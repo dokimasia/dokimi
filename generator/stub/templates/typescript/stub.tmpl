@@ -1,0 +1,403 @@
+{{- use "@dokimi/runtime/stub/compat" "compatV1"}}{{use "@dokimi/runtime/stub/group" "Group"}}
+{{- range .Records}}
+{{- $d := .Decl}}
+{{- $c := .Data}}
+{{- $stub := $d.Name}}
+{{- $tp := typeparams $d.TypeParams}}
+{{- $ta := typeargs $d.TypeParams}}
+{{- $seat := spell (stubType "Seat" "@dokimi/assert")}}
+{{- with $c.Producer}}
+
+// {{$c.Subject}} is a handle that a method of {{.}} returns.
+{{- end}}
+{{- range $c.Methods}}
+
+/** {{.Call}} records one call of {{.Qualified}}. */
+export interface {{.Call}}{{typeparams .TypeParams}} {
+{{- range .Params}}
+  /** The argument {{.Name}}. */
+  {{.Field}}{{if .Optional}}?{{end}}: {{if .Variadic}}{{spell (stubList .Type)}}{{else if .Optional}}{{spell (stubOptional .Type)}}{{else}}{{spell .Type}}{{end}};
+{{- end}}
+{{- range .Returns}}
+  /** The result of the call, where it returned one. */
+  {{.Field}}?: {{spell (stubOptional .Type)}};
+{{- end}}
+  /** The error that failed the call, where one did. */
+  {{.Failure}}?: unknown;
+}
+{{- end}}
+{{- range $i, $m := $c.Methods}}
+{{- use "@dokimi/runtime/stub/method-stub" "MethodStub"}}
+{{- $dm := index $d.Methods.Items $i}}
+{{- $value := stubType "void" ""}}{{with $m.Returns}}{{$value = (index . 0).Type}}{{end}}
+{{- $fn := $value}}{{if $m.Async}}{{$fn = stubAwaitable $value}}{{end}}
+
+/**
+ * {{$m.Stub}} configures {{$m.Name}}, and records its calls. A fault armed
+ * through it takes precedence over the function and the fixed result.
+ */
+export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Call}}{{typeargs $m.TypeParams}}> {
+  #fn: (({{params $dm.Params}}) => {{spell $fn}}) | undefined;
+{{- if $m.Returns}}
+  #fallback: { readonly value: {{spell $value}} } | undefined;
+
+  /**
+   * Sets the result of every call of {{$m.Name}}. A function and an injected
+   * fault take precedence over it.
+   *
+   * @param result - The result.
+   * @returns The stub.
+   */
+  returns(result: {{spell $value}}): this {
+    this.#fallback = { value: result };
+    return this;
+  }
+{{- end}}
+
+  /**
+   * Sets the function of {{$m.Name}}, for a result that depends on the
+   * arguments. An injected fault takes precedence over it.
+   *
+   * @param fn - The function.
+   * @returns The stub.
+   */
+  func(fn: ({{params $dm.Params}}) => {{spell $fn}}): this {
+    this.#fn = fn;
+    return this;
+  }
+{{- with $q := $m.Sequence}}
+
+  /**
+   * Makes {{$m.Name}} return an asynchronous sequence of the items.
+   *
+   * @param items - The items.
+   * @returns The stub.
+   */
+  yields(...items: {{spell (stubList $q.Elem)}}): this {
+    return this.func(async function* () {
+      yield* items;
+    });
+  }
+{{- end}}
+{{- range $m.Errors}}
+
+  /**
+   * Makes the next call of {{$m.Name}} fail with {{.Name}}. The calls after it
+   * succeed.
+   *
+   * @returns The stub.
+   */
+  {{.Helper}}(): this {
+    return this.faultsOnce({{value .Value}});
+  }
+{{- end}}
+{{- if $m.Retry}}{{use "@dokimi/runtime/fault" "retry"}}
+
+  /**
+   * Makes {{$m.Name}} fail with error on every call before call number
+   * {{$m.Retry}}, which succeeds along with every call after it.
+   *
+   * @param error - The error.
+   * @returns The stub.
+   */
+  retrySchedule(error: unknown): this {
+    return this.setFault(retry(error, {{$m.Retry}}));
+  }
+{{- end}}
+{{- if ge $m.Partition 0}}
+{{- $p := index $m.Params $m.Partition}}
+{{- $key := $p.Type}}{{if $p.Optional}}{{$key = stubOptional $p.Type}}{{end}}
+
+  /**
+   * Makes {{$m.Name}} fail every nth call whose {{$p.Field}} matches key, and
+   * leaves the other partitions alone. A test that one outage does not reach
+   * another partition needs a fault that selects its calls.
+   *
+   * @param key - The {{$p.Field}} of the calls that fail.
+   * @param error - The error.
+   * @param n - The period of the failed calls among the calls of the partition.
+   * @returns The stub.
+   */
+  faultForPartition(key: {{spell $key}}, error: unknown, n: number): this {
+    return this.faultsWhen((call) => call.{{$p.Field}} === key, error, n);
+  }
+
+  /**
+   * Makes {{$m.Name}} fail every nth call whose {{$p.Field}} differs from key,
+   * and leaves the partition of key alone.
+   *
+   * @param key - The {{$p.Field}} of the calls that pass.
+   * @param error - The error.
+   * @param n - The period of the failed calls among the other calls.
+   * @returns The stub.
+   */
+  faultForOtherPartitions(key: {{spell $key}}, error: unknown, n: number): this {
+    return this.faultsWhen((call) => call.{{$p.Field}} !== key, error, n);
+  }
+{{- end}}
+
+  /**
+   * Returns the arms of a call of {{$m.Name}} with its arguments.
+   */
+  arms({{params $dm.Params}}): {{spell (stubType "Arms" "@dokimi/runtime/stub/answer")}}<{{$m.Call}}{{typeargs $m.TypeParams}}, {{spell $value}}, {{spell $fn}}> {
+    const {{$m.Func}} = this.#fn;
+    return {
+      invoke: {{$m.Func}} && (() => {{$m.Func}}({{template "stub.ts.args" $m}})),
+{{- if $m.Returns}}
+      fallback: this.#fallback,
+      stamp: (call, result) => {
+        call.{{(index $m.Returns 0).Field}} = result;
+      },
+{{- end}}
+      fail: (call, error) => {
+        call.{{$m.Failure}} = error;
+      },
+    };
+  }
+}
+{{- end}}
+
+/** An option of a {{$stub}}, which its constructor applies. */
+export type {{$stub}}Option{{$tp}} = (double: {{$stub}}{{$ta}}) => void;
+
+/**
+ * {{$stub}} is a recording test double of {{$c.Subject}}. Each property
+ * on<Method> configures its method. Left alone, a method returns undefined
+ * and records the call.
+ */
+export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
+{{- range $c.Properties}}
+  /** The property {{.Field}}, which a test assigns. */
+  {{.Field}}{{if .Optional}}?{{else}}!{{end}}: {{spell .Type}};
+{{- end}}
+{{- range $c.Methods}}
+  /** Configures {{.Name}}{{with .From}}, which {{.}} contributes{{end}}. */
+  readonly {{.Field}}: {{.Stub}}{{typeargs .TypeParams}};
+{{- end}}
+  readonly #group: Group;
+{{- if $c.Ordered}}{{use "@dokimi/runtime/stub/order-tracker" "OrderTracker"}}
+  readonly #order: OrderTracker;
+{{- end}}
+  #strict = false;
+
+  /**
+   * Returns a double of {{$c.Subject}} that reports to seat, with the options.
+   * The double registers the check of the expected counts of calls for the
+   * end of the test. An undefined seat reports nothing.
+   *
+   * @param seat - The seat of the test.
+   * @param options - The options.
+   */
+  constructor(seat: {{$seat}} | undefined, ...options: {{$stub}}Option{{$ta}}[]) {
+{{- range $c.Methods}}
+    this.{{.Field}} = new {{.Stub}}{{typeargs .TypeParams}}(seat, "{{.Qualified}}");
+{{- end}}
+    this.#group = new Group({{range $i, $m := $c.Methods}}{{if $i}}, {{end}}this.{{$m.Field}}{{end}});
+    for (const option of options) {
+      option(this);
+    }
+    if (this.#strict) {
+      this.#group.strictAll();
+    }
+{{- if $c.Ordered}}
+    this.#order = new OrderTracker(seat, this.#strict);
+{{- end}}
+    this.#group.bind(seat);
+  }
+
+  /**
+   * Returns the option that makes an unconfigured method fail the test.
+   *
+   * @returns The option.
+   */
+  static strict{{$tp}}(): {{$stub}}Option{{$ta}} {
+    return (double) => {
+      double.#strict = true;
+    };
+  }
+{{- if $c.Methods}}
+
+  /**
+   * Returns the option that passes each call to impl, and records the call.
+   *
+   * @param impl - The implementation.
+   * @returns The option.
+   */
+  static delegateTo{{$tp}}(impl: {{spell $c.Delegate}}): {{$stub}}Option{{$ta}} {
+    return (double) => {
+{{- range $c.Methods}}
+      double.{{.Field}}.func(impl.{{.Name}}.bind(impl));
+{{- end}}
+    };
+  }
+{{- end}}
+
+  /**
+   * Returns the option that reads the latency, the windows of faults and the
+   * instants of the calls from clock.
+   *
+   * @param clock - The clock.
+   * @returns The option.
+   */
+  static withClock{{$tp}}(clock: {{spell (stubType "Clock" "@dokimi/assert")}}): {{$stub}}Option{{$ta}} {
+    return (double) => {
+      double.#group.setClock(clock);
+    };
+  }
+
+  /**
+   * Returns the option that takes the numbers of probabilistic faults from
+   * random, so a seeded source repeats the faults of a run.
+   *
+   * @param random - The source.
+   * @returns The option.
+   */
+  static withRandSource{{$tp}}(random: {{spell (stubType "RandomSource" "@dokimi/runtime/fault")}}): {{$stub}}Option{{$ta}} {
+    return (double) => {
+      double.#group.setRandSource(random);
+    };
+  }
+
+  /**
+   * Returns the option that turns the recording of calls off. The methods
+   * still return their results.
+   *
+   * @returns The option.
+   */
+  static benchMode{{$tp}}(): {{$stub}}Option{{$ta}} {
+    return (double) => {
+      double.#group.benchMode();
+    };
+  }
+
+  /**
+   * Returns the option that makes every asynchronous method wait duration on
+   * the clock of the double before it returns.
+   *
+   * @param duration - The latency, in milliseconds.
+   * @returns The option.
+   */
+  static withLatency{{$tp}}(duration: number): {{$stub}}Option{{$ta}} {
+    return (double) => {
+      double.#group.setLatency(duration);
+    };
+  }
+{{- if $c.Fallible}}
+
+  /**
+   * Returns the option that arms every method with error, so each call fails.
+   *
+   * @param error - The error.
+   * @returns The option.
+   */
+  static failing{{$tp}}(error: unknown): {{$stub}}Option{{$ta}} {
+    return (double) => {
+{{- range $c.Methods}}
+{{- if .Fails}}
+      double.{{.Field}}.faults(error, 1);
+{{- end}}
+{{- end}}
+    };
+  }
+{{- end}}
+{{- range $i, $m := $c.Methods}}
+{{- $dm := index $d.Methods.Items $i}}
+{{- $value := stubType "void" ""}}{{with $m.Returns}}{{$value = (index . 0).Type}}{{end}}
+{{- $fn := $value}}{{if $m.Async}}{{$fn = stubAwaitable $value}}{{end}}
+
+  /**
+   * Returns the option that sets the function of {{$m.Name}}.
+   *
+   * @param fn - The function.
+   * @returns The option.
+   */
+  static with{{$c.Subject}}{{stubPascal $m.Name}}{{$tp}}(fn: ({{params $dm.Params}}) => {{spell $fn}}): {{$stub}}Option{{$ta}} {
+    return (double) => {
+      double.{{$m.Field}}.func(fn);
+    };
+  }
+{{- end}}
+
+  /**
+   * Returns a double whose every asynchronous method waits duration on clock
+   * before it returns, with the options after the pair.
+   *
+   * @param seat - The seat of the test.
+   * @param duration - The latency, in milliseconds.
+   * @param clock - The clock.
+   * @param options - The options.
+   * @returns The double.
+   */
+  static newDelayed{{$tp}}(
+    seat: {{$seat}} | undefined,
+    duration: number,
+    clock: {{spell (stubType "Clock" "@dokimi/assert")}},
+    ...options: {{$stub}}Option{{$ta}}[]
+  ): {{$stub}}{{$ta}} {
+    return new {{$stub}}{{$ta}}(
+      seat,
+      {{$stub}}.withClock{{$ta}}(clock),
+      {{$stub}}.withLatency{{$ta}}(duration),
+      ...options,
+    );
+  }
+{{- if $c.Fallible}}
+
+  /**
+   * Returns a double whose every method fails with error, with the options
+   * after it.
+   *
+   * @param seat - The seat of the test.
+   * @param error - The error.
+   * @param options - The options.
+   * @returns The double.
+   */
+  static newFailing{{$tp}}(
+    seat: {{$seat}} | undefined,
+    error: unknown,
+    ...options: {{$stub}}Option{{$ta}}[]
+  ): {{$stub}}{{$ta}} {
+    return new {{$stub}}{{$ta}}(seat, {{$stub}}.failing{{$ta}}(error), ...options);
+  }
+{{- end}}
+
+  /**
+   * Clears the recorded calls, the counters of the faults and the expected
+   * counts. It keeps the functions, the fixed results and the faults.
+   */
+  resetCalls(): void {
+    this.#group.reset();
+{{- if $c.Ordered}}
+    this.#order.reset();
+{{- end}}
+  }
+{{- range $i, $m := $c.Methods}}
+{{- $dm := index $d.Methods.Items $i}}
+{{- if $m.Async}}{{use "@dokimi/runtime/stub/answer" "answerAsync"}}{{else}}{{use "@dokimi/runtime/stub/answer" "answer"}}{{end}}
+
+  /**
+   * Records the call of {{$m.Name}}, and returns its result.
+   */
+  {{$dm.Name}}({{params $dm.Params}}){{returns $dm}} {
+{{- with $m.After}}
+    this.#order.assertAfter("{{$m.Name}}", "{{.}}");
+{{- end}}
+{{- if $c.Ordered}}
+    this.#order.record("{{$m.Name}}");
+{{- end}}
+    const {{$m.Record}}: {{$m.Call}}{{typeargs $m.TypeParams}} = { {{- template "stub.ts.fields" $m}}};
+    return {{if $m.Async}}answerAsync{{else}}answer{{end}}(this.{{$m.Field}}, {{$m.Record}}, this.{{$m.Field}}.arms({{template "stub.ts.args" $m}}));
+  }
+{{- end}}
+}
+{{- end}}
+
+void compatV1;
+
+{{- define "stub.ts.args"}}
+{{- range $i, $p := .Params}}{{if $i}}, {{end}}{{if $p.Variadic}}...{{end}}{{$p.Name}}{{end}}
+{{- end}}
+
+{{- define "stub.ts.fields"}}
+{{- range $i, $p := .Params}}{{if $i}},{{end}} {{$p.Name}}{{end}}{{if .Params}} {{end}}
+{{- end}}

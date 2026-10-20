@@ -1,0 +1,6 @@
+package shop
+// Widget is a struct with a method in a language that stub has no part for.
+//
+//dokimi:stub
+type Widget string
+method Spin int

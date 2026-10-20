@@ -1,0 +1,502 @@
+{{- range .Records}}
+{{- $t := .Decl}}
+{{- $c := .Data}}
+{{- $stub := $c.Double}}
+{{- $iface := $c.Subject}}
+{{- $tp := typeparams $t.TypeParams}}
+{{- $ta := typeargs $t.TypeParams}}
+{{- if and $c.Generic (not $c.Witnesses)}}
+
+{{docs (wrapdocs (printf `Skipped: %s is generic — instantiate it with concrete types and
+write the checks in the consuming package.` $stub))}}
+{{- else}}
+{{- use "testing"}}{{use "go.dokimi.dev/assert"}}{{use "go.dokimi.dev/dokimi-go/stub"}}
+{{- $new := spell (stubRef $t (printf "New%s" $stub))}}
+{{- $double := spell (stubRef $t $stub)}}
+{{- range $i, $m := $c.Methods}}
+{{- $site := stubSite $t $c.Methods $i}}
+{{- $call := spell (stubRef $t $m.Call)}}
+{{- $ret := "struct{}"}}{{if $m.Returns}}{{$ret = printf "%s%s" (spell (stubRef $t $m.Return)) $ta}}{{end}}
+
+{{docs (wrapdocs (printf `%s%sSubject binds %s into the shape
+[stub.Behaviour] drives: how to call it, what it answers with, and how to
+override it.
+
+Each call builds a fresh double: several checks assert on failure and
+need one bound to a failable TB rather than to the running test.` (stubCamel $stub) $m.Name $m.Name))}}
+{{- ""}}func {{stubCamel $stub}}{{$m.Name}}Subject{{$tp}}(tb assert.TB) stub.Subject[{{$call}}{{$ta}}, {{$ret}}] {
+	tb.Helper()
+	s := {{$new}}{{$ta}}(tb)
+	return stub.Subject[{{$call}}{{$ta}}, {{$ret}}]{
+		Stub: s.{{$m.Field}}.MethodStub,
+		Call: func() {
+{{- template "stub.testargs" $site -}}
+			{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		},
+{{- if $m.Returns}}
+		Result: func() {{$ret}} {
+{{- template "stub.testargs" $site -}}
+			{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}got{{$j}}{{end}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+			return {{$ret}}{{"{"}}{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}{{$r.Field}}: got{{$j}}{{end}}{{"}"}}
+		},
+{{- end}}
+		Override: func(mark func()) {
+			s.{{$m.Field}}.Func(func({{template "stub.testfuncparams" $m}}){{template "stub.testresults" $m}} {
+				mark()
+{{- template "stub.zeros" $m}}
+			})
+		},
+{{- if ge $m.Err 0}}
+		Fails: func() error {
+{{- template "stub.testargs" $site -}}
+			{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+			return {{(index $m.Returns $m.Err).Local}}
+		},
+{{- end}}
+	}
+}
+
+{{docs (wrapdocs (printf `Test%s%s pins how %s answers.
+
+Recording, resetting, call-count expectations, strict mode, fault injection
+and zero-value dispatch are the same contract for every method, so they are
+asserted once in [stub.Behaviour] rather than restated here. What remains
+below needs a value this method's signature can tell apart from a zero one.` $stub $m.Name $m.Name))}}
+{{- ""}}{{if $c.Witnesses -}}
+func {{stubCamel $stub}}{{$m.Name}}Checks{{$tp}}(t *testing.T) {
+{{- else -}}
+func Test{{$stub}}{{$m.Name}}(t *testing.T) {
+{{- end}}
+	t.Parallel()
+
+	stub.Behaviour(t, "{{$m.Name}}", {{stubCamel $stub}}{{$m.Name}}Subject{{$ta}})
+{{- if $m.Returns}}
+{{- if $m.Pinnable}}
+
+	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+		// Distinguishable from the zero wherever a value can be written: a
+		// double that ignored Returns answers the zero too.
+{{- template "stub.pins" $site -}}
+		s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
+{{- template "stub.testargs" $site -}}
+		{{template "stub.pinned" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+{{- range $j, $r := $m.Returns}}
+{{- if $r.Pinned}}
+		assert.Equal(t, got{{$j}}, want{{$j}}, "{{$m.Name}} must answer with what Returns pinned")
+{{- end}}
+{{- end}}
+{{- template "stub.unpinned" $m}}
+	})
+{{- else}}
+
+	// No check that {{$m.Name}} answers what Returns pinned: no result of its
+	// signature admits a value this run can tell apart from the zero, and an
+	// unconfigured double answers the zero anyway.
+{{- end}}
+{{- end}}
+	t.Run("records what it was called with", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+{{- template "stub.testargs" $site -}}
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		{{if $m.Params}}got := {{end}}s.{{$m.Field}}.AssertCalledOnce(t, "{{$m.Name}} must record the call")
+{{- range $j, $p := $m.Params}}
+		assert.Equal(t, got.{{$p.Field}}, a{{$j}}, "the recorded call carries {{$p.Field}}")
+{{- end}}
+	})
+
+	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
+		t.Parallel()
+		// The hook fires synchronously as each call lands, which is what a
+		// concurrency test observes progress with.
+		s := {{$new}}{{$ta}}(t)
+		var seen []{{$call}}{{$ta}}
+		s.{{$m.Field}}.OnRecord(func(c {{$call}}{{$ta}}) { seen = append(seen, c) })
+{{- template "stub.testargs" $site -}}
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.Length(t, seen, 2, "OnRecord must fire once per {{$m.Name}} call")
+	})
+
+	t.Run("wires With{{$iface}}{{$m.Name}} at construction", func(t *testing.T) {
+		t.Parallel()
+		called := false
+		s := {{$new}}(t, {{spell (stubRef $t (printf "With%s%s" $iface $m.Name))}}{{$ta}}(func({{template "stub.testfuncparams" $m}}){{template "stub.testresults" $m}} {
+			called = true
+{{- template "stub.zeros" $m}}
+		}))
+{{- template "stub.testargs" $site -}}
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.True(t, called, "With{{$iface}}{{$m.Name}} must install the override")
+	})
+{{- if ge $m.Err 0}}{{use "errors"}}
+
+	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
+		t.Parallel()
+		// The preset arms every method that can fail, so it is checked once
+		// per method. Built through the convenience constructor, which puts
+		// the wrapper and the option it applies under the same check.
+		want := errors.New("{{$m.Name}}-failing")
+		s := {{spell (stubRef $t (printf "New%sFailing" $stub))}}{{$ta}}(t, want)
+{{- template "stub.testargs" $site -}}
+		{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, want, "{{$m.Name}} must answer the armed error")
+	})
+{{- range $f := $m.Errors}}
+
+	t.Run("answers {{$f.Name}} once {{$f.Helper}} arms it", func(t *testing.T) {
+		t.Parallel()
+		// One arm, two calls: the helper promises a one-shot fault.
+		s := {{$new}}{{$ta}}(t)
+		s.{{$m.Field}}.{{$f.Helper}}()
+{{- template "stub.testargs" $site -}}
+		{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, {{value $f.Value}}, "{{$f.Helper}} must answer with {{$f.Name}}")
+		{{template "stub.fails" $m}} = s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.NoError(t, {{(index $m.Returns $m.Err).Local}}, "the fault is one-shot and must clear")
+	})
+{{- end}}
+{{- if $m.Retry}}
+
+	t.Run("fails until attempt {{$m.Retry}} then succeeds", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+		want := errors.New("{{$m.Name}}-retry")
+		s.{{$m.Field}}.RetrySchedule(want)
+{{- template "stub.testargs" $site -}}
+		for attempt := 1; attempt < {{$m.Retry}}; attempt++ {
+			{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+			assert.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, want, "a call before attempt {{$m.Retry}} must fail")
+		}
+		{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.NoError(t, {{(index $m.Returns $m.Err).Local}}, "attempt {{$m.Retry}} must succeed")
+	})
+{{- end}}
+{{- if ge $m.Partition 0}}
+{{- $p := index $m.Params $m.Partition}}
+
+	t.Run("faults only the targeted partition", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+{{- template "stub.testargs" $site -}}
+		// The key is the value the call below carries in {{$p.Field}}, so
+		// the call lands in the targeted partition by construction.
+		key := a{{$m.Partition}}
+		want := errors.New("{{$m.Name}}-partition")
+		s.{{$m.Field}}.FaultForPartition(key, want, 1)
+		{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, want, "a call in the targeted partition must fail")
+	})
+
+	t.Run("spares the partition FaultForOtherPartitions names", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+{{- template "stub.testargs" $site -}}
+		key := a{{$m.Partition}}
+		s.{{$m.Field}}.FaultForOtherPartitions(key, errors.New("{{$m.Name}}-partition"), 1)
+		{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.NoError(t, {{(index $m.Returns $m.Err).Local}}, "a call in the named partition must be spared")
+	})
+{{- end}}
+{{- end}}
+{{- if $m.Returns}}
+{{- if $m.Pinnable}}
+
+	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
+		t.Parallel()
+		// A reset clears what happened, not what was configured. Pinned to a
+		// distinguishable value: a reset that lost the configuration answers
+		// the zero, and so does one that kept a configured zero.
+		s := {{$new}}{{$ta}}(t)
+{{- template "stub.pins" $site -}}
+		s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
+{{- template "stub.testargs" $site -}}
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		s.ResetCalls()
+		{{template "stub.pinned" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+{{- range $j, $r := $m.Returns}}
+{{- if $r.Pinned}}
+		assert.Equal(t, got{{$j}}, want{{$j}}, "a reset must keep what Returns pinned")
+{{- end}}
+{{- end}}
+	})
+{{- else}}
+
+	t.Run("keeps recording across a reset", func(t *testing.T) {
+		t.Parallel()
+		// No result of {{$m.Name}} admits a distinguishable value, so what Returns
+		// pinned cannot be told from the zero. What a reset can still be held
+		// to is that it clears the log without taking the double with it:
+		// configure, call, reset, call again, and exactly one call is
+		// recorded.
+		s := {{$new}}{{$ta}}(t)
+{{- range $j, $r := $m.Returns}}
+		var want{{$j}} {{spell $r.Type}}
+{{- end}}
+		s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
+{{- template "stub.testargs" $site -}}
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		s.ResetCalls()
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		s.{{$m.Field}}.AssertCalledOnce(t, "{{$m.Name}} must record the call that followed the reset")
+	})
+{{- end}}
+{{- end}}
+{{- with $q := $m.Sequence}}
+
+	t.Run("yields the items Yields configured", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+		var want {{spell $q.Elem}}
+		s.{{$m.Field}}.Yields(want, want)
+{{- template "stub.testargs" $site -}}
+		got0 := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		seen := 0
+		for range got0 {
+			seen++
+		}
+		assert.Equal(t, seen, 2, "{{$m.Name}} must yield every configured item")
+	})
+
+	t.Run("stops yielding when the caller breaks", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+		var want {{spell $q.Elem}}
+		s.{{$m.Field}}.Yields(want, want, want)
+{{- template "stub.testargs" $site -}}
+		got0 := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		seen := 0
+		for range got0 {
+			seen++
+			break
+		}
+		assert.Equal(t, seen, 1, "{{$m.Name}} must stop when the caller breaks")
+	})
+{{- if $q.Errors}}{{use "errors"}}
+
+	t.Run("yields the items YieldsError configured and then fails", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+		var item {{spell $q.Elem}}
+		want := errors.New("{{$m.Name}}-yields")
+		s.{{$m.Field}}.YieldsError([]{{spell $q.Elem}}{item, item}, want)
+{{- template "stub.testargs" $site -}}
+		got0 := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		seen := 0
+		var last error
+		for _, err := range got0 {
+			if err != nil {
+				last = err
+				break
+			}
+			seen++
+		}
+		assert.Equal(t, seen, 2, "{{$m.Name}} must yield every item before failing")
+		assert.ErrorIs(t, last, want, "{{$m.Name}} must end with the configured error")
+	})
+
+	t.Run("stops a failing sequence when the caller breaks", func(t *testing.T) {
+		t.Parallel()
+		s := {{$new}}{{$ta}}(t)
+		var item {{spell $q.Elem}}
+		s.{{$m.Field}}.YieldsError([]{{spell $q.Elem}}{item, item, item}, errors.New("{{$m.Name}}-yields"))
+{{- template "stub.testargs" $site -}}
+		got0 := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		seen := 0
+		for range got0 {
+			seen++
+			break
+		}
+		assert.Equal(t, seen, 1, "{{$m.Name}} must stop when the caller breaks")
+	})
+{{- end}}
+{{- end}}
+{{- with $m.After}}
+
+	t.Run("refuses {{$m.Name}} before {{.}} in strict mode", func(t *testing.T) {
+		t.Parallel()
+		r := assert.NewRecorder()
+		s := {{$new}}{{$ta}}(r, {{spell (stubRef $t (printf "%sStrict" $stub))}}{{$ta}}())
+{{- template "stub.testargs" $site -}}
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.True(t, r.Failed(), "{{$m.Name}} before {{.}} must be refused")
+	})
+{{- end}}
+}
+{{- end}}
+{{- if $c.Methods}}{{use "time"}}{{use "math/rand/v2"}}
+{{- $m := index $c.Methods 0}}
+{{- $site := stubSite $t $c.Methods 0}}
+{{- $call := spell (stubRef $t $m.Call)}}
+
+{{docs (wrapdocs (printf `%sDouble describes how to build a %s under each
+option whose effect is the same whatever a method's signature.
+
+%s stands in for the double as a whole: these checks assert only
+that an option reached it.` (stubCamel $stub) $stub $m.Name))}}
+{{- ""}}func {{stubCamel $stub}}Double{{$tp}}() stub.Double[{{$call}}{{$ta}}] {
+	instance := func(s *{{$double}}{{$ta}}) stub.Instance[{{$call}}{{$ta}}] {
+		return stub.Instance[{{$call}}{{$ta}}]{
+			Stub: s.{{$m.Field}}.MethodStub,
+			Call: func() {
+{{- template "stub.testargs" $site -}}
+				{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+			},
+			Reset: s.ResetCalls,
+		}
+	}
+	return stub.Double[{{$call}}{{$ta}}]{
+		New: func(tb assert.TB) stub.Instance[{{$call}}{{$ta}}] {
+			return instance({{$new}}{{$ta}}(tb))
+		},
+		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[{{$call}}{{$ta}}] {
+			return instance({{$new}}{{$ta}}(tb, {{spell (stubRef $t (printf "%sWithClock" $stub))}}{{$ta}}(clk)))
+		},
+		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[{{$call}}{{$ta}}] {
+			// Through the convenience constructor, which puts the wrapper
+			// and the pair it bundles under the same check.
+			return instance({{spell (stubRef $t (printf "New%sDelayed" $stub))}}{{$ta}}(tb, d, clk))
+		},
+		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[{{$call}}{{$ta}}] {
+			return instance({{$new}}{{$ta}}(tb, {{spell (stubRef $t (printf "%sWithRandSource" $stub))}}{{$ta}}(src)))
+		},
+		BenchMode: func(tb assert.TB) stub.Instance[{{$call}}{{$ta}}] {
+			return instance({{$new}}{{$ta}}(tb, {{spell (stubRef $t (printf "%sBenchMode" $stub))}}{{$ta}}()))
+		},
+		Strict: func(tb assert.TB) stub.Instance[{{$call}}{{$ta}}] {
+			return instance({{$new}}{{$ta}}(tb, {{spell (stubRef $t (printf "%sStrict" $stub))}}{{$ta}}()))
+		},
+	}
+}
+
+{{docs (wrapdocs (printf `Test%sOptions pins the settings that apply to the double rather
+than to one method: bench mode, the injected clock and random source, and
+what a reset clears.` $stub))}}
+{{- ""}}{{if $c.Witnesses -}}
+func {{stubCamel $stub}}OptionChecks{{$tp}}(t *testing.T) {
+{{- else -}}
+func Test{{$stub}}Options(t *testing.T) {
+{{- end}}
+	t.Parallel()
+
+	stub.DoubleBehaviour(t, {{stubCamel $stub}}Double{{$ta}}())
+}
+{{- end}}
+{{- if $c.Value}}
+
+{{docs (wrapdocs (printf `Test%sDelegateTo pins that a wrapped implementation is called
+through, and recorded on the way past.` $stub))}}
+{{- ""}}{{if $c.Witnesses -}}
+func {{stubCamel $stub}}DelegationChecks{{$tp}}(t *testing.T) {
+{{- else -}}
+func Test{{$stub}}DelegateTo(t *testing.T) {
+{{- end}}
+	t.Parallel()
+
+	inner := {{$new}}{{$ta}}(t)
+	s := {{$new}}{{$ta}}(t, {{spell (stubRef $t (printf "%sDelegateTo" $stub))}}{{$ta}}(inner))
+{{- range $i, $m := $c.Methods}}
+{{- $site := stubSite $t $c.Methods $i}}
+
+	t.Run("forwards {{$m.Name}} to the wrapped implementation", func(t *testing.T) {
+{{- template "stub.testargs" $site -}}
+		{{template "stub.blanks" $m}}s.{{$m.Name}}({{template "stub.testcall" $m}})
+		inner.{{$m.Field}}.AssertCalledOnce(t, "{{$m.Name}} must reach the wrapped implementation")
+	})
+{{- if ge $m.Err 0}}{{use "errors"}}{{use "time"}}
+
+	t.Run("surfaces what {{$m.Name}} answered", func(t *testing.T) {
+		want := errors.New("{{$m.Name}}-delegate")
+		inner.{{$m.Field}}.FaultsFor(time.Hour, want)
+{{- template "stub.testargs" $site -}}
+		{{template "stub.fails" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
+		assert.ErrorIs(t, {{(index $m.Returns $m.Err).Local}}, want, "{{$m.Name}} must surface the wrapped answer")
+	})
+{{- end}}
+{{- end}}
+}
+{{- end}}
+{{- if $c.Witnesses}}
+{{- range $m := $c.Methods}}
+
+{{docs (wrapdocs (printf `Test%s%s runs %s's checks at the witness types
+its constraints admit.
+
+A Go test function cannot take type parameters, so the checks live in a
+generic helper and this instantiates it at one set of witnesses.` $stub $m.Name $m.Name))}}
+{{- ""}}func Test{{$stub}}{{$m.Name}}(t *testing.T) { {{- stubCamel $stub}}{{$m.Name}}Checks{{typeargs $c.Witnesses}}(t) }
+{{- end}}
+
+{{docs (wrapdocs (printf `Test%sOptions runs the whole-double checks at the same witnesses.` $stub))}}
+{{- ""}}func Test{{$stub}}Options(t *testing.T) { {{- stubCamel $stub}}OptionChecks{{typeargs $c.Witnesses}}(t) }
+{{- if $c.Value}}
+
+{{docs (wrapdocs (printf `Test%sDelegateTo runs the delegation checks at the same witnesses.` $stub))}}
+{{- ""}}func Test{{$stub}}DelegateTo(t *testing.T) { {{- stubCamel $stub}}DelegationChecks{{typeargs $c.Witnesses}}(t) }
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+
+{{- /* The arguments that every check calls with. A sample replaces the zero
+       wherever one can be written: the body of a method of the record of the
+       tests assigns it. The data is the site of the method. The partial
+       writes whole lines, so a caller trims the space after it. */ -}}
+{{- define "stub.testargs"}}{{"\n"}}
+{{- range $i, $p := .Method.Params}}var a{{$i}} {{if $p.Variadic}}[]{{end}}{{spell $p.Type}}{{"\n"}}{{end}}
+{{- if ge .Method.Args 0}}{{memberbody (index .Test.Methods.Items .Method.Args)}}{{end}}
+{{- end}}
+
+{{- /* The values of the check of Returns: the zero of each result, and a
+       sample wherever one can be written. The data is the site of the
+       method. The partial writes whole lines, as stub.testargs does. */ -}}
+{{- define "stub.pins"}}{{"\n"}}
+{{- range $i, $r := .Method.Returns}}var want{{$i}} {{spell $r.Type}}{{"\n"}}{{end}}
+{{- if ge .Method.Pins 0}}{{memberbody (index .Test.Methods.Items .Method.Pins)}}{{end}}
+{{- end}}
+
+{{- define "stub.pinned"}}
+{{- range $i, $r := .Returns}}{{if $i}}, {{end}}{{if $r.Pinned}}got{{$i}}{{else}}_{{end}}{{end}}
+{{- end}}
+
+{{- define "stub.unpinned"}}
+{{- $n := 0}}{{range .Returns}}{{if not .Pinned}}{{$n = 1}}{{end}}{{end}}
+{{- if $n}}
+		// Blanked above: no literal exists for {{$n = 0}}{{range $i, $r := .Returns}}{{if not $r.Pinned}}{{if $n}}, {{end}}result {{$i}} ({{spell $r.Type}}){{$n = 1}}{{end}}{{end}}, so the
+		// only value to pin there is the zero, which a double that ignored
+		// Returns answers too.
+{{- end}}
+{{- end}}
+
+{{- define "stub.zeros"}}
+{{- if .Returns}}
+{{- range $i, $r := .Returns}}
+				var z{{$i}} {{spell $r.Type}}
+{{- end}}
+				return {{range $i, $r := .Returns}}{{if $i}}, {{end}}z{{$i}}{{end}}
+{{- end}}
+{{- end}}
+
+{{- define "stub.blanks"}}
+{{- if .Returns}}{{range $i, $r := .Returns}}{{if $i}}, {{end}}_{{end}} = {{end}}
+{{- end}}
+
+{{- define "stub.fails"}}
+{{- $m := .}}{{range $i, $r := .Returns}}{{if $i}}, {{end}}{{if eq $i $m.Err}}{{$r.Local}}{{else}}_{{end}}{{end}}
+{{- end}}
+
+{{- define "stub.testcall"}}
+{{- range $i, $p := .Params}}{{if $i}}, {{end}}a{{$i}}{{if $p.Variadic}}...{{end}}{{end}}
+{{- end}}
+
+{{- define "stub.testfuncparams"}}
+{{- range $i, $p := .Params}}{{if $i}}, {{end}}_ {{if $p.Variadic}}...{{end}}{{spell $p.Type}}{{end}}
+{{- end}}
+
+{{- define "stub.testresults"}}
+{{- if eq (len .Returns) 1}} {{spell (index .Returns 0).Type}}
+{{- else if .Returns}} ({{range $i, $r := .Returns}}{{if $i}}, {{end}}{{spell $r.Type}}{{end}})
+{{- end}}
+{{- end}}

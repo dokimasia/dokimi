@@ -1,0 +1,313 @@
+{{- /*
+The test imports each double from the module of its file without the suffix
+.test.ts, so a config that routes the two families apart breaks the import.
+*/ -}}
+{{- $module := stubModule $.Name}}
+{{- use "vitest" "describe"}}{{use "@dokimi/assert/vitest" "test"}}{{use "@dokimi/assert" "check"}}
+{{- range .Records}}
+{{- $t := .Decl}}
+{{- $c := .Data}}
+{{- $stub := $c.Double}}
+{{- $tp := typeparams $t.TypeParams}}
+{{- $ta := typeargs $t.TypeParams}}
+{{- $wa := typeargs $c.Witnesses}}
+{{- use $module $stub}}
+{{- if $c.Methods}}{{use "@dokimi/assert" "byIdentity"}}{{use "@dokimi/runtime/stub/behaviour" "behaviour"}}
+{{- use "@dokimi/runtime/stub/behaviour" "settle"}}{{use "@dokimi/runtime/stub/double-behaviour" "doubleBehaviour"}}
+{{- end}}
+{{- range $i, $m := $c.Methods}}
+{{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
+{{- if $m.Params}}
+
+/** Returns the samples of the arguments of {{$m.Name}}, or undefined. */
+function {{$helper}}Args{{typeparams $m.ArgTypeParams}}(): [{{range $j, $p := $m.Params}}{{if $j}}, {{end}}{{if $p.Variadic}}{{spell (stubList $p.Type)}}{{else if $p.Optional}}{{spell (stubOptional $p.Type)}}{{else}}{{spell $p.Type}}{{end}}{{end}}] {
+{{- range $j, $p := $m.Params}}
+{{- if $p.Variadic}}
+  const a{{$j}}: {{spell (stubList $p.Type)}} = [];
+{{- else}}
+  let a{{$j}} = undefined as unknown as {{spell $p.Type}};
+{{- end}}
+{{- end}}
+{{if ge $m.Args 0}}{{body (index $t.Methods.Items $m.Args)}}{{end}}  return [{{range $j, $p := $m.Params}}{{if $j}}, {{end}}a{{$j}}{{end}}];
+}
+{{- end}}
+
+/** Calls {{$m.Name}} of double with the samples of its arguments. */
+function {{$helper}}{{$tp}}(double: {{$stub}}{{$ta}}){{template "stub.ts.returns" $m}} {
+{{- if $m.Params}}
+  const args = {{$helper}}Args{{typeargs $m.ArgTypeParams}}();
+{{- end}}
+  return double.{{$m.Name}}({{range $j, $p := $m.Params}}{{if $j}}, {{end}}{{if $p.Variadic}}...{{end}}args[{{$j}}]{{end}});
+}
+{{- if $m.Pinnable}}
+
+/** Returns the sample of the result of {{$m.Name}}. */
+function {{$helper}}Pin(): {{spell (index $m.Returns 0).Type}} {
+  let want0: {{spell (index $m.Returns 0).Type}};
+{{body (index $t.Methods.Items $m.Pins)}}  return want0;
+}
+{{- end}}
+{{- end}}
+{{- range $i, $m := $c.Methods}}
+{{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
+{{- $await := ""}}{{if $m.Async}}{{$await = "await "}}{{end}}
+
+describe("{{$stub}}.{{$m.Name}}", () => {
+  const checks = behaviour("{{$m.Qualified}}", (seat) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    return {
+      stub: double.{{$m.Field}},
+      call: () => {{$helper}}(double),
+      override: (mark) => {
+        double.{{$m.Field}}.func(() => {
+          mark();
+          return undefined as never;
+        });
+      },
+    };
+  });
+  for (const c of checks) {
+    test(c.name, ({ seat }) => c.run(seat));
+  }
+{{- if $m.Pinnable}}
+
+  test("returns the result of returns", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    const want = {{$helper}}Pin();
+    double.{{$m.Field}}.returns(want);
+    check.equal(seat, {{$await}}{{$helper}}(double), want, "{{$m.Name}} returns the result of returns");
+  });
+{{- end}}
+
+  test("records the arguments of the call", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    {{$await}}{{$helper}}(double);
+    {{if $m.Params}}const got = {{end}}double.{{$m.Field}}.assertCalledOnce(seat, "{{$m.Name}} records the call");
+{{- if $m.Params}}
+    const args = {{$helper}}Args{{typeargs $m.ArgWitnesses}}();
+{{- end}}
+{{- range $j, $p := $m.Params}}
+    check.equal(seat, got?.{{$p.Field}}, args[{{$j}}], "the call records {{$p.Field}}");
+{{- end}}
+  });
+
+  test("runs the onRecord hook for each call", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    let seen = 0;
+    double.{{$m.Field}}.onRecord(() => {
+      seen += 1;
+    });
+    {{$await}}{{$helper}}(double);
+    {{$await}}{{$helper}}(double);
+    check.equal(seat, seen, 2, "onRecord runs once for each call of {{$m.Name}}");
+  });
+
+  test("sets the function of with{{$c.Subject}}{{stubPascal $m.Name}} at construction", async ({ seat }) => {
+    let called = false;
+    const option = {{$stub}}.with{{$c.Subject}}{{stubPascal $m.Name}}{{$wa}}(() => {
+      called = true;
+      return undefined as never;
+    });
+    {{$await}}{{$helper}}(new {{$stub}}{{$wa}}(seat, option));
+    check.isTrue(seat, called, "with{{$c.Subject}}{{stubPascal $m.Name}} sets the function");
+  });
+{{- if $m.Fails}}
+
+  test("fails with the error of the failing option", async ({ seat }) => {
+    const want = new Error("{{$m.Name}}-failing");
+    const double = {{$stub}}.newFailing{{$wa}}(seat, want);
+    const outcome = await settle(() => {{$helper}}(double));
+    const message = "{{$m.Name}} fails with the error of the option";
+    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  });
+{{- end}}
+{{- range $m.Errors}}
+
+  test("fails the next call with {{.Name}} once {{.Helper}} arms it", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    double.{{$m.Field}}.{{.Helper}}();
+    const first = await settle(() => {{$helper}}(double));
+    const message = "{{.Helper}} fails the next call of {{$m.Name}} with {{.Name}}";
+    check.equal(seat, first.threw && first.error, {{value .Value}}, message, byIdentity());
+    const second = await settle(() => {{$helper}}(double));
+    check.isFalse(seat, second.threw, "the call after it succeeds");
+  });
+{{- end}}
+{{- if $m.Retry}}
+
+  test("fails until attempt {{$m.Retry}} then succeeds", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    const want = new Error("{{$m.Name}}-retry");
+    double.{{$m.Field}}.retrySchedule(want);
+    for (let attempt = 1; attempt < {{$m.Retry}}; attempt += 1) {
+      const outcome = await settle(() => {{$helper}}(double));
+      const message = "a call before attempt {{$m.Retry}} fails";
+      check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    }
+    const outcome = await settle(() => {{$helper}}(double));
+    check.isFalse(seat, outcome.threw, "attempt {{$m.Retry}} succeeds");
+  });
+{{- end}}
+{{- if ge $m.Partition 0}}
+
+  test("faults only the targeted partition", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    const args = {{$helper}}Args{{typeargs $m.ArgWitnesses}}();
+    const want = new Error("{{$m.Name}}-partition");
+    double.{{$m.Field}}.faultForPartition(args[{{$m.Partition}}], want, 1);
+    const outcome = await settle(() => {{$helper}}(double));
+    const message = "a call in the targeted partition fails";
+    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  });
+
+  test("spares the partition that faultForOtherPartitions names", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    const args = {{$helper}}Args{{typeargs $m.ArgWitnesses}}();
+    double.{{$m.Field}}.faultForOtherPartitions(args[{{$m.Partition}}], new Error("{{$m.Name}}-partition"), 1);
+    const outcome = await settle(() => {{$helper}}(double));
+    check.isFalse(seat, outcome.threw, "a call in the named partition passes");
+  });
+{{- end}}
+{{- if $m.Pinnable}}
+
+  test("keeps the result of returns across a reset", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    const want = {{$helper}}Pin();
+    double.{{$m.Field}}.returns(want);
+    {{$await}}{{$helper}}(double);
+    double.resetCalls();
+    check.equal(seat, {{$await}}{{$helper}}(double), want, "a reset keeps the result of returns");
+  });
+{{- else if $m.Returns}}
+
+  test("keeps recording across a reset", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    double.{{$m.Field}}.returns(undefined as never);
+    {{$await}}{{$helper}}(double);
+    double.resetCalls();
+    {{$await}}{{$helper}}(double);
+    double.{{$m.Field}}.assertCalledOnce(seat, "{{$m.Name}} records the call after the reset");
+  });
+{{- end}}
+{{- if $m.Sequence}}
+
+  test("yields the items of yields", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    double.{{$m.Field}}.yields(undefined as never, undefined as never);
+    let seen = 0;
+    for await (const _ of {{$helper}}(double)) {
+      seen += 1;
+    }
+    check.equal(seat, seen, 2, "{{$m.Name}} yields each item");
+  });
+
+  test("stops yielding when the caller breaks", async ({ seat }) => {
+    const double = new {{$stub}}{{$wa}}(seat);
+    double.{{$m.Field}}.yields(undefined as never, undefined as never, undefined as never);
+    let seen = 0;
+    for await (const _ of {{$helper}}(double)) {
+      seen += 1;
+      break;
+    }
+    check.equal(seat, seen, 1, "{{$m.Name}} stops when the caller breaks");
+  });
+{{- end}}
+{{- with $m.After}}{{use "@dokimi/assert" "Recorder"}}
+
+  test("refuses {{$m.Name}} before {{.}} in strict mode", async ({ seat }) => {
+    const failures = new Recorder();
+    const double = new {{$stub}}{{$wa}}(failures, {{$stub}}.strict{{$wa}}());
+    await settle(() => {{$helper}}(double));
+    check.isTrue(seat, failures.failed, "{{$m.Name}} before {{.}} is refused");
+  });
+{{- end}}
+});
+{{- end}}
+{{- if $c.Methods}}
+{{- $pick := 0}}{{$found := false}}
+{{- range $i, $m := $c.Methods}}{{if and $m.Async (not $found)}}{{$pick = $i}}{{$found = true}}{{end}}{{end}}
+{{- $p := index $c.Methods $pick}}
+
+describe("{{$stub}}", () => {
+  const instance = (double: {{$stub}}{{$wa}}) => ({
+    stub: double.{{$p.Field}},
+    call: () => {{stubCamel $stub}}{{stubPascal $p.Name}}(double),
+    reset: () => double.resetCalls(),
+  });
+  const checks = doubleBehaviour({
+    create: (seat) => instance(new {{$stub}}{{$wa}}(seat)),
+    withClock: (seat, clock) => instance(new {{$stub}}{{$wa}}(seat, {{$stub}}.withClock{{$wa}}(clock))),
+    withLatency: (seat, duration, clock) => instance({{$stub}}.newDelayed{{$wa}}(seat, duration, clock)),
+    withRandSource: (seat, random) =>
+      instance(new {{$stub}}{{$wa}}(seat, {{$stub}}.withRandSource{{$wa}}(random))),
+    benchMode: (seat) => instance(new {{$stub}}{{$wa}}(seat, {{$stub}}.benchMode{{$wa}}())),
+    strict: (seat) => instance(new {{$stub}}{{$wa}}(seat, {{$stub}}.strict{{$wa}}())),
+    async: {{$p.Async}},
+  });
+  for (const c of checks) {
+    test(c.name, ({ seat }) => c.run(seat));
+  }
+{{- range $m := $c.Methods}}
+{{- $helper := printf "%s%s" (stubCamel $stub) (stubPascal $m.Name)}}
+
+  test("passes {{$m.Name}} to the implementation of delegateTo", async ({ seat }) => {
+    const inner = new {{$stub}}{{$wa}}(seat);
+    await settle(() => {{$helper}}(new {{$stub}}{{$wa}}(seat, {{$stub}}.delegateTo{{$wa}}(inner))));
+    inner.{{$m.Field}}.assertCalledOnce(seat, "{{$m.Name}} reaches the implementation");
+  });
+
+  test("fails {{$m.Name}} with the error of the implementation of delegateTo", async ({ seat }) => {
+    const want = new Error("{{$m.Name}}-delegate");
+    const inner = new {{$stub}}{{$wa}}(seat);
+    inner.{{$m.Field}}.faults(want, 1);
+    const double = new {{$stub}}{{$wa}}(seat, {{$stub}}.delegateTo{{$wa}}(inner));
+    const outcome = await settle(() => {{$helper}}(double));
+    const message = "{{$m.Name}} fails with the error of the implementation";
+    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  });
+{{- end}}
+});
+{{- else}}{{use "@dokimi/assert" "Controlled"}}
+{{- $double := printf "%s%s" $stub $wa}}
+{{- $props := printf "%sProps" (stubCamel $stub)}}
+{{- if ge $c.Props 0}}
+
+/** Assigns the sample of each property of {{$stub}} to double. */
+function {{$props}}(double: {{$double}}): void {
+{{body (index $t.Methods.Items $c.Props)}}}
+{{- end}}
+
+describe("{{$stub}}", () => {
+  const builds: [string, (seat: {{spell (stubType "Seat" "@dokimi/assert")}}) => {{$double}}][] = [
+    ["new", (seat) => new {{$double}}(seat)],
+    ["strict", (seat) => new {{$double}}(seat, {{$stub}}.strict{{$wa}}())],
+    ["withClock", (seat) => new {{$double}}(seat, {{$stub}}.withClock{{$wa}}(new Controlled()))],
+    ["withRandSource", (seat) => new {{$double}}(seat, {{$stub}}.withRandSource{{$wa}}(() => 0))],
+    ["benchMode", (seat) => new {{$double}}(seat, {{$stub}}.benchMode{{$wa}}())],
+    ["withLatency", (seat) => new {{$double}}(seat, {{$stub}}.withLatency{{$wa}}(1))],
+    ["newDelayed", (seat) => {{$stub}}.newDelayed{{$wa}}(seat, 1, new Controlled())],
+  ];
+  for (const [name, build] of builds) {
+    test(`keeps each property across a reset of a double built by ${name}`, ({ seat }) => {
+      const double = build(seat);
+{{- if ge $c.Props 0}}
+      {{$props}}(double);
+{{- end}}
+      double.resetCalls();
+      const want = new {{$double}}(undefined);
+{{- if ge $c.Props 0}}
+      {{$props}}(want);
+{{- end}}
+{{- range $c.Properties}}
+      check.equal(seat, double.{{.Field}}, want.{{.Field}}, "the reset keeps the property {{.Field}}");
+{{- end}}
+    });
+  }
+});
+{{- end}}
+{{- end}}
+
+{{- define "stub.ts.returns"}}
+{{- $value := "void"}}{{with .Returns}}{{$value = spell (index . 0).Type}}{{end}}
+{{- if .Async}}: Promise<{{$value}}>{{else}}: {{$value}}{{end}}
+{{- end}}

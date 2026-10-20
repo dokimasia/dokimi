@@ -1,0 +1,67 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The settings of dokimi, which ergon init merges into .golangci.yml.
+
+linters:
+  settings:
+    depguard:
+      rules:
+        # A plugin and its tests import the SDK facade of eidos. The facade exports the kernel types
+        # that a plugin uses. The root package and cmd/dokimi compose the workspace, so the rules do
+        # not cover them.
+        plugin-facade:
+          files:
+            - "**/annotator/**"
+            - "**/generator/**"
+          deny:
+            - pkg: go.dokimi.dev/eidos/core
+              desc: import go.dokimi.dev/eidos/sdk instead of the kernel
+
+        # plugin.go contains the code of a plugin for every language. The package naming of
+        # eidos-lang cases a name and makes a name unique, and contains no syntax of a language, so
+        # each file of a plugin may import it.
+        plugin-neutral:
+          list-mode: lax
+          files:
+            - "**/annotator/*/plugin.go"
+            - "**/generator/*/plugin.go"
+          allow:
+            - go.dokimi.dev/eidos/lang/naming$
+          deny:
+            - pkg: go.dokimi.dev/eidos/lang
+              desc: plugin.go does not import a satellite of eidos, so move the code of one language into <lang>.go
+
+        # golang.go and typescript.go contain the parts of a plugin for one language. Each imports
+        # the root package of its own satellite as its only package of a satellite.
+        plugin-golang:
+          list-mode: lax
+          files:
+            - "**/annotator/*/golang.go"
+            - "**/generator/*/golang.go"
+          allow:
+            - go.dokimi.dev/eidos/lang/go$
+            - go.dokimi.dev/eidos/lang/naming$
+          deny:
+            - pkg: go.dokimi.dev/eidos/lang
+              desc: golang.go imports go.dokimi.dev/eidos/lang/go as its only package of a satellite
+        plugin-typescript:
+          list-mode: lax
+          files:
+            - "**/annotator/*/typescript.go"
+            - "**/generator/*/typescript.go"
+          allow:
+            - go.dokimi.dev/eidos/lang/typescript$
+            - go.dokimi.dev/eidos/lang/naming$
+          deny:
+            - pkg: go.dokimi.dev/eidos/lang
+              desc: typescript.go imports go.dokimi.dev/eidos/lang/typescript as its only package of a satellite
+
+formatters:
+  settings:
+    # The modules of dokimi form an import group of their own.
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(go.dokimi.dev/dokimi)

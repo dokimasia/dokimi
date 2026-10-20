@@ -1,5 +1,5 @@
 {
-  "ergon": "0.9.1",
+  "ergon": "0.10.4",
   "files": [
     {
       "path": ".commitlint.yaml",
@@ -69,7 +69,7 @@
     {
       "path": ".github/workflows/codeql.yml",
       "producer": "github",
-      "sha256": "219b2a3e23e5b10b2e7ea9e33cb6bfb937d97c93ac9886df9d86793370e4af8b"
+      "sha256": "5e07fa561318aaf54ca5a6d3edab8644647d25de75225b40cf3fe2474fb1abaa"
     },
     {
       "path": ".github/workflows/nightly.yml",
@@ -84,7 +84,7 @@
     {
       "path": ".github/workflows/security.yml",
       "producer": "github",
-      "sha256": "623fd26152fc68d822fcf30ffb781d146bd8efb3a94d3ec0ed709b5c2a67f45b"
+      "sha256": "d8e417da7c7c24961381966bc06f18d494867fc77fde0d3925910253f1a5b2e3"
     },
     {
       "path": ".github/workflows/version.yml",
@@ -94,12 +94,14 @@
     {
       "path": ".gitignore",
       "producer": "common",
-      "sha256": "fa0369ca6988428a798efe232d57354c3db66f5914954bbc7ca2448966b504c4"
+      "local": "c104801abdef8e4ace2da9f3aa20b7d8ee51eeee5b0a90325848f3cb9aa4cc98",
+      "sha256": "1fbb73f33c2cf8bb25ce50004c78468692c8438a768124e0a99382718eb413fc"
     },
     {
       "path": ".golangci.yml",
       "producer": "go",
-      "sha256": "1357f799a72c35c283a26506609e4e1ab6a93db6e45de2e31eea2504b6b7753b"
+      "local": "8b77fc2bb04e625146200bbe3379d7a37abc4d5a3cdb07c4cf6ad39429015ff1",
+      "sha256": "ce66833898af4672d0cf48466ca327949b43f5867f7138a4991cd0060e3b71f7"
     },
     {
       "path": ".markdownlint.yml",
@@ -114,7 +116,7 @@
     {
       "path": ".pre-commit-config.yaml",
       "producer": "common",
-      "sha256": "ecaa2fc2648601525a24707cf06193b20f5e8db8df7d0b1264caaeb9e629b4c2"
+      "sha256": "6eac5d714a351b97a4cdf0d698c8c218c534c035d7ad967aa5bd3c952d2dc42a"
     },
     {
       "path": "CODE_OF_CONDUCT.md",
@@ -142,6 +144,7 @@
     "common.ergon": [
       "ergon"
     ],
+    "common.hooks.exclude": "",
     "common.hooks.pre-commit": [
       "lint",
       "test"
@@ -190,6 +193,7 @@
     "github.ci.actions.upload-artifact.release": "v7.0.2",
     "github.ci.actions.upload-artifact.uses": "actions/upload-artifact",
     "github.ci.timeout": 15,
+    "github.code-security": true,
     "github.linux": "ubuntu-26.04",
     "github.make": "4.4.1",
     "github.nightly.schedule": "0 3 * * *",

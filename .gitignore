@@ -1,4 +1,4 @@
-# Managed by ergon init. Add repository settings to .ergon/local/.gitignore and run ergon init sync.
+# Managed by ergon init, with .ergon/local/.gitignore merged in. Change the repository's settings there and run ergon init sync.
 
 # Editors and IDEs
 .idea/
@@ -34,3 +34,6 @@ coverage.out
 *.test
 # The artifacts of ergon release pack, which a build of a release must not see as changes
 /dist/
+
+# The state directory of a dokimi run, whose manifest is not committed
+.dokimi/

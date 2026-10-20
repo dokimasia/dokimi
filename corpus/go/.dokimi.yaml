@@ -1,0 +1,8 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# dokimi does not generate suites yet, so the run does not report the
+# directive suite of the fixtures as unclaimed.
+version: 1
+ignore:
+  - suite

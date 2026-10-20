@@ -1,0 +1,46 @@
+// Copyright Dokimasia B.V. 2026
+// SPDX-License-Identifier: Apache-2.0
+
+// Package eventually is the mixin-axis fixture for the eventually mixin, which
+// declares that the effect becomes visible after a quiet period rather than immediately.
+//
+// The interface carries whatever methods the law needs to be stateable.
+// A mixin whose law spans two calls cannot be hosted by a single method:
+// there would be nothing to compare against, and the generated subtest
+// would pass by having nothing to check.
+//
+// There is no negated form here. eidos declares the mixin directive
+// DenyNegation, because a mixin is opt-in and deleting the directive is
+// the suppression (docs/adr/0016).
+package eventually
+
+import (
+	"context"
+)
+
+// Mixed is the fixture interface.
+//
+//dokimi:stub
+//dokimi:suite
+//dokimi:out path=eventuallytest/
+type Mixed interface {
+	// Publish is not observable on return. The law is that it becomes so,
+	// which needs a settle step, an anti-entropy exchange, and a read to
+	// observe after both — the members the directive names.
+	// observe= names the read the effect is expected to reach. Without it
+	// the directive states the property and no law can bind: settling is
+	// getting to quiescence, and quiescence is not an observation.
+	//dokimi:mixin eventually settle=Settle sync=Sync observe=Items
+	Publish(ctx context.Context, item string) error
+
+	// Settle advances the quiet window the law waits out.
+	Settle(ctx context.Context) error
+
+	// Sync pulls one peer's settled state into this replica — the pairwise
+	// anti-entropy step the law composes into a full round.
+	Sync(ctx context.Context, peer Mixed) error
+
+	// Items observes the eventual state, in sorted order, so two converged
+	// replicas answer identically.
+	Items(ctx context.Context) ([]string, error)
+}

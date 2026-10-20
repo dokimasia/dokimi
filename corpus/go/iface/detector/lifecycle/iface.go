@@ -1,0 +1,32 @@
+// Copyright Dokimasia B.V. 2026
+// SPDX-License-Identifier: Apache-2.0
+
+// Package lifecycle is the detector-axis fixture for the lifecycle shape:
+// a failable teardown. Close must be idempotent and every later operation
+// must report the closed sentinel, which is the law the shape carries.
+//
+// No directive appears here: the classification comes from the signature
+// alone, so a detector that misfires shows up as wrong generated output
+// rather than as a directive that was misread.
+package lifecycle
+
+import (
+	"context"
+	"errors"
+)
+
+// ErrClosed is the sentinel operations report after teardown.
+var ErrClosed = errors.New("lifecycle: closed")
+
+// Lifecycle is the fixture interface.
+//
+//dokimi:stub
+//dokimi:suite
+//dokimi:out path=lifecycletest/
+type Lifecycle interface {
+	// Close tears down, and declares the teardown safe to repeat — the
+	// idempotence a deferred double-close relies on, which the mixin states
+	// because no signature can.
+	//dokimi:mixin idempotent
+	Close(ctx context.Context) error
+}

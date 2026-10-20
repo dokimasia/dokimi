@@ -1,0 +1,3 @@
+package shop
+// Widget is a struct of the scripted language.
+type Widget string

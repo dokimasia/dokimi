@@ -1,0 +1,6 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The dependencies and the coverage report of the scripts of package.json
+node_modules/
+coverage/

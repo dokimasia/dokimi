@@ -1,0 +1,16 @@
+{
+  "name": "@dokimi/corpus-typescript",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "types": "tsc --noEmit",
+    "test": "vitest run --coverage.enabled --coverage.include='**/*.{stub,builder,enum}.ts' --coverage.thresholds.100"
+  },
+  "devDependencies": {
+    "@dokimi/assert": "^0.1.0",
+    "@dokimi/runtime": "^0.1.0",
+    "@vitest/coverage-v8": "^5.0.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

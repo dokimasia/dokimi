@@ -1,0 +1,38 @@
+// Copyright Dokimasia B.V. 2026
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * Declares the mixin-axis fixture for the idempotent mixin, which declares
+ * that repeating the call leaves the observable state unchanged.
+ *
+ * @remarks
+ * The interface carries whatever methods the law needs to be stateable. A
+ * mixin whose law spans two calls cannot be hosted by a single method: there
+ * would be nothing to compare against, and the generated subtest would pass
+ * by having nothing to check.
+ *
+ * There is no negated form here. eidos declares the mixin directive
+ * DenyNegation, because a mixin is opt-in and deleting the directive is the
+ * suppression.
+ *
+ * @packageDocumentation
+ */
+
+/** Represents the subject of the fixture. */
+//dokimi:stub
+//dokimi:suite
+//dokimi:out path=idempotenttest/
+export interface Mixed {
+  /**
+   * Stores the value under the key.
+   *
+   * @remarks
+   * put must be safe to repeat. The law compares state after one call with
+   * state after two, so a reader is required to make that comparison.
+   */
+  //dokimi:mixin idempotent
+  put(key: string, value: string): Promise<void>;
+
+  /** Returns the value under the key, which is the state that the law compares. */
+  read(key: string): Promise<string>;
+}

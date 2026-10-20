@@ -1,0 +1,43 @@
+{{- use "vitest" "describe"}}{{use "@dokimi/assert/vitest" "test"}}{{use "@dokimi/assert" "check"}}
+{{- range .Records}}
+{{- $r := .Decl}}
+{{- $c := .Data}}
+{{- range $c.Kinds}}
+{{- $m := index $r.Methods.Items .Method}}
+
+describe("{{.Name}} contract", () => {
+  test("reports a message", ({ seat }) => {
+{{memberbody $m}}    check.notEqual(seat, got.message, "", "an error must report a message");
+  });
+{{- if $c.Prefix}}
+
+  test("carries the prefix of its module", ({ seat }) => {
+{{memberbody $m}}    check.isTrue(seat, got.message.startsWith({{printf "%q" $c.Prefix}}), "an error class must carry the prefix of its module");
+  });
+{{- end}}
+{{- if ge .PeersMethod 0}}
+
+  test("does not match the other error classes of its module", ({ seat }) => {
+{{memberbody $m}}{{memberbody (index $r.Methods.Items .PeersMethod)}}    for (const other of others) {
+      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+    }
+  });
+{{- end}}
+{{- if ge .CauseMethod 0}}
+
+  test("exposes the cause it was given", ({ seat }) => {
+    const cause = new Error("cause");
+{{memberbody (index $r.Methods.Items .CauseMethod)}}    check.equal(seat, got.cause, cause, "an error naming a cause must expose it");
+  });
+{{- end}}
+{{- $texts := 0}}{{range .Members}}{{if .Text}}{{$texts = 1}}{{end}}{{end}}
+{{- if $texts}}
+
+  test("puts every member it carries into its message", ({ seat }) => {
+{{memberbody $m}}
+{{- range .Members}}{{if .Text}}    check.isTrue(seat, got.message.includes(got.{{.Name}}), "{{.Name}} must reach the message");
+{{end}}{{end}}  });
+{{- end}}
+});
+{{- end}}
+{{- end}}

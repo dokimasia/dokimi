@@ -1,0 +1,93 @@
+package neighbour
+
+import (
+	"errors"
+	"strings"
+	"testing"
+)
+
+// TestNeighbourSentinels pins the contract every declared error in this
+// package carries.
+//
+// Callers match on these values, read them in logs and branch on them, so
+// their messages and identities are as much an API as any exported
+// signature — and nothing in the compiler holds them to it.
+func TestNeighbourSentinels(t *testing.T) {
+	t.Parallel()
+
+	all := []struct {
+		name string
+		err  error
+	}{
+		{"ErrNotFound", ErrNotFound},
+		{"ErrConflict", ErrConflict},
+	}
+
+	t.Run("every sentinel is assigned", func(t *testing.T) {
+		t.Parallel()
+		for _, e := range all {
+			if e.err == nil {
+				t.Fatalf("every sentinel must be assigned: %s is nil", e.name)
+			}
+		}
+	})
+
+	t.Run("every sentinel carries a message", func(t *testing.T) {
+		t.Parallel()
+		for _, e := range all {
+			if e.err.Error() == "" {
+				t.Errorf("every sentinel must carry a message: %s has none", e.name)
+			}
+		}
+	})
+
+	t.Run("every sentinel carries the package prefix", func(t *testing.T) {
+		t.Parallel()
+		for _, e := range all {
+			if !strings.HasPrefix(e.err.Error(), "neighbour: ") {
+				t.Errorf("every sentinel must carry the package prefix %q: %s reads %q",
+					"neighbour: ", e.name, e.err.Error())
+			}
+		}
+	})
+
+	t.Run("no two sentinels share a message", func(t *testing.T) {
+		t.Parallel()
+		seen := map[string]string{}
+		for _, e := range all {
+			if first, dup := seen[e.err.Error()]; dup {
+				t.Errorf("no two sentinels may share a message: %s repeats %s", e.name, first)
+			}
+			seen[e.err.Error()] = e.name
+		}
+	})
+
+	t.Run("no sentinel's message begins with another's", func(t *testing.T) {
+		t.Parallel()
+		for _, a := range all {
+			for _, b := range all {
+				if a.name == b.name {
+					continue
+				}
+				if strings.HasPrefix(a.err.Error(), b.err.Error()) {
+					t.Errorf("no sentinel's message may begin with another's: %s begins with the whole of %s",
+						a.name, b.name)
+				}
+			}
+		}
+	})
+
+	t.Run("no sentinel matches another", func(t *testing.T) {
+		t.Parallel()
+		for _, a := range all {
+			for _, b := range all {
+				if a.name == b.name {
+					continue
+				}
+				if errors.Is(a.err, b.err) {
+					t.Errorf("no sentinel may match another: %s matches %s", a.name, b.name)
+				}
+			}
+		}
+	})
+}

@@ -1,0 +1,199 @@
+{{- use "testing"}}
+{{- range .Records}}
+{{- $r := .Decl}}
+{{- $c := .Data}}
+{{- if $c.Sentinels}}{{use "errors"}}{{use "strings"}}
+
+{{docs (wrapdocs (printf `Test%sSentinels pins the contract every declared error in this
+package carries.
+
+Callers match on these values, read them in logs and branch on them, so
+their messages and identities are as much an API as any exported
+signature — and nothing in the compiler holds them to it.` (pascal $c.Subject)))}}
+{{- ""}}func Test{{pascal $c.Subject}}Sentinels(t *testing.T) {
+	t.Parallel()
+
+	all := []struct {
+		name string
+		err  error
+	}{
+{{- range $c.Sentinels}}
+		{"{{.Name}}", {{spell .Ref}}},
+{{- end}}
+	}
+
+	t.Run("every sentinel is assigned", func(t *testing.T) {
+		t.Parallel()
+		for _, e := range all {
+			if e.err == nil {
+				t.Fatalf("every sentinel must be assigned: %s is nil", e.name)
+			}
+		}
+	})
+
+	t.Run("every sentinel carries a message", func(t *testing.T) {
+		t.Parallel()
+		for _, e := range all {
+			if e.err.Error() == "" {
+				t.Errorf("every sentinel must carry a message: %s has none", e.name)
+			}
+		}
+	})
+{{- if $c.Prefix}}
+
+	t.Run("every sentinel carries the package prefix", func(t *testing.T) {
+		t.Parallel()
+		for _, e := range all {
+			if !strings.HasPrefix(e.err.Error(), {{printf "%q" $c.Prefix}}) {
+				t.Errorf("every sentinel must carry the package prefix %q: %s reads %q",
+					{{printf "%q" $c.Prefix}}, e.name, e.err.Error())
+			}
+		}
+	})
+{{- end}}
+
+	t.Run("no two sentinels share a message", func(t *testing.T) {
+		t.Parallel()
+		seen := map[string]string{}
+		for _, e := range all {
+			if first, dup := seen[e.err.Error()]; dup {
+				t.Errorf("no two sentinels may share a message: %s repeats %s", e.name, first)
+			}
+			seen[e.err.Error()] = e.name
+		}
+	})
+
+	t.Run("no sentinel's message begins with another's", func(t *testing.T) {
+		t.Parallel()
+		for _, a := range all {
+			for _, b := range all {
+				if a.name == b.name {
+					continue
+				}
+				if strings.HasPrefix(a.err.Error(), b.err.Error()) {
+					t.Errorf("no sentinel's message may begin with another's: %s begins with the whole of %s",
+						a.name, b.name)
+				}
+			}
+		}
+	})
+
+	t.Run("no sentinel matches another", func(t *testing.T) {
+		t.Parallel()
+		for _, a := range all {
+			for _, b := range all {
+				if a.name == b.name {
+					continue
+				}
+				if errors.Is(a.err, b.err) {
+					t.Errorf("no sentinel may match another: %s matches %s", a.name, b.name)
+				}
+			}
+		}
+	})
+{{- range $c.Neighbours}}
+
+	t.Run("no sentinel matches one in {{.Name}}", func(t *testing.T) {
+		t.Parallel()
+{{- if .Sentinels}}
+		for _, a := range all {
+			for _, b := range []struct {
+				name string
+				err  error
+			}{
+{{- range .Sentinels}}
+				{"{{.Name}}", {{spell .Ref}}},
+{{- end}}
+			} {
+				if errors.Is(a.err, b.err) {
+					t.Errorf("no sentinel may match one in {{.Name}}: %s matches %s", a.name, b.name)
+				}
+			}
+		}
+{{- else}}
+		_ = all
+{{- end}}
+	})
+{{- end}}
+}
+{{- end}}
+{{- range $c.Kinds}}{{use "go.dokimi.dev/assert"}}
+{{- $amp := ""}}{{if .Pointer}}{{$amp = "&"}}{{end}}
+{{- $lit := printf "%s%s{}" $amp (spell .Ref)}}
+
+{{docs (wrapdocs (printf `Test%sContract pins what %s owes a caller beyond taking part in the
+error protocol.` .Name .Name))}}
+{{- ""}}func Test{{.Name}}Contract(t *testing.T) {
+	t.Parallel()
+
+	t.Run("reports a message for its zero value", func(t *testing.T) {
+		t.Parallel()
+		assert.NotEqual(t, ({{$lit}}).Error(), "", "an error must report a message without panicking")
+	})
+{{- if $c.Prefix}}{{use "strings"}}
+
+	t.Run("carries the package prefix like a sentinel does", func(t *testing.T) {
+		t.Parallel()
+		assert.True(t, strings.HasPrefix(({{$lit}}).Error(), {{printf "%q" $c.Prefix}}), "an error type must carry the package prefix")
+	})
+{{- end}}
+{{- $self := .Name}}
+{{- if gt (len $c.Kinds) 1}}{{use "errors"}}
+
+	t.Run("does not match the package's other error types", func(t *testing.T) {
+		t.Parallel()
+		subject := {{$lit}}
+		for _, other := range []error{
+{{- range $c.Kinds}}
+{{- if ne .Name $self}}
+			{{if .Pointer}}&{{end}}{{spell .Ref}}{},
+{{- end}}
+{{- end}}
+		} {
+			assert.False(t, errors.Is(subject, other), "an error type must not match another declared here")
+		}
+	})
+{{- end}}
+{{- if and .Compares (not .Unwraps) $c.Sentinels}}{{use "errors"}}
+
+	t.Run("agrees with the standard comparison about what it matches", func(t *testing.T) {
+		t.Parallel()
+		subject := {{$lit}}
+		for _, e := range []error{
+{{- range $c.Sentinels}}
+			{{spell .Ref}},
+{{- end}}
+		} {
+			assert.Equal(t, errors.Is(subject, e), subject.Is(e), "the standard comparison must agree with the declared one")
+		}
+	})
+{{- end}}
+{{- if and .Unwraps .Cause}}{{use "errors"}}{{use "fmt"}}
+
+	t.Run("exposes the cause it was given", func(t *testing.T) {
+		t.Parallel()
+		cause := fmt.Errorf("cause")
+{{- if .Pointer}}
+		got := &{{spell .Ref}}{}
+{{- else}}
+		var got {{spell .Ref}}
+{{- end}}
+		got.{{.Cause}} = cause
+		assert.Equal(t, errors.Unwrap(got), cause, "an error naming a cause must expose it")
+	})
+{{- end}}
+{{- if ge .Method 0}}
+{{- $m := index $r.Methods.Items .Method}}
+{{- $texts := 0}}{{range .Members}}{{if .Text}}{{$texts = 1}}{{end}}{{end}}
+{{- if $texts}}{{use "strings"}}
+
+	t.Run("puts every member it carries into its message", func(t *testing.T) {
+		t.Parallel()
+{{body $m}}
+{{- range .Members}}{{if .Text}}		assert.True(t, strings.Contains(got.Error(), string(got.{{.Name}})), "{{.Name}} must reach the message")
+{{end}}{{end}}	})
+{{- end}}
+{{- end}}
+}
+{{- end}}
+{{- end}}

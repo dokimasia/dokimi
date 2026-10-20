@@ -1,0 +1,279 @@
+{{- range .Records}}
+{{- $m := .Data}}
+{{- if and (ne .Decl.Name $m.New) (ne .Decl.Name $m.From)}}
+{{- $b := .Decl}}
+{{- $start := index $b.Types.Items 0}}
+{{- $tp := typeparams $b.TypeParams}}
+{{- $ta := typeargs $b.TypeParams}}
+{{- $v := spell $m.Value}}
+
+{{docs (wrapdocs (printf `%s constructs [%s] values.
+
+Start with [%s] or [%s], set what you care about, and
+call [%s.Build].
+
+The point is what you do not have to write. A composite literal restates
+every member each time, so a member added to %s breaks every
+literal at once and a reader cannot tell which members a given call site
+actually cares about. Here the constructor supplies the rest, and each
+call states only what it varies.
+
+Every setter returns the builder, so calls chain. A builder is a value
+under construction and is not safe for concurrent use;
+[%s.Clone] is how one becomes two.` $b.Name $m.Subject $m.New $m.From $b.Name $m.Subject $b.Name))}}
+{{- ""}}type {{$b.Name}}{{$tp}} struct {
+	v {{$v}}
+}
+{{- if eq $m.Seed "companion"}}
+
+{{docs (wrapdocs (printf `%s returns a builder seeded from the package's companion, with any
+declared per-member default applied over it.
+
+Two layers, in that order: whatever the companion supplies, then each
+member that declares its own default. A member the companion sets and
+the declaration does not keeps the companion's value, so the two sources
+compose rather than one replacing the other.` $m.New))}}
+{{- ""}}func {{$m.New}}{{$tp}}() *{{$b.Name}}{{$ta}} {
+{{body $start}}	return &{{$b.Name}}{{$ta}}{v: v}
+}
+{{- else if eq $m.Seed "defaults"}}
+
+{{docs (wrapdocs (printf `%s returns a builder seeded with the declared defaults.
+
+Only the members that declare one. Everything else holds its zero value,
+so a caller that sets nothing gets a mixture rather than either extreme
+— which is what makes a check against a built value worth writing.` $m.New))}}
+{{- ""}}func {{$m.New}}{{$tp}}() *{{$b.Name}}{{$ta}} {
+	var v {{$v}}
+{{body $start}}	return &{{$b.Name}}{{$ta}}{v: v}
+}
+{{- else}}
+
+{{docs (wrapdocs (printf `%s returns a builder holding the zero value.
+
+No member declares a default, so there is nothing to seed. A caller that
+builds immediately gets the same value a composite literal with no
+fields would, and the setters are what make it differ.` $m.New))}}
+{{- ""}}func {{$m.New}}{{$tp}}() *{{$b.Name}}{{$ta}} {
+	return &{{$b.Name}}{{$ta}}{}
+}
+{{- end}}
+
+{{docs (wrapdocs (printf `%s returns a builder seeded with v.
+
+For the case where a caller already holds a value and wants one member
+different — a round trip, a near-copy, a regression fixture built from
+something a previous step produced.` $m.From))}}
+{{- ""}}func {{$m.From}}{{$tp}}(v {{$v}}) *{{$b.Name}}{{$ta}} {
+	return &{{$b.Name}}{{$ta}}{v: v}
+}
+{{- range $m.Members}}
+{{- $f := .Field}}
+{{- $n := .Names}}
+{{- if eq .Form "list"}}
+
+{{docs (wrapdocs (printf `%s replaces %s with the elements given.
+
+Variadic, and replacing: whatever the collection held is discarded,
+including anything a constructor seeded. %s is the counterpart
+that keeps it. Called with no arguments this empties the member rather
+than leaving it alone, which is how a caller clears a seeded default.` $n.With $f $n.Append))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.With}}(v ...{{spell .Elem}}) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = v
+	return b
+}
+
+{{docs (wrapdocs (printf `%s adds to %s, keeping what is already there.
+
+The counterpart to %s, which discards it. Both are offered
+because a caller extending a seeded default and a caller replacing it
+want opposite things, and one method cannot mean both.` $n.Append $f $n.With))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.Append}}(v ...{{spell .Elem}}) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = append(b.v.{{$f}}, v...)
+	return b
+}
+{{- else if eq .Form "bytes"}}
+
+{{docs (wrapdocs (printf `%s replaces %s with the bytes given.
+
+The bytes are kept, not copied: the builder and every value built from
+it share the array the caller passed, so a caller that mutates it
+afterwards changes what was already built. %s is the form
+that takes text and has no such tie.` $n.With $f $n.Text))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.With}}(v {{spell .Type}}) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = v
+	return b
+}
+
+{{docs (wrapdocs (printf `%s replaces %s with the bytes of s.
+
+The conversion is available for this element type and no other, and a
+caller holding text should not have to write it at every call site.` $n.Text $f))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.Text}}(s string) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = {{spell .Type}}(s)
+	return b
+}
+{{- else if eq .Form "set"}}
+
+{{docs (wrapdocs (printf `%s replaces %s wholesale.
+
+The whole collection, not one key: what the member held is discarded
+rather than merged into, and the map is kept rather than copied.
+%s is what adds to what is already there.` $n.With $f $n.Entry))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.With}}(v {{spell .Type}}) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = v
+	return b
+}
+
+{{docs (wrapdocs (printf `%s adds one key to %s, allocating on first use.
+
+A set entry is a key. Every value in the collection is the same one, so
+there is nothing for a caller to supply and no parameter for it — a
+setter asking would be asking for the one thing they cannot vary.` $n.Entry $f))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.Entry}}(k {{spell .Elem}}) *{{$b.Name}}{{$ta}} {
+	if b.v.{{$f}} == nil {
+		b.v.{{$f}} = make({{spell .Type}})
+	}
+	b.v.{{$f}}[k] = struct{}{}
+	return b
+}
+
+{{docs (wrapdocs (printf `%s adds each key to %s, keeping those it holds.
+
+Additive like %s, so two calls union rather than the second
+replacing the first. A key already present is left as it stands: a set
+holds a key or it does not, and adding one twice is the same as adding
+it once.` $n.Entries $f $n.Entry))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.Entries}}(keys ...{{spell .Elem}}) *{{$b.Name}}{{$ta}} {
+	if b.v.{{$f}} == nil {
+		b.v.{{$f}} = make({{spell .Type}}, len(keys))
+	}
+	for _, k := range keys {
+		b.v.{{$f}}[k] = struct{}{}
+	}
+	return b
+}
+{{- else if eq .Form "map"}}
+
+{{docs (wrapdocs (printf `%s replaces %s wholesale.
+
+The whole mapping, not one entry: what the member held is discarded
+rather than merged into, and the map is kept rather than copied — so a
+caller that writes to it afterwards changes what was already built.
+%s is what sets a single key.` $n.With $f $n.Entry))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.With}}(v {{spell .Type}}) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = v
+	return b
+}
+
+{{docs (wrapdocs (printf `%s sets one key of %s, allocating on first use.
+
+A key already present takes the new value. The allocation is why this is
+offered at all: a caller writing to the member directly has to check for
+nil first, and the builder is the thing that knows whether a constructor
+seeded one.` $n.Entry $f))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.Entry}}(k {{spell .Key}}, v {{spell .Value}}) *{{$b.Name}}{{$ta}} {
+	if b.v.{{$f}} == nil {
+		b.v.{{$f}} = make({{spell .Type}})
+	}
+	b.v.{{$f}}[k] = v
+	return b
+}
+
+{{docs (wrapdocs (printf `%s merges entries into %s.
+
+Merges rather than replaces: a key already present takes the new value,
+and keys absent from entries are left alone. Use %s to discard
+what is there.` $n.Entries $f $n.With))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.Entries}}(entries {{spell .Type}}) *{{$b.Name}}{{$ta}} {
+	if b.v.{{$f}} == nil {
+		b.v.{{$f}} = make({{spell .Type}}, len(entries))
+	}
+	for k, v := range entries {
+		b.v.{{$f}}[k] = v
+	}
+	return b
+}
+{{- else if eq .Form "optional"}}
+
+{{docs (wrapdocs (printf `%s replaces %s, taking the value and addressing it, so a
+caller need not hold a variable to point at.
+
+Use [%s.Mutate] to clear the member, or to point it at an
+address that already exists.` $n.With $f $b.Name))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.With}}(v {{spell .Elem}}) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = &v
+	return b
+}
+{{- else}}
+
+{{docs (wrapdocs (printf `%s replaces %s.
+
+The later call wins: a setter overwrites rather than merges, so a caller
+building from a constructor that seeded this member states only what it
+varies.` $n.With $f))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) {{$n.With}}(v {{spell .Type}}) *{{$b.Name}}{{$ta}} {
+	b.v.{{$f}} = v
+	return b
+}
+{{- end}}
+{{- end}}
+
+// Mutate applies fn to the value under construction.
+//
+// The way out for what the setters do not reach: a member this
+// builder cannot name, a shape it does not model, or a change that
+// touches several members at once and only makes sense as one edit.
+//
+// Prefer a setter where one exists. A setter says which member it
+// writes, and a reader of the call site learns that without following
+// a closure.
+func (b *{{$b.Name}}{{$ta}}) Mutate(fn func(*{{$v}})) *{{$b.Name}}{{$ta}} {
+	fn(&b.v)
+	return b
+}
+
+{{docs (wrapdocs (printf `Clone returns a builder that can be configured without affecting this
+one.
+
+One level deep, and the boundary matters. The sequence, byte-sequence
+and keyed members are copied, so appending or setting an entry through
+one clone is not visible through another.
+
+What is shared: anything held *inside* those — a struct in a slice
+that owns a slice of its own — and every optional member, which is
+what a reference means. Mutating through one of those does reach the
+original. Use [%s.Mutate] to replace such a member outright
+rather than editing it in place.` $b.Name))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) Clone() *{{$b.Name}}{{$ta}} {
+	out := &{{$b.Name}}{{$ta}}{v: b.v}
+{{- range $m.Members}}
+{{- if .Copied}}
+	if b.v.{{.Field}} != nil {
+{{- if or (eq .Form "map") (eq .Form "set")}}
+		out.v.{{.Field}} = make({{spell .Type}}, len(b.v.{{.Field}}))
+		for k, v := range b.v.{{.Field}} {
+			out.v.{{.Field}}[k] = v
+		}
+{{- else}}
+		out.v.{{.Field}} = append({{spell .Type}}(nil), b.v.{{.Field}}...)
+{{- end}}
+	}
+{{- end}}
+{{- end}}
+	return out
+}
+
+{{docs (wrapdocs (printf `Build returns the constructed [%s].
+
+The builder stays usable afterwards, and a second call returns the value
+as it stands then — so a caller may build, set one more member, and
+build again. What it returns is a copy of the value under construction,
+but only as far as Go copies: a member holding a slice or a map is
+shared with the builder and with every value built from it, and
+[%s.Clone] is what separates them.` $m.Subject $b.Name))}}
+{{- ""}}func (b *{{$b.Name}}{{$ta}}) Build() {{$v}} {
+	return b.v
+}
+{{- end}}
+{{- end}}

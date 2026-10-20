@@ -1,0 +1,5 @@
+package shop
+// Widget is a struct of a language that builder has no part for.
+//
+//dokimi:builder
+type Widget string

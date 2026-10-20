@@ -1,0 +1,236 @@
+{{- range .Records}}
+{{- $t := .Decl}}
+{{- $c := .Data}}
+{{- if not $c.Instantiable}}
+
+// {{$t.Name}} has no tests: {{$c.Subject}} is parameterised and its constraints
+// admit no concrete type to instantiate at, so there is nothing a check could
+// name. Write one by hand at the types your own code uses.
+{{- else}}
+{{- use "vitest" "describe"}}{{use "@dokimi/assert/vitest" "test"}}{{use "@dokimi/assert" "check"}}{{use "@dokimi/assert" "byIdentity"}}
+{{- use (printf "./%s" (trimSuffix $.Name ".test.ts")) $t.Name}}
+{{- $seed := index $t.Types.Items 0}}
+{{- $ta := typeargs $c.Args}}
+{{- if or $c.Seeds $c.Defaults}}
+
+describe("{{$t.Name}} construction", () => {
+{{- if $c.Seeds}}
+  test("{{$c.From}} round-trips what it was seeded with", ({ seat }) => {
+    const seed = new {{spellvalue $c.Value}}();
+{{memberbody $seed}}    const got = {{$t.Name}}.{{$c.From}}{{$ta}}(seed).build();
+{{- range $c.Seeds}}
+    check.equal(seat, got.{{.}}, seed.{{.}}, "{{$c.From}} keeps the member it was given");
+{{- end}}
+  });
+{{- end}}
+{{- range $i, $check := slice $t.Types.Items 1}}
+{{- $field := index $c.Defaults $i}}
+
+  test("{{$field}} carries its declared default", ({ seat }) => {
+    let want: {{spell (index $check.Params.Items 0).Type}};
+{{memberbody $check}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().build();
+    check.equal(seat, got.{{$field}}, want, "the constructor applies the declared default");
+  });
+{{- end}}
+});
+{{- end}}
+{{- if or $c.Setters $c.Probes}}
+
+describe("{{$t.Name}} setters", () => {
+{{- range $i, $s := $c.Setters}}
+{{- $m := index $t.Methods.Items $s.Method}}
+{{- if $i}}
+{{end}}
+  test("{{$s.Setter}} writes {{$s.Field}}", ({ seat }) => {
+    let want: {{spell $s.Type}};
+{{memberbody $m}}
+{{- if eq $s.Form "list"}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(...want).build();
+    check.length(seat, got.{{$s.Field}}, 1, "the setter replaces the sequence");
+{{- else if or (eq $s.Form "map") (eq $s.Form "set")}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(want).build();
+    check.length(seat, got.{{$s.Field}}, 1, "the setter replaces the collection");
+{{- else if eq $s.Form "bytes"}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(want).build();
+    check.length(seat, got.{{$s.Field}}, 1, "the setter replaces the sequence");
+{{- else if eq $s.Form "optional"}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(want).build();
+    check.isNotNil(seat, got.{{$s.Field}}, "the setter writes the value it was given");
+{{- else}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(want).build();
+    check.equal(seat, got.{{$s.Field}}, want, "the setter writes what it was given");
+{{- end}}
+  });
+{{- if ge $s.Replace 0}}
+{{- $r := index $t.Methods.Items $s.Replace}}
+
+  test("{{$s.Setter}} replaces what was already there", ({ seat }) => {
+    let first: {{spell $s.Type}};
+    let want: {{spell $s.Type}};
+{{memberbody $r}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(first).{{$s.Setter}}(want).build();
+    check.equal(seat, got.{{$s.Field}}, want, "the later call wins");
+  });
+{{- end}}
+{{- end}}
+{{- range $j, $p := $c.Probes}}
+{{- if or $c.Setters $j}}
+{{end}}
+{{- if lt .Sample 0}}
+  test("{{.Method}} returns its builder", ({ seat }) => {
+    const builder = {{$t.Name}}.{{$c.New}}{{$ta}}();
+    check.equal(
+      seat,
+{{- if eq .Kind "append"}}
+      builder.{{.Method}}(),
+{{- else if and (eq .Kind "entries") (eq .Form "set")}}
+      builder.{{.Method}}(),
+{{- else if eq .Kind "entries"}}
+      builder.{{.Method}}(builder.build().{{.Field}}),
+{{- else if and (eq .Kind "entry") (eq .Form "set")}}
+      builder.{{.Method}}(undefined as never),
+{{- else if eq .Kind "entry"}}
+      builder.{{.Method}}(undefined as never, undefined as never),
+{{- else if eq .Form "list"}}
+      builder.{{.Method}}(...builder.build().{{.Field}}),
+{{- else if eq .Form "optional"}}
+      builder.{{.Method}}(undefined as never),
+{{- else}}
+      builder.{{.Method}}(builder.build().{{.Field}}),
+{{- end}}
+      builder,
+      "the setter returns its builder for the next call",
+      byIdentity(),
+    );
+  });
+{{- else}}
+{{- $m := index $t.Methods.Items .Sample}}
+{{- if eq .Kind "append"}}
+  test("{{.Method}} keeps what {{.Field}} holds", ({ seat }) => {
+    let want: {{spell (index $m.Params.Items 0).Type}};
+{{memberbody $m}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{.With}}(...want).{{.Method}}(...want).build();
+    check.length(seat, got.{{.Field}}, 2, "the appender adds to the sequence");
+  });
+{{- else if eq .Kind "entry"}}
+  test("{{.Method}} adds one key to {{.Field}}", ({ seat }) => {
+    let want: {{spell (index $m.Params.Items 0).Type}};
+{{memberbody $m}}    const builder = {{$t.Name}}.{{$c.New}}{{$ta}}();
+{{- if eq .Form "set"}}
+    for (const key of want) {
+      check.isTrue(seat, builder.{{.Method}}(key).build().{{.Field}}.has(key), "the setter adds the key");
+    }
+{{- else if mapclass .Type}}
+    for (const [key, item] of want) {
+      check.equal(seat, builder.{{.Method}}(key, item).build().{{.Field}}.get(key), item, "the setter sets the key");
+    }
+{{- else}}
+    for (const [key, item] of Object.entries(want)) {
+      check.equal(seat, builder.{{.Method}}(key, item).build().{{.Field}}[key], item, "the setter sets the key");
+    }
+{{- end}}
+  });
+{{- else}}
+  test("{{.Method}} adds each key to {{.Field}}", ({ seat }) => {
+    let want: {{spell (index $m.Params.Items 0).Type}};
+{{memberbody $m}}
+{{- if eq .Form "set"}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{.Method}}(...want).build();
+    for (const key of want) {
+      check.isTrue(seat, got.{{.Field}}.has(key), "the setter adds each key");
+    }
+{{- else if mapclass .Type}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{.Method}}(want).build();
+    for (const [key, item] of want) {
+      check.equal(seat, got.{{.Field}}.get(key), item, "the setter merges each entry");
+    }
+{{- else}}    const got = {{$t.Name}}.{{$c.New}}{{$ta}}().{{.Method}}(want).build();
+    for (const [key, item] of Object.entries(want)) {
+      check.equal(seat, got.{{.Field}}[key], item, "the setter merges each entry");
+    }
+{{- end}}
+  });
+{{- end}}
+{{- end}}
+{{- end}}
+});
+{{- end}}
+{{- $filled := false}}
+{{- range $c.Fills}}{{if ge .Sample 0}}{{$filled = true}}{{end}}{{end}}
+{{- if or $c.Clones $filled}}
+
+describe("{{$t.Name}} clone", () => {
+{{- range $i, $s := $c.Clones}}
+{{- $m := index $t.Methods.Items $s.Method}}
+{{- if $i}}
+{{end}}
+  test("{{$s.Field}} is not shared with a clone", ({ seat }) => {
+    let want: {{spell $s.Type}};
+    let other: {{spell $s.Type}};
+{{memberbody $m}}
+{{- if eq $s.Form "list"}}    const original = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(...want);
+{{- else}}    const original = {{$t.Name}}.{{$c.New}}{{$ta}}().{{$s.Setter}}(want);
+{{- end}}
+    const clone = original.clone();
+{{- if eq $s.Form "list"}}
+    clone.mutate((value) => {
+      value.{{$s.Field}}.splice(0, other.length, ...other);
+    });
+    check.notEqual(seat, original.build().{{$s.Field}}, other, "writing through a clone must not reach the original");
+{{- else if eq $s.Form "bytes"}}
+    clone.mutate((value) => {
+      value.{{$s.Field}}.set(other);
+    });
+    check.notEqual(seat, original.build().{{$s.Field}}, other, "writing through a clone must not reach the original");
+{{- else if eq $s.Form "set"}}
+    clone.mutate((value) => {
+      for (const key of other) {
+        value.{{$s.Field}}.add(key);
+      }
+    });
+    check.length(seat, original.build().{{$s.Field}}, 1, "writing through a clone must not reach the original");
+{{- else if mapclass $s.Type}}
+    clone.mutate((value) => {
+      for (const [key, item] of other) {
+        value.{{$s.Field}}.set(key, item);
+      }
+    });
+    check.length(seat, original.build().{{$s.Field}}, 1, "writing through a clone must not reach the original");
+{{- else}}
+    clone.mutate((value) => {
+      Object.assign(value.{{$s.Field}}, other);
+    });
+    check.length(seat, original.build().{{$s.Field}}, 1, "writing through a clone must not reach the original");
+{{- end}}
+  });
+{{- end}}
+{{- $sep := gt (len $c.Clones) 0}}
+{{- range $c.Fills}}
+{{- if ge .Sample 0}}
+{{- $m := index $t.Methods.Items .Sample}}
+{{- if $sep}}
+{{end}}
+  test("clone copies {{.Field}}", ({ seat }) => {
+    let want: {{spell (index $m.Params.Items 0).Type}};
+{{memberbody $m}}    const original = {{$t.Name}}.{{$c.New}}{{$ta}}().{{.With}}({{if eq .Form "list"}}...{{end}}want);
+    check.equal(seat, original.clone().build().{{.Field}}, want, "a clone builds the same member as its original");
+  });
+{{- $sep = true}}
+{{- end}}
+{{- end}}
+});
+{{- end}}
+
+describe("{{$t.Name}} methods", () => {
+  test("mutate passes the value under construction", ({ seat }) => {
+    const seen: {{spell $c.Value}}[] = [];
+    const record = (value: {{spell $c.Value}}): void => {
+      seen.push(value);
+    };
+    {{$t.Name}}.{{$c.New}}{{$ta}}().mutate(record).mutate(record);
+    check.length(seat, seen, 2, "mutate calls each function once");
+    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+  });
+
+  test("clone and from keep the value under construction", ({ seat }) => {
+    const original = {{$t.Name}}.{{$c.New}}{{$ta}}();
+    const want = original.build();
+    const clone = original.clone();
+    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
+    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
+    check.equal(seat, {{$t.Name}}.{{$c.From}}{{$ta}}(want).build(), want, "from keeps the value it was given");
+  });
+});
+{{- end}}
+{{- end}}

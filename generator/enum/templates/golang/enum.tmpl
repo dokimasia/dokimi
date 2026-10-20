@@ -1,0 +1,103 @@
+{{- range .Records}}
+{{- $m := .Data}}
+{{- if eq .Decl.Name $m.Subject}}
+{{- $t := spell $m.Type}}
+{{- $n := $m.Names}}
+{{- if $m.Generate.Render}}
+
+{{docs (wrapdocs (printf `%s returns %s's textual form.
+
+A value outside the declared set renders as itself, so a corrupt value
+is visible rather than indistinguishable from a declared one.` $n.Render $m.Subject))}}
+{{- ""}}func (v {{$t}}) {{$n.Render}}() string {
+	switch v {
+{{- range $m.Variants}}
+	case {{.Member}}:
+		return {{.Text}}
+{{- end}}
+	}
+{{- if $m.Textual}}
+	return string(v)
+{{- else}}{{use "fmt"}}
+	return fmt.Sprintf("{{$m.Subject}}({{$m.Format}})", {{spell $m.Fallback}}(v))
+{{- end}}
+}
+{{- end}}
+{{- if $m.Generate.Parse}}{{use "errors"}}
+
+{{docs (wrapdocs (printf `%s reports text that names no declared variant.` $n.Sentinel))}}
+{{- ""}}var {{$n.Sentinel}} = errors.New("{{$m.Package}}: unknown {{$m.Subject}} value")
+
+{{docs (wrapdocs (printf `%s maps text back to a %s.
+
+The inverse of %s for every declared variant, which is what lets a
+value survive a round trip through anything that carries it as text —
+a log line, a JSON field, a database column.` $n.Parse $m.Subject $n.Render))}}
+{{- ""}}func {{$n.Parse}}(s string) ({{$t}}, error) {
+	switch s {
+{{- range $m.Variants}}
+	case {{.Text}}:
+		return {{.Member}}, nil
+{{- end}}
+	}
+	var zero {{$t}}
+	return zero, {{$n.Sentinel}}
+}
+{{- end}}
+{{- if $m.Generate.Values}}
+
+{{docs (wrapdocs (printf `%s returns every declared variant in declaration order.
+
+A fresh slice per call: a package-level one would let any caller reorder
+or overwrite the set every other caller reads.` $n.Values))}}
+{{- ""}}func {{$n.Values}}() []{{$t}} {
+	return []{{$t}}{
+{{- range $m.Variants}}
+		{{.Member}},
+{{- end}}
+	}
+}
+{{- end}}
+{{- if $m.Generate.Valid}}
+
+{{docs (wrapdocs (printf `%s reports whether v is a declared variant.
+
+A conversion admits any value of the underlying type, so this is the
+only thing standing between an out-of-range value and the rest of the
+program.` $n.Valid))}}
+{{- ""}}func (v {{$t}}) {{$n.Valid}}() bool {
+	switch v {
+{{- range $m.Variants}}
+	case {{.Member}}:
+		return true
+{{- end}}
+	}
+	return false
+}
+{{- end}}
+{{- if $m.Generate.Encode}}
+
+{{docs (wrapdocs (printf `%s implements [encoding.TextMarshaler].
+
+Text rather than JSON: encoding/json reaches for TextMarshaler on its
+own and so does YAML, and it is what makes %s legal as a map key —
+which a JSON marshaller alone does not.` $n.Encode $m.Subject))}}
+{{- ""}}func (v {{$t}}) {{$n.Encode}}() ([]byte, error) {
+	return []byte(v.{{$n.Render}}()), nil
+}
+{{- end}}
+{{- if $m.Generate.Decode}}
+
+{{docs (wrapdocs (printf `%s implements [encoding.TextUnmarshaler], refusing text that
+names no declared variant rather than admitting it as an unnamed value.` $n.Decode))}}
+{{- ""}}func (v *{{$t}}) {{$n.Decode}}(text []byte) error {
+	parsed, err := {{$n.Parse}}(string(text))
+	if err != nil {
+		return err
+	}
+	*v = parsed
+	return nil
+}
+{{- end}}
+{{- end}}
+{{- end}}

@@ -1,0 +1,94 @@
+{{- range .Records}}
+{{- $m := .Data}}
+{{- $t := spell $m.Type}}
+{{- $e := spellvalue $m.Type}}
+{{- $n := $m.Names}}
+{{- if $m.Generate.Render}}
+
+/**
+ * {{$n.Render}} returns the textual form of a {{$m.Subject}}.
+ *
+ * A value outside the declared set renders as itself, so a corrupt value is
+ * visible rather than indistinguishable from a declared one.
+ */
+export function {{$n.Render}}(value: {{$t}}): string {
+  switch (value) {
+{{- range $m.Variants}}
+    case {{$e}}{{.Member}}:
+      return {{.Text}};
+{{- end}}
+  }
+{{- if $m.Textual}}
+  return String(value);
+{{- else}}
+  return `{{$m.Subject}}(${String(value)})`;
+{{- end}}
+}
+{{- end}}
+{{- if $m.Generate.Parse}}
+
+/** {{$n.Sentinel}} reports text that names no declared variant of {{$m.Subject}}. */
+export class {{$n.Sentinel}} extends Error {
+  /** text is the text that names no declared variant. */
+  readonly text: string;
+
+  /** Creates the error of the text that names no declared variant. */
+  constructor(text: string) {
+    super(`{{$m.Package}}: unknown {{$m.Subject}} value ${JSON.stringify(text)}`);
+    this.name = "{{$n.Sentinel}}";
+    this.text = text;
+  }
+}
+
+{{docs (wrapdocs (printf `%s maps text back to a %s.
+
+The inverse of %s for every declared variant, which is what lets a
+value survive a round trip through anything that carries it as text — a log
+line, a JSON field, a database column.
+
+@throws %s for text that names no declared variant.` $n.Parse $m.Subject $n.Render $n.Sentinel))}}
+{{- ""}}export function {{$n.Parse}}(text: string): {{$t}} {
+  switch (text) {
+{{- range $m.Variants}}
+    case {{.Text}}:
+      return {{$e}}{{.Member}};
+{{- end}}
+  }
+  throw new {{$n.Sentinel}}(text);
+}
+{{- end}}
+{{- if $m.Generate.Values}}
+
+/**
+ * {{$n.Values}} returns every declared variant in declaration order.
+ *
+ * A fresh array per call: a module-level one would let any caller reorder or
+ * overwrite the set every other caller reads.
+ */
+export function {{$n.Values}}(): {{$t}}[] {
+  return [
+{{- range $m.Variants}}
+    {{$e}}{{.Member}},
+{{- end}}
+  ];
+}
+{{- end}}
+{{- if $m.Generate.Valid}}
+
+/**
+ * {{$n.Valid}} reports whether value is a declared variant of {{$m.Subject}}.
+ *
+ * A cast admits any value, so this is the only thing standing between an
+ * out-of-range value and the rest of the program.
+ */
+export function {{$n.Valid}}(value: unknown): value is {{$t}} {
+  switch (value) {
+{{- range $m.Variants}}
+    case {{$e}}{{.Member}}:
+{{- end}}
+      return true;
+  }
+  return false;
+}
+{{- end}}
+{{- end}}

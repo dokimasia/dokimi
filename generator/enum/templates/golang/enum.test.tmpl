@@ -1,0 +1,166 @@
+{{- use "testing"}}{{use "go.dokimi.dev/assert"}}
+{{- define "set"}}
+{{- if .Data.Calls.Values}}
+	all := {{spell (index .Decl.Fields.Items 1).Type}}()
+{{- else}}
+	all := []{{spell .Data.Type}}{
+{{- range .Data.Variants}}
+		{{value .Value}},
+{{- end}}
+	}
+{{- end}}
+{{- end}}
+{{- range .Records}}
+{{- $d := .Decl}}
+{{- $c := .Data}}
+{{- $t := spell $c.Type}}
+{{- $n := $c.Names}}
+
+{{docs (wrapdocs (printf `Test%sVariants pins the declared set itself, which every other check
+here takes as given.` $c.Subject))}}
+{{- ""}}func Test{{$c.Subject}}Variants(t *testing.T) {
+	t.Parallel()
+{{template "set" .}}
+
+	t.Run("declares exactly {{len $c.Variants}} variants", func(t *testing.T) {
+		t.Parallel()
+		assert.Length(t, all, {{len $c.Variants}}, "the declared set must not change unnoticed")
+	})
+
+	t.Run("no two variants share a value", func(t *testing.T) {
+		t.Parallel()
+		seen := map[{{$t}}]bool{}
+		for _, v := range all {
+			assert.False(t, seen[v], "each variant must hold a distinct value")
+			seen[v] = true
+		}
+	})
+{{- if $c.Calls.Render}}
+{{- if $c.Stated}}
+
+	t.Run("every variant renders the value it declares", func(t *testing.T) {
+		t.Parallel()
+{{- range $c.Variants}}
+{{- if .Stated}}
+		assert.Equal(t, {{value .Value}}.{{$n.Render}}(), {{.Text}}, "the declared value is the textual form")
+{{- end}}
+{{- end}}
+	})
+{{- end}}
+
+	t.Run("no two variants share a textual form", func(t *testing.T) {
+		t.Parallel()
+		seen := map[string]bool{}
+		for _, v := range all {
+			assert.False(t, seen[v.{{$n.Render}}()], "each variant must render distinctly")
+			seen[v.{{$n.Render}}()] = true
+		}
+	})
+{{- end}}
+{{- if $c.Calls.Valid}}
+{{- if $c.OutOfRange}}
+
+	t.Run("a value outside the set is not valid", func(t *testing.T) {
+		t.Parallel()
+		assert.False(t, {{$t}}({{$c.OutOfRange}}).{{$n.Valid}}(), "an undeclared value must not be valid")
+	})
+{{- end}}
+
+	t.Run("every declared variant is valid", func(t *testing.T) {
+		t.Parallel()
+		for _, v := range all {
+			assert.True(t, v.{{$n.Valid}}(), "a declared variant must be valid")
+		}
+	})
+{{- if $c.Zero}}
+
+	t.Run("the zero value is {{$c.Zero.Name}}", func(t *testing.T) {
+		t.Parallel()
+		var zero {{$t}}
+		assert.True(t, zero.{{$n.Valid}}(), "the zero value is a declared variant")
+		assert.Equal(t, zero, {{value $c.Zero.Value}}, "the zero value is {{$c.Zero.Name}}")
+	})
+{{- else}}
+
+	t.Run("the zero value is not a declared variant", func(t *testing.T) {
+		t.Parallel()
+		var zero {{$t}}
+		assert.False(t, zero.{{$n.Valid}}(), "the zero value must not be a variant")
+	})
+{{- end}}
+{{- end}}
+}
+{{- if $c.Calls.Parse}}
+{{- $parse := spell (index $d.Fields.Items 0).Type}}
+{{- $sentinel := spell (index $d.Fields.Items 2).Type}}
+
+{{docs (wrapdocs (printf `Test%sText pins the round trip a value makes through anything that
+carries it as text — a log line, a JSON field, a database column.` $c.Subject))}}
+{{- ""}}func Test{{$c.Subject}}Text(t *testing.T) {
+	t.Parallel()
+{{template "set" .}}
+
+	t.Run("every variant survives a text round trip", func(t *testing.T) {
+		t.Parallel()
+		for _, v := range all {
+			got, err := {{$parse}}(v.{{$n.Render}}())
+			assert.NoError(t, err, "a declared variant must parse back")
+			assert.Equal(t, got, v, "the round trip must be lossless")
+		}
+	})
+
+	t.Run("text naming no variant is refused", func(t *testing.T) {
+		t.Parallel()
+		_, err := {{$parse}}({{$c.Unknown}})
+		assert.ErrorIs(t, err, {{$sentinel}}, "unknown text must be refused with the declared refusal")
+	})
+{{- if $c.OutOfRange}}
+
+	t.Run("a value outside the set does not render as one inside it", func(t *testing.T) {
+		t.Parallel()
+		out := {{$t}}({{$c.OutOfRange}})
+		for _, v := range all {
+			assert.NotEqual(t, out.{{$n.Render}}(), v.{{$n.Render}}(), "an undeclared value must render distinctly")
+		}
+	})
+{{- end}}
+}
+{{- end}}
+{{- if and $c.Calls.Encode $c.Calls.Render}}
+
+{{docs (wrapdocs (printf `Test%sEncoding pins the boundary where a value most often crosses
+out of the program's control.` $c.Subject))}}
+{{- ""}}func Test{{$c.Subject}}Encoding(t *testing.T) {
+	t.Parallel()
+{{template "set" .}}
+
+	t.Run("every variant encodes to its textual form", func(t *testing.T) {
+		t.Parallel()
+		for _, v := range all {
+			text, err := v.{{$n.Encode}}()
+			assert.NoError(t, err, "a declared variant must encode")
+			assert.Equal(t, string(text), v.{{$n.Render}}(), "the encoding must match the textual form")
+		}
+	})
+{{- if $c.Calls.Decode}}
+
+	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
+		t.Parallel()
+		for _, v := range all {
+			text, err := v.{{$n.Encode}}()
+			assert.NoError(t, err, "a declared variant must encode")
+			var got {{$t}}
+			assert.NoError(t, got.{{$n.Decode}}(text), "and decode back")
+			assert.Equal(t, got, v, "the round trip must be lossless")
+		}
+	})
+
+	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
+		t.Parallel()
+		var got {{$t}}
+		assert.HasError(t, got.{{$n.Decode}}([]byte({{$c.Unknown}})), "unknown text must not decode")
+	})
+{{- end}}
+}
+{{- end}}
+{{- end}}

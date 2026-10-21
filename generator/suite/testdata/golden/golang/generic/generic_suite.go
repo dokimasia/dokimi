@@ -3,7 +3,7 @@ package generic
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,31 +41,16 @@ func CacheSuite() conform.Suite[Cache[int, int]] {
 	return conform.Suite[Cache[int, int]]{Declaration: "Cache"}
 }
 
-// RunCache applies the checks of Cache, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunCache[T Cache[int, int]](t *testing.T, newSubject func() T, opts ...CacheOption) {
+// RunCacheSuite applies the checks of Cache, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunCacheSuite[T Cache[int, int]](t *testing.T, newSubject func() T, opts ...CacheOption) {
 	t.Helper()
-	conform.Verify(t, CacheSuite(), func(*CacheHandle) Cache[int, int] { return newSubject() }, opts...)
+	RunCacheSuiteFromHandle(t, func(*CacheHandle) T { return newSubject() }, opts...)
 }
 
-// RunCacheOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunCacheOn[T Cache[int, int]](t *testing.T, newSubject func(h *CacheHandle) T, opts ...CacheOption) {
+// RunCacheSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunCacheSuiteFromHandle[T Cache[int, int]](t *testing.T, newSubject func(h *CacheHandle) T, opts ...CacheOption) {
 	t.Helper()
-	conform.Verify(t, CacheSuite(), func(h *CacheHandle) Cache[int, int] { return newSubject(h) }, opts...)
-}
-
-// ControlCache applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlCache[T Cache[int, int]](t *testing.T, newControl func() T, opts ...CacheOption) {
-	t.Helper()
-	conform.Control(t, CacheSuite(), func(*CacheHandle) Cache[int, int] { return newControl() }, opts...)
-}
-
-// ControlCacheOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlCacheOn[T Cache[int, int]](t *testing.T, newControl func(h *CacheHandle) T, opts ...CacheOption) {
-	t.Helper()
-	conform.Control(t, CacheSuite(), func(h *CacheHandle) Cache[int, int] { return newControl(h) }, opts...)
+	conform.Run(t, CacheSuite(), func(h *CacheHandle) Cache[int, int] { return newSubject(h) }, opts...)
 }

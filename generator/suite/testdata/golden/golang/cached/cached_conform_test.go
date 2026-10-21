@@ -9,5 +9,5 @@ import (
 func TestCacheConformsToCache(t *testing.T) {
 	t.Parallel()
 
-	RunCache(t, New)
+	RunCacheSuite(t, New)
 }

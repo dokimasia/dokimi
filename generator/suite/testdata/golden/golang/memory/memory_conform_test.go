@@ -9,7 +9,7 @@ import (
 func TestStoreConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	RunStore(t, New)
+	RunStoreSuite(t, New)
 }
 
 // TestClockedConformsToStore applies the checks of the suite of Store to
@@ -17,5 +17,5 @@ func TestStoreConformsToStore(t *testing.T) {
 func TestClockedConformsToStore(t *testing.T) {
 	t.Parallel()
 
-	RunStoreOn(t, NewClocked)
+	RunStoreSuiteFromHandle(t, NewClocked)
 }

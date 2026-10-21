@@ -28,6 +28,16 @@ func TestCodes(t *testing.T) {
 			Name: "BadFactory", Give: suite.BadFactory, WantCode: "DOKIMISUITE-0003",
 			WantMeaning: "the function of the param new of the directive subject is not a factory of subjects",
 		},
+		{
+			Name: "UnknownCallable", Give: suite.UnknownCallable, WantCode: "DOKIMISUITE-0004",
+			WantMeaning: "the directive check has a callable that no declaration under the directive suite " +
+				"has, or that two of them have",
+		},
+		{
+			Name: "BadCheck", Give: suite.BadCheck, WantCode: "DOKIMISUITE-0005",
+			WantMeaning: "a function under the directive check has no statement, or it or its defect has " +
+				"another signature than a check",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

@@ -3,7 +3,7 @@ package slug
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -29,35 +29,46 @@ type slugCallable struct {
 	conform.Callable[SlugFunc]
 }
 
+// KeepsTheOrder returns the identity of the check that Slug keeps the
+// words of the title in their order.
+func (c slugCallable) KeepsTheOrder() conform.ID[SlugFunc] {
+	return c.Check("keeps-the-order")
+}
+
+// KeepsTheWords returns the identity of the check that Slug keeps each
+// word of the title.
+func (c slugCallable) KeepsTheWords() conform.ID[SlugFunc] {
+	return c.Check("keeps-the-words")
+}
+
 // SlugSuite returns the checks of Slug.
 func SlugSuite() conform.Suite[SlugFunc] {
-	return conform.Suite[SlugFunc]{Declaration: "Slug"}
+	return conform.Suite[SlugFunc]{Declaration: "Slug", Checks: []conform.Check[SlugFunc]{
+		{
+			ID:        SlugChecks.KeepsTheOrder(),
+			Statement: "Slug keeps the words of the title in their order",
+			Apply:     KeepsTheOrder,
+			Defect:    dropsWords,
+		},
+		{
+			ID:        SlugChecks.KeepsTheWords(),
+			Statement: "Slug keeps each word of the title",
+			Apply:     KeepsTheWords,
+			Defect:    dropsWords,
+		},
+	}}
 }
 
-// RunSlug applies the checks of Slug, and the checks that opts add, to
-// subject.
-func RunSlug(t *testing.T, subject SlugFunc, opts ...SlugOption) {
+// RunSlugSuite applies the checks of Slug, and the checks that opts add,
+// to subject.
+func RunSlugSuite(t *testing.T, subject SlugFunc, opts ...SlugOption) {
 	t.Helper()
-	conform.Verify(t, SlugSuite(), func(*SlugHandle) SlugFunc { return subject }, opts...)
+	RunSlugSuiteFromHandle(t, func(*SlugHandle) SlugFunc { return subject }, opts...)
 }
 
-// RunSlugOn applies the same checks to a subject that newSubject builds on
-// the handle of each check.
-func RunSlugOn(t *testing.T, newSubject func(h *SlugHandle) SlugFunc, opts ...SlugOption) {
+// RunSlugSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunSlugSuiteFromHandle(t *testing.T, newSubject func(h *SlugHandle) SlugFunc, opts ...SlugOption) {
 	t.Helper()
-	conform.Verify(t, SlugSuite(), newSubject, opts...)
-}
-
-// ControlSlug applies the same checks to control. A control is a correct
-// implementation that differs from the subject.
-func ControlSlug(t *testing.T, control SlugFunc, opts ...SlugOption) {
-	t.Helper()
-	conform.Control(t, SlugSuite(), func(*SlugHandle) SlugFunc { return control }, opts...)
-}
-
-// ControlSlugOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlSlugOn(t *testing.T, newControl func(h *SlugHandle) SlugFunc, opts ...SlugOption) {
-	t.Helper()
-	conform.Control(t, SlugSuite(), newControl, opts...)
+	conform.Run(t, SlugSuite(), newSubject, opts...)
 }

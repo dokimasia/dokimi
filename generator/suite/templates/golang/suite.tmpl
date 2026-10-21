@@ -1,24 +1,33 @@
-{{- use "testing"}}{{use "go.dokimi.dev/dokimi-go/conform"}}
+{{- use "testing"}}{{use "go.dokimi.dev/conform"}}
 {{- range .Records}}
 {{- $d := .Decl}}
 {{- $c := .Data}}
 {{- $n := $c.Names}}
-{{- if eq $d.Name $n.Checks}}
+{{- $checks := suitePascal $n.Checks}}
+{{- if eq $d.Name $checks}}
 {{- $s := spell $c.Subject}}
+{{- with $c.Methods}}{{$s = suitePascal $n.Methods}}{{end}}
+{{- with $c.Func}}{{$s = suitePascal $n.Func}}{{end}}
+{{- $suite := suitePascal $n.Suite}}
+{{- $run := suitePascal $n.Run}}
+{{- $fromHandle := suitePascal $n.RunFromHandle}}
+{{- $handle := suitePascal $n.Handle}}
+{{- $check := suitePascal $n.Check}}
+{{- $option := suitePascal $n.Option}}
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
 {{docs (wrapdocs (printf `The names that a test of %s writes.` $c.Declaration))}}
 {{- ""}}type (
-	{{$n.Handle}} = conform.Handle[{{$s}}]
-	{{$n.Check}} = conform.Check[{{$s}}]
-	{{$n.Option}} = conform.Option[{{$s}}]
+	{{$handle}} = conform.Handle[{{$s}}]
+	{{$check}} = conform.Check[{{$s}}]
+	{{$option}} = conform.Option[{{$s}}]
 )
 {{- with $c.Methods}}
 
-{{docs (wrapdocs (printf `%s is the interface of the exported methods of %s. Each subject of the suite of %s implements it.` $n.Methods $c.Declaration $c.Declaration))}}
-{{- ""}}type {{$n.Methods}} interface {
+{{docs (wrapdocs (printf `%s is the interface of the exported methods of %s. Each subject of the suite of %s implements it.` $s $c.Declaration $c.Declaration))}}
+{{- ""}}type {{$s}} interface {
 {{- range .Methods.Items}}
 	{{.Name}}({{params .Params}}){{results .Returns}}
 {{- end}}
@@ -26,88 +35,85 @@ var _ = conform.CompatV1
 {{- end}}
 {{- with $c.Func}}
 
-{{docs (wrapdocs (printf `%s is the type of the function %s. Each subject of the suite of %s has it.` $n.Func $c.Declaration $c.Declaration))}}
-{{- ""}}type {{$n.Func}} func({{params .Params}}){{results .Returns}}
+{{docs (wrapdocs (printf `%s is the type of the function %s. Each subject of the suite of %s has it.` $s $c.Declaration $c.Declaration))}}
+{{- ""}}type {{$s}} func({{params .Params}}){{results .Returns}}
 {{- end}}
 
-{{docs (wrapdocs (printf `%s contains the name of each callable of %s, with the identities of its checks.` $n.Checks $c.Declaration))}}
+{{docs (wrapdocs (printf `%s contains the name of each callable of %s, with the identities of its checks.` $checks $c.Declaration))}}
 {{- if $c.Func}}
 {{- $only := index $c.Callables 0}}
-{{- ""}}var {{$n.Checks}} = {{$only.Type}}{ {{- printf "%q" $only.Name -}} }
+{{- ""}}var {{$checks}} = {{suiteCamel $only.Type}}{ {{- printf "%q" $only.Name -}} }
 {{- else if $c.Callables}}
-{{- ""}}var {{$n.Checks}} = struct {
+{{- ""}}var {{$checks}} = struct {
 {{- range $c.Callables}}
-	{{.Field}} {{.Type}}
+	{{.Field}} {{suiteCamel .Type}}
 {{- end}}
 }{
 {{- range $c.Callables}}
-	{{.Field}}: {{.Type}}{ {{- printf "%q" .Name -}} },
+	{{.Field}}: {{suiteCamel .Type}}{ {{- printf "%q" .Name -}} },
 {{- end}}
 }
 {{- else}}
-{{- ""}}var {{$n.Checks}} = struct{}{}
+{{- ""}}var {{$checks}} = struct{}{}
 {{- end}}
-{{- range $c.Callables}}
+{{- range $callable := $c.Callables}}
+{{- $type := suiteCamel .Type}}
 
-{{docs (wrapdocs (printf `%s is the name of %s, with the identities of its checks.` .Type .Name))}}
-{{- ""}}type {{.Type}} struct {
+{{docs (wrapdocs (printf `%s is the name of %s, with the identities of its checks.` $type .Name))}}
+{{- ""}}type {{$type}} struct {
 	conform.Callable[{{$s}}]
 }
+{{- range $c.Checks}}
+{{- if eq .Type $callable.Type}}
+{{- $method := suitePascal .Method}}
+
+{{docs (wrapdocs (printf `%s returns the identity of the check that %s.` $method .Statement))}}
+{{- ""}}func (c {{$type}}) {{$method}}() conform.ID[{{$s}}] {
+	return c.Check({{printf "%q" .Segment}})
+}
+{{- end}}
+{{- end}}
 {{- end}}
 
-{{docs (wrapdocs (printf `%s returns the checks of %s.` $n.Suite $c.Declaration))}}
-{{- ""}}func {{$n.Suite}}() conform.Suite[{{$s}}] {
-	return conform.Suite[{{$s}}]{Declaration: {{printf "%q" $c.Declaration}}}
+{{docs (wrapdocs (printf `%s returns the checks of %s.` $suite $c.Declaration))}}
+{{- ""}}func {{$suite}}() conform.Suite[{{$s}}] {
+	return conform.Suite[{{$s}}]{Declaration: {{printf "%q" $c.Declaration}}
+{{- with $c.Checks}}, Checks: []conform.Check[{{$s}}]{
+{{- range .}}
+		{
+			ID:        {{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+			Statement: {{printf "%q" .Statement}},
+			Apply:     {{spell .Apply}},
+			Defect:    {{spell .Defect}},
+		},
+{{- end}}
+	}{{end}}}
 }
 {{- if $c.Func}}
 
-{{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to subject.` $n.Run $c.Declaration))}}
-{{- ""}}func {{$n.Run}}(t *testing.T, subject {{$s}}, opts ...{{$n.Option}}) {
+{{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to subject.` $run $c.Declaration))}}
+{{- ""}}func {{$run}}(t *testing.T, subject {{$s}}, opts ...{{$option}}) {
 	t.Helper()
-	conform.Verify(t, {{$n.Suite}}(), func(*{{$n.Handle}}) {{$s}} { return subject }, opts...)
+	{{$fromHandle}}(t, func(*{{$handle}}) {{$s}} { return subject }, opts...)
 }
 
-{{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds on the handle of each check.` $n.RunOn))}}
-{{- ""}}func {{$n.RunOn}}(t *testing.T, newSubject func(h *{{$n.Handle}}) {{$s}}, opts ...{{$n.Option}}) {
+{{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds from the handle of each check.` $fromHandle))}}
+{{- ""}}func {{$fromHandle}}(t *testing.T, newSubject func(h *{{$handle}}) {{$s}}, opts ...{{$option}}) {
 	t.Helper()
-	conform.Verify(t, {{$n.Suite}}(), newSubject, opts...)
-}
-
-{{docs (wrapdocs (printf `%s applies the same checks to control. A control is a correct implementation that differs from the subject.` $n.Control))}}
-{{- ""}}func {{$n.Control}}(t *testing.T, control {{$s}}, opts ...{{$n.Option}}) {
-	t.Helper()
-	conform.Control(t, {{$n.Suite}}(), func(*{{$n.Handle}}) {{$s}} { return control }, opts...)
-}
-
-{{docs (wrapdocs (printf `%s applies the same checks to a control that newControl builds on the handle of each check.` $n.ControlOn))}}
-{{- ""}}func {{$n.ControlOn}}(t *testing.T, newControl func(h *{{$n.Handle}}) {{$s}}, opts ...{{$n.Option}}) {
-	t.Helper()
-	conform.Control(t, {{$n.Suite}}(), newControl, opts...)
+	conform.Run(t, {{$suite}}(), newSubject, opts...)
 }
 {{- else}}
 
-{{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to a fresh subject of newSubject for each check.` $n.Run $c.Declaration))}}
-{{- ""}}func {{$n.Run}}[T {{$s}}](t *testing.T, newSubject func() T, opts ...{{$n.Option}}) {
+{{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to a fresh subject of newSubject for each check.` $run $c.Declaration))}}
+{{- ""}}func {{$run}}[T {{$s}}](t *testing.T, newSubject func() T, opts ...{{$option}}) {
 	t.Helper()
-	conform.Verify(t, {{$n.Suite}}(), func(*{{$n.Handle}}) {{$s}} { return newSubject() }, opts...)
+	{{$fromHandle}}(t, func(*{{$handle}}) T { return newSubject() }, opts...)
 }
 
-{{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds on the handle of each check.` $n.RunOn))}}
-{{- ""}}func {{$n.RunOn}}[T {{$s}}](t *testing.T, newSubject func(h *{{$n.Handle}}) T, opts ...{{$n.Option}}) {
+{{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds from the handle of each check.` $fromHandle))}}
+{{- ""}}func {{$fromHandle}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	t.Helper()
-	conform.Verify(t, {{$n.Suite}}(), func(h *{{$n.Handle}}) {{$s}} { return newSubject(h) }, opts...)
-}
-
-{{docs (wrapdocs (printf `%s applies the same checks to a fresh control of newControl for each check. A control is a correct implementation that differs from the subject.` $n.Control))}}
-{{- ""}}func {{$n.Control}}[T {{$s}}](t *testing.T, newControl func() T, opts ...{{$n.Option}}) {
-	t.Helper()
-	conform.Control(t, {{$n.Suite}}(), func(*{{$n.Handle}}) {{$s}} { return newControl() }, opts...)
-}
-
-{{docs (wrapdocs (printf `%s applies the same checks to a control that newControl builds on the handle of each check.` $n.ControlOn))}}
-{{- ""}}func {{$n.ControlOn}}[T {{$s}}](t *testing.T, newControl func(h *{{$n.Handle}}) T, opts ...{{$n.Option}}) {
-	t.Helper()
-	conform.Control(t, {{$n.Suite}}(), func(h *{{$n.Handle}}) {{$s}} { return newControl(h) }, opts...)
+	conform.Run(t, {{$suite}}(), func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
 }
 {{- end}}
 {{- end}}

@@ -6,7 +6,6 @@ package suite_test
 import (
 	"testing"
 
-	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/golden"
 	golang "go.dokimi.dev/eidos/lang/go"
 	gobackend "go.dokimi.dev/eidos/lang/go/backend"
@@ -31,9 +30,9 @@ func TestGolang(t *testing.T) {
 		t.Parallel()
 
 		p := suite.New()
-		res := fixture(t, goTree, p, storePackage, genericPackage, catalogPackage, slugPackage, memoryPackage,
-			cachedPackage).Generate(t, p)
-		assert.NoError(t, res.Err, "the generator runs whole")
+		f := fixture(t, goTree, p, storePackage, genericPackage, catalogPackage, slugPackage, memoryPackage,
+			cachedPackage)
+		_, res := phases(t, f, p)
 		golden.MatchTree(t, "golang", gentest.Rendered(t, res, p, gobackend.New()), golden.ShouldUpdate())
 	})
 }

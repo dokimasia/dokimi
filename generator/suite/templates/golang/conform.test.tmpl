@@ -2,11 +2,22 @@
 {{- range .Records}}
 {{- $c := .Data}}
 {{- $refs := .Decl.Fields.Items}}
+{{- $test := suitePascal $c.Test}}
+{{- if $c.Subject}}
 
-{{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $c.Test $c.Declaration $c.Subject))}}
-{{- ""}}func {{$c.Test}}(t *testing.T) {
+{{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $test $c.Declaration $c.Subject))}}
+{{- ""}}func {{$test}}(t *testing.T) {
 	t.Parallel()
 
 	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}})
 }
+{{- else}}{{use "go.dokimi.dev/conform"}}
+
+{{docs (wrapdocs (printf `%s proves that each check of the suite of %s fails on its planted defect.` $test $c.Declaration))}}
+{{- ""}}func {{$test}}(t *testing.T) {
+	t.Parallel()
+
+	conform.Falsify(t, {{spell (index $refs 0).Type}}())
+}
+{{- end}}
 {{- end}}

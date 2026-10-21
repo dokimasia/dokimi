@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -31,41 +31,51 @@ type storeGet struct {
 	conform.Callable[Store]
 }
 
+// KeepsTheItem returns the identity of the check that Get returns the item
+// that Put stored.
+func (c storeGet) KeepsTheItem() conform.ID[Store] {
+	return c.Check("keeps-the-item")
+}
+
 // storePut is the name of Store.Put, with the identities of its checks.
 type storePut struct {
 	conform.Callable[Store]
 }
 
+// RefusesACancelledPut returns the identity of the check that Put reports
+// a cancelled context.
+func (c storePut) RefusesACancelledPut() conform.ID[Store] {
+	return c.Check("refuses-a-cancelled-put")
+}
+
 // StoreSuite returns the checks of Store.
 func StoreSuite() conform.Suite[Store] {
-	return conform.Suite[Store]{Declaration: "Store"}
+	return conform.Suite[Store]{Declaration: "Store", Checks: []conform.Check[Store]{
+		{
+			ID:        StoreChecks.Get.KeepsTheItem(),
+			Statement: "Get returns the item that Put stored",
+			Apply:     KeepsTheItem,
+			Defect:    forgetful,
+		},
+		{
+			ID:        StoreChecks.Put.RefusesACancelledPut(),
+			Statement: "Put reports a cancelled context",
+			Apply:     RefusesACancelledPut,
+			Defect:    careless,
+		},
+	}}
 }
 
-// RunStore applies the checks of Store, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunStore[T Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
+// RunStoreSuite applies the checks of Store, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunStoreSuite[T Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(*StoreHandle) Store { return newSubject() }, opts...)
+	RunStoreSuiteFromHandle(t, func(*StoreHandle) T { return newSubject() }, opts...)
 }
 
-// RunStoreOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunStoreOn[T Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+// RunStoreSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStoreSuiteFromHandle[T Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(h *StoreHandle) Store { return newSubject(h) }, opts...)
-}
-
-// ControlStore applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlStore[T Store](t *testing.T, newControl func() T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(*StoreHandle) Store { return newControl() }, opts...)
-}
-
-// ControlStoreOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlStoreOn[T Store](t *testing.T, newControl func(h *StoreHandle) T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(h *StoreHandle) Store { return newControl(h) }, opts...)
+	conform.Run(t, StoreSuite(), func(h *StoreHandle) Store { return newSubject(h) }, opts...)
 }

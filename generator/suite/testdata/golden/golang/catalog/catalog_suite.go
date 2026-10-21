@@ -3,7 +3,7 @@ package catalog
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,6 +39,12 @@ type catalogFind struct {
 	conform.Callable[CatalogMethods]
 }
 
+// FindsTheAddedProduct returns the identity of the check that Find returns
+// the product that Add listed.
+func (c catalogFind) FindsTheAddedProduct() conform.ID[CatalogMethods] {
+	return c.Check("finds-the-added-product")
+}
+
 // catalogAdd is the name of Catalog.Add, with the identities of its
 // checks.
 type catalogAdd struct {
@@ -47,34 +53,26 @@ type catalogAdd struct {
 
 // CatalogSuite returns the checks of Catalog.
 func CatalogSuite() conform.Suite[CatalogMethods] {
-	return conform.Suite[CatalogMethods]{Declaration: "Catalog"}
+	return conform.Suite[CatalogMethods]{Declaration: "Catalog", Checks: []conform.Check[CatalogMethods]{
+		{
+			ID:        CatalogChecks.Find.FindsTheAddedProduct(),
+			Statement: "Find returns the product that Add listed",
+			Apply:     FindsTheAddedProduct,
+			Defect:    amnesiac,
+		},
+	}}
 }
 
-// RunCatalog applies the checks of Catalog, and the checks that opts add,
-// to a fresh subject of newSubject for each check.
-func RunCatalog[T CatalogMethods](t *testing.T, newSubject func() T, opts ...CatalogOption) {
+// RunCatalogSuite applies the checks of Catalog, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunCatalogSuite[T CatalogMethods](t *testing.T, newSubject func() T, opts ...CatalogOption) {
 	t.Helper()
-	conform.Verify(t, CatalogSuite(), func(*CatalogHandle) CatalogMethods { return newSubject() }, opts...)
+	RunCatalogSuiteFromHandle(t, func(*CatalogHandle) T { return newSubject() }, opts...)
 }
 
-// RunCatalogOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunCatalogOn[T CatalogMethods](t *testing.T, newSubject func(h *CatalogHandle) T, opts ...CatalogOption) {
+// RunCatalogSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunCatalogSuiteFromHandle[T CatalogMethods](t *testing.T, newSubject func(h *CatalogHandle) T, opts ...CatalogOption) {
 	t.Helper()
-	conform.Verify(t, CatalogSuite(), func(h *CatalogHandle) CatalogMethods { return newSubject(h) }, opts...)
-}
-
-// ControlCatalog applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlCatalog[T CatalogMethods](t *testing.T, newControl func() T, opts ...CatalogOption) {
-	t.Helper()
-	conform.Control(t, CatalogSuite(), func(*CatalogHandle) CatalogMethods { return newControl() }, opts...)
-}
-
-// ControlCatalogOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlCatalogOn[T CatalogMethods](t *testing.T, newControl func(h *CatalogHandle) T, opts ...CatalogOption) {
-	t.Helper()
-	conform.Control(t, CatalogSuite(), func(h *CatalogHandle) CatalogMethods { return newControl(h) }, opts...)
+	conform.Run(t, CatalogSuite(), func(h *CatalogHandle) CatalogMethods { return newSubject(h) }, opts...)
 }

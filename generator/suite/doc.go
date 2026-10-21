@@ -7,8 +7,9 @@
 //
 // The suite of a declaration contains the names of its callables with the
 // identities of their checks, the function that returns its checks, and the
-// applications that run the checks on a subject and on a control. The runtime
-// conform of dokimi-go declares the types of these parts:
+// two forms of the application that runs the checks on a subject. The test
+// of its proofs falsifies each check on its planted defect. The module
+// go.dokimi.dev/conform declares the types of these parts:
 //
 //	//dokimi:suite
 //	//dokimi:out path=storetest/
@@ -16,9 +17,29 @@
 //		Get(ctx context.Context, id string) (Item, error)
 //	}
 //
+// # Checks of a consumer
+//
+// The directive check binds a function of the package of the generated suite
+// to a callable of the suite as a check. Its param defect contains the name of
+// the function that returns the planted defect of the check. The doc comment
+// of the function opens with the name of the function and the words "checks
+// that", and the rest of its first sentence is the statement of the check:
+//
+//	// KeepsTheItem checks that Get returns the item that Put stored.
+//	//
+//	//dokimi:check Store.Get defect=forgetful
+//	func KeepsTheItem(h *StoreHandle) { … }
+//
+// Where two declarations under the directive suite have the name Store, the
+// directive writes the name of the package before it, as in store.Store.Get.
+// The annotate half of suite stamps the facts of each check that it binds, and
+// the generate half reads them into the suite of the declaration.
+//
+// # Subjects
+//
 // A consumer applies the suite to a subject, and adds checks of its own:
 //
-//	storetest.RunStore(t, memory.New, conform.With(keepsTheItem()))
+//	storetest.RunStoreSuite(t, memory.New, conform.With(keepsTheItem()))
 //
 // The directive subject on a struct of the consumer generates that test in
 // the package of the struct. Its param new names the factory of the
@@ -26,9 +47,6 @@
 //
 //	//dokimi:subject store.Store new=New
 //	type Store struct{ … }
-//
-// The suite of a declaration has no checks of its own, so an application runs
-// the checks that the consumer adds.
 //
 // # Kinds of declaration
 //
@@ -50,12 +68,14 @@
 // suite reports [Uninstantiable] at a declaration whose type parameters its
 // suite cannot instantiate, [NoSuite] at a subject whose declaration has no
 // directive suite, and [BadFactory] at a subject whose factory an application
-// cannot call.
+// cannot call. It reports [UnknownCallable] at the directive of a check whose
+// callable it cannot find, and [BadCheck] at the directive of a check without
+// a statement or with the wrong signature.
 //
 // # Dependency position
 //
 // The package imports the packages internal/lang and generator/stub of the
 // module, the root package of the Go satellite in golang.go, the package
-// naming of eidos-lang, the root, diag, directive, emit, node, plugin, rules
-// and symbol packages of the SDK facade of eidos, and the Go stdlib.
+// naming of eidos-lang, the root, diag, directive, emit, meta, node, plugin,
+// rules and symbol packages of the SDK facade of eidos, and the Go stdlib.
 package suite

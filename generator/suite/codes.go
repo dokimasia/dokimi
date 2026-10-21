@@ -35,3 +35,23 @@ var BadFactory = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  3,
 	Meaning: "the function of the param new of the directive subject is not a factory of subjects",
 })
+
+// UnknownCallable reports a function under the directive check whose callable
+// no declaration under the directive suite has, or two of them have. The
+// finding is an Error at the function, and no suite binds the check.
+var UnknownCallable = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 4,
+	Meaning: "the directive check has a callable that no declaration under the directive suite has, or that " +
+		"two of them have",
+})
+
+// BadCheck reports a function under the directive check whose doc comment
+// states no statement, or whose signature or the signature of its defect is
+// not the signature of a check. A check takes the handle of its check alone,
+// and its defect takes the handle and returns the planted defect alone. The
+// finding is an Error at the function, and no suite binds the check.
+var BadCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 5,
+	Meaning: "a function under the directive check has no statement, or it or its defect has another signature " +
+		"than a check",
+})

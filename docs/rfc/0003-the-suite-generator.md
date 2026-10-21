@@ -469,14 +469,15 @@ Each classification without a claim has a stance and a note in the section `uncl
 
 ### The generated suite
 
-The generator writes four families of files. The template tree of each target spells them:
+The generator writes three families of files. The template tree of each target spells them:
 
 | Family | Per | Contents |
 |---|---|---|
 | The suite | Source file of the declaration | The header, the compatibility reference, the checks with their planted defects, and the application |
-| The proofs | Source file of the declaration, as a test | The falsification test and the structural test |
+| The tests | Source file of a declaration or of a subject, as a test | The proofs of the suite of a declaration: the falsification test and the structural test. The conformance test of a subject that the directive `subject` declares: the application of the suite to the subject |
 | The lock | Package of the suite | The keys of every check of the package, one per line, sorted |
-| The conformance test | Source file of a subject, as a test | The application of the suite to a subject that the directive `subject` declares |
+
+eidos gives a plugin one family of test files, so the proofs and the conformance tests share it. A Go file of the family is `<file>_conform_test.go`: the proofs of `Store` in the package of its suite, and the conformance test of a subject in the package of the subject.
 
 The header lists:
 
@@ -614,9 +615,9 @@ func KeepsTheBody(h *LogHandle) {
 The suite generator binds a check in its two steps:
 
 1. Its annotate step runs on each function with the directive `check`. It resolves the declaration, the callable and the defect. It stamps facts on the function: the identity of the declaration, the name of the callable, the segment, the statement and the identity of the defect.
-2. The generate step of a declaration lists the functions with the directive `check` through `Reader.ByDirective` of eidos, and reads the facts of each function through `sdk.FactOf`. It binds each function whose facts contain the identity of the declaration.
+2. The generate step of a declaration lists the functions with the fact of a declaration through `sdk.Subjects` of eidos, and reads the facts of each function through `sdk.FactOf`. It binds each function whose fact contains the identity of the declaration.
 
-`Reader.ByDirective` records a read of the set of functions with the directive. eidos then runs the generate step of each suite again when a function gains or loses the directive. A change of any other declaration does not run it again.
+`sdk.Subjects` records a read of the set of functions with the key of the fact. eidos then runs the generate step of each suite again when a function gains or loses the fact. A change of any other declaration does not run it again.
 
 A check in a test file cannot be bound, because the generated suite cannot refer to a test file. `conform.With` adds such a check to one application, and the application falsifies the check before it applies the check to the subject.
 
@@ -732,7 +733,7 @@ A team declares a store of sessions, adds a check of its own and applies the sui
 |---|---|---|
 | `session/session.go` | The team | The declaration with its directives |
 | `session/sessiontest/session_suite.go` | dokimi | The names, the checks with their planted defects, and the application |
-| `session/sessiontest/session_suite_test.go` | dokimi | The falsification test |
+| `session/sessiontest/session_conform_test.go` | dokimi | The falsification test |
 | `session/sessiontest/session_stub.go` | dokimi | The double, from which the planted defects are built |
 | `session/sessiontest/checks.go` | The team | The check of the team with its planted defect |
 | `session/memory/memory.go` | The team | The store in memory |
@@ -1014,7 +1015,6 @@ FAIL
 
 | Project | Request | Why |
 |---|---|---|
-| eidos | A function of the SDK that returns the instances of a directive on the subject of a match ([issue 59](https://github.com/dokimasia/eidos/issues/59)) | The directive `excuse` adds an option to the conformance test that the directive `subject` writes for the same type |
 | assert-go | A seat that embeds another seat writes the call records of the seat that it embeds ([issue 58](https://github.com/dokimasia/assert-go/issues/58)) | The handle of a check embeds the seat of the check, so the assertions of the check write no call record |
 
 ### Invariants
@@ -1164,6 +1164,7 @@ None.
 | The callable that the rules of eidos derive | <https://github.com/dokimasia/eidos/blob/main/eidos-core/rules/callable.go> |
 | The equality of assert-spec | <https://github.com/dokimasia/assert-spec/blob/main/spec/assertions.yaml> |
 | The reads of the directives of a plan in eidos, `Reader.ByDirective` among them | <https://github.com/dokimasia/eidos/blob/main/eidos-core/store/reader.go> |
+| The subjects of a key and the instances of a directive on a subject in eidos, `Subjects` and `SubjectMatch.Directives` | <https://github.com/dokimasia/eidos/blob/main/eidos-core/match.go> |
 | The conformance helpers of the Go standard library | <https://pkg.go.dev/testing/fstest#TestFS> and <https://pkg.go.dev/testing/iotest#TestReader> |
 | `nettest.TestConn` | <https://pkg.go.dev/golang.org/x/net/nettest#TestConn> |
 | The conformance tests of the blob drivers of the Go CDK | <https://pkg.go.dev/gocloud.dev/blob/drivertest> |

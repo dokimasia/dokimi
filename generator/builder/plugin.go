@@ -5,6 +5,7 @@ package builder
 
 import (
 	"cmp"
+	"errors"
 	"reflect"
 	"slices"
 
@@ -34,6 +35,18 @@ const Version = "0.1.0"
 const (
 	BuilderDirective directive.Name     = "builder"
 	DefaultsParam    directive.ParamKey = "defaults"
+)
+
+// KeyName is the key of the fact that contains the name of the builder of a
+// struct, a class or an alias under [BuilderDirective], such as
+// AddressBuilder. KeySeed is the key of the fact that contains the name of the
+// constructor from the seed: the function NewAddressBuilder in Go, and the
+// static method create of the builder class in TypeScript. builder stamps
+// both facts on each declaration that it writes a builder of, so another
+// generator calls the builder without the naming of builder.
+const (
+	KeyName meta.KeyName = "builder.name"
+	KeySeed meta.KeyName = "builder.seed"
 )
 
 // SkipTag is the key of the tag that leaves a field out of the builder, and
@@ -136,14 +149,17 @@ const (
 // functions of the package, the record declares a function of each name
 // beside the struct of the builder, and the template writes both functions
 // at the struct. Value is the type of the value of the builder at its own
-// type parameters. Seed is the source of the value of a new builder, and the
-// start body of the record declares or assigns that value. Members are the
-// fields that the builder sets.
+// type parameters. Struct is the struct that the builder constructs. It is
+// Value for a struct and the struct of the alias for an alias. A language
+// such as TypeScript has no value of an alias. Seed is the source of the
+// value of a new builder, and the start body of the record declares or
+// assigns that value. Members are the fields that the builder sets.
 type Model struct {
 	Subject string
 	New     string
 	From    string
 	Value   *emit.TypeRef
+	Struct  *emit.TypeRef
 	Seed    Seed
 	Members []Member
 }
@@ -189,9 +205,11 @@ type Names struct {
 // order, whose type refers to the function. The layout of eidos qualifies
 // that reference where the checks are in another package than the builder.
 // Value is the type of the value at the witnesses of its type parameters,
-// and Args are the witnesses. Instantiable reports that the checks can name
-// the types that they run at. It is false for a generic declaration whose
-// type parameters have no witnesses, which has no checks.
+// and Args are the witnesses. Struct is the struct that the checks
+// construct. For an alias it is the struct of the alias. Instantiable
+// reports that the checks can name the types that they run at. It is false
+// for a generic declaration whose type parameters have no witnesses, which
+// has no checks.
 //
 // Seeds are the fields that the first function of the record seeds, which
 // the check of the constructor from a value compares one by one. Defaults
@@ -206,6 +224,7 @@ type Checks struct {
 	New          string
 	From         string
 	Value        *emit.TypeRef
+	Struct       *emit.TypeRef
 	Args         []*emit.TypeRef
 	Seeds        []string
 	Defaults     []string
@@ -284,6 +303,9 @@ type Check struct {
 // of eidos leave to the language.
 type part interface {
 	lang.Part
+	// builder returns the name of the builder of the declaration named name,
+	// which joins the name and word.
+	builder(name, word string) string
 	// companion returns the name of the companion function of the
 	// declaration named name, which joins the name and word.
 	companion(name, word string) string
@@ -329,20 +351,24 @@ type member struct {
 	id    symbol.Identity
 }
 
-// generator is one instance of builder. The composition writes its options
-// before the first phase call, and the handlers read them afterwards.
+// generator is one instance of builder: its options, and the handles of its
+// keys. The composition writes the options and registers the keys before the
+// first phase call, and the handlers read them afterwards.
 //
 // # Concurrency
 //
-// The workers of a phase call read the options concurrently, and no handler
-// writes them.
+// The workers of a phase call read the options and the handles concurrently,
+// and no handler writes them.
 type generator struct {
 	options *Options
+	name    meta.Key[string]
+	seed    meta.Key[string]
 }
 
 // invocation is the state of one builder. It contains the options of the
 // instance, the match of the subject, the part of the language of the
-// subject, the emitter, the subject and the rules of the language.
+// subject, the emitter, the subject and the rules of the language. The
+// emitter is nil in the annotate half.
 type invocation struct {
 	options *Options
 	m       sdk.SubjectMatch
@@ -362,15 +388,19 @@ var schema = directive.Schema{
 	Doc: "generates a builder of the declaration, with a setter for each field, and the checks of the builder",
 }
 
-// New returns builder. builder records a [Model] into the family [Word] for
-// each struct or class under [BuilderDirective], and for each alias of one
-// under it. The template of the family writes the builder in the conventions
-// of the language of the plan. builder records the [Checks] of each builder
-// into the family [Word] under the tag [TestTag]. The template of that family
-// writes the checks of the builder. The checks test the builder through the
-// exported API of its package, so a Go file of the family is in the external
-// test package of its directory. builder also records the Checks of a
-// generic declaration whose type parameters have no witnesses, and the
+// New returns builder, a plugin with an annotate half and a generate half.
+// The annotate half stamps [KeyName] and [KeySeed] on each struct or class
+// under [BuilderDirective] and on each alias of one under it, where builder
+// can write the builder of the declaration. It reports each declaration that
+// has no builder. The generate half runs on each declaration with the facts.
+// It records a [Model] into the family [Word], under the name that the
+// annotate half stamped. The template of the family writes the builder in the
+// conventions of the language of the plan. builder records the [Checks] of
+// each builder into the family [Word] under the tag [TestTag]. The template of
+// that family writes the checks of the builder. The checks test the builder
+// through the exported API of its package, so a Go file of the family is in
+// the external test package of its directory. builder also records the Checks
+// of a generic declaration whose type parameters have no witnesses, and the
 // template writes a note in place of its checks. The [Options] name the
 // builders and the companion functions, and can leave the checks out.
 //
@@ -391,47 +421,71 @@ var schema = directive.Schema{
 // builder requires the capability of defaults for these stamps.
 //
 // builder serves Go and TypeScript, the languages of its parts. It leaves a
-// declaration of another language alone. It reports [BadDefault] at a field
-// whose default is no value of its type, and [BadTag] at a field whose tag
-// [SkipTag] has another value than [SkipValue]. It reports [NotStruct] at an
-// alias whose target is not a struct of the workspace, and at an alias that
-// has type parameters or refers to a generic struct. It reports
-// [Unconstructed] at a declaration whose public constructors each take a
-// parameter that a caller must pass, [Empty] at a declaration without a
-// member, and [Collision] at a declaration whose builder would have two
-// methods of one name. builder records nothing for a declaration that it
-// reports, except after [BadTag], which leaves the field in the builder.
-// Each call returns a new plugin.
-func New() plugin.Generator {
+// declaration of another language alone. Its annotate half reports
+// [BadDefault] at a field whose default is no value of its type, and [BadTag]
+// at a field whose tag [SkipTag] has another value than [SkipValue]. It
+// reports [NotStruct] at an alias whose target is not a struct of the
+// workspace, and at an alias that has type parameters or refers to a generic
+// struct. It reports [Unconstructed] at a declaration whose public
+// constructors each take a parameter that a caller must pass, [Empty] at a
+// declaration without a member, and [Collision] at a declaration whose
+// builder would have two methods of one name. builder stamps and records
+// nothing for a declaration that it reports, except after [BadTag], which
+// leaves the field in the builder. Each call returns a new plugin.
+func New() sdk.Dual {
 	g := &generator{options: &Options{Suffix: Word, CompanionWord: CompanionWord}}
 	b := sdk.NewPlugin(ID).
 		Version(Version).
 		Requires(defaults.Capability).
 		Options(g.options).
+		Keys(g.register).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: builderTemplate}).
 		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, Word: Word, Template: testTemplate, External: true})
 	lang.Register(b, parts)
 	return b.Handle(sdk.Directive(schema,
-		sdk.OnStruct(lang.Served(parts, g.generateStruct)), sdk.OnAlias(lang.Served(parts, g.generateAlias)),
-	)).Generator()
+		sdk.OnStruct(lang.Served(parts, g.concludeStruct)), sdk.OnAlias(lang.Served(parts, g.concludeAlias)),
+		sdk.Where(sdk.HasKey(meta.Named[string](KeyName)),
+			sdk.OnStruct(lang.Served(parts, g.generateStruct)), sdk.OnAlias(lang.Served(parts, g.generateAlias)),
+		),
+	)).Dual()
 }
 
-// generateStruct records the builder of a struct under the directive.
-func (g *generator) generateStruct(m *sdk.StructMatch, p part, e *sdk.Emitter) error {
+// register claims the namespace of builder and registers [KeyName] and
+// [KeySeed].
+//
+// Error modes: the error of the claim, such as a namespace that another
+// registrant claimed, and the errors of the two registrations, such as a key
+// that the registrant registered with another type, joined.
+func (g *generator) register(r *meta.Registry) error {
+	errClaim := r.ClaimNamespace(KeyName.Namespace())
+	kinds := []symbol.Kind{symbol.KindStruct, symbol.KindAlias}
+	var errName, errSeed error
+	g.name, errName = meta.Register[string](r, meta.KeySpec{
+		Name: KeyName, Kinds: kinds, Doc: "contains the name of the builder of a struct, a class or an alias",
+	})
+	g.seed, errSeed = meta.Register[string](r, meta.KeySpec{
+		Name: KeySeed, Kinds: kinds, Doc: "contains the name of the constructor of the builder from the seed",
+	})
+	return errors.Join(errClaim, errName, errSeed)
+}
+
+// concludeStruct stamps the facts of the builder of a struct under the
+// directive.
+func (g *generator) concludeStruct(m *sdk.StructMatch, p part, st *sdk.Stamper) error {
 	s := m.Struct
-	sub := &subject{origin: s.ID, name: s.Name, decl: s, params: s.TypeParams, visibility: s.Visibility}
-	return g.write(m, p, e, sub)
+	g.conclude(m, p, st, &subject{origin: s.ID, name: s.Name, decl: s, params: s.TypeParams, visibility: s.Visibility})
+	return nil
 }
 
-// generateAlias records the builder of an alias of a struct under the
-// directive. The builder is named after the alias and sets the fields of
-// the struct. generateAlias reports [NotStruct] at an alias whose target is
+// concludeAlias stamps the facts of the builder of an alias of a struct under
+// the directive. The builder is named after the alias and sets the fields of
+// the struct. concludeAlias reports [NotStruct] at an alias whose target is
 // not a struct of the workspace. It also reports [NotStruct] at a generic
 // alias and at an alias of a generic struct, because the builder of an alias
 // sets the fields of a struct without type parameters. The builder of the
 // generic struct builds each instance of the struct. An alias of Go and of
 // TypeScript always has a target.
-func (g *generator) generateAlias(m *sdk.AliasMatch, p part, e *sdk.Emitter) error {
+func (g *generator) concludeAlias(m *sdk.AliasMatch, p part, st *sdk.Stamper) error {
 	a := m.Alias
 	decl, _ := m.Reader().Lookup(a.Target.Target)
 	target, isStruct := decl.(*node.Struct)
@@ -444,32 +498,80 @@ func (g *generator) generateAlias(m *sdk.AliasMatch, p part, e *sdk.Emitter) err
 			"of a struct without them", a.Name, target.Name)
 		return nil
 	}
-	return g.write(m, p, e, &subject{origin: a.ID, name: a.Name, decl: target, visibility: a.Visibility})
+	g.conclude(m, p, st, &subject{origin: a.ID, name: a.Name, decl: target, visibility: a.Visibility})
+	return nil
 }
 
-// write records the model of the builder of sub into the family of the
-// builders. It records the checks of the builder into the family of the
-// tests, unless the option no-tests is set. p is the part of the language of
-// sub.
-func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subject) error {
-	in := &invocation{options: g.options, m: m, p: p, e: e, sub: sub, b: m.Rules()}
+// conclude stamps [KeyName] and [KeySeed] on sub where builder can write the
+// builder of sub. p is the part of the language of sub. conclude reports
+// [Unconstructed] at a declaration whose public constructors each take a
+// parameter that a caller must pass, [Empty] at a declaration without a
+// member, [BadDefault] at a field whose default is no value of its type, and
+// [Collision] at a declaration whose builder would have two methods of one
+// name. It stamps nothing on such a declaration. conclude also reports
+// [BadTag] at each member whose tag has another value than [SkipValue], and
+// such a member keeps its setter.
+func (g *generator) conclude(m sdk.SubjectMatch, p part, st *sdk.Stamper, sub *subject) {
+	in := &invocation{options: g.options, m: m, p: p, sub: sub, b: m.Rules()}
 	if !in.constructible() {
 		m.Errorf(Unconstructed, "each public constructor of %s takes a parameter that a caller must pass, "+
 			"and a builder constructs %s without arguments", sub.decl.Name, sub.name)
-		return nil
+		return
 	}
 	members := in.members()
+	in.mistagged(members)
 	if len(members) == 0 {
 		m.Errorf(Empty, "%s has no field that a builder can set, so it has no builder", sub.name)
-		return nil
+		return
 	}
-	start, seed, values, valid := in.start(members)
-	if !valid {
-		return nil
+	if _, _, _, valid := in.start(members); !valid {
+		return
 	}
+	models := make([]Member, 0, len(members))
+	for i := range members {
+		models = append(models, in.modelOf(&members[i]))
+	}
+	if name, first, second, collides := collision(models); collides {
+		m.Errorf(Collision, "the builder of %s would declare %s for %s and for %s, so %s has no builder",
+			sub.name, name, first, second, sub.name)
+		return
+	}
+	name := p.builder(sub.name, cmp.Or(g.options.Suffix, Word))
+	fromSeed, _ := p.constructors(name)
+	sdk.Stamp(st, g.name, name)
+	sdk.Stamp(st, g.seed, fromSeed)
+}
+
+// generateStruct records the builder of a struct with the facts.
+func (g *generator) generateStruct(m *sdk.StructMatch, p part, e *sdk.Emitter) error {
+	s := m.Struct
+	g.write(m, p, e, &subject{origin: s.ID, name: s.Name, decl: s, params: s.TypeParams, visibility: s.Visibility})
+	return nil
+}
+
+// generateAlias records the builder of an alias with the facts. The annotate
+// half stamps the facts on an alias of a struct alone.
+func (g *generator) generateAlias(m *sdk.AliasMatch, p part, e *sdk.Emitter) error {
+	a := m.Alias
+	decl, _ := m.Reader().Lookup(a.Target.Target)
+	target, _ := decl.(*node.Struct)
+	g.write(m, p, e, &subject{origin: a.ID, name: a.Name, decl: target, visibility: a.Visibility})
+	return nil
+}
+
+// write records the model of the builder of sub into the family of the
+// builders, under the name of [KeyName] on sub. It records the checks of the
+// builder into the family of the tests, unless the option no-tests is set. p
+// is the part of the language of sub. The annotate half stamps the facts on a
+// declaration whose builder write can record alone, so write reports nothing.
+func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subject) {
+	in := &invocation{options: g.options, m: m, p: p, e: e, sub: sub, b: m.Rules()}
+	members := in.members()
+	start, seed, values, _ := in.start(members)
+	name, _ := sdk.Fact(m, g.name)
 	builder := &emit.Struct{
 		Origin:     sub.origin,
-		Name:       e.JoinName(cmp.Or(g.options.Suffix, Word), sub.name),
+		Name:       name,
 		Visibility: sub.visibility,
 		TypeParams: sdk.MirrorTypeParams(sub.params),
 	}
@@ -478,13 +580,9 @@ func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subje
 		Subject: sub.name, New: fromSeed, From: fromValue,
 		Value: in.valueOf(sdk.TypeArgs(builder.TypeParams)), Seed: seed,
 	}
+	model.Struct = in.structOf(model.Value)
 	for i := range members {
 		model.Members = append(model.Members, in.modelOf(&members[i]))
-	}
-	if name, first, second, collides := collision(model.Members); collides {
-		m.Errorf(Collision, "the builder of %s would declare %s for %s and for %s, so %s has no builder",
-			sub.name, name, first, second, sub.name)
-		return nil
 	}
 	builder.Types.Append(start)
 	record := []symbol.Symbol{builder}
@@ -493,14 +591,13 @@ func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subje
 	}
 	e.File().Record(model, record...)
 	if g.options.NoTests {
-		return nil
+		return
 	}
 	test, checks := in.tests(builder.Name, members, &model, values)
 	if p.functions() {
 		test.Fields.Append(referent(fromSeed), referent(fromValue))
 	}
 	e.File(TestTag).Record(checks, test)
-	return nil
 }
 
 // function returns the declaration of the function named name, which the
@@ -602,6 +699,7 @@ func (in *invocation) tests(
 		checks.Args = append(checks.Args, rules.EmitRef(w))
 	}
 	checks.Value = in.valueOf(checks.Args)
+	checks.Struct = in.structOf(checks.Value)
 	seed := in.method(seedLocal)
 	test.Types.Append(seed)
 	for i := range members {
@@ -783,10 +881,10 @@ func (in *invocation) seed() (emit.Expr, bool) {
 // of the language. A field that an embed promotes is no member, because the
 // builder sets the embedded field whole. A field that code outside the
 // package cannot assign on a value is no member, and neither is a field with
-// the tag [SkipTag] of the value [SkipValue]. The walk leaves out a field
-// with a computed name, and members leaves out a field whose name the
-// language does not write after a dot, such as the quoted TypeScript property
-// content-type.
+// the tag [SkipTag] of the value [SkipValue]. members leaves out a field
+// whose name the language does not write after a dot, such as the quoted
+// TypeScript property content-type and the computed name
+// [Symbol.toStringTag].
 func (in *invocation) members() []member {
 	set, _ := in.b.MembersOf(in.sub.decl)
 	// The walk lists the members that the struct declares first, its fields
@@ -846,19 +944,25 @@ func (in *invocation) promoted(mem *rules.Member) bool {
 }
 
 // skipped reports whether the field f has the tag [SkipTag] of the value
-// [SkipValue]. It reports [BadTag] at a field whose tag has another value,
-// and that field stays in the builder.
+// [SkipValue]. A field without the tag has the empty value.
 func (in *invocation) skipped(f *node.Field) bool {
-	text, tagged := in.b.Tag(f, SkipTag)
-	if !tagged {
-		return false
+	text, _ := in.b.Tag(f, SkipTag)
+	return text == SkipValue
+}
+
+// mistagged reports [BadTag] at the field of each of members with the tag
+// [SkipTag]. The members leave out each field whose tag has the value
+// [SkipValue], so the tag of a member has another value, and the builder
+// keeps the field. An embedded member has no field, and the rules report no
+// tag of a nil field.
+func (in *invocation) mistagged(members []member) {
+	for i := range members {
+		f := members[i].field
+		if text, tagged := in.b.Tag(f, SkipTag); tagged {
+			in.m.ErrorfAt(BadTag, f.Pos, "the tag %s of %s has the value %q, and only %q leaves a field out of "+
+				"the builder", SkipTag, f.Name, text, SkipValue)
+		}
 	}
-	if text != SkipValue {
-		in.m.ErrorfAt(BadTag, f.Pos, "the tag %s of %s has the value %q, and only %q leaves a field out of "+
-			"the builder", SkipTag, f.Name, text, SkipValue)
-		return false
-	}
-	return true
 }
 
 // assignable reports whether code outside the package can assign the field
@@ -987,6 +1091,17 @@ func (in *invocation) textual(ref *node.TypeRef) bool {
 // arguments args.
 func (in *invocation) valueOf(args []*emit.TypeRef) *emit.TypeRef {
 	return &emit.TypeRef{Spelling: in.sub.name, Target: in.sub.origin, Args: args}
+}
+
+// structOf returns the struct that the builder constructs, where value is
+// the type of the value of the builder. It is value for a struct and the
+// struct of the alias for an alias. The builder of an alias has no type
+// parameters.
+func (in *invocation) structOf(value *emit.TypeRef) *emit.TypeRef {
+	if in.sub.origin == in.sub.decl.ID {
+		return value
+	}
+	return &emit.TypeRef{Spelling: in.sub.decl.Name, Target: in.sub.decl.ID}
 }
 
 // childrenOf returns the references that the fold of ref makes the children

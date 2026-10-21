@@ -14,6 +14,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/plugin"
+	"go.dokimi.dev/eidos/sdk/plugintest"
 
 	"go.dokimi.dev/dokimi/annotator/defaults"
 	"go.dokimi.dev/dokimi/generator/builder"
@@ -30,6 +31,7 @@ const (
 	genericPackage    = "example.com/shop/generic"
 	companionsPackage = "example.com/shop/companions"
 	catalogModule     = "catalog"
+	aliasedModule     = "aliased"
 	builderTemplate   = "builder.tmpl"
 	testTemplate      = "builder.test.tmpl"
 )
@@ -44,7 +46,7 @@ const (
 // generated is what builder records over one fixture: the model, the start
 // body, the names of the functions that the record declares beside the
 // builder, the checks and the record of the checks of each builder by the
-// name of its subject, and the findings of the run.
+// name of its subject, and the findings of both halves.
 type generated struct {
 	models    map[string]builder.Model
 	starts    map[string]*emit.Method
@@ -78,20 +80,32 @@ func generate(t *testing.T, target plugin.Target, dir string, pkgs ...string) ge
 	return run(t, builder.New(), target, dir, pkgs...)
 }
 
+// phases runs the annotate half and then the generate half of the builder p
+// over the fixture f, as a run of the composition runs them. It returns the
+// result of each half, and stops the test where a half returns an error.
+func phases(t *testing.T, f *gentest.Fixture, p plugin.Plugin) (stamps, records plugintest.Result) {
+	t.Helper()
+
+	stamps = f.Annotate(t, p)
+	assert.NoError(t, stamps.Err, "the annotate half runs whole")
+	records = f.Generate(t, p)
+	assert.NoError(t, records.Err, "the generate half runs whole")
+	return stamps, records
+}
+
 // run runs the builder p over the packages pkgs of the tree dir with the
-// target of the plan, and returns what it records. It checks that each
-// family claims its files through its template.
+// target of the plan, and returns what it records and the findings of both
+// halves. It checks that each family claims its files through its template.
 func run(t *testing.T, p plugin.Generator, target plugin.Target, dir string, pkgs ...string) generated {
 	t.Helper()
 
-	res := fixture(t, target, dir, p, pkgs...).Generate(t, p)
-	assert.NoError(t, res.Err, "the generator runs whole")
+	stamps, res := phases(t, fixture(t, target, dir, p, pkgs...), p)
 	got := generated{
 		models:   map[string]builder.Model{},
 		starts:   map[string]*emit.Method{},
 		checks:   map[string]builder.Checks{},
 		tests:    map[string]*emit.Struct{},
-		findings: slices.Collect(res.Sink.All()),
+		findings: slices.Concat(slices.Collect(stamps.Sink.All()), slices.Collect(res.Sink.All())),
 	}
 	subject := func(m builder.Model) string { return m.Subject }
 	for name, r := range gentest.Records(t, res, builderTemplate, "", subject) {

@@ -58,6 +58,11 @@ func (golangPart) Options() []sdk.TargetOption {
 	return []sdk.TargetOption{sdk.TemplatesOf(golangTemplates, golang.Target)}
 }
 
+// builder returns the name of the builder of the declaration named name, such
+// as AddressBuilder for Address and the word builder. The word joins the name
+// in Pascal case with the initialisms of Go.
+func (golangPart) builder(name, word string) string { return name + naming.Pascal(word) }
+
 // companion returns the name of the companion function of the declaration
 // named name, such as AddressDefaults for Address and the word defaults. The
 // word joins the name in Pascal case with the initialisms of Go.

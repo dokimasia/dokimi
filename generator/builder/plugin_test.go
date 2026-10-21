@@ -14,6 +14,7 @@ import (
 	"go.dokimi.dev/eidos/lang/typescript"
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/emit"
+	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/plugintest"
 	"go.dokimi.dev/eidos/sdk/symbol"
@@ -70,6 +71,10 @@ const (
 	nameField    = "Name"
 )
 
+// otherRegistrant is the registrant that claims the namespace of builder
+// before builder registers its keys.
+const otherRegistrant = "other"
+
 // builder records the model of a builder of each declaration under its
 // directive and the checks of each builder, in Go and in TypeScript, and
 // passes the plugin suite.
@@ -102,6 +107,135 @@ func TestBuilder(t *testing.T) {
 
 			gentest.External(t, builder.New(), builder.TestTag)
 		})
+
+		{
+			tests := []struct {
+				name       string
+				giveTarget plugin.Target
+				giveTree   string
+				givePkgs   []string
+				giveKind   symbol.Kind
+				give       string
+				want       facts
+			}{
+				{
+					name:       "stamps the names of the builder and of its constructor from the seed on a struct",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{catalogPackage},
+					giveKind: symbol.KindStruct, give: addressName,
+					want: facts{name: "AddressBuilder", seed: "NewAddressBuilder", stamped: true},
+				},
+				{
+					name:       "stamps the name of the static method create on a class",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{catalogModule},
+					giveKind: symbol.KindStruct, give: addressName,
+					want: facts{name: "AddressBuilder", seed: "create", stamped: true},
+				},
+				{
+					name:       "stamps the names of the builder of an alias on the alias",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{aliasedPackage, catalogPackage},
+					giveKind: symbol.KindAlias, give: mirrorName,
+					want: facts{name: "MirrorBuilder", seed: "NewMirrorBuilder", stamped: true},
+				},
+				{
+					name:       "stamps nothing on a struct that it reports",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{badPackage},
+					giveKind: symbol.KindStruct, give: blankName,
+				},
+				{
+					name:       "stamps nothing on an alias that it reports",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{aliasedPackage, catalogPackage},
+					giveKind: symbol.KindAlias, give: secondsName,
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					p := builder.New()
+					f := fixture(t, tt.giveTarget, tt.giveTree, p, tt.givePkgs...)
+					assert.Equal(t, stamped(t, f, p, tt.giveKind, tt.give), tt.want,
+						"builder stamps "+tt.give+" as the case states")
+				})
+			}
+		}
+
+		t.Run("stamps the name of the builder that the option suffix sets", func(t *testing.T) {
+			t.Parallel()
+
+			p := builder.New()
+			p.(plugin.OptionsProvider).Options().(*builder.Options).Suffix = "factory"
+			f := fixture(t, golang.Target, goTree, p, catalogPackage)
+			assert.Equal(t, stamped(t, f, p, symbol.KindStruct, addressName),
+				facts{name: "AddressFactory", seed: "NewAddressFactory", stamped: true},
+				"the name of the builder joins Address and the option suffix")
+		})
+
+		t.Run("writes the builder under the name that its annotate half stamps", func(t *testing.T) {
+			t.Parallel()
+
+			p := builder.New()
+			f := fixture(t, golang.Target, goTree, p, catalogPackage)
+			key, registered := meta.Lookup[string](f.Keys, builder.KeyName)
+			assert.True(t, registered, "builder registers the key of the name")
+			address := f.Find(t, symbol.KindStruct, "", addressName).Identity()
+			plugintest.Stamp(t, f.Fixture, key, address, "AddressMaker")
+			res := f.Generate(t, p)
+			assert.NoError(t, res.Err, "the generate half runs whole")
+			models := gentest.Records(t, res, builderTemplate, "", func(m builder.Model) string { return m.Subject })
+			assert.Contains(t, models, addressName, "builder records the model of Address")
+			expect.Equal(t, models[addressName].Data.New, "NewAddressMaker",
+				"the constructor opens with New and the stamped name")
+		})
+
+		t.Run("records no builder of a declaration without the facts of its annotate half", func(t *testing.T) {
+			t.Parallel()
+
+			p := builder.New()
+			res := fixture(t, golang.Target, goTree, p, catalogPackage).Generate(t, p)
+			assert.NoError(t, res.Err, "the generate half runs whole")
+			subject := func(m builder.Model) string { return m.Subject }
+			expect.Empty(t, gentest.Records(t, res, builderTemplate, "", subject),
+				"the generate half writes a builder where the annotate half stamped its name")
+		})
+
+		{
+			tests := []struct {
+				name      string
+				giveClaim bool
+				giveKey   meta.KeyName
+			}{
+				{name: "returns from Keys the error of a namespace that another registrant claimed", giveClaim: true},
+				{
+					name:    "returns from Keys the error of a key of the name registered with another type",
+					giveKey: builder.KeyName,
+				},
+				{
+					name:    "returns from Keys the error of a key of the seed registered with another type",
+					giveKey: builder.KeySeed,
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					r := meta.NewRegistry()
+					own := r.For(string(builder.ID))
+					namespace := builder.KeyName.Namespace()
+					if tt.giveClaim {
+						assert.NoError(t, r.For(otherRegistrant).ClaimNamespace(namespace),
+							"another registrant claims the namespace of builder")
+					} else {
+						assert.NoError(t, own.ClaimNamespace(namespace), "builder claims its namespace")
+						spec := meta.KeySpec{Name: tt.giveKey, Doc: "a value of another type"}
+						_, err := meta.Register[int64](own, spec)
+						assert.NoError(t, err, "a key of another type takes the name")
+					}
+					keys, provides := builder.New().(plugin.KeyProvider)
+					assert.True(t, provides, "builder registers keys")
+					assert.HasError(t, keys.Keys(own), "builder cannot register its keys")
+				})
+			}
+		}
 
 		members := []struct {
 			name   string
@@ -726,14 +860,38 @@ func TestBuilder(t *testing.T) {
 			expect.Empty(t, got.checks[keyedName].Setters, "Keyed has no checks")
 		})
 
-		t.Run("records the builder of an alias with the fields of its struct", func(t *testing.T) {
-			t.Parallel()
+		aliases := []struct {
+			name       string
+			target     plugin.Target
+			tree       string
+			pkgs       []string
+			wantFields string
+			wantStruct string
+		}{
+			{
+				name: "records the builder of a Go alias with the fields of its struct", target: golang.Target,
+				tree: goTree, pkgs: []string{aliasedPackage, catalogPackage}, wantFields: nameField, wantStruct: "Role",
+			},
+			{
+				name:   "records the builder of a TypeScript alias with the fields of its class",
+				target: typescript.Target, tree: tsTree, pkgs: []string{aliasedModule, catalogModule},
+				wantFields: "owner plan", wantStruct: accountName,
+			},
+		}
+		for _, tt := range aliases {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 
-			got, recorded := generate(t, golang.Target, goTree, aliasedPackage, catalogPackage).models[mirrorName]
-			assert.True(t, recorded, "builder records the model of Mirror")
-			expect.Equal(t, got.Value.Spelling, mirrorName, "the value of the builder is the alias")
-			expect.Equal(t, fields(got.Members), nameField, "the builder sets the fields of catalog.Role")
-		})
+				got := generate(t, tt.target, tt.tree, tt.pkgs...)
+				model, recorded := got.models[mirrorName]
+				assert.True(t, recorded, "builder records the model of Mirror")
+				expect.Equal(t, model.Value.Spelling, mirrorName, "the value of the builder is the alias")
+				expect.Equal(t, model.Struct.Spelling, tt.wantStruct, "the builder constructs the struct of the alias")
+				expect.Equal(t, got.checks[mirrorName].Struct.Spelling, tt.wantStruct,
+					"the checks construct the struct of the alias")
+				expect.Equal(t, fields(model.Members), tt.wantFields, "the builder sets the fields of the struct")
+			})
+		}
 
 		t.Run("records the builder of a class whose constructor parameters are all optional", func(t *testing.T) {
 			t.Parallel()
@@ -831,9 +989,8 @@ func TestBuilder(t *testing.T) {
 
 			p := builder.New()
 			f := fixture(t, golang.Target, goTree, p, badPackage)
-			res := f.Generate(t, p)
-			assert.NoError(t, res.Err, "the generator runs whole")
-			got := gentest.Finding(t, res, f.Find(t, symbol.KindField, typoName, nameField))
+			stamps, res := phases(t, f, p)
+			got := gentest.Finding(t, stamps, f.Find(t, symbol.KindField, typoName, nameField))
 			expect.Equal(t, got.Code, builder.BadTag, "the finding has the code BadTag")
 			expect.Equal(t, got.Msg,
 				`the tag builder of Name has the value "skip", and only "-" leaves a field out of the builder`,
@@ -937,12 +1094,12 @@ func TestBuilder(t *testing.T) {
 
 				p := builder.New()
 				f := fixture(t, tt.target, tt.tree, p, tt.pkgs...)
-				res := f.Generate(t, p)
-				assert.NoError(t, res.Err, "the generator runs whole")
+				stamps, res := phases(t, f, p)
 				at := f.Find(t, tt.wantAt, tt.wantHost, tt.wantName)
-				got := gentest.Finding(t, res, at)
+				got := gentest.Finding(t, stamps, at)
 				expect.Equal(t, got.Code, tt.wantCode, "the finding has the code of its case")
 				expect.Equal(t, got.Msg, tt.wantMsg, "the message contains the declaration and the reason")
+				expect.Empty(t, slices.Collect(res.Sink.All()), "the generate half reports nothing")
 				subject := at
 				if tt.wantHost != "" {
 					subject = f.Find(t, symbol.KindStruct, "", tt.wantHost)
@@ -951,6 +1108,31 @@ func TestBuilder(t *testing.T) {
 			})
 		}
 	})
+}
+
+// facts is what builder stamps on one declaration: the name of its builder,
+// the name of the constructor from the seed, and whether it stamps the name.
+type facts struct {
+	name    string
+	seed    string
+	stamped bool
+}
+
+// stamped runs the annotate half of the builder p over the fixture f, and
+// returns what p stamps on the declaration of the kind named name at file
+// level.
+func stamped(t *testing.T, f *gentest.Fixture, p plugin.Plugin, kind symbol.Kind, name string) facts {
+	t.Helper()
+
+	assert.NoError(t, f.Annotate(t, p).Err, "the annotate half runs whole")
+	nameKey, registered := meta.Lookup[string](f.Keys, builder.KeyName)
+	assert.True(t, registered, "builder registers the key of the name")
+	seedKey, registered := meta.Lookup[string](f.Keys, builder.KeySeed)
+	assert.True(t, registered, "builder registers the key of the seed")
+	id := f.Find(t, kind, "", name).Identity()
+	got, held := meta.Get(f.Facts, id, nameKey)
+	seed, _ := meta.Get(f.Facts, id, seedKey)
+	return facts{name: got, seed: seed, stamped: held}
 }
 
 // seed returns the function of the record of the checks that seeds each

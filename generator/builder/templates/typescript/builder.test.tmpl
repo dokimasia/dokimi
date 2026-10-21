@@ -16,7 +16,7 @@
 describe("{{$t.Name}} construction", () => {
 {{- if $c.Seeds}}
   test("{{$c.From}} round-trips what it was seeded with", ({ seat }) => {
-    const seed = new {{spellvalue $c.Value}}();
+    const seed = new {{spellvalue $c.Struct}}();
 {{memberbody $seed}}    const got = {{$t.Name}}.{{$c.From}}{{$ta}}(seed).build();
 {{- range $c.Seeds}}
     check.equal(seat, got.{{.}}, seed.{{.}}, "{{$c.From}} keeps the member it was given");

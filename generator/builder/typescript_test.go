@@ -181,7 +181,7 @@ func TestTypeScript(t *testing.T) {
 
 		got := generate(t, typescript.Target, tsTree, catalogModule).models[headerName]
 		assert.Equal(t, fields(got.Members), "v2 $ref",
-			"the builder assigns a property after a dot, where content-type and 0 are no names")
+			"the builder assigns a property after a dot, where content-type, 0 and [Symbol.toStringTag] are no names")
 	})
 
 	funcs := templates.TemplateFuncs(typescript.Target)
@@ -192,6 +192,17 @@ func TestTypeScript(t *testing.T) {
 		want bool
 	}{
 		{name: "reports a Map as an instance of the class", give: &emit.TypeRef{Spelling: "Map"}, want: true},
+		{
+			name: "reports a Map of the library of TypeScript as an instance of the class",
+			give: &emit.TypeRef{
+				Spelling: "Map",
+				Target: symbol.Identity{
+					Lang: typescript.Lang, Package: plugin.StorePath(typescript.LibraryStore, "lib.es2022.full.d.ts"),
+					Name: "Map",
+				},
+			},
+			want: true,
+		},
 		{
 			name: "reports a ReadonlyMap as an instance of the class",
 			give: &emit.TypeRef{Spelling: "ReadonlyMap"},
@@ -237,7 +248,7 @@ func renderedTypeScript(t *testing.T) fstest.MapFS {
 	t.Helper()
 
 	p := builder.New()
-	res := fixture(t, typescript.Target, tsTree, p, catalogModule, immutableModule, shadowModule).Generate(t, p)
-	assert.NoError(t, res.Err, "the generator runs whole")
+	_, res := phases(t, fixture(t, typescript.Target, tsTree, p, catalogModule, immutableModule, shadowModule,
+		aliasedModule), p)
 	return gentest.Rendered(t, res, p, tsbackend.New())
 }

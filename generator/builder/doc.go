@@ -28,6 +28,15 @@
 //   - Mutate passes one value to each function. Clone and From keep the
 //     value under construction.
 //
+// # Facts
+//
+// builder is a plugin with an annotate half and a generate half. The annotate
+// half stamps the name of the builder of each declaration and the name of its
+// constructor from the seed under [KeyName] and [KeySeed], and reports each
+// declaration that has no builder. The generate half writes the builder of
+// each declaration with the facts. Another generator calls a builder through
+// the facts, as the stub generator does for the default results of a double.
+//
 // # Options
 //
 // The option suffix sets the word of the name of each builder, and the

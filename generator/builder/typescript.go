@@ -74,6 +74,11 @@ func (typescriptPart) Options() []sdk.TargetOption {
 	}
 }
 
+// builder returns the name of the builder class of the class named name, such
+// as AddressBuilder for Address and the word builder. The word joins the name
+// in Pascal case.
+func (typescriptPart) builder(name, word string) string { return name + typescriptCaser.Pascal(word) }
+
 // companion returns the name of the companion function of the class named
 // name in camel case, such as addressDefaults for Address and
 // httpClientDefaults for HTTPClient with the word defaults.
@@ -139,8 +144,10 @@ func mapClass(ref *emit.TypeRef) bool {
 }
 
 // global reports whether a reference with the target, the package and the
-// spelling names one of the global types of TypeScript in names. A global
-// type has no declaration in the workspace and no import that binds it.
+// spelling refers to one of the global types of TypeScript in names. The
+// library of TypeScript declares a global type, or the load leaves a
+// reference to it without a target. The workspace and an import do not
+// declare a global type.
 func global(target *symbol.Identity, pkg, spelling string, names ...string) bool {
-	return target.IsZero() && pkg == "" && slices.Contains(names, spelling)
+	return typescript.Global(*target, pkg) && slices.Contains(names, spelling)
 }

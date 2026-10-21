@@ -212,6 +212,8 @@ export class Header {
   v2: string = "";
   /** Contains a property whose name opens with a dollar sign. */
   $ref: string = "";
+  /** Contains the tag of the header, whose name is computed and has no setter. */
+  [Symbol.toStringTag]: string = "Header";
 }
 
 /** Represents lines as a transparent alias of a sequence. */

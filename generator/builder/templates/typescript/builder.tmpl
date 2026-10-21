@@ -5,6 +5,7 @@
 {{- $tp := typeparams $b.TypeParams}}
 {{- $ta := typeargs $b.TypeParams}}
 {{- $v := spell $m.Value}}
+{{- $s := spellvalue $m.Struct}}
 
 {{docs (wrapdocs (printf `%s constructs %s values.
 
@@ -50,7 +51,7 @@ builder becomes two.` $b.Name $m.Subject $b.Name $m.New $b.Name $m.From $m.Subje
    * value worth writing.
    */
   static {{$m.New}}{{$tp}}(): {{$b.Name}}{{$ta}} {
-    const v = new {{spellvalue $m.Value}}();
+    const v = new {{$s}}();
 {{memberbody $start}}    return new {{$b.Name}}{{$ta}}(v);
   }
 {{- else}}
@@ -63,7 +64,7 @@ builder becomes two.` $b.Name $m.Subject $b.Name $m.New $b.Name $m.From $m.Subje
    * and the setters are what make it differ.
    */
   static {{$m.New}}{{$tp}}(): {{$b.Name}}{{$ta}} {
-    return new {{$b.Name}}{{$ta}}(new {{spellvalue $m.Value}}());
+    return new {{$b.Name}}{{$ta}}(new {{$s}}());
   }
 {{- end}}
 
@@ -75,7 +76,7 @@ builder becomes two.` $b.Name $m.Subject $b.Name $m.New $b.Name $m.From $m.Subje
    * something a previous step produced.
    */
   static {{$m.From}}{{$tp}}(value: {{$v}}): {{$b.Name}}{{$ta}} {
-    return new {{$b.Name}}{{$ta}}(Object.assign(new {{spellvalue $m.Value}}(), value));
+    return new {{$b.Name}}{{$ta}}(Object.assign(new {{$s}}(), value));
   }
 {{- range $m.Members}}
 {{- $f := .Field}}
@@ -242,7 +243,7 @@ builder becomes two.` $b.Name $m.Subject $b.Name $m.New $b.Name $m.From $m.Subje
    * outright rather than editing it in place.
    */
   clone(): {{$b.Name}}{{$ta}} {
-    const out = new {{$b.Name}}{{$ta}}(Object.assign(new {{spellvalue $m.Value}}(), this.v));
+    const out = new {{$b.Name}}{{$ta}}(Object.assign(new {{$s}}(), this.v));
 {{- range $m.Members}}
 {{- if .Copied}}
 {{- if eq .Form "list"}}
@@ -270,7 +271,7 @@ builder becomes two.` $b.Name $m.Subject $b.Name $m.New $b.Name $m.From $m.Subje
    * separates them.
    */
   build(): {{$v}} {
-    return Object.assign(new {{spellvalue $m.Value}}(), this.v);
+    return Object.assign(new {{$s}}(), this.v);
   }
 }
 {{- end}}

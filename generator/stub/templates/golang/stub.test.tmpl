@@ -40,6 +40,14 @@ need one bound to a failable TB rather than to the running test.` (stubCamel $st
 			return {{$ret}}{{"{"}}{{range $j, $r := $m.Returns}}{{if $j}}, {{end}}{{$r.Field}}: got{{$j}}{{end}}{{"}"}}
 		},
 {{- end}}
+{{- if $m.Defaulted}}
+		Default: func() {{$ret}} {
+{{- range $r := $m.Returns}}{{with $r.Default}}
+			{{$r.Local}} := {{spell (stubRef $t .Ref)}}{{typeargs .Args}}().Build()
+{{- end}}{{end}}
+			return {{$ret}}{{"{"}}{{template "stub.testdefaults" $m}}{{"}"}}
+		},
+{{- end}}
 		Override: func(mark func()) {
 			s.{{$m.Field}}.Func(func({{template "stub.testfuncparams" $m}}){{template "stub.testresults" $m}} {
 				mark()
@@ -70,15 +78,18 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "{{$m.Name}}", {{stubCamel $stub}}{{$m.Name}}Subject{{$ta}})
-{{- if $m.Returns}}
 {{- if $m.Pinnable}}
 
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := {{$new}}{{$ta}}(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 {{- template "stub.pins" $site -}}
+{{- range $j, $r := $m.Returns}}
+{{- if and $r.Pinned $r.Default -}}
+		assert.NotEqual(t, want{{$j}}, {{stubCamel $stub}}{{$m.Name}}Subject{{$ta}}(t).Default().{{$r.Field}},
+			"the sample of {{$r.Field}} must differ from its default result"){{"\n"}}
+{{- end}}
+{{- end -}}
 		s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
 {{- template "stub.testargs" $site -}}
 		{{template "stub.pinned" $m}} := s.{{$m.Name}}({{template "stub.testcall" $m}})
@@ -87,15 +98,9 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 		assert.Equal(t, got{{$j}}, want{{$j}}, "{{$m.Name}} must answer with what Returns pinned")
 {{- end}}
 {{- end}}
-{{- template "stub.unpinned" $m}}
 	})
-{{- else}}
+{{- end}}
 
-	// No check that {{$m.Name}} answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
-{{- end}}
-{{- end}}
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := {{$new}}{{$ta}}(t)
@@ -109,8 +114,6 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := {{$new}}{{$ta}}(t)
 		var seen []{{$call}}{{$ta}}
 		s.{{$m.Field}}.OnRecord(func(c {{$call}}{{$ta}}) { seen = append(seen, c) })
@@ -135,9 +138,6 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("{{$m.Name}}-failing")
 		s := {{spell (stubRef $t (printf "New%sFailing" $stub))}}{{$ta}}(t, want)
 {{- template "stub.testargs" $site -}}
@@ -148,7 +148,6 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 
 	t.Run("answers {{$f.Name}} once {{$f.Helper}} arms it", func(t *testing.T) {
 		t.Parallel()
-		// One arm, two calls: the helper promises a one-shot fault.
 		s := {{$new}}{{$ta}}(t)
 		s.{{$m.Field}}.{{$f.Helper}}()
 {{- template "stub.testargs" $site -}}
@@ -181,8 +180,6 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 		t.Parallel()
 		s := {{$new}}{{$ta}}(t)
 {{- template "stub.testargs" $site -}}
-		// The key is the value the call below carries in {{$p.Field}}, so
-		// the call lands in the targeted partition by construction.
 		key := a{{$m.Partition}}
 		want := errors.New("{{$m.Name}}-partition")
 		s.{{$m.Field}}.FaultForPartition(key, want, 1)
@@ -206,9 +203,6 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := {{$new}}{{$ta}}(t)
 {{- template "stub.pins" $site -}}
 		s.{{$m.Field}}.Returns({{range $j, $r := $m.Returns}}{{if $j}}, {{end}}want{{$j}}{{end}})
@@ -226,11 +220,6 @@ func Test{{$stub}}{{$m.Name}}(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of {{$m.Name}} admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := {{$new}}{{$ta}}(t)
 {{- range $j, $r := $m.Returns}}
 		var want{{$j}} {{spell $r.Type}}
@@ -355,8 +344,6 @@ that an option reached it.` (stubCamel $stub) $stub $m.Name))}}
 			return instance({{$new}}{{$ta}}(tb, {{spell (stubRef $t (printf "%sWithClock" $stub))}}{{$ta}}(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[{{$call}}{{$ta}}] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance({{spell (stubRef $t (printf "New%sDelayed" $stub))}}{{$ta}}(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[{{$call}}{{$ta}}] {
@@ -461,13 +448,9 @@ generic helper and this instantiates it at one set of witnesses.` $stub $m.Name 
 {{- range $i, $r := .Returns}}{{if $i}}, {{end}}{{if $r.Pinned}}got{{$i}}{{else}}_{{end}}{{end}}
 {{- end}}
 
-{{- define "stub.unpinned"}}
-{{- $n := 0}}{{range .Returns}}{{if not .Pinned}}{{$n = 1}}{{end}}{{end}}
-{{- if $n}}
-		// Blanked above: no literal exists for {{$n = 0}}{{range $i, $r := .Returns}}{{if not $r.Pinned}}{{if $n}}, {{end}}result {{$i}} ({{spell $r.Type}}){{$n = 1}}{{end}}{{end}}, so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
-{{- end}}
+{{- define "stub.testdefaults"}}
+{{- $sep := ""}}
+{{- range $r := .Returns}}{{with $r.Default}}{{$sep}}{{$r.Field}}: {{if .Optional}}&{{end}}{{$r.Local}}{{$sep = ", "}}{{end}}{{end}}
 {{- end}}
 
 {{- define "stub.zeros"}}

@@ -145,6 +145,9 @@ export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Cal
       invoke: {{$m.Func}} && (() => {{$m.Func}}({{template "stub.ts.args" $m}})),
 {{- if $m.Returns}}
       fallback: this.#fallback,
+{{- with (index $m.Returns 0).Default}}
+      default: () => {{spellvalue (stubRef $d .Ref)}}.{{.Seed}}{{typeargs .Args}}().build(),
+{{- end}}
       stamp: (call, result) => {
         call.{{(index $m.Returns 0).Field}} = result;
       },
@@ -160,11 +163,23 @@ export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Cal
 /** An option of a {{$stub}}, which its constructor applies. */
 export type {{$stub}}Option{{$tp}} = (double: {{$stub}}{{$ta}}) => void;
 
+{{- $defaulted := false}}{{range $c.Methods}}{{if .Defaulted}}{{$defaulted = true}}{{end}}{{end}}
+{{- if $defaulted}}
+
+/**
+ * {{$stub}} is a recording test double of {{$c.Subject}}. Each property
+ * on<Method> configures its method. Left alone, a method records the call
+ * and returns a new value from the builder of its result type, or undefined
+ * where the type has no builder.
+ */
+{{- else}}
+
 /**
  * {{$stub}} is a recording test double of {{$c.Subject}}. Each property
  * on<Method> configures its method. Left alone, a method returns undefined
  * and records the call.
  */
+{{- end}}
 export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- range $c.Properties}}
   /** The property {{.Field}}, which a test assigns. */

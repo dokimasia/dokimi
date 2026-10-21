@@ -23,17 +23,30 @@
 // a method builds the double under each option, and checks that a reset
 // keeps the sample of each property.
 //
+// # Default results
+//
+// An unconfigured call returns a new value from the builder of each result
+// whose type has one, and the zero value of each other result. The builder
+// generator stamps the names of the builder of a type as facts. The records
+// of a double and of its test refer to the builder through a bare reference,
+// which the layout of eidos qualifies for the file of each record. The layout
+// resolves a bare reference in the package of its unit alone, so a type of
+// another package than the subject has no default result. A TypeScript
+// module is a package of its own.
+//
 // # Languages
 //
 // The file golang.go contains the part of Go. The file typescript.go
 // contains the part of TypeScript. Each part declares the target of its
-// language with its template tree and its helpers. It reports whether the language types a
-// value by its members, which subjects the file of a double can refer to and
-// which interfaces only constrain type parameters. It sets the receiver of a
-// method of a double, and returns the type that the option DelegateTo wraps.
-// It returns the names of the member that configures a method, of the fields
-// of a call and of the fields of the results. stub leaves a declaration of a
-// language without a part alone.
+// language with its template tree and its helpers. It reports whether the
+// language types a value by its members, which subjects the file of a double
+// can refer to and which interfaces only constrain type parameters. It sets
+// the receiver of a method of a double, and returns the type that the option
+// DelegateTo wraps. It returns the names of the member that configures a
+// method, of the fields of a call and of the fields of the results. It
+// returns the type that a builder builds for a result, and the declaration
+// that a default result calls. stub leaves a declaration of a language
+// without a part alone.
 //
 // # Diagnostics
 //
@@ -50,9 +63,10 @@
 //
 // # Dependency position
 //
-// The package imports the package internal/lang of the module, the root
-// packages of the Go and the TypeScript satellites in golang.go and
-// typescript.go, the package naming of eidos-lang, the shape catalog of
-// eidos, the root, diag, directive, emit, meta, node, plugin, rules and
-// symbol packages of the SDK facade of eidos, and the Go stdlib.
+// The package imports the annotator fault, the generator builder and the
+// package internal/lang of the module, the root packages of the Go and the
+// TypeScript satellites in golang.go and typescript.go, the package naming of
+// eidos-lang, the shape catalog of eidos, the root, diag, directive, emit,
+// meta, node, plugin, rules and symbol packages of the SDK facade of eidos,
+// and the Go stdlib.
 package stub

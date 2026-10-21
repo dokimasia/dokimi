@@ -21,6 +21,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/annotator/fault"
+	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/internal/lang"
 )
 
@@ -173,7 +174,8 @@ type Checks Model
 // returns its results asynchronously, and Fails that a fault can fail the
 // method. Deprecated reports that the method has the mixin deprecated.
 // Sequence is the sequence that the method returns, and nil for a method that
-// returns no sequence.
+// returns no sequence. Defaulted reports that a result of the method has a
+// default result.
 //
 // Args is the position of the method of the record of the tests whose body
 // assigns the samples of the arguments, and Pins the position of the method
@@ -224,6 +226,7 @@ type Method struct {
 	Fails         bool
 	Deprecated    bool
 	Pinnable      bool
+	Defaulted     bool
 }
 
 // Param is one parameter of a method of a double: its type, its name in the
@@ -244,15 +247,34 @@ type Param struct {
 // parameter or receiver has it. Param is the parameter of the setter Returns
 // that takes the result, which the receiver of the setter does not have.
 // Error reports that the result is the error of the method, and Pinned that
-// the tests have a sample of it.
+// the tests have a sample of it. Default is the default result, and nil where
+// an unconfigured call returns the zero value of the result.
 type Result struct {
-	Type   *emit.TypeRef
-	Name   string
-	Field  string
-	Local  string
-	Param  string
-	Error  bool
-	Pinned bool
+	Type    *emit.TypeRef
+	Default *Default
+	Name    string
+	Field   string
+	Local   string
+	Param   string
+	Error   bool
+	Pinned  bool
+}
+
+// Default is the default result of a result whose type has a builder: a new
+// value from the builder. Ref is the name of the declaration that the record
+// of the double and the record of its tests refer to. In Go it is the
+// constructor from the seed, such as NewAccountBuilder, and in TypeScript the
+// builder class, such as AccountBuilder. Seed is the name of the static method
+// of the builder class that constructs a builder from the seed, such as
+// create, and empty in Go. Args are the type arguments of the type that the
+// builder builds. Optional reports that the result is an optional of that
+// type, such as a Go pointer or Account | undefined in TypeScript. A Go
+// double returns the address of the value.
+type Default struct {
+	Ref      string
+	Seed     string
+	Args     []*emit.TypeRef
+	Optional bool
 }
 
 // ErrorValue is one error value that a helper of the stub of a method arms
@@ -294,7 +316,8 @@ type Site struct {
 // The helpers of a plan share one namespace, so the name of each helper of
 // stub opens with stub. siteHelper returns the [Site] of a method,
 // camelHelper writes a name in camel case, and refHelper returns the
-// reference of the record of the tests to a declaration of the double.
+// reference of a record to a declaration that the record refers to, such as
+// a declaration of the double or a builder.
 const (
 	siteHelper  = "stubSite"
 	camelHelper = "stubCamel"
@@ -307,17 +330,27 @@ func siteOf(test *emit.Struct, methods []Method, i int) Site {
 	return Site{Test: test, Method: &methods[i]}
 }
 
-// referentOf returns the type of the field named name of the record test of
-// the tests, which refers to the declaration of the double of that name. It
-// returns an error where test has no such field, so a template that names a
-// declaration that the record of the double does not declare fails.
-func referentOf(test *emit.Struct, name string) (*emit.TypeRef, error) {
-	for _, f := range test.Fields.Items() {
-		if f.Name == name {
+// referentOf returns the reference of the record r to the declaration named
+// name: the type of the field of r that refers to the declaration. The target
+// of a plan writes the name of the field in its own case, such as
+// accountBuilder in TypeScript, and the reference keeps the name of the
+// declaration. referentOf returns an error where no field of r refers to the
+// declaration, so a template that names a declaration that the record does
+// not refer to fails.
+func referentOf(r *emit.Struct, name string) (*emit.TypeRef, error) {
+	for _, f := range r.Fields.Items() {
+		if f.Type.Spelling == name {
 			return f.Type, nil
 		}
 	}
-	return nil, fmt.Errorf("stub: the record of the tests of %s refers to no declaration %s", test.Name, name)
+	return nil, fmt.Errorf("stub: the record %s refers to no declaration %s", r.Name, name)
+}
+
+// referent returns a field of a record whose type refers to the declaration
+// named name. The layout of eidos qualifies the reference where the file of
+// the record is in another package than the declaration.
+func referent(name string) *emit.Field {
+	return &emit.Field{Name: name, Type: &emit.TypeRef{Spelling: name}}
 }
 
 // part is the part of stub for one language. It declares the target with its
@@ -357,6 +390,12 @@ type part interface {
 	// arms the error value with the base name base for the next call, such
 	// as NotFound for the error value ErrNotFound.
 	fault(base string) string
+	// construction returns the declaration that a default result refers to,
+	// and the method of that declaration that constructs a builder from the
+	// seed, for the builder named name whose constructor from the seed is
+	// named seed. The method is empty where the declaration is the
+	// constructor itself.
+	construction(name, seed string) (ref, method string)
 }
 
 // Names are the names that the part of a language gives one method of a
@@ -584,15 +623,36 @@ func (in *invocation) write() members {
 	declared := in.p.declarations(double, &model)
 	record := append(make([]symbol.Symbol, 0, 1+len(declared)), double)
 	record = append(record, declared...)
+	calls := constructions(model.Methods)
+	for _, name := range calls {
+		double.Fields.Append(referent(name))
+	}
 	in.e.File().Record(model, record...)
 	if declared != nil {
 		for _, d := range record {
-			name := emit.DeclaredName(d)
-			test.Fields.Append(&emit.Field{Name: name, Type: &emit.TypeRef{Spelling: name}})
+			test.Fields.Append(referent(emit.DeclaredName(d)))
 		}
+	}
+	for _, name := range calls {
+		test.Fields.Append(referent(name))
 	}
 	in.e.File(TestTag).Record(Checks(model), test)
 	return walked
+}
+
+// constructions returns the declarations that the default results of the
+// methods refer to, each once, in the order of the methods and of their
+// results.
+func constructions(methods []Method) []string {
+	var out []string
+	for i := range methods {
+		for _, r := range methods[i].Returns {
+			if r.Default != nil && !slices.Contains(out, r.Default.Ref) {
+				out = append(out, r.Default.Ref)
+			}
+		}
+	}
+	return out
 }
 
 // modelOf returns the model of the double of the subject without its
@@ -646,6 +706,8 @@ func (in *invocation) walk() (members, bool) {
 			switch {
 			case hidden(s.Visibility):
 				reason = "the member " + s.Name + " that is not public"
+			case s.Computed:
+				reason = "the property " + s.Name + " with a computed name"
 			case s.Type == nil:
 				reason = "the property " + s.Name + " without a declared type"
 			}
@@ -673,9 +735,12 @@ func contributor(member *rules.Member) string {
 // unimplemented returns the description of the method s where a double
 // cannot implement it, and an empty string where it can. The member walk
 // reports a gap at an overloaded method, so walk never passes an overload to
-// unimplemented. A double writes the type of each field of a call and of each
-// result, so a parameter or a result without a declared type has no
-// implementation either.
+// unimplemented. A double names the members that configure a method after
+// the name of the method. A computed name such as [Symbol.iterator] is not
+// an identifier, so a method with a computed name has no implementation. A
+// double writes the type of each field of a call and of each result, so a
+// parameter or a result without a declared type has no implementation
+// either.
 func unimplemented(s *node.Method) string {
 	switch {
 	case s.Indexer:
@@ -684,6 +749,8 @@ func unimplemented(s *node.Method) string {
 		return "a construct signature"
 	case s.Accessor != symbol.AccessorNone:
 		return "the accessor " + s.Name
+	case s.Computed:
+		return "the method " + s.Name + " with a computed name"
 	case len(s.TypeParams) > 0:
 		return "the method " + s.Name + " with type parameters"
 	case hidden(s.Visibility):
@@ -769,6 +836,8 @@ func (in *invocation) methodOf(method *node.Method, mirrored *emit.Method, from 
 		if result.Error {
 			c.Err = i
 		}
+		result.Default = in.defaultOf(r.Type)
+		c.Defaulted = c.Defaulted || result.Default != nil
 		r.Name = result.Name
 		c.Returns = append(c.Returns, result)
 	}
@@ -789,6 +858,29 @@ func (in *invocation) methodOf(method *node.Method, mirrored *emit.Method, from 
 	c.Retry = int(retry)
 	c.Partition = in.partition(method, &c)
 	return c
+}
+
+// defaultOf returns the default result of a result of the type t, and nil
+// where the type that a builder builds for t has no builder. A builder builds
+// t itself, or the type of an optional t. The facts of the builder name the
+// builder of a type. The records refer to the builder through a bare
+// reference, which the layout of eidos resolves in the package of the subject
+// alone. So a type of another package has no default result either.
+func (in *invocation) defaultOf(t *emit.TypeRef) *Default {
+	built, optional := t, t.Form == symbol.FormOptional
+	if optional {
+		built = t.Elems[0]
+	}
+	if built.Target.Package != in.sub.origin.Package {
+		return nil
+	}
+	name, has := sdk.FactOf(in.m, built.Target, meta.Named[string](builder.KeyName))
+	if !has {
+		return nil
+	}
+	seed, _ := sdk.FactOf(in.m, built.Target, meta.Named[string](builder.KeySeed))
+	ref, method := in.p.construction(name, seed)
+	return &Default{Ref: ref, Seed: method, Args: built.Args, Optional: optional}
 }
 
 // partition returns the position of the parameter of the method c whose

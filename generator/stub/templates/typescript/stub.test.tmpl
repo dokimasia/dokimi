@@ -64,6 +64,9 @@ describe("{{$stub}}.{{$m.Name}}", () => {
           return undefined as never;
         });
       },
+{{- with $m.Returns}}{{with (index . 0).Default}}
+      default: () => {{spellvalue (stubRef $t .Ref)}}.{{.Seed}}{{typeargs .Args}}().build(),
+{{- end}}{{end}}
     };
   });
   for (const c of checks) {
@@ -74,6 +77,10 @@ describe("{{$stub}}.{{$m.Name}}", () => {
   test("returns the result of returns", async ({ seat }) => {
     const double = new {{$stub}}{{$wa}}(seat);
     const want = {{$helper}}Pin();
+{{- with (index $m.Returns 0).Default}}
+    const unset = {{spellvalue (stubRef $t .Ref)}}.{{.Seed}}{{typeargs .Args}}().build();
+    check.notEqual(seat, want, unset, "the sample of the result differs from its default result");
+{{- end}}
     double.{{$m.Field}}.returns(want);
     check.equal(seat, {{$await}}{{$helper}}(double), want, "{{$m.Name}} returns the result of returns");
   });

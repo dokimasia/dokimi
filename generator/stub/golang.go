@@ -179,6 +179,10 @@ func (golangPart) delegate(value *emit.TypeRef, class bool) *emit.TypeRef {
 // for the base NotFound of ErrNotFound.
 func (golangPart) fault(base string) string { return golangFault + naming.Pascal(base) }
 
+// construction returns seed, the function that constructs a builder from the
+// seed, such as NewAccountBuilder. A Go double calls the function itself.
+func (golangPart) construction(_, seed string) (ref, method string) { return seed, "" }
+
 // declarations returns the declarations that the templates of Go write
 // beside the double: the type of the calls, the stub and the fixed results of
 // each method and the option of each method, then the type of the options,

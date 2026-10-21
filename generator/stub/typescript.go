@@ -73,7 +73,7 @@ func (typescriptPart) Options() []sdk.TargetOption {
 		sdk.Funcs(template.FuncMap{
 			moduleHelper: module, typeHelper: typeOf, camelHelper: typescriptCaser.Camel,
 			pascalHelper: typescriptCaser.Pascal, siteHelper: siteOf, optionalHelper: optional,
-			listHelper: listOf, awaitableHelper: awaitable,
+			listHelper: listOf, awaitableHelper: awaitable, refHelper: referentOf,
 		}),
 	}
 }
@@ -163,3 +163,8 @@ func (typescriptPart) declarations(*emit.Struct, *Model) []symbol.Symbol { retur
 func (typescriptPart) fault(base string) string {
 	return typescriptFault + typescriptCaser.Pascal(base)
 }
+
+// construction returns the builder class named name and its static method
+// seed, such as AccountBuilder and create. A TypeScript double calls the
+// method of the class.
+func (typescriptPart) construction(name, seed string) (ref, method string) { return name, seed }

@@ -16,7 +16,9 @@ import (
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/plugin"
 
+	"go.dokimi.dev/dokimi/annotator/defaults"
 	"go.dokimi.dev/dokimi/annotator/fault"
+	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
@@ -34,12 +36,16 @@ const (
 	handlesPackage  = "example.com/shop/handles"
 	mixedPackage    = "example.com/shop/mixed"
 	sequencePackage = "example.com/shop/sequence"
+	builtPackage    = "example.com/shop/built"
+	billingPackage  = "example.com/shop/billing"
 	storeModule     = "store"
 	clockModule     = "clock"
 	handlesModule   = "handles"
 	streamModule    = "stream"
 	mixedModule     = "mixed"
 	pointModule     = "point"
+	builtModule     = "built"
+	billingModule   = "billing"
 	stubTemplate    = "stub.tmpl"
 	testTemplate    = "stub.test.tmpl"
 	storeName       = "Store"
@@ -63,13 +69,15 @@ type generated struct {
 // fixture returns a fixture over the packages pkgs of the tree dir, loaded
 // under the context of tb, with the target of the plan and the plugin stub
 // p. The annotators of the composition stamp the fixture: the authored
-// samples and witnesses, the facts of Go, the faults of the methods and the
-// classifications of the shape catalog.
+// samples and witnesses, the facts of Go, the declared defaults, the names
+// of the builders, the faults of the methods and the classifications of the
+// shape catalog.
 func fixture(tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pkgs ...string) *gentest.Fixture {
 	tb.Helper()
 
-	annotators := append([]plugin.Annotator{authored.Sample(), authored.Witness(), goannotate.New(), fault.New()},
-		catalog.Annotators()...)
+	annotators := append([]plugin.Annotator{
+		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), builder.New(), fault.New(),
+	}, catalog.Annotators()...)
 	return gentest.New(tb, &gentest.Spec{
 		Dir:        dir,
 		Packages:   pkgs,

@@ -50,9 +50,16 @@ func TestTableStubNames(t *testing.T) {
 
 	stub.Behaviour(t, "Names", tableStubNamesSubject)
 
-	// No check that Names answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
+	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
+		t.Parallel()
+		s := NewTableStub(t)
+		var want0 iter.Seq[string]
+		want0 = iter.Seq[string](func(func(string) bool) {})
+		s.OnNames.Returns(want0)
+		got0 := s.Names()
+		assert.Equal(t, got0, want0, "Names must answer with what Returns pinned")
+	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewTableStub(t)
@@ -62,8 +69,6 @@ func TestTableStubNames(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewTableStub(t)
 		var seen []TableNamesCall
 		s.OnNames.OnRecord(func(c TableNamesCall) { seen = append(seen, c) })
@@ -84,20 +89,16 @@ func TestTableStubNames(t *testing.T) {
 		assert.True(t, called, "WithTableNames must install the override")
 	})
 
-	t.Run("keeps recording across a reset", func(t *testing.T) {
+	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Names admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewTableStub(t)
 		var want0 iter.Seq[string]
+		want0 = iter.Seq[string](func(func(string) bool) {})
 		s.OnNames.Returns(want0)
 		_ = s.Names()
 		s.ResetCalls()
-		_ = s.Names()
-		s.OnNames.AssertCalledOnce(t, "Names must record the call that followed the reset")
+		got0 := s.Names()
+		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
 	})
 
 	t.Run("yields the items Yields configured", func(t *testing.T) {
@@ -171,9 +172,18 @@ func TestTableStubRows(t *testing.T) {
 
 	stub.Behaviour(t, "Rows", tableStubRowsSubject)
 
-	// No check that Rows answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
+	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
+		t.Parallel()
+		s := NewTableStub(t)
+		var want0 iter.Seq2[Item, error]
+		want0 = iter.Seq2[Item, error](func(func(Item, error) bool) {})
+		s.OnRows.Returns(want0)
+		var a0 int
+		a0 = 42
+		got0 := s.Rows(a0)
+		assert.Equal(t, got0, want0, "Rows must answer with what Returns pinned")
+	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewTableStub(t)
@@ -186,8 +196,6 @@ func TestTableStubRows(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewTableStub(t)
 		var seen []TableRowsCall
 		s.OnRows.OnRecord(func(c TableRowsCall) { seen = append(seen, c) })
@@ -212,22 +220,18 @@ func TestTableStubRows(t *testing.T) {
 		assert.True(t, called, "WithTableRows must install the override")
 	})
 
-	t.Run("keeps recording across a reset", func(t *testing.T) {
+	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Rows admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewTableStub(t)
 		var want0 iter.Seq2[Item, error]
+		want0 = iter.Seq2[Item, error](func(func(Item, error) bool) {})
 		s.OnRows.Returns(want0)
 		var a0 int
 		a0 = 42
 		_ = s.Rows(a0)
 		s.ResetCalls()
-		_ = s.Rows(a0)
-		s.OnRows.AssertCalledOnce(t, "Rows must record the call that followed the reset")
+		got0 := s.Rows(a0)
+		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
 	})
 
 	t.Run("yields the items Yields configured", func(t *testing.T) {
@@ -339,9 +343,16 @@ func TestTableStubCounts(t *testing.T) {
 
 	stub.Behaviour(t, "Counts", tableStubCountsSubject)
 
-	// No check that Counts answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
+	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
+		t.Parallel()
+		s := NewTableStub(t)
+		var want0 iter.Seq2[string, int]
+		want0 = iter.Seq2[string, int](func(func(string, int) bool) {})
+		s.OnCounts.Returns(want0)
+		got0 := s.Counts()
+		assert.Equal(t, got0, want0, "Counts must answer with what Returns pinned")
+	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewTableStub(t)
@@ -351,8 +362,6 @@ func TestTableStubCounts(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewTableStub(t)
 		var seen []TableCountsCall
 		s.OnCounts.OnRecord(func(c TableCountsCall) { seen = append(seen, c) })
@@ -373,20 +382,16 @@ func TestTableStubCounts(t *testing.T) {
 		assert.True(t, called, "WithTableCounts must install the override")
 	})
 
-	t.Run("keeps recording across a reset", func(t *testing.T) {
+	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Counts admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewTableStub(t)
 		var want0 iter.Seq2[string, int]
+		want0 = iter.Seq2[string, int](func(func(string, int) bool) {})
 		s.OnCounts.Returns(want0)
 		_ = s.Counts()
 		s.ResetCalls()
-		_ = s.Counts()
-		s.OnCounts.AssertCalledOnce(t, "Counts must record the call that followed the reset")
+		got0 := s.Counts()
+		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
 	})
 
 	t.Run("yields the items Yields configured", func(t *testing.T) {
@@ -456,9 +461,16 @@ func TestTableStubTail(t *testing.T) {
 
 	stub.Behaviour(t, "Tail", tableStubTailSubject)
 
-	// No check that Tail answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
+	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
+		t.Parallel()
+		s := NewTableStub(t)
+		var want0 Lines
+		want0 = iter.Seq[string](func(func(string) bool) {})
+		s.OnTail.Returns(want0)
+		got0 := s.Tail()
+		assert.Equal(t, got0, want0, "Tail must answer with what Returns pinned")
+	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewTableStub(t)
@@ -468,8 +480,6 @@ func TestTableStubTail(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewTableStub(t)
 		var seen []TableTailCall
 		s.OnTail.OnRecord(func(c TableTailCall) { seen = append(seen, c) })
@@ -490,20 +500,16 @@ func TestTableStubTail(t *testing.T) {
 		assert.True(t, called, "WithTableTail must install the override")
 	})
 
-	t.Run("keeps recording across a reset", func(t *testing.T) {
+	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Tail admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewTableStub(t)
 		var want0 Lines
+		want0 = iter.Seq[string](func(func(string) bool) {})
 		s.OnTail.Returns(want0)
 		_ = s.Tail()
 		s.ResetCalls()
-		_ = s.Tail()
-		s.OnTail.AssertCalledOnce(t, "Tail must record the call that followed the reset")
+		got0 := s.Tail()
+		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
 	})
 
 	t.Run("yields the items Yields configured", func(t *testing.T) {
@@ -557,8 +563,6 @@ func tableStubDouble() stub.Double[TableNamesCall] {
 			return instance(NewTableStub(tb, TableStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[TableNamesCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(NewTableStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[TableNamesCall] {

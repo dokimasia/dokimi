@@ -46,6 +46,7 @@ func TestEdgeStubSkip(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Skip", edgeStubSkipSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -61,8 +62,6 @@ func TestEdgeStubSkip(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeSkipCall
 		s.OnSkip.OnRecord(func(c EdgeSkipCall) { seen = append(seen, c) })
@@ -137,18 +136,14 @@ func TestEdgeStubRead(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
 		s.OnRead.Returns(want0, want1)
 		got0, _ := s.Read()
 		assert.Equal(t, got0, want0, "Read must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -158,8 +153,6 @@ func TestEdgeStubRead(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeReadCall
 		s.OnRead.OnRecord(func(c EdgeReadCall) { seen = append(seen, c) })
@@ -183,9 +176,6 @@ func TestEdgeStubRead(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Read-failing")
 		s := NewEdgeStubFailing(t, want)
 		_, r1 := s.Read()
@@ -194,9 +184,6 @@ func TestEdgeStubRead(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewEdgeStub(t)
 		var want0 int
 		var want1 error
@@ -255,8 +242,6 @@ func TestEdgeStubKeep(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		want0 = 42
 		s.OnKeep.Returns(want0)
@@ -265,6 +250,7 @@ func TestEdgeStubKeep(t *testing.T) {
 		got0 := s.Keep(a0)
 		assert.Equal(t, got0, want0, "Keep must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -277,8 +263,6 @@ func TestEdgeStubKeep(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeKeepCall
 		s.OnKeep.OnRecord(func(c EdgeKeepCall) { seen = append(seen, c) })
@@ -305,9 +289,6 @@ func TestEdgeStubKeep(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewEdgeStub(t)
 		var want0 int
 		want0 = 42
@@ -370,9 +351,6 @@ func TestEdgeStubUse(t *testing.T) {
 
 	stub.Behaviour(t, "Use", edgeStubUseSubject)
 
-	// No check that Use answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -385,8 +363,6 @@ func TestEdgeStubUse(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeUseCall
 		s.OnUse.OnRecord(func(c EdgeUseCall) { seen = append(seen, c) })
@@ -413,9 +389,6 @@ func TestEdgeStubUse(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Use-failing")
 		s := NewEdgeStubFailing(t, want)
 		var a0 string
@@ -426,11 +399,6 @@ func TestEdgeStubUse(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Use admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewEdgeStub(t)
 		var want0 error
 		s.OnUse.Returns(want0)
@@ -496,8 +464,6 @@ func TestEdgeStubRecord(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -506,10 +472,8 @@ func TestEdgeStubRecord(t *testing.T) {
 		a0 = "Record-a"
 		got0, _ := s.Record(a0)
 		assert.Equal(t, got0, want0, "Record must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -522,8 +486,6 @@ func TestEdgeStubRecord(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeRecordCall
 		s.OnRecord.OnRecord(func(c EdgeRecordCall) { seen = append(seen, c) })
@@ -551,9 +513,6 @@ func TestEdgeStubRecord(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Record-failing")
 		s := NewEdgeStubFailing(t, want)
 		var a0 string
@@ -564,9 +523,6 @@ func TestEdgeStubRecord(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewEdgeStub(t)
 		var want0 int
 		var want1 error
@@ -628,18 +584,14 @@ func TestEdgeStubClash(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Clash-a"
 		s.OnClash.Returns(want0, want1)
 		got0, _ := s.Clash()
 		assert.Equal(t, got0, want0, "Clash must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -649,8 +601,6 @@ func TestEdgeStubClash(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeClashCall
 		s.OnClash.OnRecord(func(c EdgeClashCall) { seen = append(seen, c) })
@@ -674,9 +624,6 @@ func TestEdgeStubClash(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Clash-failing")
 		s := NewEdgeStubFailing(t, want)
 		_, r1 := s.Clash()
@@ -685,9 +632,6 @@ func TestEdgeStubClash(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewEdgeStub(t)
 		var want0 string
 		var want1 error
@@ -736,6 +680,7 @@ func TestEdgeStubShift(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Shift", edgeStubShiftSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -751,8 +696,6 @@ func TestEdgeStubShift(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeShiftCall
 		s.OnShift.OnRecord(func(c EdgeShiftCall) { seen = append(seen, c) })
@@ -833,8 +776,6 @@ func TestEdgeStubFetch(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -843,10 +784,8 @@ func TestEdgeStubFetch(t *testing.T) {
 		a0 = "Fetch-a"
 		got0, _ := s.Fetch(a0)
 		assert.Equal(t, got0, want0, "Fetch must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -859,8 +798,6 @@ func TestEdgeStubFetch(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeFetchCall
 		s.OnFetch.OnRecord(func(c EdgeFetchCall) { seen = append(seen, c) })
@@ -888,9 +825,6 @@ func TestEdgeStubFetch(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Fetch-failing")
 		s := NewEdgeStubFailing(t, want)
 		var a0 string
@@ -901,9 +835,6 @@ func TestEdgeStubFetch(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewEdgeStub(t)
 		var want0 int
 		var want1 error
@@ -972,6 +903,7 @@ func TestEdgeStubWide(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Wide", edgeStubWideSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -1014,8 +946,6 @@ func TestEdgeStubWide(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgeWideCall
 		s.OnWide.OnRecord(func(c EdgeWideCall) { seen = append(seen, c) })
@@ -1122,8 +1052,6 @@ func TestEdgeStubPair(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 int
 		want0 = 42
@@ -1133,6 +1061,7 @@ func TestEdgeStubPair(t *testing.T) {
 		assert.Equal(t, got0, want0, "Pair must answer with what Returns pinned")
 		assert.Equal(t, got1, want1, "Pair must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewEdgeStub(t)
@@ -1142,8 +1071,6 @@ func TestEdgeStubPair(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewEdgeStub(t)
 		var seen []EdgePairCall
 		s.OnPair.OnRecord(func(c EdgePairCall) { seen = append(seen, c) })
@@ -1167,9 +1094,6 @@ func TestEdgeStubPair(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewEdgeStub(t)
 		var want0 int
 		var want1 int
@@ -1211,8 +1135,6 @@ func edgeStubDouble() stub.Double[EdgeSkipCall] {
 			return instance(NewEdgeStub(tb, EdgeStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[EdgeSkipCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(NewEdgeStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[EdgeSkipCall] {

@@ -78,6 +78,128 @@ func TestStub(t *testing.T) {
 		})
 
 		{
+			builtPkgs := []string{builtPackage, billingPackage}
+			builtModules := []string{builtModule, billingModule}
+			account := &stub.Default{Ref: "NewAccountBuilder"}
+			accountClass := &stub.Default{Ref: "AccountBuilder", Seed: "create"}
+			tests := []struct {
+				name          string
+				giveTarget    plugin.Target
+				giveTree      string
+				givePkgs      []string
+				give          string
+				want          []*stub.Default
+				wantDefaulted bool
+			}{
+				{
+					name:       "records the default result of a value of a struct with a builder",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: builtPkgs, give: "Get",
+					want: []*stub.Default{account, nil}, wantDefaulted: true,
+				},
+				{
+					name:       "records the default result of a pointer to a struct with a builder",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: builtPkgs, give: "Find",
+					want: []*stub.Default{{Ref: "NewAccountBuilder", Optional: true}, nil}, wantDefaulted: true,
+				},
+				{
+					name:       "records no default result of a flag beside a struct with a builder",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: builtPkgs, give: "Lookup",
+					want: []*stub.Default{account, nil}, wantDefaulted: true,
+				},
+				{
+					name:       "records no default result of a struct without a builder",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: builtPkgs, give: "Note",
+					want: []*stub.Default{nil},
+				},
+				{
+					name:       "records no default result of a struct whose builder is in another package",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: builtPkgs, give: "Bill",
+					want: []*stub.Default{nil},
+				},
+				{
+					name:       "records the default result of a promise of a class with a builder",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: builtModules, give: "get",
+					want: []*stub.Default{accountClass}, wantDefaulted: true,
+				},
+				{
+					name:       "records the default result of a class with a builder or undefined",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: builtModules, give: "find",
+					want:          []*stub.Default{{Ref: "AccountBuilder", Seed: "create", Optional: true}},
+					wantDefaulted: true,
+				},
+				{
+					name:       "records no default result of a class without a builder",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: builtModules, give: "note",
+					want: []*stub.Default{nil},
+				},
+				{
+					name:       "records no default result of a class whose builder is in another module",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: builtModules, give: "bill",
+					want: []*stub.Default{nil},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got := method(t, generate(t, tt.giveTarget, tt.giveTree, tt.givePkgs...).models[storeName], tt.give)
+					defaults := make([]*stub.Default, 0, len(got.Returns))
+					for _, r := range got.Returns {
+						defaults = append(defaults, r.Default)
+					}
+					expect.Equal(t, defaults, tt.want, "each result of "+tt.give+" has the default result of its case")
+					expect.Equal(t, got.Defaulted, tt.wantDefaulted,
+						"the method has a default result where one of its results has one")
+				})
+			}
+		}
+
+		t.Run("records the type arguments of the default result of a generic struct", func(t *testing.T) {
+			t.Parallel()
+
+			got := method(t, generate(t, golang.Target, goTree, builtPackage, billingPackage).models[storeName], "List")
+			assert.NotNil(t, got.Returns[0].Default, "the page of accounts has a default result")
+			expect.Equal(t, got.Returns[0].Default.Ref, "NewPageBuilder",
+				"the default result calls the constructor of the builder of Page")
+			assert.Length(t, got.Returns[0].Default.Args, 1, "the constructor takes one type argument")
+			expect.Equal(t, got.Returns[0].Default.Args[0].Spelling, "Account", "the type argument is Account")
+		})
+
+		{
+			tests := []struct {
+				name       string
+				giveTarget plugin.Target
+				giveTree   string
+				givePkgs   []string
+				want       []string
+			}{
+				{
+					name:       "refers to each constructor of a default result from the double and from its test",
+					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{builtPackage, billingPackage},
+					want: []string{"NewAccountBuilder", "NewPageBuilder"},
+				},
+				{
+					name:       "refers to each builder class of a default result from the double and from its test",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{builtModule, billingModule},
+					want: []string{"AccountBuilder"},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got := generate(t, tt.giveTarget, tt.giveTree, tt.givePkgs...)
+					expect.Equal(t, gentest.Referents(got.doubles[storeName]), tt.want,
+						"the record of the double refers to each declaration that a default result calls, once")
+					refs := gentest.Referents(got.tests[storeName])
+					assert.True(t, len(refs) >= len(tt.want), "the record of the checks refers to the declarations")
+					expect.Equal(t, refs[len(refs)-len(tt.want):], tt.want,
+						"the record of the checks refers to the same declarations after the declarations of the double")
+				})
+			}
+		}
+
+		{
 			tests := []struct {
 				name        string
 				giveTarget  plugin.Target
@@ -1137,12 +1259,6 @@ func TestStub(t *testing.T) {
 					wantMsg:    "the members of Remote are incomplete, so it has no double",
 				},
 				{
-					name:       "reports IncompleteMembers at an interface with a member of a computed name",
-					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{"computed"},
-					wantCode: stub.IncompleteMembers, wantAt: symbol.KindInterface, wantName: "Computed",
-					wantMsg: "the members of Computed are incomplete, so it has no double",
-				},
-				{
 					name:       "reports IncompleteMembers at an interface with an overloaded method",
 					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{"overloaded"},
 					wantCode: stub.IncompleteMembers, wantAt: symbol.KindInterface, wantName: "Overloaded",
@@ -1230,6 +1346,20 @@ func TestStub(t *testing.T) {
 					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{"accessed"},
 					wantCode: stub.Unimplementable, wantAt: symbol.KindInterface, wantName: "Accessed",
 					wantMsg: "Accessed has the accessor size, which a double cannot implement, so it has no double",
+				},
+				{
+					name:       "reports Unimplementable at an interface with a method of a computed name",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{"computed"},
+					wantCode: stub.Unimplementable, wantAt: symbol.KindInterface, wantName: "Computed",
+					wantMsg: "Computed has the method [Symbol.iterator] with a computed name, which a double " +
+						"cannot implement, so it has no double",
+				},
+				{
+					name:       "reports Unimplementable at an interface with a property of a computed name",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{"computed"},
+					wantCode: stub.Unimplementable, wantAt: symbol.KindInterface, wantName: "Tagged",
+					wantMsg: "Tagged has the property [Symbol.toStringTag] with a computed name, which a double " +
+						"cannot implement, so it has no double",
 				},
 				{
 					name:       "reports Unimplementable at an interface with a construct signature",

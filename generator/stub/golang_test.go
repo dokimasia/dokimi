@@ -226,7 +226,7 @@ func rendered(t *testing.T) fstest.MapFS {
 
 	p := stub.New()
 	res := fixture(t, golang.Target, goTree, p, catalogPackage, parityPackage, genericPackage, edgePackage,
-		handlesPackage, mixedPackage, sequencePackage).Generate(t, p)
+		handlesPackage, mixedPackage, sequencePackage, builtPackage, billingPackage).Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
 	return gentest.Rendered(t, res, p, gobackend.New())
 }

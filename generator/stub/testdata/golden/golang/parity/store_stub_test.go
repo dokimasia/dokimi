@@ -67,8 +67,6 @@ func TestStoreStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewStoreStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Get-a"
@@ -78,10 +76,8 @@ func TestStoreStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewStoreStub(t)
@@ -96,8 +92,6 @@ func TestStoreStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewStoreStub(t)
 		var seen []StoreGetCall
 		s.OnGet.OnRecord(func(c StoreGetCall) { seen = append(seen, c) })
@@ -127,9 +121,6 @@ func TestStoreStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := NewStoreStubFailing(t, want)
 		var a0 context.Context
@@ -141,7 +132,6 @@ func TestStoreStubGet(t *testing.T) {
 
 	t.Run("answers ErrNotFound once FaultNotFound arms it", func(t *testing.T) {
 		t.Parallel()
-		// One arm, two calls: the helper promises a one-shot fault.
 		s := NewStoreStub(t)
 		s.OnGet.FaultNotFound()
 		var a0 context.Context
@@ -155,7 +145,6 @@ func TestStoreStubGet(t *testing.T) {
 
 	t.Run("answers ErrGone once FaultGone arms it", func(t *testing.T) {
 		t.Parallel()
-		// One arm, two calls: the helper promises a one-shot fault.
 		s := NewStoreStub(t)
 		s.OnGet.FaultGone()
 		var a0 context.Context
@@ -173,8 +162,6 @@ func TestStoreStubGet(t *testing.T) {
 		var a0 context.Context
 		var a1 string
 		a1 = "Get-a"
-		// The key is the value the call below carries in ID, so
-		// the call lands in the targeted partition by construction.
 		key := a1
 		want := errors.New("Get-partition")
 		s.OnGet.FaultForPartition(key, want, 1)
@@ -196,9 +183,6 @@ func TestStoreStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewStoreStub(t)
 		var want0 string
 		var want1 error
@@ -261,18 +245,14 @@ func TestStoreStubList(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := NewStoreStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []string
 		var want1 error
 		want0 = []string{"List-a"}
 		s.OnList.Returns(want0, want1)
 		got0, _ := s.List()
 		assert.Equal(t, got0, want0, "List must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewStoreStub(t)
@@ -282,8 +262,6 @@ func TestStoreStubList(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewStoreStub(t)
 		var seen []StoreListCall
 		s.OnList.OnRecord(func(c StoreListCall) { seen = append(seen, c) })
@@ -307,9 +285,6 @@ func TestStoreStubList(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("List-failing")
 		s := NewStoreStubFailing(t, want)
 		_, r1 := s.List()
@@ -331,9 +306,6 @@ func TestStoreStubList(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := NewStoreStub(t)
 		var want0 []string
 		var want1 error
@@ -378,6 +350,7 @@ func TestStoreStubClose(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Close", storeStubCloseSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewStoreStub(t)
@@ -387,8 +360,6 @@ func TestStoreStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewStoreStub(t)
 		var seen []StoreCloseCall
 		s.OnClose.OnRecord(func(c StoreCloseCall) { seen = append(seen, c) })
@@ -434,8 +405,6 @@ func storeStubDouble() stub.Double[StoreGetCall] {
 			return instance(NewStoreStub(tb, StoreStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[StoreGetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(NewStoreStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[StoreGetCall] {

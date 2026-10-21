@@ -190,6 +190,17 @@ func TestTypeScript(t *testing.T) {
 		assert.True(t, declared, "the target typescript declares the helper stubCamel")
 		expect.Equal(t, camel("FindByIdStub"), "findByIdStub", "the helper keeps the case of Id")
 	})
+
+	t.Run("returns the reference of a double to the builder class of a default result", func(t *testing.T) {
+		t.Parallel()
+
+		ref, declared := templates.TemplateFuncs(typescript.Target)["stubRef"].(func(*emit.Struct, string) (*emit.TypeRef, error))
+		assert.True(t, declared, "the target typescript declares the helper stubRef")
+		got, err := ref(generate(t, typescript.Target, tsTree, builtModule, billingModule).doubles[storeName],
+			"AccountBuilder")
+		assert.NoError(t, err, "the record of the double of Store refers to AccountBuilder")
+		expect.Equal(t, got.Spelling, "AccountBuilder", "the reference names the builder class")
+	})
 }
 
 // renderedTypeScript runs stub over the modules of the TypeScript tree whose
@@ -200,7 +211,7 @@ func renderedTypeScript(t *testing.T) fstest.MapFS {
 
 	p := stub.New()
 	res := fixture(t, typescript.Target, tsTree, p, storeModule, clockModule, handlesModule, streamModule,
-		mixedModule, finderModule, pointModule).Generate(t, p)
+		mixedModule, finderModule, pointModule, builtModule, billingModule).Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
 	return gentest.Rendered(t, res, p, tsbackend.New())
 }

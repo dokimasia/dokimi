@@ -60,9 +60,6 @@ func repoStubGetChecks[T any](t *testing.T) {
 
 	stub.Behaviour(t, "Get", repoStubGetSubject[T])
 
-	// No check that Get answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewRepoStub[T](t)
@@ -75,8 +72,6 @@ func repoStubGetChecks[T any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewRepoStub[T](t)
 		var seen []RepoGetCall[T]
 		s.OnGet.OnRecord(func(c RepoGetCall[T]) { seen = append(seen, c) })
@@ -104,9 +99,6 @@ func repoStubGetChecks[T any](t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := NewRepoStubFailing[T](t, want)
 		var a0 string
@@ -117,11 +109,6 @@ func repoStubGetChecks[T any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Get admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewRepoStub[T](t)
 		var want0 T
 		var want1 error
@@ -168,6 +155,7 @@ func repoStubPutChecks[T any](t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Put", repoStubPutSubject[T])
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewRepoStub[T](t)
@@ -179,8 +167,6 @@ func repoStubPutChecks[T any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewRepoStub[T](t)
 		var seen []RepoPutCall[T]
 		s.OnPut.OnRecord(func(c RepoPutCall[T]) { seen = append(seen, c) })
@@ -246,9 +232,6 @@ func repoStubListChecks[T any](t *testing.T) {
 
 	stub.Behaviour(t, "List", repoStubListSubject[T])
 
-	// No check that List answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewRepoStub[T](t)
@@ -258,8 +241,6 @@ func repoStubListChecks[T any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewRepoStub[T](t)
 		var seen []RepoListCall[T]
 		s.OnList.OnRecord(func(c RepoListCall[T]) { seen = append(seen, c) })
@@ -283,9 +264,6 @@ func repoStubListChecks[T any](t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("List-failing")
 		s := NewRepoStubFailing[T](t, want)
 		_, r1 := s.List()
@@ -294,11 +272,6 @@ func repoStubListChecks[T any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of List admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewRepoStub[T](t)
 		var want0 []T
 		var want1 error
@@ -349,9 +322,6 @@ func repoStubBoxedChecks[T any](t *testing.T) {
 
 	stub.Behaviour(t, "Boxed", repoStubBoxedSubject[T])
 
-	// No check that Boxed answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewRepoStub[T](t)
@@ -361,8 +331,6 @@ func repoStubBoxedChecks[T any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewRepoStub[T](t)
 		var seen []RepoBoxedCall[T]
 		s.OnBoxed.OnRecord(func(c RepoBoxedCall[T]) { seen = append(seen, c) })
@@ -385,11 +353,6 @@ func repoStubBoxedChecks[T any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Boxed admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewRepoStub[T](t)
 		var want0 Box[T]
 		s.OnBoxed.Returns(want0)
@@ -425,8 +388,6 @@ func repoStubDouble[T any]() stub.Double[RepoGetCall[T]] {
 			return instance(NewRepoStub[T](tb, RepoStubWithClock[T](clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[RepoGetCall[T]] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(NewRepoStubDelayed[T](tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[RepoGetCall[T]] {
@@ -571,9 +532,6 @@ func pairsStubAllChecks[K1 comparable, V_ any](t *testing.T) {
 
 	stub.Behaviour(t, "All", pairsStubAllSubject[K1, V_])
 
-	// No check that All answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := NewPairsStub[K1, V_](t)
@@ -583,8 +541,6 @@ func pairsStubAllChecks[K1 comparable, V_ any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := NewPairsStub[K1, V_](t)
 		var seen []PairsAllCall[K1, V_]
 		s.OnAll.OnRecord(func(c PairsAllCall[K1, V_]) { seen = append(seen, c) })
@@ -607,11 +563,6 @@ func pairsStubAllChecks[K1 comparable, V_ any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of All admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := NewPairsStub[K1, V_](t)
 		var want0 map[K1]V_
 		s.OnAll.Returns(want0)
@@ -645,8 +596,6 @@ func pairsStubDouble[K1 comparable, V_ any]() stub.Double[PairsAllCall[K1, V_]] 
 			return instance(NewPairsStub[K1, V_](tb, PairsStubWithClock[K1, V_](clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[PairsAllCall[K1, V_]] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(NewPairsStubDelayed[K1, V_](tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[PairsAllCall[K1, V_]] {

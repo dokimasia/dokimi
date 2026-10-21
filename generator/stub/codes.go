@@ -19,9 +19,9 @@ var Constraint = diag.MustRegister(CodePrefix, diag.CodeSpec{
 
 // IncompleteMembers reports a declaration whose members the rules of its
 // language cannot list in full, such as an interface that embeds an
-// interface that the load did not resolve, a member with a computed name or
-// an overloaded method. The finding is an Error at the declaration, and stub
-// does not write a double of it.
+// interface that the load did not resolve, or an overloaded method. The
+// finding is an Error at the declaration, and stub does not write a double
+// of it.
 var IncompleteMembers = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  2,
 	Meaning: "a double cannot implement a declaration whose members are incomplete",
@@ -29,7 +29,8 @@ var IncompleteMembers = diag.MustRegister(CodePrefix, diag.CodeSpec{
 
 // Unimplementable reports a declaration with a member that a double cannot
 // implement: a method with type parameters, an index signature, a construct
-// signature, an accessor, a member of a class that is not public, or a member
+// signature, an accessor, a member with a computed name such as
+// [Symbol.iterator], a member of a class that is not public, or a member
 // without a declared type. It also reports a declaration that the file of its
 // double cannot refer to, such as a TypeScript interface that is not
 // exported. The finding is an Error at the declaration, and stub does not

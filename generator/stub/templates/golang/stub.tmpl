@@ -7,6 +7,7 @@
 {{- $iface := $c.Subject}}
 {{- $tp := typeparams $d.TypeParams}}
 {{- $ta := typeargs $d.TypeParams}}
+{{- $unset := "its zero value"}}{{range $c.Methods}}{{if .Defaulted}}{{$unset = "its default results"}}{{end}}{{end}}
 {{- with $c.Producer}}
 
 // --- {{$iface}}, the handle {{.}}'s methods answer ---
@@ -182,7 +183,7 @@ var _ = stub.CompatV1
 {{- ""}}type {{$stub}}Option{{$tp}} func(*{{$stub}}{{$ta}})
 
 {{docs (wrapdocs (printf `%sStrict makes an unconfigured method fail the test rather than
-return its zero value.` $stub))}}
+return %s.` $stub $unset))}}
 {{- ""}}func {{$stub}}Strict{{$tp}}() {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.strict = true }
 }
@@ -247,10 +248,19 @@ defaults for the rest.` $iface $m.Name $m.Name))}}
 }
 {{- end}}
 
+{{if eq $unset "its zero value" -}}
 {{docs (wrapdocs (printf `%s is a recording test double for %s.
 
 Each On<Method> field is that method's configuration point. Left alone, a
 method returns its zero value and records the call.` $stub $iface))}}
+{{- else -}}
+{{docs (wrapdocs (printf `%s is a recording test double for %s.
+
+Each On<Method> field is that method's configuration point. Left alone, a
+method records the call and returns its default results: a new value from
+the builder of each result type that has one, and the zero value of each
+other result.` $stub $iface))}}
+{{- end}}
 {{- ""}}type {{$stub}}{{$tp}} struct {
 {{- range $c.Methods}}
 {{if .From}}{{memberdocs (wrapdocs (printf `%s configures %s, contributed by %s.` .Field .Name .From))}}{{end}}
@@ -378,9 +388,9 @@ func ({{$m.Receiver}} *{{$m.Stub}}{{$ta}}) invokeVoid({{template "stub.paramdecl
 {{docs (wrapdocs (printf `%s records the call and answers it.
 
 Which arm answers — injected fault, Func override, Returns fallback, or the
-zero value — is [stub.Answer]'s to decide, so every generated double
+%s — is [stub.Answer]'s to decide, so every generated double
 resolves a call the same way and the ordering is tested once rather than
-restated per method.` $m.Name))}}
+restated per method.` $m.Name (or (and $m.Defaulted "default results") "zero value")))}}
 {{- ""}}func ({{receiver $dm}}) {{$dm.Name}}({{params $dm.Params}}){{results $dm.Returns}} {
 {{- if $m.Deprecated}}
 	// Skipped in bench mode: Logf allocates the formatted message per
@@ -403,6 +413,14 @@ restated per method.` $m.Name))}}
 		Fallback: {{$m.Receiver}}.{{$m.Field}}.fallback,
 {{- if ge $m.Err 0}}
 		Fault:    func(err error) {{$m.Return}}{{$ta}} { return {{$m.Return}}{{$ta}}{{"{"}}{{(index $m.Returns $m.Err).Field}}: err{{"}"}} },
+{{- end}}
+{{- if $m.Defaulted}}
+		Default: func() {{$m.Return}}{{$ta}} {
+{{- range $r := $m.Returns}}{{with $r.Default}}
+			{{$r.Local}} := {{spell (stubRef $d .Ref)}}{{typeargs .Args}}().Build()
+{{- end}}{{end}}
+			return {{$m.Return}}{{$ta}}{{"{"}}{{template "stub.defaults" $m}}{{"}"}}
+		},
 {{- end}}
 		Stamp: func(c *{{$m.Call}}{{$ta}}, r {{$m.Return}}{{$ta}}) {
 {{- range $m.Returns}}
@@ -445,4 +463,9 @@ restated per method.` $m.Name))}}
 
 {{- define "stub.returnparams"}}
 {{- range $i, $r := .Returns}}{{if $i}}, {{end}}{{$r.Param}} {{spell $r.Type}}{{end}}
+{{- end}}
+
+{{- define "stub.defaults"}}
+{{- $sep := ""}}
+{{- range $r := .Returns}}{{with $r.Default}}{{$sep}}{{$r.Field}}: {{if .Optional}}&{{end}}{{$r.Local}}{{$sep = ", "}}{{end}}{{end}}
 {{- end}}

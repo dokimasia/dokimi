@@ -13,14 +13,6 @@ import (
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Region) String() string {
-	switch v {
-	case US:
-		return "us-east"
-	case EU:
-		return "eu-west"
-	case Unset:
-		return ""
-	}
 	return string(v)
 }
 
@@ -94,4 +86,4 @@ func (v *Region) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:d7f9ad289b8474d774a70dc35ab571349a1046eed6f4a2caf2354a991f8b2bad
+// dokimi:provenance sha256:148180a2e4c78b66606db207a0ba765560131b1f0c3673ab9d46f22ef3e00b39

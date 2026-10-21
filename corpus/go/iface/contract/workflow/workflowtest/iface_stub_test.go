@@ -68,9 +68,6 @@ func TestContractStubRun(t *testing.T) {
 
 	stub.Behaviour(t, "Run", contractStubRunSubject)
 
-	// No check that Run answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := workflowtest.NewContractStub(t)
@@ -85,8 +82,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := workflowtest.NewContractStub(t)
 		var seen []workflowtest.ContractRunCall
 		s.OnRun.OnRecord(func(c workflowtest.ContractRunCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Run-failing")
 		s := workflowtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Run admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := workflowtest.NewContractStub(t)
 		var want0 error
 		s.OnRun.Returns(want0)
@@ -203,8 +190,6 @@ func TestContractStubState(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := workflowtest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "State-a"
@@ -214,10 +199,8 @@ func TestContractStubState(t *testing.T) {
 		a1 = "State-a"
 		got0, _ := s.State(a0, a1)
 		assert.Equal(t, got0, want0, "State must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := workflowtest.NewContractStub(t)
@@ -232,8 +215,6 @@ func TestContractStubState(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := workflowtest.NewContractStub(t)
 		var seen []workflowtest.ContractStateCall
 		s.OnState.OnRecord(func(c workflowtest.ContractStateCall) { seen = append(seen, c) })
@@ -263,9 +244,6 @@ func TestContractStubState(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("State-failing")
 		s := workflowtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -277,9 +255,6 @@ func TestContractStubState(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := workflowtest.NewContractStub(t)
 		var want0 string
 		var want1 error
@@ -321,8 +296,6 @@ func contractStubDouble() stub.Double[workflowtest.ContractRunCall] {
 			return instance(workflowtest.NewContractStub(tb, workflowtest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[workflowtest.ContractRunCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(workflowtest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[workflowtest.ContractRunCall] {
@@ -391,4 +364,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:9a57c8d92f9fb505789aab5a09cae8d54bd87975e78e5aeea58cdd5c0e467b9d
+// dokimi:provenance sha256:997509c40f7cd218865a7b5e1fc6a2cc0ba9ace8b002b50989ca9d26d05b2cbc

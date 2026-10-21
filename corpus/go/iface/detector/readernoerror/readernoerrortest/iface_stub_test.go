@@ -65,8 +65,6 @@ func TestReaderNoErrorStubLookup(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := readernoerrortest.NewReaderNoErrorStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 readernoerror.Value
 		want0 = readernoerror.Value{Key: "Key-a"}
 		s.OnLookup.Returns(want0)
@@ -76,6 +74,7 @@ func TestReaderNoErrorStubLookup(t *testing.T) {
 		got0 := s.Lookup(a0, a1)
 		assert.Equal(t, got0, want0, "Lookup must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := readernoerrortest.NewReaderNoErrorStub(t)
@@ -90,8 +89,6 @@ func TestReaderNoErrorStubLookup(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := readernoerrortest.NewReaderNoErrorStub(t)
 		var seen []readernoerrortest.ReaderNoErrorLookupCall
 		s.OnLookup.OnRecord(func(c readernoerrortest.ReaderNoErrorLookupCall) { seen = append(seen, c) })
@@ -120,9 +117,6 @@ func TestReaderNoErrorStubLookup(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := readernoerrortest.NewReaderNoErrorStub(t)
 		var want0 readernoerror.Value
 		want0 = readernoerror.Value{Key: "Key-a"}
@@ -163,8 +157,6 @@ func readerNoErrorStubDouble() stub.Double[readernoerrortest.ReaderNoErrorLookup
 			return instance(readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(readernoerrortest.NewReaderNoErrorStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
@@ -205,4 +197,4 @@ func TestReaderNoErrorStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:4bd0418b1c2f12946f88a9e8c56d5804cfc962781a358c85b543729fc93d32a9
+// dokimi:provenance sha256:d8c2a1f16ac4c020865bd55b5f3d9490c49d03a50d35129e115739c736354007

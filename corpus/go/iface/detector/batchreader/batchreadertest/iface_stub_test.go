@@ -71,8 +71,6 @@ func TestBatchReaderStubGetAll(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := batchreadertest.NewBatchReaderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []batchreader.Value
 		var want1 error
 		want0 = []batchreader.Value{batchreader.Value{Key: "Key-a"}}
@@ -81,10 +79,8 @@ func TestBatchReaderStubGetAll(t *testing.T) {
 		var a1 []string
 		got0, _ := s.GetAll(a0, a1...)
 		assert.Equal(t, got0, want0, "GetAll must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := batchreadertest.NewBatchReaderStub(t)
@@ -98,8 +94,6 @@ func TestBatchReaderStubGetAll(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := batchreadertest.NewBatchReaderStub(t)
 		var seen []batchreadertest.BatchReaderGetAllCall
 		s.OnGetAll.OnRecord(func(c batchreadertest.BatchReaderGetAllCall) { seen = append(seen, c) })
@@ -127,9 +121,6 @@ func TestBatchReaderStubGetAll(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("GetAll-failing")
 		s := batchreadertest.NewBatchReaderStubFailing(t, want)
 		var a0 context.Context
@@ -140,9 +131,6 @@ func TestBatchReaderStubGetAll(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := batchreadertest.NewBatchReaderStub(t)
 		var want0 []batchreader.Value
 		var want1 error
@@ -182,8 +170,6 @@ func batchReaderStubDouble() stub.Double[batchreadertest.BatchReaderGetAllCall] 
 			return instance(batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(batchreadertest.NewBatchReaderStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
@@ -232,4 +218,4 @@ func TestBatchReaderStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:963dba014fde137e00e0a8c0006315e2865aea6adee51b5817ae8a0a32aeb1b8
+// dokimi:provenance sha256:b4e696b4eae1aa9429f8fb86186bf53ffe718b4acc13589bdba504e4c0fca133

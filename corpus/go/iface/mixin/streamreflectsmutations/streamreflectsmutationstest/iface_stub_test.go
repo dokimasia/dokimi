@@ -61,8 +61,6 @@ func TestMixedStubStream(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := streamreflectsmutationstest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 iter.Seq2[string, error]
 		want0 = iter.Seq2[string, error](func(func(string, error) bool) {})
 		s.OnStream.Returns(want0)
@@ -70,6 +68,7 @@ func TestMixedStubStream(t *testing.T) {
 		got0 := s.Stream(a0)
 		assert.Equal(t, got0, want0, "Stream must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := streamreflectsmutationstest.NewMixedStub(t)
@@ -81,8 +80,6 @@ func TestMixedStubStream(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := streamreflectsmutationstest.NewMixedStub(t)
 		var seen []streamreflectsmutationstest.MixedStreamCall
 		s.OnStream.OnRecord(func(c streamreflectsmutationstest.MixedStreamCall) { seen = append(seen, c) })
@@ -107,9 +104,6 @@ func TestMixedStubStream(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := streamreflectsmutationstest.NewMixedStub(t)
 		var want0 iter.Seq2[string, error]
 		want0 = iter.Seq2[string, error](func(func(string, error) bool) {})
@@ -239,9 +233,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	stub.Behaviour(t, "Add", mixedStubAddSubject)
 
-	// No check that Add answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := streamreflectsmutationstest.NewMixedStub(t)
@@ -256,8 +247,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := streamreflectsmutationstest.NewMixedStub(t)
 		var seen []streamreflectsmutationstest.MixedAddCall
 		s.OnAdd.OnRecord(func(c streamreflectsmutationstest.MixedAddCall) { seen = append(seen, c) })
@@ -286,9 +275,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Add-failing")
 		s := streamreflectsmutationstest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -300,11 +286,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Add admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := streamreflectsmutationstest.NewMixedStub(t)
 		var want0 error
 		s.OnAdd.Returns(want0)
@@ -370,9 +351,6 @@ func TestMixedStubRemove(t *testing.T) {
 
 	stub.Behaviour(t, "Remove", mixedStubRemoveSubject)
 
-	// No check that Remove answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := streamreflectsmutationstest.NewMixedStub(t)
@@ -387,8 +365,6 @@ func TestMixedStubRemove(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := streamreflectsmutationstest.NewMixedStub(t)
 		var seen []streamreflectsmutationstest.MixedRemoveCall
 		s.OnRemove.OnRecord(func(c streamreflectsmutationstest.MixedRemoveCall) { seen = append(seen, c) })
@@ -417,9 +393,6 @@ func TestMixedStubRemove(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Remove-failing")
 		s := streamreflectsmutationstest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -431,11 +404,6 @@ func TestMixedStubRemove(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Remove admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := streamreflectsmutationstest.NewMixedStub(t)
 		var want0 error
 		s.OnRemove.Returns(want0)
@@ -473,8 +441,6 @@ func mixedStubDouble() stub.Double[streamreflectsmutationstest.MixedStreamCall] 
 			return instance(streamreflectsmutationstest.NewMixedStub(tb, streamreflectsmutationstest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[streamreflectsmutationstest.MixedStreamCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(streamreflectsmutationstest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[streamreflectsmutationstest.MixedStreamCall] {
@@ -549,4 +515,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1820a632644814d311d62c5da1618a99bdb579bc756c241fa58f1a77dfc610c7
+// dokimi:provenance sha256:507e1d680ecdaa3ee896e16569a730b14c85857704256a8225a373e916d44c7b

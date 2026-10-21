@@ -72,8 +72,6 @@ func TestMixedStubClassify(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := totaltest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Classify-a"
@@ -83,10 +81,8 @@ func TestMixedStubClassify(t *testing.T) {
 		a1 = "Classify-a"
 		got0, _ := s.Classify(a0, a1)
 		assert.Equal(t, got0, want0, "Classify must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := totaltest.NewMixedStub(t)
@@ -101,8 +97,6 @@ func TestMixedStubClassify(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := totaltest.NewMixedStub(t)
 		var seen []totaltest.MixedClassifyCall
 		s.OnClassify.OnRecord(func(c totaltest.MixedClassifyCall) { seen = append(seen, c) })
@@ -132,9 +126,6 @@ func TestMixedStubClassify(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Classify-failing")
 		s := totaltest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -146,9 +137,6 @@ func TestMixedStubClassify(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := totaltest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -211,8 +199,6 @@ func TestMixedStubNormalize(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := totaltest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		want0 = "Normalize-a"
 		s.OnNormalize.Returns(want0)
@@ -221,6 +207,7 @@ func TestMixedStubNormalize(t *testing.T) {
 		got0 := s.Normalize(a0)
 		assert.Equal(t, got0, want0, "Normalize must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := totaltest.NewMixedStub(t)
@@ -233,8 +220,6 @@ func TestMixedStubNormalize(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := totaltest.NewMixedStub(t)
 		var seen []totaltest.MixedNormalizeCall
 		s.OnNormalize.OnRecord(func(c totaltest.MixedNormalizeCall) { seen = append(seen, c) })
@@ -261,9 +246,6 @@ func TestMixedStubNormalize(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := totaltest.NewMixedStub(t)
 		var want0 string
 		want0 = "Normalize-a"
@@ -303,8 +285,6 @@ func mixedStubDouble() stub.Double[totaltest.MixedClassifyCall] {
 			return instance(totaltest.NewMixedStub(tb, totaltest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[totaltest.MixedClassifyCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(totaltest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[totaltest.MixedClassifyCall] {
@@ -362,4 +342,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ace1ff2c8882e65f593692bea8f66cc690b8ecf6b15704e5f5ba47242aab254b
+// dokimi:provenance sha256:a9dbf9b453b8e7326612c9568eb88527f70aea48c7cd1515c970581d94b0d0fa

@@ -69,8 +69,6 @@ func TestFinderStubFind(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := variadictest.NewFinderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []string
 		var want1 error
 		want0 = []string{"Find-a"}
@@ -79,10 +77,8 @@ func TestFinderStubFind(t *testing.T) {
 		var a1 []string
 		got0, _ := s.Find(a0, a1...)
 		assert.Equal(t, got0, want0, "Find must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := variadictest.NewFinderStub(t)
@@ -96,8 +92,6 @@ func TestFinderStubFind(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := variadictest.NewFinderStub(t)
 		var seen []variadictest.FinderFindCall
 		s.OnFind.OnRecord(func(c variadictest.FinderFindCall) { seen = append(seen, c) })
@@ -125,9 +119,6 @@ func TestFinderStubFind(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Find-failing")
 		s := variadictest.NewFinderStubFailing(t, want)
 		var a0 context.Context
@@ -138,9 +129,6 @@ func TestFinderStubFind(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := variadictest.NewFinderStub(t)
 		var want0 []string
 		var want1 error
@@ -215,8 +203,6 @@ func TestFinderStubFindWithLimit(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := variadictest.NewFinderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []string
 		var want1 error
 		want0 = []string{"FindWithLimit-a"}
@@ -227,10 +213,8 @@ func TestFinderStubFindWithLimit(t *testing.T) {
 		a1 = 42
 		got0, _ := s.FindWithLimit(a0, a1, a2...)
 		assert.Equal(t, got0, want0, "FindWithLimit must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := variadictest.NewFinderStub(t)
@@ -247,8 +231,6 @@ func TestFinderStubFindWithLimit(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := variadictest.NewFinderStub(t)
 		var seen []variadictest.FinderFindWithLimitCall
 		s.OnFindWithLimit.OnRecord(func(c variadictest.FinderFindWithLimitCall) { seen = append(seen, c) })
@@ -280,9 +262,6 @@ func TestFinderStubFindWithLimit(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("FindWithLimit-failing")
 		s := variadictest.NewFinderStubFailing(t, want)
 		var a0 context.Context
@@ -295,9 +274,6 @@ func TestFinderStubFindWithLimit(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := variadictest.NewFinderStub(t)
 		var want0 []string
 		var want1 error
@@ -339,8 +315,6 @@ func finderStubDouble() stub.Double[variadictest.FinderFindCall] {
 			return instance(variadictest.NewFinderStub(tb, variadictest.FinderStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[variadictest.FinderFindCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(variadictest.NewFinderStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[variadictest.FinderFindCall] {
@@ -409,4 +383,4 @@ func TestFinderStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:6a74e65acc94888919b40002eb4e39d4d5406b693f68e8933222d6eea765cb99
+// dokimi:provenance sha256:9bbfc54e3567dc11cae392e094e12a047dec1f144fbb0767d4556fcf66d66afd

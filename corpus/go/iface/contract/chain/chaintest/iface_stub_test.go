@@ -69,9 +69,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	stub.Behaviour(t, "Append", contractStubAppendSubject)
 
-	// No check that Append answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := chaintest.NewContractStub(t)
@@ -86,8 +83,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := chaintest.NewContractStub(t)
 		var seen []chaintest.ContractAppendCall
 		s.OnAppend.OnRecord(func(c chaintest.ContractAppendCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Append-failing")
 		s := chaintest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Append admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := chaintest.NewContractStub(t)
 		var want0 error
 		s.OnAppend.Returns(want0)
@@ -198,8 +185,6 @@ func TestContractStubReplay(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := chaintest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []chain.Entry
 		var want1 error
 		want0 = []chain.Entry{chain.Entry{Key: "Key-a"}}
@@ -207,10 +192,8 @@ func TestContractStubReplay(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Replay(a0)
 		assert.Equal(t, got0, want0, "Replay must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := chaintest.NewContractStub(t)
@@ -222,8 +205,6 @@ func TestContractStubReplay(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := chaintest.NewContractStub(t)
 		var seen []chaintest.ContractReplayCall
 		s.OnReplay.OnRecord(func(c chaintest.ContractReplayCall) { seen = append(seen, c) })
@@ -249,9 +230,6 @@ func TestContractStubReplay(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Replay-failing")
 		s := chaintest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -261,9 +239,6 @@ func TestContractStubReplay(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := chaintest.NewContractStub(t)
 		var want0 []chain.Entry
 		var want1 error
@@ -323,9 +298,6 @@ func TestContractStubVerify(t *testing.T) {
 
 	stub.Behaviour(t, "Verify", contractStubVerifySubject)
 
-	// No check that Verify answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := chaintest.NewContractStub(t)
@@ -337,8 +309,6 @@ func TestContractStubVerify(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := chaintest.NewContractStub(t)
 		var seen []chaintest.ContractVerifyCall
 		s.OnVerify.OnRecord(func(c chaintest.ContractVerifyCall) { seen = append(seen, c) })
@@ -363,9 +333,6 @@ func TestContractStubVerify(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Verify-failing")
 		s := chaintest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -375,11 +342,6 @@ func TestContractStubVerify(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Verify admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := chaintest.NewContractStub(t)
 		var want0 error
 		s.OnVerify.Returns(want0)
@@ -417,8 +379,6 @@ func contractStubDouble() stub.Double[chaintest.ContractAppendCall] {
 			return instance(chaintest.NewContractStub(tb, chaintest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[chaintest.ContractAppendCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(chaintest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[chaintest.ContractAppendCall] {
@@ -497,4 +457,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:40b595e107083d1906f220d8be361d5b0cc31879d6cf421a4403fa4c8bdebb77
+// dokimi:provenance sha256:835f7ce3131c1c0580e740202af0456a7718651509826572191ae311e17de5b8

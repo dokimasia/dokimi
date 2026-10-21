@@ -62,9 +62,6 @@ func TestBaseStubPing(t *testing.T) {
 
 	stub.Behaviour(t, "Ping", baseStubPingSubject)
 
-	// No check that Ping answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedtest.NewBaseStub(t)
@@ -76,8 +73,6 @@ func TestBaseStubPing(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := embeddedtest.NewBaseStub(t)
 		var seen []embeddedtest.BasePingCall
 		s.OnPing.OnRecord(func(c embeddedtest.BasePingCall) { seen = append(seen, c) })
@@ -102,9 +97,6 @@ func TestBaseStubPing(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Ping-failing")
 		s := embeddedtest.NewBaseStubFailing(t, want)
 		var a0 context.Context
@@ -114,11 +106,6 @@ func TestBaseStubPing(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Ping admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := embeddedtest.NewBaseStub(t)
 		var want0 error
 		s.OnPing.Returns(want0)
@@ -154,8 +141,6 @@ func baseStubDouble() stub.Double[embeddedtest.BasePingCall] {
 			return instance(embeddedtest.NewBaseStub(tb, embeddedtest.BaseStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[embeddedtest.BasePingCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(embeddedtest.NewBaseStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[embeddedtest.BasePingCall] {
@@ -248,9 +233,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	stub.Behaviour(t, "Close", closerStubCloseSubject)
 
-	// No check that Close answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedtest.NewCloserStub(t)
@@ -262,8 +244,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := embeddedtest.NewCloserStub(t)
 		var seen []embeddedtest.CloserCloseCall
 		s.OnClose.OnRecord(func(c embeddedtest.CloserCloseCall) { seen = append(seen, c) })
@@ -288,9 +268,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Close-failing")
 		s := embeddedtest.NewCloserStubFailing(t, want)
 		var a0 context.Context
@@ -300,11 +277,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Close admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := embeddedtest.NewCloserStub(t)
 		var want0 error
 		s.OnClose.Returns(want0)
@@ -340,8 +312,6 @@ func closerStubDouble() stub.Double[embeddedtest.CloserCloseCall] {
 			return instance(embeddedtest.NewCloserStub(tb, embeddedtest.CloserStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[embeddedtest.CloserCloseCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(embeddedtest.NewCloserStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[embeddedtest.CloserCloseCall] {
@@ -444,8 +414,6 @@ func TestComposedStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedtest.NewComposedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Get-a"
@@ -455,10 +423,8 @@ func TestComposedStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedtest.NewComposedStub(t)
@@ -473,8 +439,6 @@ func TestComposedStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := embeddedtest.NewComposedStub(t)
 		var seen []embeddedtest.ComposedGetCall
 		s.OnGet.OnRecord(func(c embeddedtest.ComposedGetCall) { seen = append(seen, c) })
@@ -504,9 +468,6 @@ func TestComposedStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := embeddedtest.NewComposedStubFailing(t, want)
 		var a0 context.Context
@@ -518,9 +479,6 @@ func TestComposedStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := embeddedtest.NewComposedStub(t)
 		var want0 string
 		var want1 error
@@ -582,9 +540,6 @@ func TestComposedStubPing(t *testing.T) {
 
 	stub.Behaviour(t, "Ping", composedStubPingSubject)
 
-	// No check that Ping answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedtest.NewComposedStub(t)
@@ -596,8 +551,6 @@ func TestComposedStubPing(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := embeddedtest.NewComposedStub(t)
 		var seen []embeddedtest.ComposedPingCall
 		s.OnPing.OnRecord(func(c embeddedtest.ComposedPingCall) { seen = append(seen, c) })
@@ -622,9 +575,6 @@ func TestComposedStubPing(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Ping-failing")
 		s := embeddedtest.NewComposedStubFailing(t, want)
 		var a0 context.Context
@@ -634,11 +584,6 @@ func TestComposedStubPing(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Ping admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := embeddedtest.NewComposedStub(t)
 		var want0 error
 		s.OnPing.Returns(want0)
@@ -696,9 +641,6 @@ func TestComposedStubClose(t *testing.T) {
 
 	stub.Behaviour(t, "Close", composedStubCloseSubject)
 
-	// No check that Close answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedtest.NewComposedStub(t)
@@ -710,8 +652,6 @@ func TestComposedStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := embeddedtest.NewComposedStub(t)
 		var seen []embeddedtest.ComposedCloseCall
 		s.OnClose.OnRecord(func(c embeddedtest.ComposedCloseCall) { seen = append(seen, c) })
@@ -736,9 +676,6 @@ func TestComposedStubClose(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Close-failing")
 		s := embeddedtest.NewComposedStubFailing(t, want)
 		var a0 context.Context
@@ -748,11 +685,6 @@ func TestComposedStubClose(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Close admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := embeddedtest.NewComposedStub(t)
 		var want0 error
 		s.OnClose.Returns(want0)
@@ -790,8 +722,6 @@ func composedStubDouble() stub.Double[embeddedtest.ComposedGetCall] {
 			return instance(embeddedtest.NewComposedStub(tb, embeddedtest.ComposedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[embeddedtest.ComposedGetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(embeddedtest.NewComposedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[embeddedtest.ComposedGetCall] {
@@ -870,4 +800,4 @@ func TestComposedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:2ddffd4280717713337fd6f9506c636b077908670767b22c710cd47e226b1ce1
+// dokimi:provenance sha256:a5a9e2db337ffef15cb13d0fb19cdfc6f43b6ee154159c7e928dd47a1433ef7c

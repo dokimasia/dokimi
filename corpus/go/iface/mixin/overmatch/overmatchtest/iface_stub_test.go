@@ -69,9 +69,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	stub.Behaviour(t, "Add", mixedStubAddSubject)
 
-	// No check that Add answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := overmatchtest.NewMixedStub(t)
@@ -86,8 +83,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := overmatchtest.NewMixedStub(t)
 		var seen []overmatchtest.MixedAddCall
 		s.OnAdd.OnRecord(func(c overmatchtest.MixedAddCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Add-failing")
 		s := overmatchtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Add admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := overmatchtest.NewMixedStub(t)
 		var want0 error
 		s.OnAdd.Returns(want0)
@@ -198,8 +185,6 @@ func TestMixedStubItems(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := overmatchtest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []overmatch.Value
 		var want1 error
 		want0 = []overmatch.Value{overmatch.Value{Key: "Key-a"}}
@@ -207,10 +192,8 @@ func TestMixedStubItems(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Items(a0)
 		assert.Equal(t, got0, want0, "Items must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := overmatchtest.NewMixedStub(t)
@@ -222,8 +205,6 @@ func TestMixedStubItems(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := overmatchtest.NewMixedStub(t)
 		var seen []overmatchtest.MixedItemsCall
 		s.OnItems.OnRecord(func(c overmatchtest.MixedItemsCall) { seen = append(seen, c) })
@@ -249,9 +230,6 @@ func TestMixedStubItems(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Items-failing")
 		s := overmatchtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -261,9 +239,6 @@ func TestMixedStubItems(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := overmatchtest.NewMixedStub(t)
 		var want0 []overmatch.Value
 		var want1 error
@@ -303,8 +278,6 @@ func mixedStubDouble() stub.Double[overmatchtest.MixedAddCall] {
 			return instance(overmatchtest.NewMixedStub(tb, overmatchtest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[overmatchtest.MixedAddCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(overmatchtest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[overmatchtest.MixedAddCall] {
@@ -369,4 +342,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:f24bad7ce222dfe98c9f971d9eea673dfec8ff942bb45fb8352c10a09157d076
+// dokimi:provenance sha256:7c17e84dce49839cd324eefa3495d253ea3c325a0a71a07650d305213f9b177a

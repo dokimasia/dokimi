@@ -72,8 +72,6 @@ func TestContractStubEncode(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := codectest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Encode-a"
@@ -83,10 +81,8 @@ func TestContractStubEncode(t *testing.T) {
 		a1 = "Encode-a"
 		got0, _ := s.Encode(a0, a1)
 		assert.Equal(t, got0, want0, "Encode must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := codectest.NewContractStub(t)
@@ -101,8 +97,6 @@ func TestContractStubEncode(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := codectest.NewContractStub(t)
 		var seen []codectest.ContractEncodeCall
 		s.OnEncode.OnRecord(func(c codectest.ContractEncodeCall) { seen = append(seen, c) })
@@ -132,9 +126,6 @@ func TestContractStubEncode(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Encode-failing")
 		s := codectest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -146,9 +137,6 @@ func TestContractStubEncode(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := codectest.NewContractStub(t)
 		var want0 string
 		var want1 error
@@ -220,8 +208,6 @@ func TestContractStubDecode(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := codectest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Decode-a"
@@ -231,10 +217,8 @@ func TestContractStubDecode(t *testing.T) {
 		a1 = "Decode-a"
 		got0, _ := s.Decode(a0, a1)
 		assert.Equal(t, got0, want0, "Decode must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := codectest.NewContractStub(t)
@@ -249,8 +233,6 @@ func TestContractStubDecode(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := codectest.NewContractStub(t)
 		var seen []codectest.ContractDecodeCall
 		s.OnDecode.OnRecord(func(c codectest.ContractDecodeCall) { seen = append(seen, c) })
@@ -280,9 +262,6 @@ func TestContractStubDecode(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Decode-failing")
 		s := codectest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -294,9 +273,6 @@ func TestContractStubDecode(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := codectest.NewContractStub(t)
 		var want0 string
 		var want1 error
@@ -338,8 +314,6 @@ func contractStubDouble() stub.Double[codectest.ContractEncodeCall] {
 			return instance(codectest.NewContractStub(tb, codectest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[codectest.ContractEncodeCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(codectest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[codectest.ContractEncodeCall] {
@@ -408,4 +382,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a42b9ad753d755a484673ded57114b541def39ee31d9716b274f212e9750992f
+// dokimi:provenance sha256:0afb50fb1ec4d2df7a402c9f395e7d37a352140b9f8ee7ad48ac517cd40a7208

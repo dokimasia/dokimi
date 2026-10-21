@@ -50,6 +50,7 @@ func TestMutatorStubTouch(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Touch", mutatorStubTouchSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := mutatortest.NewMutatorStub(t)
@@ -64,8 +65,6 @@ func TestMutatorStubTouch(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := mutatortest.NewMutatorStub(t)
 		var seen []mutatortest.MutatorTouchCall
 		s.OnTouch.OnRecord(func(c mutatortest.MutatorTouchCall) { seen = append(seen, c) })
@@ -117,8 +116,6 @@ func mutatorStubDouble() stub.Double[mutatortest.MutatorTouchCall] {
 			return instance(mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[mutatortest.MutatorTouchCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(mutatortest.NewMutatorStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[mutatortest.MutatorTouchCall] {
@@ -159,4 +156,4 @@ func TestMutatorStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7075ed3147b916c6cc5cbc2ffdabd7cb2009170310efa30b06c921f894b1776e
+// dokimi:provenance sha256:bdb626cbb43b0c28996f3455a21632513f1316c23b68adcb8cebf769c80087c3

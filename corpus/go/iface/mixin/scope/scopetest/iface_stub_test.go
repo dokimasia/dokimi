@@ -80,9 +80,6 @@ func TestMixedStubSet(t *testing.T) {
 
 	stub.Behaviour(t, "Set", mixedStubSetSubject)
 
-	// No check that Set answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := scopetest.NewMixedStub(t)
@@ -103,8 +100,6 @@ func TestMixedStubSet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := scopetest.NewMixedStub(t)
 		var seen []scopetest.MixedSetCall
 		s.OnSet.OnRecord(func(c scopetest.MixedSetCall) { seen = append(seen, c) })
@@ -141,9 +136,6 @@ func TestMixedStubSet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Set-failing")
 		s := scopetest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -159,11 +151,6 @@ func TestMixedStubSet(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Set admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := scopetest.NewMixedStub(t)
 		var want0 error
 		s.OnSet.Returns(want0)
@@ -243,8 +230,6 @@ func TestMixedStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := scopetest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Get-a"
@@ -256,10 +241,8 @@ func TestMixedStubGet(t *testing.T) {
 		a2 = "Get-a"
 		got0, _ := s.Get(a0, a1, a2)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := scopetest.NewMixedStub(t)
@@ -277,8 +260,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := scopetest.NewMixedStub(t)
 		var seen []scopetest.MixedGetCall
 		s.OnGet.OnRecord(func(c scopetest.MixedGetCall) { seen = append(seen, c) })
@@ -312,9 +293,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := scopetest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -328,9 +306,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := scopetest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -378,8 +353,6 @@ func mixedStubDouble() stub.Double[scopetest.MixedSetCall] {
 			return instance(scopetest.NewMixedStub(tb, scopetest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[scopetest.MixedSetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(scopetest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[scopetest.MixedSetCall] {
@@ -460,4 +433,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:88bd1dcb04e1ca70b6c200d14b416e9d4963ab2bc364eaafdfbe9d197c62e6a5
+// dokimi:provenance sha256:02daaba4cfce58365ee0d6289f3ae32e3cf25c1101025bfc180a3e643cf5e09b

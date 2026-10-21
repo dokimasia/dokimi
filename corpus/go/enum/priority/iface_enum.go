@@ -6,25 +6,33 @@ package priority
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 )
+
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Low-0]
+	_ = x[Medium-1]
+	_ = x[High-2]
+	_ = x[Critical-3]
+}
+
+const _Priority_name = "LowMediumHighCritical"
+
+var _Priority_index = [...]uint8{0, 3, 9, 13, 21}
 
 // String returns Priority's textual form.
 //
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Priority) String() string {
-	switch v {
-	case Low:
-		return "Low"
-	case Medium:
-		return "Medium"
-	case High:
-		return "High"
-	case Critical:
-		return "Critical"
+	idx := int(v) - 0
+	if v < 0 || idx >= len(_Priority_index)-1 {
+		return "Priority(" + strconv.FormatInt(int64(v), 10) + ")"
 	}
-	return fmt.Sprintf("Priority(%d)", int(v))
+	return _Priority_name[_Priority_index[idx]:_Priority_index[idx+1]]
 }
 
 // ErrUnknownPriority reports text that names no declared variant.
@@ -102,4 +110,4 @@ func (v *Priority) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:e64dea1bac2cbadd6d4941fe591242d588cbd7dfcf41e7286213999f7ca38cb4
+// dokimi:provenance sha256:6f9ffeb8f79f06c184d36a3e0f4cca8f06286dcba1adc75fcaeac70686491ac9

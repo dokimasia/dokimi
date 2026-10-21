@@ -68,9 +68,6 @@ func TestMixedStubSlow(t *testing.T) {
 
 	stub.Behaviour(t, "Slow", mixedStubSlowSubject)
 
-	// No check that Slow answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := timeouttest.NewMixedStub(t)
@@ -85,8 +82,6 @@ func TestMixedStubSlow(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := timeouttest.NewMixedStub(t)
 		var seen []timeouttest.MixedSlowCall
 		s.OnSlow.OnRecord(func(c timeouttest.MixedSlowCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestMixedStubSlow(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Slow-failing")
 		s := timeouttest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestMixedStubSlow(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Slow admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := timeouttest.NewMixedStub(t)
 		var want0 error
 		s.OnSlow.Returns(want0)
@@ -173,8 +160,6 @@ func mixedStubDouble() stub.Double[timeouttest.MixedSlowCall] {
 			return instance(timeouttest.NewMixedStub(tb, timeouttest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[timeouttest.MixedSlowCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(timeouttest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[timeouttest.MixedSlowCall] {
@@ -225,4 +210,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e6f28e56b93a759b3d4cc5df9e914ac1d8e14e632126be90e801eecec86bf566
+// dokimi:provenance sha256:fb94a7689bc758d28832d5182691cd5ce9a2d37429f9c7808cdff5845b894a0e

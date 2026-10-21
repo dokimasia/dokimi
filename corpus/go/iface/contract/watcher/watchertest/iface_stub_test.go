@@ -70,9 +70,6 @@ func TestContractStubWatch(t *testing.T) {
 
 	stub.Behaviour(t, "Watch", contractStubWatchSubject)
 
-	// No check that Watch answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := watchertest.NewContractStub(t)
@@ -87,8 +84,6 @@ func TestContractStubWatch(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := watchertest.NewContractStub(t)
 		var seen []watchertest.ContractWatchCall
 		s.OnWatch.OnRecord(func(c watchertest.ContractWatchCall) { seen = append(seen, c) })
@@ -118,9 +113,6 @@ func TestContractStubWatch(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Watch-failing")
 		s := watchertest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -132,11 +124,6 @@ func TestContractStubWatch(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Watch admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := watchertest.NewContractStub(t)
 		var want0 watcher.Subscription
 		var want1 error
@@ -209,9 +196,6 @@ func TestContractStubTrigger(t *testing.T) {
 
 	stub.Behaviour(t, "Trigger", contractStubTriggerSubject)
 
-	// No check that Trigger answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := watchertest.NewContractStub(t)
@@ -229,8 +213,6 @@ func TestContractStubTrigger(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := watchertest.NewContractStub(t)
 		var seen []watchertest.ContractTriggerCall
 		s.OnTrigger.OnRecord(func(c watchertest.ContractTriggerCall) { seen = append(seen, c) })
@@ -263,9 +245,6 @@ func TestContractStubTrigger(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Trigger-failing")
 		s := watchertest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -279,11 +258,6 @@ func TestContractStubTrigger(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Trigger admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := watchertest.NewContractStub(t)
 		var want0 error
 		s.OnTrigger.Returns(want0)
@@ -325,8 +299,6 @@ func contractStubDouble() stub.Double[watchertest.ContractWatchCall] {
 			return instance(watchertest.NewContractStub(tb, watchertest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[watchertest.ContractWatchCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(watchertest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[watchertest.ContractWatchCall] {
@@ -446,8 +418,6 @@ func TestSubscriptionStubNext(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := watchertest.NewSubscriptionStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 watcher.Value
 		var want1 bool
 		want0 = watcher.Value{Key: "Key-a"}
@@ -459,6 +429,7 @@ func TestSubscriptionStubNext(t *testing.T) {
 		assert.Equal(t, got0, want0, "Next must answer with what Returns pinned")
 		assert.Equal(t, got1, want1, "Next must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := watchertest.NewSubscriptionStub(t)
@@ -471,8 +442,6 @@ func TestSubscriptionStubNext(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := watchertest.NewSubscriptionStub(t)
 		var seen []watchertest.SubscriptionNextCall
 		s.OnNext.OnRecord(func(c watchertest.SubscriptionNextCall) { seen = append(seen, c) })
@@ -500,9 +469,6 @@ func TestSubscriptionStubNext(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := watchertest.NewSubscriptionStub(t)
 		var want0 watcher.Value
 		var want1 bool
@@ -551,6 +517,7 @@ func TestSubscriptionStubStop(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Stop", subscriptionStubStopSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := watchertest.NewSubscriptionStub(t)
@@ -560,8 +527,6 @@ func TestSubscriptionStubStop(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := watchertest.NewSubscriptionStub(t)
 		var seen []watchertest.SubscriptionStopCall
 		s.OnStop.OnRecord(func(c watchertest.SubscriptionStopCall) { seen = append(seen, c) })
@@ -606,8 +571,6 @@ func subscriptionStubDouble() stub.Double[watchertest.SubscriptionNextCall] {
 			return instance(watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[watchertest.SubscriptionNextCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(watchertest.NewSubscriptionStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[watchertest.SubscriptionNextCall] {
@@ -652,4 +615,4 @@ func TestSubscriptionStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:381db5716ad204aeb8bac371b251c5674e9914ea1a35681551aefa8535a36628
+// dokimi:provenance sha256:55c2f6cb317604a1a88752ac55ebace5d099d31fcf8e3d18bb8504ae15492eb2

@@ -56,14 +56,13 @@ func TestPureStubDescribe(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := puretest.NewPureStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		want0 = "Describe-a"
 		s.OnDescribe.Returns(want0)
 		got0 := s.Describe()
 		assert.Equal(t, got0, want0, "Describe must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := puretest.NewPureStub(t)
@@ -73,8 +72,6 @@ func TestPureStubDescribe(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := puretest.NewPureStub(t)
 		var seen []puretest.PureDescribeCall
 		s.OnDescribe.OnRecord(func(c puretest.PureDescribeCall) { seen = append(seen, c) })
@@ -97,9 +94,6 @@ func TestPureStubDescribe(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := puretest.NewPureStub(t)
 		var want0 string
 		want0 = "Describe-a"
@@ -134,8 +128,6 @@ func pureStubDouble() stub.Double[puretest.PureDescribeCall] {
 			return instance(puretest.NewPureStub(tb, puretest.PureStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[puretest.PureDescribeCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(puretest.NewPureStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[puretest.PureDescribeCall] {
@@ -173,4 +165,4 @@ func TestPureStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:2a1108ec033a158bdb7f33f076dfec031d00798050dffd25a95c69daf8d47240
+// dokimi:provenance sha256:c5cff1d410364b4ac79bef427952cecc8673f3b07641d4977c8cd0bcd50bc61b

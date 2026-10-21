@@ -68,8 +68,6 @@ func TestContractStubNext(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := cursortest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 cursor.Value
 		var want1 bool
 		var want2 error
@@ -80,10 +78,8 @@ func TestContractStubNext(t *testing.T) {
 		got0, got1, _ := s.Next(a0)
 		assert.Equal(t, got0, want0, "Next must answer with what Returns pinned")
 		assert.Equal(t, got1, want1, "Next must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 2 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := cursortest.NewContractStub(t)
@@ -95,8 +91,6 @@ func TestContractStubNext(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := cursortest.NewContractStub(t)
 		var seen []cursortest.ContractNextCall
 		s.OnNext.OnRecord(func(c cursortest.ContractNextCall) { seen = append(seen, c) })
@@ -123,9 +117,6 @@ func TestContractStubNext(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Next-failing")
 		s := cursortest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -135,9 +126,6 @@ func TestContractStubNext(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := cursortest.NewContractStub(t)
 		var want0 cursor.Value
 		var want1 bool
@@ -200,9 +188,6 @@ func TestContractStubClose(t *testing.T) {
 
 	stub.Behaviour(t, "Close", contractStubCloseSubject)
 
-	// No check that Close answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := cursortest.NewContractStub(t)
@@ -214,8 +199,6 @@ func TestContractStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := cursortest.NewContractStub(t)
 		var seen []cursortest.ContractCloseCall
 		s.OnClose.OnRecord(func(c cursortest.ContractCloseCall) { seen = append(seen, c) })
@@ -240,9 +223,6 @@ func TestContractStubClose(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Close-failing")
 		s := cursortest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -252,11 +232,6 @@ func TestContractStubClose(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Close admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := cursortest.NewContractStub(t)
 		var want0 error
 		s.OnClose.Returns(want0)
@@ -292,8 +267,6 @@ func contractStubDouble() stub.Double[cursortest.ContractNextCall] {
 			return instance(cursortest.NewContractStub(tb, cursortest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[cursortest.ContractNextCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(cursortest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[cursortest.ContractNextCall] {
@@ -354,4 +327,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:420589902979489d945cf454cb93ac0f64e2ee27b4a59c06cfc5f4cb933ca246
+// dokimi:provenance sha256:3cec8480ec93e78b0a8f4f58a2641726ead6331aca09f66edaf78a2ad0af0ed2

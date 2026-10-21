@@ -69,9 +69,6 @@ func TestMixedStubWrite(t *testing.T) {
 
 	stub.Behaviour(t, "Write", mixedStubWriteSubject)
 
-	// No check that Write answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := atomictest.NewMixedStub(t)
@@ -86,8 +83,6 @@ func TestMixedStubWrite(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := atomictest.NewMixedStub(t)
 		var seen []atomictest.MixedWriteCall
 		s.OnWrite.OnRecord(func(c atomictest.MixedWriteCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestMixedStubWrite(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Write-failing")
 		s := atomictest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestMixedStubWrite(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Write admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := atomictest.NewMixedStub(t)
 		var want0 error
 		s.OnWrite.Returns(want0)
@@ -204,8 +191,6 @@ func TestMixedStubRead(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := atomictest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 atomic.Entry
 		var want1 error
 		want0 = atomic.Entry{Key: "Key-a"}
@@ -215,10 +200,8 @@ func TestMixedStubRead(t *testing.T) {
 		a1 = "Read-a"
 		got0, _ := s.Read(a0, a1)
 		assert.Equal(t, got0, want0, "Read must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := atomictest.NewMixedStub(t)
@@ -233,8 +216,6 @@ func TestMixedStubRead(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := atomictest.NewMixedStub(t)
 		var seen []atomictest.MixedReadCall
 		s.OnRead.OnRecord(func(c atomictest.MixedReadCall) { seen = append(seen, c) })
@@ -264,9 +245,6 @@ func TestMixedStubRead(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Read-failing")
 		s := atomictest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -278,9 +256,6 @@ func TestMixedStubRead(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := atomictest.NewMixedStub(t)
 		var want0 atomic.Entry
 		var want1 error
@@ -322,8 +297,6 @@ func mixedStubDouble() stub.Double[atomictest.MixedWriteCall] {
 			return instance(atomictest.NewMixedStub(tb, atomictest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[atomictest.MixedWriteCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(atomictest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[atomictest.MixedWriteCall] {
@@ -392,4 +365,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:df63c0548c93f4ca1937734689d6b92efea3182d1deb582348a7497b3953c6e2
+// dokimi:provenance sha256:b063e56e64f1b95fb0574cddbf70ecdf500ed4065780d8df0d4e23f80cb7d317

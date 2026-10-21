@@ -72,8 +72,6 @@ func TestMixedStubOld(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := deprecatedtest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Old-a"
@@ -83,10 +81,8 @@ func TestMixedStubOld(t *testing.T) {
 		a1 = "Old-a"
 		got0, _ := s.Old(a0, a1)
 		assert.Equal(t, got0, want0, "Old must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := deprecatedtest.NewMixedStub(t)
@@ -101,8 +97,6 @@ func TestMixedStubOld(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := deprecatedtest.NewMixedStub(t)
 		var seen []deprecatedtest.MixedOldCall
 		s.OnOld.OnRecord(func(c deprecatedtest.MixedOldCall) { seen = append(seen, c) })
@@ -132,9 +126,6 @@ func TestMixedStubOld(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Old-failing")
 		s := deprecatedtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -146,9 +137,6 @@ func TestMixedStubOld(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := deprecatedtest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -220,8 +208,6 @@ func TestMixedStubNew(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := deprecatedtest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "New-a"
@@ -231,10 +217,8 @@ func TestMixedStubNew(t *testing.T) {
 		a1 = "New-a"
 		got0, _ := s.New(a0, a1)
 		assert.Equal(t, got0, want0, "New must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := deprecatedtest.NewMixedStub(t)
@@ -249,8 +233,6 @@ func TestMixedStubNew(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := deprecatedtest.NewMixedStub(t)
 		var seen []deprecatedtest.MixedNewCall
 		s.OnNew.OnRecord(func(c deprecatedtest.MixedNewCall) { seen = append(seen, c) })
@@ -280,9 +262,6 @@ func TestMixedStubNew(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("New-failing")
 		s := deprecatedtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -294,9 +273,6 @@ func TestMixedStubNew(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := deprecatedtest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -338,8 +314,6 @@ func mixedStubDouble() stub.Double[deprecatedtest.MixedOldCall] {
 			return instance(deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[deprecatedtest.MixedOldCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(deprecatedtest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[deprecatedtest.MixedOldCall] {
@@ -408,4 +382,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c163c20460ad47c001cfe15ab1b9067ec77f96f1670e7be7cbec304b4d463ac8
+// dokimi:provenance sha256:11ac9e898d0c8758dbcd1f561fbd4af2b3822bc6a92ab552e1c9e01b5a8cd7d9

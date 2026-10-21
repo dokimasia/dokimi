@@ -46,6 +46,7 @@ func TestVoidLifecycleStubStop(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Stop", voidLifecycleStubStopSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := voidlifecycletest.NewVoidLifecycleStub(t)
@@ -55,8 +56,6 @@ func TestVoidLifecycleStubStop(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := voidlifecycletest.NewVoidLifecycleStub(t)
 		var seen []voidlifecycletest.VoidLifecycleStopCall
 		s.OnStop.OnRecord(func(c voidlifecycletest.VoidLifecycleStopCall) { seen = append(seen, c) })
@@ -99,8 +98,6 @@ func voidLifecycleStubDouble() stub.Double[voidlifecycletest.VoidLifecycleStopCa
 			return instance(voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(voidlifecycletest.NewVoidLifecycleStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
@@ -138,4 +135,4 @@ func TestVoidLifecycleStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:de4dae44a9f4de6368be157a001d82615602a28ef4365cfb5b95780827b8a98f
+// dokimi:provenance sha256:c7f739d3c5333eab3afa59c1ab4fac7bcc3a078a822b974024a1379a18d8edba

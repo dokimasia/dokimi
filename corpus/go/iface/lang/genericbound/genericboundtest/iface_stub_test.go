@@ -67,9 +67,6 @@ func rankedStubRankChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	stub.Behaviour(t, "Rank", rankedStubRankSubject[K, V])
 
-	// No check that Rank answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := genericboundtest.NewRankedStub[K, V](t)
@@ -83,8 +80,6 @@ func rankedStubRankChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := genericboundtest.NewRankedStub[K, V](t)
 		var seen []genericboundtest.RankedRankCall[K, V]
 		s.OnRank.OnRecord(func(c genericboundtest.RankedRankCall[K, V]) { seen = append(seen, c) })
@@ -112,9 +107,6 @@ func rankedStubRankChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Rank-failing")
 		s := genericboundtest.NewRankedStubFailing[K, V](t, want)
 		var a0 context.Context
@@ -125,11 +117,6 @@ func rankedStubRankChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Rank admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := genericboundtest.NewRankedStub[K, V](t)
 		var want0 V
 		var want1 error
@@ -189,9 +176,6 @@ func rankedStubResetChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	stub.Behaviour(t, "Reset", rankedStubResetSubject[K, V])
 
-	// No check that Reset answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := genericboundtest.NewRankedStub[K, V](t)
@@ -203,8 +187,6 @@ func rankedStubResetChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := genericboundtest.NewRankedStub[K, V](t)
 		var seen []genericboundtest.RankedResetCall[K, V]
 		s.OnReset.OnRecord(func(c genericboundtest.RankedResetCall[K, V]) { seen = append(seen, c) })
@@ -229,9 +211,6 @@ func rankedStubResetChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Reset-failing")
 		s := genericboundtest.NewRankedStubFailing[K, V](t, want)
 		var a0 context.Context
@@ -241,11 +220,6 @@ func rankedStubResetChecks[K genericbound.Ordered, V any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Reset admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := genericboundtest.NewRankedStub[K, V](t)
 		var want0 error
 		s.OnReset.Returns(want0)
@@ -282,8 +256,6 @@ func rankedStubDouble[K genericbound.Ordered, V any]() stub.Double[genericboundt
 			return instance(genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubWithClock[K, V](clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(genericboundtest.NewRankedStubDelayed[K, V](tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
@@ -368,4 +340,4 @@ func TestRankedStubOptions(t *testing.T) { rankedStubOptionChecks[int, genericbo
 // witnesses.
 func TestRankedStubDelegateTo(t *testing.T) { rankedStubDelegationChecks[int, genericbound.Score](t) }
 
-// dokimi:provenance sha256:5ddf73099ad13a8c908c272f4829f95c916fe427bff0a87b7d6d420076dfcb5c
+// dokimi:provenance sha256:ed07bee62e0a16340699b98bf4470a22ba9904e0d3c840b3650b38347fc33ccb

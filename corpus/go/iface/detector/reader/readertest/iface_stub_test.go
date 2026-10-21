@@ -73,8 +73,6 @@ func TestReaderStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := readertest.NewReaderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 reader.Value
 		var want1 error
 		want0 = reader.Value{Key: "Key-a"}
@@ -84,10 +82,8 @@ func TestReaderStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := readertest.NewReaderStub(t)
@@ -102,8 +98,6 @@ func TestReaderStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := readertest.NewReaderStub(t)
 		var seen []readertest.ReaderGetCall
 		s.OnGet.OnRecord(func(c readertest.ReaderGetCall) { seen = append(seen, c) })
@@ -133,9 +127,6 @@ func TestReaderStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := readertest.NewReaderStubFailing(t, want)
 		var a0 context.Context
@@ -147,7 +138,6 @@ func TestReaderStubGet(t *testing.T) {
 
 	t.Run("answers ErrNotFound once FaultNotFound arms it", func(t *testing.T) {
 		t.Parallel()
-		// One arm, two calls: the helper promises a one-shot fault.
 		s := readertest.NewReaderStub(t)
 		s.OnGet.FaultNotFound()
 		var a0 context.Context
@@ -181,8 +171,6 @@ func TestReaderStubGet(t *testing.T) {
 		var a0 context.Context
 		var a1 string
 		a1 = "Get-a"
-		// The key is the value the call below carries in Key, so
-		// the call lands in the targeted partition by construction.
 		key := a1
 		want := errors.New("Get-partition")
 		s.OnGet.FaultForPartition(key, want, 1)
@@ -204,9 +192,6 @@ func TestReaderStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := readertest.NewReaderStub(t)
 		var want0 reader.Value
 		var want1 error
@@ -248,8 +233,6 @@ func readerStubDouble() stub.Double[readertest.ReaderGetCall] {
 			return instance(readertest.NewReaderStub(tb, readertest.ReaderStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[readertest.ReaderGetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(readertest.NewReaderStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[readertest.ReaderGetCall] {
@@ -300,4 +283,4 @@ func TestReaderStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:8aa1f1b91fad10e190d40f769f7335732781e43e836cc9dbe06c373bed7fe571
+// dokimi:provenance sha256:fb81b145930538fd3dc67d016d805d6b11b41143f04dfced99d8530212e434ec

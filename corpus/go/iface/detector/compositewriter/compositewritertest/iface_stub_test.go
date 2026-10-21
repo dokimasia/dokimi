@@ -75,9 +75,6 @@ func TestCompositeWriterStubSet(t *testing.T) {
 
 	stub.Behaviour(t, "Set", compositeWriterStubSetSubject)
 
-	// No check that Set answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := compositewritertest.NewCompositeWriterStub(t)
@@ -95,8 +92,6 @@ func TestCompositeWriterStubSet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := compositewritertest.NewCompositeWriterStub(t)
 		var seen []compositewritertest.CompositeWriterSetCall
 		s.OnSet.OnRecord(func(c compositewritertest.CompositeWriterSetCall) { seen = append(seen, c) })
@@ -129,9 +124,6 @@ func TestCompositeWriterStubSet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Set-failing")
 		s := compositewritertest.NewCompositeWriterStubFailing(t, want)
 		var a0 context.Context
@@ -145,11 +137,6 @@ func TestCompositeWriterStubSet(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Set admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := compositewritertest.NewCompositeWriterStub(t)
 		var want0 error
 		s.OnSet.Returns(want0)
@@ -194,8 +181,6 @@ func compositeWriterStubDouble() stub.Double[compositewritertest.CompositeWriter
 			return instance(compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(compositewritertest.NewCompositeWriterStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[compositewritertest.CompositeWriterSetCall] {
@@ -250,4 +235,4 @@ func TestCompositeWriterStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:34059dc45fa16f92033b9abe854a49e4f1ae3f14182fb5622b562c970de9ccbd
+// dokimi:provenance sha256:897f0cedcb1014a6c09985a084f4a572cd51664fa5141a1630c1d93f40e42ed5

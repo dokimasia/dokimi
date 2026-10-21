@@ -62,9 +62,6 @@ func TestMixedStubFail(t *testing.T) {
 
 	stub.Behaviour(t, "Fail", mixedStubFailSubject)
 
-	// No check that Fail answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := poisonabletest.NewMixedStub(t)
@@ -76,8 +73,6 @@ func TestMixedStubFail(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := poisonabletest.NewMixedStub(t)
 		var seen []poisonabletest.MixedFailCall
 		s.OnFail.OnRecord(func(c poisonabletest.MixedFailCall) { seen = append(seen, c) })
@@ -102,9 +97,6 @@ func TestMixedStubFail(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Fail-failing")
 		s := poisonabletest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -114,11 +106,6 @@ func TestMixedStubFail(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Fail admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := poisonabletest.NewMixedStub(t)
 		var want0 error
 		s.OnFail.Returns(want0)
@@ -173,9 +160,6 @@ func TestMixedStubProbe(t *testing.T) {
 
 	stub.Behaviour(t, "Probe", mixedStubProbeSubject)
 
-	// No check that Probe answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := poisonabletest.NewMixedStub(t)
@@ -185,8 +169,6 @@ func TestMixedStubProbe(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := poisonabletest.NewMixedStub(t)
 		var seen []poisonabletest.MixedProbeCall
 		s.OnProbe.OnRecord(func(c poisonabletest.MixedProbeCall) { seen = append(seen, c) })
@@ -209,9 +191,6 @@ func TestMixedStubProbe(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Probe-failing")
 		s := poisonabletest.NewMixedStubFailing(t, want)
 		r0 := s.Probe()
@@ -220,11 +199,6 @@ func TestMixedStubProbe(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Probe admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := poisonabletest.NewMixedStub(t)
 		var want0 error
 		s.OnProbe.Returns(want0)
@@ -259,8 +233,6 @@ func mixedStubDouble() stub.Double[poisonabletest.MixedFailCall] {
 			return instance(poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[poisonabletest.MixedFailCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(poisonabletest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[poisonabletest.MixedFailCall] {
@@ -319,4 +291,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c329eb53176724e0e88d5b208b9e1dd63ca249fee97bfcd3900d3ea38fe21f7d
+// dokimi:provenance sha256:d997771b999643d90d3afd3e60c521cbc19ebf358d3146e1170ce6f7bb2f5e69

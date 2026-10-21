@@ -68,9 +68,6 @@ func TestMixedStubOpen(t *testing.T) {
 
 	stub.Behaviour(t, "Open", mixedStubOpenSubject)
 
-	// No check that Open answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := wrappedviatest.NewMixedStub(t)
@@ -85,8 +82,6 @@ func TestMixedStubOpen(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := wrappedviatest.NewMixedStub(t)
 		var seen []wrappedviatest.MixedOpenCall
 		s.OnOpen.OnRecord(func(c wrappedviatest.MixedOpenCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestMixedStubOpen(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Open-failing")
 		s := wrappedviatest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestMixedStubOpen(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Open admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := wrappedviatest.NewMixedStub(t)
 		var want0 error
 		s.OnOpen.Returns(want0)
@@ -193,9 +180,6 @@ func TestMixedStubCause(t *testing.T) {
 
 	stub.Behaviour(t, "Cause", mixedStubCauseSubject)
 
-	// No check that Cause answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := wrappedviatest.NewMixedStub(t)
@@ -207,8 +191,6 @@ func TestMixedStubCause(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := wrappedviatest.NewMixedStub(t)
 		var seen []wrappedviatest.MixedCauseCall
 		s.OnCause.OnRecord(func(c wrappedviatest.MixedCauseCall) { seen = append(seen, c) })
@@ -233,9 +215,6 @@ func TestMixedStubCause(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Cause-failing")
 		s := wrappedviatest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -245,11 +224,6 @@ func TestMixedStubCause(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Cause admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := wrappedviatest.NewMixedStub(t)
 		var want0 error
 		s.OnCause.Returns(want0)
@@ -287,8 +261,6 @@ func mixedStubDouble() stub.Double[wrappedviatest.MixedOpenCall] {
 			return instance(wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[wrappedviatest.MixedOpenCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(wrappedviatest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[wrappedviatest.MixedOpenCall] {
@@ -353,4 +325,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:825c1e22ed8fbbb63f9b045b205c367ed0748c02331d6e4ed54ad39eb495dcaf
+// dokimi:provenance sha256:7d68311cc146a432c6eb8b9c81c0515ea9aead6c36a1f930d32fa628eb22faf0

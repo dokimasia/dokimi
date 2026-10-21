@@ -72,8 +72,6 @@ func TestMixedStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := cacheabletest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Get-a"
@@ -83,10 +81,8 @@ func TestMixedStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := cacheabletest.NewMixedStub(t)
@@ -101,8 +97,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := cacheabletest.NewMixedStub(t)
 		var seen []cacheabletest.MixedGetCall
 		s.OnGet.OnRecord(func(c cacheabletest.MixedGetCall) { seen = append(seen, c) })
@@ -132,9 +126,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := cacheabletest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -146,9 +137,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := cacheabletest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -190,8 +178,6 @@ func mixedStubDouble() stub.Double[cacheabletest.MixedGetCall] {
 			return instance(cacheabletest.NewMixedStub(tb, cacheabletest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[cacheabletest.MixedGetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(cacheabletest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[cacheabletest.MixedGetCall] {
@@ -242,4 +228,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a6c0e8222259d488de5ed5d3f5bd864771703ccb569802e6ddf9dea8a2bbf6ef
+// dokimi:provenance sha256:8eeb05ace207b4b72ce846263afcd7a602c3cfa275a3a1e6cc6a2a5de987c4fe

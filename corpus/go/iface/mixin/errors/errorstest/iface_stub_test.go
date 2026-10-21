@@ -73,8 +73,6 @@ func TestMixedStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := errorstest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Get-a"
@@ -84,10 +82,8 @@ func TestMixedStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := errorstest.NewMixedStub(t)
@@ -102,8 +98,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := errorstest.NewMixedStub(t)
 		var seen []errorstest.MixedGetCall
 		s.OnGet.OnRecord(func(c errorstest.MixedGetCall) { seen = append(seen, c) })
@@ -133,9 +127,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := errorstest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -147,7 +138,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("answers ErrNotFound once FaultNotFound arms it", func(t *testing.T) {
 		t.Parallel()
-		// One arm, two calls: the helper promises a one-shot fault.
 		s := errorstest.NewMixedStub(t)
 		s.OnGet.FaultNotFound()
 		var a0 context.Context
@@ -161,7 +151,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("answers ErrGone once FaultGone arms it", func(t *testing.T) {
 		t.Parallel()
-		// One arm, two calls: the helper promises a one-shot fault.
 		s := errorstest.NewMixedStub(t)
 		s.OnGet.FaultGone()
 		var a0 context.Context
@@ -175,9 +164,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := errorstest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -219,8 +205,6 @@ func mixedStubDouble() stub.Double[errorstest.MixedGetCall] {
 			return instance(errorstest.NewMixedStub(tb, errorstest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[errorstest.MixedGetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(errorstest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[errorstest.MixedGetCall] {
@@ -271,4 +255,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:9803f2896d320c304bae344b940d768a586629eeac38865924df3fa8a33f2695
+// dokimi:provenance sha256:e4735dd9a1a9cad7a847d2194ab11ccf289758a9184f70bd3911a6132eb08a2d

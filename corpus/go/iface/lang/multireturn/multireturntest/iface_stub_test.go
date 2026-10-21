@@ -74,8 +74,6 @@ func TestWideStubQuad(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := multireturntest.NewWideStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 int
 		var want2 bool
@@ -91,10 +89,8 @@ func TestWideStubQuad(t *testing.T) {
 		assert.Equal(t, got0, want0, "Quad must answer with what Returns pinned")
 		assert.Equal(t, got1, want1, "Quad must answer with what Returns pinned")
 		assert.Equal(t, got2, want2, "Quad must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 3 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := multireturntest.NewWideStub(t)
@@ -109,8 +105,6 @@ func TestWideStubQuad(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := multireturntest.NewWideStub(t)
 		var seen []multireturntest.WideQuadCall
 		s.OnQuad.OnRecord(func(c multireturntest.WideQuadCall) { seen = append(seen, c) })
@@ -142,9 +136,6 @@ func TestWideStubQuad(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Quad-failing")
 		s := multireturntest.NewWideStubFailing(t, want)
 		var a0 context.Context
@@ -156,9 +147,6 @@ func TestWideStubQuad(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := multireturntest.NewWideStub(t)
 		var want0 string
 		var want1 int
@@ -230,8 +218,6 @@ func TestWideStubTriple(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := multireturntest.NewWideStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 int
 		var want2 bool
@@ -247,6 +233,7 @@ func TestWideStubTriple(t *testing.T) {
 		assert.Equal(t, got1, want1, "Triple must answer with what Returns pinned")
 		assert.Equal(t, got2, want2, "Triple must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := multireturntest.NewWideStub(t)
@@ -261,8 +248,6 @@ func TestWideStubTriple(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := multireturntest.NewWideStub(t)
 		var seen []multireturntest.WideTripleCall
 		s.OnTriple.OnRecord(func(c multireturntest.WideTripleCall) { seen = append(seen, c) })
@@ -293,9 +278,6 @@ func TestWideStubTriple(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := multireturntest.NewWideStub(t)
 		var want0 string
 		var want1 int
@@ -365,8 +347,6 @@ func TestWideStubNoError(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := multireturntest.NewWideStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 int
 		want0 = "NoError-a"
@@ -379,6 +359,7 @@ func TestWideStubNoError(t *testing.T) {
 		assert.Equal(t, got0, want0, "NoError must answer with what Returns pinned")
 		assert.Equal(t, got1, want1, "NoError must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := multireturntest.NewWideStub(t)
@@ -393,8 +374,6 @@ func TestWideStubNoError(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := multireturntest.NewWideStub(t)
 		var seen []multireturntest.WideNoErrorCall
 		s.OnNoError.OnRecord(func(c multireturntest.WideNoErrorCall) { seen = append(seen, c) })
@@ -424,9 +403,6 @@ func TestWideStubNoError(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := multireturntest.NewWideStub(t)
 		var want0 string
 		var want1 int
@@ -470,8 +446,6 @@ func wideStubDouble() stub.Double[multireturntest.WideQuadCall] {
 			return instance(multireturntest.NewWideStub(tb, multireturntest.WideStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[multireturntest.WideQuadCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(multireturntest.NewWideStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[multireturntest.WideQuadCall] {
@@ -538,4 +512,4 @@ func TestWideStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:053f626ac5d74455a9f564612d92d64e2edcf5780a9e7825ae8cb791b2c59702
+// dokimi:provenance sha256:e6cb3d3e30299b347e14b71cb187e03af7057ef177510975dd94862ae9bda3a3

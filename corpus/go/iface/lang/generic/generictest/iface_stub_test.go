@@ -66,9 +66,6 @@ func storeStubGetChecks[K comparable, V any](t *testing.T) {
 
 	stub.Behaviour(t, "Get", storeStubGetSubject[K, V])
 
-	// No check that Get answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := generictest.NewStoreStub[K, V](t)
@@ -82,8 +79,6 @@ func storeStubGetChecks[K comparable, V any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := generictest.NewStoreStub[K, V](t)
 		var seen []generictest.StoreGetCall[K, V]
 		s.OnGet.OnRecord(func(c generictest.StoreGetCall[K, V]) { seen = append(seen, c) })
@@ -111,9 +106,6 @@ func storeStubGetChecks[K comparable, V any](t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := generictest.NewStoreStubFailing[K, V](t, want)
 		var a0 context.Context
@@ -124,11 +116,6 @@ func storeStubGetChecks[K comparable, V any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Get admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := generictest.NewStoreStub[K, V](t)
 		var want0 V
 		var want1 error
@@ -194,9 +181,6 @@ func storeStubPutChecks[K comparable, V any](t *testing.T) {
 
 	stub.Behaviour(t, "Put", storeStubPutSubject[K, V])
 
-	// No check that Put answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := generictest.NewStoreStub[K, V](t)
@@ -212,8 +196,6 @@ func storeStubPutChecks[K comparable, V any](t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := generictest.NewStoreStub[K, V](t)
 		var seen []generictest.StorePutCall[K, V]
 		s.OnPut.OnRecord(func(c generictest.StorePutCall[K, V]) { seen = append(seen, c) })
@@ -242,9 +224,6 @@ func storeStubPutChecks[K comparable, V any](t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := generictest.NewStoreStubFailing[K, V](t, want)
 		var a0 context.Context
@@ -256,11 +235,6 @@ func storeStubPutChecks[K comparable, V any](t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Put admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := generictest.NewStoreStub[K, V](t)
 		var want0 error
 		s.OnPut.Returns(want0)
@@ -299,8 +273,6 @@ func storeStubDouble[K comparable, V any]() stub.Double[generictest.StoreGetCall
 			return instance(generictest.NewStoreStub[K, V](tb, generictest.StoreStubWithClock[K, V](clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[generictest.StoreGetCall[K, V]] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(generictest.NewStoreStubDelayed[K, V](tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[generictest.StoreGetCall[K, V]] {
@@ -388,4 +360,4 @@ func TestStoreStubOptions(t *testing.T) { storeStubOptionChecks[int, int](t) }
 // witnesses.
 func TestStoreStubDelegateTo(t *testing.T) { storeStubDelegationChecks[int, int](t) }
 
-// dokimi:provenance sha256:40d32f35587bdb792b22d8e26aac69c2b7829c48ce99ef4014d031cc4d41806d
+// dokimi:provenance sha256:89ee5a528ae9194562d14941210f5d46b2b01c5008fb743575c370651a02835a

@@ -80,9 +80,6 @@ func TestMultiArgWriterStubSet(t *testing.T) {
 
 	stub.Behaviour(t, "Set", multiArgWriterStubSetSubject)
 
-	// No check that Set answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := multiargwritertest.NewMultiArgWriterStub(t)
@@ -103,8 +100,6 @@ func TestMultiArgWriterStubSet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := multiargwritertest.NewMultiArgWriterStub(t)
 		var seen []multiargwritertest.MultiArgWriterSetCall
 		s.OnSet.OnRecord(func(c multiargwritertest.MultiArgWriterSetCall) { seen = append(seen, c) })
@@ -141,9 +136,6 @@ func TestMultiArgWriterStubSet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Set-failing")
 		s := multiargwritertest.NewMultiArgWriterStubFailing(t, want)
 		var a0 context.Context
@@ -159,11 +151,6 @@ func TestMultiArgWriterStubSet(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Set admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := multiargwritertest.NewMultiArgWriterStub(t)
 		var want0 error
 		s.OnSet.Returns(want0)
@@ -237,8 +224,6 @@ func TestMultiArgWriterStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := multiargwritertest.NewMultiArgWriterStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Get-a"
@@ -248,10 +233,8 @@ func TestMultiArgWriterStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := multiargwritertest.NewMultiArgWriterStub(t)
@@ -266,8 +249,6 @@ func TestMultiArgWriterStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := multiargwritertest.NewMultiArgWriterStub(t)
 		var seen []multiargwritertest.MultiArgWriterGetCall
 		s.OnGet.OnRecord(func(c multiargwritertest.MultiArgWriterGetCall) { seen = append(seen, c) })
@@ -297,9 +278,6 @@ func TestMultiArgWriterStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := multiargwritertest.NewMultiArgWriterStubFailing(t, want)
 		var a0 context.Context
@@ -311,9 +289,6 @@ func TestMultiArgWriterStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := multiargwritertest.NewMultiArgWriterStub(t)
 		var want0 string
 		var want1 error
@@ -360,8 +335,6 @@ func multiArgWriterStubDouble() stub.Double[multiargwritertest.MultiArgWriterSet
 			return instance(multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(multiargwritertest.NewMultiArgWriterStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
@@ -438,4 +411,4 @@ func TestMultiArgWriterStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a2b43b38134de905d1215ccd84be9520354edb498d83f0075628cfbb9ea6c8bf
+// dokimi:provenance sha256:1ee99b8dd64ac38c98b2103f1cfb0c5e2a06ad587be9638b5727eb97dbd1fcb9

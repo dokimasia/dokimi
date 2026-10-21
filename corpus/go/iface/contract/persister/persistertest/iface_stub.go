@@ -113,7 +113,7 @@ var _ = stub.CompatV1
 type ContractStubOption func(*ContractStub)
 
 // ContractStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// than return its default results.
 func ContractStubStrict() ContractStubOption {
 	return func(s *ContractStub) { s.strict = true }
 }
@@ -178,7 +178,9 @@ func WithContractGet(fn func(context.Context, string) (persister.Value, error)) 
 // ContractStub is a recording test double for Contract.
 //
 // Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// a method records the call and returns its default results: a new value
+// from the builder of each result type that has one, and the zero value of
+// each other result.
 type ContractStub struct {
 	OnPut *ContractPutStub
 	OnGet *ContractGetStub
@@ -262,15 +264,19 @@ func (s *ContractPutStub) invoke(ctx context.Context, v persister.Value) func() 
 // Put records the call and answers it.
 //
 // Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// the default results — is [stub.Answer]'s to decide, so every generated
+// double resolves a call the same way and the ordering is tested once
+// rather than restated per method.
 func (s *ContractStub) Put(ctx context.Context, v persister.Value) (persister.Value, error) {
 	call := ContractPutCall{Ctx: ctx, V: v}
 	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[ContractPutCall, ContractPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) ContractPutReturn { return ContractPutReturn{Err: err} },
+		Default: func() ContractPutReturn {
+			r0 := NewValueBuilder().Build()
+			return ContractPutReturn{Result: r0}
+		},
 		Stamp: func(c *ContractPutCall, r ContractPutReturn) {
 			c.Result = r.Result
 			c.Err = r.Err
@@ -295,15 +301,19 @@ func (s *ContractGetStub) invoke(ctx context.Context, key string) func() Contrac
 // Get records the call and answers it.
 //
 // Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// the default results — is [stub.Answer]'s to decide, so every generated
+// double resolves a call the same way and the ordering is tested once
+// rather than restated per method.
 func (s *ContractStub) Get(ctx context.Context, key string) (persister.Value, error) {
 	call := ContractGetCall{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[ContractGetCall, ContractGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) ContractGetReturn { return ContractGetReturn{Err: err} },
+		Default: func() ContractGetReturn {
+			r0 := NewValueBuilder().Build()
+			return ContractGetReturn{Result: r0}
+		},
 		Stamp: func(c *ContractGetCall, r ContractGetReturn) {
 			c.Result = r.Result
 			c.Err = r.Err
@@ -312,4 +322,4 @@ func (s *ContractStub) Get(ctx context.Context, key string) (persister.Value, er
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:b6244f8e43caf1e8fdeae81702b1a688bf73c02fa91bbf212c0d3ef1ae34e004
+// dokimi:provenance sha256:069106668b0c6ba6052a1b0f5d923e4171e74c1aa3b8c665aa6e06c2ddf5f139

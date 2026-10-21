@@ -68,9 +68,6 @@ func TestMixedStubTouch(t *testing.T) {
 
 	stub.Behaviour(t, "Touch", mixedStubTouchSubject)
 
-	// No check that Touch answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := sideeffecttest.NewMixedStub(t)
@@ -85,8 +82,6 @@ func TestMixedStubTouch(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := sideeffecttest.NewMixedStub(t)
 		var seen []sideeffecttest.MixedTouchCall
 		s.OnTouch.OnRecord(func(c sideeffecttest.MixedTouchCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestMixedStubTouch(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Touch-failing")
 		s := sideeffecttest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestMixedStubTouch(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Touch admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := sideeffecttest.NewMixedStub(t)
 		var want0 error
 		s.OnTouch.Returns(want0)
@@ -203,8 +190,6 @@ func TestMixedStubObserved(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := sideeffecttest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -214,10 +199,8 @@ func TestMixedStubObserved(t *testing.T) {
 		a1 = "Observed-a"
 		got0, _ := s.Observed(a0, a1)
 		assert.Equal(t, got0, want0, "Observed must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := sideeffecttest.NewMixedStub(t)
@@ -232,8 +215,6 @@ func TestMixedStubObserved(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := sideeffecttest.NewMixedStub(t)
 		var seen []sideeffecttest.MixedObservedCall
 		s.OnObserved.OnRecord(func(c sideeffecttest.MixedObservedCall) { seen = append(seen, c) })
@@ -263,9 +244,6 @@ func TestMixedStubObserved(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Observed-failing")
 		s := sideeffecttest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -277,9 +255,6 @@ func TestMixedStubObserved(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := sideeffecttest.NewMixedStub(t)
 		var want0 int
 		var want1 error
@@ -321,8 +296,6 @@ func mixedStubDouble() stub.Double[sideeffecttest.MixedTouchCall] {
 			return instance(sideeffecttest.NewMixedStub(tb, sideeffecttest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[sideeffecttest.MixedTouchCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(sideeffecttest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[sideeffecttest.MixedTouchCall] {
@@ -391,4 +364,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:3d7a4db56cb60e01544ba0a8a92f1c988750c6273ea1937fc232bafb702031bd
+// dokimi:provenance sha256:10c8e2270242d4e6c6019e2f762b039bfd4d478edd2e72a1d1beed56d00e383a

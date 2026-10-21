@@ -67,8 +67,6 @@ func TestContractStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := pooltest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 pool.Value
 		var want1 error
 		want0 = pool.Value{Key: "Key-a"}
@@ -76,10 +74,8 @@ func TestContractStubGet(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Get(a0)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := pooltest.NewContractStub(t)
@@ -91,8 +87,6 @@ func TestContractStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := pooltest.NewContractStub(t)
 		var seen []pooltest.ContractGetCall
 		s.OnGet.OnRecord(func(c pooltest.ContractGetCall) { seen = append(seen, c) })
@@ -118,9 +112,6 @@ func TestContractStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := pooltest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -130,9 +121,6 @@ func TestContractStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := pooltest.NewContractStub(t)
 		var want0 pool.Value
 		var want1 error
@@ -198,9 +186,6 @@ func TestContractStubPut(t *testing.T) {
 
 	stub.Behaviour(t, "Put", contractStubPutSubject)
 
-	// No check that Put answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := pooltest.NewContractStub(t)
@@ -215,8 +200,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := pooltest.NewContractStub(t)
 		var seen []pooltest.ContractPutCall
 		s.OnPut.OnRecord(func(c pooltest.ContractPutCall) { seen = append(seen, c) })
@@ -245,9 +228,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := pooltest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -259,11 +239,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Put admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := pooltest.NewContractStub(t)
 		var want0 error
 		s.OnPut.Returns(want0)
@@ -327,8 +302,6 @@ func TestContractStubStats(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := pooltest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 pool.Stats
 		var want1 error
 		want0 = pool.Stats{Gets: 42}
@@ -336,10 +309,8 @@ func TestContractStubStats(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Stats(a0)
 		assert.Equal(t, got0, want0, "Stats must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := pooltest.NewContractStub(t)
@@ -351,8 +322,6 @@ func TestContractStubStats(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := pooltest.NewContractStub(t)
 		var seen []pooltest.ContractStatsCall
 		s.OnStats.OnRecord(func(c pooltest.ContractStatsCall) { seen = append(seen, c) })
@@ -378,9 +347,6 @@ func TestContractStubStats(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Stats-failing")
 		s := pooltest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -390,9 +356,6 @@ func TestContractStubStats(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := pooltest.NewContractStub(t)
 		var want0 pool.Stats
 		var want1 error
@@ -430,8 +393,6 @@ func contractStubDouble() stub.Double[pooltest.ContractGetCall] {
 			return instance(pooltest.NewContractStub(tb, pooltest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[pooltest.ContractGetCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(pooltest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[pooltest.ContractGetCall] {
@@ -510,4 +471,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7e3dafa7b89911f7bb44a3a2ba6bf7ea93113be52f937619d917cfa106f4927f
+// dokimi:provenance sha256:dc9b44aac26279f26ee9db33b02f996154e5af8532767331c3400fa6ac28c25a

@@ -72,8 +72,6 @@ func TestMixedStubRender(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := xsssafetest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Render-a"
@@ -83,10 +81,8 @@ func TestMixedStubRender(t *testing.T) {
 		a1 = "Render-a"
 		got0, _ := s.Render(a0, a1)
 		assert.Equal(t, got0, want0, "Render must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := xsssafetest.NewMixedStub(t)
@@ -101,8 +97,6 @@ func TestMixedStubRender(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := xsssafetest.NewMixedStub(t)
 		var seen []xsssafetest.MixedRenderCall
 		s.OnRender.OnRecord(func(c xsssafetest.MixedRenderCall) { seen = append(seen, c) })
@@ -132,9 +126,6 @@ func TestMixedStubRender(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Render-failing")
 		s := xsssafetest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -146,9 +137,6 @@ func TestMixedStubRender(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := xsssafetest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -190,8 +178,6 @@ func mixedStubDouble() stub.Double[xsssafetest.MixedRenderCall] {
 			return instance(xsssafetest.NewMixedStub(tb, xsssafetest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[xsssafetest.MixedRenderCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(xsssafetest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[xsssafetest.MixedRenderCall] {
@@ -242,4 +228,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:6958baef8db3652b987ab2c4899dfdf97fa830b2caa9a0b9e155157080b7243d
+// dokimi:provenance sha256:07edee0137d3c4924b62e3d8271cf15649a1437a27b84b2429f16272079ce936

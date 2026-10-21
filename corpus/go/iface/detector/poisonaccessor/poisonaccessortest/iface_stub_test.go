@@ -58,9 +58,6 @@ func TestPoisonAccessorStubErr(t *testing.T) {
 
 	stub.Behaviour(t, "Err", poisonAccessorStubErrSubject)
 
-	// No check that Err answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := poisonaccessortest.NewPoisonAccessorStub(t)
@@ -70,8 +67,6 @@ func TestPoisonAccessorStubErr(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := poisonaccessortest.NewPoisonAccessorStub(t)
 		var seen []poisonaccessortest.PoisonAccessorErrCall
 		s.OnErr.OnRecord(func(c poisonaccessortest.PoisonAccessorErrCall) { seen = append(seen, c) })
@@ -94,9 +89,6 @@ func TestPoisonAccessorStubErr(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Err-failing")
 		s := poisonaccessortest.NewPoisonAccessorStubFailing(t, want)
 		r0 := s.Err()
@@ -105,11 +97,6 @@ func TestPoisonAccessorStubErr(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Err admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := poisonaccessortest.NewPoisonAccessorStub(t)
 		var want0 error
 		s.OnErr.Returns(want0)
@@ -144,8 +131,6 @@ func poisonAccessorStubDouble() stub.Double[poisonaccessortest.PoisonAccessorErr
 			return instance(poisonaccessortest.NewPoisonAccessorStub(tb, poisonaccessortest.PoisonAccessorStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[poisonaccessortest.PoisonAccessorErrCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(poisonaccessortest.NewPoisonAccessorStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[poisonaccessortest.PoisonAccessorErrCall] {
@@ -190,4 +175,4 @@ func TestPoisonAccessorStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c015c4393a7536825fe6c83ca5144e8c1ea0dbb22a47cc5117dfabca547652be
+// dokimi:provenance sha256:7cfb5cda80853f61614246e15a4222aaf94fd68acf8acf8220ca3581bc7414b8

@@ -74,9 +74,6 @@ func TestBatchedStubPut(t *testing.T) {
 
 	stub.Behaviour(t, "Put", batchedStubPutSubject)
 
-	// No check that Put answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := batchedmixinstest.NewBatchedStub(t)
@@ -94,8 +91,6 @@ func TestBatchedStubPut(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := batchedmixinstest.NewBatchedStub(t)
 		var seen []batchedmixinstest.BatchedPutCall
 		s.OnPut.OnRecord(func(c batchedmixinstest.BatchedPutCall) { seen = append(seen, c) })
@@ -128,9 +123,6 @@ func TestBatchedStubPut(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := batchedmixinstest.NewBatchedStubFailing(t, want)
 		var a0 context.Context
@@ -144,11 +136,6 @@ func TestBatchedStubPut(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Put admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := batchedmixinstest.NewBatchedStub(t)
 		var want0 error
 		s.OnPut.Returns(want0)
@@ -220,8 +207,6 @@ func TestBatchedStubRead(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := batchedmixinstest.NewBatchedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Read-a"
@@ -231,10 +216,8 @@ func TestBatchedStubRead(t *testing.T) {
 		a1 = "Read-a"
 		got0, _ := s.Read(a0, a1)
 		assert.Equal(t, got0, want0, "Read must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := batchedmixinstest.NewBatchedStub(t)
@@ -249,8 +232,6 @@ func TestBatchedStubRead(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := batchedmixinstest.NewBatchedStub(t)
 		var seen []batchedmixinstest.BatchedReadCall
 		s.OnRead.OnRecord(func(c batchedmixinstest.BatchedReadCall) { seen = append(seen, c) })
@@ -280,9 +261,6 @@ func TestBatchedStubRead(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Read-failing")
 		s := batchedmixinstest.NewBatchedStubFailing(t, want)
 		var a0 context.Context
@@ -294,9 +272,6 @@ func TestBatchedStubRead(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := batchedmixinstest.NewBatchedStub(t)
 		var want0 string
 		var want1 error
@@ -362,8 +337,6 @@ func TestBatchedStubList(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := batchedmixinstest.NewBatchedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []string
 		var want1 error
 		want0 = []string{"List-a"}
@@ -371,10 +344,8 @@ func TestBatchedStubList(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.List(a0)
 		assert.Equal(t, got0, want0, "List must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := batchedmixinstest.NewBatchedStub(t)
@@ -386,8 +357,6 @@ func TestBatchedStubList(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := batchedmixinstest.NewBatchedStub(t)
 		var seen []batchedmixinstest.BatchedListCall
 		s.OnList.OnRecord(func(c batchedmixinstest.BatchedListCall) { seen = append(seen, c) })
@@ -413,9 +382,6 @@ func TestBatchedStubList(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("List-failing")
 		s := batchedmixinstest.NewBatchedStubFailing(t, want)
 		var a0 context.Context
@@ -425,9 +391,6 @@ func TestBatchedStubList(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := batchedmixinstest.NewBatchedStub(t)
 		var want0 []string
 		var want1 error
@@ -469,8 +432,6 @@ func batchedStubDouble() stub.Double[batchedmixinstest.BatchedPutCall] {
 			return instance(batchedmixinstest.NewBatchedStub(tb, batchedmixinstest.BatchedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[batchedmixinstest.BatchedPutCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(batchedmixinstest.NewBatchedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[batchedmixinstest.BatchedPutCall] {
@@ -557,4 +518,4 @@ func TestBatchedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ed2701def95c313b7d00a3587545ad300a5fe085ff3a4b0f9f29ca0bfd7920d6
+// dokimi:provenance sha256:9b31c3829faa7428b6bdb8c07472895980d7397a5c395614be410d2477b5e159

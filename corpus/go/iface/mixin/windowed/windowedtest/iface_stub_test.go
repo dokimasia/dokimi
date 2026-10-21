@@ -68,9 +68,6 @@ func TestMixedStubRecord(t *testing.T) {
 
 	stub.Behaviour(t, "Record", mixedStubRecordSubject)
 
-	// No check that Record answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := windowedtest.NewMixedStub(t)
@@ -85,8 +82,6 @@ func TestMixedStubRecord(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := windowedtest.NewMixedStub(t)
 		var seen []windowedtest.MixedRecordCall
 		s.OnRecord.OnRecord(func(c windowedtest.MixedRecordCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestMixedStubRecord(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Record-failing")
 		s := windowedtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestMixedStubRecord(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Record admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := windowedtest.NewMixedStub(t)
 		var want0 error
 		s.OnRecord.Returns(want0)
@@ -203,8 +190,6 @@ func TestMixedStubCountIn(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := windowedtest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -214,10 +199,8 @@ func TestMixedStubCountIn(t *testing.T) {
 		a1 = "CountIn-a"
 		got0, _ := s.CountIn(a0, a1)
 		assert.Equal(t, got0, want0, "CountIn must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := windowedtest.NewMixedStub(t)
@@ -232,8 +215,6 @@ func TestMixedStubCountIn(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := windowedtest.NewMixedStub(t)
 		var seen []windowedtest.MixedCountInCall
 		s.OnCountIn.OnRecord(func(c windowedtest.MixedCountInCall) { seen = append(seen, c) })
@@ -263,9 +244,6 @@ func TestMixedStubCountIn(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("CountIn-failing")
 		s := windowedtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -277,9 +255,6 @@ func TestMixedStubCountIn(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := windowedtest.NewMixedStub(t)
 		var want0 int
 		var want1 error
@@ -321,8 +296,6 @@ func mixedStubDouble() stub.Double[windowedtest.MixedRecordCall] {
 			return instance(windowedtest.NewMixedStub(tb, windowedtest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[windowedtest.MixedRecordCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(windowedtest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[windowedtest.MixedRecordCall] {
@@ -391,4 +364,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:93113a651e9991a26ca3c623e56885c14dc61cf0264484850b7ed597952cd353
+// dokimi:provenance sha256:047ea5606a83ee568aaa1554be7fc562668a48db9f706fbdce2fa79dbc72a6dd

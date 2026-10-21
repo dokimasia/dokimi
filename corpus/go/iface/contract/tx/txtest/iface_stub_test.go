@@ -67,8 +67,6 @@ func TestContractStubBegin(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := txtest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 tx.Tx
 		var want1 error
 		want0 = tx.Tx{ID: 42}
@@ -76,10 +74,8 @@ func TestContractStubBegin(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Begin(a0)
 		assert.Equal(t, got0, want0, "Begin must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txtest.NewContractStub(t)
@@ -91,8 +87,6 @@ func TestContractStubBegin(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txtest.NewContractStub(t)
 		var seen []txtest.ContractBeginCall
 		s.OnBegin.OnRecord(func(c txtest.ContractBeginCall) { seen = append(seen, c) })
@@ -118,9 +112,6 @@ func TestContractStubBegin(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Begin-failing")
 		s := txtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -130,9 +121,6 @@ func TestContractStubBegin(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := txtest.NewContractStub(t)
 		var want0 tx.Tx
 		var want1 error
@@ -198,9 +186,6 @@ func TestContractStubCommit(t *testing.T) {
 
 	stub.Behaviour(t, "Commit", contractStubCommitSubject)
 
-	// No check that Commit answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txtest.NewContractStub(t)
@@ -215,8 +200,6 @@ func TestContractStubCommit(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txtest.NewContractStub(t)
 		var seen []txtest.ContractCommitCall
 		s.OnCommit.OnRecord(func(c txtest.ContractCommitCall) { seen = append(seen, c) })
@@ -245,9 +228,6 @@ func TestContractStubCommit(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Commit-failing")
 		s := txtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -259,11 +239,6 @@ func TestContractStubCommit(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Commit admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := txtest.NewContractStub(t)
 		var want0 error
 		s.OnCommit.Returns(want0)
@@ -330,9 +305,6 @@ func TestContractStubRollback(t *testing.T) {
 
 	stub.Behaviour(t, "Rollback", contractStubRollbackSubject)
 
-	// No check that Rollback answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txtest.NewContractStub(t)
@@ -347,8 +319,6 @@ func TestContractStubRollback(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txtest.NewContractStub(t)
 		var seen []txtest.ContractRollbackCall
 		s.OnRollback.OnRecord(func(c txtest.ContractRollbackCall) { seen = append(seen, c) })
@@ -377,9 +347,6 @@ func TestContractStubRollback(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Rollback-failing")
 		s := txtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -391,11 +358,6 @@ func TestContractStubRollback(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Rollback admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := txtest.NewContractStub(t)
 		var want0 error
 		s.OnRollback.Returns(want0)
@@ -473,9 +435,6 @@ func TestContractStubPut(t *testing.T) {
 
 	stub.Behaviour(t, "Put", contractStubPutSubject)
 
-	// No check that Put answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txtest.NewContractStub(t)
@@ -496,8 +455,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txtest.NewContractStub(t)
 		var seen []txtest.ContractPutCall
 		s.OnPut.OnRecord(func(c txtest.ContractPutCall) { seen = append(seen, c) })
@@ -534,9 +491,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := txtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -552,11 +506,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Put admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := txtest.NewContractStub(t)
 		var want0 error
 		s.OnPut.Returns(want0)
@@ -630,8 +579,6 @@ func TestContractStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := txtest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 tx.Value
 		var want1 error
 		want0 = tx.Value{Key: "Key-a"}
@@ -641,10 +588,8 @@ func TestContractStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txtest.NewContractStub(t)
@@ -659,8 +604,6 @@ func TestContractStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txtest.NewContractStub(t)
 		var seen []txtest.ContractGetCall
 		s.OnGet.OnRecord(func(c txtest.ContractGetCall) { seen = append(seen, c) })
@@ -690,9 +633,6 @@ func TestContractStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := txtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -704,9 +644,6 @@ func TestContractStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := txtest.NewContractStub(t)
 		var want0 tx.Value
 		var want1 error
@@ -746,8 +683,6 @@ func contractStubDouble() stub.Double[txtest.ContractBeginCall] {
 			return instance(txtest.NewContractStub(tb, txtest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[txtest.ContractBeginCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(txtest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[txtest.ContractBeginCall] {
@@ -874,4 +809,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:424da1f0ab4d6bb3c533e1ecde88fa8bebc46a9c2cfa38af459386f9a9b7d814
+// dokimi:provenance sha256:8bcc6eda438cb1526f0a86fadd2756ca151eedc37b40da67d555e0897e67c496

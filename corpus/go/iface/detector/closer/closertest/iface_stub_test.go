@@ -58,9 +58,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	stub.Behaviour(t, "Close", closerStubCloseSubject)
 
-	// No check that Close answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := closertest.NewCloserStub(t)
@@ -70,8 +67,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := closertest.NewCloserStub(t)
 		var seen []closertest.CloserCloseCall
 		s.OnClose.OnRecord(func(c closertest.CloserCloseCall) { seen = append(seen, c) })
@@ -94,9 +89,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Close-failing")
 		s := closertest.NewCloserStubFailing(t, want)
 		r0 := s.Close()
@@ -105,11 +97,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Close admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := closertest.NewCloserStub(t)
 		var want0 error
 		s.OnClose.Returns(want0)
@@ -143,8 +130,6 @@ func closerStubDouble() stub.Double[closertest.CloserCloseCall] {
 			return instance(closertest.NewCloserStub(tb, closertest.CloserStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[closertest.CloserCloseCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(closertest.NewCloserStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[closertest.CloserCloseCall] {
@@ -189,4 +174,4 @@ func TestCloserStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:bd9a0380939ac29c6929368689866f3d9b3b2df28b40f0ae55bc9e0b14595975
+// dokimi:provenance sha256:c5b4d0c430e5e1463f05f69f2c971f6fea91c1b14ef31721bb265ce7ca65b1a1

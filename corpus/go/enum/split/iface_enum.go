@@ -6,23 +6,32 @@ package split
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 )
+
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Green-1]
+	_ = x[Amber-2]
+	_ = x[Red-3]
+}
+
+const _Signal_name = "GreenAmberRed"
+
+var _Signal_index = [...]uint8{0, 5, 10, 13}
 
 // String returns Signal's textual form.
 //
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Signal) String() string {
-	switch v {
-	case Green:
-		return "Green"
-	case Amber:
-		return "Amber"
-	case Red:
-		return "Red"
+	idx := int(v) - 1
+	if v < 1 || idx >= len(_Signal_index)-1 {
+		return "Signal(" + strconv.FormatInt(int64(v), 10) + ")"
 	}
-	return fmt.Sprintf("Signal(%d)", int(v))
+	return _Signal_name[_Signal_index[idx]:_Signal_index[idx+1]]
 }
 
 // ErrUnknownSignal reports text that names no declared variant.
@@ -95,4 +104,4 @@ func (v *Signal) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:0815915bfb9d550dd9880a39827fa9aeb2211981cd215526096d38ad966b8e1c
+// dokimi:provenance sha256:cd87a264fe0c987b5c675bc5f7cc7365ab31682aaf9d76116d6670bde305f485

@@ -64,8 +64,6 @@ func TestPointerReaderStubFind(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := pointerreadertest.NewPointerReaderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 *pointerreader.Value
 		want0 = &pointerreader.Value{Key: "Key-a"}
 		s.OnFind.Returns(want0)
@@ -75,6 +73,7 @@ func TestPointerReaderStubFind(t *testing.T) {
 		got0 := s.Find(a0, a1)
 		assert.Equal(t, got0, want0, "Find must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := pointerreadertest.NewPointerReaderStub(t)
@@ -89,8 +88,6 @@ func TestPointerReaderStubFind(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := pointerreadertest.NewPointerReaderStub(t)
 		var seen []pointerreadertest.PointerReaderFindCall
 		s.OnFind.OnRecord(func(c pointerreadertest.PointerReaderFindCall) { seen = append(seen, c) })
@@ -119,9 +116,6 @@ func TestPointerReaderStubFind(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := pointerreadertest.NewPointerReaderStub(t)
 		var want0 *pointerreader.Value
 		want0 = &pointerreader.Value{Key: "Key-a"}
@@ -162,8 +156,6 @@ func pointerReaderStubDouble() stub.Double[pointerreadertest.PointerReaderFindCa
 			return instance(pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(pointerreadertest.NewPointerReaderStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[pointerreadertest.PointerReaderFindCall] {
@@ -204,4 +196,4 @@ func TestPointerReaderStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:170c1d39ba36335fb305ba7f5cd021de4b4f886d0c2aadba456a8268f5531d66
+// dokimi:provenance sha256:41651cff88f304b81423ba4079499b273229eccf0a37ac084abb628f46063580

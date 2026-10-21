@@ -73,8 +73,6 @@ func TestCatalogStubLookup(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := seededreadertest.NewCatalogStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 seededreader.Body
 		var want1 error
 		want0 = seededreader.Body("Lookup-a")
@@ -84,10 +82,8 @@ func TestCatalogStubLookup(t *testing.T) {
 		a1 = seededreader.Key("Lookup-a")
 		got0, _ := s.Lookup(a0, a1)
 		assert.Equal(t, got0, want0, "Lookup must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := seededreadertest.NewCatalogStub(t)
@@ -102,8 +98,6 @@ func TestCatalogStubLookup(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := seededreadertest.NewCatalogStub(t)
 		var seen []seededreadertest.CatalogLookupCall
 		s.OnLookup.OnRecord(func(c seededreadertest.CatalogLookupCall) { seen = append(seen, c) })
@@ -133,9 +127,6 @@ func TestCatalogStubLookup(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Lookup-failing")
 		s := seededreadertest.NewCatalogStubFailing(t, want)
 		var a0 context.Context
@@ -147,9 +138,6 @@ func TestCatalogStubLookup(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := seededreadertest.NewCatalogStub(t)
 		var want0 seededreader.Body
 		var want1 error
@@ -215,8 +203,6 @@ func TestCatalogStubLen(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := seededreadertest.NewCatalogStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -224,10 +210,8 @@ func TestCatalogStubLen(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Len(a0)
 		assert.Equal(t, got0, want0, "Len must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := seededreadertest.NewCatalogStub(t)
@@ -239,8 +223,6 @@ func TestCatalogStubLen(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := seededreadertest.NewCatalogStub(t)
 		var seen []seededreadertest.CatalogLenCall
 		s.OnLen.OnRecord(func(c seededreadertest.CatalogLenCall) { seen = append(seen, c) })
@@ -266,9 +248,6 @@ func TestCatalogStubLen(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Len-failing")
 		s := seededreadertest.NewCatalogStubFailing(t, want)
 		var a0 context.Context
@@ -278,9 +257,6 @@ func TestCatalogStubLen(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := seededreadertest.NewCatalogStub(t)
 		var want0 int
 		var want1 error
@@ -320,8 +296,6 @@ func catalogStubDouble() stub.Double[seededreadertest.CatalogLookupCall] {
 			return instance(seededreadertest.NewCatalogStub(tb, seededreadertest.CatalogStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[seededreadertest.CatalogLookupCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(seededreadertest.NewCatalogStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[seededreadertest.CatalogLookupCall] {
@@ -386,4 +360,4 @@ func TestCatalogStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a0957d9b19b8bf4e286c2cf1745dce099898a6b446a6168869bf3e1d88512fa8
+// dokimi:provenance sha256:fc86e96e6b650a6574bee9e5ce7e84fe9a0a02f84e9e30d077e942ddf8604092

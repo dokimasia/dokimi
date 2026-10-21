@@ -73,8 +73,6 @@ func TestContractStubRun(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := appendertest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int64
 		var want1 error
 		want0 = 42
@@ -84,10 +82,8 @@ func TestContractStubRun(t *testing.T) {
 		a1 = appender.Value{Key: "Key-a"}
 		got0, _ := s.Run(a0, a1)
 		assert.Equal(t, got0, want0, "Run must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := appendertest.NewContractStub(t)
@@ -102,8 +98,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := appendertest.NewContractStub(t)
 		var seen []appendertest.ContractRunCall
 		s.OnRun.OnRecord(func(c appendertest.ContractRunCall) { seen = append(seen, c) })
@@ -133,9 +127,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Run-failing")
 		s := appendertest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -147,9 +138,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := appendertest.NewContractStub(t)
 		var want0 int64
 		var want1 error
@@ -191,8 +179,6 @@ func contractStubDouble() stub.Double[appendertest.ContractRunCall] {
 			return instance(appendertest.NewContractStub(tb, appendertest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[appendertest.ContractRunCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(appendertest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[appendertest.ContractRunCall] {
@@ -243,4 +229,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c29c6fcfffe0f2b7772db6decdf0dd7bd40e3d04932bd758ce8cfa05807e00da
+// dokimi:provenance sha256:994f768d9b3be106a74c81c690c0311a055551ca1d654c7ee4bb1c164612aa9f

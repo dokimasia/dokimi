@@ -69,9 +69,6 @@ func TestContractStubPublish(t *testing.T) {
 
 	stub.Behaviour(t, "Publish", contractStubPublishSubject)
 
-	// No check that Publish answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := publisheratmostoncetest.NewContractStub(t)
@@ -86,8 +83,6 @@ func TestContractStubPublish(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := publisheratmostoncetest.NewContractStub(t)
 		var seen []publisheratmostoncetest.ContractPublishCall
 		s.OnPublish.OnRecord(func(c publisheratmostoncetest.ContractPublishCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestContractStubPublish(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Publish-failing")
 		s := publisheratmostoncetest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestContractStubPublish(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Publish admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := publisheratmostoncetest.NewContractStub(t)
 		var want0 error
 		s.OnPublish.Returns(want0)
@@ -199,8 +186,6 @@ func TestContractStubSubscribe(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := publisheratmostoncetest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 <-chan publisheratmostonce.Value
 		var want1 error
 		want0 = make(<-chan publisheratmostonce.Value)
@@ -208,10 +193,8 @@ func TestContractStubSubscribe(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Subscribe(a0)
 		assert.Equal(t, got0, want0, "Subscribe must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := publisheratmostoncetest.NewContractStub(t)
@@ -223,8 +206,6 @@ func TestContractStubSubscribe(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := publisheratmostoncetest.NewContractStub(t)
 		var seen []publisheratmostoncetest.ContractSubscribeCall
 		s.OnSubscribe.OnRecord(func(c publisheratmostoncetest.ContractSubscribeCall) { seen = append(seen, c) })
@@ -250,9 +231,6 @@ func TestContractStubSubscribe(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Subscribe-failing")
 		s := publisheratmostoncetest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -262,9 +240,6 @@ func TestContractStubSubscribe(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := publisheratmostoncetest.NewContractStub(t)
 		var want0 <-chan publisheratmostonce.Value
 		var want1 error
@@ -304,8 +279,6 @@ func contractStubDouble() stub.Double[publisheratmostoncetest.ContractPublishCal
 			return instance(publisheratmostoncetest.NewContractStub(tb, publisheratmostoncetest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[publisheratmostoncetest.ContractPublishCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(publisheratmostoncetest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[publisheratmostoncetest.ContractPublishCall] {
@@ -370,4 +343,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:faaf5c5efbf237c601b1d07fb05f46d401e5ceda3ef964ecd74dd4729692d435
+// dokimi:provenance sha256:7d11fd59ea55b3f3fa267d33240cd5b466e9390f5896cf2007abbdf3797aacff

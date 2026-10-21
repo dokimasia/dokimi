@@ -57,14 +57,13 @@ func TestPredicateStubIsEmpty(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := predicatetest.NewPredicateStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 bool
 		want0 = true
 		s.OnIsEmpty.Returns(want0)
 		got0 := s.IsEmpty()
 		assert.Equal(t, got0, want0, "IsEmpty must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := predicatetest.NewPredicateStub(t)
@@ -74,8 +73,6 @@ func TestPredicateStubIsEmpty(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := predicatetest.NewPredicateStub(t)
 		var seen []predicatetest.PredicateIsEmptyCall
 		s.OnIsEmpty.OnRecord(func(c predicatetest.PredicateIsEmptyCall) { seen = append(seen, c) })
@@ -98,9 +95,6 @@ func TestPredicateStubIsEmpty(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := predicatetest.NewPredicateStub(t)
 		var want0 bool
 		want0 = true
@@ -135,8 +129,6 @@ func predicateStubDouble() stub.Double[predicatetest.PredicateIsEmptyCall] {
 			return instance(predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(predicatetest.NewPredicateStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[predicatetest.PredicateIsEmptyCall] {
@@ -174,4 +166,4 @@ func TestPredicateStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:63831dd9beb01851606e47bc2466533056e2f2acd4cbf3cbeb3fa91a3a55a3f0
+// dokimi:provenance sha256:9e45ea4c21e1323da2eee06fc24626f276277b0d1b5ef3a41d08c46fb67bc5bb

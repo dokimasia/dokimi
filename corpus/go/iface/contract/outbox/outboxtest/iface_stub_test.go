@@ -69,9 +69,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	stub.Behaviour(t, "Append", contractStubAppendSubject)
 
-	// No check that Append answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := outboxtest.NewContractStub(t)
@@ -86,8 +83,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := outboxtest.NewContractStub(t)
 		var seen []outboxtest.ContractAppendCall
 		s.OnAppend.OnRecord(func(c outboxtest.ContractAppendCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Append-failing")
 		s := outboxtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestContractStubAppend(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Append admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := outboxtest.NewContractStub(t)
 		var want0 error
 		s.OnAppend.Returns(want0)
@@ -199,8 +186,6 @@ func TestContractStubSubscribe(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := outboxtest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 <-chan outbox.Value
 		var want1 error
 		want0 = make(<-chan outbox.Value)
@@ -208,10 +193,8 @@ func TestContractStubSubscribe(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Subscribe(a0)
 		assert.Equal(t, got0, want0, "Subscribe must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := outboxtest.NewContractStub(t)
@@ -223,8 +206,6 @@ func TestContractStubSubscribe(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := outboxtest.NewContractStub(t)
 		var seen []outboxtest.ContractSubscribeCall
 		s.OnSubscribe.OnRecord(func(c outboxtest.ContractSubscribeCall) { seen = append(seen, c) })
@@ -250,9 +231,6 @@ func TestContractStubSubscribe(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Subscribe-failing")
 		s := outboxtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -262,9 +240,6 @@ func TestContractStubSubscribe(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := outboxtest.NewContractStub(t)
 		var want0 <-chan outbox.Value
 		var want1 error
@@ -304,8 +279,6 @@ func contractStubDouble() stub.Double[outboxtest.ContractAppendCall] {
 			return instance(outboxtest.NewContractStub(tb, outboxtest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[outboxtest.ContractAppendCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(outboxtest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[outboxtest.ContractAppendCall] {
@@ -370,4 +343,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:837c16fb1d4e9bcb30f5baad81ee560f6547f15f9ee4719755672d0d0c919244
+// dokimi:provenance sha256:b94cb1ae04ec10cb6fb834b0bdc456a26b0d289c7105220c9ac11e431c128132

@@ -73,8 +73,6 @@ func TestContractStubFetch(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := paginationtest.NewContractStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 pagination.Page
 		var want1 error
 		want0 = pagination.Page{Items: []pagination.Value{pagination.Value{Key: "Key-a"}}}
@@ -84,10 +82,8 @@ func TestContractStubFetch(t *testing.T) {
 		a1 = pagination.Cursor("Fetch-a")
 		got0, _ := s.Fetch(a0, a1)
 		assert.Equal(t, got0, want0, "Fetch must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := paginationtest.NewContractStub(t)
@@ -102,8 +98,6 @@ func TestContractStubFetch(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := paginationtest.NewContractStub(t)
 		var seen []paginationtest.ContractFetchCall
 		s.OnFetch.OnRecord(func(c paginationtest.ContractFetchCall) { seen = append(seen, c) })
@@ -133,9 +127,6 @@ func TestContractStubFetch(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Fetch-failing")
 		s := paginationtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -147,9 +138,6 @@ func TestContractStubFetch(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := paginationtest.NewContractStub(t)
 		var want0 pagination.Page
 		var want1 error
@@ -217,9 +205,6 @@ func TestContractStubPut(t *testing.T) {
 
 	stub.Behaviour(t, "Put", contractStubPutSubject)
 
-	// No check that Put answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := paginationtest.NewContractStub(t)
@@ -234,8 +219,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := paginationtest.NewContractStub(t)
 		var seen []paginationtest.ContractPutCall
 		s.OnPut.OnRecord(func(c paginationtest.ContractPutCall) { seen = append(seen, c) })
@@ -264,9 +247,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := paginationtest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -278,11 +258,6 @@ func TestContractStubPut(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Put admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := paginationtest.NewContractStub(t)
 		var want0 error
 		s.OnPut.Returns(want0)
@@ -322,8 +297,6 @@ func contractStubDouble() stub.Double[paginationtest.ContractFetchCall] {
 			return instance(paginationtest.NewContractStub(tb, paginationtest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[paginationtest.ContractFetchCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(paginationtest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[paginationtest.ContractFetchCall] {
@@ -392,4 +365,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:bbaffcc3df60610775e596c842409337b4d1097e1ac65e01bfff3578a611dc1e
+// dokimi:provenance sha256:8a91cc22a42c133eeca7ede5eb7265bc6c9dac0e44cc476d10245022067a2571

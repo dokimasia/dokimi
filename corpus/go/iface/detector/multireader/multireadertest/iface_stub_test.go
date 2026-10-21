@@ -75,8 +75,6 @@ func TestMultiReaderStubGetWithMeta(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := multireadertest.NewMultiReaderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 multireader.Value
 		var want1 multireader.Meta
 		var want2 error
@@ -89,10 +87,8 @@ func TestMultiReaderStubGetWithMeta(t *testing.T) {
 		got0, got1, _ := s.GetWithMeta(a0, a1)
 		assert.Equal(t, got0, want0, "GetWithMeta must answer with what Returns pinned")
 		assert.Equal(t, got1, want1, "GetWithMeta must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 2 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := multireadertest.NewMultiReaderStub(t)
@@ -107,8 +103,6 @@ func TestMultiReaderStubGetWithMeta(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := multireadertest.NewMultiReaderStub(t)
 		var seen []multireadertest.MultiReaderGetWithMetaCall
 		s.OnGetWithMeta.OnRecord(func(c multireadertest.MultiReaderGetWithMetaCall) { seen = append(seen, c) })
@@ -139,9 +133,6 @@ func TestMultiReaderStubGetWithMeta(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("GetWithMeta-failing")
 		s := multireadertest.NewMultiReaderStubFailing(t, want)
 		var a0 context.Context
@@ -153,9 +144,6 @@ func TestMultiReaderStubGetWithMeta(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := multireadertest.NewMultiReaderStub(t)
 		var want0 multireader.Value
 		var want1 multireader.Meta
@@ -200,8 +188,6 @@ func multiReaderStubDouble() stub.Double[multireadertest.MultiReaderGetWithMetaC
 			return instance(multireadertest.NewMultiReaderStub(tb, multireadertest.MultiReaderStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[multireadertest.MultiReaderGetWithMetaCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(multireadertest.NewMultiReaderStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[multireadertest.MultiReaderGetWithMetaCall] {
@@ -252,4 +238,4 @@ func TestMultiReaderStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e45622d8a914bd5e0eb91cdbf37bdd6bcf255d0c38227d0474cff25b756bb646
+// dokimi:provenance sha256:b48887152b7ffad2fb034475c9466cc55bd07353e650ccd11fe6eebaedfb9dea

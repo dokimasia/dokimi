@@ -62,9 +62,6 @@ func TestLifecycleStubClose(t *testing.T) {
 
 	stub.Behaviour(t, "Close", lifecycleStubCloseSubject)
 
-	// No check that Close answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := lifecycletest.NewLifecycleStub(t)
@@ -76,8 +73,6 @@ func TestLifecycleStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := lifecycletest.NewLifecycleStub(t)
 		var seen []lifecycletest.LifecycleCloseCall
 		s.OnClose.OnRecord(func(c lifecycletest.LifecycleCloseCall) { seen = append(seen, c) })
@@ -102,9 +97,6 @@ func TestLifecycleStubClose(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Close-failing")
 		s := lifecycletest.NewLifecycleStubFailing(t, want)
 		var a0 context.Context
@@ -114,11 +106,6 @@ func TestLifecycleStubClose(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Close admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := lifecycletest.NewLifecycleStub(t)
 		var want0 error
 		s.OnClose.Returns(want0)
@@ -154,8 +141,6 @@ func lifecycleStubDouble() stub.Double[lifecycletest.LifecycleCloseCall] {
 			return instance(lifecycletest.NewLifecycleStub(tb, lifecycletest.LifecycleStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[lifecycletest.LifecycleCloseCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(lifecycletest.NewLifecycleStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[lifecycletest.LifecycleCloseCall] {
@@ -202,4 +187,4 @@ func TestLifecycleStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a979b415909b3518cdf842c4c88c8e5dd70d57a356806b948206304775a49342
+// dokimi:provenance sha256:7cb04f4be42c8057d35544448566c3a43eef276a17b450341d7a25ee1408670a

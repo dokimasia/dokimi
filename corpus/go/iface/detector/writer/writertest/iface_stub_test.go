@@ -69,9 +69,6 @@ func TestWriterStubPut(t *testing.T) {
 
 	stub.Behaviour(t, "Put", writerStubPutSubject)
 
-	// No check that Put answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := writertest.NewWriterStub(t)
@@ -86,8 +83,6 @@ func TestWriterStubPut(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := writertest.NewWriterStub(t)
 		var seen []writertest.WriterPutCall
 		s.OnPut.OnRecord(func(c writertest.WriterPutCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestWriterStubPut(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := writertest.NewWriterStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestWriterStubPut(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Put admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := writertest.NewWriterStub(t)
 		var want0 error
 		s.OnPut.Returns(want0)
@@ -174,8 +161,6 @@ func writerStubDouble() stub.Double[writertest.WriterPutCall] {
 			return instance(writertest.NewWriterStub(tb, writertest.WriterStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[writertest.WriterPutCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(writertest.NewWriterStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[writertest.WriterPutCall] {
@@ -226,4 +211,4 @@ func TestWriterStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:356fb31eccecc83786df35ceaff05fa8f92a9a54c4ac1340e7b1dfce1ed936ce
+// dokimi:provenance sha256:0b9a825b7545c4b4ad171ec68c67835aff03b524bd4e44420735f2b6ec4d6155

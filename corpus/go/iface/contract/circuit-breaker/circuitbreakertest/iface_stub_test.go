@@ -68,9 +68,6 @@ func TestContractStubRun(t *testing.T) {
 
 	stub.Behaviour(t, "Run", contractStubRunSubject)
 
-	// No check that Run answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := circuitbreakertest.NewContractStub(t)
@@ -85,8 +82,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := circuitbreakertest.NewContractStub(t)
 		var seen []circuitbreakertest.ContractRunCall
 		s.OnRun.OnRecord(func(c circuitbreakertest.ContractRunCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Run-failing")
 		s := circuitbreakertest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestContractStubRun(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Run admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := circuitbreakertest.NewContractStub(t)
 		var want0 error
 		s.OnRun.Returns(want0)
@@ -173,8 +160,6 @@ func contractStubDouble() stub.Double[circuitbreakertest.ContractRunCall] {
 			return instance(circuitbreakertest.NewContractStub(tb, circuitbreakertest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[circuitbreakertest.ContractRunCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(circuitbreakertest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[circuitbreakertest.ContractRunCall] {
@@ -225,4 +210,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:6d76fef9be09250692b0822436671c6da3b552483a0873e31edf325e343f6f8e
+// dokimi:provenance sha256:67d1bbe2b075c8e15eb87bcd5277d1927007802cfe4028c6ece1f5a6c804ec9d

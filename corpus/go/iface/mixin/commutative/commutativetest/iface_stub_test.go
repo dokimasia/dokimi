@@ -69,9 +69,6 @@ func TestMixedStubApply(t *testing.T) {
 
 	stub.Behaviour(t, "Apply", mixedStubApplySubject)
 
-	// No check that Apply answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := commutativetest.NewMixedStub(t)
@@ -86,8 +83,6 @@ func TestMixedStubApply(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := commutativetest.NewMixedStub(t)
 		var seen []commutativetest.MixedApplyCall
 		s.OnApply.OnRecord(func(c commutativetest.MixedApplyCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestMixedStubApply(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Apply-failing")
 		s := commutativetest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestMixedStubApply(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Apply admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := commutativetest.NewMixedStub(t)
 		var want0 error
 		s.OnApply.Returns(want0)
@@ -198,8 +185,6 @@ func TestMixedStubTotal(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := commutativetest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -207,10 +192,8 @@ func TestMixedStubTotal(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Total(a0)
 		assert.Equal(t, got0, want0, "Total must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := commutativetest.NewMixedStub(t)
@@ -222,8 +205,6 @@ func TestMixedStubTotal(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := commutativetest.NewMixedStub(t)
 		var seen []commutativetest.MixedTotalCall
 		s.OnTotal.OnRecord(func(c commutativetest.MixedTotalCall) { seen = append(seen, c) })
@@ -249,9 +230,6 @@ func TestMixedStubTotal(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Total-failing")
 		s := commutativetest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -261,9 +239,6 @@ func TestMixedStubTotal(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := commutativetest.NewMixedStub(t)
 		var want0 int
 		var want1 error
@@ -303,8 +278,6 @@ func mixedStubDouble() stub.Double[commutativetest.MixedApplyCall] {
 			return instance(commutativetest.NewMixedStub(tb, commutativetest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[commutativetest.MixedApplyCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(commutativetest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[commutativetest.MixedApplyCall] {
@@ -369,4 +342,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c980c518562c8d3149e044b577cde68ac72ac920a22d1ce73e5bc86337533efa
+// dokimi:provenance sha256:57f9bdaf747ed4eabaeed59259c022a21b1ec2d3f1029dd5292872593c6a7ad2

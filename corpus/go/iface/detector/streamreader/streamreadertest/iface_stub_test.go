@@ -70,9 +70,6 @@ func TestStreamReaderStubAdd(t *testing.T) {
 
 	stub.Behaviour(t, "Add", streamReaderStubAddSubject)
 
-	// No check that Add answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := streamreadertest.NewStreamReaderStub(t)
@@ -87,8 +84,6 @@ func TestStreamReaderStubAdd(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := streamreadertest.NewStreamReaderStub(t)
 		var seen []streamreadertest.StreamReaderAddCall
 		s.OnAdd.OnRecord(func(c streamreadertest.StreamReaderAddCall) { seen = append(seen, c) })
@@ -117,9 +112,6 @@ func TestStreamReaderStubAdd(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Add-failing")
 		s := streamreadertest.NewStreamReaderStubFailing(t, want)
 		var a0 context.Context
@@ -131,11 +123,6 @@ func TestStreamReaderStubAdd(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Add admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := streamreadertest.NewStreamReaderStub(t)
 		var want0 error
 		s.OnAdd.Returns(want0)
@@ -193,8 +180,6 @@ func TestStreamReaderStubList(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := streamreadertest.NewStreamReaderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 iter.Seq2[streamreader.Value, error]
 		want0 = iter.Seq2[streamreader.Value, error](func(func(streamreader.Value, error) bool) {})
 		s.OnList.Returns(want0)
@@ -202,6 +187,7 @@ func TestStreamReaderStubList(t *testing.T) {
 		got0 := s.List(a0)
 		assert.Equal(t, got0, want0, "List must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := streamreadertest.NewStreamReaderStub(t)
@@ -213,8 +199,6 @@ func TestStreamReaderStubList(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := streamreadertest.NewStreamReaderStub(t)
 		var seen []streamreadertest.StreamReaderListCall
 		s.OnList.OnRecord(func(c streamreadertest.StreamReaderListCall) { seen = append(seen, c) })
@@ -239,9 +223,6 @@ func TestStreamReaderStubList(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := streamreadertest.NewStreamReaderStub(t)
 		var want0 iter.Seq2[streamreader.Value, error]
 		want0 = iter.Seq2[streamreader.Value, error](func(func(streamreader.Value, error) bool) {})
@@ -345,8 +326,6 @@ func streamReaderStubDouble() stub.Double[streamreadertest.StreamReaderAddCall] 
 			return instance(streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[streamreadertest.StreamReaderAddCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(streamreadertest.NewStreamReaderStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[streamreadertest.StreamReaderAddCall] {
@@ -403,4 +382,4 @@ func TestStreamReaderStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a6436b40aaf0daeb9bb0c2f7cae0df38e4bfd777f1ef682d1464469f9bead60f
+// dokimi:provenance sha256:032b493d23851042152aad9873970d10e65d6ac69a974fd470831a0706a1734c

@@ -68,9 +68,6 @@ func TestMixedStubDelete(t *testing.T) {
 
 	stub.Behaviour(t, "Delete", mixedStubDeleteSubject)
 
-	// No check that Delete answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := deleteremovestest.NewMixedStub(t)
@@ -85,8 +82,6 @@ func TestMixedStubDelete(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := deleteremovestest.NewMixedStub(t)
 		var seen []deleteremovestest.MixedDeleteCall
 		s.OnDelete.OnRecord(func(c deleteremovestest.MixedDeleteCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestMixedStubDelete(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Delete-failing")
 		s := deleteremovestest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestMixedStubDelete(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Delete admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := deleteremovestest.NewMixedStub(t)
 		var want0 error
 		s.OnDelete.Returns(want0)
@@ -205,9 +192,6 @@ func TestMixedStubPut(t *testing.T) {
 
 	stub.Behaviour(t, "Put", mixedStubPutSubject)
 
-	// No check that Put answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := deleteremovestest.NewMixedStub(t)
@@ -225,8 +209,6 @@ func TestMixedStubPut(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := deleteremovestest.NewMixedStub(t)
 		var seen []deleteremovestest.MixedPutCall
 		s.OnPut.OnRecord(func(c deleteremovestest.MixedPutCall) { seen = append(seen, c) })
@@ -259,9 +241,6 @@ func TestMixedStubPut(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := deleteremovestest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -275,11 +254,6 @@ func TestMixedStubPut(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Put admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := deleteremovestest.NewMixedStub(t)
 		var want0 error
 		s.OnPut.Returns(want0)
@@ -351,8 +325,6 @@ func TestMixedStubRead(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := deleteremovestest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Read-a"
@@ -362,10 +334,8 @@ func TestMixedStubRead(t *testing.T) {
 		a1 = "Read-a"
 		got0, _ := s.Read(a0, a1)
 		assert.Equal(t, got0, want0, "Read must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := deleteremovestest.NewMixedStub(t)
@@ -380,8 +350,6 @@ func TestMixedStubRead(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := deleteremovestest.NewMixedStub(t)
 		var seen []deleteremovestest.MixedReadCall
 		s.OnRead.OnRecord(func(c deleteremovestest.MixedReadCall) { seen = append(seen, c) })
@@ -411,9 +379,6 @@ func TestMixedStubRead(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Read-failing")
 		s := deleteremovestest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -425,9 +390,6 @@ func TestMixedStubRead(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := deleteremovestest.NewMixedStub(t)
 		var want0 string
 		var want1 error
@@ -469,8 +431,6 @@ func mixedStubDouble() stub.Double[deleteremovestest.MixedDeleteCall] {
 			return instance(deleteremovestest.NewMixedStub(tb, deleteremovestest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[deleteremovestest.MixedDeleteCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(deleteremovestest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[deleteremovestest.MixedDeleteCall] {
@@ -561,4 +521,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7ab082becc77918d45351489cc9ee76735bbaded8876172da733c6b1609b90a5
+// dokimi:provenance sha256:b2e9dc6a4c0029906911d667f34ae2105eb8ea9932a2a233ab7e633ccf1f54af

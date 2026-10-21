@@ -74,8 +74,6 @@ func TestPaginatedReaderStubFetch(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 paginatedreader.Page
 		var want1 error
 		want0 = paginatedreader.Page{Items: []paginatedreader.Value{paginatedreader.Value{Key: "Key-a"}}}
@@ -85,10 +83,8 @@ func TestPaginatedReaderStubFetch(t *testing.T) {
 		a1 = 42
 		got0, _ := s.Fetch(a0, a1)
 		assert.Equal(t, got0, want0, "Fetch must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := paginatedreadertest.NewPaginatedReaderStub(t)
@@ -103,8 +99,6 @@ func TestPaginatedReaderStubFetch(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := paginatedreadertest.NewPaginatedReaderStub(t)
 		var seen []paginatedreadertest.PaginatedReaderFetchCall
 		s.OnFetch.OnRecord(func(c paginatedreadertest.PaginatedReaderFetchCall) { seen = append(seen, c) })
@@ -134,9 +128,6 @@ func TestPaginatedReaderStubFetch(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Fetch-failing")
 		s := paginatedreadertest.NewPaginatedReaderStubFailing(t, want)
 		var a0 context.Context
@@ -148,9 +139,6 @@ func TestPaginatedReaderStubFetch(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := paginatedreadertest.NewPaginatedReaderStub(t)
 		var want0 paginatedreader.Page
 		var want1 error
@@ -218,9 +206,6 @@ func TestPaginatedReaderStubAdd(t *testing.T) {
 
 	stub.Behaviour(t, "Add", paginatedReaderStubAddSubject)
 
-	// No check that Add answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := paginatedreadertest.NewPaginatedReaderStub(t)
@@ -235,8 +220,6 @@ func TestPaginatedReaderStubAdd(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := paginatedreadertest.NewPaginatedReaderStub(t)
 		var seen []paginatedreadertest.PaginatedReaderAddCall
 		s.OnAdd.OnRecord(func(c paginatedreadertest.PaginatedReaderAddCall) { seen = append(seen, c) })
@@ -265,9 +248,6 @@ func TestPaginatedReaderStubAdd(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Add-failing")
 		s := paginatedreadertest.NewPaginatedReaderStubFailing(t, want)
 		var a0 context.Context
@@ -279,11 +259,6 @@ func TestPaginatedReaderStubAdd(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Add admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := paginatedreadertest.NewPaginatedReaderStub(t)
 		var want0 error
 		s.OnAdd.Returns(want0)
@@ -324,8 +299,6 @@ func paginatedReaderStubDouble() stub.Double[paginatedreadertest.PaginatedReader
 			return instance(paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(paginatedreadertest.NewPaginatedReaderStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
@@ -394,4 +367,4 @@ func TestPaginatedReaderStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:0a963f7d2516a738934eba8c18a3229fef5f5e2162009bc1bc96a26783b595be
+// dokimi:provenance sha256:2d27793d1a5f15143042c8a213a56fb4d10141c8146899c58da2c1f3f5f5db08

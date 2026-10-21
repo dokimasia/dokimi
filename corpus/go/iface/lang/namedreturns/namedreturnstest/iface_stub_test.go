@@ -72,8 +72,6 @@ func TestServiceStubNamed(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := namedreturnstest.NewServiceStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Named-a"
@@ -83,10 +81,8 @@ func TestServiceStubNamed(t *testing.T) {
 		a1 = "Named-a"
 		got0, _ := s.Named(a0, a1)
 		assert.Equal(t, got0, want0, "Named must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := namedreturnstest.NewServiceStub(t)
@@ -101,8 +97,6 @@ func TestServiceStubNamed(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := namedreturnstest.NewServiceStub(t)
 		var seen []namedreturnstest.ServiceNamedCall
 		s.OnNamed.OnRecord(func(c namedreturnstest.ServiceNamedCall) { seen = append(seen, c) })
@@ -132,9 +126,6 @@ func TestServiceStubNamed(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Named-failing")
 		s := namedreturnstest.NewServiceStubFailing(t, want)
 		var a0 context.Context
@@ -146,9 +137,6 @@ func TestServiceStubNamed(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := namedreturnstest.NewServiceStub(t)
 		var want0 string
 		var want1 error
@@ -220,8 +208,6 @@ func TestServiceStubUnnamed(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := namedreturnstest.NewServiceStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Unnamed-a"
@@ -231,10 +217,8 @@ func TestServiceStubUnnamed(t *testing.T) {
 		a1 = "Unnamed-a"
 		got0, _ := s.Unnamed(a0, a1)
 		assert.Equal(t, got0, want0, "Unnamed must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := namedreturnstest.NewServiceStub(t)
@@ -249,8 +233,6 @@ func TestServiceStubUnnamed(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := namedreturnstest.NewServiceStub(t)
 		var seen []namedreturnstest.ServiceUnnamedCall
 		s.OnUnnamed.OnRecord(func(c namedreturnstest.ServiceUnnamedCall) { seen = append(seen, c) })
@@ -280,9 +262,6 @@ func TestServiceStubUnnamed(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Unnamed-failing")
 		s := namedreturnstest.NewServiceStubFailing(t, want)
 		var a0 context.Context
@@ -294,9 +273,6 @@ func TestServiceStubUnnamed(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := namedreturnstest.NewServiceStub(t)
 		var want0 string
 		var want1 error
@@ -369,8 +345,6 @@ func TestServiceStubPartiallyNamed(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := namedreturnstest.NewServiceStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "PartiallyNamed-a"
@@ -380,10 +354,8 @@ func TestServiceStubPartiallyNamed(t *testing.T) {
 		a1 = "PartiallyNamed-a"
 		got0, _ := s.PartiallyNamed(a0, a1)
 		assert.Equal(t, got0, want0, "PartiallyNamed must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := namedreturnstest.NewServiceStub(t)
@@ -398,8 +370,6 @@ func TestServiceStubPartiallyNamed(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := namedreturnstest.NewServiceStub(t)
 		var seen []namedreturnstest.ServicePartiallyNamedCall
 		s.OnPartiallyNamed.OnRecord(func(c namedreturnstest.ServicePartiallyNamedCall) { seen = append(seen, c) })
@@ -429,9 +399,6 @@ func TestServiceStubPartiallyNamed(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("PartiallyNamed-failing")
 		s := namedreturnstest.NewServiceStubFailing(t, want)
 		var a0 context.Context
@@ -443,9 +410,6 @@ func TestServiceStubPartiallyNamed(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := namedreturnstest.NewServiceStub(t)
 		var want0 string
 		var want1 error
@@ -487,8 +451,6 @@ func serviceStubDouble() stub.Double[namedreturnstest.ServiceNamedCall] {
 			return instance(namedreturnstest.NewServiceStub(tb, namedreturnstest.ServiceStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[namedreturnstest.ServiceNamedCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(namedreturnstest.NewServiceStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[namedreturnstest.ServiceNamedCall] {
@@ -575,4 +537,4 @@ func TestServiceStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:5a74d3b38a85c642c7b1a6931abe68472a370a929d111f2dafa03f19df19ad31
+// dokimi:provenance sha256:b5fbb5eac0877f19d51f2ca0a3bcdc685387efb0ce9523194726a04aeff237be

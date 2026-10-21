@@ -73,8 +73,6 @@ func TestAnsweringWriterStubPut(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := answeringwritertest.NewAnsweringWriterStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 answeringwriter.Value
 		var want1 error
 		want0 = answeringwriter.Value{Key: "Key-a"}
@@ -84,10 +82,8 @@ func TestAnsweringWriterStubPut(t *testing.T) {
 		a1 = answeringwriter.Value{Key: "Key-a"}
 		got0, _ := s.Put(a0, a1)
 		assert.Equal(t, got0, want0, "Put must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := answeringwritertest.NewAnsweringWriterStub(t)
@@ -102,8 +98,6 @@ func TestAnsweringWriterStubPut(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := answeringwritertest.NewAnsweringWriterStub(t)
 		var seen []answeringwritertest.AnsweringWriterPutCall
 		s.OnPut.OnRecord(func(c answeringwritertest.AnsweringWriterPutCall) { seen = append(seen, c) })
@@ -133,9 +127,6 @@ func TestAnsweringWriterStubPut(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Put-failing")
 		s := answeringwritertest.NewAnsweringWriterStubFailing(t, want)
 		var a0 context.Context
@@ -147,9 +138,6 @@ func TestAnsweringWriterStubPut(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := answeringwritertest.NewAnsweringWriterStub(t)
 		var want0 answeringwriter.Value
 		var want1 error
@@ -192,8 +180,6 @@ func answeringWriterStubDouble() stub.Double[answeringwritertest.AnsweringWriter
 			return instance(answeringwritertest.NewAnsweringWriterStub(tb, answeringwritertest.AnsweringWriterStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[answeringwritertest.AnsweringWriterPutCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(answeringwritertest.NewAnsweringWriterStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[answeringwritertest.AnsweringWriterPutCall] {
@@ -244,4 +230,4 @@ func TestAnsweringWriterStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:33a83a11d851cb638e83738eed0e212ca3b2a039b640253b0c485c0cdb29dbd3
+// dokimi:provenance sha256:c1f13d5c094c4a4acc8ab0a57f3f2d09c91621ebfd582146d0139966743fde74

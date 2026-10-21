@@ -68,8 +68,6 @@ func TestSourceStubNext(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := streamconsumertest.NewSourceStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 streamconsumer.Value
 		var want1 bool
 		var want2 error
@@ -80,10 +78,8 @@ func TestSourceStubNext(t *testing.T) {
 		got0, got1, _ := s.Next(a0)
 		assert.Equal(t, got0, want0, "Next must answer with what Returns pinned")
 		assert.Equal(t, got1, want1, "Next must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 2 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := streamconsumertest.NewSourceStub(t)
@@ -95,8 +91,6 @@ func TestSourceStubNext(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := streamconsumertest.NewSourceStub(t)
 		var seen []streamconsumertest.SourceNextCall
 		s.OnNext.OnRecord(func(c streamconsumertest.SourceNextCall) { seen = append(seen, c) })
@@ -123,9 +117,6 @@ func TestSourceStubNext(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Next-failing")
 		s := streamconsumertest.NewSourceStubFailing(t, want)
 		var a0 context.Context
@@ -135,9 +126,6 @@ func TestSourceStubNext(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := streamconsumertest.NewSourceStub(t)
 		var want0 streamconsumer.Value
 		var want1 bool
@@ -178,8 +166,6 @@ func sourceStubDouble() stub.Double[streamconsumertest.SourceNextCall] {
 			return instance(streamconsumertest.NewSourceStub(tb, streamconsumertest.SourceStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[streamconsumertest.SourceNextCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(streamconsumertest.NewSourceStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[streamconsumertest.SourceNextCall] {
@@ -280,8 +266,6 @@ func TestStreamConsumerStubIngest(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := streamconsumertest.NewStreamConsumerStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -290,10 +274,8 @@ func TestStreamConsumerStubIngest(t *testing.T) {
 		var a1 streamconsumer.Source
 		got0, _ := s.Ingest(a0, a1)
 		assert.Equal(t, got0, want0, "Ingest must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := streamconsumertest.NewStreamConsumerStub(t)
@@ -307,8 +289,6 @@ func TestStreamConsumerStubIngest(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := streamconsumertest.NewStreamConsumerStub(t)
 		var seen []streamconsumertest.StreamConsumerIngestCall
 		s.OnIngest.OnRecord(func(c streamconsumertest.StreamConsumerIngestCall) { seen = append(seen, c) })
@@ -336,9 +316,6 @@ func TestStreamConsumerStubIngest(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Ingest-failing")
 		s := streamconsumertest.NewStreamConsumerStubFailing(t, want)
 		var a0 context.Context
@@ -349,9 +326,6 @@ func TestStreamConsumerStubIngest(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := streamconsumertest.NewStreamConsumerStub(t)
 		var want0 int
 		var want1 error
@@ -392,8 +366,6 @@ func streamConsumerStubDouble() stub.Double[streamconsumertest.StreamConsumerIng
 			return instance(streamconsumertest.NewStreamConsumerStub(tb, streamconsumertest.StreamConsumerStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[streamconsumertest.StreamConsumerIngestCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(streamconsumertest.NewStreamConsumerStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[streamconsumertest.StreamConsumerIngestCall] {
@@ -442,4 +414,4 @@ func TestStreamConsumerStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:0ca2e9382c236faf26031dc3d192c76d036c63e5bcf597b1f4be32dc5141148e
+// dokimi:provenance sha256:bbb523537c4d8f021310476a14bf92042e69d8c49af65800aeb97fcf150f4051

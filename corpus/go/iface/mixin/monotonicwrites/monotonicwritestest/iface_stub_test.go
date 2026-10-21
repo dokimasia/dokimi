@@ -73,8 +73,6 @@ func TestMixedStubStore(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := monotonicwritestest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 monotonicwrites.Value
 		var want1 error
 		want0 = monotonicwrites.Value{Key: "Key-a"}
@@ -84,10 +82,8 @@ func TestMixedStubStore(t *testing.T) {
 		a1 = monotonicwrites.Value{Key: "Key-a"}
 		got0, _ := s.Store(a0, a1)
 		assert.Equal(t, got0, want0, "Store must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := monotonicwritestest.NewMixedStub(t)
@@ -102,8 +98,6 @@ func TestMixedStubStore(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := monotonicwritestest.NewMixedStub(t)
 		var seen []monotonicwritestest.MixedStoreCall
 		s.OnStore.OnRecord(func(c monotonicwritestest.MixedStoreCall) { seen = append(seen, c) })
@@ -133,9 +127,6 @@ func TestMixedStubStore(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Store-failing")
 		s := monotonicwritestest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -147,9 +138,6 @@ func TestMixedStubStore(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := monotonicwritestest.NewMixedStub(t)
 		var want0 monotonicwrites.Value
 		var want1 error
@@ -221,8 +209,6 @@ func TestMixedStubGet(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := monotonicwritestest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 monotonicwrites.Value
 		var want1 error
 		want0 = monotonicwrites.Value{Key: "Key-a"}
@@ -232,10 +218,8 @@ func TestMixedStubGet(t *testing.T) {
 		a1 = "Get-a"
 		got0, _ := s.Get(a0, a1)
 		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := monotonicwritestest.NewMixedStub(t)
@@ -250,8 +234,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := monotonicwritestest.NewMixedStub(t)
 		var seen []monotonicwritestest.MixedGetCall
 		s.OnGet.OnRecord(func(c monotonicwritestest.MixedGetCall) { seen = append(seen, c) })
@@ -281,9 +263,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Get-failing")
 		s := monotonicwritestest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -295,9 +274,6 @@ func TestMixedStubGet(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := monotonicwritestest.NewMixedStub(t)
 		var want0 monotonicwrites.Value
 		var want1 error
@@ -339,8 +315,6 @@ func mixedStubDouble() stub.Double[monotonicwritestest.MixedStoreCall] {
 			return instance(monotonicwritestest.NewMixedStub(tb, monotonicwritestest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[monotonicwritestest.MixedStoreCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(monotonicwritestest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[monotonicwritestest.MixedStoreCall] {
@@ -409,4 +383,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:081c0bc49788b41f179cc9305e9362ca16bf4bac51a34b3379b02587762d4b0b
+// dokimi:provenance sha256:ed1a1bc663ba29fb229cdd4dcf5ff529be912ab65e1b5dff06f3e71b08c14ad4

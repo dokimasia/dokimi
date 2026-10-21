@@ -69,9 +69,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	stub.Behaviour(t, "Add", mixedStubAddSubject)
 
-	// No check that Add answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := permutationtest.NewMixedStub(t)
@@ -86,8 +83,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := permutationtest.NewMixedStub(t)
 		var seen []permutationtest.MixedAddCall
 		s.OnAdd.OnRecord(func(c permutationtest.MixedAddCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Add-failing")
 		s := permutationtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestMixedStubAdd(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Add admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := permutationtest.NewMixedStub(t)
 		var want0 error
 		s.OnAdd.Returns(want0)
@@ -198,8 +185,6 @@ func TestMixedStubItems(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := permutationtest.NewMixedStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []permutation.Value
 		var want1 error
 		want0 = []permutation.Value{permutation.Value{Key: "Key-a"}}
@@ -207,10 +192,8 @@ func TestMixedStubItems(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Items(a0)
 		assert.Equal(t, got0, want0, "Items must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := permutationtest.NewMixedStub(t)
@@ -222,8 +205,6 @@ func TestMixedStubItems(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := permutationtest.NewMixedStub(t)
 		var seen []permutationtest.MixedItemsCall
 		s.OnItems.OnRecord(func(c permutationtest.MixedItemsCall) { seen = append(seen, c) })
@@ -249,9 +230,6 @@ func TestMixedStubItems(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Items-failing")
 		s := permutationtest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -261,9 +239,6 @@ func TestMixedStubItems(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := permutationtest.NewMixedStub(t)
 		var want0 []permutation.Value
 		var want1 error
@@ -303,8 +278,6 @@ func mixedStubDouble() stub.Double[permutationtest.MixedAddCall] {
 			return instance(permutationtest.NewMixedStub(tb, permutationtest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[permutationtest.MixedAddCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(permutationtest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[permutationtest.MixedAddCall] {
@@ -369,4 +342,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e3ed6dcce2e884de4fb4772a09294a07968f07699df9a7f8a548f7f8cc1b53e7
+// dokimi:provenance sha256:1b5ecc8b56c8f0ebebcdc5208e916f4b6c22d484db36ac0cac959c037a0893d5

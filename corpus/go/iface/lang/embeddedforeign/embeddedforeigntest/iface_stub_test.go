@@ -72,8 +72,6 @@ func TestStreamStubRead(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedforeigntest.NewStreamStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 string
 		var want1 error
 		want0 = "Read-a"
@@ -83,10 +81,8 @@ func TestStreamStubRead(t *testing.T) {
 		a1 = "Read-a"
 		got0, _ := s.Read(a0, a1)
 		assert.Equal(t, got0, want0, "Read must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedforeigntest.NewStreamStub(t)
@@ -101,8 +97,6 @@ func TestStreamStubRead(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := embeddedforeigntest.NewStreamStub(t)
 		var seen []embeddedforeigntest.StreamReadCall
 		s.OnRead.OnRecord(func(c embeddedforeigntest.StreamReadCall) { seen = append(seen, c) })
@@ -132,9 +126,6 @@ func TestStreamStubRead(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Read-failing")
 		s := embeddedforeigntest.NewStreamStubFailing(t, want)
 		var a0 context.Context
@@ -146,9 +137,6 @@ func TestStreamStubRead(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := embeddedforeigntest.NewStreamStub(t)
 		var want0 string
 		var want1 error
@@ -207,9 +195,6 @@ func TestStreamStubClose(t *testing.T) {
 
 	stub.Behaviour(t, "Close", streamStubCloseSubject)
 
-	// No check that Close answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := embeddedforeigntest.NewStreamStub(t)
@@ -219,8 +204,6 @@ func TestStreamStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := embeddedforeigntest.NewStreamStub(t)
 		var seen []embeddedforeigntest.StreamCloseCall
 		s.OnClose.OnRecord(func(c embeddedforeigntest.StreamCloseCall) { seen = append(seen, c) })
@@ -243,9 +226,6 @@ func TestStreamStubClose(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Close-failing")
 		s := embeddedforeigntest.NewStreamStubFailing(t, want)
 		r0 := s.Close()
@@ -254,11 +234,6 @@ func TestStreamStubClose(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Close admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := embeddedforeigntest.NewStreamStub(t)
 		var want0 error
 		s.OnClose.Returns(want0)
@@ -295,8 +270,6 @@ func streamStubDouble() stub.Double[embeddedforeigntest.StreamReadCall] {
 			return instance(embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[embeddedforeigntest.StreamReadCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(embeddedforeigntest.NewStreamStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[embeddedforeigntest.StreamReadCall] {
@@ -359,4 +332,4 @@ func TestStreamStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d5bf2a4834fb5f4f60f8967558eac509d668bcea316bb9bf190af453f3d2b087
+// dokimi:provenance sha256:202e79bb2da7bbd4d3ea16d7083b24b75ec8bd1a9b3766fe9eb31b4fa9ac77a5

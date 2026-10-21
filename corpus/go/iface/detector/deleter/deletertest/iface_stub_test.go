@@ -68,9 +68,6 @@ func TestDeleterStubDelete(t *testing.T) {
 
 	stub.Behaviour(t, "Delete", deleterStubDeleteSubject)
 
-	// No check that Delete answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := deletertest.NewDeleterStub(t)
@@ -85,8 +82,6 @@ func TestDeleterStubDelete(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := deletertest.NewDeleterStub(t)
 		var seen []deletertest.DeleterDeleteCall
 		s.OnDelete.OnRecord(func(c deletertest.DeleterDeleteCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestDeleterStubDelete(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Delete-failing")
 		s := deletertest.NewDeleterStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestDeleterStubDelete(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Delete admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := deletertest.NewDeleterStub(t)
 		var want0 error
 		s.OnDelete.Returns(want0)
@@ -173,8 +160,6 @@ func deleterStubDouble() stub.Double[deletertest.DeleterDeleteCall] {
 			return instance(deletertest.NewDeleterStub(tb, deletertest.DeleterStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[deletertest.DeleterDeleteCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(deletertest.NewDeleterStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[deletertest.DeleterDeleteCall] {
@@ -225,4 +210,4 @@ func TestDeleterStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:84cfe79b6d1de473044bb81abb1212cef17a090d991dc8790b070e19d47e81fa
+// dokimi:provenance sha256:207e08ad9427961bc36d5674500b56983ca0733e0e97581163b1e4f55f9f4460

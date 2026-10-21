@@ -65,8 +65,6 @@ func TestCalculatorStubAdd(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := nocontexttest.NewCalculatorStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		want0 = 42
 		s.OnAdd.Returns(want0)
@@ -77,6 +75,7 @@ func TestCalculatorStubAdd(t *testing.T) {
 		got0 := s.Add(a0, a1)
 		assert.Equal(t, got0, want0, "Add must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := nocontexttest.NewCalculatorStub(t)
@@ -92,8 +91,6 @@ func TestCalculatorStubAdd(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := nocontexttest.NewCalculatorStub(t)
 		var seen []nocontexttest.CalculatorAddCall
 		s.OnAdd.OnRecord(func(c nocontexttest.CalculatorAddCall) { seen = append(seen, c) })
@@ -124,9 +121,6 @@ func TestCalculatorStubAdd(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := nocontexttest.NewCalculatorStub(t)
 		var want0 int
 		want0 = 42
@@ -201,8 +195,6 @@ func TestCalculatorStubDivide(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := nocontexttest.NewCalculatorStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -213,10 +205,8 @@ func TestCalculatorStubDivide(t *testing.T) {
 		a1 = 42
 		got0, _ := s.Divide(a0, a1)
 		assert.Equal(t, got0, want0, "Divide must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := nocontexttest.NewCalculatorStub(t)
@@ -232,8 +222,6 @@ func TestCalculatorStubDivide(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := nocontexttest.NewCalculatorStub(t)
 		var seen []nocontexttest.CalculatorDivideCall
 		s.OnDivide.OnRecord(func(c nocontexttest.CalculatorDivideCall) { seen = append(seen, c) })
@@ -265,9 +253,6 @@ func TestCalculatorStubDivide(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Divide-failing")
 		s := nocontexttest.NewCalculatorStubFailing(t, want)
 		var a0 int
@@ -280,9 +265,6 @@ func TestCalculatorStubDivide(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := nocontexttest.NewCalculatorStub(t)
 		var want0 int
 		var want1 error
@@ -331,6 +313,7 @@ func TestCalculatorStubReset(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "Reset", calculatorStubResetSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := nocontexttest.NewCalculatorStub(t)
@@ -340,8 +323,6 @@ func TestCalculatorStubReset(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := nocontexttest.NewCalculatorStub(t)
 		var seen []nocontexttest.CalculatorResetCall
 		s.OnReset.OnRecord(func(c nocontexttest.CalculatorResetCall) { seen = append(seen, c) })
@@ -388,8 +369,6 @@ func calculatorStubDouble() stub.Double[nocontexttest.CalculatorAddCall] {
 			return instance(nocontexttest.NewCalculatorStub(tb, nocontexttest.CalculatorStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[nocontexttest.CalculatorAddCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(nocontexttest.NewCalculatorStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[nocontexttest.CalculatorAddCall] {
@@ -456,4 +435,4 @@ func TestCalculatorStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:69ae15bcd888fc1170cd5547d39e060c8fdd4ee0a4d678ebe4b096f1eaccb9ce
+// dokimi:provenance sha256:08e52a8bdb5dd75e0a4212a945d25c5a2d106f4d6becfac416d8b4e60ab4ed09

@@ -62,9 +62,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	stub.Behaviour(t, "Close", closerStubCloseSubject)
 
-	// No check that Close answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := idempotentclosetest.NewCloserStub(t)
@@ -76,8 +73,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := idempotentclosetest.NewCloserStub(t)
 		var seen []idempotentclosetest.CloserCloseCall
 		s.OnClose.OnRecord(func(c idempotentclosetest.CloserCloseCall) { seen = append(seen, c) })
@@ -102,9 +97,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Close-failing")
 		s := idempotentclosetest.NewCloserStubFailing(t, want)
 		var a0 context.Context
@@ -114,11 +106,6 @@ func TestCloserStubClose(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Close admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := idempotentclosetest.NewCloserStub(t)
 		var want0 error
 		s.OnClose.Returns(want0)
@@ -180,8 +167,6 @@ func TestCloserStubStats(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := idempotentclosetest.NewCloserStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -189,10 +174,8 @@ func TestCloserStubStats(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Stats(a0)
 		assert.Equal(t, got0, want0, "Stats must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := idempotentclosetest.NewCloserStub(t)
@@ -204,8 +187,6 @@ func TestCloserStubStats(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := idempotentclosetest.NewCloserStub(t)
 		var seen []idempotentclosetest.CloserStatsCall
 		s.OnStats.OnRecord(func(c idempotentclosetest.CloserStatsCall) { seen = append(seen, c) })
@@ -231,9 +212,6 @@ func TestCloserStubStats(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Stats-failing")
 		s := idempotentclosetest.NewCloserStubFailing(t, want)
 		var a0 context.Context
@@ -243,9 +221,6 @@ func TestCloserStubStats(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := idempotentclosetest.NewCloserStub(t)
 		var want0 int
 		var want1 error
@@ -283,8 +258,6 @@ func closerStubDouble() stub.Double[idempotentclosetest.CloserCloseCall] {
 			return instance(idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[idempotentclosetest.CloserCloseCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(idempotentclosetest.NewCloserStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[idempotentclosetest.CloserCloseCall] {
@@ -345,4 +318,4 @@ func TestCloserStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:4550d29af90c57f4a893736d895283ad06f9ab385a4acff7152764c555c6279d
+// dokimi:provenance sha256:e0b94ff85f65d7583c8760501ecf45d7fda75fc23eef5be15f3ec85852e54696

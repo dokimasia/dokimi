@@ -62,9 +62,6 @@ func TestTxWithRetryStubBegin(t *testing.T) {
 
 	stub.Behaviour(t, "Begin", txWithRetryStubBeginSubject)
 
-	// No check that Begin answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txwithretrytest.NewTxWithRetryStub(t)
@@ -76,8 +73,6 @@ func TestTxWithRetryStubBegin(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txwithretrytest.NewTxWithRetryStub(t)
 		var seen []txwithretrytest.TxWithRetryBeginCall
 		s.OnBegin.OnRecord(func(c txwithretrytest.TxWithRetryBeginCall) { seen = append(seen, c) })
@@ -102,9 +97,6 @@ func TestTxWithRetryStubBegin(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Begin-failing")
 		s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
 		var a0 context.Context
@@ -114,11 +106,6 @@ func TestTxWithRetryStubBegin(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Begin admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := txwithretrytest.NewTxWithRetryStub(t)
 		var want0 error
 		s.OnBegin.Returns(want0)
@@ -177,9 +164,6 @@ func TestTxWithRetryStubCommit(t *testing.T) {
 
 	stub.Behaviour(t, "Commit", txWithRetryStubCommitSubject)
 
-	// No check that Commit answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txwithretrytest.NewTxWithRetryStub(t)
@@ -191,8 +175,6 @@ func TestTxWithRetryStubCommit(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txwithretrytest.NewTxWithRetryStub(t)
 		var seen []txwithretrytest.TxWithRetryCommitCall
 		s.OnCommit.OnRecord(func(c txwithretrytest.TxWithRetryCommitCall) { seen = append(seen, c) })
@@ -217,9 +199,6 @@ func TestTxWithRetryStubCommit(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Commit-failing")
 		s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
 		var a0 context.Context
@@ -229,11 +208,6 @@ func TestTxWithRetryStubCommit(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Commit admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := txwithretrytest.NewTxWithRetryStub(t)
 		var want0 error
 		s.OnCommit.Returns(want0)
@@ -292,9 +266,6 @@ func TestTxWithRetryStubRollback(t *testing.T) {
 
 	stub.Behaviour(t, "Rollback", txWithRetryStubRollbackSubject)
 
-	// No check that Rollback answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := txwithretrytest.NewTxWithRetryStub(t)
@@ -306,8 +277,6 @@ func TestTxWithRetryStubRollback(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := txwithretrytest.NewTxWithRetryStub(t)
 		var seen []txwithretrytest.TxWithRetryRollbackCall
 		s.OnRollback.OnRecord(func(c txwithretrytest.TxWithRetryRollbackCall) { seen = append(seen, c) })
@@ -332,9 +301,6 @@ func TestTxWithRetryStubRollback(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Rollback-failing")
 		s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
 		var a0 context.Context
@@ -344,11 +310,6 @@ func TestTxWithRetryStubRollback(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Rollback admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := txwithretrytest.NewTxWithRetryStub(t)
 		var want0 error
 		s.OnRollback.Returns(want0)
@@ -384,8 +345,6 @@ func txWithRetryStubDouble() stub.Double[txwithretrytest.TxWithRetryBeginCall] {
 			return instance(txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(txwithretrytest.NewTxWithRetryStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
@@ -460,4 +419,4 @@ func TestTxWithRetryStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:129c3f2793aad22c10b8d7979ea725ac72cf900ec04804da2fcd1f88126e3996
+// dokimi:provenance sha256:e888862eca4a88fb05c98ac5b92d42b55027e95748294007d05281e61d742dfc

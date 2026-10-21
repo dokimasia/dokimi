@@ -66,8 +66,6 @@ func TestAggregatorStubCount(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := aggregatortest.NewAggregatorStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 int
 		var want1 error
 		want0 = 42
@@ -75,10 +73,8 @@ func TestAggregatorStubCount(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Count(a0)
 		assert.Equal(t, got0, want0, "Count must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := aggregatortest.NewAggregatorStub(t)
@@ -90,8 +86,6 @@ func TestAggregatorStubCount(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := aggregatortest.NewAggregatorStub(t)
 		var seen []aggregatortest.AggregatorCountCall
 		s.OnCount.OnRecord(func(c aggregatortest.AggregatorCountCall) { seen = append(seen, c) })
@@ -117,9 +111,6 @@ func TestAggregatorStubCount(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Count-failing")
 		s := aggregatortest.NewAggregatorStubFailing(t, want)
 		var a0 context.Context
@@ -129,9 +120,6 @@ func TestAggregatorStubCount(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := aggregatortest.NewAggregatorStub(t)
 		var want0 int
 		var want1 error
@@ -169,8 +157,6 @@ func aggregatorStubDouble() stub.Double[aggregatortest.AggregatorCountCall] {
 			return instance(aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[aggregatortest.AggregatorCountCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(aggregatortest.NewAggregatorStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[aggregatortest.AggregatorCountCall] {
@@ -217,4 +203,4 @@ func TestAggregatorStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d781a825cddf9738441c124f5e9e4f4361fed605d0cdb2f28837860b1ff8c8e4
+// dokimi:provenance sha256:028a9aaa03ccc2a2565d4c7fe3aa4fe46cbfddf78fe697274af75638b7662d6a

@@ -68,9 +68,6 @@ func TestContractStubAcquire(t *testing.T) {
 
 	stub.Behaviour(t, "Acquire", contractStubAcquireSubject)
 
-	// No check that Acquire answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := leasetest.NewContractStub(t)
@@ -85,8 +82,6 @@ func TestContractStubAcquire(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := leasetest.NewContractStub(t)
 		var seen []leasetest.ContractAcquireCall
 		s.OnAcquire.OnRecord(func(c leasetest.ContractAcquireCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestContractStubAcquire(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Acquire-failing")
 		s := leasetest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestContractStubAcquire(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Acquire admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := leasetest.NewContractStub(t)
 		var want0 error
 		s.OnAcquire.Returns(want0)
@@ -199,9 +186,6 @@ func TestContractStubRelease(t *testing.T) {
 
 	stub.Behaviour(t, "Release", contractStubReleaseSubject)
 
-	// No check that Release answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := leasetest.NewContractStub(t)
@@ -216,8 +200,6 @@ func TestContractStubRelease(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := leasetest.NewContractStub(t)
 		var seen []leasetest.ContractReleaseCall
 		s.OnRelease.OnRecord(func(c leasetest.ContractReleaseCall) { seen = append(seen, c) })
@@ -246,9 +228,6 @@ func TestContractStubRelease(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Release-failing")
 		s := leasetest.NewContractStubFailing(t, want)
 		var a0 context.Context
@@ -260,11 +239,6 @@ func TestContractStubRelease(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Release admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := leasetest.NewContractStub(t)
 		var want0 error
 		s.OnRelease.Returns(want0)
@@ -304,8 +278,6 @@ func contractStubDouble() stub.Double[leasetest.ContractAcquireCall] {
 			return instance(leasetest.NewContractStub(tb, leasetest.ContractStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[leasetest.ContractAcquireCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(leasetest.NewContractStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[leasetest.ContractAcquireCall] {
@@ -374,4 +346,4 @@ func TestContractStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e9c9381e8a84d133d7381a8d025250f083e6a7f6ee5a14827fcdd0a1d1458d05
+// dokimi:provenance sha256:6a55ca5efc940549405cd99c3c59d79970ba526932ef98d48e5b360cde2e31f0

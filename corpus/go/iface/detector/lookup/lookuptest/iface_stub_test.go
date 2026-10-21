@@ -63,8 +63,6 @@ func TestLookupStubInspect(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := lookuptest.NewLookupStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 lookup.Value
 		var want1 lookup.Meta
 		var want2 bool
@@ -79,6 +77,7 @@ func TestLookupStubInspect(t *testing.T) {
 		assert.Equal(t, got1, want1, "Inspect must answer with what Returns pinned")
 		assert.Equal(t, got2, want2, "Inspect must answer with what Returns pinned")
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := lookuptest.NewLookupStub(t)
@@ -91,8 +90,6 @@ func TestLookupStubInspect(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := lookuptest.NewLookupStub(t)
 		var seen []lookuptest.LookupInspectCall
 		s.OnInspect.OnRecord(func(c lookuptest.LookupInspectCall) { seen = append(seen, c) })
@@ -121,9 +118,6 @@ func TestLookupStubInspect(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := lookuptest.NewLookupStub(t)
 		var want0 lookup.Value
 		var want1 lookup.Meta
@@ -168,8 +162,6 @@ func lookupStubDouble() stub.Double[lookuptest.LookupInspectCall] {
 			return instance(lookuptest.NewLookupStub(tb, lookuptest.LookupStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[lookuptest.LookupInspectCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(lookuptest.NewLookupStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[lookuptest.LookupInspectCall] {
@@ -209,4 +201,4 @@ func TestLookupStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b606736d48bc17ad80b1015fbac3307bdbf88eb113bea2b6abc67ee509842cbc
+// dokimi:provenance sha256:74432ad148a4cc03f51bf59b051eec89c1dc415f3bc70b2043c2a3b9270377a6

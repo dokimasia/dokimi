@@ -68,9 +68,6 @@ func TestMixedStubFire(t *testing.T) {
 
 	stub.Behaviour(t, "Fire", mixedStubFireSubject)
 
-	// No check that Fire answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := hookstest.NewMixedStub(t)
@@ -85,8 +82,6 @@ func TestMixedStubFire(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := hookstest.NewMixedStub(t)
 		var seen []hookstest.MixedFireCall
 		s.OnFire.OnRecord(func(c hookstest.MixedFireCall) { seen = append(seen, c) })
@@ -115,9 +110,6 @@ func TestMixedStubFire(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Fire-failing")
 		s := hookstest.NewMixedStubFailing(t, want)
 		var a0 context.Context
@@ -129,11 +121,6 @@ func TestMixedStubFire(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Fire admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := hookstest.NewMixedStub(t)
 		var want0 error
 		s.OnFire.Returns(want0)
@@ -181,6 +168,7 @@ func TestMixedStubOnEvent(t *testing.T) {
 	t.Parallel()
 
 	stub.Behaviour(t, "OnEvent", mixedStubOnEventSubject)
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := hookstest.NewMixedStub(t)
@@ -193,8 +181,6 @@ func TestMixedStubOnEvent(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := hookstest.NewMixedStub(t)
 		var seen []hookstest.MixedOnEventCall
 		s.OnOnEvent.OnRecord(func(c hookstest.MixedOnEventCall) { seen = append(seen, c) })
@@ -244,8 +230,6 @@ func mixedStubDouble() stub.Double[hookstest.MixedFireCall] {
 			return instance(hookstest.NewMixedStub(tb, hookstest.MixedStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[hookstest.MixedFireCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(hookstest.NewMixedStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[hookstest.MixedFireCall] {
@@ -303,4 +287,4 @@ func TestMixedStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:fdd84f7b263fdd4c1ca723b4ef44b7ca809790c0bc31deab3d2e29ca298ecd18
+// dokimi:provenance sha256:a7d777924cf815f05b5cf3692e96512a1b1c0209ed5f2d3c7cf731307160c746

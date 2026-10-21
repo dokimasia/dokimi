@@ -69,9 +69,6 @@ func TestLogStubAppend(t *testing.T) {
 
 	stub.Behaviour(t, "Append", logStubAppendSubject)
 
-	// No check that Append answers what Returns pinned: no result of its
-	// signature admits a value this run can tell apart from the zero, and an
-	// unconfigured double answers the zero anyway.
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := causalchaintest.NewLogStub(t)
@@ -86,8 +83,6 @@ func TestLogStubAppend(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := causalchaintest.NewLogStub(t)
 		var seen []causalchaintest.LogAppendCall
 		s.OnAppend.OnRecord(func(c causalchaintest.LogAppendCall) { seen = append(seen, c) })
@@ -116,9 +111,6 @@ func TestLogStubAppend(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Append-failing")
 		s := causalchaintest.NewLogStubFailing(t, want)
 		var a0 context.Context
@@ -130,11 +122,6 @@ func TestLogStubAppend(t *testing.T) {
 
 	t.Run("keeps recording across a reset", func(t *testing.T) {
 		t.Parallel()
-		// No result of Append admits a distinguishable value, so what Returns
-		// pinned cannot be told from the zero. What a reset can still be held
-		// to is that it clears the log without taking the double with it:
-		// configure, call, reset, call again, and exactly one call is
-		// recorded.
 		s := causalchaintest.NewLogStub(t)
 		var want0 error
 		s.OnAppend.Returns(want0)
@@ -198,8 +185,6 @@ func TestLogStubReplay(t *testing.T) {
 	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
 		t.Parallel()
 		s := causalchaintest.NewLogStub(t)
-		// Distinguishable from the zero wherever a value can be written: a
-		// double that ignored Returns answers the zero too.
 		var want0 []causalchain.Entry
 		var want1 error
 		want0 = []causalchain.Entry{causalchain.RootEntry()}
@@ -207,10 +192,8 @@ func TestLogStubReplay(t *testing.T) {
 		var a0 context.Context
 		got0, _ := s.Replay(a0)
 		assert.Equal(t, got0, want0, "Replay must answer with what Returns pinned")
-		// Blanked above: no literal exists for result 1 (error), so the
-		// only value to pin there is the zero, which a double that ignored
-		// Returns answers too.
 	})
+
 	t.Run("records what it was called with", func(t *testing.T) {
 		t.Parallel()
 		s := causalchaintest.NewLogStub(t)
@@ -222,8 +205,6 @@ func TestLogStubReplay(t *testing.T) {
 
 	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
 		t.Parallel()
-		// The hook fires synchronously as each call lands, which is what a
-		// concurrency test observes progress with.
 		s := causalchaintest.NewLogStub(t)
 		var seen []causalchaintest.LogReplayCall
 		s.OnReplay.OnRecord(func(c causalchaintest.LogReplayCall) { seen = append(seen, c) })
@@ -249,9 +230,6 @@ func TestLogStubReplay(t *testing.T) {
 
 	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
 		t.Parallel()
-		// The preset arms every method that can fail, so it is checked once
-		// per method. Built through the convenience constructor, which puts
-		// the wrapper and the option it applies under the same check.
 		want := errors.New("Replay-failing")
 		s := causalchaintest.NewLogStubFailing(t, want)
 		var a0 context.Context
@@ -261,9 +239,6 @@ func TestLogStubReplay(t *testing.T) {
 
 	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
 		t.Parallel()
-		// A reset clears what happened, not what was configured. Pinned to a
-		// distinguishable value: a reset that lost the configuration answers
-		// the zero, and so does one that kept a configured zero.
 		s := causalchaintest.NewLogStub(t)
 		var want0 []causalchain.Entry
 		var want1 error
@@ -303,8 +278,6 @@ func logStubDouble() stub.Double[causalchaintest.LogAppendCall] {
 			return instance(causalchaintest.NewLogStub(tb, causalchaintest.LogStubWithClock(clk)))
 		},
 		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[causalchaintest.LogAppendCall] {
-			// Through the convenience constructor, which puts the wrapper
-			// and the pair it bundles under the same check.
 			return instance(causalchaintest.NewLogStubDelayed(tb, d, clk))
 		},
 		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[causalchaintest.LogAppendCall] {
@@ -369,4 +342,4 @@ func TestLogStubDelegateTo(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c17780b054e9034b38e39e05ba07874b20d9970f7e21a003ad16bcc7a86f4bd9
+// dokimi:provenance sha256:c4ddb6112318e4025a0959d28fc966214772dd6814a759c2575810e767a6b3f3

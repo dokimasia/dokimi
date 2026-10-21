@@ -84,7 +84,14 @@ func AccountSecond() Account {
 	}
 }
 
-// Store is the subject the generated harness holds an implementation to.
+// Store is the subject that the generated harness checks an implementation
+// against.
+//
+// An unconfigured call of Get on its double returns a new account from the
+// builder of Account. AccountDefaults seeds that builder, so the store
+// accepts the account.
+//
+//dokimi:stub
 type Store interface {
 	// Put refuses an Account that does not validate.
 	Put(ctx context.Context, a Account) error

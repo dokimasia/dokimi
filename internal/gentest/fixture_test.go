@@ -10,10 +10,12 @@ import (
 
 	"go.dokimi.dev/assert"
 	golang "go.dokimi.dev/eidos/lang/go"
+	"go.dokimi.dev/eidos/lang/typescript"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/frontendtest"
 	"go.dokimi.dev/eidos/sdk/meta"
+	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
@@ -34,10 +36,11 @@ const (
 )
 
 // The declarations that the cases find beside Address and its field Street:
-// the field of the class of the TypeScript tree, the struct of the scripted
+// the fields of the class of the TypeScript tree, the struct of the scripted
 // tree, and a name that no tree declares.
 const (
 	tsStreetName = "street"
+	tsLabelsName = "labels"
 	widgetName   = "Widget"
 	missingName  = "Missing"
 )
@@ -56,6 +59,7 @@ const stampedKey meta.KeyName = "stamper.stamped"
 // The openings of the contracts of the records that a stopped fixture
 // writes.
 const (
+	storesContract   = "the frontend " + string(golang.Name) + " locates its stores"
 	loadContract     = "the source tree loads"
 	packageContract  = "the load declares the package "
 	reportedContract = "the annotator reporter reports no Error, and reports "
@@ -94,6 +98,17 @@ func TestFixture(t *testing.T) {
 			f := gentest.New(t, &gentest.Spec{Dir: tsTree, Packages: []string{catalogModule}})
 			got := f.Find(t, symbol.KindField, addressName, tsStreetName).Identity()
 			assert.Equal(t, got.Package, catalogModule, "the fixture loads the class Address from the module catalog")
+		})
+
+		t.Run("resolves a global type of a TypeScript tree to the library of TypeScript", func(t *testing.T) {
+			t.Parallel()
+
+			f := gentest.New(t, &gentest.Spec{Dir: tsTree, Packages: []string{catalogModule}})
+			field, isField := f.Find(t, symbol.KindField, addressName, tsLabelsName).(*node.Field)
+			assert.True(t, isField, "labels is a field")
+			assert.NotNil(t, field.Type, "labels declares its type")
+			assert.True(t, typescript.Library(field.Type.Target.Package),
+				"the fixture loads the store of the library, which declares Map")
 		})
 
 		t.Run("loads the packages of a tree of the scripted language of eidos", func(t *testing.T) {
@@ -141,6 +156,18 @@ func TestFixture(t *testing.T) {
 			})
 			assert.Length(t, records, 1, "the fixture stops at the packages")
 			assert.Equal(t, records[0].Contract, packageContract+missingPackage, "the fixture stops at the package")
+		})
+
+		t.Run("stops at a frontend that locates no store", func(t *testing.T) {
+			t.Parallel()
+
+			records := assert.Rejects(t, "an environment without the roots of Go", func(tb assert.TB) {
+				gentest.New(tb, &gentest.Spec{
+					Dir: goTree, Packages: []string{catalogPackage}, Getenv: func(string) string { return "" },
+				})
+			})
+			assert.Length(t, records, 1, "the fixture stops at the stores")
+			assert.Equal(t, records[0].Contract, storesContract, "the fixture stops at the frontend of Go")
 		})
 
 		t.Run("fails at an Error that an annotator reports", func(t *testing.T) {

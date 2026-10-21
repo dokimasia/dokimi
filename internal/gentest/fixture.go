@@ -5,6 +5,8 @@ package gentest
 
 import (
 	"fmt"
+	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -30,9 +32,14 @@ import (
 // directive as //dokimi:builder.
 const Brand output.Brand = "dokimi"
 
-// Spec describes a fixture: the tree, the packages of the fixture, the
-// target of the plan, and the plugins that the fixture registers and runs.
+// Spec describes a fixture: the environment of its stores, the tree, the
+// packages of the fixture, the target of the plan, and the plugins that the
+// fixture registers and runs.
 type Spec struct {
+	// Getenv reads the environment through which the frontends locate their
+	// stores. A nil Getenv reads the environment of the process, as the
+	// command line of eidos does.
+	Getenv func(key string) string
 	// Dir is the directory of the tree, slash-separated and relative to the
 	// directory of the spec.
 	Dir string
@@ -67,25 +74,36 @@ type Fixture struct {
 }
 
 // New returns a fixture over the packages of the tree that s describes. It
-// loads the tree through [plugintest.Loaded] under [Brand]. The fixture has
-// the frontends and the rules of Go, TypeScript and the scripted language of
-// eidos. No plugin of dokimi serves the scripted language, so a spec loads a
-// scripted tree to show that a plugin leaves the declarations of another
-// language alone. New registers the plugins and the annotators of s. It seals
-// the graph to list the declarations of the packages, as the first phase call
-// seals it. The annotators of s then stamp the fixture in order. New stops
-// the test where [plugintest.Loaded] stops it and where an annotator returns
-// an error. It fails the test for each Error that an annotator reports.
+// loads the tree through [plugintest.Loaded] under [Brand], with the stores
+// that the frontends locate through [Spec.Getenv], as a run of the
+// composition loads it. So a global type of TypeScript resolves to the
+// library of TypeScript, and an import of the standard library of Go resolves
+// to its package. The fixture has the frontends and the rules of Go,
+// TypeScript and the scripted language of eidos. No plugin of dokimi serves
+// the scripted language, so a spec loads a scripted tree to show that a
+// plugin leaves the declarations of another language alone. New registers the
+// plugins and the annotators of s. It seals the graph to list the
+// declarations of the packages, as the first phase call seals it. The
+// annotators of s then stamp the fixture in order. New stops the test where a
+// frontend locates no store, where [plugintest.Loaded] stops it and where an
+// annotator returns an error. It fails the test for each Error that an
+// annotator reports.
 //
 // Each call loads the tree again, so a plugintest setup that calls New
 // returns a fresh fixture on every call.
 func New(tb assert.TB, s *Spec) *Fixture {
 	tb.Helper()
 
+	getenv := s.Getenv
+	if getenv == nil {
+		getenv = os.Getenv
+	}
+	frontends := []plugin.Frontend{gofrontend.New(nil), tsfrontend.New(), frontendtest.NewScripted()}
 	f := &Fixture{Fixture: plugintest.Loaded(tb, plugintest.Source{
 		Tree:      os.DirFS(filepath.FromSlash(s.Dir)),
+		Stores:    stores(tb, frontends, getenv),
 		Brand:     Brand,
-		Frontends: []plugin.Frontend{gofrontend.New(nil), tsfrontend.New(), frontendtest.NewScripted()},
+		Frontends: frontends,
 		Rules:     []rules.SourceRules{gorules.New(), tsrules.New(), rulestest.Scripted()},
 		Plugins:   slices.Concat(s.Plugins, annotators(s.Annotators)),
 		Packages:  s.Packages,
@@ -121,6 +139,23 @@ func (f *Fixture) Find(tb assert.TB, kind symbol.Kind, owner, name string) node.
 	}
 	assert.Length(tb, found, 1, fmt.Sprintf("the fixture declares one %s %q in %q", kind, name, owner))
 	return found[0]
+}
+
+// stores returns the stores that the frontends locate through getenv, by
+// name, as the command line of eidos locates them. It stops the test where a
+// frontend locates no store.
+func stores(tb assert.TB, frontends []plugin.Frontend, getenv func(key string) string) map[string]fs.FS {
+	tb.Helper()
+
+	out := map[string]fs.FS{}
+	for _, front := range frontends {
+		if locator, locates := front.(plugin.StoreLocator); locates {
+			located, err := locator.Stores(getenv)
+			assert.NoError(tb, err, "the frontend "+string(front.Name())+" locates its stores")
+			maps.Copy(out, located)
+		}
+	}
+	return out
 }
 
 // annotators returns the annotators as plugins, in order.

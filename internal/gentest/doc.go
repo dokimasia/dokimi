@@ -6,10 +6,11 @@
 // declares and records.
 //
 // [New] loads the packages of a tree under [Brand] with the frontends and
-// the rules of Go, TypeScript and the scripted language of eidos. It
-// registers the keys and validates the directives of the plugins of a
-// [Spec], and the annotators of the spec stamp the fixture, as a run of the
-// composition does before the plugin under test runs. [Fixture.Find]
+// the rules of Go, TypeScript and the scripted language of eidos, and with
+// the stores that the frontends locate. It registers the keys and validates
+// the directives of the plugins of a [Spec], and the annotators of the spec
+// stamp the fixture, as a run of the composition does before the plugin
+// under test runs. [Fixture.Find]
 // returns a declaration of the fixture by its kind, its owner and its name.
 //
 // A spec of a generator reads the result of a phase call through these

@@ -2,23 +2,32 @@ package commented
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 )
+
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Poor-0]
+	_ = x[Fair-1]
+	_ = x[Good-2]
+}
+
+const _Grade_name = "poorfair enoughGood"
+
+var _Grade_index = [...]uint8{0, 4, 15, 19}
 
 // String returns Grade's textual form.
 //
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Grade) String() string {
-	switch v {
-	case Poor:
-		return "poor"
-	case Fair:
-		return "fair enough"
-	case Good:
-		return "Good"
+	idx := int(v) - 0
+	if v < 0 || idx >= len(_Grade_index)-1 {
+		return "Grade(" + strconv.FormatInt(int64(v), 10) + ")"
 	}
-	return fmt.Sprintf("Grade(%d)", int(v))
+	return _Grade_name[_Grade_index[idx]:_Grade_index[idx+1]]
 }
 
 // ErrUnknownGrade reports text that names no declared variant.
@@ -91,18 +100,28 @@ func (v *Grade) UnmarshalText(text []byte) error {
 	return nil
 }
 
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Calm-0]
+	_ = x[Angry-1]
+}
+
+const _Mood_name = "CalmAngry"
+
+var _Mood_index = [...]uint8{0, 4, 9}
+
 // String returns Mood's textual form.
 //
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Mood) String() string {
-	switch v {
-	case Calm:
-		return "Calm"
-	case Angry:
-		return "Angry"
+	idx := int(v) - 0
+	if v < 0 || idx >= len(_Mood_index)-1 {
+		return "Mood(" + strconv.FormatInt(int64(v), 10) + ")"
 	}
-	return fmt.Sprintf("Mood(%d)", int(v))
+	return _Mood_name[_Mood_index[idx]:_Mood_index[idx+1]]
 }
 
 // ErrUnknownMood reports text that names no declared variant.

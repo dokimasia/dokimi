@@ -130,6 +130,11 @@ type Members struct {
 // such a value as itself. Generate are the members that the record declares,
 // which are the members that the enumeration and its package do not declare.
 //
+// Table is the table of the texts of an enumeration of integers, which the
+// render slices. It is nil where the part of the language writes no table,
+// such as for an enumeration of another kind. Converts reports that the text
+// of each variant is its value, so the render converts a value to text.
+//
 // The record of a surface with a parse function names the struct of the
 // enumeration. In a language whose checks refer to the surface through its
 // package, the record also declares the parse function, the list of the
@@ -138,6 +143,7 @@ type Members struct {
 type Model struct {
 	Type     *emit.TypeRef
 	Fallback *emit.TypeRef
+	Table    *Table
 	Subject  string
 	Package  string
 	Format   string
@@ -145,6 +151,52 @@ type Model struct {
 	Variants []Variant
 	Generate Members
 	Textual  bool
+	Converts bool
+}
+
+// Table is the table of the texts of an enumeration of integers, from which
+// the render slices the text of a value. Values are the variants with their
+// values in the order of the declaration, which a check of the values at
+// compile time reads. Runs are the runs of consecutive values in increasing
+// order. Indexed reports that a run has two values or more, so the render
+// declares the index of that run. Map reports that the runs are too many for
+// a switch, so the render looks the text of a value up in a map. Name is then
+// the texts of the variants in the order of their values in one string
+// literal, and Entries are the variants in that order with the bounds of
+// their texts in Name.
+type Table struct {
+	Name    string
+	Values  []Entry
+	Runs    []Run
+	Entries []Entry
+	Indexed bool
+	Map     bool
+}
+
+// Entry is one variant of a table: its name, its value as a literal, and the
+// bounds of its text in the name of the table.
+type Entry struct {
+	Name  string
+	Value string
+	Start int
+	End   int
+}
+
+// Run is one run of consecutive values of a table. Name is the texts of its
+// variants in one string literal, and Index the offset of each text in Name,
+// followed by the length of Name. Bits is the width of the unsigned integers
+// of the index. Low and High are the first and the last value, as literals.
+// Open reports that the run starts at the zero of an unsigned type, so a
+// value of the run has no lower bound to check. Single reports that the run
+// has one value, whose text is all of Name.
+type Run struct {
+	Name   string
+	Low    string
+	High   string
+	Index  []int
+	Bits   int
+	Open   bool
+	Single bool
 }
 
 // Checks is the data of the record of the checks of one enumeration, and the
@@ -202,6 +254,12 @@ type part interface {
 	// of the surface through the package of the surface, and false where a
 	// check imports each of them from the module of the surface.
 	qualified() bool
+	// table returns the table of the texts of the enumeration e, whose
+	// variants have the texts of variants and the identities of ids. It
+	// returns nil where the language writes the render of e without a table.
+	// m is the match of e, and b are the rules of its language.
+	table(m sdk.Matcher, b *rules.Bound, e *node.Enum, variants []rules.VariantText,
+		ids map[string]symbol.Identity) *Table
 }
 
 // parts are the parts of enum, one for each language that it serves.
@@ -283,7 +341,7 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 		return nil
 	}
 	textual := info.Form == rules.EnumValue
-	stated := stateTexts(m, info.Variants, textual)
+	stated, commented := stateTexts(m, info.Variants, textual)
 	if first, second, shared := sharedText(info.Variants); shared {
 		m.Errorf(Duplicate, "the variants %s and %s of %s have one text, so it has no surface",
 			first, second, enum.Name)
@@ -316,8 +374,9 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 		longest = max(longest, len(v.Text.Text))
 	}
 	model := Model{
-		Type: typ, Fallback: fallback, Subject: enum.Name, Package: pkg.Name, Format: format,
-		Names: names, Variants: variants, Generate: generated, Textual: textual,
+		Type: typ, Fallback: fallback, Table: p.table(m, &b, enum, info.Variants, ids), Subject: enum.Name,
+		Package: pkg.Name, Format: format, Names: names, Variants: variants, Generate: generated,
+		Textual: textual, Converts: textual && !commented,
 	}
 	// The record declares the functions and the variable of the surface that
 	// the checks refer to through its package. They go with the parse
@@ -368,21 +427,23 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 // a comment keeps the text that the rules derive. stateTexts reports for each
 // variant whether its declaration states its text. A variant of an
 // enumeration of text states its value, which the rules derive as its text.
-func stateTexts(m *sdk.EnumMatch, variants []rules.VariantText, textual bool) []bool {
-	_, commented := m.Directive().Params[TextParam]
+// stateTexts also reports whether a comment states the text of a variant.
+func stateTexts(m *sdk.EnumMatch, variants []rules.VariantText, textual bool) (stated []bool, commented bool) {
+	_, byComment := m.Directive().Params[TextParam]
 	comments := make(map[string]string, len(m.Enum.Variants))
 	for _, v := range m.Enum.Variants {
 		comments[v.Name] = strings.TrimSpace(v.Comment)
 	}
-	stated := make([]bool, len(variants))
+	stated = make([]bool, len(variants))
 	for i := range variants {
 		stated[i] = textual
-		if comment := comments[variants[i].Name]; commented && comment != "" {
+		if comment := comments[variants[i].Name]; byComment && comment != "" {
 			variants[i].Text = emit.Literal(emit.LiteralString, comment)
 			stated[i] = true
+			commented = true
 		}
 	}
-	return stated
+	return stated, commented
 }
 
 // sharedText returns the first variant whose text a later variant repeats,

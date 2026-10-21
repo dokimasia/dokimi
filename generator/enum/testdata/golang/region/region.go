@@ -24,3 +24,15 @@ const (
 	South Zone = "south"
 	Unset Zone = ""
 )
+
+// Lane is a lane of a road. Its directive takes the text of each variant from
+// the trailing comment of the variant, so a text is not the value.
+//
+//dokimi:enum text=comment
+type Lane string
+
+// The lanes of a road.
+const (
+	Left  Lane = "l" // left
+	Right Lane = "r" // right
+)

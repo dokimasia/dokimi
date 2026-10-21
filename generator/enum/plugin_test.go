@@ -133,6 +133,37 @@ func TestEnum(t *testing.T) {
 			})
 		}
 
+		{
+			tests := []struct {
+				name    string
+				givePkg string
+				give    string
+				want    bool
+			}{
+				{
+					name:    "records that the render converts a value of text whose text is its value",
+					givePkg: regionPackage, give: regionName, want: true,
+				},
+				{
+					name:    "records that the render converts no value of text whose trailing comment states its text",
+					givePkg: regionPackage, give: "Lane",
+				},
+				{
+					name:    "records that the render converts no value of a number",
+					givePkg: statusPackage, give: statusName,
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got, recorded := generate(t, golang.Target, goTree, tt.givePkg).models[tt.give]
+					assert.True(t, recorded, "enum records the surface of "+tt.give)
+					expect.Equal(t, got.Converts, tt.want, "the render converts a value where each text is the value")
+				})
+			}
+		}
+
 		t.Run("records the name of the declaration of each variant as a value", func(t *testing.T) {
 			t.Parallel()
 

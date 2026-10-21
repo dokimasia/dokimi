@@ -4,11 +4,101 @@
 {{- $t := spell $m.Type}}
 {{- $n := $m.Names}}
 {{- if $m.Generate.Render}}
+{{- if $m.Table}}{{use "strconv"}}
+{{- $tab := $m.Table}}
+{{- $s := $m.Subject}}
 
-{{docs (wrapdocs (printf `%s returns %s's textual form.
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+{{- range $tab.Values}}
+	_ = x[{{.Name}} - {{.Value}}]
+{{- end}}
+}
+{{- if $tab.Map}}
 
-A value outside the declared set renders as itself, so a corrupt value
-is visible rather than indistinguishable from a declared one.` $n.Render $m.Subject))}}
+const _{{$s}}_name = {{$tab.Name}}
+
+var _{{$s}}_map = map[{{$t}}]string{
+{{- range $tab.Entries}}
+	{{.Value}}: _{{$s}}_name[{{.Start}}:{{.End}}],
+{{- end}}
+}
+
+{{template "enum.render.doc" $m}}
+{{- ""}}func (v {{$t}}) {{$n.Render}}() string {
+	if str, ok := _{{$s}}_map[v]; ok {
+		return str
+	}
+	return "{{$s}}(" + strconv.FormatInt(int64(v), 10) + ")"
+}
+{{- else if eq (len $tab.Runs) 1}}
+{{- $r := index $tab.Runs 0}}
+
+const _{{$s}}_name = {{$r.Name}}
+
+var _{{$s}}_index = [...]uint{{$r.Bits}}{{"{"}}{{range $i, $o := $r.Index}}{{if $i}}, {{end}}{{$o}}{{end}}{{"}"}}
+
+{{template "enum.render.doc" $m}}
+{{- ""}}func (v {{$t}}) {{$n.Render}}() string {
+	idx := int(v) - {{$r.Low}}
+	if v < {{$r.Low}} || idx >= len(_{{$s}}_index)-1 {
+		return "{{$s}}(" + strconv.FormatInt(int64(v), 10) + ")"
+	}
+	return _{{$s}}_name[_{{$s}}_index[idx]:_{{$s}}_index[idx+1]]
+}
+{{- else}}
+
+const (
+{{- range $k, $r := $tab.Runs}}
+	_{{$s}}_name_{{$k}} = {{$r.Name}}
+{{- end}}
+)
+{{- if $tab.Indexed}}
+
+var (
+{{- range $k, $r := $tab.Runs}}
+{{- if not $r.Single}}
+	_{{$s}}_index_{{$k}} = [...]uint{{$r.Bits}}{{"{"}}{{range $i, $o := $r.Index}}{{if $i}}, {{end}}{{$o}}{{end}}{{"}"}}
+{{- end}}
+{{- end}}
+)
+{{- end}}
+
+{{template "enum.render.doc" $m}}
+{{- ""}}func (v {{$t}}) {{$n.Render}}() string {
+	switch {
+{{- range $k, $r := $tab.Runs}}
+{{- if $r.Single}}
+	case v == {{$r.Low}}:
+		return _{{$s}}_name_{{$k}}
+{{- else}}
+{{- if $r.Open}}
+	case v <= {{$r.High}}:
+{{- else}}
+	case {{$r.Low}} <= v && v <= {{$r.High}}:
+{{- end}}
+{{- if ne $r.Low "0"}}
+		v -= {{$r.Low}}
+{{- end}}
+		return _{{$s}}_name_{{$k}}[_{{$s}}_index_{{$k}}[v]:_{{$s}}_index_{{$k}}[v+1]]
+{{- end}}
+{{- end}}
+	default:
+		return "{{$s}}(" + strconv.FormatInt(int64(v), 10) + ")"
+	}
+}
+{{- end}}
+{{- else if $m.Converts}}
+
+{{template "enum.render.doc" $m}}
+{{- ""}}func (v {{$t}}) {{$n.Render}}() string {
+	return string(v)
+}
+{{- else}}
+
+{{template "enum.render.doc" $m}}
 {{- ""}}func (v {{$t}}) {{$n.Render}}() string {
 	switch v {
 {{- range $m.Variants}}
@@ -22,6 +112,7 @@ is visible rather than indistinguishable from a declared one.` $n.Render $m.Subj
 	return fmt.Sprintf("{{$m.Subject}}({{$m.Format}})", {{spell $m.Fallback}}(v))
 {{- end}}
 }
+{{- end}}
 {{- end}}
 {{- if $m.Generate.Parse}}{{use "errors"}}
 
@@ -100,4 +191,11 @@ names no declared variant rather than admitting it as an unnamed value.` $n.Deco
 }
 {{- end}}
 {{- end}}
+{{- end}}
+
+{{- define "enum.render.doc"}}
+{{- docs (wrapdocs (printf `%s returns %s's textual form.
+
+A value outside the declared set renders as itself, so a corrupt value
+is visible rather than indistinguishable from a declared one.` .Names.Render .Subject))}}
 {{- end}}

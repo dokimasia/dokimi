@@ -46,6 +46,14 @@
 // prints a value outside the variants. enum leaves an enumeration of a
 // language without a part alone.
 //
+// The part of Go also returns the table of the texts of an enumeration of
+// integers, and the render slices the text of a value out of it in the form
+// of the tool stringer: a compile-time check of the value of each variant,
+// the texts in one string with an index of offsets, and a switch over the
+// runs of consecutive values, or a map where the runs are more than ten. The
+// render of an enumeration of text whose texts are its values converts the
+// value to text. Every other render switches over the variants.
+//
 // # Diagnostics
 //
 // enum reports [Empty] at an enumeration without a variant, and [Duplicate]

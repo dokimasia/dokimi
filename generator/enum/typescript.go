@@ -123,6 +123,14 @@ func (p typescriptPart) member(name string) string {
 // function of the surface from the module of the surface.
 func (typescriptPart) qualified() bool { return false }
 
+// table returns nil, because the render of TypeScript switches over the
+// members of an enum.
+func (typescriptPart) table(
+	sdk.Matcher, *rules.Bound, *node.Enum, []rules.VariantText, map[string]symbol.Identity,
+) *Table {
+	return nil
+}
+
 // literal returns the literal of TypeScript of the value v: a string in
 // double quotes, which JSON writes as TypeScript reads it, and a number or a
 // truth value as its text.

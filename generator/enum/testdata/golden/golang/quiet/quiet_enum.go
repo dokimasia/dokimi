@@ -3,20 +3,31 @@ package quiet
 import (
 	"errors"
 	"fmt"
+	"strconv"
 )
+
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Low-1]
+	_ = x[High-2]
+}
+
+const _Tone_name = "LowHigh"
+
+var _Tone_index = [...]uint8{0, 3, 7}
 
 // String returns Tone's textual form.
 //
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Tone) String() string {
-	switch v {
-	case Low:
-		return "Low"
-	case High:
-		return "High"
+	idx := int(v) - 1
+	if v < 1 || idx >= len(_Tone_index)-1 {
+		return "Tone(" + strconv.FormatInt(int64(v), 10) + ")"
 	}
-	return fmt.Sprintf("Tone(%d)", int(v))
+	return _Tone_name[_Tone_index[idx]:_Tone_index[idx+1]]
 }
 
 // ErrUnknownTone reports text that names no declared variant.
@@ -169,18 +180,28 @@ func (v Phase) IsValid() bool {
 	return false
 }
 
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Slow-1]
+	_ = x[Fast-2]
+}
+
+const _Speed_name = "SlowFast"
+
+var _Speed_index = [...]uint8{0, 4, 8}
+
 // String returns Speed's textual form.
 //
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Speed) String() string {
-	switch v {
-	case Slow:
-		return "Slow"
-	case Fast:
-		return "Fast"
+	idx := int(v) - 1
+	if v < 1 || idx >= len(_Speed_index)-1 {
+		return "Speed(" + strconv.FormatInt(int64(v), 10) + ")"
 	}
-	return fmt.Sprintf("Speed(%d)", int(v))
+	return _Speed_name[_Speed_index[idx]:_Speed_index[idx+1]]
 }
 
 // ErrUnknownSpeed reports text that names no declared variant.

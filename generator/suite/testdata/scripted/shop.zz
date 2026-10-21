@@ -1,0 +1,6 @@
+package shop
+// Widget is a struct with a method in a language that suite has no part for.
+//
+//dokimi:suite
+type Widget string
+method Spin int

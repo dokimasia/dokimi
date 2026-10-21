@@ -4,7 +4,7 @@ title: The package structure of dokimi
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-21
 discussion: none
 supersedes: none
 superseded-by: none
@@ -159,12 +159,32 @@ The rules of eidos supply the facts of both languages:
 
 ### The runtimes
 
-| Repository | Package | Contents |
+| Repository | Modules or package | Contents |
 |---|---|---|
-| `dokimasia/dokimi-go` | The module `go.dokimi.dev/dokimi-go`, with the packages `stub`, `fault`, `spec`, `conform` and `probe` | The double runtime: the record of each call, the order of results, strict mode and the expectations of calls. The fault strategies. The constants of the vendored conformance spec, the checks with their test handle, falsification and suite records, and the probes |
+| `dokimasia/dokimi-go` | The modules `go.dokimi.dev/stub`, `go.dokimi.dev/fault` and `go.dokimi.dev/conform` | The double runtime: the record of each call, the order of results, strict mode and the expectations of calls. The fault strategies. The constants of the vendored conformance spec, the checks with their test handle, falsification and suite records, and the probes |
 | `dokimasia/dokimi-typescript` | The package `@dokimi/runtime`, with the modules `stub/*`, `fault`, `spec`, `conform` and `probe`. Each module is a subpath export, such as `@dokimi/runtime/stub/answer` | The same contents in TypeScript |
 
 The runtime contains the code that every generated double and every generated check would otherwise repeat. Each double reads the time from the clock of the assert library of its language, and it takes its random values from a source that the test passes, such as the source of a property case. RFC-0002 states the API of the conformance parts.
+
+#### The modules of dokimi-go
+
+The runtime of Go has three modules. Each module contains one concern of the runtime, and its path has the form `go.dokimi.dev/<name>`:
+
+| Module | Directory | Packages | Requires |
+|---|---|---|---|
+| `go.dokimi.dev/fault` | `fault/` | `fault` | `go.dokimi.dev/assert` in its tests |
+| `go.dokimi.dev/stub` | `stub/` | `stub` | `go.dokimi.dev/fault` and `go.dokimi.dev/assert` |
+| `go.dokimi.dev/conform` | `conform/` | `conform`, `conform/spec` and `conform/probe` | `go.dokimi.dev/assert` |
+
+- A test imports `go.dokimi.dev/stub` beside `go.dokimi.dev/assert`, and no import path contains the name of the repository. The doubles of a consumer do not require the conformance runtime.
+- The packages `spec` and `probe` are in the module of `conform`. A suite record contains the name and the version of one runtime, and that version implements one version of the conformance spec. A probe also takes the handle of `conform`. The verdict reverses when a second engine of suites calls the probes.
+- The root of the repository has no module. Its `go.work` uses the three directories, so a change of two modules builds and tests in one tree. ergon reads the modules of a repository from the `use` list of its `go.work`.
+- The vanity host go.dokimi.dev serves a page for each module. The `go-import` meta tag of the page contains the repository and the directory of the module, as in `go.dokimi.dev/stub git https://github.com/dokimasia/dokimi-go stub`. The go command reads the directory from Go 1.25 on.
+- The version tags of a module start with its directory, such as `conform/v0.1.0`, because the go command requires that prefix for a module in a directory.
+- The front matter of a changeset contains the path of the module that it releases, such as `"go.dokimi.dev/stub": minor`. A release of `fault` also releases `stub` at patch with the new requirement, because ergon releases each dependent whose consumers would not receive the new version otherwise.
+- Each module exports its compatibility witness: `stub.CompatV1`, `fault.CompatV1` and `conform.CompatV1`. A generated double that imports `fault` refers to `fault.CompatV1` beside `stub.CompatV1`.
+
+The site generator of go.dokimi.dev writes a directory into the meta tag only for a module below another module, through the field `Dir` of its type `Sub`. Its type `Module` takes the same field for a module at the top level of the host.
 
 ### The corpus
 
@@ -173,16 +193,27 @@ The corpus of every language has the same structure:
 ```text
 corpus/<lang>/
 └── <family>/[<group>/]<fixture>/
-    ├── iface.go                 the declarations of the fixture, with their directives
-    └── <fixture>test/           the directory that the fixture routes its files to
-        ├── inmemory.go          the subject of the suite
-        └── inmemory_test.go     the test that runs the suite against the subject
+    ├── iface.go                       the declarations of the fixture, with their directives
+    └── <fixture>test/                 the directory that the fixture routes its files to
+        ├── checks.go                  the checks of the fixture, under the directive check
+        ├── inmemory.go                the subject of the suite
+        ├── inmemory_conform_test.go   the test that the directive subject writes for the subject
+        └── inmemory_test.go           the test of a subject that the handle builds, and the checks that conform.With adds
 ```
 
 - The families are `enum`, `errors`, `iface`, `integration` and `struct`. The family `iface` has the groups `composite`, `contract`, `detector`, `lang` and `mixin`, and the other families have no group.
-- A fixture has the same path, the same declarations and the same files in every language. The tree shows the names of Go, and TypeScript names the same files `iface.ts`, `inmemory.ts` and `inmemory.test.ts`.
+- A fixture has the same path, the same declarations and the same files in every language. The tree shows the names of Go, and TypeScript names the same files `iface.ts`, `checks.ts`, `inmemory.ts`, `inmemory.conform.test.ts` and `inmemory.test.ts`.
 - A fixture that a language cannot state, such as a Go channel in TypeScript, has the file `absent.md` in its directory of that language. The file states the reason.
 - dokimi writes the generated files of each fixture into its routed directory. The generation gate fails while a committed file differs from a fresh run.
+
+The corpus applies each suite in full:
+
+- Each fixture with the directive `suite` has the subject `inmemory.go`. The directive `subject` writes the test of a subject whose constructor takes no arguments, and `inmemory_test.go` applies the suite to a subject that reads the clock or another door of the handle.
+- The generated falsification test of each suite proves every check of the suite, the checks of the fixture among them.
+- Every check runs on a subject of the fixture. An excusal contains the reason why the subject cannot pass the check.
+- Each shape family has a control, a second correct implementation to which the corpus applies the suite of the family.
+- A fixture of the corpus uses each part of the contract of a suite: the directives `subject`, `check` and `excuse`, the options `With`, `Excuse`, `Reference`, `Second` and `Restartable`, and both forms of the application.
+- The tests of the corpus run every statement of the generated suites, as they run every statement of the generated doubles.
 
 `corpus/go` is the module `go.dokimi.dev/dokimi/corpus/go`, with the hand-written fixtures of the corpus of testkit. `corpus/typescript` is the package `@dokimi/corpus`, with the same fixtures in TypeScript and a `tsconfig.json`.
 
@@ -195,6 +226,7 @@ corpus/<lang>/
 | The generated files | The toolchain adapters of the Go and the TypeScript satellites | The Go output type-checks and its tests pass. The TypeScript output type-checks and its tests pass under vitest |
 | The binary | `acceptancetest` of eidos-cli | The exit statuses, the idempotence of a second run and the compile of the generated output |
 | The corpus | `dokimi run --check` over each directory of `corpus/` | The committed generated files equal a fresh run |
+| The corpus of Go | `go test -cover ./...` in `corpus/go` | Each check of each suite fails on its planted defect and passes on its subjects, and the tests run every statement of the generated files |
 
 ### Requests
 
@@ -213,6 +245,9 @@ corpus/<lang>/
 | Every fixture of a corpus has the same path in the corpus of every other language, or the file `absent.md` | A test of the root package, which walks every corpus |
 | The goldens of both plans equal a fresh run | workspacetest |
 | A generated test passes in its language | The toolchain adapters |
+| Each check of a suite of the corpus fails on its planted defect, and runs on a subject or has an excusal with a reason | The generated falsification tests and the tests of the corpus |
+| The tests of the corpus run every statement of the generated files | The corpus check of Go, which fails below 100% of those statements |
+| A module of dokimi-go requires no module of dokimi-go that requires it | ergon, which refuses to release a cycle of modules |
 
 ### Failure handling
 
@@ -224,6 +259,8 @@ corpus/<lang>/
 | The goldens differ from a fresh run | workspacetest fails with the difference | Review the difference, then update the goldens with `-update` |
 | A generated TypeScript test cannot import `@dokimi/assert` | The toolchain check fails | Release `@dokimi/assert` |
 | A toolchain is missing on a machine | The check skips there with its reason, and CI requires it | Install the toolchain |
+| A check of the corpus fails on its subject, or a statement of a generated file does not run | The corpus check of Go fails and names the check or the file | Fix the subject, the check or the tests of the fixture |
+| A generated file imports a module of dokimi-go at a path that the vanity host does not serve | `go get` of the consumer fails with the missing `go-import` meta tag | Add the module to the site generator of go.dokimi.dev |
 
 ## Alternatives considered
 
@@ -251,6 +288,18 @@ The runtimes are the directories `runtimes/<language>` of the dokimi repository,
 
 **Why not:** a consumer installs the runtime from the registry of its language, so the runtime needs the baseline, the gate and the release flow of that language in a repository of its own.
 
+### One module for the runtime of Go
+
+The module `go.dokimi.dev/dokimi-go` contains the packages `stub`, `fault` and `conform`, at one version.
+
+**Why not:** each import path then contains the name of the repository, as in `go.dokimi.dev/dokimi-go/stub`. A consumer of the doubles alone requires the conformance runtime, and a change of `conform` releases a version that the users of the doubles receive without a change of their packages. ergon releases the modules of one repository at independent versions, so three modules cost three `go.mod` files and no step of a release.
+
+### A module for each package of the conformance runtime
+
+`go.dokimi.dev/spec` and `go.dokimi.dev/probe` are modules beside `go.dokimi.dev/conform`.
+
+**Why not:** a suite record contains the name and the version of one runtime. With three modules the record needs three versions, and a new version of the conformance spec changes the three modules in one change. A probe takes the handle of `conform`, so the module of the probes would require each new version of `conform`.
+
 ### The composition under internal/
 
 The composition is the package `internal/compose`.
@@ -269,6 +318,7 @@ The directories `golang/` and `typescript/` contain the generators of each langu
 - **A Node toolchain in CI.** The checks of the generated TypeScript need Node, tsc and vitest on every runner of CI.
 - **The TypeScript checks wait on a release.** Until `@dokimi/assert` is on npm, the generated TypeScript tests cannot install it.
 - **A tree for each new language.** A language that eidos reads with rules needs a template tree in every generator.
+- **A release of the doubles for each change of the fault strategies.** A release of `go.dokimi.dev/fault` also releases `go.dokimi.dev/stub`, and a consumer of the doubles then updates two requirements.
 
 ## Open questions
 
@@ -284,3 +334,7 @@ None.
 | stubgen, a generator of eidos-reference for Go and TypeScript | <https://github.com/dokimasia/eidos/tree/main/eidos-reference/stubgen> |
 | The composition of eidos-reference | <https://github.com/dokimasia/eidos/blob/main/eidos-reference/reference.go> |
 | The shared helpers of plugins in eidos | <https://github.com/dokimasia/eidos/blob/main/docs/rfc/0069-constructions-module-directives-and-the-shared-helpers-of-plugins.md> |
+| The `go-import` meta tag, and the directory of a module in it | <https://pkg.go.dev/cmd/go#hdr-Remote_import_paths> |
+| The site generator of go.dokimi.dev | <https://github.com/dokimasia/go.dokimi.dev/blob/main/_gen/data.go> |
+| The independent versions of the modules of a repository in ergon | <https://github.com/dokimasia/ergon/blob/main/docs/adr/0002-independent-module-versions.md> |
+| The release of the dependents of a module in ergon | <https://github.com/dokimasia/ergon/blob/main/docs/adr/0009-release-dependents-by-resolution.md> |

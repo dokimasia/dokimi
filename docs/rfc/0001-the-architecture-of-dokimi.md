@@ -4,7 +4,7 @@ title: The purpose and scope of dokimi
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-10-13
-updated: 2026-10-19
+updated: 2026-10-21
 discussion: none
 supersedes: none
 superseded-by: none
@@ -196,7 +196,7 @@ The same directive on a concrete type selects the same claims for each method of
 | Component | Repository | Contents |
 |---|---|---|
 | dokimi | `dokimasia/dokimi`, the Go module `go.dokimi.dev/dokimi` | The conformance spec, the binary `dokimi` with its derivation, its generators and the command `conform`, and the corpus |
-| A runtime per language | `dokimasia/dokimi-<lang>`, published to the registry of the language | The package that generated tests import: the probes of the conformance spec, the suite engine, falsification, typed doubles, fault injection and the writer of suite records |
+| A runtime per language | `dokimasia/dokimi-<lang>`, published to the registry of the language | The packages that generated tests import: the probes of the conformance spec, the suite engine, falsification, typed doubles, fault injection and the writer of suite records |
 | assert-spec | `dokimasia/assert-spec` | The definition of every assertion and of its name in each language, the failure record and the call record, the property engine, the machines, the checkers of histories, the benchmark ceilings and the controlled clock |
 | mutate-spec | `dokimasia/mutate-spec` | The definition of a mutation run and of its record |
 | The assert libraries | `dokimasia/assert-go`, `dokimasia/assert-typescript` and the other assert repositories | The implementation of assert-spec in each language. The probes of each runtime assert through them |

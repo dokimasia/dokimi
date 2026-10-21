@@ -4,7 +4,7 @@ title: The conformance spec
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-21
 discussion: none
 supersedes: none
 superseded-by: none
@@ -293,11 +293,10 @@ The test runner of each language runs each check as a test of its own, named by 
 
 ### The suite record
 
-A suite has three applications, and each application writes one suite record:
+A suite has two applications, and each application writes one suite record:
 
 - The falsification test applies every check to its planted defect.
-- `Run` applies every check to a subject of the consumer.
-- `Control` applies every check to the control of the consumer.
+- The application to a subject applies every check to a subject of the consumer.
 
 A runtime writes the suite record into the artifact of the test runner beside the call records of its assert library, under the key `dokimi.suite`. The entry `records` of the overlay of each language in assert-spec describes where that artifact keeps the records of a test. `schemas/suite.schema.json` describes the format:
 
@@ -306,7 +305,7 @@ A runtime writes the suite record into the artifact of the test runner beside th
   "spec": "1.0.0",
   "suite": {"language": "go", "package": "example.com/store/storetest", "declaration": "Store"},
   "generator": {"name": "dokimi", "version": "v0.1.0"},
-  "runtime": {"name": "go.dokimi.dev/dokimi-go", "version": "v0.1.0"},
+  "runtime": {"name": "go.dokimi.dev/conform", "version": "v0.1.0"},
   "seed": "0x5f3a1c9e27d4b860",
   "application": "falsification",
   "checks": [
@@ -343,9 +342,9 @@ A runtime writes the suite record into the artifact of the test runner beside th
 | Field | Values |
 |---|---|
 | `spec` | The version of the conformance spec that the runtime implements |
-| `application` | `falsification`, `subject` or `control` |
-| `subject` | The name of the subject that the consumer passed to `Run`, for the application `subject` |
-| `checks[].result` | `pass`, `fail`, `vacuous` or `excused` for a subject and for the control. `proven`, `passed`, `wrong-reason` or `vacuous` for falsification |
+| `application` | `falsification` or `subject` |
+| `subject` | The name of the subject that the consumer passed to the application, for the application `subject` |
+| `checks[].result` | `pass`, `fail`, `vacuous` or `excused` for a subject. `proven`, `passed`, `wrong-reason` or `vacuous` for falsification |
 | `checks[].reason` | The reason code that the probe reported |
 | `checks[].failure` | The failure record of assert-spec for the assertion that failed, on `fail` and on `wrong-reason` |
 | `checks[].shallow` | True when the machinery of the claim is shallower than the depth of its law |
@@ -375,7 +374,7 @@ The seed of a run comes from the environment variable `DOKIMI_SEED`, as a decima
 
 A generated file and its runtime agree on a compatibility constant, the names of the probes, the constants of the spec and the reason codes:
 
-1. **A compatibility constant.** Each package of a runtime that generated files import exports a constant whose name contains the major version of the runtime, such as `stub.CompatV0` in Go. Every generated file refers to the constant of the major version that the generator targets. A major version of a runtime renames the constant. A mismatch fails the build of the consumer in Go, Rust, Java, Kotlin and C#, and the type check or the module load in TypeScript. In Python and PHP it fails the import of the generated file.
+1. **A compatibility constant.** Each package of a runtime that generated files import exports a constant whose name contains the major version of its module, such as the function `stub.CompatV1` in Go. Every generated file refers to the constant of the major version that the generator targets. A major version of a runtime renames the constant. A mismatch fails the build of the consumer in Go, Rust, Java, Kotlin and C#, and the type check or the module load in TypeScript. In Python and PHP it fails the import of the generated file.
 2. **Probe names.** A generated check calls each probe by its identifier in the casing of the language. With a runtime that implements an older spec without the probe, the build or the import fails at that call.
 3. **Constants.** Each runtime generates the constants of the entries of the spec from its vendored copy. Generated files refer to those constants, so a file that refers to an entry that the runtime lacks fails the build or the import.
 4. **Reason codes.** A probe asserts through the assert library of its language. It passes the library a test handle of the runtime instead of the test itself. The handle receives the failure record of each failed assertion and records the reason code of the assertion in `asserts`. Falsification reads the recorded code and never the text of the failure.
@@ -386,18 +385,20 @@ The handle implements the interface that its assert library calls on a test, suc
 
 Each runtime implements the same parts in the conventions of its language:
 
-| Part | Go: `go.dokimi.dev/dokimi-go` | TypeScript: `@dokimi/runtime` |
+| Part | Go: `go.dokimi.dev/conform` | TypeScript: `@dokimi/runtime` |
 |---|---|---|
 | The constants of the spec | The package `spec`, such as `spec.ErrorsDiffer` and `spec.SharedIdentity` | The module `spec`, such as `probes.errorsDiffer` and `reasons.sharedIdentity` |
-| A check | `conform.Check[S]`: the identity and the key, the claim with its law and machinery, the reason of its defect, a function that applies the check to a subject of the type `S`, and a function that returns its planted defect as a subject | `Check<S>`, with the same fields |
+| A check | `conform.Check[S]`: the identity and the key, the statement, the claim with its law and machinery, the reason of its defect, a function that applies the check through its handle, and a function that returns its planted defect as a subject of the type `S`. Its methods `Run` and `Falsify` apply the check on any seat to a subject and to its planted defect | `Check<S>`, with the same fields and functions |
 | The checks of one declaration | `conform.Suite[S]`: the language, the package, the declaration, the checks, the refusals and the unclaimed classifications | `Suite<S>` |
-| The test handle | `*conform.Handle`, which implements `assert.TB` and `assert.Reporter` | `Handle`, which implements `Seat` |
+| The test handle | `*conform.Handle[S]`, which implements `assert.TB`, `assert.Reporter` and `assert.Clocked`, and builds the subjects of its check | `Handle<S>`, which implements `Seat` |
+| The name of a callable | `conform.Callable[S]`, whose method `Check` returns the identity `conform.ID[S]` of a check of the callable | `Callable<S>`, with the function `check` |
 | A probe | A function of the package `probe`, such as `probe.ErrorsDiffer(h, values)` | A function of the module `probe`, such as `errorsDiffer(h, values)` |
 | A named value | `conform.Named[T]` | `Named<T>` |
-| The application to a subject | `conform.Verify(t, suite, subject)`, where `subject` returns a fresh subject for each check | `verify(suite, subject)` |
+| The application to a subject | `conform.Run(t, suite, newSubject, opts...)`, where `newSubject` builds a fresh subject from the handle of each check | `run(suite, newSubject, options)` |
+| The options of an application | `conform.With`, `conform.Excuse`, `conform.Reference`, `conform.Second` and `conform.Restartable`, which RFC-0003 states | `Options<S>` |
 | The falsification | `conform.Falsify(t, suite)` | `falsify(suite)` |
 
-`Verify` and `Falsify` run each check as a test of its own, named by the identity of the check. Each check gets a handle of its own, and the probe reads the statement of the check from it. `Verify` fails a check whose probe fails, and `Falsify` fails a check whose planted defect does not fail it with the reason of its claim. Each writes the suite record of its application. The subject of a suite is the implementation that the factory of the consumer returns. The subject of the checks of errors is a value of a type that the generated test declares, with the errors of the package.
+The module `go.dokimi.dev/conform` contains the packages `conform`, `spec` and `probe` of the Go runtime, as RFC-0005 states. `Run` and `Falsify` run each check as a test of its own, named by the identity of the check. Each check gets a handle of its own, and the probe reads the statement of the check from it. `Run` fails a check that fails on its subject, and `Falsify` fails a check whose planted defect does not fail it with the reason of its claim. Each writes the suite record of its application. The subject of a suite is the implementation that the factory of the consumer returns. The subject of the checks of errors is a value of a type that the generated test declares, with the errors of the package.
 
 ### The package spec
 

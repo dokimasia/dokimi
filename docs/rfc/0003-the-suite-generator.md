@@ -4,7 +4,7 @@ title: The suite generator
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-21
 discussion: none
 supersedes: none
 superseded-by: none
@@ -24,7 +24,7 @@ The suite generator writes the checks of each declaration that the directive `su
 
 - a header
 - the checks with their probe calls
-- the entry points for the subjects of the consumer
+- the entry points for the subjects and the checks of the consumer
 - a planted defect for each check
 - a falsification test and a structural test
 - a lock file of check identities
@@ -469,13 +469,14 @@ Each classification without a claim has a stance and a note in the section `uncl
 
 ### The generated suite
 
-The generator writes three families of files for each declaration. The template tree of each target spells them:
+The generator writes four families of files. The template tree of each target spells them:
 
 | Family | Per | Contents |
 |---|---|---|
-| The suite | Source file | The header, the compatibility reference, the checks and the entry points |
-| The proofs | Source file, as a test | The planted defects, the falsification test and the structural test |
-| The lock | Package | The keys of every check of the package, one per line, sorted |
+| The suite | Source file of the declaration | The header, the compatibility reference, the checks with their planted defects, and the application |
+| The proofs | Source file of the declaration, as a test | The falsification test and the structural test |
+| The lock | Package of the suite | The keys of every check of the package, one per line, sorted |
+| The conformance test | Source file of a subject, as a test | The application of the suite to a subject that the directive `subject` declares |
 
 The header lists:
 
@@ -484,26 +485,537 @@ The header lists:
 - the refusals, each with its reason and remedy
 - the unclaimed classifications, each with its stance and note
 
-The suite has two entry points for the consumer:
+The suite has one application for the consumer. It applies every check to a fresh subject from a factory of the consumer. Its two forms differ in the factory alone: one form takes a constructor without arguments, and the other takes a factory that builds the subject from the handle of the check. Both forms accept the checks of the consumer, an excusal of a check by its identity with a reason, and the doors of the machineries that only the consumer can build.
 
-- `Run` applies every check to a fresh subject from a factory of the consumer.
-- `Control` applies every check to a correct implementation that differs from the subject. Every check that the control does not excuse must pass on it.
-
-Both accept an excusal of a check by its identity, with a reason, and a factory that pairs a fresh subject with a controlled clock. A check that needs a clock fails, naming the missing option, when the consumer did not supply that factory.
+The corpus applies each suite to a control through the same application. A control is a correct implementation that differs from the subject, so a check that fails on the control has a defect of its own.
 
 Each planted defect is the typed double of the declaration, with the callables that the defect form names replaced. The double is not a correct implementation of the declaration. A planted defect is correct for the calls that its check makes, and wrong at the claim of that check. Each defect form has one template in each template tree.
 
 The falsification test runs in the package of the generated suite and does not need a subject of the consumer:
 
 1. It checks that every check has a planted defect, and that every planted defect belongs to a check.
-2. It runs each check against its planted defect, and it fails unless the check fails with the reason code of the claim.
+2. It runs each check against its planted defect. A derived check must fail with the reason code of its claim. A check of the consumer must fail at the assertion whose message is its statement.
 3. It runs each edge in both directions. The deeper check must fail on the defect of the shallower check, and the shallower check must pass on the defect of the deeper check.
 
+In Go the falsification test is one call of the runtime:
+
+```go
+// TestStoreSuite proves that each check of the suite of Store fails on its
+// planted defect.
+func TestStoreSuite(t *testing.T) {
+	t.Parallel()
+
+	conform.Falsify(t, StoreSuite())
+}
+```
+
 The structural test checks that the lock lists every check and nothing else, that every identity is unique and that every check has its law and its machinery.
+
+### The contract of a suite
+
+A consumer codes against these parts of a suite. The runtime of each language declares their types, and the generated file declares their names for one declaration:
+
+| Part | Go | TypeScript |
+|---|---|---|
+| The names of the callables and of the checks | `StoreChecks.Read`, which embeds `conform.Callable[store.Store]` and has a method for each check, such as `StoreChecks.Read.ZeroOnError()` | `storeChecks.read`, a `Callable<Store>` with a function for each check, such as `storeChecks.read.zeroOnError()` |
+| The checks | `StoreSuite()`, which returns a `conform.Suite[store.Store]` | `storeSuite()`, which returns a `Suite<Store>` |
+| The application to a subject | `RunStoreSuite(t, newSubject, opts...)` and `RunStoreSuiteFromHandle(t, newSubject, opts...)` | `runStoreSuite(newSubject, options)` and `runStoreSuiteFromHandle(newSubject, options)` |
+| The options of an application | `conform.With`, `conform.Excuse`, `conform.Reference`, `conform.Second` and `conform.Restartable` | The fields `checks`, `excuse`, `reference`, `second` and `restart` of `Options<S>` |
+| The names of the types | `StoreHandle`, `StoreCheck` and `StoreOption` | `StoreHandle`, `StoreCheck` and `StoreOptions` |
+
+The contract does not depend on the claims that the derivation binds. A declaration without a bound claim has the same parts, and its suite runs the checks of the consumer alone.
+
+Each kind of declaration has its subject type:
+
+- An interface is its own subject type.
+- For a concrete type such as the struct `Store`, the generator writes the interface `StoreMethods` of its exported methods, and that interface is the subject type.
+- For a function such as `Slug`, the generator writes the type `SlugFunc` of the function. An application takes the function itself, as in `RunSlugSuite(t, slug.Slug)`.
+
+#### The application
+
+`RunStoreSuite` takes a constructor without arguments. `RunStoreSuiteFromHandle` takes a factory that builds each subject from the handle of its check, such as on its clock or in its temporary directory. The words `StoreSuite` in each name refer to the suite that `StoreSuite` returns. The suffix `FromHandle` refers to the argument of the factory. Both functions are generic over the type of the subject, so a constructor such as `NewInMemory`, which returns `*InMemory`, does not need a conversion:
+
+```go
+func TestInMemory(t *testing.T) {
+	t.Parallel()
+
+	storetest.RunStoreSuite(t, storetest.NewInMemory,
+		conform.Excuse(storetest.StoreChecks.Read.Cancel(), "Read reads memory and never blocks"))
+}
+
+func TestCache(t *testing.T) {
+	t.Parallel()
+
+	storetest.RunStoreSuiteFromHandle(t, func(h *storetest.StoreHandle) *ttl.Cache { return ttl.New(h.Clock()) })
+}
+```
+
+A TypeScript test calls the generated function inside a `describe` block:
+
+```ts
+describe('InMemory', () => {
+  runStoreSuite(() => new InMemory(), {
+    excuse: { [storeChecks.read.cancel()]: 'read reads memory and never blocks' },
+  });
+});
+```
+
+`RunStoreSuite` calls `RunStoreSuiteFromHandle` with a factory that does not read the handle. `RunStoreSuiteFromHandle` runs every check as a test of its own, named by the identity of the check, through `conform.Run` (RFC-0002). `runStoreSuite` registers each check with vitest in a `describe` block of the declaration.
+
+The subject type of its suite types each identity: `conform.ID[store.Store]` in Go and `Id<Store>` in TypeScript. An option takes its subject type from the identity, and the identity of another suite fails the compile.
+
+#### The handle
+
+A check takes a handle. The handle implements the seat of the assert library: `assert.TB`, `assert.Reporter` and `assert.Clocked` in Go, and `Seat` in TypeScript. It also builds the subjects of the check and supplies its machinery:
+
+| Method | Returns | Machinery |
+|---|---|---|
+| `Subject()` | The subject of the check, built once | Every check |
+| `New()` | A fresh subject from the same source | `generated-sequences` and `concurrent-callers` |
+| `Reference()` | A fresh reference implementation | `a-reference-implementation` |
+| `Second()` | A fresh second subject | `a-second-subject` |
+| `Restart(s)` | The subject `s` after a restart of its process | `a-killable-process-or-breakable-medium` |
+| `Clock()` and `Advance(d)` | The controlled clock of the check, and its advance | `a-clock-the-run-advances` |
+| `Statement()` | The statement of the check | Every check |
+
+Under falsification `Subject()` and `New()` return the planted defect of the check. The consumer supplies the reference, the second subject and the restart through the options. A check that calls a door without its option fails, and its failure message contains the option to pass.
+
+A check that advances the clock fails when no factory of its subjects read the clock of the handle. Its failure message contains the call of `RunStoreSuiteFromHandle` that builds the subject on the clock.
+
+#### The checks of a consumer
+
+A consumer declares a check with the directive `check` on a function of the package of the generated suite. The suite generator binds it as it binds a claim:
+
+```go
+// KeepsTheBody checks that Replay returns the body that Append stored.
+//
+//dokimi:check Log.Replay defect=losesBodies
+func KeepsTheBody(h *LogHandle) {
+	s := h.Subject()
+	assert.NoError(h, s.Append(h.Context(), causalchain.RootEntry()), "Append admits the root entry")
+	got, err := s.Replay(h.Context())
+	assert.NoError(h, err, "Replay reads the log")
+	assert.Length(h, got, 1, "Replay returns the root entry")
+	assert.Equal(h, got[0].Body, causalchain.RootEntry().Body, h.Statement())
+}
+```
+
+- The segment is the name of the function in kebab case, and the identity is `Log.Replay/keeps-the-body`. The statement is the first sentence of the doc comment after the words "checks that".
+- `defect` names a function of the package that returns the planted defect of the check from its handle.
+- `Log` is the name of a declaration of the plan with the directive `suite`. Where two such declarations have the name, the directive qualifies it with the name of its package, as in `causalchain.Log.Replay`.
+- The check is part of the suite. The header lists it, the lock contains its key, the generated falsification test applies it to its defect, and `LogChecks.Replay.KeepsTheBody()` returns its identity.
+- The generator reports each of these mistakes at the position of the directive:
+  - a name that no declaration with the directive `suite` has, or that two of them have
+  - an unknown callable
+  - a segment that a derived check of the callable has
+  - a defect without a function, or with another signature
+  - a function without a doc comment
+
+The suite generator binds a check in its two steps:
+
+1. Its annotate step runs on each function with the directive `check`. It resolves the declaration, the callable and the defect. It stamps facts on the function: the identity of the declaration, the name of the callable, the segment, the statement and the identity of the defect.
+2. The generate step of a declaration lists the functions with the directive `check` through `Reader.ByDirective` of eidos, and reads the facts of each function through `sdk.FactOf`. It binds each function whose facts contain the identity of the declaration.
+
+`Reader.ByDirective` records a read of the set of functions with the directive. eidos then runs the generate step of each suite again when a function gains or loses the directive. A change of any other declaration does not run it again.
+
+A check in a test file cannot be bound, because the generated suite cannot refer to a test file. `conform.With` adds such a check to one application, and the application falsifies the check before it applies the check to the subject.
+
+The decisive assertion of a check passes `h.Statement()` as its message. Falsification passes when the first failure record on the planted defect has the statement as its contract. A failure of another assertion, such as a guard, fails the falsification.
+
+A run fails when two of its checks have one identity, and the failure message contains both identities. The same failure occurs when a release derives a check with the identity of a check of the consumer.
+
+The usual planted defect is the verified fake of the declaration with one method replaced. The double of the stub generator forwards each call to the fake through `DelegateTo`, and the defect replaces one method:
+
+```go
+func losesBodies(h *LogHandle) causalchain.Log {
+	fake := NewLogFake()
+	return NewLogStub(h, LogStubDelegateTo(fake),
+		WithLogAppend(func(ctx context.Context, e causalchain.Entry) error {
+			e.Body = ""
+			return fake.Append(ctx, e)
+		}))
+}
+```
+
+#### The subjects of a consumer
+
+A consumer declares a subject with the directive `subject` on its type, and an excusal with the directive `excuse`:
+
+```go
+// Store is the Log on PostgreSQL.
+//
+//dokimi:subject causalchain.Log new=NewTestStore
+//dokimi:excuse Log.Replay/cancel reason="the test server finishes a cancelled query"
+type Store struct{ … }
+```
+
+The suite generator writes a conformance test of the subject into the package of the subject:
+
+```go
+func TestStoreConformsToLog(t *testing.T) {
+	t.Parallel()
+
+	causalchaintest.RunLogSuite(t, NewTestStore,
+		conform.Excuse(causalchaintest.LogChecks.Replay.Cancel(), "the test server finishes a cancelled query"))
+}
+```
+
+A factory without parameters selects `RunLogSuite`, and a factory whose one parameter is the handle selects `RunLogSuiteFromHandle`. The test refers to the function as a declaration that the plan emits, which the layout of eidos qualifies by the package of its file. The generator reports an excusal whose identity matches no check of the suite at the position of the directive, with the identities of the checks of the callable. A subject whose wiring a directive cannot state calls `RunLogSuite` or `RunLogSuiteFromHandle` in a test of its own.
+
+#### Excusals
+
+An excusal contains the identity of a check and a reason. The check reports `excused` with the reason, and never `pass`. A run fails when the identity of an excusal does not match a check of the run. So an excusal fails once a release no longer derives its check.
+
+#### Failure messages
+
+A failure of the contract contains the code that fixes it, and the command that runs the check again with the seed of the run:
+
+```text
+--- FAIL: TestStoreConformsToLog/Log.Append/expires
+    Log.Append/expires advances a clock that the subject never read. Build the subject on the clock of the handle:
+        RunLogSuiteFromHandle(t, func(h *conform.Handle[causalchain.Log]) causalchain.Log { … h.Clock() … })
+    Run it again:
+        DOKIMI_SEED=0x5f3a1c9e27d4b860 go test -run 'TestStoreConformsToLog/Log.Append/expires' ./pgstore
+```
+
+The message does not contain an excusal. A test that the directive `subject` generates takes the directive `excuse`, and a test of the consumer takes the option `conform.Excuse`. Both tests make the same calls of the runtime.
+
+#### The generated file
+
+The Go file of `Store` declares these names:
+
+```go
+// The names that a test of Store writes.
+type (
+	StoreHandle = conform.Handle[store.Store]
+	StoreCheck  = conform.Check[store.Store]
+	StoreOption = conform.Option[store.Store]
+)
+
+// StoreChecks contains the name of each callable of Store, with the
+// identities of its checks.
+var StoreChecks = struct {
+	Read  storeRead
+	Write storeWrite
+}{Read: storeRead{"Store.Read"}, Write: storeWrite{"Store.Write"}}
+
+// storeRead is the name of Store.Read, with the identities of its checks.
+type storeRead struct{ conform.Callable[store.Store] }
+
+// ZeroOnError returns the identity of the check that Read returns the zero
+// value beside an error.
+func (c storeRead) ZeroOnError() conform.ID[store.Store] { return c.Check("zero-on-error") }
+
+// StoreSuite returns the checks of Store.
+func StoreSuite() conform.Suite[store.Store]
+
+// RunStoreSuite applies the checks of Store, and the checks that opts add, to
+// a fresh subject of newSubject for each check.
+func RunStoreSuite[T store.Store](t *testing.T, newSubject func() T, opts ...StoreOption)
+
+// RunStoreSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStoreSuiteFromHandle[T store.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption)
+```
+
+`StoreSuite` takes the identity of each check from `StoreChecks`, so a run of the suite calls each function of an identity. The proofs of `Store` declare `TestStoreSuite`. The TypeScript file declares the same names in camel case. The function `storeChecks.read.zeroOnError()` returns the identity of a check.
 
 ### The lock
 
 The lock is a source file of the target language with the keys of the checks of a package, one per line, sorted. A regeneration that loses a check removes one line from the lock. The generation gate fails while the committed lock differs from a fresh run, so a reviewer sees a lost check as a deleted line in a small file. A removal is legitimate when that deleted line is in the same change as the edit of the declaration that caused it.
+
+### A worked example
+
+A team declares a store of sessions, adds a check of its own and applies the suite to two implementations. One implementation reads the clock of the handle, and the other excuses the check that needs that clock.
+
+| File | Written by | Contents |
+|---|---|---|
+| `session/session.go` | The team | The declaration with its directives |
+| `session/sessiontest/session_suite.go` | dokimi | The names, the checks with their planted defects, and the application |
+| `session/sessiontest/session_suite_test.go` | dokimi | The falsification test |
+| `session/sessiontest/session_stub.go` | dokimi | The double, from which the planted defects are built |
+| `session/sessiontest/checks.go` | The team | The check of the team with its planted defect |
+| `session/memory/memory.go` | The team | The store in memory |
+| `session/memory/memory_test.go` | The team | The application on the clock of the handle, with a check of the store in memory |
+| `session/postgres/store.go` | The team | The store on PostgreSQL, with the directives `subject` and `excuse` |
+| `session/postgres/store_conform_test.go` | dokimi | The application to the store on PostgreSQL |
+
+#### The declaration
+
+```go
+// Package session keeps the sessions of signed-in users.
+package session
+
+// ErrNotFound is the error of a read of a session that the store does not
+// have.
+var ErrNotFound = errors.New("session: not found")
+
+// Session is the session of one signed-in user.
+type Session struct {
+	ID    string
+	User  string
+	Roles []string
+}
+
+// Store keeps the sessions of signed-in users.
+//
+//dokimi:suite
+//dokimi:out path=sessiontest/
+type Store interface {
+	// Put stores s under s.ID and starts its lifetime.
+	Put(ctx context.Context, s Session) error
+
+	// Get returns the session with the ID id until its lifetime ends.
+	//dokimi:mixin not-found sentinel=ErrNotFound
+	//dokimi:mixin read-after-write write=Put
+	//dokimi:mixin ttl duration=30m put=Put read=Get not-found=ErrNotFound
+	Get(ctx context.Context, id string) (Session, error)
+
+	// Delete removes the session with the ID id.
+	//dokimi:mixin delete-removes read=Get sentinel=ErrNotFound
+	Delete(ctx context.Context, id string) error
+}
+```
+
+The derivation binds eleven claims, and the header of `session_suite.go` lists them:
+
+| Identity | Licence | Machinery |
+|---|---|---|
+| `Store.Put/smoke` and `Store.Put/cancel` | Every callable, and the parameter in the role context | `nothing-beyond-a-caller` |
+| `Store.Get/smoke` and `Store.Get/cancel` | Every callable, and the parameter in the role context | `nothing-beyond-a-caller` |
+| `Store.Get/zero-on-error` | The shape reader | `nothing-beyond-a-caller` |
+| `Store.Get/miss` | The mixin not-found | `nothing-beyond-a-caller` |
+| `Store.Get/read-after-write` | The mixin read-after-write | `nothing-beyond-a-caller` |
+| `Store.Get/expires` | The mixin ttl | `a-clock-the-run-advances` |
+| `Store.Delete/smoke` and `Store.Delete/cancel` | Every callable, and the parameter in the role context | `nothing-beyond-a-caller` |
+| `Store.Delete/delete-removes` | The mixin delete-removes | `nothing-beyond-a-caller` |
+
+The header also lists the shape writer of `Put` and the shape deleter of `Delete` as unclaimed classifications with the stance `silent`.
+
+#### The check of the team
+
+No claim of the spec states that `Get` returns a copy of the roles, so the team adds a check of it. The check is in the package of the suite, so every implementation runs it:
+
+```go
+package sessiontest
+
+import (
+	"context"
+	"slices"
+
+	"go.dokimi.dev/assert"
+
+	"example.com/shop/session"
+)
+
+// ReturnsACopyOfTheRoles checks that a change of the roles that Get returns
+// leaves the session in the store unchanged.
+//
+//dokimi:check Store.Get defect=sharesTheRoles
+func ReturnsACopyOfTheRoles(h *StoreHandle) {
+	s := h.Subject()
+	put := session.Session{ID: "s-1", User: "u-1", Roles: []string{"admin"}}
+	assert.NoError(h, s.Put(h.Context(), put), "Put stores the session")
+	first, err := s.Get(h.Context(), "s-1")
+	assert.NoError(h, err, "Get reads the session")
+	assert.Length(h, first.Roles, 1, "Get returns the role of the session")
+	first.Roles[0] = "guest"
+	second, err := s.Get(h.Context(), "s-1")
+	assert.NoError(h, err, "Get reads the session again")
+	assert.Equal(h, second.Roles, []string{"admin"}, h.Statement())
+}
+
+// sharesTheRoles returns a Store whose Get returns the roles that the store
+// keeps instead of a copy of them.
+func sharesTheRoles(h *StoreHandle) session.Store {
+	kept := map[string]session.Session{}
+	return NewStoreStub(h,
+		WithStorePut(func(_ context.Context, s session.Session) error {
+			s.Roles = slices.Clone(s.Roles)
+			kept[s.ID] = s
+			return nil
+		}),
+		WithStoreGet(func(_ context.Context, id string) (session.Session, error) {
+			s, ok := kept[id]
+			if !ok {
+				return session.Session{}, session.ErrNotFound
+			}
+			return s, nil
+		}))
+}
+```
+
+The planted defect passes each guard of the check and fails its last assertion, whose message is the statement. The suite generator adds the check to the suite:
+
+```go
+// ReturnsACopyOfTheRoles returns the identity of the check that a change of
+// the roles that Get returns leaves the session in the store unchanged.
+func (c storeGet) ReturnsACopyOfTheRoles() conform.ID[session.Store] {
+	return c.Check("returns-a-copy-of-the-roles")
+}
+
+// StoreSuite returns the checks of Store.
+func StoreSuite() conform.Suite[session.Store] {
+	return conform.Suite[session.Store]{Declaration: "Store", Checks: []conform.Check[session.Store]{
+		// The eleven derived checks.
+		{
+			ID:        StoreChecks.Get.ReturnsACopyOfTheRoles(),
+			Statement: "a change of the roles that Get returns leaves the session in the store unchanged",
+			Apply:     ReturnsACopyOfTheRoles,
+			Defect:    sharesTheRoles,
+		},
+	}}
+}
+```
+
+#### The store in memory
+
+`memory.New(clock, limit)` returns a store that reads the time from `clock` and keeps at most `limit` sessions. The test of the team builds each subject on the clock of the handle, because the check `Store.Get/expires` advances that clock. It adds a check of the limit, which only the store in memory has:
+
+```go
+package memory_test
+
+// TestStore applies the suite of Store to the store in memory, with the check
+// of its limit.
+func TestStore(t *testing.T) {
+	t.Parallel()
+
+	sessiontest.RunStoreSuiteFromHandle(t, func(h *sessiontest.StoreHandle) *memory.Store {
+		return memory.New(h.Clock(), 2)
+	}, conform.With(evictsTheFirstSession()))
+}
+
+// evictsTheFirstSession returns the check that Put evicts the session that it
+// stored first once the store has two sessions. Its planted defect keeps
+// every session.
+func evictsTheFirstSession() sessiontest.StoreCheck {
+	return sessiontest.StoreCheck{
+		ID:        sessiontest.StoreChecks.Put.Check("evicts-the-first-session"),
+		Statement: "Put evicts the session that it stored first once the store has two sessions",
+		Apply: func(h *sessiontest.StoreHandle) {
+			s := h.Subject()
+			for _, id := range []string{"s-1", "s-2", "s-3"} {
+				assert.NoError(h, s.Put(h.Context(), session.Session{ID: id, User: "u-1"}), "Put stores the session")
+			}
+			_, err := s.Get(h.Context(), "s-1")
+			assert.ErrorIs(h, err, session.ErrNotFound, h.Statement())
+		},
+		Defect: func(h *sessiontest.StoreHandle) session.Store {
+			kept := map[string]session.Session{}
+			return sessiontest.NewStoreStub(h,
+				sessiontest.WithStorePut(func(_ context.Context, s session.Session) error {
+					kept[s.ID] = s
+					return nil
+				}),
+				sessiontest.WithStoreGet(func(_ context.Context, id string) (session.Session, error) {
+					return kept[id], nil
+				}))
+		},
+	}
+}
+```
+
+The application falsifies `Store.Put/evicts-the-first-session` on its planted defect before it runs the check on the store. A test that built the store on the clock of the system through `RunStoreSuite` would fail `Store.Get/expires` with the message of [Failure messages](#failure-messages).
+
+#### The store on PostgreSQL
+
+PostgreSQL computes the end of a lifetime with `now()`, so no test can advance the clock of the store. The team declares the subject and the excusal on the type:
+
+```go
+// Store is the Store on PostgreSQL.
+//
+//dokimi:subject session.Store new=NewTestStore
+//dokimi:excuse Store.Get/expires reason="PostgreSQL computes the expiry with now(), which a test cannot advance"
+type Store struct{ … }
+
+// NewTestStore returns a Store on a schema of its own in the database of the
+// environment variable SESSION_TEST_DATABASE.
+func NewTestStore() *Store { … }
+```
+
+The suite generator writes the test of the subject:
+
+```go
+// Code generated by dokimi. DO NOT EDIT.
+// dokimi:plugin suite
+// dokimi:source session/postgres/store.go
+
+package postgres
+
+import (
+	"testing"
+
+	"example.com/shop/session/sessiontest"
+	"go.dokimi.dev/conform"
+)
+
+// TestStoreConformsToStore applies the checks of the suite of Store to Store.
+func TestStoreConformsToStore(t *testing.T) {
+	t.Parallel()
+
+	sessiontest.RunStoreSuite(t, NewTestStore,
+		conform.Excuse(sessiontest.StoreChecks.Get.Expires(), "PostgreSQL computes the expiry with now(), which a test cannot advance"))
+}
+```
+
+#### The output
+
+Each check runs as a subtest with the identity of the check as its name. The falsification test passes when every check fails on its planted defect:
+
+```text
+$ go test -v ./session/sessiontest
+…
+--- PASS: TestStoreSuite (0.01s)
+    --- PASS: TestStoreSuite/Store.Put/smoke (0.00s)
+    --- PASS: TestStoreSuite/Store.Put/cancel (0.00s)
+    --- PASS: TestStoreSuite/Store.Get/smoke (0.00s)
+    --- PASS: TestStoreSuite/Store.Get/cancel (0.00s)
+    --- PASS: TestStoreSuite/Store.Get/zero-on-error (0.00s)
+    --- PASS: TestStoreSuite/Store.Get/miss (0.00s)
+    --- PASS: TestStoreSuite/Store.Get/read-after-write (0.00s)
+    --- PASS: TestStoreSuite/Store.Get/expires (0.00s)
+    --- PASS: TestStoreSuite/Store.Get/returns-a-copy-of-the-roles (0.00s)
+    --- PASS: TestStoreSuite/Store.Delete/smoke (0.00s)
+    --- PASS: TestStoreSuite/Store.Delete/cancel (0.00s)
+    --- PASS: TestStoreSuite/Store.Delete/delete-removes (0.00s)
+```
+
+The test of the store on PostgreSQL reports the excused check as skipped, with the line of the application and the reason:
+
+```text
+$ go test -v -run 'TestStoreConformsToStore/Store.Get/expires' ./session/postgres
+=== RUN   TestStoreConformsToStore
+=== PAUSE TestStoreConformsToStore
+=== CONT  TestStoreConformsToStore
+=== RUN   TestStoreConformsToStore/Store.Get/expires
+=== PAUSE TestStoreConformsToStore/Store.Get/expires
+=== CONT  TestStoreConformsToStore/Store.Get/expires
+    store_conform_test.go:18: Store.Get/expires is excused: PostgreSQL computes the expiry with now(), which a test cannot advance
+--- PASS: TestStoreConformsToStore (0.00s)
+    --- SKIP: TestStoreConformsToStore/Store.Get/expires (0.00s)
+PASS
+ok  	example.com/shop/session/postgres	0.214s
+```
+
+A change of the store on PostgreSQL that caches each session and returns the roles of the cache fails the check of the team at its statement:
+
+```text
+$ go test ./session/postgres
+--- FAIL: TestStoreConformsToStore (0.38s)
+    --- FAIL: TestStoreConformsToStore/Store.Get/returns-a-copy-of-the-roles (0.01s)
+        checks.go:26: a change of the roles that Get returns leaves the session in the store unchanged: (-want +got)
+            	[0]: -"admin" +"guest"
+FAIL
+FAIL	example.com/shop/session/postgres	0.402s
+FAIL
+```
+
+### Requests
+
+| Project | Request | Why |
+|---|---|---|
+| eidos | A function of the SDK that returns the instances of a directive on the subject of a match ([issue 59](https://github.com/dokimasia/eidos/issues/59)) | The directive `excuse` adds an option to the conformance test that the directive `subject` writes for the same type |
+| assert-go | A seat that embeds another seat writes the call records of the seat that it embeds ([issue 58](https://github.com/dokimasia/assert-go/issues/58)) | The handle of a check embeds the seat of the check, so the assertions of the check write no call record |
 
 ### Invariants
 
@@ -518,6 +1030,12 @@ The lock is a source file of the target language with the keys of the checks of 
 | A lost check changes the committed lock | The lock and the generation gate |
 | Every claim refers to an existing law, gate, probe, reason code, machinery and classification | The test of the package spec |
 | Every gate of the spec has a condition in the derivation | A test of the derivation |
+| A check of a consumer fails on its planted defect at the assertion of its statement before it runs on a subject | The generated falsification test, and the application for a check that `conform.With` adds |
+| Every excusal names a check of its run | The generator for the directive `excuse`, and the application |
+| The checks of a run have distinct identities | The generator for the directive `check`, and the application |
+| A function under the directive `check` binds to one callable of one declaration with the directive `suite` | The annotate step of the suite generator |
+| A check that advances the clock runs on a subject that read the clock of its handle | The handle |
+| A check that calls a door has the option of the door | The handle |
 
 ### Failure handling
 
@@ -532,6 +1050,14 @@ The lock is a source file of the target language with the keys of the checks of 
 | A gate of the spec has no condition in the derivation | A test of the derivation fails and names the gate | Implement the condition |
 | A planted defect passes its check | The falsification test fails and names the check | Fix the probe, the defect form or the claim |
 | The committed lock differs from a fresh run | The generation gate fails | Run `dokimi run`, review the lock and commit |
+| The planted defect of a check of a consumer passes the check, or fails an assertion of another contract than its statement | The falsification of the check fails and names the contract | Fix the check or its defect, or pass the statement to the decisive assertion |
+| The directive `check` names a declaration without the directive `suite`, an unknown callable, a taken segment or a missing defect | Generation reports it at the position of the directive | Correct the directive |
+| The directive `check` names a declaration that two declarations with the directive `suite` have | Generation reports it at the position of the directive, with the package of each declaration | Qualify the name with the name of its package |
+| The directive `excuse` names no check of the suite | Generation reports it at the position of the directive, with the identities of the checks of the callable | Correct or remove the excusal |
+| An excusal of `conform.Excuse` names no check of the run | The run fails and names the identity | Remove the excusal |
+| Two checks of a run have one identity | The run fails and names both checks | Rename the check of the consumer |
+| A check advances the clock of a subject that never read it | The check fails, and the message contains the call of `RunStoreSuiteFromHandle` that builds the subject on the clock | Build the subject on the clock of the handle |
+| A check calls a door without its option | The check fails and names the option | Pass the option |
 
 ## Alternatives considered
 
@@ -571,6 +1097,48 @@ The lock is a text file beside the generated files. testkit proposed such a file
 
 **Why not:** eidos writes the files of a plan through the backend of its target. Each backend spells a source file of its language. A lock in the language of the target is one more file family, and its structural test reads the lock as code.
 
+### A separate falsification of the checks of a consumer
+
+The generated file declares `FalsifyStore`, which a consumer calls beside `RunStoreSuite` with the same checks.
+
+**Why not:** a consumer who does not call it runs checks that no planted defect has failed. An application that falsifies each check of the consumer first cannot run an unproven check.
+
+### Reason codes of the consumer
+
+A check of a consumer declares a reason code of its own, and its body reports the code before each assertion.
+
+**Why not:** the assert library records the assertion of each failure, and no assertion records a code of the consumer. Each body would need a call of the runtime beside its assertions, and a missing call would turn each falsification into a wrong reason.
+
+### The assertion of the first failure as the reason
+
+A check of a consumer declares an assertion of assert-spec, such as `equal`, and falsification compares it with the assertion of the first failure record.
+
+**Why not:** a guard of the same assertion fails first on many defects, so its failure would count as proof. The consumer would also restate in a field what the decisive assertion already states.
+
+### Checks of a consumer registered at run time alone
+
+A consumer passes each of its checks to `conform.With`, and no directive declares one.
+
+**Why not:** the lock and the header then miss the checks of the consumer, so a lost check does not show in review. A misspelled callable or defect fails only when the test runs.
+
+### A factory of every subject that takes the handle
+
+`RunStoreSuite` takes a factory with the handle as its parameter for every subject. The conformance tests of the Go CDK take one factory in this way: `drivertest.RunConformanceTests(t, newHarness, asTests)` of `gocloud.dev/blob` takes a `HarnessMaker`, which receives the context and the test.
+
+**Why not:** most constructors do not need the handle, and each test would wrap its constructor in a function literal. `RunStoreSuiteFromHandle` serves the subjects that need the handle.
+
+### The names `RunStore` and `RunStoreOn`
+
+The application of the suite of `Store` is `RunStore`, and its form with the handle is `RunStoreOn`.
+
+**Why not:** a reader takes `RunStore` for an instruction to run the store, because the name does not mention the suite. From the word `On`, a reader cannot tell what the factory receives. Each conformance helper of Go has the name of what it tests: `fstest.TestFS`, `iotest.TestReader`, `nettest.TestConn` and `drivertest.RunConformanceTests`. In `RunStoreSuiteFromHandle`, the words `StoreSuite` refer to the suite that `StoreSuite` returns, and `FromHandle` refers to the argument of the factory. The suffix `WithHandle` would collide with `conform.With`, which adds checks.
+
+### An application to a control
+
+The generated file declares `ControlStore` and `ControlStoreFromHandle`, which apply the checks to a control. The suite record of such a run has the application `control`, so a reader of the record blames a failure on the check and not on the implementation.
+
+**Why not:** the runtime runs a control exactly as it runs a subject, so the two functions differ from the application only in the record. The controls of dokimi are in its corpus. The corpus fails on every failed check, so the record adds nothing that the corpus does not enforce. Every suite would declare two functions that no consumer calls. The verdict reverses when the service needs to tell the failures of a control of a consumer from the failures of a subject.
+
 ## Drawbacks
 
 - **Templates for every defect form.** testkit uses 36 defect forms. With eight targets, that is 288 defect templates, and a new defect form needs a template in every tree.
@@ -578,6 +1146,10 @@ The lock is a text file beside the generated files. testkit proposed such a file
 - **A double for every suite.** A declaration with `suite` also gets the typed double. For the corpus fixture of testkit with one method, the suite and its proofs have 392 lines and the double with its test has 465.
 - **Structural equality.** Probes compare results by structure. A type that its language compares by identity, such as a class in TypeScript, compares by structure in a check.
 - **Claims that need parameters.** A partner claim refuses until its directive sets the partner, so a mixin without its parameters adds refusals to the header.
+- **A check of a consumer runs twice.** It runs on its planted defect and then on the subject.
+- **A guard can reuse the statement.** A guard that passes `h.Statement()` as its message turns its own failure into proof. eidos does not model the bodies of functions, so the generator cannot detect it.
+- **Bound checks are outside test files.** The functions of the directive `check` are in the package of the generated suite, beside the doubles. A production package that imports that package compiles test code.
+- **Long names.** The longest declaration of the corpus gives `RunLeasedIdempotentWriterSuiteFromHandle`, a name of 40 characters.
 
 ## Open questions
 
@@ -591,3 +1163,7 @@ None.
 | The shape catalog of eidos | <https://github.com/dokimasia/eidos/blob/main/docs/architecture/12-shape-catalog.md> |
 | The callable that the rules of eidos derive | <https://github.com/dokimasia/eidos/blob/main/eidos-core/rules/callable.go> |
 | The equality of assert-spec | <https://github.com/dokimasia/assert-spec/blob/main/spec/assertions.yaml> |
+| The reads of the directives of a plan in eidos, `Reader.ByDirective` among them | <https://github.com/dokimasia/eidos/blob/main/eidos-core/store/reader.go> |
+| The conformance helpers of the Go standard library | <https://pkg.go.dev/testing/fstest#TestFS> and <https://pkg.go.dev/testing/iotest#TestReader> |
+| `nettest.TestConn` | <https://pkg.go.dev/golang.org/x/net/nettest#TestConn> |
+| The conformance tests of the blob drivers of the Go CDK | <https://pkg.go.dev/gocloud.dev/blob/drivertest> |

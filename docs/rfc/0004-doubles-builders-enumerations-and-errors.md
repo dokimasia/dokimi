@@ -4,7 +4,7 @@ title: Doubles, builders, enumerations and errors
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Draft
 created: 2026-10-19
-updated: 2026-10-20
+updated: 2026-10-21
 discussion: none
 supersedes: none
 superseded-by: none
@@ -28,6 +28,8 @@ Four generators of dokimi write the parts of a test that are not suites:
 - `sentinel` writes the checks of the error values and error types of a package.
 
 The checks of `enum` and `sentinel` are the checks that the enumeration tests and the error tests of testkit write, and they assert through the assert library of each language. A double and a builder are tools that tests use, so a structural test of the generated code covers them.
+
+A double and a builder work together. Where a test configures nothing, a double returns a new value from the builder of each result whose type has one. A test then configures only the calls that it checks.
 
 ## Motivation
 
@@ -97,7 +99,7 @@ For each callable, a double records every call with its arguments and its result
 1. A fault that the test armed, where the fault fails the call.
 2. A function that the test set, which computes the results from the arguments.
 3. A result that the test configured.
-4. The zero results in Go, and `undefined` in TypeScript.
+4. The default results. A result whose type has a builder takes a new value from the builder, as [Doubles and builders](#doubles-and-builders) states. Every other result is its zero value in Go, and `undefined` in TypeScript.
 
 A callable can fail where the error model of its language has a failure channel. A Go method can fail when its last result is `error`. Every TypeScript method can fail, because it can throw or reject. A fault of a TypeScript method throws its error, or rejects with it. A fault that fails a call of a Go method without an error result fails the test, because a double that dropped the fault would let a fault-injection test pass without a fault.
 
@@ -105,7 +107,7 @@ A callable can fail where the error model of its language has a failure channel.
 
 The runtime of each language implements the parts of a double that do not depend on a signature:
 
-| Part | Go: `go.dokimi.dev/dokimi-go` | TypeScript: `@dokimi/runtime` |
+| Part | Go: `go.dokimi.dev/stub` and `go.dokimi.dev/fault` | TypeScript: `@dokimi/runtime` |
 |---|---|---|
 | The log of calls with the instant of each, its hooks and bench mode | `stub.Recorder[T]` | `Recorder<T>` of `stub/recorder` |
 | The stub of one method: faults, latency, strict mode and the expected counts of calls | `stub.MethodStub[C]` | `MethodStub<C>` of `stub/method-stub` |
@@ -114,7 +116,7 @@ The runtime of each language implements the parts of a double that do not depend
 | The order of the calls of two methods | `stub.OrderTracker` | `OrderTracker` of `stub/order-tracker` |
 | The contract of each method | `stub.Behaviour` | `behaviour` of `stub/behaviour` |
 | The contract of the whole double | `stub.DoubleBehaviour` | `doubleBehaviour` of `stub/double-behaviour` |
-| The fault strategies | The package `fault` | The module `fault` |
+| The fault strategies | The package `fault` of the module `go.dokimi.dev/fault` | The module `fault` |
 
 Each module of TypeScript is a subpath export of the package, such as `@dokimi/runtime/stub/answer`.
 
@@ -194,10 +196,10 @@ The stub generator writes a test of each double. The test of a double with a met
 
 | Suite | Checks |
 |---|---|
-| `Behaviour` of each method | A call is recorded. An unmet count of `Times` and of `TimesAtLeast` fails the test. Strict mode refuses an unconfigured call. An unconfigured call returns the zero results. The double calls the function that the test set. An armed fault fails the call, a counted fault fails the nth call, and a call that a fault failed is recorded |
+| `Behaviour` of each method | A call is recorded. An unmet count of `Times` and of `TimesAtLeast` fails the test. Strict mode refuses an unconfigured call. An unconfigured call returns the default results. The double calls the function that the test set. An armed fault fails the call, a counted fault fails the nth call, and a call that a fault failed is recorded |
 | `DoubleBehaviour` of the double | Bench mode records no call. A strict double refuses an unconfigured call. A reset clears the instants of the calls. A fault with a probability reads the source of the double. A latency sleeps on the clock of the double, and a call is recorded after its latency. The latency of `NewStoreStubDelayed` sleeps on the same clock. Under the latency of `StoreStub.newDelayed`, a synchronous TypeScript method records its call at once. A fault with a window stops when the window closes |
 
-The test of each method also checks the results that need a value of the signature of the method. The method returns the samples of Returns, and the log of calls contains the arguments. OnRecord runs with each call, the option of the method sets its function, and Failing fails the method. A reset keeps the configuration of the results. Further checks cover a sequence, the refusal of a call before its sibling in a strict double, the helper of each error value, the retry schedule, and the two partition faults. The helper of an error value fails the next call with the value, and the call after it succeeds. The arguments take a sample of each parameter, and Returns takes a sample of each result. A variadic parameter takes no sample. The test of a generic double runs at the witnesses of its type parameters. Without witnesses, the test states that the double has no checks.
+The test of each method also checks the results that need a value of the signature of the method. The method returns the samples of Returns, and the log of calls contains the arguments. The check of Returns first checks that its samples differ from the default results, because a check with equal values passes for a double that ignores Returns. OnRecord runs with each call, the option of the method sets its function, and Failing fails the method. A reset keeps the configuration of the results. Further checks cover a sequence, the refusal of a call before its sibling in a strict double, the helper of each error value, the retry schedule, and the two partition faults. The helper of an error value fails the next call with the value, and the call after it succeeds. The arguments take a sample of each parameter, and Returns takes a sample of each result. A variadic parameter takes no sample. The test of a generic double runs at the witnesses of its type parameters. Without witnesses, the test states that the double has no checks.
 
 A double without methods, such as the TypeScript double of an interface with properties alone, does not run a suite, because each suite calls a method of the double. Its test builds the double under each option and through `newDelayed`. It assigns a sample to each property and then calls `resetCalls`. The test checks that each property keeps its sample.
 
@@ -209,7 +211,7 @@ The subject of a builder is a struct or a class under the directive `builder`, o
 
 | Part of the model | Derived from |
 |---|---|
-| The members | The fields of the member walk that code outside the package can assign on a value: public fields of the instance that are not immutable. A field with a hard private name is private, and the walk leaves out a field with a computed name. An embedded field of a public type is a member that the builder sets whole, and a field that an embed promotes is no member. A field that a base class declares is a member. A field with the tag `builder:"-"` is no member. A builder assigns a field after a dot, so a TypeScript property whose name is not an identifier, such as `'content-type'`, is no member |
+| The members | The fields of the member walk that code outside the package can assign on a value: public fields of the instance that are not immutable. A field with a hard private name is private. An embedded field of a public type is a member that the builder sets whole, and a field that an embed promotes is no member. A field that a base class declares is a member. A field with the tag `builder:"-"` is no member. A builder assigns a field after a dot, so a TypeScript property whose name is not an identifier, such as `'content-type'` or the computed name `[Symbol.toStringTag]`, is no member |
 | The names of the methods | The part of each language names the constructors and the setters of a member from the name of the builder, the name of the field and its form |
 | The form of a member | The canonical shape of the type of the field: a list, a map, bytes, an optional or a scalar. A field that may be absent is an optional of its type. The type follows each transparent alias. A Go defined type, such as `type Codes []string`, is a reference to its declaration, so the builder sets it whole. The shapes have no set, so the part of each language states the types that it writes as sets |
 | The seed | The function that the param `defaults` names, else the companion function of the declaration, else the start value of the language |
@@ -267,6 +269,36 @@ In Go, a probe passes zero values, such as `*new(string)`. The probe of a scalar
 
 A generic declaration is checked at the witnesses of its type parameters. Without witnesses, the test file states that the declaration has no checks.
 
+### Doubles and builders
+
+Where a test configured nothing, a double returns a value from a builder. The test then configures only the calls that it checks. Every other call of the code under test receives a value that the declaration of its type accepts, such as the account of a companion function that a store validates.
+
+| Result of a method | Default result |
+|---|---|
+| A struct, a class or an alias under `builder`, such as `Account` | A new value from its builder: `NewAccountBuilder().Build()` in Go, and `AccountBuilder.create().build()` in TypeScript. A generic struct takes the type arguments of the result |
+| A Go pointer to such a struct, or a TypeScript `Account \| undefined` | The same new value. Go returns its address |
+| A TypeScript promise of such a type | A promise of the same new value |
+| Every other result, such as an error, a flag, a list or a type without a builder | Its zero value in Go, and `undefined` in TypeScript |
+
+Each call builds a new value, so two calls never share a value that a caller changes. A flag keeps its zero value, so a lookup with the results `(Account, bool)` reports a miss until the test configures a hit. Strict mode still refuses an unconfigured call. A function, a configured result and a fault come before the default results.
+
+The builder states its constructor as a fact, and the stub writes the default results from it:
+
+1. The builder stamps two facts on each struct, class and alias under its directive, in an annotate role beside its generate role. `builder.name` is the name of its builder, and `builder.seed` is the name of the constructor from the seed: the function `NewAccountBuilder` in Go, and the static method `create` in TypeScript.
+2. The stub reads both facts on the type of each result. Its records refer to the builder through a bare reference, which the layout of eidos qualifies for the file of the double and for the external test package of its test.
+3. The templates of the stub write the default arm of each method with such a result, and the default of its subject in the test.
+
+The annotate role reports each declaration that has no builder and stamps no fact on it. The generate role runs on each declaration with the facts and writes its builder under the stamped name, so each fact contains the name of a builder that the plan writes. The builder derives the name of its own constructor, so the stub does not repeat the naming and the option `suffix` of the builder. A composition without the builder stamps no fact, and its doubles return zero values.
+
+The runtime of each language takes the default arm. `stub.Arms[C, R]` has the field `Default func() R`, and `Arms<C, R, I>` has the property `default`. `stub.Answer` and `answer` return the default results after the configured result and before the zero values. The behaviour suite compares an unconfigured call with the default of the subject, `Subject.Default` in Go and `default` in TypeScript, and with the zero values where the subject has no default.
+
+The layout of eidos resolves a bare reference within the source package of its unit alone, and a TypeScript module is a package of its own. So a result takes its default result where the package of the subject declares its type, and a type of another package keeps its zero value. The layout resolves a reference by its origin and its name only where the reference is in another language. dokimasia/eidos#53 requests the same resolution in the language of the plan. With it, the stub refers to the builder of a type of another package by its origin, and that type takes its default result too.
+
+The corpus states the integration in both languages:
+
+- `integration/validated` puts the directive `stub` on `Store`. An unconfigured `Get` of its double returns the account of `AccountDefaults`, which the store accepts.
+- `integration/built` declares a method for each row of the table of default results, beside a type without a builder and a type whose builder is in another package. The test of its double checks the default results of each method.
+
 ### The enumeration
 
 The enum generator reads the variants of an enumeration and their texts from the rules of eidos. The text of a variant of an enumeration of text is its value, such as `us-east` for `US Region = "us-east"`. The text of any other variant is its name without the name of its type, such as `Draft` for `StatusDraft`.
@@ -313,7 +345,17 @@ const (
 | Write a value as text | `func (v Status) MarshalText() ([]byte, error)` | None. JSON writes the value of a member |
 | Read a value from text | `func (v *Status) UnmarshalText(text []byte) error` | None |
 
-The render of a value outside the variants returns the value itself: `Status(42)` in Go, and the value of the member in TypeScript. The surface leaves out each member that the enumeration or its package already declares under its name. A parse function and a list of the variants go with the render, because an enumeration that renders itself parses itself. A decode needs a parse function, so without one the surface leaves out the encode too. The directive `enum methods=off` leaves out the whole surface and keeps the checks.
+The render of a value outside the variants returns the value itself: `Status(42)` in Go, and the value of the member in TypeScript.
+
+The Go render of an enumeration of integers takes the form that the tool stringer writes:
+
+- A compile-time check indexes an array of one element with each variant minus its value, so a changed value fails the build until the generator runs again.
+- The render slices the text of a value out of one string constant through an index of offsets.
+- A switch selects among the runs of consecutive values. An enumeration with more than ten runs looks the text up in a map from each value.
+
+The frontend of Go stamps the exact value of each variant, and a variant whose value reads a constant of another package has none. The render of such an enumeration, of an enumeration of floats and of an enumeration of truth values switches over the variants. The render of an enumeration of text whose texts are its values is the conversion `string(v)`.
+
+The surface leaves out each member that the enumeration or its package already declares under its name. A parse function and a list of the variants go with the render, because an enumeration that renders itself parses itself. A decode needs a parse function, so without one the surface leaves out the encode too. The directive `enum methods=off` leaves out the whole surface and keeps the checks.
 
 The enum generator has three options:
 
@@ -378,7 +420,8 @@ The file of the checks is beside the source file of the first error value, as te
 
 | Invariant | Enforced by |
 |---|---|
-| A double decides each result in the order fault, function, configured result, zero | The runtime of each language and its behaviour suite |
+| A double decides each result in the order fault, function, configured result, default result | The runtime of each language and its behaviour suite |
+| An unconfigured call of a double that is not strict returns a new value from the builder of each result whose type has one | The behaviour suite of each runtime, with the default of the subject |
 | A fault armed on a callable that cannot fail fails the test | The runtime of each language |
 | A handle has one double in its package | The stub generator, which writes the double of a handle at the first subject of the package that returns it |
 | A check of `sentinel` covers every error of its kind in its package | The directive on the package, and the generator, which reads the package whole |
@@ -394,8 +437,8 @@ The file of the checks is beside the source file of the first error value, as te
 |---|---|---|
 | A test arms a fault on a callable that cannot fail | The test fails and names the callable | Remove the fault, or give the callable an error result |
 | A Go interface under `stub` has type-set elements | The stub generator reports `Constraint` at the interface and writes no double | Put the directive on an interface that values implement |
-| The member walk of the subject of a double has a gap, such as an embed that the load did not resolve, a member with a computed name or an overloaded method | The stub generator reports `IncompleteMembers` at the subject and writes no double | Load the package of the embed, or give the member one name and one signature |
-| A member of the subject has no implementation in a double: a method with type parameters, an index signature, a construct signature, an accessor, or a member of a class that is not public | The stub generator reports `Unimplementable` at the subject and writes no double | Put the directive on an interface without the member |
+| The member walk of the subject of a double has a gap, such as an embed that the load did not resolve or an overloaded method | The stub generator reports `IncompleteMembers` at the subject and writes no double | Load the package of the embed, or give the method one signature |
+| A member of the subject has no implementation in a double: a method with type parameters, an index signature, a construct signature, an accessor, a member with a computed name such as `[Symbol.iterator]`, or a member of a class that is not public | The stub generator reports `Unimplementable` at the subject and writes no double | Put the directive on an interface without the member |
 | The subject of a TypeScript double is not exported | The stub generator reports `Unimplementable` at the subject and writes no double | Export the subject |
 | A parameter, a result or a property of the subject has no declared type, such as a TypeScript method whose result type the compiler infers | The stub generator reports `Unimplementable` at the subject and writes no double, because a double states the type of each field of a call, of each result and of each property | Declare the type |
 | Two members of a double have one name, such as the field `OnClose` of the method `Close` and a method `OnClose` | The stub generator reports `Collision` at the subject and writes no double | Rename one of the methods |
@@ -406,6 +449,8 @@ The file of the checks is beside the source file of the first error value, as te
 | The param `retry` of the directive `fault` is below 2 | The annotator `fault` reports the instance, and the double has no retry schedule | State the attempt that succeeds |
 | The param `partition` names a variadic parameter, or a parameter whose type mentions a type parameter of the double | The stub generator reports `Incomparable` at the declaration, and the double has no partition helpers, because a partition fault compares each argument with a key | Select the calls with `FaultsWhen`, or `faultsWhen` in TypeScript |
 | A generic subject of a double has no witnesses | The double has no test | Author the witnesses with the directive `witness` |
+| A sample of Returns equals the default result, such as a sample that equals the value of a companion function | The check of Returns fails and names the method | Author another sample with the directive `sample` |
+| An `out` routes the builder of a result type into another Go package than the double, such as `accounttest` beside a double in `account` | The package of the builder imports the package of the double, and the double imports the package of the builder, so the double does not compile | Give the double the same `out` as the builder |
 | A default is no value of the type of its field | The builder reports `BadDefault` at the field and writes nothing for the declaration | Correct the default |
 | A field has the tag `builder` with another value than `-` | The builder reports `BadTag` at the field, and the field keeps its setter | Correct the tag |
 | A declaration under `builder` has no field that a builder can set | The builder reports `Empty` at the declaration and writes nothing for it | Remove the directive, or make a field public |
@@ -451,11 +496,35 @@ The trailing comment of a variant is its text without a param, as in `Poor Grade
 
 **Why not:** authors write trailing comments that explain a variant, such as `Calm Mood = iota // the reader reads on`. As the text, such a comment would change the render and the parse function of an enumeration that adds the directive, and every value that it encodes. The source would state that change nowhere. The flag `-linecomment` of stringer is off by default for the same reason. The param `text=comment` states the choice in the directive that the author writes anyway.
 
-### Slots of the builder and a fact of its name
+### Slots of the builder
 
-The builder hands out slots for setters on the builder, for statements inside `Build` and for checks in the test file. Other generators fill them. The builder also stamps the name of each builder on its declaration as a fact. Another generator then refers to the builder without the naming convention.
+The builder hands out slots for setters on the builder, for statements inside `Build` and for checks in the test file. Other generators fill them.
 
-**Why not:** no generator of dokimi adds a setter, a statement or a check to a builder. A generator of a later turn reads the emitted builder through `sdk.OnEmit`, which hands it the builder with its name, and it appends to the slots of the emitted declarations through `Emitter.Slot`. A generator that needs a slot of the template brings the slot with it.
+**Why not:** no generator of dokimi adds a setter, a statement or a check to a builder.
+
+### The builder weaves the default results into the double
+
+The stub declares a named slot in each method of a double. The builder runs in a later turn and triggers on each such method through `sdk.OnEmit`. It appends the call of its constructor to the slot through `Emitter.Slot`.
+
+**Why not:** a slot of a body contains statements. The layout of eidos qualifies a bare reference in a type and leaves a call in a statement as written. The test of a double is in the external test package, so the call would not compile there. RFC-0057 of eidos records the limit for a reference from one emitted declaration to another in a file of another package.
+
+### The stub derives the name of the constructor
+
+The stub reads that a type has a builder, and joins the name of the constructor by the naming of the builder.
+
+**Why not:** the stub would repeat the naming of the builder and its option `suffix`, so a change of the naming of the builder would break each double. The facts of the builder name the constructor.
+
+### A builder that fills an interface field with a double
+
+The builder fills each field whose type is an interface under `stub` with a new double.
+
+**Why not:** a double that a builder constructs has no seat of a test, so strict mode and the expected counts of calls do not report a failure. To check the calls of a double, a test constructs it with its seat and passes it to the setter, as in `WithStore(store)`. The verdict reverses for a builder that takes the seat of the test.
+
+### Samples from the builder in the test of a double
+
+The test of a double takes the samples of a type with a builder from the builder.
+
+**Why not:** the check of Returns needs samples that differ from the default results, and the builder returns the default results.
 
 ### A mocking library of each language
 
@@ -528,5 +597,10 @@ None.
 |---|---|
 | The stub runtime and the fault strategies of testkit | <https://github.com/thesm-os/testkit/tree/main/stub> |
 | The reference plugins of eidos | <https://github.com/dokimasia/eidos/tree/main/eidos-reference> |
+| The facts of an owner and the two-package weave of eidos | <https://github.com/dokimasia/eidos/blob/main/docs/architecture/06b-authoring.md> |
+| The qualification of a reference by the layout of eidos | <https://github.com/dokimasia/eidos/blob/main/eidos-core/layout/reference.go> |
+| The limit of a reference between emitted declarations, in RFC-0057 of eidos | <https://github.com/dokimasia/eidos/blob/main/docs/rfc/0057-template-helpers-and-scaffold-forms.md> |
+| A reference by origin and name in the language of the plan | <https://github.com/dokimasia/eidos/issues/53> |
 | The error tests of testkit | <https://github.com/thesm-os/testkit/tree/main/conformance/corpus/errors> |
+| The tool stringer, whose forms the Go render of an enumeration of integers takes | <https://pkg.go.dev/golang.org/x/tools/cmd/stringer> |
 | `errors.Is` | <https://pkg.go.dev/errors#Is> |

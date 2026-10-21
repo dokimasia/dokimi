@@ -7,14 +7,15 @@ import { test } from '@dokimi/assert/vitest';
 import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
 import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
 import { describe } from 'vitest';
-import type { Level, Tag } from '../iface';
+import { type Level, type Tag, newTestLevel, newTestTag } from '../iface';
 import { LabellerStub } from './iface.stub';
 
 /** Returns the samples of the arguments of apply, or undefined. */
 function labellerStubApplyArgs(): [Tag, Level] {
   let a0 = undefined as unknown as Tag;
   let a1 = undefined as unknown as Level;
-  a0 = 'newTestTag()';
+  a0 = newTestTag();
+  a1 = newTestLevel();
   return [a0, a1];
 }
 
@@ -118,4 +119,4 @@ describe("LabellerStub", () => {
   });
 });
 
-// dokimi:provenance sha256:362777fe46a032a4bff177df5722a3fada9385d1838414103657b3669a2a6ecd
+// dokimi:provenance sha256:0cf9b714b7d8dfac6204f1226dad352b71338ba4979d2671f8170ee51f166268

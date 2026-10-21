@@ -9,6 +9,7 @@ import { compatV1 } from '@dokimi/runtime/stub/compat';
 import { Group } from '@dokimi/runtime/stub/group';
 import { MethodStub } from '@dokimi/runtime/stub/method-stub';
 import type { Contract, Value } from '../iface';
+import { ValueBuilder } from './iface.builder';
 
 /** ContractPutCall records one call of Contract.put. */
 export interface ContractPutCall {
@@ -70,6 +71,7 @@ export class ContractPutStub extends MethodStub<ContractPutCall> {
     return {
       invoke: fn && (() => fn(v)),
       fallback: this.#fallback,
+      default: () => ValueBuilder.create().build(),
       stamp: (call, result) => {
         call.result = result;
       },
@@ -120,6 +122,7 @@ export class ContractGetStub extends MethodStub<ContractGetCall> {
     return {
       invoke: fn && (() => fn(key)),
       fallback: this.#fallback,
+      default: () => ValueBuilder.create().build(),
       stamp: (call, result) => {
         call.result = result;
       },
@@ -135,8 +138,9 @@ export type ContractStubOption = (double: ContractStub) => void;
 
 /**
  * ContractStub is a recording test double of Contract. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. Left alone, a method records the call
+ * and returns a new value from the builder of its result type, or undefined
+ * where the type has no builder.
  */
 export class ContractStub implements Contract {
   /** Configures put. */
@@ -347,4 +351,4 @@ export class ContractStub implements Contract {
 
 void compatV1;
 
-// dokimi:provenance sha256:8bfdb6217df1e151a07c2ba84e7452dad91a5b94bb335cd70a8ae6bcde604ee2
+// dokimi:provenance sha256:fb1c38d8936f00cd19888d32c82b10b2aa5753679367dde85fa7c6fc1377c017

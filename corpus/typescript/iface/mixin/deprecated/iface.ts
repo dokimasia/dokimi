@@ -35,6 +35,12 @@ export interface Mixed {
   //dokimi:mixin deprecated
   old(key: string): Promise<string>;
 
-  /** Returns the value under the key, as the replacement of old. */
-  new(key: string): Promise<string>;
+  /**
+   * Returns the value under the key, as the replacement of old.
+   *
+   * @remarks
+   * The name new is in quotes because `new(` opens a construct signature in
+   * an interface.
+   */
+  "new"(key: string): Promise<string>;
 }

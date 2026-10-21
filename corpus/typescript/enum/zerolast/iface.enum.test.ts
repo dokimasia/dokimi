@@ -37,6 +37,10 @@ describe("Region variants", () => {
     }
   });
 
+  test("a value outside the set is not valid", ({ seat }) => {
+    check.isFalse(seat, isRegion("????????"), "an undeclared value must not be valid");
+  });
+
   test("every declared variant is valid", ({ seat }) => {
     for (const value of all) {
       check.isTrue(seat, isRegion(value), "a declared variant must be valid");
@@ -57,6 +61,13 @@ describe("Region text", () => {
     const err = check.throws(seat, () => parseRegion("????????"), "unknown text must be refused");
     check.errorAs(seat, err, UnknownRegionError, "unknown text must be refused with the declared refusal");
   });
+
+  test("a value outside the set does not render as one inside it", ({ seat }) => {
+    const out = "????????" as unknown as Region;
+    for (const value of all) {
+      check.notEqual(seat, regionToString(out), regionToString(value), "an undeclared value must render distinctly");
+    }
+  });
 });
 
-// dokimi:provenance sha256:5a81eb4b2025a5d8c9965c5c52bbebdfa0ed83422a80c2a5869da51240710a78
+// dokimi:provenance sha256:eae8c2441bd89bead80993585c060957556abb5e6390241e5f5342b31110762d

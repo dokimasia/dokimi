@@ -8,6 +8,7 @@ import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
 import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
 import { describe } from 'vitest';
 import type { Value } from '../iface';
+import { ValueBuilder } from './iface.builder';
 import { ContractStub } from './iface.stub';
 
 /** Returns the samples of the arguments of put, or undefined. */
@@ -62,6 +63,7 @@ describe("ContractStub.put", () => {
           return undefined as never;
         });
       },
+      default: () => ValueBuilder.create().build(),
     };
   });
   for (const c of checks) {
@@ -71,6 +73,8 @@ describe("ContractStub.put", () => {
   test("returns the result of returns", async ({ seat }) => {
     const double = new ContractStub(seat);
     const want = contractStubPutPin();
+    const unset = ValueBuilder.create().build();
+    check.notEqual(seat, want, unset, "the sample of the result differs from its default result");
     double.onPut.returns(want);
     check.equal(seat, await contractStubPut(double), want, "put returns the result of returns");
   });
@@ -134,6 +138,7 @@ describe("ContractStub.get", () => {
           return undefined as never;
         });
       },
+      default: () => ValueBuilder.create().build(),
     };
   });
   for (const c of checks) {
@@ -143,6 +148,8 @@ describe("ContractStub.get", () => {
   test("returns the result of returns", async ({ seat }) => {
     const double = new ContractStub(seat);
     const want = contractStubGetPin();
+    const unset = ValueBuilder.create().build();
+    check.notEqual(seat, want, unset, "the sample of the result differs from its default result");
     double.onGet.returns(want);
     check.equal(seat, await contractStubGet(double), want, "get returns the result of returns");
   });
@@ -247,4 +254,4 @@ describe("ContractStub", () => {
   });
 });
 
-// dokimi:provenance sha256:0fb9df16639a3a3bee4ace25c4f8c3a1b2883d3bd83bfd42c5f14d6b47883fc7
+// dokimi:provenance sha256:dd75f63ae021dea5e2df9f04426533ddf5457cf5e0c7626ad37993877880e90b

@@ -92,7 +92,16 @@ export function accountSecond(): Account {
   return account;
 }
 
-/** Represents the subject that the generated harness holds an implementation to. */
+/**
+ * Represents the subject that the generated harness checks an implementation
+ * against.
+ *
+ * @remarks
+ * An unconfigured call of get on its double returns a new account from the
+ * builder of Account. {@link accountDefaults} seeds that builder, so the store
+ * accepts the account.
+ */
+//dokimi:stub
 export interface Store {
   /** Stores the account, and refuses an account that does not validate. */
   put(a: Account): Promise<void>;

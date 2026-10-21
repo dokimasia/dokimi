@@ -6,23 +6,32 @@ package catalog
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 )
+
+func _() {
+	// An "invalid array index" compiler error means that the value of a
+	// variant changed. Run dokimi again to write the table of the new values.
+	var x [1]struct{}
+	_ = x[Active-1]
+	_ = x[Suspended-2]
+	_ = x[Closed-3]
+}
+
+const _Status_name = "ActiveSuspendedClosed"
+
+var _Status_index = [...]uint8{0, 6, 15, 21}
 
 // String returns Status's textual form.
 //
 // A value outside the declared set renders as itself, so a corrupt value
 // is visible rather than indistinguishable from a declared one.
 func (v Status) String() string {
-	switch v {
-	case Active:
-		return "Active"
-	case Suspended:
-		return "Suspended"
-	case Closed:
-		return "Closed"
+	idx := int(v) - 1
+	if v < 1 || idx >= len(_Status_index)-1 {
+		return "Status(" + strconv.FormatInt(int64(v), 10) + ")"
 	}
-	return fmt.Sprintf("Status(%d)", int(v))
+	return _Status_name[_Status_index[idx]:_Status_index[idx+1]]
 }
 
 // ErrUnknownStatus reports text that names no declared variant.
@@ -95,4 +104,4 @@ func (v *Status) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:de37907deaa9e949aebcd8ac5b54e37f044e6f76e0d13302a4063554de225bb3
+// dokimi:provenance sha256:3480f8614dcc31347a561b4275ba38dd6dfc36dd5a2c48c9b00517af39c87e1f

@@ -4,6 +4,8 @@
 package dokimi
 
 import (
+	"slices"
+
 	"go.dokimi.dev/eidos/core/authored"
 	"go.dokimi.dev/eidos/core/workspace"
 	golang "go.dokimi.dev/eidos/lang/go"
@@ -25,6 +27,7 @@ import (
 	"go.dokimi.dev/dokimi/generator/enum"
 	"go.dokimi.dev/dokimi/generator/sentinel"
 	"go.dokimi.dev/dokimi/generator/stub"
+	"go.dokimi.dev/dokimi/generator/suite"
 )
 
 // Brand is the brand of dokimi. A carrier sets a directive as
@@ -63,15 +66,18 @@ func Base() *workspace.Builder {
 // alone scopes each plan, so a plan also reads the packages of its language
 // that a store provides, such as the standard library of Go. A double of an
 // interface that embeds io.Closer then has the method Close. Both plans share
-// one instance of each generator: builder, stub, enum and sentinel. Each call
-// returns new plugin instances.
+// one instance of each generator: builder, stub, enum and sentinel. The plan
+// go also runs suite, which writes the suites of Go. builder also has an
+// annotate half, which the workspace runs with the annotators. It stamps the
+// names of each builder, which the stub generator reads for the default
+// results of a double. Each call returns new plugin instances.
 func Plans() []workspace.Plan {
 	generators := []plugin.Generator{builder.New(), stub.New(), enum.New(), sentinel.New()}
 	return []workspace.Plan{
 		{
 			Name:       GoPlan,
 			Sources:    workspace.Sources{Lang: golang.Lang},
-			Generators: generators,
+			Generators: append(slices.Clone(generators), suite.New()),
 			Backend:    gobackend.New(),
 		},
 		{

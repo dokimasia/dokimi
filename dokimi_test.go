@@ -34,6 +34,7 @@ import (
 	"go.dokimi.dev/dokimi/generator/enum"
 	"go.dokimi.dev/dokimi/generator/sentinel"
 	"go.dokimi.dev/dokimi/generator/stub"
+	"go.dokimi.dev/dokimi/generator/suite"
 )
 
 // The tree of the composition and the directory of the files that the plans
@@ -88,6 +89,19 @@ func TestDokimi(t *testing.T) {
 					"both plans run one instance of the generator", assert.ByIdentity())
 			})
 		}
+
+		t.Run("returns a plan go that runs suite", func(t *testing.T) {
+			t.Parallel()
+
+			generator(t, dokimi.Plans()[0], suite.ID)
+		})
+
+		t.Run("returns a plan typescript that runs no suite", func(t *testing.T) {
+			t.Parallel()
+
+			suites := func(g plugin.Generator) bool { return g.Name() == suite.ID }
+			expect.False(t, slices.ContainsFunc(dokimi.Plans()[1].Generators, suites), "the plan writes no suite")
+		})
 
 		sources := []struct {
 			name string

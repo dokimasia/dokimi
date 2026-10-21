@@ -11,8 +11,9 @@
 // [Part], and lists one part for each language.
 //
 // [Register] declares the target of each part on the builder of the plugin.
-// [Served] wraps a handler, so the handler runs with the part of the language
-// of its match and leaves a subject of another language alone.
+// [Served] wraps a handler that generates or stamps, so the handler runs with
+// the part of the language of its match and leaves a subject of another
+// language alone.
 //
 // # Dependency position
 //

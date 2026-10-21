@@ -29,12 +29,13 @@ func Register[P Part](b *sdk.Builder, parts []P) {
 }
 
 // Served returns a handler that runs h with the part of the language of its
-// match among parts. For a match of a language without a part, the handler
-// returns nil without running h.
-func Served[M interface{ Lang() symbol.Lang }, P Part](
-	parts []P, h func(M, P, *sdk.Emitter) error,
-) func(M, *sdk.Emitter) error {
-	return func(m M, e *sdk.Emitter) error {
+// match among parts. The handler takes the effect of h, so it generates where
+// h generates and stamps where h stamps. For a match of a language without a
+// part, the handler returns nil without running h.
+func Served[M interface{ Lang() symbol.Lang }, P Part, E sdk.Effect](
+	parts []P, h func(M, P, E) error,
+) func(M, E) error {
+	return func(m M, e E) error {
 		for _, p := range parts {
 			if p.Lang() == m.Lang() {
 				return h(m, p, e)

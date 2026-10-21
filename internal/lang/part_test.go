@@ -77,6 +77,18 @@ func TestPart(t *testing.T) {
 			expect.Equal(t, got, []fixturePart{typescriptPart}, "the handler runs once with the part of TypeScript")
 		})
 
+		t.Run("runs a handler that stamps with the part of the language of the match", func(t *testing.T) {
+			t.Parallel()
+
+			var got []fixturePart
+			h := lang.Served(parts, func(_ match, p fixturePart, _ *sdk.Stamper) error {
+				got = append(got, p)
+				return nil
+			})
+			assert.NoError(t, h(match{lang: "golang"}, nil), "the handler runs")
+			expect.Equal(t, got, []fixturePart{golangPart}, "the handler runs once with the part of Go")
+		})
+
 		t.Run("does nothing for a match of a language without a part", func(t *testing.T) {
 			t.Parallel()
 

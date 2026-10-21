@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // RepoGetCall records one invocation of Repo.Get.
@@ -170,7 +170,7 @@ func (s *RepoBoxedStub[T]) Func(fn func() Box[T]) *RepoBoxedStub[T] {
 
 // --- RepoStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // RepoStubOption configures a [RepoStub] at construction time.
@@ -505,7 +505,7 @@ func (s *PairsAllStub[K1, V_]) Func(fn func() map[K1]V_) *PairsAllStub[K1, V_] {
 
 // --- PairsStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // PairsStubOption configures a [PairsStub] at construction time.
@@ -683,7 +683,7 @@ func (s *BagAddStub[K]) Func(fn func(K)) *BagAddStub[K] {
 
 // --- BagStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // BagStubOption configures a [BagStub] at construction time.

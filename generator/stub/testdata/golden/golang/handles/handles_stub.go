@@ -7,7 +7,7 @@ import (
 
 	"example.com/shop/other"
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // ArchiveSizeCall records one invocation of Archive.Size.
@@ -102,7 +102,7 @@ func (s *ArchiveOpenLogStub) Func(fn func(string) (Log, error)) *ArchiveOpenLogS
 
 // --- ArchiveStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // ArchiveStubOption configures a [ArchiveStub] at construction time.
@@ -354,7 +354,7 @@ func (s *LogAppendStub) Func(fn func(string) error) *LogAppendStub {
 
 // --- LogStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // LogStubOption configures a [LogStub] at construction time.
@@ -742,7 +742,7 @@ func (s *ProducerElsewhereStub) Func(fn func() other.Thing) *ProducerElsewhereSt
 
 // --- ProducerStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // ProducerStubOption configures a [ProducerStub] at construction time.
@@ -1163,7 +1163,7 @@ func (s *CursorCloseStub) Func(fn func(context.Context) error) *CursorCloseStub 
 
 // --- CursorStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // CursorStubOption configures a [CursorStub] at construction time.
@@ -1418,7 +1418,7 @@ func (s *ReaderReadStub) Func(fn func() Cursor) *ReaderReadStub {
 
 // --- ReaderStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // ReaderStubOption configures a [ReaderStub] at construction time.
@@ -1592,7 +1592,7 @@ func (s *SubscriptionCancelStub) Func(fn func()) *SubscriptionCancelStub {
 
 // --- SubscriptionStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // SubscriptionStubOption configures a [SubscriptionStub] at construction

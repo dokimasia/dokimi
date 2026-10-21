@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // StoreGetCall records one invocation of Store.Get.
@@ -306,7 +306,7 @@ func (s *StoreCloseStub) Func(fn func() error) *StoreCloseStub {
 
 // --- StoreStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // StoreStubOption configures a [StoreStub] at construction time.
@@ -859,7 +859,7 @@ func (s *ClockEveryStub) Func(fn func(time.Duration, func()) func()) *ClockEvery
 
 // --- ClockStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // ClockStubOption configures a [ClockStub] at construction time.

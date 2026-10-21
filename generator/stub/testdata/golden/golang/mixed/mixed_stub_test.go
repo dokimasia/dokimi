@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // sessionStubPrepareSubject binds Prepare into the shape [stub.Behaviour]

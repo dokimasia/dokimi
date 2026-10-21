@@ -9,7 +9,7 @@ import (
 
 	"example.com/shop/other"
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // archiveStubSizeSubject binds Size into the shape [stub.Behaviour]

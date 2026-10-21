@@ -10,7 +10,7 @@
 {{docs (wrapdocs (printf `Skipped: %s is generic — instantiate it with concrete types and
 write the checks in the consuming package.` $stub))}}
 {{- else}}
-{{- use "testing"}}{{use "go.dokimi.dev/assert"}}{{use "go.dokimi.dev/dokimi-go/stub"}}
+{{- use "testing"}}{{use "go.dokimi.dev/assert"}}{{use "go.dokimi.dev/stub"}}
 {{- $new := spell (stubRef $t (printf "New%s" $stub))}}
 {{- $double := spell (stubRef $t $stub)}}
 {{- range $i, $m := $c.Methods}}

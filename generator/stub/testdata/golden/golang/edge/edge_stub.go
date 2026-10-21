@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // EdgeSkipCall records one invocation of Edge.Skip.
@@ -412,7 +412,7 @@ func (s *EdgePairStub) Func(fn func() (int, int)) *EdgePairStub {
 
 // --- EdgeStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // EdgeStubOption configures a [EdgeStub] at construction time.

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // SessionPrepareCall records one invocation of Session.Prepare.
@@ -138,7 +138,7 @@ func (s *SessionOldStub) Func(fn func(string) (string, error)) *SessionOldStub {
 
 // --- SessionStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // SessionStubOption configures a [SessionStub] at construction time.

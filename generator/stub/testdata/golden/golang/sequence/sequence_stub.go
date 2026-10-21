@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/stub"
 )
 
 // TableNamesCall records one invocation of Table.Names.
@@ -287,7 +287,7 @@ func (s *TableTailStub) Yields(items ...string) *TableTailStub {
 
 // --- TableStub ---
 
-// The double-runtime witness for the surface this double rides.
+// The witness of the major version of the runtime of doubles.
 var _ = stub.CompatV1
 
 // TableStubOption configures a [TableStub] at construction time.

@@ -313,8 +313,11 @@ func TestSentinel(t *testing.T) {
 				assert.NoError(t, res.Err, "the generator runs whole")
 				var at node.Declaration
 				for pkg := range f.Graph.Packages() {
-					at = pkg
+					if pkg.ID.Package == tt.pkg {
+						at = pkg
+					}
 				}
+				assert.NotNil(t, at, "the fixture contains the package "+tt.pkg)
 				got := gentest.Finding(t, res, at)
 				expect.Equal(t, got.Code, tt.wantCode, "the finding has the code of its case")
 				expect.Equal(t, got.Msg, tt.wantMsg, "the message contains the package and the reason")

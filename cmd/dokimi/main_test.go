@@ -57,7 +57,7 @@ func TestDokimi(t *testing.T) {
 	t.Run("main", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("writes the brand and the module of the binary for version", func(t *testing.T) {
+		t.Run("writes the brand of the binary with its module for version", func(t *testing.T) {
 			t.Parallel()
 
 			binary, err := os.Executable()

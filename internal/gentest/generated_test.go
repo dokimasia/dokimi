@@ -204,7 +204,7 @@ func TestGenerated(t *testing.T) {
 		}{
 			{name: "returns nothing for no statements"},
 			{
-				name: "joins the names of a statement by commas and the statements by spaces",
+				name: "writes each statement as its names joined by commas",
 				give: []emit.Stmt{{Names: []string{"seed.Street"}}, {Names: []string{"a", "b"}}},
 				want: "seed.Street a,b",
 			},

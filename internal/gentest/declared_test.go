@@ -95,7 +95,7 @@ func TestDeclared(t *testing.T) {
 	t.Run("External", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes for a family whose files test their package from outside", func(t *testing.T) {
+		t.Run("passes for a family whose files check their package from outside", func(t *testing.T) {
 			t.Parallel()
 
 			gentest.External(t, recorder(recording{external: true}), sdk.TagTest)
@@ -116,7 +116,7 @@ func TestDeclared(t *testing.T) {
 				wantContract: "the plugin declares the family of the tag bench",
 			},
 			{
-				name: "fails for a family whose files are in the package that they test",
+				name: "fails for a family whose files are in the package that they check",
 				give: recorder(recording{}), giveTag: sdk.TagTest,
 				wantContract: "the files of the family test their package from outside",
 			},
@@ -137,7 +137,7 @@ func TestDeclared(t *testing.T) {
 	t.Run("Codes", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("passes for a code with its spelling and its meaning", func(t *testing.T) {
+		t.Run("passes for a complete code", func(t *testing.T) {
 			t.Parallel()
 
 			gentest.Codes(t, gentest.Code{

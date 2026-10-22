@@ -198,7 +198,7 @@ func TestFixture(t *testing.T) {
 	t.Run("Find", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("returns the declaration of the kind with the owner and the name", func(t *testing.T) {
+		t.Run("returns the declaration of the kind that the owner declares under the name", func(t *testing.T) {
 			t.Parallel()
 
 			f := gentest.New(t, &gentest.Spec{Dir: goTree, Packages: []string{catalogPackage}})

@@ -174,7 +174,7 @@ func TestDokimi(t *testing.T) {
 			workspacetest.RunWorkspaceSuite(t, f)
 		})
 
-		t.Run("passes the warm and cold suite over the tree", func(t *testing.T) {
+		t.Run("passes the warm-cold suite of the workspace over the tree", func(t *testing.T) {
 			t.Parallel()
 
 			workspacetest.RunWarmColdSuite(t, f)
@@ -201,7 +201,7 @@ func TestDokimi(t *testing.T) {
 			toolchain.AssertDocumented(t, tsfrontend.New(), generated(f, tsExtension))
 		})
 
-		t.Run("writes Go tests that pass", func(t *testing.T) {
+		t.Run("writes Go specs that pass", func(t *testing.T) {
 			t.Parallel()
 
 			a := gotesting.New()
@@ -211,7 +211,7 @@ func TestDokimi(t *testing.T) {
 			toolchain.AssertTestsPass(t.Context(), t, a, generated(f, goExtension))
 		})
 
-		t.Run("writes Go tests that run in parallel", func(t *testing.T) {
+		t.Run("writes Go specs that run in parallel", func(t *testing.T) {
 			t.Parallel()
 
 			gotesting.AssertParallel(t, generated(f, goExtension))

@@ -17,11 +17,14 @@
 //	const store = new StoreStub(seat);
 //	store.onGet.returns(item);
 //
-// The test of a double with a method runs the behaviour suites of the
-// runtime against the double. It checks the answers of each method with a
-// sample of each argument and of each result. The test of a double without
-// a method builds the double under each option, and checks that a reset
-// keeps the sample of each property.
+// The test of a double with a method has a level for each method and each
+// option of the double, and for ResetCalls, NewStoreStubDelayed and
+// NewStoreStubFailing. These levels run the behaviour suites of the runtime
+// against the double. Their other cases check the answers of each method with
+// a sample of each argument and of each result. The test of the stub of a
+// method has a level for each method of the stub, such as Returns and Func.
+// The test of a double without a method builds the double under each option,
+// and checks that a reset keeps the sample of each property.
 //
 // # Default results
 //
@@ -42,11 +45,12 @@
 // language types a value by its members, which subjects the file of a double
 // can refer to and which interfaces only constrain type parameters. It sets
 // the receiver of a method of a double, and returns the type that the option
-// DelegateTo wraps. It returns the names of the member that configures a
-// method, of the fields of a call and of the fields of the results. It
-// returns the type that a builder builds for a result, and the declaration
-// that a default result calls. stub leaves a declaration of a language
-// without a part alone.
+// DelegateTo wraps. For a Go struct the part of Go returns no type, and the
+// template writes the interface of the methods of the double. Each part
+// returns the names of the member that configures a method, of the fields of
+// a call and of the fields of the results. It returns the type that a builder
+// builds for a result, and the declaration that a default result calls. stub
+// leaves a declaration of a language without a part alone.
 //
 // # Diagnostics
 //

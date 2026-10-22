@@ -10,25 +10,75 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// repoStubGetSubject binds Get into the shape [stub.Behaviour] drives: how
-// to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// repoStubGetArgs returns the samples of the arguments of Get.
+func repoStubGetArgs[T any](tb assert.TB) string {
+	tb.Helper()
+	var a0 string
+	a0 = "Get-a"
+	return a0
+}
+
+// repoStubGet calls Get of s with the samples of its arguments.
+func repoStubGet[T any](tb assert.TB, s *RepoStub[T]) (T, error) {
+	tb.Helper()
+	a0 := repoStubGetArgs[T](tb)
+	return s.Get(a0)
+}
+
+// repoStubGetPins returns the samples of the results of Get, with a new
+// error as its error result.
+func repoStubGetPins[T any]() (T, error) {
+	var want0 T
+	want1 := errors.New("Get-returns")
+	return want0, want1
+}
+
+// repoStubPutArgs returns the samples of the arguments of Put.
+func repoStubPutArgs[T any](tb assert.TB) T {
+	tb.Helper()
+	var a0 T
+	return a0
+}
+
+// repoStubPut calls Put of s with the samples of its arguments.
+func repoStubPut[T any](tb assert.TB, s *RepoStub[T]) {
+	tb.Helper()
+	a0 := repoStubPutArgs[T](tb)
+	s.Put(a0)
+}
+
+// repoStubList calls List of s with the samples of its arguments.
+func repoStubList[T any](tb assert.TB, s *RepoStub[T]) ([]T, error) {
+	tb.Helper()
+	return s.List()
+}
+
+// repoStubListPins returns the samples of the results of List, with a new
+// error as its error result.
+func repoStubListPins[T any]() ([]T, error) {
+	var want0 []T
+	want1 := errors.New("List-returns")
+	return want0, want1
+}
+
+// repoStubBoxed calls Boxed of s with the samples of its arguments.
+func repoStubBoxed[T any](tb assert.TB, s *RepoStub[T]) Box[T] {
+	tb.Helper()
+	return s.Boxed()
+}
+
+// repoStubGetSubject returns the subject of [stub.Behaviour] for Get. The
+// subject calls a new double that reports to tb.
 func repoStubGetSubject[T any](tb assert.TB) stub.Subject[RepoGetCall[T], RepoGetReturn[T]] {
 	tb.Helper()
 	s := NewRepoStub[T](tb)
 	return stub.Subject[RepoGetCall[T], RepoGetReturn[T]]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			var a0 string
-			a0 = "Get-a"
-			_, _ = s.Get(a0)
+			_, _ = repoStubGet[T](tb, s)
 		},
 		Result: func() RepoGetReturn[T] {
-			var a0 string
-			a0 = "Get-a"
-			got0, got1 := s.Get(a0)
+			got0, got1 := repoStubGet[T](tb, s)
 			return RepoGetReturn[T]{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -40,101 +90,21 @@ func repoStubGetSubject[T any](tb assert.TB) stub.Subject[RepoGetCall[T], RepoGe
 			})
 		},
 		Fails: func() error {
-			var a0 string
-			a0 = "Get-a"
-			_, r1 := s.Get(a0)
+			_, r1 := repoStubGet[T](tb, s)
 			return r1
 		},
 	}
 }
 
-// TestRepoStubGet pins how Get answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func repoStubGetChecks[T any](t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Get", repoStubGetSubject[T])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var a0 string
-		a0 = "Get-a"
-		_, _ = s.Get(a0)
-		got := s.OnGet.AssertCalledOnce(t, "Get must record the call")
-		assert.Equal(t, got.ID, a0, "the recorded call carries ID")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var seen []RepoGetCall[T]
-		s.OnGet.OnRecord(func(c RepoGetCall[T]) { seen = append(seen, c) })
-		var a0 string
-		a0 = "Get-a"
-		_, _ = s.Get(a0)
-		_, _ = s.Get(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Get call")
-	})
-
-	t.Run("wires WithRepoGet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewRepoStub(t, WithRepoGet[T](func(_ string) (T, error) {
-			called = true
-			var z0 T
-			var z1 error
-			return z0, z1
-		}))
-		var a0 string
-		a0 = "Get-a"
-		_, _ = s.Get(a0)
-		assert.True(t, called, "WithRepoGet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Get-failing")
-		s := NewRepoStubFailing[T](t, want)
-		var a0 string
-		a0 = "Get-a"
-		_, r1 := s.Get(a0)
-		assert.ErrorIs(t, r1, want, "Get must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var want0 T
-		var want1 error
-		s.OnGet.Returns(want0, want1)
-		var a0 string
-		a0 = "Get-a"
-		_, _ = s.Get(a0)
-		s.ResetCalls()
-		_, _ = s.Get(a0)
-		s.OnGet.AssertCalledOnce(t, "Get must record the call that followed the reset")
-	})
-}
-
-// repoStubPutSubject binds Put into the shape [stub.Behaviour] drives: how
-// to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// repoStubPutSubject returns the subject of [stub.Behaviour] for Put. The
+// subject calls a new double that reports to tb.
 func repoStubPutSubject[T any](tb assert.TB) stub.Subject[RepoPutCall[T], struct{}] {
 	tb.Helper()
 	s := NewRepoStub[T](tb)
 	return stub.Subject[RepoPutCall[T], struct{}]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 T
-			s.Put(a0)
+			repoStubPut[T](tb, s)
 		},
 		Override: func(mark func()) {
 			s.OnPut.Func(func(_ T) {
@@ -144,65 +114,18 @@ func repoStubPutSubject[T any](tb assert.TB) stub.Subject[RepoPutCall[T], struct
 	}
 }
 
-// TestRepoStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func repoStubPutChecks[T any](t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Put", repoStubPutSubject[T])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var a0 T
-		s.Put(a0)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.V, a0, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var seen []RepoPutCall[T]
-		s.OnPut.OnRecord(func(c RepoPutCall[T]) { seen = append(seen, c) })
-		var a0 T
-		s.Put(a0)
-		s.Put(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithRepoPut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewRepoStub(t, WithRepoPut[T](func(_ T) {
-			called = true
-		}))
-		var a0 T
-		s.Put(a0)
-		assert.True(t, called, "WithRepoPut must install the override")
-	})
-}
-
-// repoStubListSubject binds List into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// repoStubListSubject returns the subject of [stub.Behaviour] for List.
+// The subject calls a new double that reports to tb.
 func repoStubListSubject[T any](tb assert.TB) stub.Subject[RepoListCall[T], RepoListReturn[T]] {
 	tb.Helper()
 	s := NewRepoStub[T](tb)
 	return stub.Subject[RepoListCall[T], RepoListReturn[T]]{
 		Stub: s.OnList.MethodStub,
 		Call: func() {
-			_, _ = s.List()
+			_, _ = repoStubList[T](tb, s)
 		},
 		Result: func() RepoListReturn[T] {
-			got0, got1 := s.List()
+			got0, got1 := repoStubList[T](tb, s)
 			return RepoListReturn[T]{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -214,90 +137,24 @@ func repoStubListSubject[T any](tb assert.TB) stub.Subject[RepoListCall[T], Repo
 			})
 		},
 		Fails: func() error {
-			_, r1 := s.List()
+			_, r1 := repoStubList[T](tb, s)
 			return r1
 		},
 	}
 }
 
-// TestRepoStubList pins how List answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func repoStubListChecks[T any](t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "List", repoStubListSubject[T])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		_, _ = s.List()
-		s.OnList.AssertCalledOnce(t, "List must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var seen []RepoListCall[T]
-		s.OnList.OnRecord(func(c RepoListCall[T]) { seen = append(seen, c) })
-		_, _ = s.List()
-		_, _ = s.List()
-		assert.Length(t, seen, 2, "OnRecord must fire once per List call")
-	})
-
-	t.Run("wires WithRepoList at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewRepoStub(t, WithRepoList[T](func() ([]T, error) {
-			called = true
-			var z0 []T
-			var z1 error
-			return z0, z1
-		}))
-		_, _ = s.List()
-		assert.True(t, called, "WithRepoList must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("List-failing")
-		s := NewRepoStubFailing[T](t, want)
-		_, r1 := s.List()
-		assert.ErrorIs(t, r1, want, "List must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var want0 []T
-		var want1 error
-		s.OnList.Returns(want0, want1)
-		_, _ = s.List()
-		s.ResetCalls()
-		_, _ = s.List()
-		s.OnList.AssertCalledOnce(t, "List must record the call that followed the reset")
-	})
-}
-
-// repoStubBoxedSubject binds Boxed into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// repoStubBoxedSubject returns the subject of [stub.Behaviour] for Boxed.
+// The subject calls a new double that reports to tb.
 func repoStubBoxedSubject[T any](tb assert.TB) stub.Subject[RepoBoxedCall[T], RepoBoxedReturn[T]] {
 	tb.Helper()
 	s := NewRepoStub[T](tb)
 	return stub.Subject[RepoBoxedCall[T], RepoBoxedReturn[T]]{
 		Stub: s.OnBoxed.MethodStub,
 		Call: func() {
-			_ = s.Boxed()
+			_ = repoStubBoxed[T](tb, s)
 		},
 		Result: func() RepoBoxedReturn[T] {
-			got0 := s.Boxed()
+			got0 := repoStubBoxed[T](tb, s)
 			return RepoBoxedReturn[T]{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -310,204 +167,558 @@ func repoStubBoxedSubject[T any](tb assert.TB) stub.Subject[RepoBoxedCall[T], Re
 	}
 }
 
-// TestRepoStubBoxed pins how Boxed answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func repoStubBoxedChecks[T any](t *testing.T) {
-	t.Parallel()
+// repoStubInstance is the instance of a RepoStub that the checks of the
+// constructors and the options drive.
+type repoStubInstance[T any] = stub.Instance[RepoGetCall[T]]
 
-	stub.Behaviour(t, "Boxed", repoStubBoxedSubject[T])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		_ = s.Boxed()
-		s.OnBoxed.AssertCalledOnce(t, "Boxed must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var seen []RepoBoxedCall[T]
-		s.OnBoxed.OnRecord(func(c RepoBoxedCall[T]) { seen = append(seen, c) })
-		_ = s.Boxed()
-		_ = s.Boxed()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Boxed call")
-	})
-
-	t.Run("wires WithRepoBoxed at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewRepoStub(t, WithRepoBoxed[T](func() Box[T] {
-			called = true
-			var z0 Box[T]
-			return z0
-		}))
-		_ = s.Boxed()
-		assert.True(t, called, "WithRepoBoxed must install the override")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewRepoStub[T](t)
-		var want0 Box[T]
-		s.OnBoxed.Returns(want0)
-		_ = s.Boxed()
-		s.ResetCalls()
-		_ = s.Boxed()
-		s.OnBoxed.AssertCalledOnce(t, "Boxed must record the call that followed the reset")
-	})
+// repoStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Get alone.
+func repoStubInstanceOf[T any](tb assert.TB, s *RepoStub[T]) repoStubInstance[T] {
+	tb.Helper()
+	return repoStubInstance[T]{
+		Stub: s.OnGet.MethodStub,
+		Call: func() {
+			_, _ = repoStubGet[T](tb, s)
+		},
+		Reset: s.ResetCalls,
+	}
 }
 
-// repoStubDouble describes how to build a RepoStub under each option whose
-// effect is the same whatever a method's signature.
-//
-// Get stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func repoStubDouble[T any]() stub.Double[RepoGetCall[T]] {
-	instance := func(s *RepoStub[T]) stub.Instance[RepoGetCall[T]] {
-		return stub.Instance[RepoGetCall[T]]{
-			Stub: s.OnGet.MethodStub,
-			Call: func() {
-				var a0 string
-				a0 = "Get-a"
-				_, _ = s.Get(a0)
+// checkRepoStub checks the methods, the constructors and the options of
+// the double RepoStub at its type parameters.
+func checkRepoStub[T any](t *testing.T) {
+	t.Helper()
+
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Get", repoStubGetSubject[T])
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			_, _ = repoStubGet[T](t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0 := repoStubGetArgs[T](t)
+			assert.Equal(t, got.ID, a0, "the call records ID")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			var seen []RepoGetCall[T]
+			s.OnGet.OnRecord(func(c RepoGetCall[T]) { seen = append(seen, c) })
+			_, _ = repoStubGet[T](t, s)
+			_, _ = repoStubGet[T](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
+		})
+	})
+
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", repoStubPutSubject[T])
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			repoStubPut[T](t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0 := repoStubPutArgs[T](t)
+			assert.Equal(t, got.V, a0, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			var seen []RepoPutCall[T]
+			s.OnPut.OnRecord(func(c RepoPutCall[T]) { seen = append(seen, c) })
+			repoStubPut[T](t, s)
+			repoStubPut[T](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("List", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "List", repoStubListSubject[T])
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			var seen []RepoListCall[T]
+			s.OnList.OnRecord(func(c RepoListCall[T]) { seen = append(seen, c) })
+			_, _ = repoStubList[T](t, s)
+			_, _ = repoStubList[T](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of List")
+		})
+	})
+
+	t.Run("Boxed", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Boxed", repoStubBoxedSubject[T])
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			var seen []RepoBoxedCall[T]
+			s.OnBoxed.OnRecord(func(c RepoBoxedCall[T]) { seen = append(seen, c) })
+			_ = repoStubBoxed[T](t, s)
+			_ = repoStubBoxed[T](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Boxed")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) repoStubInstance[T] {
+			return repoStubInstanceOf[T](tb, NewRepoStub[T](tb))
+		})
+
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			_, _ = repoStubGet[T](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+		})
+
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			want0, want1 := repoStubGetPins[T]()
+			s.OnGet.Returns(want0, want1)
+			s.ResetCalls()
+			_, got1 := repoStubGet[T](t, s)
+			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			repoStubPut[T](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("clears the recorded calls of List", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			_, _ = repoStubList[T](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnList.CallCount(), 0, "ResetCalls clears the calls of List")
+		})
+
+		t.Run("keeps the results of Returns of List", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			want0, want1 := repoStubListPins[T]()
+			s.OnList.Returns(want0, want1)
+			s.ResetCalls()
+			_, got1 := repoStubList[T](t, s)
+			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of List")
+		})
+
+		t.Run("clears the recorded calls of Boxed", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			_ = repoStubBoxed[T](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnBoxed.CallCount(), 0, "ResetCalls clears the calls of Boxed")
+		})
+	})
+
+	t.Run("NewRepoStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) repoStubInstance[T] {
+				return repoStubInstanceOf[T](tb, NewRepoStubDelayed[T](tb, d, clk))
 			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[RepoGetCall[T]]{
-		New: func(tb assert.TB) stub.Instance[RepoGetCall[T]] {
-			return instance(NewRepoStub[T](tb))
-		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[RepoGetCall[T]] {
-			return instance(NewRepoStub[T](tb, RepoStubWithClock[T](clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[RepoGetCall[T]] {
-			return instance(NewRepoStubDelayed[T](tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[RepoGetCall[T]] {
-			return instance(NewRepoStub[T](tb, RepoStubWithRandSource[T](src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[RepoGetCall[T]] {
-			return instance(NewRepoStub[T](tb, RepoStubBenchMode[T]()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[RepoGetCall[T]] {
-			return instance(NewRepoStub[T](tb, RepoStubStrict[T]()))
-		},
-	}
+		)
+	})
+
+	t.Run("NewRepoStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := NewRepoStubFailing[T](t, want)
+			_, r1 := repoStubGet[T](t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of NewRepoStubFailing")
+		})
+
+		t.Run("fails List with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("List-failing")
+			s := NewRepoStubFailing[T](t, want)
+			_, r1 := repoStubList[T](t, s)
+			assert.ErrorIs(t, r1, want, "List fails with the error of NewRepoStubFailing")
+		})
+	})
+
+	t.Run("RepoStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) repoStubInstance[T] {
+			return repoStubInstanceOf[T](tb, NewRepoStub[T](tb, RepoStubStrict[T]()))
+		})
+	})
+
+	t.Run("RepoStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Get to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewRepoStub[T](t)
+			s := NewRepoStub[T](t, RepoStubDelegateTo[T](inner))
+			_, _ = repoStubGet[T](t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
+		})
+
+		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-delegate")
+			inner := NewRepoStub[T](t)
+			inner.OnGet.Faults(want, 1)
+			s := NewRepoStub[T](t, RepoStubDelegateTo[T](inner))
+			_, r1 := repoStubGet[T](t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
+		})
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewRepoStub[T](t)
+			s := NewRepoStub[T](t, RepoStubDelegateTo[T](inner))
+			repoStubPut[T](t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("passes List to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewRepoStub[T](t)
+			s := NewRepoStub[T](t, RepoStubDelegateTo[T](inner))
+			_, _ = repoStubList[T](t, s)
+			inner.OnList.AssertCalledOnce(t, "List calls the implementation")
+		})
+
+		t.Run("fails List with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("List-delegate")
+			inner := NewRepoStub[T](t)
+			inner.OnList.Faults(want, 1)
+			s := NewRepoStub[T](t, RepoStubDelegateTo[T](inner))
+			_, r1 := repoStubList[T](t, s)
+			assert.ErrorIs(t, r1, want, "List fails with the error of the implementation")
+		})
+
+		t.Run("passes Boxed to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewRepoStub[T](t)
+			s := NewRepoStub[T](t, RepoStubDelegateTo[T](inner))
+			_ = repoStubBoxed[T](t, s)
+			inner.OnBoxed.AssertCalledOnce(t, "Boxed calls the implementation")
+		})
+	})
+
+	t.Run("RepoStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) repoStubInstance[T] {
+			return repoStubInstanceOf[T](tb, NewRepoStub[T](tb, RepoStubWithClock[T](clk)))
+		})
+	})
+
+	t.Run("RepoStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) repoStubInstance[T] {
+			return repoStubInstanceOf[T](tb, NewRepoStub[T](tb, RepoStubWithRandSource[T](src)))
+		})
+	})
+
+	t.Run("RepoStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) repoStubInstance[T] {
+			return repoStubInstanceOf[T](tb, NewRepoStub[T](tb, RepoStubBenchMode[T]()))
+		})
+	})
+
+	t.Run("RepoStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) repoStubInstance[T] {
+				return repoStubInstanceOf[T](
+					tb,
+					NewRepoStub[T](tb, RepoStubWithClock[T](clk), RepoStubWithLatency[T](d)),
+				)
+			},
+		)
+	})
+
+	t.Run("RepoStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := NewRepoStub[T](t, RepoStubFailing[T](want))
+			_, r1 := repoStubGet[T](t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of RepoStubFailing")
+		})
+
+		t.Run("fails List with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("List-failing")
+			s := NewRepoStub[T](t, RepoStubFailing[T](want))
+			_, r1 := repoStubList[T](t, s)
+			assert.ErrorIs(t, r1, want, "List fails with the error of RepoStubFailing")
+		})
+	})
+
+	t.Run("WithRepoGet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Get", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewRepoStub(t, WithRepoGet[T](func(_ string) (T, error) {
+				called = true
+				var z0 T
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = repoStubGet[T](t, s)
+			assert.True(t, called, "WithRepoGet sets the function of Get")
+		})
+	})
+
+	t.Run("WithRepoPut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewRepoStub(t, WithRepoPut[T](func(_ T) {
+				called = true
+			}))
+			repoStubPut[T](t, s)
+			assert.True(t, called, "WithRepoPut sets the function of Put")
+		})
+	})
+
+	t.Run("WithRepoList", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of List", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewRepoStub(t, WithRepoList[T](func() ([]T, error) {
+				called = true
+				var z0 []T
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = repoStubList[T](t, s)
+			assert.True(t, called, "WithRepoList sets the function of List")
+		})
+	})
+
+	t.Run("WithRepoBoxed", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Boxed", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewRepoStub(t, WithRepoBoxed[T](func() Box[T] {
+				called = true
+				var z0 Box[T]
+				return z0
+			}))
+			_ = repoStubBoxed[T](t, s)
+			assert.True(t, called, "WithRepoBoxed sets the function of Boxed")
+		})
+	})
 }
 
-// TestRepoStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func repoStubOptionChecks[T any](t *testing.T) {
+// checkRepoGetStub checks the methods of RepoGetStub, which configures
+// Get, at the type parameters of the double.
+func checkRepoGetStub[T any](t *testing.T) {
+	t.Helper()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			want0, want1 := repoStubGetPins[T]()
+			s.OnGet.Returns(want0, want1)
+			_, got1 := repoStubGet[T](t, s)
+			assert.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
+		})
+
+		t.Run("configures Get for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewRepoStub[T](r)
+			s.OnGet.Strict()
+			var want0 T
+			var want1 error
+			s.OnGet.Returns(want0, want1)
+			_, _ = repoStubGet[T](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			var got0 string
+			s.OnGet.Func(func(p0 string) (T, error) {
+				got0 = p0
+				var z0 T
+				var z1 error
+				return z0, z1
+			})
+			_, _ = repoStubGet[T](t, s)
+			a0 := repoStubGetArgs[T](t)
+			assert.Equal(t, got0, a0, "the function receives ID")
+		})
+	})
+}
+
+// checkRepoPutStub checks the methods of RepoPutStub, which configures
+// Put, at the type parameters of the double.
+func checkRepoPutStub[T any](t *testing.T) {
+	t.Helper()
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			var got0 T
+			s.OnPut.Func(func(p0 T) {
+				got0 = p0
+			})
+			repoStubPut[T](t, s)
+			a0 := repoStubPutArgs[T](t)
+			assert.Equal(t, got0, a0, "the function receives V")
+		})
+	})
+}
+
+// checkRepoListStub checks the methods of RepoListStub, which configures
+// List, at the type parameters of the double.
+func checkRepoListStub[T any](t *testing.T) {
+	t.Helper()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of List", func(t *testing.T) {
+			t.Parallel()
+			s := NewRepoStub[T](t)
+			want0, want1 := repoStubListPins[T]()
+			s.OnList.Returns(want0, want1)
+			_, got1 := repoStubList[T](t, s)
+			assert.ErrorIs(t, got1, want1, "List returns the error that Returns sets")
+		})
+
+		t.Run("configures List for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewRepoStub[T](r)
+			s.OnList.Strict()
+			var want0 []T
+			var want1 error
+			s.OnList.Returns(want0, want1)
+			_, _ = repoStubList[T](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of List")
+		})
+	})
+}
+
+// checkRepoBoxedStub checks the methods of RepoBoxedStub, which configures
+// Boxed, at the type parameters of the double.
+func checkRepoBoxedStub[T any](t *testing.T) {
+	t.Helper()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("configures Boxed for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewRepoStub[T](r)
+			s.OnBoxed.Strict()
+			var want0 Box[T]
+			s.OnBoxed.Returns(want0)
+			_ = repoStubBoxed[T](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Boxed")
+		})
+	})
+}
+
+// TestRepoStub runs the checks of RepoStub at the witnesses of its type
+// parameters.
+func TestRepoStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, repoStubDouble[T]())
+	checkRepoStub[int](t)
 }
 
-// TestRepoStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func repoStubDelegationChecks[T any](t *testing.T) {
+// TestRepoGetStub runs the checks of RepoGetStub at the same witnesses.
+func TestRepoGetStub(t *testing.T) {
 	t.Parallel()
 
-	inner := NewRepoStub[T](t)
-	s := NewRepoStub[T](t, RepoStubDelegateTo[T](inner))
-
-	t.Run("forwards Get to the wrapped implementation", func(t *testing.T) {
-		var a0 string
-		a0 = "Get-a"
-		_, _ = s.Get(a0)
-		inner.OnGet.AssertCalledOnce(t, "Get must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Get answered", func(t *testing.T) {
-		want := errors.New("Get-delegate")
-		inner.OnGet.FaultsFor(time.Hour, want)
-		var a0 string
-		a0 = "Get-a"
-		_, r1 := s.Get(a0)
-		assert.ErrorIs(t, r1, want, "Get must surface the wrapped answer")
-	})
-
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 T
-		s.Put(a0)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
-	})
-
-	t.Run("forwards List to the wrapped implementation", func(t *testing.T) {
-		_, _ = s.List()
-		inner.OnList.AssertCalledOnce(t, "List must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what List answered", func(t *testing.T) {
-		want := errors.New("List-delegate")
-		inner.OnList.FaultsFor(time.Hour, want)
-		_, r1 := s.List()
-		assert.ErrorIs(t, r1, want, "List must surface the wrapped answer")
-	})
-
-	t.Run("forwards Boxed to the wrapped implementation", func(t *testing.T) {
-		_ = s.Boxed()
-		inner.OnBoxed.AssertCalledOnce(t, "Boxed must reach the wrapped implementation")
-	})
+	checkRepoGetStub[int](t)
 }
 
-// TestRepoStubGet runs Get's checks at the witness types its constraints
-// admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestRepoStubGet(t *testing.T) { repoStubGetChecks[int](t) }
+// TestRepoPutStub runs the checks of RepoPutStub at the same witnesses.
+func TestRepoPutStub(t *testing.T) {
+	t.Parallel()
 
-// TestRepoStubPut runs Put's checks at the witness types its constraints
-// admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestRepoStubPut(t *testing.T) { repoStubPutChecks[int](t) }
+	checkRepoPutStub[int](t)
+}
 
-// TestRepoStubList runs List's checks at the witness types its constraints
-// admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestRepoStubList(t *testing.T) { repoStubListChecks[int](t) }
+// TestRepoListStub runs the checks of RepoListStub at the same witnesses.
+func TestRepoListStub(t *testing.T) {
+	t.Parallel()
 
-// TestRepoStubBoxed runs Boxed's checks at the witness types its
-// constraints admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestRepoStubBoxed(t *testing.T) { repoStubBoxedChecks[int](t) }
+	checkRepoListStub[int](t)
+}
 
-// TestRepoStubOptions runs the whole-double checks at the same witnesses.
-func TestRepoStubOptions(t *testing.T) { repoStubOptionChecks[int](t) }
+// TestRepoBoxedStub runs the checks of RepoBoxedStub at the same
+// witnesses.
+func TestRepoBoxedStub(t *testing.T) {
+	t.Parallel()
 
-// TestRepoStubDelegateTo runs the delegation checks at the same witnesses.
-func TestRepoStubDelegateTo(t *testing.T) { repoStubDelegationChecks[int](t) }
+	checkRepoBoxedStub[int](t)
+}
 
-// pairsStubAllSubject binds All into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func pairsStubAllSubject[K1 comparable, V_ any](tb assert.TB) stub.Subject[PairsAllCall[K1, V_], PairsAllReturn[K1, V_]] {
+// pairsStubAll calls All of s with the samples of its arguments.
+func pairsStubAll[K1 comparable, V_ any](tb assert.TB, s *PairsStub[K1, V_]) map[K1]V_ {
+	tb.Helper()
+	return s.All()
+}
+
+// pairsStubAllSubject returns the subject of [stub.Behaviour] for All. The
+// subject calls a new double that reports to tb.
+func pairsStubAllSubject[K1 comparable, V_ any](
+	tb assert.TB,
+) stub.Subject[PairsAllCall[K1, V_], PairsAllReturn[K1, V_]] {
 	tb.Helper()
 	s := NewPairsStub[K1, V_](tb)
 	return stub.Subject[PairsAllCall[K1, V_], PairsAllReturn[K1, V_]]{
 		Stub: s.OnAll.MethodStub,
 		Call: func() {
-			_ = s.All()
+			_ = pairsStubAll[K1, V_](tb, s)
 		},
 		Result: func() PairsAllReturn[K1, V_] {
-			got0 := s.All()
+			got0 := pairsStubAll[K1, V_](tb, s)
 			return PairsAllReturn[K1, V_]{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -520,132 +731,193 @@ func pairsStubAllSubject[K1 comparable, V_ any](tb assert.TB) stub.Subject[Pairs
 	}
 }
 
-// TestPairsStubAll pins how All answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func pairsStubAllChecks[K1 comparable, V_ any](t *testing.T) {
-	t.Parallel()
+// pairsStubInstance is the instance of a PairsStub that the checks of the
+// constructors and the options drive.
+type pairsStubInstance[K1 comparable, V_ any] = stub.Instance[PairsAllCall[K1, V_]]
 
-	stub.Behaviour(t, "All", pairsStubAllSubject[K1, V_])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewPairsStub[K1, V_](t)
-		_ = s.All()
-		s.OnAll.AssertCalledOnce(t, "All must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewPairsStub[K1, V_](t)
-		var seen []PairsAllCall[K1, V_]
-		s.OnAll.OnRecord(func(c PairsAllCall[K1, V_]) { seen = append(seen, c) })
-		_ = s.All()
-		_ = s.All()
-		assert.Length(t, seen, 2, "OnRecord must fire once per All call")
-	})
-
-	t.Run("wires WithPairsAll at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewPairsStub(t, WithPairsAll[K1, V_](func() map[K1]V_ {
-			called = true
-			var z0 map[K1]V_
-			return z0
-		}))
-		_ = s.All()
-		assert.True(t, called, "WithPairsAll must install the override")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewPairsStub[K1, V_](t)
-		var want0 map[K1]V_
-		s.OnAll.Returns(want0)
-		_ = s.All()
-		s.ResetCalls()
-		_ = s.All()
-		s.OnAll.AssertCalledOnce(t, "All must record the call that followed the reset")
-	})
+// pairsStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call All alone.
+func pairsStubInstanceOf[K1 comparable, V_ any](
+	tb assert.TB,
+	s *PairsStub[K1, V_],
+) pairsStubInstance[K1, V_] {
+	tb.Helper()
+	return pairsStubInstance[K1, V_]{
+		Stub: s.OnAll.MethodStub,
+		Call: func() {
+			_ = pairsStubAll[K1, V_](tb, s)
+		},
+		Reset: s.ResetCalls,
+	}
 }
 
-// pairsStubDouble describes how to build a PairsStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// All stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func pairsStubDouble[K1 comparable, V_ any]() stub.Double[PairsAllCall[K1, V_]] {
-	instance := func(s *PairsStub[K1, V_]) stub.Instance[PairsAllCall[K1, V_]] {
-		return stub.Instance[PairsAllCall[K1, V_]]{
-			Stub: s.OnAll.MethodStub,
-			Call: func() {
-				_ = s.All()
+// checkPairsStub checks the methods, the constructors and the options of
+// the double PairsStub at its type parameters.
+func checkPairsStub[K1 comparable, V_ any](t *testing.T) {
+	t.Helper()
+
+	t.Run("All", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "All", pairsStubAllSubject[K1, V_])
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewPairsStub[K1, V_](t)
+			var seen []PairsAllCall[K1, V_]
+			s.OnAll.OnRecord(func(c PairsAllCall[K1, V_]) { seen = append(seen, c) })
+			_ = pairsStubAll[K1, V_](t, s)
+			_ = pairsStubAll[K1, V_](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of All")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) pairsStubInstance[K1, V_] {
+			return pairsStubInstanceOf[K1, V_](tb, NewPairsStub[K1, V_](tb))
+		})
+
+		t.Run("clears the recorded calls of All", func(t *testing.T) {
+			t.Parallel()
+			s := NewPairsStub[K1, V_](t)
+			_ = pairsStubAll[K1, V_](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAll.CallCount(), 0, "ResetCalls clears the calls of All")
+		})
+	})
+
+	t.Run("NewPairsStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) pairsStubInstance[K1, V_] {
+				return pairsStubInstanceOf[K1, V_](tb, NewPairsStubDelayed[K1, V_](tb, d, clk))
 			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[PairsAllCall[K1, V_]]{
-		New: func(tb assert.TB) stub.Instance[PairsAllCall[K1, V_]] {
-			return instance(NewPairsStub[K1, V_](tb))
-		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[PairsAllCall[K1, V_]] {
-			return instance(NewPairsStub[K1, V_](tb, PairsStubWithClock[K1, V_](clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[PairsAllCall[K1, V_]] {
-			return instance(NewPairsStubDelayed[K1, V_](tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[PairsAllCall[K1, V_]] {
-			return instance(NewPairsStub[K1, V_](tb, PairsStubWithRandSource[K1, V_](src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[PairsAllCall[K1, V_]] {
-			return instance(NewPairsStub[K1, V_](tb, PairsStubBenchMode[K1, V_]()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[PairsAllCall[K1, V_]] {
-			return instance(NewPairsStub[K1, V_](tb, PairsStubStrict[K1, V_]()))
-		},
-	}
-}
+		)
+	})
 
-// TestPairsStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func pairsStubOptionChecks[K1 comparable, V_ any](t *testing.T) {
-	t.Parallel()
+	t.Run("PairsStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) pairsStubInstance[K1, V_] {
+			return pairsStubInstanceOf[K1, V_](
+				tb,
+				NewPairsStub[K1, V_](tb, PairsStubStrict[K1, V_]()),
+			)
+		})
+	})
 
-	stub.DoubleBehaviour(t, pairsStubDouble[K1, V_]())
-}
+	t.Run("PairsStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
 
-// TestPairsStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func pairsStubDelegationChecks[K1 comparable, V_ any](t *testing.T) {
-	t.Parallel()
+		t.Run("passes All to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewPairsStub[K1, V_](t)
+			s := NewPairsStub[K1, V_](t, PairsStubDelegateTo[K1, V_](inner))
+			_ = pairsStubAll[K1, V_](t, s)
+			inner.OnAll.AssertCalledOnce(t, "All calls the implementation")
+		})
+	})
 
-	inner := NewPairsStub[K1, V_](t)
-	s := NewPairsStub[K1, V_](t, PairsStubDelegateTo[K1, V_](inner))
+	t.Run("PairsStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) pairsStubInstance[K1, V_] {
+			return pairsStubInstanceOf[K1, V_](
+				tb,
+				NewPairsStub[K1, V_](tb, PairsStubWithClock[K1, V_](clk)),
+			)
+		})
+	})
 
-	t.Run("forwards All to the wrapped implementation", func(t *testing.T) {
-		_ = s.All()
-		inner.OnAll.AssertCalledOnce(t, "All must reach the wrapped implementation")
+	t.Run("PairsStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) pairsStubInstance[K1, V_] {
+			return pairsStubInstanceOf[K1, V_](
+				tb,
+				NewPairsStub[K1, V_](tb, PairsStubWithRandSource[K1, V_](src)),
+			)
+		})
+	})
+
+	t.Run("PairsStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) pairsStubInstance[K1, V_] {
+			return pairsStubInstanceOf[K1, V_](
+				tb,
+				NewPairsStub[K1, V_](tb, PairsStubBenchMode[K1, V_]()),
+			)
+		})
+	})
+
+	t.Run("PairsStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) pairsStubInstance[K1, V_] {
+				return pairsStubInstanceOf[K1, V_](
+					tb,
+					NewPairsStub[K1, V_](
+						tb,
+						PairsStubWithClock[K1, V_](clk),
+						PairsStubWithLatency[K1, V_](d),
+					),
+				)
+			},
+		)
+	})
+
+	t.Run("WithPairsAll", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of All", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewPairsStub(t, WithPairsAll[K1, V_](func() map[K1]V_ {
+				called = true
+				var z0 map[K1]V_
+				return z0
+			}))
+			_ = pairsStubAll[K1, V_](t, s)
+			assert.True(t, called, "WithPairsAll sets the function of All")
+		})
 	})
 }
 
-// TestPairsStubAll runs All's checks at the witness types its constraints
-// admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestPairsStubAll(t *testing.T) { pairsStubAllChecks[string, int](t) }
+// checkPairsAllStub checks the methods of PairsAllStub, which configures
+// All, at the type parameters of the double.
+func checkPairsAllStub[K1 comparable, V_ any](t *testing.T) {
+	t.Helper()
 
-// TestPairsStubOptions runs the whole-double checks at the same witnesses.
-func TestPairsStubOptions(t *testing.T) { pairsStubOptionChecks[string, int](t) }
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-// TestPairsStubDelegateTo runs the delegation checks at the same
-// witnesses.
-func TestPairsStubDelegateTo(t *testing.T) { pairsStubDelegationChecks[string, int](t) }
+		t.Run("configures All for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewPairsStub[K1, V_](r)
+			s.OnAll.Strict()
+			var want0 map[K1]V_
+			s.OnAll.Returns(want0)
+			_ = pairsStubAll[K1, V_](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of All")
+		})
+	})
+}
 
-// Skipped: BagStub is generic — instantiate it with concrete types and
-// write the checks in the consuming package.
+// TestPairsStub runs the checks of PairsStub at the witnesses of its type
+// parameters.
+func TestPairsStub(t *testing.T) {
+	t.Parallel()
+
+	checkPairsStub[string, int](t)
+}
+
+// TestPairsAllStub runs the checks of PairsAllStub at the same witnesses.
+func TestPairsAllStub(t *testing.T) {
+	t.Parallel()
+
+	checkPairsAllStub[string, int](t)
+}
+
+// BagStub is generic, and its type parameters have no witnesses, so the
+// file has no checks of it. A test in the package of a consumer
+// instantiates it.

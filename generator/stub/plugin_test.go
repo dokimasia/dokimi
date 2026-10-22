@@ -356,9 +356,8 @@ func TestStub(t *testing.T) {
 					giveTree: goTree, givePkg: catalogPackage, giveSubject: storeName, want: storeName,
 				},
 				{
-					name:       "records a pointer to a Go struct as the type that DelegateTo wraps",
+					name:       "records no type that DelegateTo wraps for a Go struct",
 					giveTarget: golang.Target, giveTree: goTree, givePkg: catalogPackage, giveSubject: clockName,
-					want: "*Clock",
 				},
 				{
 					name:       "records a TypeScript interface as the type that DelegateTo wraps",
@@ -568,6 +567,15 @@ func TestStub(t *testing.T) {
 			}
 		}
 
+		t.Run("marks the parameter that the rules of Go give the role of a context", func(t *testing.T) {
+			t.Parallel()
+
+			got := method(t, generate(t, golang.Target, goTree, catalogPackage).models[storeName], "Get")
+			assert.Length(t, got.Params, 2, "Get takes a context and an identity")
+			expect.Equal(t, []bool{got.Params[0].Context, got.Params[1].Context}, []bool{true, false},
+				"the context of Get is the one parameter with the role of a context")
+		})
+
 		{
 			tests := []struct {
 				name         string
@@ -762,7 +770,7 @@ func TestStub(t *testing.T) {
 				wantPins string
 			}{
 				{
-					name: "leaves the context of Get at its zero value", give: "Get", wantArgs: "a1",
+					name: "takes no sample of the context of Get", give: "Get", wantArgs: "a1",
 					wantPins: "want0",
 				},
 				{

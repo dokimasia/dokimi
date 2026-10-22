@@ -1,10 +1,10 @@
-import type { Clock, Seat } from '@dokimi/assert';
-import { type RandomSource, retry } from '@dokimi/runtime/fault';
-import { type Arms, answer, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import { type Item, type Repo, type Store, type Table, type Wrap, notFound } from './store';
+import type { Clock, Seat } from "@dokimi/assert";
+import { type RandomSource, retry } from "@dokimi/runtime/fault";
+import { type Arms, answer, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import { type Item, type Repo, type Store, type Table, type Wrap, notFound } from "./store";
 
 /** StoreGetCall records one call of Store.get. */
 export interface StoreGetCall {
@@ -51,7 +51,7 @@ export interface StoreCloseCall {
 }
 
 /**
- * StoreGetStub configures get, and records its calls. A fault armed
+ * StoreGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreGetStub extends MethodStub<StoreGetCall> {
@@ -71,7 +71,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -94,7 +94,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
 
   /**
    * Makes get fail with error on every call before call number
-   * 3, which succeeds along with every call after it.
+   * 3. Call 3 and every call after it succeed.
    *
    * @param error - The error.
    * @returns The stub.
@@ -104,9 +104,9 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   }
 
   /**
-   * Makes get fail every nth call whose id matches key, and
-   * leaves the other partitions alone. A test that one outage does not reach
-   * another partition needs a fault that selects its calls.
+   * Makes get fail every nth call whose id matches key. The
+   * fault leaves the calls of the other partitions alone. A test of the
+   * isolation of a partition needs a fault that selects its calls.
    *
    * @param key - The id of the calls that fail.
    * @param error - The error.
@@ -118,8 +118,8 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   }
 
   /**
-   * Makes get fail every nth call whose id differs from key,
-   * and leaves the partition of key alone.
+   * Makes get fail every nth call whose id differs from key.
+   * The fault leaves the calls of the partition of key alone.
    *
    * @param key - The id of the calls that pass.
    * @param error - The error.
@@ -149,14 +149,14 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
 }
 
 /**
- * StorePutStub configures put, and records its calls. A fault armed
+ * StorePutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StorePutStub extends MethodStub<StorePutCall> {
   #fn: ((item: Item, note?: string) => void) | undefined;
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -182,7 +182,7 @@ export class StorePutStub extends MethodStub<StorePutCall> {
 }
 
 /**
- * StoreSizeStub configures size, and records its calls. A fault armed
+ * StoreSizeStub configures size and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreSizeStub extends MethodStub<StoreSizeCall> {
@@ -202,7 +202,7 @@ export class StoreSizeStub extends MethodStub<StoreSizeCall> {
   }
 
   /**
-   * Sets the function of size, for a result that depends on the
+   * Sets the function that computes the result of size from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -232,14 +232,14 @@ export class StoreSizeStub extends MethodStub<StoreSizeCall> {
 }
 
 /**
- * StoreLogStub configures log, and records its calls. A fault armed
+ * StoreLogStub configures log and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreLogStub extends MethodStub<StoreLogCall> {
   #fn: ((format: string, ...args: string[]) => void) | undefined;
 
   /**
-   * Sets the function of log, for a result that depends on the
+   * Sets the function that computes the result of log from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -265,14 +265,14 @@ export class StoreLogStub extends MethodStub<StoreLogCall> {
 }
 
 /**
- * StoreCloseStub configures close, and records its calls. A fault armed
+ * StoreCloseStub configures close and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreCloseStub extends MethodStub<StoreCloseCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of close, for a result that depends on the
+   * Sets the function that computes the result of close from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -297,13 +297,13 @@ export class StoreCloseStub extends MethodStub<StoreCloseCall> {
   }
 }
 
-/** An option of a StoreStub, which its constructor applies. */
+/** Configures a StoreStub at its construction. */
 export type StoreStubOption = (double: StoreStub) => void;
 
 /**
  * StoreStub is a recording test double of Store. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class StoreStub implements Store {
   /** The property zone, which a test assigns. */
@@ -324,9 +324,9 @@ export class StoreStub implements Store {
   #strict = false;
 
   /**
-   * Returns a double of Store that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Store that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -359,7 +359,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -375,8 +376,9 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -388,8 +390,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -426,7 +428,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -502,8 +505,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -526,8 +529,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -551,7 +554,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(id: string): Promise<Item> {
     const call: StoreGetCall = { id };
@@ -559,7 +562,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(item: Item, note?: string): void {
     const call: StorePutCall = { item, note };
@@ -567,7 +570,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of size, and returns its result.
+   * Records the call of size and returns its result.
    */
   size(): number {
     const call: StoreSizeCall = {};
@@ -575,7 +578,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of log, and returns its result.
+   * Records the call of log and returns its result.
    */
   log(format: string, ...args: string[]): void {
     const call: StoreLogCall = { format, args };
@@ -583,7 +586,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of close, and returns its result.
+   * Records the call of close and returns its result.
    */
   close(): Promise<void> {
     const call: StoreCloseCall = {};
@@ -593,13 +596,13 @@ export class StoreStub implements Store {
 
 // Item is a handle that a method of Store returns.
 
-/** An option of a ItemStub, which its constructor applies. */
+/** Configures a ItemStub at its construction. */
 export type ItemStubOption = (double: ItemStub) => void;
 
 /**
  * ItemStub is a recording test double of Item. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ItemStub implements Item {
   /** The property id, which a test assigns. */
@@ -608,9 +611,9 @@ export class ItemStub implements Item {
   #strict = false;
 
   /**
-   * Returns a double of Item that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Item that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -638,8 +641,9 @@ export class ItemStub implements Item {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -651,8 +655,8 @@ export class ItemStub implements Item {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -689,8 +693,8 @@ export class ItemStub implements Item {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -732,7 +736,7 @@ export interface RepoFindCall<T> {
 }
 
 /**
- * RepoFindStub configures find, and records its calls. A fault armed
+ * RepoFindStub configures find and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class RepoFindStub<T> extends MethodStub<RepoFindCall<T>> {
@@ -752,7 +756,7 @@ export class RepoFindStub<T> extends MethodStub<RepoFindCall<T>> {
   }
 
   /**
-   * Sets the function of find, for a result that depends on the
+   * Sets the function that computes the result of find from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -781,13 +785,13 @@ export class RepoFindStub<T> extends MethodStub<RepoFindCall<T>> {
   }
 }
 
-/** An option of a RepoStub, which its constructor applies. */
+/** Configures a RepoStub at its construction. */
 export type RepoStubOption<T> = (double: RepoStub<T>) => void;
 
 /**
  * RepoStub is a recording test double of Repo. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class RepoStub<T> implements Repo<T> {
   /** Configures find. */
@@ -796,9 +800,9 @@ export class RepoStub<T> implements Repo<T> {
   #strict = false;
 
   /**
-   * Returns a double of Repo that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Repo that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -827,7 +831,8 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -839,8 +844,9 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -852,8 +858,8 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -890,7 +896,8 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -914,8 +921,8 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -938,8 +945,8 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -963,7 +970,7 @@ export class RepoStub<T> implements Repo<T> {
   }
 
   /**
-   * Records the call of find, and returns its result.
+   * Records the call of find and returns its result.
    */
   find(id: string): T {
     const call: RepoFindCall<T> = { id };
@@ -980,14 +987,14 @@ export interface WrapPutCall<T$> {
 }
 
 /**
- * WrapPutStub configures put, and records its calls. A fault armed
+ * WrapPutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class WrapPutStub<T$> extends MethodStub<WrapPutCall<T$>> {
   #fn: ((items: T$[]) => void) | undefined;
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -1012,13 +1019,13 @@ export class WrapPutStub<T$> extends MethodStub<WrapPutCall<T$>> {
   }
 }
 
-/** An option of a WrapStub, which its constructor applies. */
+/** Configures a WrapStub at its construction. */
 export type WrapStubOption<T$> = (double: WrapStub<T$>) => void;
 
 /**
  * WrapStub is a recording test double of Wrap. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class WrapStub<T$> implements Wrap<T$> {
   /** Configures put. */
@@ -1027,9 +1034,9 @@ export class WrapStub<T$> implements Wrap<T$> {
   #strict = false;
 
   /**
-   * Returns a double of Wrap that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Wrap that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -1058,7 +1065,8 @@ export class WrapStub<T$> implements Wrap<T$> {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -1070,8 +1078,9 @@ export class WrapStub<T$> implements Wrap<T$> {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -1083,8 +1092,8 @@ export class WrapStub<T$> implements Wrap<T$> {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -1121,7 +1130,8 @@ export class WrapStub<T$> implements Wrap<T$> {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -1145,8 +1155,8 @@ export class WrapStub<T$> implements Wrap<T$> {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -1169,8 +1179,8 @@ export class WrapStub<T$> implements Wrap<T$> {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -1194,7 +1204,7 @@ export class WrapStub<T$> implements Wrap<T$> {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(items: T$[]): void {
     const call: WrapPutCall<T$> = { items };
@@ -1221,7 +1231,7 @@ export interface TableSizeCall {
 }
 
 /**
- * TableGetStub configures get, and records its calls. A fault armed
+ * TableGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class TableGetStub<K, V> extends MethodStub<TableGetCall<K, V>> {
@@ -1241,7 +1251,7 @@ export class TableGetStub<K, V> extends MethodStub<TableGetCall<K, V>> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -1271,7 +1281,7 @@ export class TableGetStub<K, V> extends MethodStub<TableGetCall<K, V>> {
 }
 
 /**
- * TableSizeStub configures size, and records its calls. A fault armed
+ * TableSizeStub configures size and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class TableSizeStub extends MethodStub<TableSizeCall> {
@@ -1291,7 +1301,7 @@ export class TableSizeStub extends MethodStub<TableSizeCall> {
   }
 
   /**
-   * Sets the function of size, for a result that depends on the
+   * Sets the function that computes the result of size from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -1320,13 +1330,13 @@ export class TableSizeStub extends MethodStub<TableSizeCall> {
   }
 }
 
-/** An option of a TableStub, which its constructor applies. */
+/** Configures a TableStub at its construction. */
 export type TableStubOption<K, V> = (double: TableStub<K, V>) => void;
 
 /**
  * TableStub is a recording test double of Table. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class TableStub<K, V> implements Table<K, V> {
   /** Configures get. */
@@ -1337,9 +1347,9 @@ export class TableStub<K, V> implements Table<K, V> {
   #strict = false;
 
   /**
-   * Returns a double of Table that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Table that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -1369,7 +1379,8 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -1382,8 +1393,9 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -1395,8 +1407,8 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -1433,7 +1445,8 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -1470,8 +1483,8 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -1494,8 +1507,8 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -1519,7 +1532,7 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(key: K): Promise<V> {
     const call: TableGetCall<K, V> = { key };
@@ -1527,7 +1540,7 @@ export class TableStub<K, V> implements Table<K, V> {
   }
 
   /**
-   * Records the call of size, and returns its result.
+   * Records the call of size and returns its result.
    */
   size(): number {
     const call: TableSizeCall = {};

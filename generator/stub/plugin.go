@@ -105,7 +105,9 @@ type Options struct {
 // empty for a subject under the directive. Value is the subject at the type
 // parameters of the double, and nil where no double is a value of the type
 // of its subject, as for a Go struct. Delegate is the type of the
-// implementation that the option DelegateTo wraps. Witnesses are the
+// implementation that the option DelegateTo wraps, and nil where the
+// template writes the interface of the methods of the double, as for a Go
+// struct. Witnesses are the
 // witnesses of the type parameters of a generic subject, and nil for a
 // subject without type parameters or without witnesses. Guard is the type
 // that the double is a value of at the witnesses, which a compile-time check
@@ -229,15 +231,30 @@ type Method struct {
 	Defaulted     bool
 }
 
+// Checked returns the count of the results of the method that the test of
+// its fixed results compares: each result with a sample, and the error.
+func (m *Method) Checked() int {
+	n := 0
+	for _, r := range m.Returns {
+		if r.Pinned || r.Error {
+			n++
+		}
+	}
+	return n
+}
+
 // Param is one parameter of a method of a double: its type, its name in the
 // methods of the double, the field of the call that records it, and whether
-// it is variadic or may be absent.
+// it is variadic or may be absent. Context reports that the rules of the
+// language give the parameter the role of a context. A test passes its own
+// context as the argument.
 type Param struct {
 	Type     *emit.TypeRef
 	Name     string
 	Field    string
 	Variadic bool
 	Optional bool
+	Context  bool
 }
 
 // Result is one result of a method of a double: its type, the name that the
@@ -374,7 +391,8 @@ type part interface {
 	constraint(m sdk.Matcher, id *symbol.Identity) bool
 	// delegate returns the type of the implementation that the option
 	// DelegateTo of a double of the subject value wraps. class reports that
-	// the subject is a struct or a class.
+	// the subject is a struct or a class. delegate returns nil where the
+	// template writes the interface of the methods of the double.
 	delegate(value *emit.TypeRef, class bool) *emit.TypeRef
 	// names returns the names of the method of a double named method, with
 	// the parameters named params and the returns rs. taken are the names
@@ -481,13 +499,14 @@ type invocation struct {
 // interface, struct or class under [StubDirective]. The template of the
 // family writes the double in the conventions of the language of the plan.
 // stub records the [Checks] of each double into the family [Word] under the
-// tag [TestTag]. The template of that family writes a test that runs the
-// behaviour suites of the runtime against a double with a method, and checks
-// the answers that need a value of the signature of a method. The test of a
-// double without a method builds the double under each option, and checks
-// that a reset keeps the sample of each property. The test uses the double
-// through the exported API of its package, so a Go file of the family is in
-// the external test package of its directory.
+// tag [TestTag]. The template of that family writes a test of a double with a
+// method, and a test of the stub of each method. Each test has a level for
+// each function that it checks. The levels run the behaviour suites of the
+// runtime, and check the answers that need a value of the signature of a
+// method. The test of a double without a method builds the double under each
+// option, and checks that a reset keeps the sample of each property. The test
+// uses the double through the exported API of its package, so a Go file of
+// the family is in the external test package of its directory.
 //
 // The methods of a double are the methods of the member walk of its subject,
 // without the members at type level and the constructors of a class. A
@@ -818,6 +837,7 @@ func (in *invocation) methodOf(method *node.Method, mirrored *emit.Method, from 
 		c.Params = append(c.Params, Param{
 			Name: p.Name, Field: named.Args[i], Type: p.Type,
 			Variadic: variadic, Optional: view.Params[i].Optional && !variadic,
+			Context: view.Params[i].Role == rules.ParamContext,
 		})
 	}
 	if named.Grouped {

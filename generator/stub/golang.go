@@ -166,13 +166,15 @@ func golangNamed(rs []rules.ReturnView, taken map[string]bool) bool {
 	return true
 }
 
-// delegate returns value for an interface, and a pointer to value for a
-// struct, whose method set includes the methods with a pointer receiver.
+// delegate returns value for an interface, and nil for a struct. The option
+// DelegateTo of the double of a struct takes the interface of the methods of
+// the double, which the template writes. A pointer to the struct implements
+// that interface, and so does a second double.
 func (golangPart) delegate(value *emit.TypeRef, class bool) *emit.TypeRef {
-	if !class {
-		return value
+	if class {
+		return nil
 	}
-	return &emit.TypeRef{Spelling: "*" + value.Spelling, Form: symbol.FormOptional, Elems: []*emit.TypeRef{value}}
+	return value
 }
 
 // fault returns Fault followed by base in Pascal case, such as FaultNotFound

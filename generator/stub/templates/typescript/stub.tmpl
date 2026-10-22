@@ -33,7 +33,7 @@ export interface {{.Call}}{{typeparams .TypeParams}} {
 {{- $fn := $value}}{{if $m.Async}}{{$fn = stubAwaitable $value}}{{end}}
 
 /**
- * {{$m.Stub}} configures {{$m.Name}}, and records its calls. A fault armed
+ * {{$m.Stub}} configures {{$m.Name}} and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Call}}{{typeargs $m.TypeParams}}> {
@@ -55,7 +55,7 @@ export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Cal
 {{- end}}
 
   /**
-   * Sets the function of {{$m.Name}}, for a result that depends on the
+   * Sets the function that computes the result of {{$m.Name}} from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -95,7 +95,7 @@ export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Cal
 
   /**
    * Makes {{$m.Name}} fail with error on every call before call number
-   * {{$m.Retry}}, which succeeds along with every call after it.
+   * {{$m.Retry}}. Call {{$m.Retry}} and every call after it succeed.
    *
    * @param error - The error.
    * @returns The stub.
@@ -109,9 +109,9 @@ export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Cal
 {{- $key := $p.Type}}{{if $p.Optional}}{{$key = stubOptional $p.Type}}{{end}}
 
   /**
-   * Makes {{$m.Name}} fail every nth call whose {{$p.Field}} matches key, and
-   * leaves the other partitions alone. A test that one outage does not reach
-   * another partition needs a fault that selects its calls.
+   * Makes {{$m.Name}} fail every nth call whose {{$p.Field}} matches key. The
+   * fault leaves the calls of the other partitions alone. A test of the
+   * isolation of a partition needs a fault that selects its calls.
    *
    * @param key - The {{$p.Field}} of the calls that fail.
    * @param error - The error.
@@ -123,8 +123,8 @@ export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Cal
   }
 
   /**
-   * Makes {{$m.Name}} fail every nth call whose {{$p.Field}} differs from key,
-   * and leaves the partition of key alone.
+   * Makes {{$m.Name}} fail every nth call whose {{$p.Field}} differs from key.
+   * The fault leaves the calls of the partition of key alone.
    *
    * @param key - The {{$p.Field}} of the calls that pass.
    * @param error - The error.
@@ -160,7 +160,7 @@ export class {{$m.Stub}}{{typeparams $m.TypeParams}} extends MethodStub<{{$m.Cal
 }
 {{- end}}
 
-/** An option of a {{$stub}}, which its constructor applies. */
+/** Configures a {{$stub}} at its construction. */
 export type {{$stub}}Option{{$tp}} = (double: {{$stub}}{{$ta}}) => void;
 
 {{- $defaulted := false}}{{range $c.Methods}}{{if .Defaulted}}{{$defaulted = true}}{{end}}{{end}}
@@ -168,16 +168,16 @@ export type {{$stub}}Option{{$tp}} = (double: {{$stub}}{{$ta}}) => void;
 
 /**
  * {{$stub}} is a recording test double of {{$c.Subject}}. Each property
- * on<Method> configures its method. Left alone, a method records the call
- * and returns a new value from the builder of its result type, or undefined
- * where the type has no builder.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns a new value from the builder of its result type. It returns
+ * undefined where the type has no builder.
  */
 {{- else}}
 
 /**
  * {{$stub}} is a recording test double of {{$c.Subject}}. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 {{- end}}
 export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
@@ -196,9 +196,9 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
   #strict = false;
 
   /**
-   * Returns a double of {{$c.Subject}} that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of {{$c.Subject}} that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -233,7 +233,8 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- if $c.Methods}}
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -248,8 +249,9 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- end}}
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -261,8 +263,8 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -300,7 +302,8 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- if $c.Fallible}}
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -334,8 +337,8 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- end}}
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -359,8 +362,8 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- if $c.Fallible}}
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -391,7 +394,7 @@ export class {{$stub}}{{$tp}} implements {{spell $c.Value}} {
 {{- if $m.Async}}{{use "@dokimi/runtime/stub/answer" "answerAsync"}}{{else}}{{use "@dokimi/runtime/stub/answer" "answer"}}{{end}}
 
   /**
-   * Records the call of {{$m.Name}}, and returns its result.
+   * Records the call of {{$m.Name}} and returns its result.
    */
   {{$dm.Name}}({{params $dm.Params}}){{returns $dm}} {
 {{- with $m.After}}

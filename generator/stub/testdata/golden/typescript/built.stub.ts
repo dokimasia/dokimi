@@ -1,11 +1,11 @@
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Invoice } from './billing';
-import type { Account, Note, Store } from './built';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Invoice } from "./billing";
+import type { Account, Note, Store } from "./built";
 
 /** StoreGetCall records one call of Store.get. */
 export interface StoreGetCall {
@@ -22,7 +22,7 @@ export interface StoreFindCall {
   /** The argument id. */
   id: string;
   /** The result of the call, where it returned one. */
-  result?: Account|undefined | undefined;
+  result?: Account | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -48,7 +48,7 @@ export interface StoreBillCall {
 }
 
 /**
- * StoreGetStub configures get, and records its calls. A fault armed
+ * StoreGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreGetStub extends MethodStub<StoreGetCall> {
@@ -68,7 +68,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -99,12 +99,12 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
 }
 
 /**
- * StoreFindStub configures find, and records its calls. A fault armed
+ * StoreFindStub configures find and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreFindStub extends MethodStub<StoreFindCall> {
-  #fn: ((id: string) => Account|undefined) | undefined;
-  #fallback: { readonly value: Account|undefined } | undefined;
+  #fn: ((id: string) => Account | undefined) | undefined;
+  #fallback: { readonly value: Account | undefined } | undefined;
 
   /**
    * Sets the result of every call of find. A function and an injected
@@ -113,19 +113,19 @@ export class StoreFindStub extends MethodStub<StoreFindCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Account|undefined): this {
+  returns(result: Account | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of find, for a result that depends on the
+   * Sets the function that computes the result of find from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => Account|undefined): this {
+  func(fn: (id: string) => Account | undefined): this {
     this.#fn = fn;
     return this;
   }
@@ -133,7 +133,7 @@ export class StoreFindStub extends MethodStub<StoreFindCall> {
   /**
    * Returns the arms of a call of find with its arguments.
    */
-  arms(id: string): Arms<StoreFindCall, Account|undefined, Account|undefined> {
+  arms(id: string): Arms<StoreFindCall, Account | undefined, Account | undefined> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(id)),
@@ -150,7 +150,7 @@ export class StoreFindStub extends MethodStub<StoreFindCall> {
 }
 
 /**
- * StoreNoteStub configures note, and records its calls. A fault armed
+ * StoreNoteStub configures note and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreNoteStub extends MethodStub<StoreNoteCall> {
@@ -170,7 +170,7 @@ export class StoreNoteStub extends MethodStub<StoreNoteCall> {
   }
 
   /**
-   * Sets the function of note, for a result that depends on the
+   * Sets the function that computes the result of note from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -200,7 +200,7 @@ export class StoreNoteStub extends MethodStub<StoreNoteCall> {
 }
 
 /**
- * StoreBillStub configures bill, and records its calls. A fault armed
+ * StoreBillStub configures bill and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreBillStub extends MethodStub<StoreBillCall> {
@@ -220,7 +220,7 @@ export class StoreBillStub extends MethodStub<StoreBillCall> {
   }
 
   /**
-   * Sets the function of bill, for a result that depends on the
+   * Sets the function that computes the result of bill from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -249,14 +249,14 @@ export class StoreBillStub extends MethodStub<StoreBillCall> {
   }
 }
 
-/** An option of a StoreStub, which its constructor applies. */
+/** Configures a StoreStub at its construction. */
 export type StoreStubOption = (double: StoreStub) => void;
 
 /**
  * StoreStub is a recording test double of Store. Each property
- * on<Method> configures its method. Left alone, a method records the call
- * and returns a new value from the builder of its result type, or undefined
- * where the type has no builder.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns a new value from the builder of its result type. It returns
+ * undefined where the type has no builder.
  */
 export class StoreStub implements Store {
   /** Configures get. */
@@ -271,9 +271,9 @@ export class StoreStub implements Store {
   #strict = false;
 
   /**
-   * Returns a double of Store that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Store that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -305,7 +305,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -320,8 +321,9 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -333,8 +335,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -371,7 +373,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -403,7 +406,7 @@ export class StoreStub implements Store {
    * @param fn - The function.
    * @returns The option.
    */
-  static withStoreFind(fn: (id: string) => Account|undefined): StoreStubOption {
+  static withStoreFind(fn: (id: string) => Account | undefined): StoreStubOption {
     return (double) => {
       double.onFind.func(fn);
     };
@@ -434,8 +437,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -458,8 +461,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -483,7 +486,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(id: string): Promise<Account> {
     const call: StoreGetCall = { id };
@@ -491,15 +494,15 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of find, and returns its result.
+   * Records the call of find and returns its result.
    */
-  find(id: string): Account|undefined {
+  find(id: string): Account | undefined {
     const call: StoreFindCall = { id };
     return answer(this.onFind, call, this.onFind.arms(id));
   }
 
   /**
-   * Records the call of note, and returns its result.
+   * Records the call of note and returns its result.
    */
   note(id: string): Note {
     const call: StoreNoteCall = { id };
@@ -507,7 +510,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of bill, and returns its result.
+   * Records the call of bill and returns its result.
    */
   bill(id: string): Invoice {
     const call: StoreBillCall = { id };

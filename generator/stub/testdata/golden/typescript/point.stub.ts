@@ -1,16 +1,16 @@
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import type { Box, Point } from './point';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import type { Box, Point } from "./point";
 
-/** An option of a PointStub, which its constructor applies. */
+/** Configures a PointStub at its construction. */
 export type PointStubOption = (double: PointStub) => void;
 
 /**
  * PointStub is a recording test double of Point. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class PointStub implements Point {
   /** The property x, which a test assigns. */
@@ -21,9 +21,9 @@ export class PointStub implements Point {
   #strict = false;
 
   /**
-   * Returns a double of Point that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Point that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -51,8 +51,9 @@ export class PointStub implements Point {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -64,8 +65,8 @@ export class PointStub implements Point {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -102,8 +103,8 @@ export class PointStub implements Point {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -134,13 +135,13 @@ export class PointStub implements Point {
   }
 }
 
-/** An option of a BoxStub, which its constructor applies. */
+/** Configures a BoxStub at its construction. */
 export type BoxStubOption<T> = (double: BoxStub<T>) => void;
 
 /**
  * BoxStub is a recording test double of Box. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class BoxStub<T> implements Box<T> {
   /** The property value, which a test assigns. */
@@ -149,9 +150,9 @@ export class BoxStub<T> implements Box<T> {
   #strict = false;
 
   /**
-   * Returns a double of Box that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Box that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -179,8 +180,9 @@ export class BoxStub<T> implements Box<T> {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -192,8 +194,8 @@ export class BoxStub<T> implements Box<T> {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -230,8 +232,8 @@ export class BoxStub<T> implements Box<T> {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.

@@ -1,10 +1,10 @@
-import type { Clock as Clock2, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Clock } from './clock';
+import type { Clock as Clock2, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Clock } from "./clock";
 
 /** ClockNowCall records one call of Clock.now. */
 export interface ClockNowCall {
@@ -17,7 +17,7 @@ export interface ClockNowCall {
 /** ClockEveryCall records one call of Clock.every. */
 export interface ClockEveryCall {
   /** The argument fn. */
-  fn: ()=>void;
+  fn: () => void;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -25,13 +25,13 @@ export interface ClockEveryCall {
 /** ClockStopperCall records one call of Clock.stopper. */
 export interface ClockStopperCall {
   /** The result of the call, where it returned one. */
-  result?: (()=>void) | undefined;
+  result?: (() => void) | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * ClockNowStub configures now, and records its calls. A fault armed
+ * ClockNowStub configures now and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ClockNowStub extends MethodStub<ClockNowCall> {
@@ -51,7 +51,7 @@ export class ClockNowStub extends MethodStub<ClockNowCall> {
   }
 
   /**
-   * Sets the function of now, for a result that depends on the
+   * Sets the function that computes the result of now from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -81,20 +81,20 @@ export class ClockNowStub extends MethodStub<ClockNowCall> {
 }
 
 /**
- * ClockEveryStub configures every, and records its calls. A fault armed
+ * ClockEveryStub configures every and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ClockEveryStub extends MethodStub<ClockEveryCall> {
-  #fn: ((fn: ()=>void) => void) | undefined;
+  #fn: ((fn: () => void) => void) | undefined;
 
   /**
-   * Sets the function of every, for a result that depends on the
+   * Sets the function that computes the result of every from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (fn: ()=>void) => void): this {
+  func(fn: (fn: () => void) => void): this {
     this.#fn = fn;
     return this;
   }
@@ -102,7 +102,7 @@ export class ClockEveryStub extends MethodStub<ClockEveryCall> {
   /**
    * Returns the arms of a call of every with its arguments.
    */
-  arms(fn: ()=>void): Arms<ClockEveryCall, void, void> {
+  arms(fn: () => void): Arms<ClockEveryCall, void, void> {
     const fn0 = this.#fn;
     return {
       invoke: fn0 && (() => fn0(fn)),
@@ -114,12 +114,12 @@ export class ClockEveryStub extends MethodStub<ClockEveryCall> {
 }
 
 /**
- * ClockStopperStub configures stopper, and records its calls. A fault armed
+ * ClockStopperStub configures stopper and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ClockStopperStub extends MethodStub<ClockStopperCall> {
-  #fn: (() => ()=>void) | undefined;
-  #fallback: { readonly value: ()=>void } | undefined;
+  #fn: (() => () => void) | undefined;
+  #fallback: { readonly value: () => void } | undefined;
 
   /**
    * Sets the result of every call of stopper. A function and an injected
@@ -128,19 +128,19 @@ export class ClockStopperStub extends MethodStub<ClockStopperCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: ()=>void): this {
+  returns(result: () => void): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of stopper, for a result that depends on the
+   * Sets the function that computes the result of stopper from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => ()=>void): this {
+  func(fn: () => () => void): this {
     this.#fn = fn;
     return this;
   }
@@ -148,7 +148,7 @@ export class ClockStopperStub extends MethodStub<ClockStopperCall> {
   /**
    * Returns the arms of a call of stopper with its arguments.
    */
-  arms(): Arms<ClockStopperCall, ()=>void, ()=>void> {
+  arms(): Arms<ClockStopperCall, () => void, () => void> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn()),
@@ -163,13 +163,13 @@ export class ClockStopperStub extends MethodStub<ClockStopperCall> {
   }
 }
 
-/** An option of a ClockStub, which its constructor applies. */
+/** Configures a ClockStub at its construction. */
 export type ClockStubOption = (double: ClockStub) => void;
 
 /**
  * ClockStub is a recording test double of Clock. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ClockStub implements Clock {
   /** The property zone, which a test assigns. */
@@ -184,9 +184,9 @@ export class ClockStub implements Clock {
   #strict = false;
 
   /**
-   * Returns a double of Clock that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Clock that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -217,7 +217,8 @@ export class ClockStub implements Clock {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -231,8 +232,9 @@ export class ClockStub implements Clock {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -244,8 +246,8 @@ export class ClockStub implements Clock {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -282,7 +284,8 @@ export class ClockStub implements Clock {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -313,7 +316,7 @@ export class ClockStub implements Clock {
    * @param fn - The function.
    * @returns The option.
    */
-  static withClockEvery(fn: (fn: ()=>void) => void): ClockStubOption {
+  static withClockEvery(fn: (fn: () => void) => void): ClockStubOption {
     return (double) => {
       double.onEvery.func(fn);
     };
@@ -325,15 +328,15 @@ export class ClockStub implements Clock {
    * @param fn - The function.
    * @returns The option.
    */
-  static withClockStopper(fn: () => ()=>void): ClockStubOption {
+  static withClockStopper(fn: () => () => void): ClockStubOption {
     return (double) => {
       double.onStopper.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -356,8 +359,8 @@ export class ClockStub implements Clock {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -381,7 +384,7 @@ export class ClockStub implements Clock {
   }
 
   /**
-   * Records the call of now, and returns its result.
+   * Records the call of now and returns its result.
    */
   now(): number {
     const call: ClockNowCall = {};
@@ -389,17 +392,17 @@ export class ClockStub implements Clock {
   }
 
   /**
-   * Records the call of every, and returns its result.
+   * Records the call of every and returns its result.
    */
-  every(fn: ()=>void): void {
+  every(fn: () => void): void {
     const call: ClockEveryCall = { fn };
     return answer(this.onEvery, call, this.onEvery.arms(fn));
   }
 
   /**
-   * Records the call of stopper, and returns its result.
+   * Records the call of stopper and returns its result.
    */
-  stopper(): ()=>void {
+  stopper(): () => void {
     const call: ClockStopperCall = {};
     return answer(this.onStopper, call, this.onStopper.arms());
   }

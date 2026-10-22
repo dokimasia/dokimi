@@ -1,10 +1,10 @@
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Finder } from './finder';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Finder } from "./finder";
 
 /** FinderFindByIdCall records one call of Finder.findById. */
 export interface FinderFindByIdCall {
@@ -17,7 +17,7 @@ export interface FinderFindByIdCall {
 }
 
 /**
- * FinderFindByIdStub configures findById, and records its calls. A fault armed
+ * FinderFindByIdStub configures findById and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class FinderFindByIdStub extends MethodStub<FinderFindByIdCall> {
@@ -37,7 +37,7 @@ export class FinderFindByIdStub extends MethodStub<FinderFindByIdCall> {
   }
 
   /**
-   * Sets the function of findById, for a result that depends on the
+   * Sets the function that computes the result of findById from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -66,13 +66,13 @@ export class FinderFindByIdStub extends MethodStub<FinderFindByIdCall> {
   }
 }
 
-/** An option of a FinderStub, which its constructor applies. */
+/** Configures a FinderStub at its construction. */
 export type FinderStubOption = (double: FinderStub) => void;
 
 /**
  * FinderStub is a recording test double of Finder. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class FinderStub implements Finder {
   /** Configures findById. */
@@ -81,9 +81,9 @@ export class FinderStub implements Finder {
   #strict = false;
 
   /**
-   * Returns a double of Finder that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Finder that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -112,7 +112,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -124,8 +125,9 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -137,8 +139,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -175,7 +177,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -199,8 +202,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -223,8 +226,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -248,7 +251,7 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Records the call of findById, and returns its result.
+   * Records the call of findById and returns its result.
    */
   findById(id: string): string {
     const call: FinderFindByIdCall = { id };

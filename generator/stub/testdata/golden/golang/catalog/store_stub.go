@@ -9,10 +9,7 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// StoreGetCall records one invocation of Store.Get.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StoreGetCall records one call of Store.Get.
 type StoreGetCall struct {
 	Ctx    context.Context
 	ID     string
@@ -20,47 +17,32 @@ type StoreGetCall struct {
 	Err    error
 }
 
-// StorePutCall records one invocation of Store.Put.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StorePutCall records one call of Store.Put.
 type StorePutCall struct {
 	A0  context.Context
 	A1  Item
 	Err error
 }
 
-// StoreLenCall records one invocation of Store.Len.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StoreLenCall records one call of Store.Len.
 type StoreLenCall struct {
 	Result int
 }
 
-// StoreLookupCall records one invocation of Store.Lookup.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StoreLookupCall records one call of Store.Lookup.
 type StoreLookupCall struct {
 	Key  string
 	Item Item
 	Ok   bool
 }
 
-// StoreLogCall records one invocation of Store.Log.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StoreLogCall records one call of Store.Log.
 type StoreLogCall struct {
 	Format string
 	Args   []string
 }
 
-// StoreSplitCall records one invocation of Store.Split.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StoreSplitCall records one call of Store.Split.
 type StoreSplitCall struct {
 	S       string
 	Result0 string
@@ -68,22 +50,13 @@ type StoreSplitCall struct {
 	Err     error
 }
 
-// StoreCloseCall records one invocation of Store.Close.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StoreCloseCall records one call of Store.Close.
 type StoreCloseCall struct {
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// StoreGetStub controls how the double answers Get and records what it was
-// asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StoreGetStub configures Get and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
 type StoreGetStub struct {
 	*stub.MethodStub[StoreGetCall]
 
@@ -91,32 +64,28 @@ type StoreGetStub struct {
 	fallback *StoreGetReturn
 }
 
-// StoreGetReturn holds the fixed answer configured through Returns.
+// StoreGetReturn contains the fixed results of Get.
 type StoreGetReturn struct {
 	Result Item
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Get. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Get. A function and an
+// injected fault take precedence over them.
 func (s *StoreGetStub) Returns(result Item, err error) *StoreGetStub {
 	s.fallback = &StoreGetReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Get, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Get from its
+// arguments. An injected fault takes precedence over it.
 func (s *StoreGetStub) Func(fn func(context.Context, string) (Item, error)) *StoreGetStub {
 	s.fn = fn
 	return s
 }
 
-// StorePutStub controls how the double answers Put and records what it was
-// asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StorePutStub configures Put and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
 type StorePutStub struct {
 	*stub.MethodStub[StorePutCall]
 
@@ -124,31 +93,27 @@ type StorePutStub struct {
 	fallback *StorePutReturn
 }
 
-// StorePutReturn holds the fixed answer configured through Returns.
+// StorePutReturn contains the fixed results of Put.
 type StorePutReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Put. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Put. A function and an
+// injected fault take precedence over them.
 func (s *StorePutStub) Returns(err error) *StorePutStub {
 	s.fallback = &StorePutReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Put, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Put from its
+// arguments. An injected fault takes precedence over it.
 func (s *StorePutStub) Func(fn func(context.Context, Item) error) *StorePutStub {
 	s.fn = fn
 	return s
 }
 
-// StoreLenStub controls how the double answers Len and records what it was
-// asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StoreLenStub configures Len and records its calls. Len returns no error,
+// so a fault armed through it fails the test.
 type StoreLenStub struct {
 	*stub.MethodStub[StoreLenCall]
 
@@ -156,36 +121,27 @@ type StoreLenStub struct {
 	fallback *StoreLenReturn
 }
 
-// StoreLenReturn holds the fixed answer configured through Returns.
+// StoreLenReturn contains the fixed results of Len.
 type StoreLenReturn struct {
 	Result int
 }
 
-// Returns pins a fixed result for every call to Len. A Func override takes
-// precedence over it.
-//
-// No fault can take precedence here: Len answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Len. A function takes
+// precedence over them.
 func (s *StoreLenStub) Returns(result int) *StoreLenStub {
 	s.fallback = &StoreLenReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Len, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Len answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Len from its
+// arguments.
 func (s *StoreLenStub) Func(fn func() int) *StoreLenStub {
 	s.fn = fn
 	return s
 }
 
-// StoreLookupStub controls how the double answers Lookup and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StoreLookupStub configures Lookup and records its calls. Lookup returns
+// no error, so a fault armed through it fails the test.
 type StoreLookupStub struct {
 	*stub.MethodStub[StoreLookupCall]
 
@@ -193,57 +149,43 @@ type StoreLookupStub struct {
 	fallback *StoreLookupReturn
 }
 
-// StoreLookupReturn holds the fixed answer configured through Returns.
+// StoreLookupReturn contains the fixed results of Lookup.
 type StoreLookupReturn struct {
 	Item Item
 	Ok   bool
 }
 
-// Returns pins a fixed result for every call to Lookup. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Lookup answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Lookup. A function takes
+// precedence over them.
 func (s *StoreLookupStub) Returns(item Item, ok bool) *StoreLookupStub {
 	s.fallback = &StoreLookupReturn{Item: item, Ok: ok}
 	return s
 }
 
-// Func supplies a body for Lookup, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Lookup answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Lookup from its
+// arguments.
 func (s *StoreLookupStub) Func(fn func(string) (Item, bool)) *StoreLookupStub {
 	s.fn = fn
 	return s
 }
 
-// StoreLogStub controls how the double answers Log and records what it was
-// asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StoreLogStub configures Log and records its calls. Log returns no error,
+// so a fault armed through it fails the test.
 type StoreLogStub struct {
 	*stub.MethodStub[StoreLogCall]
 
 	fn func(string, ...string)
 }
 
-// Func supplies a body for Log, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Log answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Log from its
+// arguments.
 func (s *StoreLogStub) Func(fn func(string, ...string)) *StoreLogStub {
 	s.fn = fn
 	return s
 }
 
-// StoreSplitStub controls how the double answers Split and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StoreSplitStub configures Split and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type StoreSplitStub struct {
 	*stub.MethodStub[StoreSplitCall]
 
@@ -251,33 +193,29 @@ type StoreSplitStub struct {
 	fallback *StoreSplitReturn
 }
 
-// StoreSplitReturn holds the fixed answer configured through Returns.
+// StoreSplitReturn contains the fixed results of Split.
 type StoreSplitReturn struct {
 	Result0 string
 	Result1 string
 	Err     error
 }
 
-// Returns pins a fixed result for every call to Split. A Func override
-// takes precedence over it, and so does an injected fault.
-func (s *StoreSplitStub) Returns(result0 string, result1 string, err error) *StoreSplitStub {
+// Returns sets the results of every call of Split. A function and an
+// injected fault take precedence over them.
+func (s *StoreSplitStub) Returns(result0, result1 string, err error) *StoreSplitStub {
 	s.fallback = &StoreSplitReturn{Result0: result0, Result1: result1, Err: err}
 	return s
 }
 
-// Func supplies a body for Split, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Split from its
+// arguments. An injected fault takes precedence over it.
 func (s *StoreSplitStub) Func(fn func(string) (string, string, error)) *StoreSplitStub {
 	s.fn = fn
 	return s
 }
 
-// StoreCloseStub controls how the double answers Close and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StoreCloseStub configures Close and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type StoreCloseStub struct {
 	*stub.MethodStub[StoreCloseCall]
 
@@ -285,41 +223,40 @@ type StoreCloseStub struct {
 	fallback *StoreCloseReturn
 }
 
-// StoreCloseReturn holds the fixed answer configured through Returns.
+// StoreCloseReturn contains the fixed results of Close.
 type StoreCloseReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Close. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Close. A function and an
+// injected fault take precedence over them.
 func (s *StoreCloseStub) Returns(err error) *StoreCloseStub {
 	s.fallback = &StoreCloseReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Close, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Close from its
+// arguments. An injected fault takes precedence over it.
 func (s *StoreCloseStub) Func(fn func() error) *StoreCloseStub {
 	s.fn = fn
 	return s
 }
 
-// --- StoreStub ---
-
-// The witness of the major version of the runtime of doubles.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// StoreStubOption configures a [StoreStub] at construction time.
+// StoreStubOption configures a [StoreStub] at its construction.
 type StoreStubOption func(*StoreStub)
 
-// StoreStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// StoreStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func StoreStubStrict() StoreStubOption {
 	return func(s *StoreStub) { s.strict = true }
 }
 
-// StoreStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// StoreStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func StoreStubDelegateTo(impl Store) StoreStubOption {
 	return func(s *StoreStub) {
 		s.OnGet.Func(impl.Get)
@@ -332,35 +269,35 @@ func StoreStubDelegateTo(impl Store) StoreStubOption {
 	}
 }
 
-// StoreStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// StoreStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func StoreStubWithClock(clk assert.Clock) StoreStubOption {
 	return func(s *StoreStub) { s.group.SetClock(clk) }
 }
 
-// StoreStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// StoreStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func StoreStubWithRandSource(src rand.Source) StoreStubOption {
 	return func(s *StoreStub) { s.group.SetRandSource(src) }
 }
 
-// StoreStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// StoreStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func StoreStubBenchMode() StoreStubOption {
 	return func(s *StoreStub) { s.group.BenchMode() }
 }
 
-// StoreStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with StoreStubWithClock, or d elapses in wall time.
+// StoreStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without StoreStubWithClock, d passes in real time.
 func StoreStubWithLatency(d time.Duration) StoreStubOption {
 	return func(s *StoreStub) { s.group.SetLatency(d) }
 }
 
-// StoreStubFailing arms every method that can fail with err, so a caller's
-// error path is one option rather than one Faults call per method. A
-// method answering no error is left alone.
+// StoreStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func StoreStubFailing(err error) StoreStubOption {
 	return func(s *StoreStub) {
 		s.OnGet.Faults(err, 1)
@@ -370,52 +307,44 @@ func StoreStubFailing(err error) StoreStubOption {
 	}
 }
 
-// WithStoreGet sets Get's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithStoreGet returns the option that sets the function of Get.
 func WithStoreGet(fn func(context.Context, string) (Item, error)) StoreStubOption {
 	return func(s *StoreStub) { s.OnGet.Func(fn) }
 }
 
-// WithStorePut sets Put's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithStorePut returns the option that sets the function of Put.
 func WithStorePut(fn func(context.Context, Item) error) StoreStubOption {
 	return func(s *StoreStub) { s.OnPut.Func(fn) }
 }
 
-// WithStoreLen sets Len's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithStoreLen returns the option that sets the function of Len.
 func WithStoreLen(fn func() int) StoreStubOption {
 	return func(s *StoreStub) { s.OnLen.Func(fn) }
 }
 
-// WithStoreLookup sets Lookup's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithStoreLookup returns the option that sets the function of Lookup.
 func WithStoreLookup(fn func(string) (Item, bool)) StoreStubOption {
 	return func(s *StoreStub) { s.OnLookup.Func(fn) }
 }
 
-// WithStoreLog sets Log's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithStoreLog returns the option that sets the function of Log.
 func WithStoreLog(fn func(string, ...string)) StoreStubOption {
 	return func(s *StoreStub) { s.OnLog.Func(fn) }
 }
 
-// WithStoreSplit sets Split's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithStoreSplit returns the option that sets the function of Split.
 func WithStoreSplit(fn func(string) (string, string, error)) StoreStubOption {
 	return func(s *StoreStub) { s.OnSplit.Func(fn) }
 }
 
-// WithStoreClose sets Close's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithStoreClose returns the option that sets the function of Close.
 func WithStoreClose(fn func() error) StoreStubOption {
 	return func(s *StoreStub) { s.OnClose.Func(fn) }
 }
 
-// StoreStub is a recording test double for Store.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// StoreStub is a recording test double of Store. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type StoreStub struct {
 	OnGet    *StoreGetStub
 	OnPut    *StorePutStub
@@ -423,33 +352,35 @@ type StoreStub struct {
 	OnLookup *StoreLookupStub
 	OnLog    *StoreLogStub
 	OnSplit  *StoreSplitStub
-	// OnClose configures Close, contributed by Closer.
+	// OnClose configures Close, which Closer declares.
 	OnClose *StoreCloseStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that StoreStub satisfies Store.
+// The compiler checks that StoreStub implements Store.
 var _ Store = (*StoreStub)(nil)
 
-// NewStoreStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewStoreStub returns a double of Store that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewStoreStub(tb assert.TB, opts ...StoreStubOption) *StoreStub {
 	s := &StoreStub{
-		OnGet:    &StoreGetStub{MethodStub: stub.NewMethodStub[StoreGetCall](tb, "Store.Get")},
-		OnPut:    &StorePutStub{MethodStub: stub.NewMethodStub[StorePutCall](tb, "Store.Put")},
-		OnLen:    &StoreLenStub{MethodStub: stub.NewMethodStub[StoreLenCall](tb, "Store.Len")},
-		OnLookup: &StoreLookupStub{MethodStub: stub.NewMethodStub[StoreLookupCall](tb, "Store.Lookup")},
-		OnLog:    &StoreLogStub{MethodStub: stub.NewMethodStub[StoreLogCall](tb, "Store.Log")},
-		OnSplit:  &StoreSplitStub{MethodStub: stub.NewMethodStub[StoreSplitCall](tb, "Store.Split")},
-		OnClose:  &StoreCloseStub{MethodStub: stub.NewMethodStub[StoreCloseCall](tb, "Store.Close")},
+		OnGet: &StoreGetStub{MethodStub: stub.NewMethodStub[StoreGetCall](tb, "Store.Get")},
+		OnPut: &StorePutStub{MethodStub: stub.NewMethodStub[StorePutCall](tb, "Store.Put")},
+		OnLen: &StoreLenStub{MethodStub: stub.NewMethodStub[StoreLenCall](tb, "Store.Len")},
+		OnLookup: &StoreLookupStub{
+			MethodStub: stub.NewMethodStub[StoreLookupCall](tb, "Store.Lookup"),
+		},
+		OnLog: &StoreLogStub{MethodStub: stub.NewMethodStub[StoreLogCall](tb, "Store.Log")},
+		OnSplit: &StoreSplitStub{
+			MethodStub: stub.NewMethodStub[StoreSplitCall](tb, "Store.Split"),
+		},
+		OnClose: &StoreCloseStub{
+			MethodStub: stub.NewMethodStub[StoreCloseCall](tb, "Store.Close"),
+		},
 	}
 	s.group = stub.NewGroup(
 		s.OnGet.MethodStub,
@@ -470,37 +401,34 @@ func NewStoreStub(tb assert.TB, opts ...StoreStubOption) *StoreStub {
 	return s
 }
 
-// NewStoreStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
-func NewStoreStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...StoreStubOption) *StoreStub {
+// NewStoreStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
+func NewStoreStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...StoreStubOption,
+) *StoreStub {
 	return NewStoreStub(tb, append([]StoreStubOption{
 		StoreStubWithClock(clk),
 		StoreStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewStoreStubFailing returns a double whose every fallible method answers
-// err — [StoreStubFailing] applied at construction, for the test whose
-// whole subject is the caller's error path. Further options apply after
-// it.
+// NewStoreStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
 func NewStoreStubFailing(tb assert.TB, err error, opts ...StoreStubOption) *StoreStub {
 	return NewStoreStub(tb, append([]StoreStubOption{StoreStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StoreStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StoreGetStub) invoke(ctx context.Context, id string) func() StoreGetReturn {
 	if s.fn == nil {
 		return nil
@@ -511,12 +439,8 @@ func (s *StoreGetStub) invoke(ctx context.Context, id string) func() StoreGetRet
 	}
 }
 
-// Get records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Get records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Get(ctx context.Context, id string) (Item, error) {
 	call := StoreGetCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[StoreGetCall, StoreGetReturn]{
@@ -531,9 +455,8 @@ func (s *StoreStub) Get(ctx context.Context, id string) (Item, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StorePutStub) invoke(a0 context.Context, a1 Item) func() StorePutReturn {
 	if s.fn == nil {
 		return nil
@@ -544,12 +467,8 @@ func (s *StorePutStub) invoke(a0 context.Context, a1 Item) func() StorePutReturn
 	}
 }
 
-// Put records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Put records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Put(a0 context.Context, a1 Item) error {
 	call := StorePutCall{A0: a0, A1: a1}
 	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[StorePutCall, StorePutReturn]{
@@ -563,9 +482,8 @@ func (s *StoreStub) Put(a0 context.Context, a1 Item) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StoreLenStub) invoke() func() StoreLenReturn {
 	if s.fn == nil {
 		return nil
@@ -576,12 +494,8 @@ func (s *StoreLenStub) invoke() func() StoreLenReturn {
 	}
 }
 
-// Len records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Len records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Len() int {
 	call := StoreLenCall{}
 	r := stub.Answer(s.OnLen.MethodStub, &call, stub.Arms[StoreLenCall, StoreLenReturn]{
@@ -594,9 +508,8 @@ func (s *StoreStub) Len() int {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StoreLookupStub) invoke(key string) func() StoreLookupReturn {
 	if s.fn == nil {
 		return nil
@@ -607,12 +520,8 @@ func (s *StoreLookupStub) invoke(key string) func() StoreLookupReturn {
 	}
 }
 
-// Lookup records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Lookup records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Lookup(key string) (item Item, ok bool) {
 	call := StoreLookupCall{Key: key}
 	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[StoreLookupCall, StoreLookupReturn]{
@@ -626,9 +535,9 @@ func (s *StoreStub) Lookup(key string) (item Item, ok bool) {
 	return r.Item, r.Ok
 }
 
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
 func (s *StoreLogStub) invokeVoid(format string, args ...string) func() struct{} {
 	if s.fn == nil {
 		return nil
@@ -639,12 +548,8 @@ func (s *StoreLogStub) invokeVoid(format string, args ...string) func() struct{}
 	}
 }
 
-// Log records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Log records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Log(format string, args ...string) {
 	call := StoreLogCall{Format: format, Args: args}
 	stub.Answer(s.OnLog.MethodStub, &call, stub.Arms[StoreLogCall, struct{}]{
@@ -652,9 +557,8 @@ func (s *StoreStub) Log(format string, args ...string) {
 	})
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s0 *StoreSplitStub) invoke(s string) func() StoreSplitReturn {
 	if s0.fn == nil {
 		return nil
@@ -665,12 +569,8 @@ func (s0 *StoreSplitStub) invoke(s string) func() StoreSplitReturn {
 	}
 }
 
-// Split records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Split records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s0 *StoreStub) Split(s string) (string, string, error) {
 	call := StoreSplitCall{S: s}
 	r := stub.Answer(s0.OnSplit.MethodStub, &call, stub.Arms[StoreSplitCall, StoreSplitReturn]{
@@ -686,9 +586,8 @@ func (s0 *StoreStub) Split(s string) (string, string, error) {
 	return r.Result0, r.Result1, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StoreCloseStub) invoke() func() StoreCloseReturn {
 	if s.fn == nil {
 		return nil
@@ -699,12 +598,8 @@ func (s *StoreCloseStub) invoke() func() StoreCloseReturn {
 	}
 }
 
-// Close records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Close records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Close() error {
 	call := StoreCloseCall{}
 	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[StoreCloseCall, StoreCloseReturn]{
@@ -718,40 +613,25 @@ func (s *StoreStub) Close() error {
 	return r.Err
 }
 
-// ClockNowCall records one invocation of Clock.Now.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ClockNowCall records one call of Clock.Now.
 type ClockNowCall struct {
 	Result time.Time
 }
 
-// ClockZoneCall records one invocation of Clock.Zone.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ClockZoneCall records one call of Clock.Zone.
 type ClockZoneCall struct {
 	Result string
 }
 
-// ClockEveryCall records one invocation of Clock.Every.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ClockEveryCall records one call of Clock.Every.
 type ClockEveryCall struct {
 	D    time.Duration
 	Fn   func()
 	Stop func()
 }
 
-// --- Per-method configuration ---
-
-// ClockNowStub controls how the double answers Now and records what it was
-// asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ClockNowStub configures Now and records its calls. Now returns no error,
+// so a fault armed through it fails the test.
 type ClockNowStub struct {
 	*stub.MethodStub[ClockNowCall]
 
@@ -759,36 +639,27 @@ type ClockNowStub struct {
 	fallback *ClockNowReturn
 }
 
-// ClockNowReturn holds the fixed answer configured through Returns.
+// ClockNowReturn contains the fixed results of Now.
 type ClockNowReturn struct {
 	Result time.Time
 }
 
-// Returns pins a fixed result for every call to Now. A Func override takes
-// precedence over it.
-//
-// No fault can take precedence here: Now answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Now. A function takes
+// precedence over them.
 func (s *ClockNowStub) Returns(result time.Time) *ClockNowStub {
 	s.fallback = &ClockNowReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Now, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Now answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Now from its
+// arguments.
 func (s *ClockNowStub) Func(fn func() time.Time) *ClockNowStub {
 	s.fn = fn
 	return s
 }
 
-// ClockZoneStub controls how the double answers Zone and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ClockZoneStub configures Zone and records its calls. Zone returns no
+// error, so a fault armed through it fails the test.
 type ClockZoneStub struct {
 	*stub.MethodStub[ClockZoneCall]
 
@@ -796,36 +667,27 @@ type ClockZoneStub struct {
 	fallback *ClockZoneReturn
 }
 
-// ClockZoneReturn holds the fixed answer configured through Returns.
+// ClockZoneReturn contains the fixed results of Zone.
 type ClockZoneReturn struct {
 	Result string
 }
 
-// Returns pins a fixed result for every call to Zone. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Zone answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Zone. A function takes
+// precedence over them.
 func (s *ClockZoneStub) Returns(result string) *ClockZoneStub {
 	s.fallback = &ClockZoneReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Zone, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Zone answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Zone from its
+// arguments.
 func (s *ClockZoneStub) Func(fn func() string) *ClockZoneStub {
 	s.fn = fn
 	return s
 }
 
-// ClockEveryStub controls how the double answers Every and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ClockEveryStub configures Every and records its calls. Every returns no
+// error, so a fault armed through it fails the test.
 type ClockEveryStub struct {
 	*stub.MethodStub[ClockEveryCall]
 
@@ -833,47 +695,47 @@ type ClockEveryStub struct {
 	fallback *ClockEveryReturn
 }
 
-// ClockEveryReturn holds the fixed answer configured through Returns.
+// ClockEveryReturn contains the fixed results of Every.
 type ClockEveryReturn struct {
 	Stop func()
 }
 
-// Returns pins a fixed result for every call to Every. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Every answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Every. A function takes
+// precedence over them.
 func (s *ClockEveryStub) Returns(stop func()) *ClockEveryStub {
 	s.fallback = &ClockEveryReturn{Stop: stop}
 	return s
 }
 
-// Func supplies a body for Every, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Every answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Every from its
+// arguments.
 func (s *ClockEveryStub) Func(fn func(time.Duration, func()) func()) *ClockEveryStub {
 	s.fn = fn
 	return s
 }
 
-// --- ClockStub ---
-
-// The witness of the major version of the runtime of doubles.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ClockStubOption configures a [ClockStub] at construction time.
+// ClockStubOption configures a [ClockStub] at its construction.
 type ClockStubOption func(*ClockStub)
 
-// ClockStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// ClockStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func ClockStubStrict() ClockStubOption {
 	return func(s *ClockStub) { s.strict = true }
 }
 
-// ClockStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
-func ClockStubDelegateTo(impl *Clock) ClockStubOption {
+// ClockStubDelegateTo returns the option that passes each call to impl.
+// impl has the methods of Clock. Both a pointer to a Clock and a second
+// double have them. The double still records the call.
+func ClockStubDelegateTo(impl interface {
+	Now() time.Time
+	Zone() string
+	Every(d time.Duration, fn func()) (stop func())
+},
+) ClockStubOption {
 	return func(s *ClockStub) {
 		s.OnNow.Func(impl.Now)
 		s.OnZone.Func(impl.Zone)
@@ -881,71 +743,64 @@ func ClockStubDelegateTo(impl *Clock) ClockStubOption {
 	}
 }
 
-// ClockStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// ClockStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func ClockStubWithClock(clk assert.Clock) ClockStubOption {
 	return func(s *ClockStub) { s.group.SetClock(clk) }
 }
 
-// ClockStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ClockStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func ClockStubWithRandSource(src rand.Source) ClockStubOption {
 	return func(s *ClockStub) { s.group.SetRandSource(src) }
 }
 
-// ClockStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// ClockStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func ClockStubBenchMode() ClockStubOption {
 	return func(s *ClockStub) { s.group.BenchMode() }
 }
 
-// ClockStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with ClockStubWithClock, or d elapses in wall time.
+// ClockStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without ClockStubWithClock, d passes in real time.
 func ClockStubWithLatency(d time.Duration) ClockStubOption {
 	return func(s *ClockStub) { s.group.SetLatency(d) }
 }
 
-// WithClockNow sets Now's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithClockNow returns the option that sets the function of Now.
 func WithClockNow(fn func() time.Time) ClockStubOption {
 	return func(s *ClockStub) { s.OnNow.Func(fn) }
 }
 
-// WithClockZone sets Zone's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithClockZone returns the option that sets the function of Zone.
 func WithClockZone(fn func() string) ClockStubOption {
 	return func(s *ClockStub) { s.OnZone.Func(fn) }
 }
 
-// WithClockEvery sets Every's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithClockEvery returns the option that sets the function of Every.
 func WithClockEvery(fn func(time.Duration, func()) func()) ClockStubOption {
 	return func(s *ClockStub) { s.OnEvery.Func(fn) }
 }
 
-// ClockStub is a recording test double for Clock.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ClockStub is a recording test double of Clock. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type ClockStub struct {
 	OnNow   *ClockNowStub
 	OnZone  *ClockZoneStub
 	OnEvery *ClockEveryStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// NewClockStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewClockStub returns a double of Clock that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewClockStub(tb assert.TB, opts ...ClockStubOption) *ClockStub {
 	s := &ClockStub{
 		OnNow:   &ClockNowStub{MethodStub: stub.NewMethodStub[ClockNowCall](tb, "Clock.Now")},
@@ -967,29 +822,28 @@ func NewClockStub(tb assert.TB, opts ...ClockStubOption) *ClockStub {
 	return s
 }
 
-// NewClockStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
-func NewClockStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ClockStubOption) *ClockStub {
+// NewClockStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
+func NewClockStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...ClockStubOption,
+) *ClockStub {
 	return NewClockStub(tb, append([]ClockStubOption{
 		ClockStubWithClock(clk),
 		ClockStubWithLatency(d),
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ClockStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ClockNowStub) invoke() func() ClockNowReturn {
 	if s.fn == nil {
 		return nil
@@ -1000,12 +854,8 @@ func (s *ClockNowStub) invoke() func() ClockNowReturn {
 	}
 }
 
-// Now records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Now records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ClockStub) Now() time.Time {
 	call := ClockNowCall{}
 	r := stub.Answer(s.OnNow.MethodStub, &call, stub.Arms[ClockNowCall, ClockNowReturn]{
@@ -1018,9 +868,8 @@ func (s *ClockStub) Now() time.Time {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ClockZoneStub) invoke() func() ClockZoneReturn {
 	if s.fn == nil {
 		return nil
@@ -1031,12 +880,8 @@ func (s *ClockZoneStub) invoke() func() ClockZoneReturn {
 	}
 }
 
-// Zone records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Zone records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ClockStub) Zone() string {
 	call := ClockZoneCall{}
 	r := stub.Answer(s.OnZone.MethodStub, &call, stub.Arms[ClockZoneCall, ClockZoneReturn]{
@@ -1049,9 +894,8 @@ func (s *ClockStub) Zone() string {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ClockEveryStub) invoke(d time.Duration, fn func()) func() ClockEveryReturn {
 	if s.fn == nil {
 		return nil
@@ -1062,12 +906,8 @@ func (s *ClockEveryStub) invoke(d time.Duration, fn func()) func() ClockEveryRet
 	}
 }
 
-// Every records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Every records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ClockStub) Every(d time.Duration, fn func()) (stop func()) {
 	call := ClockEveryCall{D: d, Fn: fn}
 	r := stub.Answer(s.OnEvery.MethodStub, &call, stub.Arms[ClockEveryCall, ClockEveryReturn]{

@@ -8,30 +8,162 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/stub"
 )
 
-// storeStubGetSubject binds Get into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubGetArgs returns the samples of the arguments of Get.
+func storeStubGetArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Get-a"
+	return a0, a1
+}
+
+// storeStubGet calls Get of s with the samples of its arguments.
+func storeStubGet(tb assert.TB, s *StoreStub) (Item, error) {
+	tb.Helper()
+	a0, a1 := storeStubGetArgs(tb)
+	return s.Get(a0, a1)
+}
+
+// storeStubGetPins returns the samples of the results of Get, with a new
+// error as its error result.
+func storeStubGetPins() (Item, error) {
+	var want0 Item
+	want1 := errors.New("Get-returns")
+	want0 = Item{ID: "ID-a"}
+	return want0, want1
+}
+
+// storeStubPutArgs returns the samples of the arguments of Put.
+func storeStubPutArgs(tb assert.TB) (context.Context, Item) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 Item
+	a1 = Item{ID: "ID-a"}
+	return a0, a1
+}
+
+// storeStubPut calls Put of s with the samples of its arguments.
+func storeStubPut(tb assert.TB, s *StoreStub) error {
+	tb.Helper()
+	a0, a1 := storeStubPutArgs(tb)
+	return s.Put(a0, a1)
+}
+
+// storeStubPutPins returns the samples of the results of Put, with a new
+// error as its error result.
+func storeStubPutPins() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// storeStubLen calls Len of s with the samples of its arguments.
+func storeStubLen(tb assert.TB, s *StoreStub) int {
+	tb.Helper()
+	return s.Len()
+}
+
+// storeStubLenPins returns the samples of the results of Len.
+func storeStubLenPins() int {
+	var want0 int
+	want0 = 42
+	return want0
+}
+
+// storeStubLookupArgs returns the samples of the arguments of Lookup.
+func storeStubLookupArgs(tb assert.TB) string {
+	tb.Helper()
+	var a0 string
+	a0 = "Lookup-a"
+	return a0
+}
+
+// storeStubLookup calls Lookup of s with the samples of its arguments.
+func storeStubLookup(tb assert.TB, s *StoreStub) (Item, bool) {
+	tb.Helper()
+	a0 := storeStubLookupArgs(tb)
+	return s.Lookup(a0)
+}
+
+// storeStubLookupPins returns the samples of the results of Lookup.
+func storeStubLookupPins() (Item, bool) {
+	var want0 Item
+	var want1 bool
+	want0 = Item{ID: "ID-a"}
+	want1 = true
+	return want0, want1
+}
+
+// storeStubLogArgs returns the samples of the arguments of Log.
+func storeStubLogArgs(tb assert.TB) (string, []string) {
+	tb.Helper()
+	var a0 string
+	var a1 []string
+	a0 = "Log-a"
+	return a0, a1
+}
+
+// storeStubLog calls Log of s with the samples of its arguments.
+func storeStubLog(tb assert.TB, s *StoreStub) {
+	tb.Helper()
+	a0, a1 := storeStubLogArgs(tb)
+	s.Log(a0, a1...)
+}
+
+// storeStubSplitArgs returns the samples of the arguments of Split.
+func storeStubSplitArgs(tb assert.TB) string {
+	tb.Helper()
+	var a0 string
+	a0 = "Split-a"
+	return a0
+}
+
+// storeStubSplit calls Split of s with the samples of its arguments.
+func storeStubSplit(tb assert.TB, s *StoreStub) (string, string, error) {
+	tb.Helper()
+	a0 := storeStubSplitArgs(tb)
+	return s.Split(a0)
+}
+
+// storeStubSplitPins returns the samples of the results of Split, with a
+// new error as its error result.
+func storeStubSplitPins() (string, string, error) {
+	var want0 string
+	var want1 string
+	want2 := errors.New("Split-returns")
+	want0 = "Split-a"
+	want1 = "Split-a"
+	return want0, want1, want2
+}
+
+// storeStubClose calls Close of s with the samples of its arguments.
+func storeStubClose(tb assert.TB, s *StoreStub) error {
+	tb.Helper()
+	return s.Close()
+}
+
+// storeStubClosePins returns the samples of the results of Close, with a
+// new error as its error result.
+func storeStubClosePins() error {
+	want0 := errors.New("Close-returns")
+	return want0
+}
+
+// storeStubGetSubject returns the subject of [stub.Behaviour] for Get. The
+// subject calls a new double that reports to tb.
 func storeStubGetSubject(tb assert.TB) stub.Subject[StoreGetCall, StoreGetReturn] {
 	tb.Helper()
 	s := NewStoreStub(tb)
 	return stub.Subject[StoreGetCall, StoreGetReturn]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			_, _ = s.Get(a0, a1)
+			_, _ = storeStubGet(tb, s)
 		},
 		Result: func() StoreGetReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			got0, got1 := s.Get(a0, a1)
+			got0, got1 := storeStubGet(tb, s)
 			return StoreGetReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -43,131 +175,24 @@ func storeStubGetSubject(tb assert.TB) stub.Subject[StoreGetCall, StoreGetReturn
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			_, r1 := s.Get(a0, a1)
+			_, r1 := storeStubGet(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestStoreStubGet pins how Get answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubGet(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Get", storeStubGetSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 Item
-		var want1 error
-		want0 = Item{ID: "ID-a"}
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		got0, _ := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		got := s.OnGet.AssertCalledOnce(t, "Get must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.ID, a1, "the recorded call carries ID")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var seen []StoreGetCall
-		s.OnGet.OnRecord(func(c StoreGetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		_, _ = s.Get(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Get call")
-	})
-
-	t.Run("wires WithStoreGet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewStoreStub(t, WithStoreGet(func(_ context.Context, _ string) (Item, error) {
-			called = true
-			var z0 Item
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		assert.True(t, called, "WithStoreGet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Get-failing")
-		s := NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 Item
-		var want1 error
-		want0 = Item{ID: "ID-a"}
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// storeStubPutSubject binds Put into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubPutSubject returns the subject of [stub.Behaviour] for Put. The
+// subject calls a new double that reports to tb.
 func storeStubPutSubject(tb assert.TB) stub.Subject[StorePutCall, StorePutReturn] {
 	tb.Helper()
 	s := NewStoreStub(tb)
 	return stub.Subject[StorePutCall, StorePutReturn]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 Item
-			a1 = Item{ID: "ID-a"}
-			_ = s.Put(a0, a1)
+			_ = storeStubPut(tb, s)
 		},
 		Result: func() StorePutReturn {
-			var a0 context.Context
-			var a1 Item
-			a1 = Item{ID: "ID-a"}
-			got0 := s.Put(a0, a1)
+			got0 := storeStubPut(tb, s)
 			return StorePutReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -178,108 +203,24 @@ func storeStubPutSubject(tb assert.TB) stub.Subject[StorePutCall, StorePutReturn
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 Item
-			a1 = Item{ID: "ID-a"}
-			r0 := s.Put(a0, a1)
+			r0 := storeStubPut(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStoreStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubPut(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Put", storeStubPutSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var a0 context.Context
-		var a1 Item
-		a1 = Item{ID: "ID-a"}
-		_ = s.Put(a0, a1)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.A0, a0, "the recorded call carries A0")
-		assert.Equal(t, got.A1, a1, "the recorded call carries A1")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var seen []StorePutCall
-		s.OnPut.OnRecord(func(c StorePutCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 Item
-		a1 = Item{ID: "ID-a"}
-		_ = s.Put(a0, a1)
-		_ = s.Put(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithStorePut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewStoreStub(t, WithStorePut(func(_ context.Context, _ Item) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 Item
-		a1 = Item{ID: "ID-a"}
-		_ = s.Put(a0, a1)
-		assert.True(t, called, "WithStorePut must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Put-failing")
-		s := NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 Item
-		a1 = Item{ID: "ID-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 error
-		s.OnPut.Returns(want0)
-		var a0 context.Context
-		var a1 Item
-		a1 = Item{ID: "ID-a"}
-		_ = s.Put(a0, a1)
-		s.ResetCalls()
-		_ = s.Put(a0, a1)
-		s.OnPut.AssertCalledOnce(t, "Put must record the call that followed the reset")
-	})
-}
-
-// storeStubLenSubject binds Len into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubLenSubject returns the subject of [stub.Behaviour] for Len. The
+// subject calls a new double that reports to tb.
 func storeStubLenSubject(tb assert.TB) stub.Subject[StoreLenCall, StoreLenReturn] {
 	tb.Helper()
 	s := NewStoreStub(tb)
 	return stub.Subject[StoreLenCall, StoreLenReturn]{
 		Stub: s.OnLen.MethodStub,
 		Call: func() {
-			_ = s.Len()
+			_ = storeStubLen(tb, s)
 		},
 		Result: func() StoreLenReturn {
-			got0 := s.Len()
+			got0 := storeStubLen(tb, s)
 			return StoreLenReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -292,89 +233,18 @@ func storeStubLenSubject(tb assert.TB) stub.Subject[StoreLenCall, StoreLenReturn
 	}
 }
 
-// TestStoreStubLen pins how Len answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubLen(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Len", storeStubLenSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 int
-		want0 = 42
-		s.OnLen.Returns(want0)
-		got0 := s.Len()
-		assert.Equal(t, got0, want0, "Len must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		_ = s.Len()
-		s.OnLen.AssertCalledOnce(t, "Len must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var seen []StoreLenCall
-		s.OnLen.OnRecord(func(c StoreLenCall) { seen = append(seen, c) })
-		_ = s.Len()
-		_ = s.Len()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Len call")
-	})
-
-	t.Run("wires WithStoreLen at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewStoreStub(t, WithStoreLen(func() int {
-			called = true
-			var z0 int
-			return z0
-		}))
-		_ = s.Len()
-		assert.True(t, called, "WithStoreLen must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 int
-		want0 = 42
-		s.OnLen.Returns(want0)
-		_ = s.Len()
-		s.ResetCalls()
-		got0 := s.Len()
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// storeStubLookupSubject binds Lookup into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubLookupSubject returns the subject of [stub.Behaviour] for
+// Lookup. The subject calls a new double that reports to tb.
 func storeStubLookupSubject(tb assert.TB) stub.Subject[StoreLookupCall, StoreLookupReturn] {
 	tb.Helper()
 	s := NewStoreStub(tb)
 	return stub.Subject[StoreLookupCall, StoreLookupReturn]{
 		Stub: s.OnLookup.MethodStub,
 		Call: func() {
-			var a0 string
-			a0 = "Lookup-a"
-			_, _ = s.Lookup(a0)
+			_, _ = storeStubLookup(tb, s)
 		},
 		Result: func() StoreLookupReturn {
-			var a0 string
-			a0 = "Lookup-a"
-			got0, got1 := s.Lookup(a0)
+			got0, got1 := storeStubLookup(tb, s)
 			return StoreLookupReturn{Item: got0, Ok: got1}
 		},
 		Override: func(mark func()) {
@@ -388,103 +258,15 @@ func storeStubLookupSubject(tb assert.TB) stub.Subject[StoreLookupCall, StoreLoo
 	}
 }
 
-// TestStoreStubLookup pins how Lookup answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubLookup(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Lookup", storeStubLookupSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 Item
-		var want1 bool
-		want0 = Item{ID: "ID-a"}
-		want1 = true
-		s.OnLookup.Returns(want0, want1)
-		var a0 string
-		a0 = "Lookup-a"
-		got0, got1 := s.Lookup(a0)
-		assert.Equal(t, got0, want0, "Lookup must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Lookup must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var a0 string
-		a0 = "Lookup-a"
-		_, _ = s.Lookup(a0)
-		got := s.OnLookup.AssertCalledOnce(t, "Lookup must record the call")
-		assert.Equal(t, got.Key, a0, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var seen []StoreLookupCall
-		s.OnLookup.OnRecord(func(c StoreLookupCall) { seen = append(seen, c) })
-		var a0 string
-		a0 = "Lookup-a"
-		_, _ = s.Lookup(a0)
-		_, _ = s.Lookup(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Lookup call")
-	})
-
-	t.Run("wires WithStoreLookup at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewStoreStub(t, WithStoreLookup(func(_ string) (Item, bool) {
-			called = true
-			var z0 Item
-			var z1 bool
-			return z0, z1
-		}))
-		var a0 string
-		a0 = "Lookup-a"
-		_, _ = s.Lookup(a0)
-		assert.True(t, called, "WithStoreLookup must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 Item
-		var want1 bool
-		want0 = Item{ID: "ID-a"}
-		want1 = true
-		s.OnLookup.Returns(want0, want1)
-		var a0 string
-		a0 = "Lookup-a"
-		_, _ = s.Lookup(a0)
-		s.ResetCalls()
-		got0, got1 := s.Lookup(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-	})
-}
-
-// storeStubLogSubject binds Log into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubLogSubject returns the subject of [stub.Behaviour] for Log. The
+// subject calls a new double that reports to tb.
 func storeStubLogSubject(tb assert.TB) stub.Subject[StoreLogCall, struct{}] {
 	tb.Helper()
 	s := NewStoreStub(tb)
 	return stub.Subject[StoreLogCall, struct{}]{
 		Stub: s.OnLog.MethodStub,
 		Call: func() {
-			var a0 string
-			var a1 []string
-			a0 = "Log-a"
-			s.Log(a0, a1...)
+			storeStubLog(tb, s)
 		},
 		Override: func(mark func()) {
 			s.OnLog.Func(func(_ string, _ ...string) {
@@ -494,76 +276,18 @@ func storeStubLogSubject(tb assert.TB) stub.Subject[StoreLogCall, struct{}] {
 	}
 }
 
-// TestStoreStubLog pins how Log answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubLog(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Log", storeStubLogSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var a0 string
-		var a1 []string
-		a0 = "Log-a"
-		s.Log(a0, a1...)
-		got := s.OnLog.AssertCalledOnce(t, "Log must record the call")
-		assert.Equal(t, got.Format, a0, "the recorded call carries Format")
-		assert.Equal(t, got.Args, a1, "the recorded call carries Args")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var seen []StoreLogCall
-		s.OnLog.OnRecord(func(c StoreLogCall) { seen = append(seen, c) })
-		var a0 string
-		var a1 []string
-		a0 = "Log-a"
-		s.Log(a0, a1...)
-		s.Log(a0, a1...)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Log call")
-	})
-
-	t.Run("wires WithStoreLog at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewStoreStub(t, WithStoreLog(func(_ string, _ ...string) {
-			called = true
-		}))
-		var a0 string
-		var a1 []string
-		a0 = "Log-a"
-		s.Log(a0, a1...)
-		assert.True(t, called, "WithStoreLog must install the override")
-	})
-}
-
-// storeStubSplitSubject binds Split into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubSplitSubject returns the subject of [stub.Behaviour] for Split.
+// The subject calls a new double that reports to tb.
 func storeStubSplitSubject(tb assert.TB) stub.Subject[StoreSplitCall, StoreSplitReturn] {
 	tb.Helper()
 	s := NewStoreStub(tb)
 	return stub.Subject[StoreSplitCall, StoreSplitReturn]{
 		Stub: s.OnSplit.MethodStub,
 		Call: func() {
-			var a0 string
-			a0 = "Split-a"
-			_, _, _ = s.Split(a0)
+			_, _, _ = storeStubSplit(tb, s)
 		},
 		Result: func() StoreSplitReturn {
-			var a0 string
-			a0 = "Split-a"
-			got0, got1, got2 := s.Split(a0)
+			got0, got1, got2 := storeStubSplit(tb, s)
 			return StoreSplitReturn{Result0: got0, Result1: got1, Err: got2}
 		},
 		Override: func(mark func()) {
@@ -576,124 +300,24 @@ func storeStubSplitSubject(tb assert.TB) stub.Subject[StoreSplitCall, StoreSplit
 			})
 		},
 		Fails: func() error {
-			var a0 string
-			a0 = "Split-a"
-			_, _, r2 := s.Split(a0)
+			_, _, r2 := storeStubSplit(tb, s)
 			return r2
 		},
 	}
 }
 
-// TestStoreStubSplit pins how Split answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubSplit(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Split", storeStubSplitSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 string
-		var want1 string
-		var want2 error
-		want0 = "Split-a"
-		want1 = "Split-a"
-		s.OnSplit.Returns(want0, want1, want2)
-		var a0 string
-		a0 = "Split-a"
-		got0, got1, _ := s.Split(a0)
-		assert.Equal(t, got0, want0, "Split must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Split must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var a0 string
-		a0 = "Split-a"
-		_, _, _ = s.Split(a0)
-		got := s.OnSplit.AssertCalledOnce(t, "Split must record the call")
-		assert.Equal(t, got.S, a0, "the recorded call carries S")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var seen []StoreSplitCall
-		s.OnSplit.OnRecord(func(c StoreSplitCall) { seen = append(seen, c) })
-		var a0 string
-		a0 = "Split-a"
-		_, _, _ = s.Split(a0)
-		_, _, _ = s.Split(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Split call")
-	})
-
-	t.Run("wires WithStoreSplit at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewStoreStub(t, WithStoreSplit(func(_ string) (string, string, error) {
-			called = true
-			var z0 string
-			var z1 string
-			var z2 error
-			return z0, z1, z2
-		}))
-		var a0 string
-		a0 = "Split-a"
-		_, _, _ = s.Split(a0)
-		assert.True(t, called, "WithStoreSplit must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Split-failing")
-		s := NewStoreStubFailing(t, want)
-		var a0 string
-		a0 = "Split-a"
-		_, _, r2 := s.Split(a0)
-		assert.ErrorIs(t, r2, want, "Split must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 string
-		var want1 string
-		var want2 error
-		want0 = "Split-a"
-		want1 = "Split-a"
-		s.OnSplit.Returns(want0, want1, want2)
-		var a0 string
-		a0 = "Split-a"
-		_, _, _ = s.Split(a0)
-		s.ResetCalls()
-		got0, got1, _ := s.Split(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-	})
-}
-
-// storeStubCloseSubject binds Close into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubCloseSubject returns the subject of [stub.Behaviour] for Close.
+// The subject calls a new double that reports to tb.
 func storeStubCloseSubject(tb assert.TB) stub.Subject[StoreCloseCall, StoreCloseReturn] {
 	tb.Helper()
 	s := NewStoreStub(tb)
 	return stub.Subject[StoreCloseCall, StoreCloseReturn]{
 		Stub: s.OnClose.MethodStub,
 		Call: func() {
-			_ = s.Close()
+			_ = storeStubClose(tb, s)
 		},
 		Result: func() StoreCloseReturn {
-			got0 := s.Close()
+			got0 := storeStubClose(tb, s)
 			return StoreCloseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -704,230 +328,1006 @@ func storeStubCloseSubject(tb assert.TB) stub.Subject[StoreCloseCall, StoreClose
 			})
 		},
 		Fails: func() error {
-			r0 := s.Close()
+			r0 := storeStubClose(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStoreStubClose pins how Close answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubClose(t *testing.T) {
-	t.Parallel()
+// storeStubInstance is the instance of a StoreStub that the checks of the
+// constructors and the options drive.
+type storeStubInstance = stub.Instance[StoreGetCall]
 
-	stub.Behaviour(t, "Close", storeStubCloseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		_ = s.Close()
-		s.OnClose.AssertCalledOnce(t, "Close must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var seen []StoreCloseCall
-		s.OnClose.OnRecord(func(c StoreCloseCall) { seen = append(seen, c) })
-		_ = s.Close()
-		_ = s.Close()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Close call")
-	})
-
-	t.Run("wires WithStoreClose at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewStoreStub(t, WithStoreClose(func() error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		_ = s.Close()
-		assert.True(t, called, "WithStoreClose must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Close-failing")
-		s := NewStoreStubFailing(t, want)
-		r0 := s.Close()
-		assert.ErrorIs(t, r0, want, "Close must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewStoreStub(t)
-		var want0 error
-		s.OnClose.Returns(want0)
-		_ = s.Close()
-		s.ResetCalls()
-		_ = s.Close()
-		s.OnClose.AssertCalledOnce(t, "Close must record the call that followed the reset")
-	})
+// storeStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Get alone.
+func storeStubInstanceOf(tb assert.TB, s *StoreStub) storeStubInstance {
+	tb.Helper()
+	return storeStubInstance{
+		Stub: s.OnGet.MethodStub,
+		Call: func() {
+			_, _ = storeStubGet(tb, s)
+		},
+		Reset: s.ResetCalls,
+	}
 }
 
-// storeStubDouble describes how to build a StoreStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Get stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func storeStubDouble() stub.Double[StoreGetCall] {
-	instance := func(s *StoreStub) stub.Instance[StoreGetCall] {
-		return stub.Instance[StoreGetCall]{
-			Stub: s.OnGet.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Get-a"
-				_, _ = s.Get(a0, a1)
+// TestStoreStub checks the methods, the constructors and the options of
+// the double StoreStub.
+func TestStoreStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Get", storeStubGetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_, _ = storeStubGet(t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0, a1 := storeStubGetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.ID, a1, "the call records ID")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var seen []StoreGetCall
+			s.OnGet.OnRecord(func(c StoreGetCall) { seen = append(seen, c) })
+			_, _ = storeStubGet(t, s)
+			_, _ = storeStubGet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
+		})
+	})
+
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", storeStubPutSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_ = storeStubPut(t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1 := storeStubPutArgs(t)
+			expect.Equal(t, got.A0, a0, "the call records A0", expect.ByIdentity())
+			expect.Equal(t, got.A1, a1, "the call records A1")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var seen []StorePutCall
+			s.OnPut.OnRecord(func(c StorePutCall) { seen = append(seen, c) })
+			_ = storeStubPut(t, s)
+			_ = storeStubPut(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("Len", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Len", storeStubLenSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var seen []StoreLenCall
+			s.OnLen.OnRecord(func(c StoreLenCall) { seen = append(seen, c) })
+			_ = storeStubLen(t, s)
+			_ = storeStubLen(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Len")
+		})
+	})
+
+	t.Run("Lookup", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Lookup", storeStubLookupSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_, _ = storeStubLookup(t, s)
+			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
+			a0 := storeStubLookupArgs(t)
+			assert.Equal(t, got.Key, a0, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var seen []StoreLookupCall
+			s.OnLookup.OnRecord(func(c StoreLookupCall) { seen = append(seen, c) })
+			_, _ = storeStubLookup(t, s)
+			_, _ = storeStubLookup(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
+		})
+	})
+
+	t.Run("Log", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Log", storeStubLogSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			storeStubLog(t, s)
+			got := s.OnLog.AssertCalledOnce(t, "Log records the call")
+			a0, a1 := storeStubLogArgs(t)
+			expect.Equal(t, got.Format, a0, "the call records Format")
+			expect.Equal(t, got.Args, a1, "the call records Args")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var seen []StoreLogCall
+			s.OnLog.OnRecord(func(c StoreLogCall) { seen = append(seen, c) })
+			storeStubLog(t, s)
+			storeStubLog(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Log")
+		})
+	})
+
+	t.Run("Split", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Split", storeStubSplitSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_, _, _ = storeStubSplit(t, s)
+			got := s.OnSplit.AssertCalledOnce(t, "Split records the call")
+			a0 := storeStubSplitArgs(t)
+			assert.Equal(t, got.S, a0, "the call records S")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var seen []StoreSplitCall
+			s.OnSplit.OnRecord(func(c StoreSplitCall) { seen = append(seen, c) })
+			_, _, _ = storeStubSplit(t, s)
+			_, _, _ = storeStubSplit(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Split")
+		})
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Close", storeStubCloseSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var seen []StoreCloseCall
+			s.OnClose.OnRecord(func(c StoreCloseCall) { seen = append(seen, c) })
+			_ = storeStubClose(t, s)
+			_ = storeStubClose(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance {
+			return storeStubInstanceOf(tb, NewStoreStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_, _ = storeStubGet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+		})
+
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0, want1 := storeStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := storeStubGet(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_ = storeStubPut(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0 := storeStubPutPins()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+
+		t.Run("clears the recorded calls of Len", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_ = storeStubLen(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnLen.CallCount(), 0, "ResetCalls clears the calls of Len")
+		})
+
+		t.Run("keeps the results of Returns of Len", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0 := storeStubLenPins()
+			s.OnLen.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubLen(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Len")
+		})
+
+		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_, _ = storeStubLookup(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
+		})
+
+		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0, want1 := storeStubLookupPins()
+			s.OnLookup.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := storeStubLookup(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Item of Lookup")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Ok of Lookup")
+		})
+
+		t.Run("clears the recorded calls of Log", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			storeStubLog(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnLog.CallCount(), 0, "ResetCalls clears the calls of Log")
+		})
+
+		t.Run("clears the recorded calls of Split", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_, _, _ = storeStubSplit(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSplit.CallCount(), 0, "ResetCalls clears the calls of Split")
+		})
+
+		t.Run("keeps the results of Returns of Split", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0, want1, want2 := storeStubSplitPins()
+			s.OnSplit.Returns(want0, want1, want2)
+			s.ResetCalls()
+			got0, got1, got2 := storeStubSplit(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Split")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Split")
+			expect.ErrorIs(t, got2, want2, "ResetCalls keeps the error of Split")
+		})
+
+		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			_ = storeStubClose(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
+		})
+
+		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0 := storeStubClosePins()
+			s.OnClose.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
+		})
+	})
+
+	t.Run("NewStoreStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
+				return storeStubInstanceOf(tb, NewStoreStubDelayed(tb, d, clk))
 			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[StoreGetCall]{
-		New: func(tb assert.TB) stub.Instance[StoreGetCall] {
-			return instance(NewStoreStub(tb))
-		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[StoreGetCall] {
-			return instance(NewStoreStub(tb, StoreStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[StoreGetCall] {
-			return instance(NewStoreStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[StoreGetCall] {
-			return instance(NewStoreStub(tb, StoreStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[StoreGetCall] {
-			return instance(NewStoreStub(tb, StoreStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[StoreGetCall] {
-			return instance(NewStoreStub(tb, StoreStubStrict()))
-		},
-	}
+		)
+	})
+
+	t.Run("NewStoreStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := NewStoreStubFailing(t, want)
+			_, r1 := storeStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := NewStoreStubFailing(t, want)
+			r0 := storeStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Split with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Split-failing")
+			s := NewStoreStubFailing(t, want)
+			_, _, r2 := storeStubSplit(t, s)
+			assert.ErrorIs(t, r2, want, "Split fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := NewStoreStubFailing(t, want)
+			r0 := storeStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of NewStoreStubFailing")
+		})
+	})
+
+	t.Run("StoreStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) storeStubInstance {
+			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubStrict()))
+		})
+	})
+
+	t.Run("StoreStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Get to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewStoreStub(t)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_, _ = storeStubGet(t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
+		})
+
+		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-delegate")
+			inner := NewStoreStub(t)
+			inner.OnGet.Faults(want, 1)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_, r1 := storeStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
+		})
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewStoreStub(t)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_ = storeStubPut(t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := NewStoreStub(t)
+			inner.OnPut.Faults(want, 1)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			r0 := storeStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+
+		t.Run("passes Len to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewStoreStub(t)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_ = storeStubLen(t, s)
+			inner.OnLen.AssertCalledOnce(t, "Len calls the implementation")
+		})
+
+		t.Run("passes Lookup to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewStoreStub(t)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_, _ = storeStubLookup(t, s)
+			inner.OnLookup.AssertCalledOnce(t, "Lookup calls the implementation")
+		})
+
+		t.Run("passes Log to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewStoreStub(t)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			storeStubLog(t, s)
+			inner.OnLog.AssertCalledOnce(t, "Log calls the implementation")
+		})
+
+		t.Run("passes Split to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewStoreStub(t)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_, _, _ = storeStubSplit(t, s)
+			inner.OnSplit.AssertCalledOnce(t, "Split calls the implementation")
+		})
+
+		t.Run("fails Split with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Split-delegate")
+			inner := NewStoreStub(t)
+			inner.OnSplit.Faults(want, 1)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_, _, r2 := storeStubSplit(t, s)
+			assert.ErrorIs(t, r2, want, "Split fails with the error of the implementation")
+		})
+
+		t.Run("passes Close to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewStoreStub(t)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			_ = storeStubClose(t, s)
+			inner.OnClose.AssertCalledOnce(t, "Close calls the implementation")
+		})
+
+		t.Run("fails Close with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-delegate")
+			inner := NewStoreStub(t)
+			inner.OnClose.Faults(want, 1)
+			s := NewStoreStub(t, StoreStubDelegateTo(inner))
+			r0 := storeStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of the implementation")
+		})
+	})
+
+	t.Run("StoreStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) storeStubInstance {
+			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubWithClock(clk)))
+		})
+	})
+
+	t.Run("StoreStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) storeStubInstance {
+			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("StoreStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) storeStubInstance {
+			return storeStubInstanceOf(tb, NewStoreStub(tb, StoreStubBenchMode()))
+		})
+	})
+
+	t.Run("StoreStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
+				return storeStubInstanceOf(
+					tb,
+					NewStoreStub(tb, StoreStubWithClock(clk), StoreStubWithLatency(d)),
+				)
+			},
+		)
+	})
+
+	t.Run("StoreStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := NewStoreStub(t, StoreStubFailing(want))
+			_, r1 := storeStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := NewStoreStub(t, StoreStubFailing(want))
+			r0 := storeStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Split with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Split-failing")
+			s := NewStoreStub(t, StoreStubFailing(want))
+			_, _, r2 := storeStubSplit(t, s)
+			assert.ErrorIs(t, r2, want, "Split fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := NewStoreStub(t, StoreStubFailing(want))
+			r0 := storeStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of StoreStubFailing")
+		})
+	})
+
+	t.Run("WithStoreGet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Get", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewStoreStub(t, WithStoreGet(func(_ context.Context, _ string) (Item, error) {
+				called = true
+				var z0 Item
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = storeStubGet(t, s)
+			assert.True(t, called, "WithStoreGet sets the function of Get")
+		})
+	})
+
+	t.Run("WithStorePut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewStoreStub(t, WithStorePut(func(_ context.Context, _ Item) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = storeStubPut(t, s)
+			assert.True(t, called, "WithStorePut sets the function of Put")
+		})
+	})
+
+	t.Run("WithStoreLen", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Len", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewStoreStub(t, WithStoreLen(func() int {
+				called = true
+				var z0 int
+				return z0
+			}))
+			_ = storeStubLen(t, s)
+			assert.True(t, called, "WithStoreLen sets the function of Len")
+		})
+	})
+
+	t.Run("WithStoreLookup", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Lookup", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewStoreStub(t, WithStoreLookup(func(_ string) (Item, bool) {
+				called = true
+				var z0 Item
+				var z1 bool
+				return z0, z1
+			}))
+			_, _ = storeStubLookup(t, s)
+			assert.True(t, called, "WithStoreLookup sets the function of Lookup")
+		})
+	})
+
+	t.Run("WithStoreLog", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Log", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewStoreStub(t, WithStoreLog(func(_ string, _ ...string) {
+				called = true
+			}))
+			storeStubLog(t, s)
+			assert.True(t, called, "WithStoreLog sets the function of Log")
+		})
+	})
+
+	t.Run("WithStoreSplit", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Split", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewStoreStub(t, WithStoreSplit(func(_ string) (string, string, error) {
+				called = true
+				var z0 string
+				var z1 string
+				var z2 error
+				return z0, z1, z2
+			}))
+			_, _, _ = storeStubSplit(t, s)
+			assert.True(t, called, "WithStoreSplit sets the function of Split")
+		})
+	})
+
+	t.Run("WithStoreClose", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Close", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewStoreStub(t, WithStoreClose(func() error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = storeStubClose(t, s)
+			assert.True(t, called, "WithStoreClose sets the function of Close")
+		})
+	})
 }
 
-// TestStoreStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestStoreStubOptions(t *testing.T) {
+// TestStoreGetStub checks the methods of StoreGetStub, which configures
+// Get.
+func TestStoreGetStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, storeStubDouble())
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0, want1 := storeStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			got0, got1 := storeStubGet(t, s)
+			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
+		})
+
+		t.Run("configures Get for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewStoreStub(r)
+			s.OnGet.Strict()
+			var want0 Item
+			var want1 error
+			s.OnGet.Returns(want0, want1)
+			_, _ = storeStubGet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnGet.Func(func(p0 context.Context, p1 string) (Item, error) {
+				got0, got1 = p0, p1
+				var z0 Item
+				var z1 error
+				return z0, z1
+			})
+			_, _ = storeStubGet(t, s)
+			a0, a1 := storeStubGetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives ID")
+		})
+	})
 }
 
-// TestStoreStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestStoreStubDelegateTo(t *testing.T) {
+// TestStorePutStub checks the methods of StorePutStub, which configures
+// Put.
+func TestStorePutStub(t *testing.T) {
 	t.Parallel()
 
-	inner := NewStoreStub(t)
-	s := NewStoreStub(t, StoreStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Get to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		inner.OnGet.AssertCalledOnce(t, "Get must reach the wrapped implementation")
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0 := storeStubPutPins()
+			s.OnPut.Returns(want0)
+			got0 := storeStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
+
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewStoreStub(r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = storeStubPut(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
 	})
 
-	t.Run("surfaces what Get answered", func(t *testing.T) {
-		want := errors.New("Get-delegate")
-		inner.OnGet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 Item
-		a1 = Item{ID: "ID-a"}
-		_ = s.Put(a0, a1)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Put answered", func(t *testing.T) {
-		want := errors.New("Put-delegate")
-		inner.OnPut.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 Item
-		a1 = Item{ID: "ID-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must surface the wrapped answer")
-	})
-
-	t.Run("forwards Len to the wrapped implementation", func(t *testing.T) {
-		_ = s.Len()
-		inner.OnLen.AssertCalledOnce(t, "Len must reach the wrapped implementation")
-	})
-
-	t.Run("forwards Lookup to the wrapped implementation", func(t *testing.T) {
-		var a0 string
-		a0 = "Lookup-a"
-		_, _ = s.Lookup(a0)
-		inner.OnLookup.AssertCalledOnce(t, "Lookup must reach the wrapped implementation")
-	})
-
-	t.Run("forwards Log to the wrapped implementation", func(t *testing.T) {
-		var a0 string
-		var a1 []string
-		a0 = "Log-a"
-		s.Log(a0, a1...)
-		inner.OnLog.AssertCalledOnce(t, "Log must reach the wrapped implementation")
-	})
-
-	t.Run("forwards Split to the wrapped implementation", func(t *testing.T) {
-		var a0 string
-		a0 = "Split-a"
-		_, _, _ = s.Split(a0)
-		inner.OnSplit.AssertCalledOnce(t, "Split must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Split answered", func(t *testing.T) {
-		want := errors.New("Split-delegate")
-		inner.OnSplit.FaultsFor(time.Hour, want)
-		var a0 string
-		a0 = "Split-a"
-		_, _, r2 := s.Split(a0)
-		assert.ErrorIs(t, r2, want, "Split must surface the wrapped answer")
-	})
-
-	t.Run("forwards Close to the wrapped implementation", func(t *testing.T) {
-		_ = s.Close()
-		inner.OnClose.AssertCalledOnce(t, "Close must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Close answered", func(t *testing.T) {
-		want := errors.New("Close-delegate")
-		inner.OnClose.FaultsFor(time.Hour, want)
-		r0 := s.Close()
-		assert.ErrorIs(t, r0, want, "Close must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var got0 context.Context
+			var got1 Item
+			s.OnPut.Func(func(p0 context.Context, p1 Item) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = storeStubPut(t, s)
+			a0, a1 := storeStubPutArgs(t)
+			expect.Equal(t, got0, a0, "the function receives A0", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives A1")
+		})
 	})
 }
 
-// clockStubNowSubject binds Now into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// TestStoreLenStub checks the methods of StoreLenStub, which configures
+// Len.
+func TestStoreLenStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Len", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0 := storeStubLenPins()
+			s.OnLen.Returns(want0)
+			got0 := storeStubLen(t, s)
+			assert.Equal(t, got0, want0, "Len returns the Result that Returns sets")
+		})
+
+		t.Run("configures Len for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewStoreStub(r)
+			s.OnLen.Strict()
+			var want0 int
+			s.OnLen.Returns(want0)
+			_ = storeStubLen(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Len")
+		})
+	})
+}
+
+// TestStoreLookupStub checks the methods of StoreLookupStub, which
+// configures Lookup.
+func TestStoreLookupStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0, want1 := storeStubLookupPins()
+			s.OnLookup.Returns(want0, want1)
+			got0, got1 := storeStubLookup(t, s)
+			expect.Equal(t, got0, want0, "Lookup returns the Item that Returns sets")
+			expect.Equal(t, got1, want1, "Lookup returns the Ok that Returns sets")
+		})
+
+		t.Run("configures Lookup for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewStoreStub(r)
+			s.OnLookup.Strict()
+			var want0 Item
+			var want1 bool
+			s.OnLookup.Returns(want0, want1)
+			_, _ = storeStubLookup(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Lookup")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var got0 string
+			s.OnLookup.Func(func(p0 string) (Item, bool) {
+				got0 = p0
+				var z0 Item
+				var z1 bool
+				return z0, z1
+			})
+			_, _ = storeStubLookup(t, s)
+			a0 := storeStubLookupArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Key")
+		})
+	})
+}
+
+// TestStoreLogStub checks the methods of StoreLogStub, which configures
+// Log.
+func TestStoreLogStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Log to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var got0 string
+			var got1 []string
+			s.OnLog.Func(func(p0 string, p1 ...string) {
+				got0, got1 = p0, p1
+			})
+			storeStubLog(t, s)
+			a0, a1 := storeStubLogArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Format")
+			expect.Equal(t, got1, a1, "the function receives Args")
+		})
+	})
+}
+
+// TestStoreSplitStub checks the methods of StoreSplitStub, which
+// configures Split.
+func TestStoreSplitStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Split", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0, want1, want2 := storeStubSplitPins()
+			s.OnSplit.Returns(want0, want1, want2)
+			got0, got1, got2 := storeStubSplit(t, s)
+			expect.Equal(t, got0, want0, "Split returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "Split returns the Result1 that Returns sets")
+			expect.ErrorIs(t, got2, want2, "Split returns the error that Returns sets")
+		})
+
+		t.Run("configures Split for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewStoreStub(r)
+			s.OnSplit.Strict()
+			var want0 string
+			var want1 string
+			var want2 error
+			s.OnSplit.Returns(want0, want1, want2)
+			_, _, _ = storeStubSplit(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Split")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Split to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			var got0 string
+			s.OnSplit.Func(func(p0 string) (string, string, error) {
+				got0 = p0
+				var z0 string
+				var z1 string
+				var z2 error
+				return z0, z1, z2
+			})
+			_, _, _ = storeStubSplit(t, s)
+			a0 := storeStubSplitArgs(t)
+			assert.Equal(t, got0, a0, "the function receives S")
+		})
+	})
+}
+
+// TestStoreCloseStub checks the methods of StoreCloseStub, which
+// configures Close.
+func TestStoreCloseStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Close", func(t *testing.T) {
+			t.Parallel()
+			s := NewStoreStub(t)
+			want0 := storeStubClosePins()
+			s.OnClose.Returns(want0)
+			got0 := storeStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
+		})
+
+		t.Run("configures Close for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewStoreStub(r)
+			s.OnClose.Strict()
+			var want0 error
+			s.OnClose.Returns(want0)
+			_ = storeStubClose(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
+		})
+	})
+}
+
+// clockStubNow calls Now of s with the samples of its arguments.
+func clockStubNow(tb assert.TB, s *ClockStub) time.Time {
+	tb.Helper()
+	return s.Now()
+}
+
+// clockStubNowPins returns the samples of the results of Now.
+func clockStubNowPins() time.Time {
+	var want0 time.Time
+	want0 = time.Unix(1700000000, 0)
+	return want0
+}
+
+// clockStubZone calls Zone of s with the samples of its arguments.
+func clockStubZone(tb assert.TB, s *ClockStub) string {
+	tb.Helper()
+	return s.Zone()
+}
+
+// clockStubZonePins returns the samples of the results of Zone.
+func clockStubZonePins() string {
+	var want0 string
+	want0 = "Zone-a"
+	return want0
+}
+
+// clockStubEveryArgs returns the samples of the arguments of Every.
+func clockStubEveryArgs(tb assert.TB) (time.Duration, func()) {
+	tb.Helper()
+	var a0 time.Duration
+	var a1 func()
+	a0 = time.Duration(1)
+	a1 = func() {}
+	return a0, a1
+}
+
+// clockStubEvery calls Every of s with the samples of its arguments.
+func clockStubEvery(tb assert.TB, s *ClockStub) func() {
+	tb.Helper()
+	a0, a1 := clockStubEveryArgs(tb)
+	return s.Every(a0, a1)
+}
+
+// clockStubEveryPins returns the samples of the results of Every.
+func clockStubEveryPins() func() {
+	var want0 func()
+	want0 = func() {}
+	return want0
+}
+
+// clockStubNowSubject returns the subject of [stub.Behaviour] for Now. The
+// subject calls a new double that reports to tb.
 func clockStubNowSubject(tb assert.TB) stub.Subject[ClockNowCall, ClockNowReturn] {
 	tb.Helper()
 	s := NewClockStub(tb)
 	return stub.Subject[ClockNowCall, ClockNowReturn]{
 		Stub: s.OnNow.MethodStub,
 		Call: func() {
-			_ = s.Now()
+			_ = clockStubNow(tb, s)
 		},
 		Result: func() ClockNowReturn {
-			got0 := s.Now()
+			got0 := clockStubNow(tb, s)
 			return ClockNowReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -940,85 +1340,18 @@ func clockStubNowSubject(tb assert.TB) stub.Subject[ClockNowCall, ClockNowReturn
 	}
 }
 
-// TestClockStubNow pins how Now answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestClockStubNow(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Now", clockStubNowSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var want0 time.Time
-		want0 = time.Unix(1700000000, 0)
-		s.OnNow.Returns(want0)
-		got0 := s.Now()
-		assert.Equal(t, got0, want0, "Now must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		_ = s.Now()
-		s.OnNow.AssertCalledOnce(t, "Now must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var seen []ClockNowCall
-		s.OnNow.OnRecord(func(c ClockNowCall) { seen = append(seen, c) })
-		_ = s.Now()
-		_ = s.Now()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Now call")
-	})
-
-	t.Run("wires WithClockNow at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewClockStub(t, WithClockNow(func() time.Time {
-			called = true
-			var z0 time.Time
-			return z0
-		}))
-		_ = s.Now()
-		assert.True(t, called, "WithClockNow must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var want0 time.Time
-		want0 = time.Unix(1700000000, 0)
-		s.OnNow.Returns(want0)
-		_ = s.Now()
-		s.ResetCalls()
-		got0 := s.Now()
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// clockStubZoneSubject binds Zone into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// clockStubZoneSubject returns the subject of [stub.Behaviour] for Zone.
+// The subject calls a new double that reports to tb.
 func clockStubZoneSubject(tb assert.TB) stub.Subject[ClockZoneCall, ClockZoneReturn] {
 	tb.Helper()
 	s := NewClockStub(tb)
 	return stub.Subject[ClockZoneCall, ClockZoneReturn]{
 		Stub: s.OnZone.MethodStub,
 		Call: func() {
-			_ = s.Zone()
+			_ = clockStubZone(tb, s)
 		},
 		Result: func() ClockZoneReturn {
-			got0 := s.Zone()
+			got0 := clockStubZone(tb, s)
 			return ClockZoneReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -1031,93 +1364,18 @@ func clockStubZoneSubject(tb assert.TB) stub.Subject[ClockZoneCall, ClockZoneRet
 	}
 }
 
-// TestClockStubZone pins how Zone answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestClockStubZone(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Zone", clockStubZoneSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var want0 string
-		want0 = "Zone-a"
-		s.OnZone.Returns(want0)
-		got0 := s.Zone()
-		assert.Equal(t, got0, want0, "Zone must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		_ = s.Zone()
-		s.OnZone.AssertCalledOnce(t, "Zone must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var seen []ClockZoneCall
-		s.OnZone.OnRecord(func(c ClockZoneCall) { seen = append(seen, c) })
-		_ = s.Zone()
-		_ = s.Zone()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Zone call")
-	})
-
-	t.Run("wires WithClockZone at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewClockStub(t, WithClockZone(func() string {
-			called = true
-			var z0 string
-			return z0
-		}))
-		_ = s.Zone()
-		assert.True(t, called, "WithClockZone must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var want0 string
-		want0 = "Zone-a"
-		s.OnZone.Returns(want0)
-		_ = s.Zone()
-		s.ResetCalls()
-		got0 := s.Zone()
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// clockStubEverySubject binds Every into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// clockStubEverySubject returns the subject of [stub.Behaviour] for Every.
+// The subject calls a new double that reports to tb.
 func clockStubEverySubject(tb assert.TB) stub.Subject[ClockEveryCall, ClockEveryReturn] {
 	tb.Helper()
 	s := NewClockStub(tb)
 	return stub.Subject[ClockEveryCall, ClockEveryReturn]{
 		Stub: s.OnEvery.MethodStub,
 		Call: func() {
-			var a0 time.Duration
-			var a1 func()
-			a0 = time.Duration(1)
-			a1 = func() {}
-			_ = s.Every(a0, a1)
+			_ = clockStubEvery(tb, s)
 		},
 		Result: func() ClockEveryReturn {
-			var a0 time.Duration
-			var a1 func()
-			a0 = time.Duration(1)
-			a1 = func() {}
-			got0 := s.Every(a0, a1)
+			got0 := clockStubEvery(tb, s)
 			return ClockEveryReturn{Stop: got0}
 		},
 		Override: func(mark func()) {
@@ -1130,134 +1388,378 @@ func clockStubEverySubject(tb assert.TB) stub.Subject[ClockEveryCall, ClockEvery
 	}
 }
 
-// TestClockStubEvery pins how Every answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestClockStubEvery(t *testing.T) {
-	t.Parallel()
+// clockStubInstance is the instance of a ClockStub that the checks of the
+// constructors and the options drive.
+type clockStubInstance = stub.Instance[ClockNowCall]
 
-	stub.Behaviour(t, "Every", clockStubEverySubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var want0 func()
-		want0 = func() {}
-		s.OnEvery.Returns(want0)
-		var a0 time.Duration
-		var a1 func()
-		a0 = time.Duration(1)
-		a1 = func() {}
-		got0 := s.Every(a0, a1)
-		assert.Equal(t, got0, want0, "Every must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var a0 time.Duration
-		var a1 func()
-		a0 = time.Duration(1)
-		a1 = func() {}
-		_ = s.Every(a0, a1)
-		got := s.OnEvery.AssertCalledOnce(t, "Every must record the call")
-		assert.Equal(t, got.D, a0, "the recorded call carries D")
-		assert.Equal(t, got.Fn, a1, "the recorded call carries Fn")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var seen []ClockEveryCall
-		s.OnEvery.OnRecord(func(c ClockEveryCall) { seen = append(seen, c) })
-		var a0 time.Duration
-		var a1 func()
-		a0 = time.Duration(1)
-		a1 = func() {}
-		_ = s.Every(a0, a1)
-		_ = s.Every(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Every call")
-	})
-
-	t.Run("wires WithClockEvery at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewClockStub(t, WithClockEvery(func(_ time.Duration, _ func()) func() {
-			called = true
-			var z0 func()
-			return z0
-		}))
-		var a0 time.Duration
-		var a1 func()
-		a0 = time.Duration(1)
-		a1 = func() {}
-		_ = s.Every(a0, a1)
-		assert.True(t, called, "WithClockEvery must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewClockStub(t)
-		var want0 func()
-		want0 = func() {}
-		s.OnEvery.Returns(want0)
-		var a0 time.Duration
-		var a1 func()
-		a0 = time.Duration(1)
-		a1 = func() {}
-		_ = s.Every(a0, a1)
-		s.ResetCalls()
-		got0 := s.Every(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
+// clockStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Now alone.
+func clockStubInstanceOf(tb assert.TB, s *ClockStub) clockStubInstance {
+	tb.Helper()
+	return clockStubInstance{
+		Stub: s.OnNow.MethodStub,
+		Call: func() {
+			_ = clockStubNow(tb, s)
+		},
+		Reset: s.ResetCalls,
+	}
 }
 
-// clockStubDouble describes how to build a ClockStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Now stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func clockStubDouble() stub.Double[ClockNowCall] {
-	instance := func(s *ClockStub) stub.Instance[ClockNowCall] {
-		return stub.Instance[ClockNowCall]{
-			Stub: s.OnNow.MethodStub,
-			Call: func() {
-				_ = s.Now()
+// TestClockStub checks the methods, the constructors and the options of
+// the double ClockStub.
+func TestClockStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Now", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Now", clockStubNowSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			var seen []ClockNowCall
+			s.OnNow.OnRecord(func(c ClockNowCall) { seen = append(seen, c) })
+			_ = clockStubNow(t, s)
+			_ = clockStubNow(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Now")
+		})
+	})
+
+	t.Run("Zone", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Zone", clockStubZoneSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			var seen []ClockZoneCall
+			s.OnZone.OnRecord(func(c ClockZoneCall) { seen = append(seen, c) })
+			_ = clockStubZone(t, s)
+			_ = clockStubZone(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Zone")
+		})
+	})
+
+	t.Run("Every", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Every", clockStubEverySubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			_ = clockStubEvery(t, s)
+			got := s.OnEvery.AssertCalledOnce(t, "Every records the call")
+			a0, a1 := clockStubEveryArgs(t)
+			expect.Equal(t, got.D, a0, "the call records D")
+			expect.Equal(t, got.Fn, a1, "the call records Fn")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			var seen []ClockEveryCall
+			s.OnEvery.OnRecord(func(c ClockEveryCall) { seen = append(seen, c) })
+			_ = clockStubEvery(t, s)
+			_ = clockStubEvery(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Every")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) clockStubInstance {
+			return clockStubInstanceOf(tb, NewClockStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Now", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			_ = clockStubNow(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnNow.CallCount(), 0, "ResetCalls clears the calls of Now")
+		})
+
+		t.Run("keeps the results of Returns of Now", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			want0 := clockStubNowPins()
+			s.OnNow.Returns(want0)
+			s.ResetCalls()
+			got0 := clockStubNow(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Now")
+		})
+
+		t.Run("clears the recorded calls of Zone", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			_ = clockStubZone(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnZone.CallCount(), 0, "ResetCalls clears the calls of Zone")
+		})
+
+		t.Run("keeps the results of Returns of Zone", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			want0 := clockStubZonePins()
+			s.OnZone.Returns(want0)
+			s.ResetCalls()
+			got0 := clockStubZone(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Zone")
+		})
+
+		t.Run("clears the recorded calls of Every", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			_ = clockStubEvery(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnEvery.CallCount(), 0, "ResetCalls clears the calls of Every")
+		})
+
+		t.Run("keeps the results of Returns of Every", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			want0 := clockStubEveryPins()
+			s.OnEvery.Returns(want0)
+			s.ResetCalls()
+			got0 := clockStubEvery(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Stop of Every")
+		})
+	})
+
+	t.Run("NewClockStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) clockStubInstance {
+				return clockStubInstanceOf(tb, NewClockStubDelayed(tb, d, clk))
 			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[ClockNowCall]{
-		New: func(tb assert.TB) stub.Instance[ClockNowCall] {
-			return instance(NewClockStub(tb))
-		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[ClockNowCall] {
-			return instance(NewClockStub(tb, ClockStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[ClockNowCall] {
-			return instance(NewClockStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[ClockNowCall] {
-			return instance(NewClockStub(tb, ClockStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[ClockNowCall] {
-			return instance(NewClockStub(tb, ClockStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[ClockNowCall] {
-			return instance(NewClockStub(tb, ClockStubStrict()))
-		},
-	}
+		)
+	})
+
+	t.Run("ClockStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) clockStubInstance {
+			return clockStubInstanceOf(tb, NewClockStub(tb, ClockStubStrict()))
+		})
+	})
+
+	t.Run("ClockStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Now to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewClockStub(t)
+			s := NewClockStub(t, ClockStubDelegateTo(inner))
+			_ = clockStubNow(t, s)
+			inner.OnNow.AssertCalledOnce(t, "Now calls the implementation")
+		})
+
+		t.Run("passes Zone to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewClockStub(t)
+			s := NewClockStub(t, ClockStubDelegateTo(inner))
+			_ = clockStubZone(t, s)
+			inner.OnZone.AssertCalledOnce(t, "Zone calls the implementation")
+		})
+
+		t.Run("passes Every to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewClockStub(t)
+			s := NewClockStub(t, ClockStubDelegateTo(inner))
+			_ = clockStubEvery(t, s)
+			inner.OnEvery.AssertCalledOnce(t, "Every calls the implementation")
+		})
+	})
+
+	t.Run("ClockStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) clockStubInstance {
+			return clockStubInstanceOf(tb, NewClockStub(tb, ClockStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ClockStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) clockStubInstance {
+			return clockStubInstanceOf(tb, NewClockStub(tb, ClockStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("ClockStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) clockStubInstance {
+			return clockStubInstanceOf(tb, NewClockStub(tb, ClockStubBenchMode()))
+		})
+	})
+
+	t.Run("ClockStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) clockStubInstance {
+				return clockStubInstanceOf(
+					tb,
+					NewClockStub(tb, ClockStubWithClock(clk), ClockStubWithLatency(d)),
+				)
+			},
+		)
+	})
+
+	t.Run("WithClockNow", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Now", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewClockStub(t, WithClockNow(func() time.Time {
+				called = true
+				var z0 time.Time
+				return z0
+			}))
+			_ = clockStubNow(t, s)
+			assert.True(t, called, "WithClockNow sets the function of Now")
+		})
+	})
+
+	t.Run("WithClockZone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Zone", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewClockStub(t, WithClockZone(func() string {
+				called = true
+				var z0 string
+				return z0
+			}))
+			_ = clockStubZone(t, s)
+			assert.True(t, called, "WithClockZone sets the function of Zone")
+		})
+	})
+
+	t.Run("WithClockEvery", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Every", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewClockStub(t, WithClockEvery(func(_ time.Duration, _ func()) func() {
+				called = true
+				var z0 func()
+				return z0
+			}))
+			_ = clockStubEvery(t, s)
+			assert.True(t, called, "WithClockEvery sets the function of Every")
+		})
+	})
 }
 
-// TestClockStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestClockStubOptions(t *testing.T) {
+// TestClockNowStub checks the methods of ClockNowStub, which configures
+// Now.
+func TestClockNowStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, clockStubDouble())
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Now", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			want0 := clockStubNowPins()
+			s.OnNow.Returns(want0)
+			got0 := clockStubNow(t, s)
+			assert.Equal(t, got0, want0, "Now returns the Result that Returns sets")
+		})
+
+		t.Run("configures Now for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewClockStub(r)
+			s.OnNow.Strict()
+			var want0 time.Time
+			s.OnNow.Returns(want0)
+			_ = clockStubNow(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Now")
+		})
+	})
+}
+
+// TestClockZoneStub checks the methods of ClockZoneStub, which configures
+// Zone.
+func TestClockZoneStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Zone", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			want0 := clockStubZonePins()
+			s.OnZone.Returns(want0)
+			got0 := clockStubZone(t, s)
+			assert.Equal(t, got0, want0, "Zone returns the Result that Returns sets")
+		})
+
+		t.Run("configures Zone for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewClockStub(r)
+			s.OnZone.Strict()
+			var want0 string
+			s.OnZone.Returns(want0)
+			_ = clockStubZone(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Zone")
+		})
+	})
+}
+
+// TestClockEveryStub checks the methods of ClockEveryStub, which
+// configures Every.
+func TestClockEveryStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Every", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			want0 := clockStubEveryPins()
+			s.OnEvery.Returns(want0)
+			got0 := clockStubEvery(t, s)
+			assert.Equal(t, got0, want0, "Every returns the Stop that Returns sets")
+		})
+
+		t.Run("configures Every for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewClockStub(r)
+			s.OnEvery.Strict()
+			var want0 func()
+			s.OnEvery.Returns(want0)
+			_ = clockStubEvery(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Every")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Every to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewClockStub(t)
+			var got0 time.Duration
+			var got1 func()
+			s.OnEvery.Func(func(p0 time.Duration, p1 func()) func() {
+				got0, got1 = p0, p1
+				var z0 func()
+				return z0
+			})
+			_ = clockStubEvery(t, s)
+			a0, a1 := clockStubEveryArgs(t)
+			expect.Equal(t, got0, a0, "the function receives D")
+			expect.Equal(t, got1, a1, "the function receives Fn")
+		})
+	})
 }

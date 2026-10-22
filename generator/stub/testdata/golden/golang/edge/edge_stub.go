@@ -8,84 +8,57 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// EdgeSkipCall records one invocation of Edge.Skip.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeSkipCall records one call of Edge.Skip.
 type EdgeSkipCall struct {
 	A0 string
 	E  int
 }
 
-// EdgeReadCall records one invocation of Edge.Read.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeReadCall records one call of Edge.Read.
 type EdgeReadCall struct {
 	R   int
 	Err error
 }
 
-// EdgeKeepCall records one invocation of Edge.Keep.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeKeepCall records one call of Edge.Keep.
 type EdgeKeepCall struct {
 	R      int
 	Result int
 }
 
-// EdgeUseCall records one invocation of Edge.Use.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeUseCall records one call of Edge.Use.
 type EdgeUseCall struct {
 	S   string
 	Err error
 }
 
-// EdgeRecordCall records one invocation of Edge.Record.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeRecordCall records one call of Edge.Record.
 type EdgeRecordCall struct {
 	Call string
 	N    int
 	Err  error
 }
 
-// EdgeClashCall records one invocation of Edge.Clash.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeClashCall records one call of Edge.Clash.
 type EdgeClashCall struct {
 	S   string
 	Err error
 }
 
-// EdgeShiftCall records one invocation of Edge.Shift.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeShiftCall records one call of Edge.Shift.
 type EdgeShiftCall struct {
 	A00 string
 	A0  int
 }
 
-// EdgeFetchCall records one invocation of Edge.Fetch.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeFetchCall records one call of Edge.Fetch.
 type EdgeFetchCall struct {
 	A00 string
 	A0  int
 	Err error
 }
 
-// EdgeWideCall records one invocation of Edge.Wide.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgeWideCall records one call of Edge.Wide.
 type EdgeWideCall struct {
 	A    int
 	A10  int
@@ -100,43 +73,29 @@ type EdgeWideCall struct {
 	A100 int
 }
 
-// EdgePairCall records one invocation of Edge.Pair.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// EdgePairCall records one call of Edge.Pair.
 type EdgePairCall struct {
 	AB int
 	Ab int
 }
 
-// --- Per-method configuration ---
-
-// EdgeSkipStub controls how the double answers Skip and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeSkipStub configures Skip and records its calls. Skip returns no
+// error, so a fault armed through it fails the test.
 type EdgeSkipStub struct {
 	*stub.MethodStub[EdgeSkipCall]
 
 	fn func(string, int)
 }
 
-// Func supplies a body for Skip, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Skip answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Skip from its
+// arguments.
 func (s *EdgeSkipStub) Func(fn func(string, int)) *EdgeSkipStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeReadStub controls how the double answers Read and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeReadStub configures Read and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type EdgeReadStub struct {
 	*stub.MethodStub[EdgeReadCall]
 
@@ -144,32 +103,28 @@ type EdgeReadStub struct {
 	fallback *EdgeReadReturn
 }
 
-// EdgeReadReturn holds the fixed answer configured through Returns.
+// EdgeReadReturn contains the fixed results of Read.
 type EdgeReadReturn struct {
 	R   int
 	Err error
 }
 
-// Returns pins a fixed result for every call to Read. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Read. A function and an
+// injected fault take precedence over them.
 func (s *EdgeReadStub) Returns(r int, err error) *EdgeReadStub {
 	s.fallback = &EdgeReadReturn{R: r, Err: err}
 	return s
 }
 
-// Func supplies a body for Read, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Read from its
+// arguments. An injected fault takes precedence over it.
 func (s *EdgeReadStub) Func(fn func() (int, error)) *EdgeReadStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeKeepStub controls how the double answers Keep and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeKeepStub configures Keep and records its calls. Keep returns no
+// error, so a fault armed through it fails the test.
 type EdgeKeepStub struct {
 	*stub.MethodStub[EdgeKeepCall]
 
@@ -177,36 +132,27 @@ type EdgeKeepStub struct {
 	fallback *EdgeKeepReturn
 }
 
-// EdgeKeepReturn holds the fixed answer configured through Returns.
+// EdgeKeepReturn contains the fixed results of Keep.
 type EdgeKeepReturn struct {
 	Result int
 }
 
-// Returns pins a fixed result for every call to Keep. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Keep answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Keep. A function takes
+// precedence over them.
 func (s *EdgeKeepStub) Returns(result int) *EdgeKeepStub {
 	s.fallback = &EdgeKeepReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Keep, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Keep answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Keep from its
+// arguments.
 func (s *EdgeKeepStub) Func(fn func(int) int) *EdgeKeepStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeUseStub controls how the double answers Use and records what it was
-// asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeUseStub configures Use and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
 type EdgeUseStub struct {
 	*stub.MethodStub[EdgeUseCall]
 
@@ -214,31 +160,27 @@ type EdgeUseStub struct {
 	fallback *EdgeUseReturn
 }
 
-// EdgeUseReturn holds the fixed answer configured through Returns.
+// EdgeUseReturn contains the fixed results of Use.
 type EdgeUseReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Use. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Use. A function and an
+// injected fault take precedence over them.
 func (s *EdgeUseStub) Returns(err error) *EdgeUseStub {
 	s.fallback = &EdgeUseReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Use, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Use from its
+// arguments. An injected fault takes precedence over it.
 func (s *EdgeUseStub) Func(fn func(string) error) *EdgeUseStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeRecordStub controls how the double answers Record and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeRecordStub configures Record and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type EdgeRecordStub struct {
 	*stub.MethodStub[EdgeRecordCall]
 
@@ -246,32 +188,28 @@ type EdgeRecordStub struct {
 	fallback *EdgeRecordReturn
 }
 
-// EdgeRecordReturn holds the fixed answer configured through Returns.
+// EdgeRecordReturn contains the fixed results of Record.
 type EdgeRecordReturn struct {
 	N   int
 	Err error
 }
 
-// Returns pins a fixed result for every call to Record. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Record. A function and an
+// injected fault take precedence over them.
 func (s *EdgeRecordStub) Returns(n int, err error) *EdgeRecordStub {
 	s.fallback = &EdgeRecordReturn{N: n, Err: err}
 	return s
 }
 
-// Func supplies a body for Record, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Record from its
+// arguments. An injected fault takes precedence over it.
 func (s *EdgeRecordStub) Func(fn func(string) (int, error)) *EdgeRecordStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeClashStub controls how the double answers Clash and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeClashStub configures Clash and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type EdgeClashStub struct {
 	*stub.MethodStub[EdgeClashCall]
 
@@ -279,52 +217,43 @@ type EdgeClashStub struct {
 	fallback *EdgeClashReturn
 }
 
-// EdgeClashReturn holds the fixed answer configured through Returns.
+// EdgeClashReturn contains the fixed results of Clash.
 type EdgeClashReturn struct {
 	S   string
 	Err error
 }
 
-// Returns pins a fixed result for every call to Clash. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Clash. A function and an
+// injected fault take precedence over them.
 func (s *EdgeClashStub) Returns(s0 string, err error) *EdgeClashStub {
 	s.fallback = &EdgeClashReturn{S: s0, Err: err}
 	return s
 }
 
-// Func supplies a body for Clash, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Clash from its
+// arguments. An injected fault takes precedence over it.
 func (s *EdgeClashStub) Func(fn func() (string, error)) *EdgeClashStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeShiftStub controls how the double answers Shift and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeShiftStub configures Shift and records its calls. Shift returns no
+// error, so a fault armed through it fails the test.
 type EdgeShiftStub struct {
 	*stub.MethodStub[EdgeShiftCall]
 
 	fn func(string, int)
 }
 
-// Func supplies a body for Shift, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Shift answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Shift from its
+// arguments.
 func (s *EdgeShiftStub) Func(fn func(string, int)) *EdgeShiftStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeFetchStub controls how the double answers Fetch and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeFetchStub configures Fetch and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type EdgeFetchStub struct {
 	*stub.MethodStub[EdgeFetchCall]
 
@@ -332,52 +261,45 @@ type EdgeFetchStub struct {
 	fallback *EdgeFetchReturn
 }
 
-// EdgeFetchReturn holds the fixed answer configured through Returns.
+// EdgeFetchReturn contains the fixed results of Fetch.
 type EdgeFetchReturn struct {
 	A0  int
 	Err error
 }
 
-// Returns pins a fixed result for every call to Fetch. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Fetch. A function and an
+// injected fault take precedence over them.
 func (s *EdgeFetchStub) Returns(a0 int, err error) *EdgeFetchStub {
 	s.fallback = &EdgeFetchReturn{A0: a0, Err: err}
 	return s
 }
 
-// Func supplies a body for Fetch, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Fetch from its
+// arguments. An injected fault takes precedence over it.
 func (s *EdgeFetchStub) Func(fn func(string) (int, error)) *EdgeFetchStub {
 	s.fn = fn
 	return s
 }
 
-// EdgeWideStub controls how the double answers Wide and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgeWideStub configures Wide and records its calls. Wide returns no
+// error, so a fault armed through it fails the test.
 type EdgeWideStub struct {
 	*stub.MethodStub[EdgeWideCall]
 
 	fn func(int, int, int, int, int, int, int, int, int, int, int)
 }
 
-// Func supplies a body for Wide, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Wide answers no error, so
-// the double carries no fault arm for one to be reported through.
-func (s *EdgeWideStub) Func(fn func(int, int, int, int, int, int, int, int, int, int, int)) *EdgeWideStub {
+// Func sets the function that computes the results of Wide from its
+// arguments.
+func (s *EdgeWideStub) Func(
+	fn func(int, int, int, int, int, int, int, int, int, int, int),
+) *EdgeWideStub {
 	s.fn = fn
 	return s
 }
 
-// EdgePairStub controls how the double answers Pair and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// EdgePairStub configures Pair and records its calls. Pair returns no
+// error, so a fault armed through it fails the test.
 type EdgePairStub struct {
 	*stub.MethodStub[EdgePairCall]
 
@@ -385,47 +307,41 @@ type EdgePairStub struct {
 	fallback *EdgePairReturn
 }
 
-// EdgePairReturn holds the fixed answer configured through Returns.
+// EdgePairReturn contains the fixed results of Pair.
 type EdgePairReturn struct {
 	AB int
 	Ab int
 }
 
-// Returns pins a fixed result for every call to Pair. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Pair answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
-func (s *EdgePairStub) Returns(ab int, ab0 int) *EdgePairStub {
+// Returns sets the results of every call of Pair. A function takes
+// precedence over them.
+func (s *EdgePairStub) Returns(ab, ab0 int) *EdgePairStub {
 	s.fallback = &EdgePairReturn{AB: ab, Ab: ab0}
 	return s
 }
 
-// Func supplies a body for Pair, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Pair answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Pair from its
+// arguments.
 func (s *EdgePairStub) Func(fn func() (int, int)) *EdgePairStub {
 	s.fn = fn
 	return s
 }
 
-// --- EdgeStub ---
-
-// The witness of the major version of the runtime of doubles.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// EdgeStubOption configures a [EdgeStub] at construction time.
+// EdgeStubOption configures a [EdgeStub] at its construction.
 type EdgeStubOption func(*EdgeStub)
 
-// EdgeStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// EdgeStubStrict returns the option that makes an unconfigured method fail
+// the test instead of returning its zero value.
 func EdgeStubStrict() EdgeStubOption {
 	return func(s *EdgeStub) { s.strict = true }
 }
 
-// EdgeStubDelegateTo wraps a real implementation: every method forwards to
-// impl and is recorded on the double on the way through.
+// EdgeStubDelegateTo returns the option that passes each call to impl. The
+// double still records the call.
 func EdgeStubDelegateTo(impl Edge) EdgeStubOption {
 	return func(s *EdgeStub) {
 		s.OnSkip.Func(impl.Skip)
@@ -441,35 +357,35 @@ func EdgeStubDelegateTo(impl Edge) EdgeStubOption {
 	}
 }
 
-// EdgeStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// EdgeStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func EdgeStubWithClock(clk assert.Clock) EdgeStubOption {
 	return func(s *EdgeStub) { s.group.SetClock(clk) }
 }
 
-// EdgeStubWithRandSource makes probabilistic fault injection reproducible.
-// A failure nobody can replay is not a finding.
+// EdgeStubWithRandSource returns the option that sets the random source of
+// the probabilistic faults to src. A seeded source repeats the faults of a
+// run.
 func EdgeStubWithRandSource(src rand.Source) EdgeStubOption {
 	return func(s *EdgeStub) { s.group.SetRandSource(src) }
 }
 
-// EdgeStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// EdgeStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func EdgeStubBenchMode() EdgeStubOption {
 	return func(s *EdgeStub) { s.group.BenchMode() }
 }
 
-// EdgeStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with EdgeStubWithClock, or d elapses in wall time.
+// EdgeStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without EdgeStubWithClock, d passes in real time.
 func EdgeStubWithLatency(d time.Duration) EdgeStubOption {
 	return func(s *EdgeStub) { s.group.SetLatency(d) }
 }
 
-// EdgeStubFailing arms every method that can fail with err, so a caller's
-// error path is one option rather than one Faults call per method. A
-// method answering no error is left alone.
+// EdgeStubFailing returns the option that arms err on each method that can
+// fail. Each call of such a method then fails with err.
 func EdgeStubFailing(err error) EdgeStubOption {
 	return func(s *EdgeStub) {
 		s.OnRead.Faults(err, 1)
@@ -480,70 +396,59 @@ func EdgeStubFailing(err error) EdgeStubOption {
 	}
 }
 
-// WithEdgeSkip sets Skip's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithEdgeSkip returns the option that sets the function of Skip.
 func WithEdgeSkip(fn func(string, int)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnSkip.Func(fn) }
 }
 
-// WithEdgeRead sets Read's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithEdgeRead returns the option that sets the function of Read.
 func WithEdgeRead(fn func() (int, error)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnRead.Func(fn) }
 }
 
-// WithEdgeKeep sets Keep's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithEdgeKeep returns the option that sets the function of Keep.
 func WithEdgeKeep(fn func(int) int) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnKeep.Func(fn) }
 }
 
-// WithEdgeUse sets Use's body at construction time, for the common case of
-// configuring one method and taking the defaults for the rest.
+// WithEdgeUse returns the option that sets the function of Use.
 func WithEdgeUse(fn func(string) error) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnUse.Func(fn) }
 }
 
-// WithEdgeRecord sets Record's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithEdgeRecord returns the option that sets the function of Record.
 func WithEdgeRecord(fn func(string) (int, error)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnRecord.Func(fn) }
 }
 
-// WithEdgeClash sets Clash's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithEdgeClash returns the option that sets the function of Clash.
 func WithEdgeClash(fn func() (string, error)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnClash.Func(fn) }
 }
 
-// WithEdgeShift sets Shift's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithEdgeShift returns the option that sets the function of Shift.
 func WithEdgeShift(fn func(string, int)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnShift.Func(fn) }
 }
 
-// WithEdgeFetch sets Fetch's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithEdgeFetch returns the option that sets the function of Fetch.
 func WithEdgeFetch(fn func(string) (int, error)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnFetch.Func(fn) }
 }
 
-// WithEdgeWide sets Wide's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithEdgeWide returns the option that sets the function of Wide.
 func WithEdgeWide(fn func(int, int, int, int, int, int, int, int, int, int, int)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnWide.Func(fn) }
 }
 
-// WithEdgePair sets Pair's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithEdgePair returns the option that sets the function of Pair.
 func WithEdgePair(fn func() (int, int)) EdgeStubOption {
 	return func(s *EdgeStub) { s.OnPair.Func(fn) }
 }
 
-// EdgeStub is a recording test double for Edge.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// EdgeStub is a recording test double of Edge. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type EdgeStub struct {
 	OnSkip   *EdgeSkipStub
 	OnRead   *EdgeReadStub
@@ -556,33 +461,31 @@ type EdgeStub struct {
 	OnWide   *EdgeWideStub
 	OnPair   *EdgePairStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that EdgeStub satisfies Edge.
+// The compiler checks that EdgeStub implements Edge.
 var _ Edge = (*EdgeStub)(nil)
 
-// NewEdgeStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewEdgeStub returns a double of Edge that reports its failures to tb and
+// applies opts. The double checks the expected counts of calls at the end
+// of the test. With a nil tb, the double reports nothing.
 func NewEdgeStub(tb assert.TB, opts ...EdgeStubOption) *EdgeStub {
 	s := &EdgeStub{
-		OnSkip:   &EdgeSkipStub{MethodStub: stub.NewMethodStub[EdgeSkipCall](tb, "Edge.Skip")},
-		OnRead:   &EdgeReadStub{MethodStub: stub.NewMethodStub[EdgeReadCall](tb, "Edge.Read")},
-		OnKeep:   &EdgeKeepStub{MethodStub: stub.NewMethodStub[EdgeKeepCall](tb, "Edge.Keep")},
-		OnUse:    &EdgeUseStub{MethodStub: stub.NewMethodStub[EdgeUseCall](tb, "Edge.Use")},
-		OnRecord: &EdgeRecordStub{MethodStub: stub.NewMethodStub[EdgeRecordCall](tb, "Edge.Record")},
-		OnClash:  &EdgeClashStub{MethodStub: stub.NewMethodStub[EdgeClashCall](tb, "Edge.Clash")},
-		OnShift:  &EdgeShiftStub{MethodStub: stub.NewMethodStub[EdgeShiftCall](tb, "Edge.Shift")},
-		OnFetch:  &EdgeFetchStub{MethodStub: stub.NewMethodStub[EdgeFetchCall](tb, "Edge.Fetch")},
-		OnWide:   &EdgeWideStub{MethodStub: stub.NewMethodStub[EdgeWideCall](tb, "Edge.Wide")},
-		OnPair:   &EdgePairStub{MethodStub: stub.NewMethodStub[EdgePairCall](tb, "Edge.Pair")},
+		OnSkip: &EdgeSkipStub{MethodStub: stub.NewMethodStub[EdgeSkipCall](tb, "Edge.Skip")},
+		OnRead: &EdgeReadStub{MethodStub: stub.NewMethodStub[EdgeReadCall](tb, "Edge.Read")},
+		OnKeep: &EdgeKeepStub{MethodStub: stub.NewMethodStub[EdgeKeepCall](tb, "Edge.Keep")},
+		OnUse:  &EdgeUseStub{MethodStub: stub.NewMethodStub[EdgeUseCall](tb, "Edge.Use")},
+		OnRecord: &EdgeRecordStub{
+			MethodStub: stub.NewMethodStub[EdgeRecordCall](tb, "Edge.Record"),
+		},
+		OnClash: &EdgeClashStub{MethodStub: stub.NewMethodStub[EdgeClashCall](tb, "Edge.Clash")},
+		OnShift: &EdgeShiftStub{MethodStub: stub.NewMethodStub[EdgeShiftCall](tb, "Edge.Shift")},
+		OnFetch: &EdgeFetchStub{MethodStub: stub.NewMethodStub[EdgeFetchCall](tb, "Edge.Fetch")},
+		OnWide:  &EdgeWideStub{MethodStub: stub.NewMethodStub[EdgeWideCall](tb, "Edge.Wide")},
+		OnPair:  &EdgePairStub{MethodStub: stub.NewMethodStub[EdgePairCall](tb, "Edge.Pair")},
 	}
 	s.group = stub.NewGroup(
 		s.OnSkip.MethodStub,
@@ -606,37 +509,35 @@ func NewEdgeStub(tb assert.TB, opts ...EdgeStubOption) *EdgeStub {
 	return s
 }
 
-// NewEdgeStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
-func NewEdgeStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...EdgeStubOption) *EdgeStub {
+// NewEdgeStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
+func NewEdgeStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...EdgeStubOption,
+) *EdgeStub {
 	return NewEdgeStub(tb, append([]EdgeStubOption{
 		EdgeStubWithClock(clk),
 		EdgeStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewEdgeStubFailing returns a double whose every fallible method answers
-// err — [EdgeStubFailing] applied at construction, for the test whose
-// whole subject is the caller's error path. Further options apply after
-// it.
+// NewEdgeStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
 func NewEdgeStubFailing(tb assert.TB, err error, opts ...EdgeStubOption) *EdgeStub {
 	return NewEdgeStub(tb, append([]EdgeStubOption{EdgeStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *EdgeStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
 func (s *EdgeSkipStub) invokeVoid(a0 string, e int) func() struct{} {
 	if s.fn == nil {
 		return nil
@@ -647,12 +548,8 @@ func (s *EdgeSkipStub) invokeVoid(a0 string, e int) func() struct{} {
 	}
 }
 
-// Skip records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Skip records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Skip(a0 string, e int) {
 	call := EdgeSkipCall{A0: a0, E: e}
 	stub.Answer(s.OnSkip.MethodStub, &call, stub.Arms[EdgeSkipCall, struct{}]{
@@ -660,9 +557,8 @@ func (s *EdgeStub) Skip(a0 string, e int) {
 	})
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *EdgeReadStub) invoke() func() EdgeReadReturn {
 	if s.fn == nil {
 		return nil
@@ -673,12 +569,8 @@ func (s *EdgeReadStub) invoke() func() EdgeReadReturn {
 	}
 }
 
-// Read records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Read records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Read() (int, error) {
 	call := EdgeReadCall{}
 	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[EdgeReadCall, EdgeReadReturn]{
@@ -693,9 +585,8 @@ func (s *EdgeStub) Read() (int, error) {
 	return r.R, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *EdgeKeepStub) invoke(r int) func() EdgeKeepReturn {
 	if s.fn == nil {
 		return nil
@@ -706,12 +597,8 @@ func (s *EdgeKeepStub) invoke(r int) func() EdgeKeepReturn {
 	}
 }
 
-// Keep records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Keep records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Keep(r int) int {
 	call := EdgeKeepCall{R: r}
 	r1 := stub.Answer(s.OnKeep.MethodStub, &call, stub.Arms[EdgeKeepCall, EdgeKeepReturn]{
@@ -724,9 +611,8 @@ func (s *EdgeStub) Keep(r int) int {
 	return r1.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s0 *EdgeUseStub) invoke(s string) func() EdgeUseReturn {
 	if s0.fn == nil {
 		return nil
@@ -737,12 +623,8 @@ func (s0 *EdgeUseStub) invoke(s string) func() EdgeUseReturn {
 	}
 }
 
-// Use records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Use records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s0 *EdgeStub) Use(s string) error {
 	call := EdgeUseCall{S: s}
 	r := stub.Answer(s0.OnUse.MethodStub, &call, stub.Arms[EdgeUseCall, EdgeUseReturn]{
@@ -756,9 +638,8 @@ func (s0 *EdgeStub) Use(s string) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *EdgeRecordStub) invoke(call string) func() EdgeRecordReturn {
 	if s.fn == nil {
 		return nil
@@ -769,12 +650,8 @@ func (s *EdgeRecordStub) invoke(call string) func() EdgeRecordReturn {
 	}
 }
 
-// Record records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Record records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Record(call string) (n int, err error) {
 	call0 := EdgeRecordCall{Call: call}
 	r := stub.Answer(s.OnRecord.MethodStub, &call0, stub.Arms[EdgeRecordCall, EdgeRecordReturn]{
@@ -789,9 +666,8 @@ func (s *EdgeStub) Record(call string) (n int, err error) {
 	return r.N, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *EdgeClashStub) invoke() func() EdgeClashReturn {
 	if s.fn == nil {
 		return nil
@@ -802,12 +678,8 @@ func (s *EdgeClashStub) invoke() func() EdgeClashReturn {
 	}
 }
 
-// Clash records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Clash records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Clash() (string, error) {
 	call := EdgeClashCall{}
 	r := stub.Answer(s.OnClash.MethodStub, &call, stub.Arms[EdgeClashCall, EdgeClashReturn]{
@@ -822,9 +694,9 @@ func (s *EdgeStub) Clash() (string, error) {
 	return r.S, r.Err
 }
 
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
 func (s *EdgeShiftStub) invokeVoid(a00 string, a0 int) func() struct{} {
 	if s.fn == nil {
 		return nil
@@ -835,12 +707,8 @@ func (s *EdgeShiftStub) invokeVoid(a00 string, a0 int) func() struct{} {
 	}
 }
 
-// Shift records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Shift records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Shift(a00 string, a0 int) {
 	call := EdgeShiftCall{A00: a00, A0: a0}
 	stub.Answer(s.OnShift.MethodStub, &call, stub.Arms[EdgeShiftCall, struct{}]{
@@ -848,9 +716,8 @@ func (s *EdgeStub) Shift(a00 string, a0 int) {
 	})
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *EdgeFetchStub) invoke(a00 string) func() EdgeFetchReturn {
 	if s.fn == nil {
 		return nil
@@ -861,12 +728,8 @@ func (s *EdgeFetchStub) invoke(a00 string) func() EdgeFetchReturn {
 	}
 }
 
-// Fetch records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Fetch records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Fetch(a00 string) (a0 int, err error) {
 	call := EdgeFetchCall{A00: a00}
 	r := stub.Answer(s.OnFetch.MethodStub, &call, stub.Arms[EdgeFetchCall, EdgeFetchReturn]{
@@ -881,10 +744,10 @@ func (s *EdgeStub) Fetch(a00 string) (a0 int, err error) {
 	return r.A0, r.Err
 }
 
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
-func (s *EdgeWideStub) invokeVoid(a int, a10 int, a1 int, b int, c int, d int, e int, f int, g int, h int, a100 int) func() struct{} {
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
+func (s *EdgeWideStub) invokeVoid(a, a10, a1, b, c, d, e, f, g, h, a100 int) func() struct{} {
 	if s.fn == nil {
 		return nil
 	}
@@ -894,22 +757,29 @@ func (s *EdgeWideStub) invokeVoid(a int, a10 int, a1 int, b int, c int, d int, e
 	}
 }
 
-// Wide records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
-func (s *EdgeStub) Wide(a int, a10 int, a1 int, b int, c int, d int, e int, f int, g int, h int, a100 int) {
-	call := EdgeWideCall{A: a, A10: a10, A1: a1, B: b, C: c, D: d, E: e, F: f, G: g, H: h, A100: a100}
+// Wide records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *EdgeStub) Wide(a, a10, a1, b, c, d, e, f, g, h, a100 int) {
+	call := EdgeWideCall{
+		A:    a,
+		A10:  a10,
+		A1:   a1,
+		B:    b,
+		C:    c,
+		D:    d,
+		E:    e,
+		F:    f,
+		G:    g,
+		H:    h,
+		A100: a100,
+	}
 	stub.Answer(s.OnWide.MethodStub, &call, stub.Arms[EdgeWideCall, struct{}]{
 		Invoke: s.OnWide.invokeVoid(a, a10, a1, b, c, d, e, f, g, h, a100),
 	})
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *EdgePairStub) invoke() func() EdgePairReturn {
 	if s.fn == nil {
 		return nil
@@ -920,13 +790,9 @@ func (s *EdgePairStub) invoke() func() EdgePairReturn {
 	}
 }
 
-// Pair records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
-func (s *EdgeStub) Pair() (aB int, ab int) {
+// Pair records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *EdgeStub) Pair() (aB, ab int) {
 	call := EdgePairCall{}
 	r := stub.Answer(s.OnPair.MethodStub, &call, stub.Arms[EdgePairCall, EdgePairReturn]{
 		Invoke:   s.OnPair.invoke(),

@@ -8,26 +8,90 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/stub"
 )
 
-// sessionStubPrepareSubject binds Prepare into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func sessionStubPrepareSubject(tb assert.TB) stub.Subject[SessionPrepareCall, SessionPrepareReturn] {
+// sessionStubPrepareArgs returns the samples of the arguments of Prepare.
+func sessionStubPrepareArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// sessionStubPrepare calls Prepare of s with the samples of its arguments.
+func sessionStubPrepare(tb assert.TB, s *SessionStub) error {
+	tb.Helper()
+	a0 := sessionStubPrepareArgs(tb)
+	return s.Prepare(a0)
+}
+
+// sessionStubPreparePins returns the samples of the results of Prepare,
+// with a new error as its error result.
+func sessionStubPreparePins() error {
+	want0 := errors.New("Prepare-returns")
+	return want0
+}
+
+// sessionStubCommitArgs returns the samples of the arguments of Commit.
+func sessionStubCommitArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// sessionStubCommit calls Commit of s with the samples of its arguments.
+func sessionStubCommit(tb assert.TB, s *SessionStub) error {
+	tb.Helper()
+	a0 := sessionStubCommitArgs(tb)
+	return s.Commit(a0)
+}
+
+// sessionStubCommitPins returns the samples of the results of Commit, with
+// a new error as its error result.
+func sessionStubCommitPins() error {
+	want0 := errors.New("Commit-returns")
+	return want0
+}
+
+// sessionStubOldArgs returns the samples of the arguments of Old.
+func sessionStubOldArgs(tb assert.TB) string {
+	tb.Helper()
+	var a0 string
+	a0 = "Old-a"
+	return a0
+}
+
+// sessionStubOld calls Old of s with the samples of its arguments.
+func sessionStubOld(tb assert.TB, s *SessionStub) (string, error) {
+	tb.Helper()
+	a0 := sessionStubOldArgs(tb)
+	return s.Old(a0)
+}
+
+// sessionStubOldPins returns the samples of the results of Old, with a new
+// error as its error result.
+func sessionStubOldPins() (string, error) {
+	var want0 string
+	want1 := errors.New("Old-returns")
+	want0 = "Old-a"
+	return want0, want1
+}
+
+// sessionStubPrepareSubject returns the subject of [stub.Behaviour] for
+// Prepare. The subject calls a new double that reports to tb.
+func sessionStubPrepareSubject(
+	tb assert.TB,
+) stub.Subject[SessionPrepareCall, SessionPrepareReturn] {
 	tb.Helper()
 	s := NewSessionStub(tb)
 	return stub.Subject[SessionPrepareCall, SessionPrepareReturn]{
 		Stub: s.OnPrepare.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Prepare(a0)
+			_ = sessionStubPrepare(tb, s)
 		},
 		Result: func() SessionPrepareReturn {
-			var a0 context.Context
-			got0 := s.Prepare(a0)
+			got0 := sessionStubPrepare(tb, s)
 			return SessionPrepareReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -38,97 +102,24 @@ func sessionStubPrepareSubject(tb assert.TB) stub.Subject[SessionPrepareCall, Se
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Prepare(a0)
+			r0 := sessionStubPrepare(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestSessionStubPrepare pins how Prepare answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestSessionStubPrepare(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Prepare", sessionStubPrepareSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		got := s.OnPrepare.AssertCalledOnce(t, "Prepare must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var seen []SessionPrepareCall
-		s.OnPrepare.OnRecord(func(c SessionPrepareCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		_ = s.Prepare(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Prepare call")
-	})
-
-	t.Run("wires WithSessionPrepare at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewSessionStub(t, WithSessionPrepare(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		assert.True(t, called, "WithSessionPrepare must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Prepare-failing")
-		s := NewSessionStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Prepare(a0)
-		assert.ErrorIs(t, r0, want, "Prepare must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var want0 error
-		s.OnPrepare.Returns(want0)
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		s.ResetCalls()
-		_ = s.Prepare(a0)
-		s.OnPrepare.AssertCalledOnce(t, "Prepare must record the call that followed the reset")
-	})
-}
-
-// sessionStubCommitSubject binds Commit into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// sessionStubCommitSubject returns the subject of [stub.Behaviour] for
+// Commit. The subject calls a new double that reports to tb.
 func sessionStubCommitSubject(tb assert.TB) stub.Subject[SessionCommitCall, SessionCommitReturn] {
 	tb.Helper()
 	s := NewSessionStub(tb)
 	return stub.Subject[SessionCommitCall, SessionCommitReturn]{
 		Stub: s.OnCommit.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Commit(a0)
+			_ = sessionStubCommit(tb, s)
 		},
 		Result: func() SessionCommitReturn {
-			var a0 context.Context
-			got0 := s.Commit(a0)
+			got0 := sessionStubCommit(tb, s)
 			return SessionCommitReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -139,108 +130,24 @@ func sessionStubCommitSubject(tb assert.TB) stub.Subject[SessionCommitCall, Sess
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Commit(a0)
+			r0 := sessionStubCommit(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestSessionStubCommit pins how Commit answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestSessionStubCommit(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Commit", sessionStubCommitSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var a0 context.Context
-		_ = s.Commit(a0)
-		got := s.OnCommit.AssertCalledOnce(t, "Commit must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var seen []SessionCommitCall
-		s.OnCommit.OnRecord(func(c SessionCommitCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Commit(a0)
-		_ = s.Commit(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Commit call")
-	})
-
-	t.Run("wires WithSessionCommit at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewSessionStub(t, WithSessionCommit(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Commit(a0)
-		assert.True(t, called, "WithSessionCommit must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Commit-failing")
-		s := NewSessionStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Commit(a0)
-		assert.ErrorIs(t, r0, want, "Commit must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var want0 error
-		s.OnCommit.Returns(want0)
-		var a0 context.Context
-		_ = s.Commit(a0)
-		s.ResetCalls()
-		_ = s.Commit(a0)
-		s.OnCommit.AssertCalledOnce(t, "Commit must record the call that followed the reset")
-	})
-
-	t.Run("refuses Commit before Prepare in strict mode", func(t *testing.T) {
-		t.Parallel()
-		r := assert.NewRecorder()
-		s := NewSessionStub(r, SessionStubStrict())
-		var a0 context.Context
-		_ = s.Commit(a0)
-		assert.True(t, r.Failed(), "Commit before Prepare must be refused")
-	})
-}
-
-// sessionStubOldSubject binds Old into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// sessionStubOldSubject returns the subject of [stub.Behaviour] for Old.
+// The subject calls a new double that reports to tb.
 func sessionStubOldSubject(tb assert.TB) stub.Subject[SessionOldCall, SessionOldReturn] {
 	tb.Helper()
 	s := NewSessionStub(tb)
 	return stub.Subject[SessionOldCall, SessionOldReturn]{
 		Stub: s.OnOld.MethodStub,
 		Call: func() {
-			var a0 string
-			a0 = "Old-a"
-			_, _ = s.Old(a0)
+			_, _ = sessionStubOld(tb, s)
 		},
 		Result: func() SessionOldReturn {
-			var a0 string
-			a0 = "Old-a"
-			got0, got1 := s.Old(a0)
+			got0, got1 := sessionStubOld(tb, s)
 			return SessionOldReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -252,198 +159,538 @@ func sessionStubOldSubject(tb assert.TB) stub.Subject[SessionOldCall, SessionOld
 			})
 		},
 		Fails: func() error {
-			var a0 string
-			a0 = "Old-a"
-			_, r1 := s.Old(a0)
+			_, r1 := sessionStubOld(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestSessionStubOld pins how Old answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestSessionStubOld(t *testing.T) {
-	t.Parallel()
+// sessionStubInstance is the instance of a SessionStub that the checks of
+// the constructors and the options drive.
+type sessionStubInstance = stub.Instance[SessionPrepareCall]
 
-	stub.Behaviour(t, "Old", sessionStubOldSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Old-a"
-		s.OnOld.Returns(want0, want1)
-		var a0 string
-		a0 = "Old-a"
-		got0, _ := s.Old(a0)
-		assert.Equal(t, got0, want0, "Old must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var a0 string
-		a0 = "Old-a"
-		_, _ = s.Old(a0)
-		got := s.OnOld.AssertCalledOnce(t, "Old must record the call")
-		assert.Equal(t, got.Key, a0, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var seen []SessionOldCall
-		s.OnOld.OnRecord(func(c SessionOldCall) { seen = append(seen, c) })
-		var a0 string
-		a0 = "Old-a"
-		_, _ = s.Old(a0)
-		_, _ = s.Old(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Old call")
-	})
-
-	t.Run("wires WithSessionOld at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := NewSessionStub(t, WithSessionOld(func(_ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 string
-		a0 = "Old-a"
-		_, _ = s.Old(a0)
-		assert.True(t, called, "WithSessionOld must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Old-failing")
-		s := NewSessionStubFailing(t, want)
-		var a0 string
-		a0 = "Old-a"
-		_, r1 := s.Old(a0)
-		assert.ErrorIs(t, r1, want, "Old must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := NewSessionStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Old-a"
-		s.OnOld.Returns(want0, want1)
-		var a0 string
-		a0 = "Old-a"
-		_, _ = s.Old(a0)
-		s.ResetCalls()
-		got0, _ := s.Old(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
+// sessionStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Prepare alone.
+func sessionStubInstanceOf(tb assert.TB, s *SessionStub) sessionStubInstance {
+	tb.Helper()
+	return sessionStubInstance{
+		Stub: s.OnPrepare.MethodStub,
+		Call: func() {
+			_ = sessionStubPrepare(tb, s)
+		},
+		Reset: s.ResetCalls,
+	}
 }
 
-// sessionStubDouble describes how to build a SessionStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Prepare stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func sessionStubDouble() stub.Double[SessionPrepareCall] {
-	instance := func(s *SessionStub) stub.Instance[SessionPrepareCall] {
-		return stub.Instance[SessionPrepareCall]{
-			Stub: s.OnPrepare.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_ = s.Prepare(a0)
+// TestSessionStub checks the methods, the constructors and the options of
+// the double SessionStub.
+func TestSessionStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Prepare", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Prepare", sessionStubPrepareSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			_ = sessionStubPrepare(t, s)
+			got := s.OnPrepare.AssertCalledOnce(t, "Prepare records the call")
+			a0 := sessionStubPrepareArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			var seen []SessionPrepareCall
+			s.OnPrepare.OnRecord(func(c SessionPrepareCall) { seen = append(seen, c) })
+			_ = sessionStubPrepare(t, s)
+			_ = sessionStubPrepare(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Prepare")
+		})
+	})
+
+	t.Run("Commit", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Commit", sessionStubCommitSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			_ = sessionStubCommit(t, s)
+			got := s.OnCommit.AssertCalledOnce(t, "Commit records the call")
+			a0 := sessionStubCommitArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			var seen []SessionCommitCall
+			s.OnCommit.OnRecord(func(c SessionCommitCall) { seen = append(seen, c) })
+			_ = sessionStubCommit(t, s)
+			_ = sessionStubCommit(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Commit")
+		})
+	})
+
+	t.Run("Old", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Old", sessionStubOldSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			_, _ = sessionStubOld(t, s)
+			got := s.OnOld.AssertCalledOnce(t, "Old records the call")
+			a0 := sessionStubOldArgs(t)
+			assert.Equal(t, got.Key, a0, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			var seen []SessionOldCall
+			s.OnOld.OnRecord(func(c SessionOldCall) { seen = append(seen, c) })
+			_, _ = sessionStubOld(t, s)
+			_, _ = sessionStubOld(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Old")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) sessionStubInstance {
+			return sessionStubInstanceOf(tb, NewSessionStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Prepare", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			_ = sessionStubPrepare(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPrepare.CallCount(), 0, "ResetCalls clears the calls of Prepare")
+		})
+
+		t.Run("keeps the results of Returns of Prepare", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			want0 := sessionStubPreparePins()
+			s.OnPrepare.Returns(want0)
+			s.ResetCalls()
+			got0 := sessionStubPrepare(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Prepare")
+		})
+
+		t.Run("clears the recorded calls of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			_ = sessionStubCommit(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCommit.CallCount(), 0, "ResetCalls clears the calls of Commit")
+		})
+
+		t.Run("keeps the results of Returns of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			want0 := sessionStubCommitPins()
+			s.OnCommit.Returns(want0)
+			s.ResetCalls()
+			got0 := sessionStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Commit")
+		})
+
+		t.Run("clears the recorded calls of Old", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			_, _ = sessionStubOld(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnOld.CallCount(), 0, "ResetCalls clears the calls of Old")
+		})
+
+		t.Run("keeps the results of Returns of Old", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			want0, want1 := sessionStubOldPins()
+			s.OnOld.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := sessionStubOld(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Old")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Old")
+		})
+	})
+
+	t.Run("NewSessionStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) sessionStubInstance {
+				return sessionStubInstanceOf(tb, NewSessionStubDelayed(tb, d, clk))
 			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[SessionPrepareCall]{
-		New: func(tb assert.TB) stub.Instance[SessionPrepareCall] {
-			return instance(NewSessionStub(tb))
-		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[SessionPrepareCall] {
-			return instance(NewSessionStub(tb, SessionStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[SessionPrepareCall] {
-			return instance(NewSessionStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[SessionPrepareCall] {
-			return instance(NewSessionStub(tb, SessionStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[SessionPrepareCall] {
-			return instance(NewSessionStub(tb, SessionStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[SessionPrepareCall] {
-			return instance(NewSessionStub(tb, SessionStubStrict()))
-		},
-	}
+		)
+	})
+
+	t.Run("NewSessionStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Prepare with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Prepare-failing")
+			s := NewSessionStubFailing(t, want)
+			r0 := sessionStubPrepare(t, s)
+			assert.ErrorIs(t, r0, want, "Prepare fails with the error of NewSessionStubFailing")
+		})
+
+		t.Run("fails Commit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-failing")
+			s := NewSessionStubFailing(t, want)
+			r0 := sessionStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of NewSessionStubFailing")
+		})
+
+		t.Run("fails Old with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Old-failing")
+			s := NewSessionStubFailing(t, want)
+			_, r1 := sessionStubOld(t, s)
+			assert.ErrorIs(t, r1, want, "Old fails with the error of NewSessionStubFailing")
+		})
+	})
+
+	t.Run("SessionStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) sessionStubInstance {
+			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubStrict()))
+		})
+
+		t.Run("refuses Commit before Prepare", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			fn := func(_ context.Context) error {
+				var z0 error
+				return z0
+			}
+			s := NewSessionStub(r, SessionStubStrict(), WithSessionCommit(fn))
+			_ = sessionStubCommit(t, s)
+			assert.True(t, r.Failed(), "a strict double refuses Commit before Prepare")
+		})
+	})
+
+	t.Run("SessionStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Prepare to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewSessionStub(t)
+			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			_ = sessionStubPrepare(t, s)
+			inner.OnPrepare.AssertCalledOnce(t, "Prepare calls the implementation")
+		})
+
+		t.Run("fails Prepare with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Prepare-delegate")
+			inner := NewSessionStub(t)
+			inner.OnPrepare.Faults(want, 1)
+			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			r0 := sessionStubPrepare(t, s)
+			assert.ErrorIs(t, r0, want, "Prepare fails with the error of the implementation")
+		})
+
+		t.Run("passes Commit to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewSessionStub(t)
+			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			_ = sessionStubCommit(t, s)
+			inner.OnCommit.AssertCalledOnce(t, "Commit calls the implementation")
+		})
+
+		t.Run("fails Commit with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-delegate")
+			inner := NewSessionStub(t)
+			inner.OnCommit.Faults(want, 1)
+			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			r0 := sessionStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of the implementation")
+		})
+
+		t.Run("passes Old to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := NewSessionStub(t)
+			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			_, _ = sessionStubOld(t, s)
+			inner.OnOld.AssertCalledOnce(t, "Old calls the implementation")
+		})
+
+		t.Run("fails Old with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Old-delegate")
+			inner := NewSessionStub(t)
+			inner.OnOld.Faults(want, 1)
+			s := NewSessionStub(t, SessionStubDelegateTo(inner))
+			_, r1 := sessionStubOld(t, s)
+			assert.ErrorIs(t, r1, want, "Old fails with the error of the implementation")
+		})
+	})
+
+	t.Run("SessionStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) sessionStubInstance {
+			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubWithClock(clk)))
+		})
+	})
+
+	t.Run("SessionStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) sessionStubInstance {
+			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("SessionStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) sessionStubInstance {
+			return sessionStubInstanceOf(tb, NewSessionStub(tb, SessionStubBenchMode()))
+		})
+	})
+
+	t.Run("SessionStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(
+			t,
+			func(tb assert.TB, d time.Duration, clk assert.Clock) sessionStubInstance {
+				return sessionStubInstanceOf(
+					tb,
+					NewSessionStub(tb, SessionStubWithClock(clk), SessionStubWithLatency(d)),
+				)
+			},
+		)
+	})
+
+	t.Run("SessionStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Prepare with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Prepare-failing")
+			s := NewSessionStub(t, SessionStubFailing(want))
+			r0 := sessionStubPrepare(t, s)
+			assert.ErrorIs(t, r0, want, "Prepare fails with the error of SessionStubFailing")
+		})
+
+		t.Run("fails Commit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-failing")
+			s := NewSessionStub(t, SessionStubFailing(want))
+			r0 := sessionStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of SessionStubFailing")
+		})
+
+		t.Run("fails Old with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Old-failing")
+			s := NewSessionStub(t, SessionStubFailing(want))
+			_, r1 := sessionStubOld(t, s)
+			assert.ErrorIs(t, r1, want, "Old fails with the error of SessionStubFailing")
+		})
+	})
+
+	t.Run("WithSessionPrepare", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Prepare", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewSessionStub(t, WithSessionPrepare(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = sessionStubPrepare(t, s)
+			assert.True(t, called, "WithSessionPrepare sets the function of Prepare")
+		})
+	})
+
+	t.Run("WithSessionCommit", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Commit", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewSessionStub(t, WithSessionCommit(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = sessionStubCommit(t, s)
+			assert.True(t, called, "WithSessionCommit sets the function of Commit")
+		})
+	})
+
+	t.Run("WithSessionOld", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Old", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := NewSessionStub(t, WithSessionOld(func(_ string) (string, error) {
+				called = true
+				var z0 string
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = sessionStubOld(t, s)
+			assert.True(t, called, "WithSessionOld sets the function of Old")
+		})
+	})
 }
 
-// TestSessionStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestSessionStubOptions(t *testing.T) {
+// TestSessionPrepareStub checks the methods of SessionPrepareStub, which
+// configures Prepare.
+func TestSessionPrepareStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, sessionStubDouble())
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Prepare", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			want0 := sessionStubPreparePins()
+			s.OnPrepare.Returns(want0)
+			got0 := sessionStubPrepare(t, s)
+			assert.ErrorIs(t, got0, want0, "Prepare returns the error that Returns sets")
+		})
+
+		t.Run("configures Prepare for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewSessionStub(r)
+			s.OnPrepare.Strict()
+			var want0 error
+			s.OnPrepare.Returns(want0)
+			_ = sessionStubPrepare(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Prepare")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Prepare to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			var got0 context.Context
+			s.OnPrepare.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = sessionStubPrepare(t, s)
+			a0 := sessionStubPrepareArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
 }
 
-// TestSessionStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestSessionStubDelegateTo(t *testing.T) {
+// TestSessionCommitStub checks the methods of SessionCommitStub, which
+// configures Commit.
+func TestSessionCommitStub(t *testing.T) {
 	t.Parallel()
 
-	inner := NewSessionStub(t)
-	s := NewSessionStub(t, SessionStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Prepare to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		inner.OnPrepare.AssertCalledOnce(t, "Prepare must reach the wrapped implementation")
+		t.Run("sets the results of each call of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			want0 := sessionStubCommitPins()
+			s.OnCommit.Returns(want0)
+			got0 := sessionStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "Commit returns the error that Returns sets")
+		})
+
+		t.Run("configures Commit for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewSessionStub(r)
+			s.OnCommit.Strict()
+			var want0 error
+			s.OnCommit.Returns(want0)
+			_ = sessionStubCommit(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Commit")
+		})
 	})
 
-	t.Run("surfaces what Prepare answered", func(t *testing.T) {
-		want := errors.New("Prepare-delegate")
-		inner.OnPrepare.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Prepare(a0)
-		assert.ErrorIs(t, r0, want, "Prepare must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Commit to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			var got0 context.Context
+			s.OnCommit.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = sessionStubCommit(t, s)
+			a0 := sessionStubCommitArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// TestSessionOldStub checks the methods of SessionOldStub, which
+// configures Old.
+func TestSessionOldStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Old", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			want0, want1 := sessionStubOldPins()
+			s.OnOld.Returns(want0, want1)
+			got0, got1 := sessionStubOld(t, s)
+			expect.Equal(t, got0, want0, "Old returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Old returns the error that Returns sets")
+		})
+
+		t.Run("configures Old for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := NewSessionStub(r)
+			s.OnOld.Strict()
+			var want0 string
+			var want1 error
+			s.OnOld.Returns(want0, want1)
+			_, _ = sessionStubOld(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Old")
+		})
 	})
 
-	t.Run("forwards Commit to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Commit(a0)
-		inner.OnCommit.AssertCalledOnce(t, "Commit must reach the wrapped implementation")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("surfaces what Commit answered", func(t *testing.T) {
-		want := errors.New("Commit-delegate")
-		inner.OnCommit.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Commit(a0)
-		assert.ErrorIs(t, r0, want, "Commit must surface the wrapped answer")
-	})
-
-	t.Run("forwards Old to the wrapped implementation", func(t *testing.T) {
-		var a0 string
-		a0 = "Old-a"
-		_, _ = s.Old(a0)
-		inner.OnOld.AssertCalledOnce(t, "Old must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Old answered", func(t *testing.T) {
-		want := errors.New("Old-delegate")
-		inner.OnOld.FaultsFor(time.Hour, want)
-		var a0 string
-		a0 = "Old-a"
-		_, r1 := s.Old(a0)
-		assert.ErrorIs(t, r1, want, "Old must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Old to the function", func(t *testing.T) {
+			t.Parallel()
+			s := NewSessionStub(t)
+			var got0 string
+			s.OnOld.Func(func(p0 string) (string, error) {
+				got0 = p0
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = sessionStubOld(t, s)
+			a0 := sessionStubOldArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Key")
+		})
 	})
 }

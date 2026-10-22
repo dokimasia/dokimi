@@ -1,10 +1,10 @@
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Cursor, Producer } from './handles';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Cursor, Producer } from "./handles";
 
 /** ProducerOpenCall records one call of Producer.open. */
 export interface ProducerOpenCall {
@@ -15,7 +15,7 @@ export interface ProducerOpenCall {
 }
 
 /**
- * ProducerOpenStub configures open, and records its calls. A fault armed
+ * ProducerOpenStub configures open and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ProducerOpenStub extends MethodStub<ProducerOpenCall> {
@@ -35,7 +35,7 @@ export class ProducerOpenStub extends MethodStub<ProducerOpenCall> {
   }
 
   /**
-   * Sets the function of open, for a result that depends on the
+   * Sets the function that computes the result of open from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -64,13 +64,13 @@ export class ProducerOpenStub extends MethodStub<ProducerOpenCall> {
   }
 }
 
-/** An option of a ProducerStub, which its constructor applies. */
+/** Configures a ProducerStub at its construction. */
 export type ProducerStubOption = (double: ProducerStub) => void;
 
 /**
  * ProducerStub is a recording test double of Producer. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ProducerStub implements Producer {
   /** Configures open. */
@@ -79,9 +79,9 @@ export class ProducerStub implements Producer {
   #strict = false;
 
   /**
-   * Returns a double of Producer that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Producer that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -110,7 +110,8 @@ export class ProducerStub implements Producer {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -122,8 +123,9 @@ export class ProducerStub implements Producer {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -135,8 +137,8 @@ export class ProducerStub implements Producer {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -173,7 +175,8 @@ export class ProducerStub implements Producer {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -197,8 +200,8 @@ export class ProducerStub implements Producer {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -221,8 +224,8 @@ export class ProducerStub implements Producer {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -246,7 +249,7 @@ export class ProducerStub implements Producer {
   }
 
   /**
-   * Records the call of open, and returns its result.
+   * Records the call of open and returns its result.
    */
   open(): Promise<Cursor> {
     const call: ProducerOpenCall = {};
@@ -271,7 +274,7 @@ export interface CursorCloseCall {
 }
 
 /**
- * CursorNextStub configures next, and records its calls. A fault armed
+ * CursorNextStub configures next and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CursorNextStub extends MethodStub<CursorNextCall> {
@@ -291,7 +294,7 @@ export class CursorNextStub extends MethodStub<CursorNextCall> {
   }
 
   /**
-   * Sets the function of next, for a result that depends on the
+   * Sets the function that computes the result of next from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -321,14 +324,14 @@ export class CursorNextStub extends MethodStub<CursorNextCall> {
 }
 
 /**
- * CursorCloseStub configures close, and records its calls. A fault armed
+ * CursorCloseStub configures close and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CursorCloseStub extends MethodStub<CursorCloseCall> {
   #fn: (() => void) | undefined;
 
   /**
-   * Sets the function of close, for a result that depends on the
+   * Sets the function that computes the result of close from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -353,13 +356,13 @@ export class CursorCloseStub extends MethodStub<CursorCloseCall> {
   }
 }
 
-/** An option of a CursorStub, which its constructor applies. */
+/** Configures a CursorStub at its construction. */
 export type CursorStubOption = (double: CursorStub) => void;
 
 /**
  * CursorStub is a recording test double of Cursor. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class CursorStub implements Cursor {
   /** Configures next. */
@@ -370,9 +373,9 @@ export class CursorStub implements Cursor {
   #strict = false;
 
   /**
-   * Returns a double of Cursor that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Cursor that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -402,7 +405,8 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -415,8 +419,9 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -428,8 +433,8 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -466,7 +471,8 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -503,8 +509,8 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -527,8 +533,8 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -552,7 +558,7 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Records the call of next, and returns its result.
+   * Records the call of next and returns its result.
    */
   next(): Promise<string> {
     const call: CursorNextCall = {};
@@ -560,7 +566,7 @@ export class CursorStub implements Cursor {
   }
 
   /**
-   * Records the call of close, and returns its result.
+   * Records the call of close and returns its result.
    */
   close(): void {
     const call: CursorCloseCall = {};

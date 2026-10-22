@@ -9,47 +9,29 @@ import (
 	"go.dokimi.dev/stub"
 )
 
-// TableNamesCall records one invocation of Table.Names.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// TableNamesCall records one call of Table.Names.
 type TableNamesCall struct {
 	Result iter.Seq[string]
 }
 
-// TableRowsCall records one invocation of Table.Rows.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// TableRowsCall records one call of Table.Rows.
 type TableRowsCall struct {
 	Limit  int
 	Result iter.Seq2[Item, error]
 }
 
-// TableCountsCall records one invocation of Table.Counts.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// TableCountsCall records one call of Table.Counts.
 type TableCountsCall struct {
 	Result iter.Seq2[string, int]
 }
 
-// TableTailCall records one invocation of Table.Tail.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// TableTailCall records one call of Table.Tail.
 type TableTailCall struct {
 	Result Lines
 }
 
-// --- Per-method configuration ---
-
-// TableNamesStub controls how the double answers Names and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// TableNamesStub configures Names and records its calls. Names returns no
+// error, so a fault armed through it fails the test.
 type TableNamesStub struct {
 	*stub.MethodStub[TableNamesCall]
 
@@ -57,35 +39,27 @@ type TableNamesStub struct {
 	fallback *TableNamesReturn
 }
 
-// TableNamesReturn holds the fixed answer configured through Returns.
+// TableNamesReturn contains the fixed results of Names.
 type TableNamesReturn struct {
 	Result iter.Seq[string]
 }
 
-// Returns pins a fixed result for every call to Names. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Names answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Names. A function takes
+// precedence over them.
 func (s *TableNamesStub) Returns(result iter.Seq[string]) *TableNamesStub {
 	s.fallback = &TableNamesReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Names, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Names answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Names from its
+// arguments.
 func (s *TableNamesStub) Func(fn func() iter.Seq[string]) *TableNamesStub {
 	s.fn = fn
 	return s
 }
 
-// Yields makes Names return a sequence over items.
-//
-// Building a range-over-func by hand is a closure with a break-handling
-// branch in it, and a test that gets that branch wrong reports a bug in
-// itself rather than in the subject.
+// Yields makes Names return a sequence of items. The sequence stops where
+// the caller breaks out of the loop.
 func (s *TableNamesStub) Yields(items ...string) *TableNamesStub {
 	s.fn = func() iter.Seq[string] {
 		return func(yield func(string) bool) {
@@ -99,12 +73,8 @@ func (s *TableNamesStub) Yields(items ...string) *TableNamesStub {
 	return s
 }
 
-// TableRowsStub controls how the double answers Rows and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// TableRowsStub configures Rows and records its calls. Rows returns no
+// error, so a fault armed through it fails the test.
 type TableRowsStub struct {
 	*stub.MethodStub[TableRowsCall]
 
@@ -112,35 +82,27 @@ type TableRowsStub struct {
 	fallback *TableRowsReturn
 }
 
-// TableRowsReturn holds the fixed answer configured through Returns.
+// TableRowsReturn contains the fixed results of Rows.
 type TableRowsReturn struct {
 	Result iter.Seq2[Item, error]
 }
 
-// Returns pins a fixed result for every call to Rows. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Rows answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Rows. A function takes
+// precedence over them.
 func (s *TableRowsStub) Returns(result iter.Seq2[Item, error]) *TableRowsStub {
 	s.fallback = &TableRowsReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Rows, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Rows answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Rows from its
+// arguments.
 func (s *TableRowsStub) Func(fn func(int) iter.Seq2[Item, error]) *TableRowsStub {
 	s.fn = fn
 	return s
 }
 
-// Yields makes Rows return a sequence over items.
-//
-// Building a range-over-func by hand is a closure with a break-handling
-// branch in it, and a test that gets that branch wrong reports a bug in
-// itself rather than in the subject.
+// Yields makes Rows return a sequence of items. The sequence stops where
+// the caller breaks out of the loop.
 func (s *TableRowsStub) Yields(items ...Item) *TableRowsStub {
 	s.fn = func(_ int) iter.Seq2[Item, error] {
 		return func(yield func(Item, error) bool) {
@@ -154,11 +116,8 @@ func (s *TableRowsStub) Yields(items ...Item) *TableRowsStub {
 	return s
 }
 
-// YieldsError makes Rows return a sequence that produces items and then
-// fails.
-//
-// Failing partway through is the case a consumer's loop most often gets
-// wrong, and it cannot be reached by a sequence that only ever succeeds.
+// YieldsError makes Rows return a sequence of items that fails with err
+// after the last item.
 func (s *TableRowsStub) YieldsError(items []Item, err error) *TableRowsStub {
 	s.fn = func(_ int) iter.Seq2[Item, error] {
 		return func(yield func(Item, error) bool) {
@@ -174,12 +133,8 @@ func (s *TableRowsStub) YieldsError(items []Item, err error) *TableRowsStub {
 	return s
 }
 
-// TableCountsStub controls how the double answers Counts and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// TableCountsStub configures Counts and records its calls. Counts returns
+// no error, so a fault armed through it fails the test.
 type TableCountsStub struct {
 	*stub.MethodStub[TableCountsCall]
 
@@ -187,35 +142,27 @@ type TableCountsStub struct {
 	fallback *TableCountsReturn
 }
 
-// TableCountsReturn holds the fixed answer configured through Returns.
+// TableCountsReturn contains the fixed results of Counts.
 type TableCountsReturn struct {
 	Result iter.Seq2[string, int]
 }
 
-// Returns pins a fixed result for every call to Counts. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Counts answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Counts. A function takes
+// precedence over them.
 func (s *TableCountsStub) Returns(result iter.Seq2[string, int]) *TableCountsStub {
 	s.fallback = &TableCountsReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Counts, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Counts answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Counts from its
+// arguments.
 func (s *TableCountsStub) Func(fn func() iter.Seq2[string, int]) *TableCountsStub {
 	s.fn = fn
 	return s
 }
 
-// Yields makes Counts return a sequence over items.
-//
-// Building a range-over-func by hand is a closure with a break-handling
-// branch in it, and a test that gets that branch wrong reports a bug in
-// itself rather than in the subject.
+// Yields makes Counts return a sequence of items. The sequence stops where
+// the caller breaks out of the loop.
 func (s *TableCountsStub) Yields(items ...string) *TableCountsStub {
 	s.fn = func() iter.Seq2[string, int] {
 		return func(yield func(string, int) bool) {
@@ -230,12 +177,8 @@ func (s *TableCountsStub) Yields(items ...string) *TableCountsStub {
 	return s
 }
 
-// TableTailStub controls how the double answers Tail and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// TableTailStub configures Tail and records its calls. Tail returns no
+// error, so a fault armed through it fails the test.
 type TableTailStub struct {
 	*stub.MethodStub[TableTailCall]
 
@@ -243,35 +186,27 @@ type TableTailStub struct {
 	fallback *TableTailReturn
 }
 
-// TableTailReturn holds the fixed answer configured through Returns.
+// TableTailReturn contains the fixed results of Tail.
 type TableTailReturn struct {
 	Result Lines
 }
 
-// Returns pins a fixed result for every call to Tail. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Tail answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Tail. A function takes
+// precedence over them.
 func (s *TableTailStub) Returns(result Lines) *TableTailStub {
 	s.fallback = &TableTailReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Tail, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Tail answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Tail from its
+// arguments.
 func (s *TableTailStub) Func(fn func() Lines) *TableTailStub {
 	s.fn = fn
 	return s
 }
 
-// Yields makes Tail return a sequence over items.
-//
-// Building a range-over-func by hand is a closure with a break-handling
-// branch in it, and a test that gets that branch wrong reports a bug in
-// itself rather than in the subject.
+// Yields makes Tail return a sequence of items. The sequence stops where
+// the caller breaks out of the loop.
 func (s *TableTailStub) Yields(items ...string) *TableTailStub {
 	s.fn = func() Lines {
 		return func(yield func(string) bool) {
@@ -285,22 +220,21 @@ func (s *TableTailStub) Yields(items ...string) *TableTailStub {
 	return s
 }
 
-// --- TableStub ---
-
-// The witness of the major version of the runtime of doubles.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// TableStubOption configures a [TableStub] at construction time.
+// TableStubOption configures a [TableStub] at its construction.
 type TableStubOption func(*TableStub)
 
-// TableStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// TableStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func TableStubStrict() TableStubOption {
 	return func(s *TableStub) { s.strict = true }
 }
 
-// TableStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// TableStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func TableStubDelegateTo(impl Table) TableStubOption {
 	return func(s *TableStub) {
 		s.OnNames.Func(impl.Names)
@@ -310,87 +244,83 @@ func TableStubDelegateTo(impl Table) TableStubOption {
 	}
 }
 
-// TableStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// TableStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func TableStubWithClock(clk assert.Clock) TableStubOption {
 	return func(s *TableStub) { s.group.SetClock(clk) }
 }
 
-// TableStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// TableStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func TableStubWithRandSource(src rand.Source) TableStubOption {
 	return func(s *TableStub) { s.group.SetRandSource(src) }
 }
 
-// TableStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// TableStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func TableStubBenchMode() TableStubOption {
 	return func(s *TableStub) { s.group.BenchMode() }
 }
 
-// TableStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with TableStubWithClock, or d elapses in wall time.
+// TableStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without TableStubWithClock, d passes in real time.
 func TableStubWithLatency(d time.Duration) TableStubOption {
 	return func(s *TableStub) { s.group.SetLatency(d) }
 }
 
-// WithTableNames sets Names's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithTableNames returns the option that sets the function of Names.
 func WithTableNames(fn func() iter.Seq[string]) TableStubOption {
 	return func(s *TableStub) { s.OnNames.Func(fn) }
 }
 
-// WithTableRows sets Rows's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithTableRows returns the option that sets the function of Rows.
 func WithTableRows(fn func(int) iter.Seq2[Item, error]) TableStubOption {
 	return func(s *TableStub) { s.OnRows.Func(fn) }
 }
 
-// WithTableCounts sets Counts's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithTableCounts returns the option that sets the function of Counts.
 func WithTableCounts(fn func() iter.Seq2[string, int]) TableStubOption {
 	return func(s *TableStub) { s.OnCounts.Func(fn) }
 }
 
-// WithTableTail sets Tail's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithTableTail returns the option that sets the function of Tail.
 func WithTableTail(fn func() Lines) TableStubOption {
 	return func(s *TableStub) { s.OnTail.Func(fn) }
 }
 
-// TableStub is a recording test double for Table.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// TableStub is a recording test double of Table. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type TableStub struct {
 	OnNames  *TableNamesStub
 	OnRows   *TableRowsStub
 	OnCounts *TableCountsStub
 	OnTail   *TableTailStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that TableStub satisfies Table.
+// The compiler checks that TableStub implements Table.
 var _ Table = (*TableStub)(nil)
 
-// NewTableStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewTableStub returns a double of Table that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewTableStub(tb assert.TB, opts ...TableStubOption) *TableStub {
 	s := &TableStub{
-		OnNames:  &TableNamesStub{MethodStub: stub.NewMethodStub[TableNamesCall](tb, "Table.Names")},
-		OnRows:   &TableRowsStub{MethodStub: stub.NewMethodStub[TableRowsCall](tb, "Table.Rows")},
-		OnCounts: &TableCountsStub{MethodStub: stub.NewMethodStub[TableCountsCall](tb, "Table.Counts")},
-		OnTail:   &TableTailStub{MethodStub: stub.NewMethodStub[TableTailCall](tb, "Table.Tail")},
+		OnNames: &TableNamesStub{
+			MethodStub: stub.NewMethodStub[TableNamesCall](tb, "Table.Names"),
+		},
+		OnRows: &TableRowsStub{MethodStub: stub.NewMethodStub[TableRowsCall](tb, "Table.Rows")},
+		OnCounts: &TableCountsStub{
+			MethodStub: stub.NewMethodStub[TableCountsCall](tb, "Table.Counts"),
+		},
+		OnTail: &TableTailStub{MethodStub: stub.NewMethodStub[TableTailCall](tb, "Table.Tail")},
 	}
 	s.group = stub.NewGroup(
 		s.OnNames.MethodStub,
@@ -408,29 +338,28 @@ func NewTableStub(tb assert.TB, opts ...TableStubOption) *TableStub {
 	return s
 }
 
-// NewTableStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
-func NewTableStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...TableStubOption) *TableStub {
+// NewTableStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
+func NewTableStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...TableStubOption,
+) *TableStub {
 	return NewTableStub(tb, append([]TableStubOption{
 		TableStubWithClock(clk),
 		TableStubWithLatency(d),
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *TableStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *TableNamesStub) invoke() func() TableNamesReturn {
 	if s.fn == nil {
 		return nil
@@ -441,12 +370,8 @@ func (s *TableNamesStub) invoke() func() TableNamesReturn {
 	}
 }
 
-// Names records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Names records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Names() iter.Seq[string] {
 	call := TableNamesCall{}
 	r := stub.Answer(s.OnNames.MethodStub, &call, stub.Arms[TableNamesCall, TableNamesReturn]{
@@ -459,9 +384,8 @@ func (s *TableStub) Names() iter.Seq[string] {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *TableRowsStub) invoke(limit int) func() TableRowsReturn {
 	if s.fn == nil {
 		return nil
@@ -472,12 +396,8 @@ func (s *TableRowsStub) invoke(limit int) func() TableRowsReturn {
 	}
 }
 
-// Rows records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Rows records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Rows(limit int) iter.Seq2[Item, error] {
 	call := TableRowsCall{Limit: limit}
 	r := stub.Answer(s.OnRows.MethodStub, &call, stub.Arms[TableRowsCall, TableRowsReturn]{
@@ -490,9 +410,8 @@ func (s *TableStub) Rows(limit int) iter.Seq2[Item, error] {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *TableCountsStub) invoke() func() TableCountsReturn {
 	if s.fn == nil {
 		return nil
@@ -503,12 +422,8 @@ func (s *TableCountsStub) invoke() func() TableCountsReturn {
 	}
 }
 
-// Counts records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Counts records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Counts() iter.Seq2[string, int] {
 	call := TableCountsCall{}
 	r := stub.Answer(s.OnCounts.MethodStub, &call, stub.Arms[TableCountsCall, TableCountsReturn]{
@@ -521,9 +436,8 @@ func (s *TableStub) Counts() iter.Seq2[string, int] {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *TableTailStub) invoke() func() TableTailReturn {
 	if s.fn == nil {
 		return nil
@@ -534,12 +448,8 @@ func (s *TableTailStub) invoke() func() TableTailReturn {
 	}
 }
 
-// Tail records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Tail records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Tail() Lines {
 	call := TableTailCall{}
 	r := stub.Answer(s.OnTail.MethodStub, &call, stub.Arms[TableTailCall, TableTailReturn]{

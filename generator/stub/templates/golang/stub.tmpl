@@ -11,14 +11,11 @@
 {{- $retries := false}}{{range $c.Methods}}{{if .Retry}}{{$retries = true}}{{end}}{{end}}
 {{- with $c.Producer}}
 
-// --- {{$iface}}, the handle {{.}}'s methods answer ---
+// {{$iface}} is a handle that a method of {{.}} returns.
 {{- end}}
 {{- range $c.Methods}}
 
-{{docs (wrapdocs (printf `%s records one invocation of %s.%s.
-
-Fields take their names from the source signature; a slot the source
-left unnamed or blank falls back to a positional name.` .Call $iface .Name))}}
+{{docs (wrapdocs (printf `%s records one call of %s.%s.` .Call $iface .Name))}}
 {{- ""}}type {{.Call}}{{$tp}} struct {
 {{- range .Params}}
 	{{.Field}} {{if .Variadic}}[]{{end}}{{spell .Type}}
@@ -28,16 +25,15 @@ left unnamed or blank falls back to a positional name.` .Call $iface .Name))}}
 {{- end}}
 }
 {{- end}}
-
-// --- Per-method configuration ---
 {{- range $m := $c.Methods}}
 
-{{docs (wrapdocs (printf `%s controls how the double answers %s and records
-what it was asked.
-
-The embedded MethodStub supplies the machinery every method shares: call
-recording, fault injection, latency against a virtual clock, gates,
-call-count expectations, and strict mode.` $m.Stub $m.Name))}}
+{{if ge $m.Err 0 -}}
+{{docs (wrapdocs (printf `%s configures %s and records its calls. A fault armed through it takes
+precedence over the function and the fixed results.` $m.Stub $m.Name))}}
+{{- else -}}
+{{docs (wrapdocs (printf `%s configures %s and records its calls. %s returns no error, so a fault
+armed through it fails the test.` $m.Stub $m.Name $m.Name))}}
+{{- end}}
 {{- ""}}type {{$m.Stub}}{{$tp}} struct {
 	*stub.MethodStub[{{$m.Call}}{{$ta}}]
 
@@ -48,7 +44,7 @@ call-count expectations, and strict mode.` $m.Stub $m.Name))}}
 }
 {{- if $m.Returns}}
 
-{{docs (wrapdocs (printf `%s holds the fixed answer configured through Returns.` $m.Return))}}
+{{docs (wrapdocs (printf `%s contains the fixed results of %s.` $m.Return $m.Name))}}
 {{- ""}}type {{$m.Return}}{{$tp}} struct {
 {{- range $m.Returns}}
 	{{.Field}} {{spell .Type}}
@@ -56,15 +52,11 @@ call-count expectations, and strict mode.` $m.Stub $m.Name))}}
 }
 
 {{if ge $m.Err 0 -}}
-{{docs (wrapdocs (printf `Returns pins a fixed result for every call to %s. A Func
-override takes precedence over it, and so does an injected fault.` $m.Name))}}
+{{docs (wrapdocs (printf `Returns sets the results of every call of %s. A function and an
+injected fault take precedence over them.` $m.Name))}}
 {{- else -}}
-{{docs (wrapdocs (printf `Returns pins a fixed result for every call to %s. A Func
-override takes precedence over it.
-
-No fault can take precedence here: %s answers no error, so
-the double is built with no fault arm and a fault armed through Faults
-fails the test.` $m.Name $m.Name))}}
+{{docs (wrapdocs (printf `Returns sets the results of every call of %s. A function takes
+precedence over them.` $m.Name))}}
 {{- end}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) Returns({{template "stub.returnparams" $m}}) *{{$m.Stub}}{{$ta}} {
 	s.fallback = &{{$m.Return}}{{$ta}}{{"{"}}{{range $i, $r := $m.Returns}}{{if $i}}, {{end}}{{$r.Field}}: {{$r.Param}}{{end}}{{"}"}}
@@ -73,13 +65,11 @@ fails the test.` $m.Name $m.Name))}}
 {{- end}}
 
 {{if ge $m.Err 0 -}}
-{{docs (wrapdocs (printf `Func supplies a body for %s, for when the answer depends on the
-arguments. An injected fault still takes precedence.` $m.Name))}}
+{{docs (wrapdocs (printf `Func sets the function that computes the results of %s from its
+arguments. An injected fault takes precedence over it.` $m.Name))}}
 {{- else -}}
-{{docs (wrapdocs (printf `Func supplies a body for %s, for when the answer depends on the
-arguments.
-Nothing takes precedence over it: %s answers no error, so the
-double carries no fault arm for one to be reported through.` $m.Name $m.Name))}}
+{{docs (wrapdocs (printf `Func sets the function that computes the results of %s from its
+arguments.` $m.Name))}}
 {{- end}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) Func(fn func({{template "stub.paramtypes" $m}}){{template "stub.results" $m}}) *{{$m.Stub}}{{$ta}} {
 	s.fn = fn
@@ -87,11 +77,8 @@ double carries no fault arm for one to be reported through.` $m.Name $m.Name))}}
 }
 {{- with $q := $m.Sequence}}
 
-{{docs (wrapdocs (printf `Yields makes %s return a sequence over items.
-
-Building a range-over-func by hand is a closure with a break-handling
-branch in it, and a test that gets that branch wrong reports a bug in
-itself rather than in the subject.` $m.Name))}}
+{{docs (wrapdocs (printf `Yields makes %s return a sequence of items. The sequence stops where the
+caller breaks out of the loop.` $m.Name))}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) Yields(items ...{{spell $q.Elem}}) *{{$m.Stub}}{{$ta}} {
 	s.fn = func({{template "stub.blankparams" $m}}){{template "stub.results" $m}} {
 		return func(yield func({{spell $q.Elem}}{{with $q.Second}}, {{spell .}}{{end}}) bool) {
@@ -109,11 +96,8 @@ itself rather than in the subject.` $m.Name))}}
 }
 {{- if $q.Errors}}
 
-{{docs (wrapdocs (printf `YieldsError makes %s return a sequence that produces items and
-then fails.
-
-Failing partway through is the case a consumer's loop most often gets
-wrong, and it cannot be reached by a sequence that only ever succeeds.` $m.Name))}}
+{{docs (wrapdocs (printf `YieldsError makes %s return a sequence of items that fails with err after
+the last item.` $m.Name))}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) YieldsError(items []{{spell $q.Elem}}, err error) *{{$m.Stub}}{{$ta}} {
 	s.fn = func({{template "stub.blankparams" $m}}){{template "stub.results" $m}} {
 		return func(yield func({{spell $q.Elem}}, {{spell $q.Second}}) bool) {
@@ -132,12 +116,8 @@ wrong, and it cannot be reached by a sequence that only ever succeeds.` $m.Name)
 {{- end}}
 {{- range $m.Errors}}
 
-{{docs (wrapdocs (printf `%s makes the next %s call fail with %s;
-the calls after it succeed.
-
-One-shot, because that is what a test asserting on this error's handling
-wants: poison a single call, then let the scenario continue. Faults is
-the periodic form for the rest.` .Helper $m.Name .Name))}}
+{{docs (wrapdocs (printf `%s makes the next call of %s fail with %s. The calls after it
+succeed.` .Helper $m.Name .Name))}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) {{.Helper}}() *{{$m.Stub}}{{$ta}} {
 	s.FaultsOnce({{value .Value}})
 	return s
@@ -145,8 +125,8 @@ the periodic form for the rest.` .Helper $m.Name .Name))}}
 {{- end}}
 {{- if $m.Retry}}{{use "go.dokimi.dev/fault"}}
 
-{{docs (wrapdocs (printf `RetrySchedule makes %s fail with err on every call before call
-number %d, which succeeds along with every call after it.` $m.Name $m.Retry))}}
+{{docs (wrapdocs (printf `RetrySchedule makes %s fail with err on every call before call %d. Call %d
+and every call after it succeed.` $m.Name $m.Retry $m.Retry))}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) RetrySchedule(err error) *{{$m.Stub}}{{$ta}} {
 	s.SetFault(fault.NewRetryFault[{{$m.Call}}{{$ta}}](err, {{$m.Retry}}))
 	return s
@@ -155,19 +135,16 @@ number %d, which succeeds along with every call after it.` $m.Name $m.Retry))}}
 {{- if ge $m.Partition 0}}
 {{- $p := index $m.Params $m.Partition}}
 
-{{docs (wrapdocs (printf `FaultForPartition makes %s fail every nth call whose
-%s matches key, leaving other partitions untouched.
-
-Partitioned failure is what proves isolation: a test asserting that one
-tenant's outage does not reach another needs the fault to be selective.` $m.Name $p.Field))}}
+{{docs (wrapdocs (printf `FaultForPartition makes %s fail every nth call whose %s matches key. The
+fault leaves the calls of the other partitions alone. A test of the isolation
+of a partition needs a fault that selects its calls.` $m.Name $p.Field))}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) FaultForPartition(key {{spell $p.Type}}, err error, n int) *{{$m.Stub}}{{$ta}} {
 	s.FaultsWhen(func(c {{$m.Call}}{{$ta}}) bool { return c.{{$p.Field}} == key }, err, n)
 	return s
 }
 
-{{docs (wrapdocs (printf `FaultForOtherPartitions inverts FaultForPartition: every nth call whose
-%s does not match key fails, and the named partition is left
-healthy.` $p.Field))}}
+{{docs (wrapdocs (printf `FaultForOtherPartitions makes %s fail every nth call whose %s differs
+from key. The fault leaves the calls of the partition of key alone.` $m.Name $p.Field))}}
 {{- ""}}func (s *{{$m.Stub}}{{$ta}}) FaultForOtherPartitions(key {{spell $p.Type}}, err error, n int) *{{$m.Stub}}{{$ta}} {
 	s.FaultsWhen(func(c {{$m.Call}}{{$ta}}) bool { return c.{{$p.Field}} != key }, err, n)
 	return s
@@ -175,28 +152,38 @@ healthy.` $p.Field))}}
 {{- end}}
 {{- end}}
 
-// --- {{$stub}} ---
-
-// The witness of the major version of the runtime of doubles.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 {{- if $retries}}
 
-// The witness of the major version of the fault strategies.
+// The reference to fault.CompatV1 fails the build against another major
+// version of the fault strategies.
 var _ = fault.CompatV1
 {{- end}}
 
-{{docs (wrapdocs (printf `%sOption configures a [%s] at construction time.` $stub $stub))}}
+{{docs (wrapdocs (printf `%sOption configures a [%s] at its construction.` $stub $stub))}}
 {{- ""}}type {{$stub}}Option{{$tp}} func(*{{$stub}}{{$ta}})
 
-{{docs (wrapdocs (printf `%sStrict makes an unconfigured method fail the test rather than
-return %s.` $stub $unset))}}
+{{docs (wrapdocs (printf `%sStrict returns the option that makes an unconfigured method fail the
+test instead of returning %s.` $stub $unset))}}
 {{- ""}}func {{$stub}}Strict{{$tp}}() {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.strict = true }
 }
 
-{{docs (wrapdocs (printf `%sDelegateTo wraps a real implementation: every method forwards to
-impl and is recorded on the double on the way through.` $stub))}}
-{{- ""}}func {{$stub}}DelegateTo{{$tp}}(impl {{spell $c.Delegate}}) {{$stub}}Option{{$ta}} {
+{{if $c.Delegate -}}
+{{docs (wrapdocs (printf `%sDelegateTo returns the option that passes each call to impl. The double
+still records the call.` $stub))}}
+{{- else -}}
+{{docs (wrapdocs (printf `%sDelegateTo returns the option that passes each call to impl. impl has the
+methods of %s. Both a pointer to a %s and a second double have them. The double
+still records the call.` $stub $iface $iface))}}
+{{- end}}
+{{- ""}}func {{$stub}}DelegateTo{{$tp}}(impl {{with $c.Delegate}}{{spell .}}{{else}}interface {
+{{- range $dm := $d.Methods.Items}}
+	{{$dm.Name}}({{params $dm.Params}}){{results $dm.Returns}}
+{{- end}}
+}{{end}}) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) {
 {{- range $c.Methods}}
 		s.{{.Field}}.Func(impl.{{.Name}})
@@ -204,36 +191,34 @@ impl and is recorded on the double on the way through.` $stub))}}
 	}
 }
 
-{{docs (wrapdocs (printf `%sWithClock drives latency and time-windowed faults from clk
-rather than from wall time, so a test asserting on a five-second timeout
-does not take five seconds.` $stub))}}
+{{docs (wrapdocs (printf `%sWithClock returns the option that sets the clock of the double to clk.
+The double takes the latency, the windows of the faults and the instants of
+the calls from clk. A latency on a controlled clock costs no real time.` $stub))}}
 {{- ""}}func {{$stub}}WithClock{{$tp}}(clk assert.Clock) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.group.SetClock(clk) }
 }
 
-{{docs (wrapdocs (printf `%sWithRandSource makes probabilistic fault injection reproducible.
-A failure nobody can replay is not a finding.` $stub))}}
+{{docs (wrapdocs (printf `%sWithRandSource returns the option that sets the random source of the
+probabilistic faults to src. A seeded source repeats the faults of a run.` $stub))}}
 {{- ""}}func {{$stub}}WithRandSource{{$tp}}(src rand.Source) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.group.SetRandSource(src) }
 }
 
-{{docs (wrapdocs (printf `%sBenchMode disables call recording. Dispatch still works; only
-the accumulating call log is dropped.` $stub))}}
+{{docs (wrapdocs (printf `%sBenchMode returns the option that turns the recording of calls off. The
+methods still return their results.` $stub))}}
 {{- ""}}func {{$stub}}BenchMode{{$tp}}() {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.group.BenchMode() }
 }
 
-{{docs (wrapdocs (printf `%sWithLatency makes every method sleep d before answering, for a
-test standing in for a slow dependency rather than one slow method. Pair
-it with %sWithClock, or d elapses in wall time.` $stub $stub))}}
+{{docs (wrapdocs (printf `%sWithLatency returns the option that makes every method sleep d before it
+returns. Without %sWithClock, d passes in real time.` $stub $stub))}}
 {{- ""}}func {{$stub}}WithLatency{{$tp}}(d time.Duration) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.group.SetLatency(d) }
 }
 {{- if $c.Fallible}}
 
-{{docs (wrapdocs (printf `%sFailing arms every method that can fail with err, so a
-caller's error path is one option rather than one Faults call per
-method. A method answering no error is left alone.` $stub))}}
+{{docs (wrapdocs (printf `%sFailing returns the option that arms err on each method that can fail.
+Each call of such a method then fails with err.` $stub))}}
 {{- ""}}func {{$stub}}Failing{{$tp}}(err error) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) {
 {{- range $c.Methods}}
@@ -246,35 +231,29 @@ method. A method answering no error is left alone.` $stub))}}
 {{- end}}
 {{- range $m := $c.Methods}}
 
-{{docs (wrapdocs (printf `With%s%s sets %s's body at construction
-time, for the common case of configuring one method and taking the
-defaults for the rest.` $iface $m.Name $m.Name))}}
+{{docs (wrapdocs (printf `With%s%s returns the option that sets the function of %s.` $iface $m.Name $m.Name))}}
 {{- ""}}func With{{$iface}}{{$m.Name}}{{$tp}}(fn func({{template "stub.paramtypes" $m}}){{template "stub.results" $m}}) {{$stub}}Option{{$ta}} {
 	return func(s *{{$stub}}{{$ta}}) { s.{{$m.Field}}.Func(fn) }
 }
 {{- end}}
 
 {{if eq $unset "its zero value" -}}
-{{docs (wrapdocs (printf `%s is a recording test double for %s.
-
-Each On<Method> field is that method's configuration point. Left alone, a
-method returns its zero value and records the call.` $stub $iface))}}
+{{docs (wrapdocs (printf `%s is a recording test double of %s. Each field On<Method> configures its
+method. An unconfigured method records the call and returns the zero values
+of its results.` $stub $iface))}}
 {{- else -}}
-{{docs (wrapdocs (printf `%s is a recording test double for %s.
-
-Each On<Method> field is that method's configuration point. Left alone, a
-method records the call and returns its default results: a new value from
-the builder of each result type that has one, and the zero value of each
-other result.` $stub $iface))}}
+{{docs (wrapdocs (printf `%s is a recording test double of %s. Each field On<Method> configures its
+method. An unconfigured method records the call and returns its default
+results. The default result of a type with a builder is a new value from the
+builder, and every other result is its zero value.` $stub $iface))}}
 {{- end}}
 {{- ""}}type {{$stub}}{{$tp}} struct {
 {{- range $c.Methods}}
-{{if .From}}{{memberdocs (wrapdocs (printf `%s configures %s, contributed by %s.` .Field .Name .From))}}{{end}}
+{{if .From}}{{memberdocs (wrapdocs (printf `%s configures %s, which %s declares.` .Field .Name .From))}}{{end}}
 {{- ""}}	{{.Field}} *{{.Stub}}{{$ta}}
 {{- end}}
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group *stub.Group
 {{- if $c.Ordered}}
 
@@ -285,23 +264,18 @@ other result.` $stub $iface))}}
 {{- with $c.Guard}}
 
 {{if $c.Witnesses -}}
-{{docs (wrapdocs (printf `Compile-time proof that %s satisfies %s.
-
-A generic double is asserted at one instantiation. It never branches on its
-type parameters, so satisfying the interface at these types means satisfying
-it at every type the constraints admit.` $stub $iface))}}
+{{docs (wrapdocs (printf `The compiler checks that %s implements %s at the witnesses of its type
+parameters. The double does not branch on its type parameters, so it implements
+%s at every instance.` $stub $iface $iface))}}
 {{- else -}}
-{{docs (wrapdocs (printf `Compile-time proof that %s satisfies %s.` $stub $iface))}}
+{{docs (wrapdocs (printf `The compiler checks that %s implements %s.` $stub $iface))}}
 {{- end}}
 {{- ""}}var _ {{spell .}} = (*{{$stub}}{{typeargs $c.Witnesses}})(nil)
 {{- end}}
 
-{{docs (wrapdocs (printf `New%s returns a double bound to tb.
-
-Passing tb registers a cleanup that verifies every method's call-count
-expectations when the test ends, so an unmet Times is reported without the
-caller remembering to check. A nil tb skips that, which is what benchmarks
-and non-test callers want.` $stub))}}
+{{docs (wrapdocs (printf `New%s returns a double of %s that reports its failures to tb and applies
+opts. The double checks the expected counts of calls at the end of the test.
+With a nil tb, the double reports nothing.` $stub $iface))}}
 {{- ""}}func New{{$stub}}{{$tp}}(tb assert.TB, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
 	s := &{{$stub}}{{$ta}}{
 {{- range $c.Methods}}
@@ -320,18 +294,16 @@ and non-test callers want.` $stub))}}
 		s.group.StrictAll()
 	}
 {{- if $c.Ordered}}
-	// Allocated after the options run: the tracker only fails the test in
-	// strict mode, so it has to be told which mode it is in.
+	// The tracker fails the test in strict mode alone, so it follows the
+	// options.
 	s.order = stub.NewOrderTracker(tb, s.strict)
 {{- end}}
 	s.group.Bind(tb)
 	return s
 }
 
-{{docs (wrapdocs (printf `New%sDelayed returns a double whose every method sleeps d against
-clk before answering — the clock and the latency a slow-dependency test
-wants, in one call rather than two options. Further options apply after
-the pair, so a caller can still add Strict or a method override.` $stub))}}
+{{docs (wrapdocs (printf `New%sDelayed returns a double whose methods sleep d on clk before they
+return. It applies opts after the clock and the latency.` $stub))}}
 {{- ""}}func New{{$stub}}Delayed{{$tp}}(tb assert.TB, d time.Duration, clk assert.Clock, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
 	return New{{$stub}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{
 		{{$stub}}WithClock{{$ta}}(clk),
@@ -340,32 +312,27 @@ the pair, so a caller can still add Strict or a method override.` $stub))}}
 }
 {{- if $c.Fallible}}
 
-{{docs (wrapdocs (printf `New%sFailing returns a double whose every fallible method answers
-err — [%sFailing] applied at construction, for the test whose
-whole subject is the caller's error path. Further options apply after it.` $stub $stub))}}
+{{docs (wrapdocs (printf `New%sFailing returns a double on which each call of a method that can
+fail fails with err. It applies opts after the failure.` $stub))}}
 {{- ""}}func New{{$stub}}Failing{{$tp}}(tb assert.TB, err error, opts ...{{$stub}}Option{{$ta}}) *{{$stub}}{{$ta}} {
 	return New{{$stub}}{{$ta}}(tb, append([]{{$stub}}Option{{$ta}}{ {{- $stub}}Failing{{$ta}}(err)}, opts...)...)
 }
 {{- end}}
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *{{$stub}}{{$ta}}) ResetCalls() {
 	s.group.Reset()
 {{- if $c.Ordered}}
 	s.order.Reset()
 {{- end}}
 }
-
-// --- Interface methods ---
 {{- range $i, $m := $c.Methods}}
 {{- $dm := index $d.Methods.Items $i}}
 {{- if $m.Returns}}
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func ({{$m.Receiver}} *{{$m.Stub}}{{$ta}}) invoke({{template "stub.paramdecls" $m}}) func() {{$m.Return}}{{$ta}} {
 	if {{$m.Receiver}}.fn == nil {
 		return nil
@@ -377,9 +344,9 @@ func ({{$m.Receiver}} *{{$m.Stub}}{{$ta}}) invoke({{template "stub.paramdecls" $
 }
 {{- else}}
 
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
 func ({{$m.Receiver}} *{{$m.Stub}}{{$ta}}) invokeVoid({{template "stub.paramdecls" $m}}) func() struct{} {
 	if {{$m.Receiver}}.fn == nil {
 		return nil
@@ -391,17 +358,11 @@ func ({{$m.Receiver}} *{{$m.Stub}}{{$ta}}) invokeVoid({{template "stub.paramdecl
 }
 {{- end}}
 
-{{docs (wrapdocs (printf `%s records the call and answers it.
-
-Which arm answers — injected fault, Func override, Returns fallback, or the
-%s — is [stub.Answer]'s to decide, so every generated double
-resolves a call the same way and the ordering is tested once rather than
-restated per method.` $m.Name (or (and $m.Defaulted "default results") "zero value")))}}
+{{docs (wrapdocs (printf `%s records the call. An armed fault comes first, then the function of
+Func, then the results of Returns, and then the %s.` $m.Name (or (and $m.Defaulted "default results") "zero values")))}}
 {{- ""}}func ({{receiver $dm}}) {{$dm.Name}}({{params $dm.Params}}){{results $dm.Returns}} {
 {{- if $m.Deprecated}}
-	// Skipped in bench mode: Logf allocates the formatted message per
-	// dispatch, which is what a benchmark through this double would
-	// otherwise be measuring.
+	// Bench mode logs nothing, because a log allocates on each call.
 	if tb, logs := {{$m.Receiver}}.{{$m.Field}}.TB().(interface{ Logf(string, ...any) }); logs && !{{$m.Receiver}}.{{$m.Field}}.IsBenchMode() {
 		tb.Logf("{{$m.Qualified}} is deprecated")
 	}

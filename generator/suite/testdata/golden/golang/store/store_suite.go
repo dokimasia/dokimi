@@ -75,7 +75,11 @@ func RunStoreSuite[T Store](t *testing.T, newSubject func() T, opts ...StoreOpti
 
 // RunStoreSuiteFromHandle applies the same checks to a subject that
 // newSubject builds from the handle of each check.
-func RunStoreSuiteFromHandle[T Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+func RunStoreSuiteFromHandle[T Store](
+	t *testing.T,
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
 	t.Helper()
 	conform.Run(t, StoreSuite(), func(h *StoreHandle) Store { return newSubject(h) }, opts...)
 }

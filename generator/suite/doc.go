@@ -7,9 +7,10 @@
 //
 // The suite of a declaration contains the names of its callables with the
 // identities of their checks, the function that returns its checks, and the
-// two forms of the application that runs the checks on a subject. The test
-// of its proofs falsifies each check on its planted defect. The module
-// go.dokimi.dev/conform declares the types of these parts:
+// two forms of the application that runs the checks on a subject. The spec of
+// the file of the suite falsifies each check on its planted defect. It also
+// checks that each form passes the value of its factory to a check as the
+// subject. The module go.dokimi.dev/conform declares the types of these parts:
 //
 //	//dokimi:suite
 //	//dokimi:out path=storetest/
@@ -42,10 +43,23 @@
 //	storetest.RunStoreSuite(t, memory.New, conform.With(keepsTheItem()))
 //
 // The directive subject on a struct of the consumer generates that test in
-// the package of the struct. Its param new names the factory of the
-// subjects:
+// the external test package of the struct. Where the factory is not exported,
+// the test is inside the package of the struct. Its param new contains the
+// name of the factory of the subjects:
 //
 //	//dokimi:subject store.Store new=New
+//	type Store struct{ … }
+//
+// # Excusals
+//
+// The directive excuse on the struct of a subject excuses a check of the
+// suite from the conformance test of the subject. Its positional param is the
+// identity of the check, and its param reason states why the subject does not
+// pass the check. The test passes each excusal to the application through
+// conform.Excuse, and the application skips the check with the reason:
+//
+//	//dokimi:subject store.Store new=New
+//	//dokimi:excuse Store.Get/keeps-the-item reason="the store drops each item"
 //	type Store struct{ … }
 //
 // # Kinds of declaration
@@ -69,8 +83,11 @@
 // suite cannot instantiate, [NoSuite] at a subject whose declaration has no
 // directive suite, and [BadFactory] at a subject whose factory an application
 // cannot call. It reports [UnknownCallable] at the directive of a check whose
-// callable it cannot find, and [BadCheck] at the directive of a check without
-// a statement or with the wrong signature.
+// callable it cannot find. It reports [BadCheck] at the directive of a check
+// without a statement or with the wrong signature, and of a check of a
+// function with the segment of a check that the spec of the suite adds. It
+// reports [UnknownExcusal] at an excusal whose identity does not match a check
+// of the suite.
 //
 // # Dependency position
 //

@@ -37,15 +37,20 @@ const Version = "0.1.0"
 // subjects. CheckDirective binds a function of a consumer to a callable of a
 // suite as a check. Its positional param CallableParam contains the callable,
 // and its param DefectParam contains the name of the function of the planted
-// defect.
+// defect. ExcuseDirective excuses a check of the suite from the conformance
+// test of a subject. Its positional param IdentityParam contains the identity
+// of the check, and its param ReasonParam contains the reason.
 const (
 	SuiteDirective   directive.Name     = "suite"
 	SubjectDirective directive.Name     = "subject"
 	CheckDirective   directive.Name     = "check"
+	ExcuseDirective  directive.Name     = "excuse"
 	DeclarationParam directive.ParamKey = "declaration"
 	NewParam         directive.ParamKey = "new"
 	CallableParam    directive.ParamKey = "callable"
 	DefectParam      directive.ParamKey = "defect"
+	IdentityParam    directive.ParamKey = "identity"
+	ReasonParam      directive.ParamKey = "reason"
 )
 
 // KeyDeclaration, KeyCallable, KeySegment, KeyStatement and KeyDefect are the
@@ -66,13 +71,12 @@ const (
 // comment, as in "KeepsTheItem checks that Get returns the item".
 const checksThat = " checks that"
 
-// Word is the word of the family of the suites, and ConformWord the word of
-// the family of the conformance tests. TestTag is the tag of the family of the
-// conformance tests.
+// Word is the word of the family of the suites and of the family of their
+// tests, so the test of a suite is the spec of its file. TestTag is the tag of
+// the family of the tests.
 const (
-	Word        = "suite"
-	ConformWord = "conform"
-	TestTag     = sdk.TagTest
+	Word    = "suite"
+	TestTag = sdk.TagTest
 )
 
 // The tree of each target contains the file template of the suites and the
@@ -104,6 +108,7 @@ const (
 	testWord       = "Test"
 	conformsWord   = "ConformsTo"
 	newWord        = "New"
+	subjectWord    = "Subject"
 )
 
 // Suite is the data of the record of the suite of one declaration, and the
@@ -182,18 +187,45 @@ type Check struct {
 // tests, and the template of the family reads it. Test is the name of the
 // test function, and Declaration the name of the declaration whose suite the
 // test applies. Subject is the name of the subject of a conformance test, and
-// empty for the falsification test of a suite.
+// empty for the test of a suite. Excusals are the excusals of the subject in
+// the order of their directives. The test of a suite applies a check of its
+// own to the forms of the application, so its excusals are the checks of the
+// suite. Function reports that the declaration is a function, whose form Run
+// takes the subject itself. Builds and Receives are the segments of the
+// checks that the test of a suite adds. The check of the form Run of the
+// suite of a function has the segment Receives, and each other check has
+// the segment Builds. Both are empty for a conformance test.
 //
 // The record of a conformance test is a struct with two fields. The type of
 // the first refers to the form of the application, as RunStoreSuite, and the
-// type of the second to the factory of the subjects. The record of a
-// falsification test is a struct with one field, whose type refers to the
-// function of the suite, as StoreSuite. The layout of eidos qualifies each
-// reference to the suite by the package of the file of the suite.
+// type of the second to the factory of the subjects. The record of a subject
+// with excusals has a third field, whose type refers to the names of the
+// callables of the suite, as StoreChecks. The record of the test of a suite
+// is a struct whose fields refer, in this order, to the function of the suite
+// as StoreSuite, to the two forms of the application, to the aliases of the
+// handle and the check, to the type of the subjects and to the names of the
+// callables. The record of the suite of a function has a last field, which
+// refers to the function. The layout of eidos qualifies each reference to the
+// suite by the package of the file of the suite.
 type Conformance struct {
 	Test        string
 	Subject     string
 	Declaration string
+	Builds      string
+	Receives    string
+	Excusals    []Excusal
+	Function    bool
+}
+
+// Excusal is one excusal of a check in the conformance test of a subject.
+// Field is the field of the callable of the check in the names of the
+// callables, as Get, and Method the method that returns the identity of the
+// check, as KeepsTheItem. Reason is the reason why the subject does not pass
+// the check.
+type Excusal struct {
+	Field  string
+	Method string
+	Reason string
 }
 
 // parts are the parts of suite, one for each language that it serves.
@@ -239,6 +271,25 @@ var checkSchema = directive.Schema{
 	Doc: "binds the function to a callable of a suite as a check of the consumer, with its planted defect",
 }
 
+// excuseSchema is the directive of an excusal. A subject excuses each check
+// with a directive of its own, so the directive repeats, and it requires the
+// directive subject on its struct.
+var excuseSchema = directive.Schema{
+	Name:       ExcuseDirective,
+	Repeatable: true,
+	Requires:   []directive.Name{SubjectDirective},
+	Kinds:      []symbol.Kind{symbol.KindStruct},
+	Positional: []directive.ParamSpec{{
+		Key: IdentityParam, Type: directive.TypeString, Required: true,
+		Doc: "the identity of the check of the suite that the subject does not pass, such as Store.Get/keeps-the-item",
+	}},
+	Params: []directive.ParamSpec{{
+		Key: ReasonParam, Type: directive.TypeString, Required: true,
+		Doc: "the reason why the subject does not pass the check",
+	}},
+	Doc: "excuses a check of the suite of the declaration from the conformance test of the subject, with the reason",
+}
+
 // generator is one instance of suite: the handles of the keys of the facts of
 // a check. The composition registers the keys before the first phase call,
 // and the handlers read them afterwards.
@@ -258,19 +309,24 @@ type generator struct {
 // New returns suite, a plugin with an annotate half and a generate half. The
 // annotate half stamps the facts of a check on each function under
 // [CheckDirective] whose directive names a callable of a declaration under
-// [SuiteDirective]. The generate half records a [Suite] into the family [Word]
-// for each interface, struct or function under SuiteDirective, with the
+// [SuiteDirective]. The generate half records a [Suite] into the family of the
+// suites for each interface, struct or function under SuiteDirective, with the
 // checks that the annotate half binds to its callables. The template of the
 // family writes the suite in the conventions of the language of the plan.
 //
-// suite records a [Conformance] into the family [ConformWord] under the tag
-// [TestTag] for each declaration under SuiteDirective, and the template of the
-// family writes the test that falsifies each check of the suite on its
-// planted defect. suite also records a Conformance for each struct under
-// [SubjectDirective], and the template writes a test that applies the suite
-// of the declaration to a subject of the factory. The test calls the
-// factory, which need not be exported, so a Go file of the family is in the
-// package of the subject.
+// suite records a [Conformance] into the family of the tag [TestTag] for each
+// declaration under SuiteDirective, and the template of the family writes the
+// test that falsifies each check of the suite on its planted defect. Both
+// families have the word [Word], so a Go suite and its test are
+// <file>_suite.go and <file>_suite_test.go. suite also records a Conformance
+// for each struct under [SubjectDirective], and the template writes a test
+// that applies the suite of the declaration to a subject of the factory. The
+// tests of the family test their package from outside, so a Go file of the
+// family is in the external test package of its directory. The test of a
+// subject whose factory is not exported tests from inside the package of the
+// subject, because only that package can call the factory. The test of a
+// subject passes each excusal of the directive [ExcuseDirective] on the
+// struct of the subject to the application.
 //
 // suite runs after stub, whose doubles the planted defects of a suite build
 // on. It serves Go, the language of its part, and leaves a declaration of
@@ -278,9 +334,10 @@ type generator struct {
 // type parameters its suite cannot instantiate, [NoSuite] at a subject whose
 // declaration has no directive suite, and [BadFactory] at a subject whose
 // factory an application cannot call. It reports [UnknownCallable] and
-// [BadCheck] at the directive of a check that it cannot bind. suite records
-// and stamps nothing for a declaration that it reports. Each call returns a
-// new plugin.
+// [BadCheck] at the directive of a check that it cannot bind, and
+// [UnknownExcusal] at an excusal of a check that the suite does not have.
+// suite records and stamps nothing for a declaration that it reports. Each
+// call returns a new plugin.
 func New() sdk.Dual {
 	g := &generator{}
 	b := sdk.NewPlugin(ID).
@@ -288,15 +345,16 @@ func New() sdk.Dual {
 		Requires(stub.Capability).
 		Keys(g.register).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: suiteTemplate}).
-		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, Word: ConformWord, Template: conformTemplate})
+		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, External: true, Word: Word, Template: conformTemplate})
 	lang.Register(b, parts)
 	return b.Handle(
 		sdk.Directive(suiteSchema,
 			sdk.OnInterface(lang.Served(parts, g.suiteOfInterface)),
 			sdk.OnStruct(lang.Served(parts, g.suiteOfStruct)),
 			sdk.OnFunction(lang.Served(parts, g.suiteOfFunction))),
-		sdk.Directive(subjectSchema, sdk.OnStruct(lang.Served(parts, conformanceOf))),
+		sdk.Directive(subjectSchema, sdk.OnStruct(lang.Served(parts, g.conformanceOf))),
 		sdk.Directive(checkSchema, sdk.OnFunction(lang.Served(parts, g.concludeCheck))),
+		sdk.Directive(excuseSchema),
 	).Dual()
 }
 
@@ -328,7 +386,9 @@ func (g *generator) register(r *meta.Registry) error {
 // concludeCheck stamps the facts of a check on a function under the directive
 // check. It stamps them where the callable of the directive belongs to one
 // declaration under the directive suite. The function and its defect must also
-// have the signatures of a check. Otherwise concludeCheck reports
+// have the signatures of a check. The identity of a check of a function names
+// no callable, so a check of a function must not have the segment of a check
+// that the test of the suite adds. Otherwise concludeCheck reports
 // [UnknownCallable] or [BadCheck] at the directive.
 func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ lang.Part, st *sdk.Stamper) error {
 	fn := m.Function
@@ -346,9 +406,15 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ lang.Part, st *sdk.Sta
 	if !signed(m, d, fn) {
 		return nil
 	}
+	segment := naming.Kebab(fn.Name)
+	if !strings.Contains(callable, ".") && (segment == buildsSegment || segment == receivesSegment) {
+		m.ErrorfAt(BadCheck, d.Pos, "the test of the suite of %s adds the check %s/%s to the forms of its "+
+			"application, so %s is no check. Rename the function", callable, callable, segment, fn.Name)
+		return nil
+	}
 	sdk.Stamp(st, g.declaration, decl)
 	sdk.Stamp(st, g.callable, callable)
-	sdk.Stamp(st, g.segment, naming.Kebab(fn.Name))
+	sdk.Stamp(st, g.segment, segment)
 	sdk.Stamp(st, g.statement, statement)
 	sdk.Stamp(st, g.defect, d.Params[DefectParam].Target)
 	return nil
@@ -468,33 +534,99 @@ func signed(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) boo
 	return false
 }
 
-// checksOf returns the checks that the annotate half binds to the callables
-// of the declaration origin, in the order of the callables. The checks of one
-// callable are in the order of the identities of their functions.
-func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables []Callable) []Check {
-	bound := map[string][]Check{}
+// bound is a check that the annotate half binds to a declaration: the
+// function of the check and the facts that the annotate half stamps on it.
+type bound struct {
+	fn        symbol.Identity
+	callable  string
+	segment   string
+	statement string
+	defect    symbol.Identity
+}
+
+// boundTo returns the checks that the annotate half binds to the declaration
+// origin, in the order of the identities of their functions.
+func (g *generator) boundTo(m sdk.Matcher, origin *symbol.Identity) []bound {
+	var out []bound
 	for id := range sdk.Subjects(m, g.declaration) {
 		if decl, _ := sdk.FactOf(m, id, g.declaration); decl != *origin {
 			continue
 		}
-		callable, _ := sdk.FactOf(m, id, g.callable)
-		segment, _ := sdk.FactOf(m, id, g.segment)
-		statement, _ := sdk.FactOf(m, id, g.statement)
-		defect, _ := sdk.FactOf(m, id, g.defect)
-		bound[callable] = append(bound[callable], Check{
-			Apply:  &emit.TypeRef{Spelling: id.Name, Target: id},
-			Defect: &emit.TypeRef{Spelling: defect.Name, Target: defect},
-			Method: id.Name, Segment: segment, Statement: statement,
+		b := bound{fn: id}
+		b.callable, _ = sdk.FactOf(m, id, g.callable)
+		b.segment, _ = sdk.FactOf(m, id, g.segment)
+		b.statement, _ = sdk.FactOf(m, id, g.statement)
+		b.defect, _ = sdk.FactOf(m, id, g.defect)
+		out = append(out, b)
+	}
+	return out
+}
+
+// checksOf returns the checks that the annotate half binds to the callables
+// of the declaration origin, in the order of the callables. The checks of one
+// callable are in the order of the identities of their functions.
+func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables []Callable) []Check {
+	byCallable := map[string][]Check{}
+	checks := g.boundTo(m, origin)
+	for i := range checks {
+		b := &checks[i]
+		byCallable[b.callable] = append(byCallable[b.callable], Check{
+			Apply:  &emit.TypeRef{Spelling: b.fn.Name, Target: b.fn},
+			Defect: &emit.TypeRef{Spelling: b.defect.Name, Target: b.defect},
+			Method: b.fn.Name, Segment: b.segment, Statement: b.statement,
 		})
 	}
 	var out []Check
 	for _, c := range callables {
-		for _, check := range bound[c.Name] {
+		for _, check := range byCallable[c.Name] {
 			check.Field, check.Type = c.Field, c.Type
 			out = append(out, check)
 		}
 	}
 	return out
+}
+
+// excusalsOf returns the excusals of the subject of m in the order of their
+// directives. Each excusal excuses a check that the annotate half binds to the
+// declaration declared. excusalsOf reports [UnknownExcusal] at each excusal
+// whose identity does not match such a check, with the identities of the
+// checks of its callable in the order of their functions. It returns false
+// where it reports an excusal.
+func (g *generator) excusalsOf(m *sdk.StructMatch, declared *symbol.Identity) ([]Excusal, bool) {
+	methods := map[string]string{}
+	checks := g.boundTo(m, declared)
+	for i := range checks {
+		methods[checks[i].callable+"/"+checks[i].segment] = checks[i].fn.Name
+	}
+	var out []Excusal
+	excused := true
+	for x := range m.Directives(ExcuseDirective) {
+		identity := x.Args[0].Str
+		callable, _, _ := strings.Cut(identity, "/")
+		method, found := methods[identity]
+		if found {
+			_, field, _ := strings.Cut(callable, ".")
+			out = append(out, Excusal{Field: field, Method: method, Reason: x.Params[ReasonParam].Str})
+			continue
+		}
+		var ids []string
+		for i := range checks {
+			if checks[i].callable == callable {
+				ids = append(ids, callable+"/"+checks[i].segment)
+			}
+		}
+		listing := fmt.Sprintf("The suite of %s has no check of %s", declared.Name, callable)
+		switch {
+		case len(ids) > 1:
+			listing = fmt.Sprintf("The checks of %s are %s", callable, listed(ids, "and"))
+		case len(ids) == 1:
+			listing = fmt.Sprintf("The check of %s is %s", callable, ids[0])
+		}
+		m.ErrorfAt(UnknownExcusal, x.Pos, "%s is no check of the suite of %s, so %s has no conformance test. %s",
+			identity, declared.Name, m.Struct.Name, listing)
+		excused = false
+	}
+	return out, excused
 }
 
 // listed returns words, two or more, as an English list whose last two words
@@ -602,18 +734,53 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	record := &emit.Struct{
 		Origin: *origin, Name: e.JoinName(proofsWord, s.Declaration), Visibility: symbol.VisibilityPackage,
 	}
-	record.Fields.Append(&emit.Field{
-		Name: suiteWord, Type: &emit.TypeRef{Spelling: n.Suite, Target: *origin, Emitted: true},
-	})
-	e.File(TestTag).Record(Conformance{Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration}, record)
+	emitted := func(name string) *emit.TypeRef { return &emit.TypeRef{Spelling: name, Target: *origin, Emitted: true} }
+	subject := s.Subject
+	if s.Methods != nil || s.Func != nil {
+		subject = emitted(s.Subject.Spelling)
+	}
+	record.Fields.Append(
+		&emit.Field{Name: suiteWord, Type: emitted(n.Suite)},
+		&emit.Field{Name: runWord, Type: emitted(n.Run)},
+		&emit.Field{Name: fromHandleWord, Type: emitted(n.RunFromHandle)},
+		&emit.Field{Name: handleWord, Type: emitted(n.Handle)},
+		&emit.Field{Name: checkWord, Type: emitted(n.Check)},
+		&emit.Field{Name: subjectWord, Type: subject},
+		&emit.Field{Name: checksWord, Type: emitted(n.Checks)},
+	)
+	if s.Func != nil {
+		record.Fields.Append(&emit.Field{Name: funcWord, Type: &emit.TypeRef{Spelling: s.Declaration, Target: *origin}})
+	}
+	excused := make([]Excusal, 0, len(s.Checks))
+	for _, c := range s.Checks {
+		excused = append(excused, Excusal{Field: c.Field, Method: c.Method, Reason: aloneReason})
+	}
+	e.File(TestTag).Record(Conformance{
+		Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration, Builds: buildsSegment,
+		Receives: receivesSegment, Excusals: excused, Function: s.Func != nil,
+	}, record)
 }
 
+// aloneReason is the reason of each excusal of the test of a suite, which
+// applies a check of its own alone to the forms of the application.
+const aloneReason = "the test applies the check of its option alone"
+
+// buildsSegment and receivesSegment are the segments of the checks that the
+// test of a suite adds to the forms of its application, as the record of the
+// test states them in [Conformance].
+const (
+	buildsSegment   = "builds-the-subject"
+	receivesSegment = "receives-the-function"
+)
+
 // conformanceOf records the conformance test of a struct under the directive
-// subject. It reports [NoSuite] where the declaration has no directive suite,
-// and [BadFactory] where an application cannot call the factory. A factory
-// without a parameter goes to the form Run of the application, and a factory
-// of one parameter, the handle of a check, to the form RunFromHandle.
-func conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitter) error {
+// subject, with the excusals of the struct. It reports [NoSuite] where the
+// declaration has no directive suite, and [BadFactory] where an application
+// cannot call the factory. A factory without a parameter goes to the form Run
+// of the application, and a factory of one parameter, the handle of a check,
+// to the form RunFromHandle. The test of a factory that is not exported tests
+// from inside the package.
+func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitter) error {
 	st := m.Struct
 	d := m.Directive()
 	declared := d.Args[0].Target
@@ -639,6 +806,10 @@ func conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitter) error {
 			factory.Name, len(view.Returns), st.Name)
 		return nil
 	}
+	excusals, excused := g.excusalsOf(m, &declared)
+	if !excused {
+		return nil
+	}
 	record := &emit.Struct{
 		Origin:     st.ID,
 		Name:       e.JoinName(conformanceWd, st.Name),
@@ -648,9 +819,20 @@ func conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitter) error {
 		&emit.Field{Name: runWord, Type: &emit.TypeRef{Spelling: run, Target: declared, Emitted: true}},
 		&emit.Field{Name: newWord, Type: &emit.TypeRef{Spelling: factory.Name, Target: factory}},
 	)
-	e.File(TestTag).Record(Conformance{
+	if len(excusals) > 0 {
+		record.Fields.Append(&emit.Field{
+			Name: checksWord, Type: &emit.TypeRef{Spelling: names.Checks, Target: declared, Emitted: true},
+		})
+	}
+	out := e.File(TestTag)
+	// The directive subject is on a struct, so its factory is a function in
+	// the scope of the struct.
+	if fn, _ := found.(*node.Function); fn.Visibility != symbol.VisibilityPublic {
+		out = out.Internal()
+	}
+	out.Record(Conformance{
 		Test:    e.JoinName(declared.Name, e.JoinName(conformsWord, e.JoinName(st.Name, testWord))),
-		Subject: st.Name, Declaration: declared.Name,
+		Subject: st.Name, Declaration: declared.Name, Excusals: excusals,
 	}, record)
 	return nil
 }

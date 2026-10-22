@@ -80,6 +80,16 @@ func BuildsNothing(h any) {}
 //dokimi:check store.Store.Get defect=paired
 func BuildsTwo(h any) {}
 
+// BuildsTheSubject checks that Normalize returns the text.
+//
+//dokimi:check Normalize defect=broken
+func BuildsTheSubject(h any) {}
+
+// ReceivesTheFunction checks that Normalize keeps the text.
+//
+//dokimi:check Normalize defect=broken
+func ReceivesTheFunction(h any) {}
+
 // broken returns a store that breaks every check.
 func broken(any) store.Store { return nil }
 

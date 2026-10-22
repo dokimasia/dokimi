@@ -48,10 +48,21 @@ var UnknownCallable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // BadCheck reports a function under the directive check whose doc comment
 // states no statement, or whose signature or the signature of its defect is
 // not the signature of a check. A check takes the handle of its check alone,
-// and its defect takes the handle and returns the planted defect alone. The
+// and its defect takes the handle and returns the planted defect alone.
+// BadCheck also reports a check of a function with the identity of a check
+// that the test of the suite adds to the forms of its application. The
 // finding is an Error at the function, and no suite binds the check.
 var BadCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 5,
-	Meaning: "a function under the directive check has no statement, or it or its defect has another signature " +
-		"than a check",
+	Meaning: "a function under the directive check has no statement, it or its defect has another signature " +
+		"than a check, or it has the identity of a check that the test of its suite adds",
+})
+
+// UnknownExcusal reports an excusal under the directive excuse whose identity
+// does not match a check of the suite of the declaration of its subject. The
+// finding is an Error at the directive, and suite does not record the
+// conformance test of the subject.
+var UnknownExcusal = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  6,
+	Meaning: "the directive excuse names a check that the suite of the declaration of its subject does not have",
 })

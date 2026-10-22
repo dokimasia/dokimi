@@ -20,7 +20,7 @@ type (
 // subject of the suite of Catalog implements it.
 type CatalogMethods interface {
 	Find(id string) (string, bool)
-	Add(id string, name string)
+	Add(id, name string)
 }
 
 // CatalogChecks contains the name of each callable of Catalog, with the
@@ -53,14 +53,17 @@ type catalogAdd struct {
 
 // CatalogSuite returns the checks of Catalog.
 func CatalogSuite() conform.Suite[CatalogMethods] {
-	return conform.Suite[CatalogMethods]{Declaration: "Catalog", Checks: []conform.Check[CatalogMethods]{
-		{
-			ID:        CatalogChecks.Find.FindsTheAddedProduct(),
-			Statement: "Find returns the product that Add listed",
-			Apply:     FindsTheAddedProduct,
-			Defect:    amnesiac,
+	return conform.Suite[CatalogMethods]{
+		Declaration: "Catalog",
+		Checks: []conform.Check[CatalogMethods]{
+			{
+				ID:        CatalogChecks.Find.FindsTheAddedProduct(),
+				Statement: "Find returns the product that Add listed",
+				Apply:     FindsTheAddedProduct,
+				Defect:    amnesiac,
+			},
 		},
-	}}
+	}
 }
 
 // RunCatalogSuite applies the checks of Catalog, and the checks that opts
@@ -72,7 +75,15 @@ func RunCatalogSuite[T CatalogMethods](t *testing.T, newSubject func() T, opts .
 
 // RunCatalogSuiteFromHandle applies the same checks to a subject that
 // newSubject builds from the handle of each check.
-func RunCatalogSuiteFromHandle[T CatalogMethods](t *testing.T, newSubject func(h *CatalogHandle) T, opts ...CatalogOption) {
+func RunCatalogSuiteFromHandle[T CatalogMethods](
+	t *testing.T,
+	newSubject func(h *CatalogHandle) T,
+	opts ...CatalogOption,
+) {
 	t.Helper()
-	conform.Run(t, CatalogSuite(), func(h *CatalogHandle) CatalogMethods { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		CatalogSuite(),
+		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
+		opts...)
 }

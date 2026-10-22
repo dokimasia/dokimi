@@ -50,7 +50,15 @@ func RunCacheSuite[T Cache[int, int]](t *testing.T, newSubject func() T, opts ..
 
 // RunCacheSuiteFromHandle applies the same checks to a subject that
 // newSubject builds from the handle of each check.
-func RunCacheSuiteFromHandle[T Cache[int, int]](t *testing.T, newSubject func(h *CacheHandle) T, opts ...CacheOption) {
+func RunCacheSuiteFromHandle[T Cache[int, int]](
+	t *testing.T,
+	newSubject func(h *CacheHandle) T,
+	opts ...CacheOption,
+) {
 	t.Helper()
-	conform.Run(t, CacheSuite(), func(h *CacheHandle) Cache[int, int] { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		CacheSuite(),
+		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
+		opts...)
 }

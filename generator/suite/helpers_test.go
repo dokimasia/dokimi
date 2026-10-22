@@ -35,11 +35,13 @@ const (
 
 // generated is what suite records over one fixture: the suite of each
 // declaration by its name, the record of each test of the family of the tests
-// by the name of the test, and the findings of the run.
+// by the name of the test, the origins that test their package from inside,
+// and the findings of the run.
 type generated struct {
 	suites   map[string]suite.Suite
 	tests    map[string]gentest.Record[suite.Conformance]
 	beside   map[string][]string
+	inside   map[symbol.Identity]bool
 	findings []diag.Diag
 }
 
@@ -89,7 +91,13 @@ func recorded(t *testing.T, f *gentest.Fixture, p plugin.Plugin) generated {
 	stamps, res := phases(t, f, p)
 	got := generated{
 		suites:   map[string]suite.Suite{},
+		inside:   map[symbol.Identity]bool{},
 		findings: slices.Concat(slices.Collect(stamps.Sink.All()), slices.Collect(res.Sink.All())),
+	}
+	for u := range res.Emit.Units() {
+		for _, origin := range u.Inside {
+			got.inside[origin] = true
+		}
 	}
 	declaration := func(s suite.Suite) string { return s.Declaration }
 	for name, r := range gentest.Records(t, res, suiteTemplate, "", declaration) {

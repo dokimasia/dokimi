@@ -4,20 +4,151 @@
 {{- $refs := .Decl.Fields.Items}}
 {{- $test := suitePascal $c.Test}}
 {{- if $c.Subject}}
+{{- if $c.Excusals}}{{use "go.dokimi.dev/conform"}}{{end}}
 
 {{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $test $c.Declaration $c.Subject))}}
 {{- ""}}func {{$test}}(t *testing.T) {
 	t.Parallel()
+{{- if $c.Excusals}}
+{{- $checks := spell (index $refs 2).Type}}
+
+	{{spell (index $refs 0).Type}}(
+		t,
+		{{spell (index $refs 1).Type}},
+{{- range $c.Excusals}}
+		conform.Excuse(
+			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+			{{printf "%q" .Reason}},
+		),
+{{- end}}
+	)
+{{- else}}
 
 	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}})
+{{- end}}
 }
-{{- else}}{{use "go.dokimi.dev/conform"}}
+{{- else}}{{use "go.dokimi.dev/conform"}}{{use "go.dokimi.dev/assert"}}
+{{- $suite := index $refs 0}}
+{{- $run := index $refs 1}}
+{{- $fromHandle := index $refs 2}}
+{{- $handle := spell (index $refs 3).Type}}
+{{- $check := spell (index $refs 4).Type}}
+{{- $subject := spell (index $refs 5).Type}}
+{{- $value := printf "%sSubject" (suiteCamel $c.Declaration)}}
+{{- if not $c.Function}}
 
-{{docs (wrapdocs (printf `%s proves that each check of the suite of %s fails on its planted defect.` $test $c.Declaration))}}
+{{docs (wrapdocs (printf `%s is a value of %s that only %s builds.` $value $c.Declaration $test))}}
+{{- ""}}type {{$value}} struct{ {{$subject}} }
+{{- end}}
+
+{{docs (wrapdocs (printf `%s checks the suite of %s and the two forms of its application.` $test $c.Declaration))}}
 {{- ""}}func {{$test}}(t *testing.T) {
 	t.Parallel()
 
-	conform.Falsify(t, {{spell (index $refs 0).Type}}())
+	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, {{spell $suite.Type}}())
+	})
+
+	t.Run("{{suitePascal $run.Type.Spelling}}", func(t *testing.T) {
+		t.Parallel()
+{{- if $c.Function}}
+{{- $fn := spell (index $refs 7).Type}}
+		{{spell $run.Type}}(
+			t,
+			{{$fn}},
+			conform.With({{$check}}{
+				ID:        "{{$c.Declaration}}/{{$c.Receives}}",
+				Statement: "the subject of a check is the function of the application",
+				Apply: func(h *{{$handle}}) {
+					assert.Equal(h, h.Subject(), {{$subject}}({{$fn}}), h.Statement())
+				},
+				Defect: func(*{{$handle}}) {{$subject}} { return nil },
+			}),
+{{- template "suite.alone" .}}
+		)
+{{- else}}
+		var built *{{$value}}
+		{{spell $run.Type}}(
+			t,
+			func() *{{$value}} {
+				built = &{{$value}}{}
+				return built
+			},
+{{- template "suite.built" .}}
+		)
+{{- end}}
+	})
+
+	t.Run("{{suitePascal $fromHandle.Type.Spelling}}", func(t *testing.T) {
+		t.Parallel()
+{{- if $c.Function}}
+{{- $fn := spell (index $refs 7).Type}}
+		{{spell $fromHandle.Type}}(
+			t,
+			func(*{{$handle}}) {{$subject}} {
+				return {{$fn}}
+			},
+			conform.With({{$check}}{
+				ID:        "{{$c.Declaration}}/{{$c.Builds}}",
+				Statement: "the subject of a check is the function that the factory returns",
+				Apply: func(h *{{$handle}}) {
+					assert.Equal(h, h.Subject(), {{$subject}}({{$fn}}), h.Statement())
+				},
+				Defect: func(*{{$handle}}) {{$subject}} { return nil },
+			}),
+{{- template "suite.alone" .}}
+		)
+{{- else}}
+		var built *{{$value}}
+		{{spell $fromHandle.Type}}(
+			t,
+			func(*{{$handle}}) *{{$value}} {
+				built = &{{$value}}{}
+				return built
+			},
+{{- template "suite.built" .}}
+		)
+{{- end}}
+	})
 }
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.built writes the check that the test of the suite of an interface or a
+struct adds to a form of the application, and the excusals of the test. The
+check compares the subject of a check with the value that the factory of the
+test built last, by identity.
+*/}}
+{{- define "suite.built"}}
+{{- $c := .Data}}
+{{- $refs := .Decl.Fields.Items}}
+{{- $handle := spell (index $refs 3).Type}}
+{{- $subject := spell (index $refs 5).Type}}
+{{- $value := printf "%sSubject" (suiteCamel $c.Declaration)}}
+			conform.With({{spell (index $refs 4).Type}}{
+				ID:        "{{$c.Declaration}}/{{$c.Builds}}",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *{{$handle}}) {
+					got := h.Subject()
+					assert.Equal(h, got, {{$subject}}(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*{{$handle}}) {{$subject}} { return &{{$value}}{} },
+			}),
+{{- template "suite.alone" .}}
+{{- end}}
+
+{{- /*
+suite.alone writes the excusal of each check of the suite, because the test of
+the suite applies its own check alone.
+*/}}
+{{- define "suite.alone"}}
+{{- $checks := spell (index .Decl.Fields.Items 6).Type}}
+{{- range .Data.Excusals}}
+			conform.Excuse(
+				{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+				{{printf "%q" .Reason}},
+			),
 {{- end}}
 {{- end}}

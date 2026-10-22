@@ -68,7 +68,11 @@ func RunSlugSuite(t *testing.T, subject SlugFunc, opts ...SlugOption) {
 
 // RunSlugSuiteFromHandle applies the same checks to a subject that
 // newSubject builds from the handle of each check.
-func RunSlugSuiteFromHandle(t *testing.T, newSubject func(h *SlugHandle) SlugFunc, opts ...SlugOption) {
+func RunSlugSuiteFromHandle(
+	t *testing.T,
+	newSubject func(h *SlugHandle) SlugFunc,
+	opts ...SlugOption,
+) {
 	t.Helper()
 	conform.Run(t, SlugSuite(), newSubject, opts...)
 }

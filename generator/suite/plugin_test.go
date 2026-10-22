@@ -10,6 +10,7 @@ import (
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/eidos/sdk/diag"
+	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/plugin"
@@ -29,6 +30,7 @@ const (
 	boxPackage      = "example.com/shop/box"
 	badPackage      = "example.com/shop/bad"
 	twinPackage     = "example.com/shop/twin"
+	reservedPackage = "example.com/shop/reserved"
 	shopPackage     = "shop"
 	otherRegistrant = "other"
 )
@@ -95,14 +97,22 @@ func TestSuite(t *testing.T) {
 				"suite requires the capability of stub")
 		})
 
-		t.Run("tests each subject from inside its package", func(t *testing.T) {
+		t.Run("declares that the directive excuse requires the directive subject", func(t *testing.T) {
 			t.Parallel()
 
-			families, declares := suite.New().(plugin.OutputProvider)
-			assert.True(t, declares, "suite declares its families")
-			at := slices.IndexFunc(families.Outputs(), func(o plugin.Output) bool { return o.Tag == suite.TestTag })
-			assert.NotEqual(t, at, -1, "suite declares the family of the conformance tests")
-			expect.False(t, families.Outputs()[at].External, "a conformance test calls a factory that is not exported")
+			declared, declares := suite.New().(plugin.DirectiveProvider)
+			assert.True(t, declares, "suite declares its directives")
+			schemas := declared.Directives()
+			i := slices.IndexFunc(schemas, func(s directive.Schema) bool { return s.Name == suite.ExcuseDirective })
+			assert.True(t, i >= 0, "suite declares the directive excuse")
+			expect.Equal(t, schemas[i].Requires, []directive.Name{suite.SubjectDirective},
+				"an excusal applies to the conformance test of a subject")
+		})
+
+		t.Run("writes its tests into the external test package", func(t *testing.T) {
+			t.Parallel()
+
+			gentest.External(t, suite.New(), suite.TestTag)
 		})
 
 		t.Run("records the falsification test of each suite", func(t *testing.T) {
@@ -114,12 +124,86 @@ func TestSuite(t *testing.T) {
 			assert.True(t, found, "suite records the falsification test of the suite of Store")
 			expect.Equal(t, got.Data.Declaration, "Store", "the test falsifies the suite of Store")
 			expect.Equal(t, got.Data.Subject, "", "the falsification test applies the suite to no subject")
+			expect.False(t, got.Data.Function, "the suite of an interface applies to the subjects of a factory")
+			expect.Equal(t, got.Data.Builds, "builds-the-subject", "the check of a factory has the segment Builds")
+			expect.Equal(t, got.Data.Receives, "receives-the-function",
+				"the check of the form Run of a function has the segment Receives")
+			alone := "the test applies the check of its option alone"
+			expect.Equal(t, got.Data.Excusals, []suite.Excusal{
+				{Field: "Get", Method: "KeepsTheItem", Reason: alone},
+				{Field: "Put", Method: "RefusesACancelledPut", Reason: alone},
+			}, "the test excuses each check of the suite where it applies a check of its own")
+			assert.NotNil(t, got.Decl, "the record of the test is a struct")
+			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
+			emitted := func(name string) emit.TypeRef { return emit.TypeRef{Spelling: name, Target: store, Emitted: true} }
+			refs := make([]emit.TypeRef, 0, got.Decl.Fields.Len())
+			for _, field := range got.Decl.Fields.Items() {
+				refs = append(refs, *field.Type)
+			}
+			expect.Equal(t, refs, []emit.TypeRef{
+				emitted("StoreSuite"),
+				emitted("RunStoreSuite"),
+				emitted("RunStoreSuiteFromHandle"),
+				emitted("StoreHandle"),
+				emitted("StoreCheck"),
+				{Spelling: "Store", Target: store},
+				emitted("StoreChecks"),
+			}, "the record refers to the suite, its two applications, its aliases, the subject type and the callables")
+		})
+
+		{
+			tests := []struct {
+				name         string
+				givePkg      string
+				giveKind     symbol.Kind
+				give         string
+				wantSubject  string
+				wantFields   int
+				wantFunction bool
+			}{
+				{
+					name:    "records the interface of the methods of a struct as the subject type of its test",
+					givePkg: catalogPackage, giveKind: symbol.KindStruct, give: "Catalog",
+					wantSubject: "CatalogMethods", wantFields: 7,
+				},
+				{
+					name:    "records the function type of a function as the subject type of its test",
+					givePkg: slugPackage, giveKind: symbol.KindFunction, give: "Slug",
+					wantSubject: "SlugFunc", wantFields: 8, wantFunction: true,
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					p := suite.New()
+					f := fixture(t, goTree, p, tt.givePkg)
+					got, found := recorded(t, f, p).tests["Test"+tt.give+"Suite"]
+					assert.True(t, found, "suite records the test of the suite of "+tt.give)
+					expect.Equal(t, got.Data.Function, tt.wantFunction, "the test applies the function itself")
+					assert.NotNil(t, got.Decl, "the record of the test is a struct")
+					refs := got.Decl.Fields.Items()
+					assert.Length(t, refs, tt.wantFields, "the record has a field of each name of the test")
+					origin := f.Find(t, tt.giveKind, "", tt.give).Identity()
+					want := emit.TypeRef{Spelling: tt.wantSubject, Target: origin, Emitted: true}
+					expect.Equal(t, *refs[5].Type, want, "the record refers to the subject type that the suite emits")
+				})
+			}
+		}
+
+		t.Run("records the function of the test of the suite of a function", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, slugPackage)
+			got, found := recorded(t, f, p).tests["TestSlugSuite"]
+			assert.True(t, found, "suite records the test of the suite of Slug")
 			assert.NotNil(t, got.Decl, "the record of the test is a struct")
 			refs := got.Decl.Fields.Items()
-			assert.Length(t, refs, 1, "the record refers to the function of the suite")
-			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
-			expect.Equal(t, *refs[0].Type, emit.TypeRef{Spelling: "StoreSuite", Target: store, Emitted: true},
-				"the record refers to the function that the suite of Store emits")
+			assert.Length(t, refs, 8, "the record has a field of each name of the test")
+			slug := f.Find(t, symbol.KindFunction, "", "Slug").Identity()
+			expect.Equal(t, *refs[7].Type, emit.TypeRef{Spelling: "Slug", Target: slug},
+				"the record refers to the function that the form Run applies")
 		})
 
 		t.Run("records the subject type and the callables of an interface", func(t *testing.T) {
@@ -280,6 +364,34 @@ func TestSuite(t *testing.T) {
 
 		{
 			tests := []struct {
+				name       string
+				give       string
+				wantInside bool
+			}{
+				{
+					name: "records the conformance test of a subject with an exported factory as an external test",
+					give: "Store",
+				},
+				{
+					name: "records the conformance test of a subject with an unexported factory as an internal test",
+					give: "Hidden", wantInside: true,
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					p := suite.New()
+					f := fixture(t, goTree, p, storePackage, memoryPackage)
+					subject := f.Find(t, symbol.KindStruct, "", tt.give).Identity()
+					expect.Equal(t, recorded(t, f, p).inside[subject], tt.wantInside,
+						"only the package of a factory that is not exported can call it")
+				})
+			}
+		}
+
+		{
+			tests := []struct {
 				name     string
 				givePkgs []string
 				giveKind symbol.Kind
@@ -340,6 +452,75 @@ func TestSuite(t *testing.T) {
 					expect.Equal(t, got.Code, tt.wantCode, "the finding has the code of its case")
 					expect.Equal(t, got.Msg, tt.wantMsg, "the message contains the declaration and the reason")
 					gentest.Unrecorded(t, res, at)
+				})
+			}
+		}
+
+		t.Run("records each excusal of a subject in the order of its directives", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, storePackage, memoryPackage)
+			got, found := recorded(t, f, p).tests["TestForgetfulConformsToStore"]
+			assert.True(t, found, "suite records the conformance test of Forgetful")
+			expect.Equal(t, got.Data.Excusals, []suite.Excusal{
+				{Field: "Get", Method: "KeepsTheItem", Reason: "the store drops each item"},
+				{
+					Field: "Put", Method: "RefusesACancelledPut",
+					Reason: "the store drops each item before it reads the context",
+				},
+			}, "each excusal names the callable and the method of the identity of its check")
+			assert.NotNil(t, got.Decl, "the record of the test is a struct")
+			refs := got.Decl.Fields.Items()
+			assert.Length(t, refs, 3, "the record refers to the application, the factory and the names of the checks")
+			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
+			expect.Equal(t, *refs[2].Type, emit.TypeRef{Spelling: "StoreChecks", Target: store, Emitted: true},
+				"the record refers to the names of the checks that the suite of Store emits")
+		})
+
+		{
+			tests := []struct {
+				name    string
+				give    string
+				wantMsg string
+			}{
+				{
+					name: "reports UnknownExcusal at an excusal of a callable with checks", give: "Priceless",
+					wantMsg: "Store.Get/keeps-the-price is no check of the suite of Store, so Priceless has no " +
+						"conformance test. The checks of Store.Get are Store.Get/keeps-an-item and " +
+						"Store.Get/keeps-the-item",
+				},
+				{
+					name: "reports UnknownExcusal at an excusal of a callable with one check", give: "Misplaced",
+					wantMsg: "Store.Put/keeps-the-item is no check of the suite of Store, so Misplaced has no " +
+						"conformance test. The check of Store.Put is Store.Put/refuses-a-cancelled-put",
+				},
+				{
+					name: "reports UnknownExcusal at an excusal of a callable without checks", give: "Fetchless",
+					wantMsg: "Store.Fetch/finds-the-item is no check of the suite of Store, so Fetchless has no " +
+						"conformance test. The suite of Store has no check of Store.Fetch",
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					p := suite.New()
+					f := fixture(t, goTree, p, storePackage, badPackage)
+					_, res := phases(t, f, p)
+					subject := f.Find(t, symbol.KindStruct, "", tt.give)
+					at := subject.Position()
+					var got []diag.Diag
+					for d := range res.Sink.All() {
+						// The directive excuse of each subject is on the line above its struct.
+						if d.Pos.File == at.File && d.Pos.Line == at.Line-1 {
+							got = append(got, d)
+						}
+					}
+					assert.Length(t, got, 1, "suite reports one finding at the excusal of "+tt.give)
+					expect.Equal(t, got[0].Code, suite.UnknownExcusal, "the finding has the code UnknownExcusal")
+					expect.Equal(t, got[0].Msg, tt.wantMsg, "the message contains the checks of the callable")
+					gentest.Unrecorded(t, res, subject)
 				})
 			}
 		}
@@ -408,6 +589,20 @@ func TestSuite(t *testing.T) {
 				Apply: ref(t, f, "KeepsTheName"), Defect: ref(t, f, "broken"), Field: "Get", Type: "StoreGet",
 				Method: "KeepsTheName", Segment: "keeps-the-name", Statement: "Get of the twin store returns the name",
 			}}, "the check binds to the Store of the package twin alone")
+		})
+
+		t.Run("binds a check of a method with the segment of a check of the test of its suite", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, reservedPackage)
+			_, res := phases(t, f, p)
+			byPackage := gentest.Records(t, res, suiteTemplate, "",
+				func(s suite.Suite) string { return s.Subject.Target.Package })
+			checks := byPackage[reservedPackage].Data.Checks
+			assert.Length(t, checks, 1, "the suite of Shelf binds its one check")
+			expect.Equal(t, checks[0].Segment, "builds-the-subject",
+				"the identity of the check names the callable Get, so it differs from the check of the test")
 		})
 
 		t.Run("binds no check that it reports", func(t *testing.T) {
@@ -500,6 +695,20 @@ func TestSuite(t *testing.T) {
 					name: "reports BadCheck at a defect of two results", give: "BuildsTwo", wantCode: suite.BadCheck,
 					wantMsg: "the defect paired of BuildsTwo returns 2 results, " +
 						"and a defect returns the planted defect alone",
+				},
+				{
+					name:     "reports BadCheck at a check of a function with the segment of the check of a factory",
+					give:     "BuildsTheSubject",
+					wantCode: suite.BadCheck,
+					wantMsg: "the test of the suite of Normalize adds the check Normalize/builds-the-subject " +
+						"to the forms of its application, so BuildsTheSubject is no check. Rename the function",
+				},
+				{
+					name:     "reports BadCheck at a check of a function with the segment of the check of the form Run",
+					give:     "ReceivesTheFunction",
+					wantCode: suite.BadCheck,
+					wantMsg: "the test of the suite of Normalize adds the check Normalize/receives-the-function " +
+						"to the forms of its application, so ReceivesTheFunction is no check. Rename the function",
 				},
 			}
 			for _, tt := range tests {

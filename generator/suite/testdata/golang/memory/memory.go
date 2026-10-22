@@ -51,3 +51,35 @@ func NewClocked(handle any) *Clocked {
 	_ = handle
 	return &Clocked{Store: New()}
 }
+
+// Forgetful is the store of items in memory that drops each item, so it
+// excuses the checks of Get and Put.
+//
+//dokimi:subject store.Store new=NewForgetful
+//dokimi:excuse Store.Get/keeps-the-item reason="the store drops each item"
+//dokimi:excuse Store.Put/refuses-a-cancelled-put reason="the store drops each item before it reads the context"
+type Forgetful struct {
+	*Store
+}
+
+// NewForgetful returns an empty store that drops each item.
+func NewForgetful() *Forgetful {
+	return &Forgetful{Store: New()}
+}
+
+// Put drops the item.
+func (*Forgetful) Put(context.Context, store.Item) error {
+	return nil
+}
+
+// Hidden is the store of items in memory that only its package can build.
+//
+//dokimi:subject store.Store new=newHidden
+type Hidden struct {
+	*Store
+}
+
+// newHidden returns an empty store.
+func newHidden() *Hidden {
+	return &Hidden{Store: New()}
+}

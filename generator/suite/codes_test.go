@@ -35,8 +35,13 @@ func TestCodes(t *testing.T) {
 		},
 		{
 			Name: "BadCheck", Give: suite.BadCheck, WantCode: "DOKIMISUITE-0005",
-			WantMeaning: "a function under the directive check has no statement, or it or its defect has " +
-				"another signature than a check",
+			WantMeaning: "a function under the directive check has no statement, it or its defect has another " +
+				"signature than a check, or it has the identity of a check that the test of its suite adds",
+		},
+		{
+			Name: "UnknownExcusal", Give: suite.UnknownExcusal, WantCode: "DOKIMISUITE-0006",
+			WantMeaning: "the directive excuse names a check that the suite of the declaration of its subject " +
+				"does not have",
 		},
 	}
 	for _, c := range codes {

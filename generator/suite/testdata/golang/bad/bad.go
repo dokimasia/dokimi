@@ -43,3 +43,32 @@ type Nothing struct{}
 
 // NewNothing returns nothing.
 func NewNothing() {}
+
+// Priceless is a subject that excuses a check of Get that the suite of Store
+// does not have.
+//
+//dokimi:subject store.Store new=NewPriceless
+//dokimi:excuse Store.Get/keeps-the-price reason="the store has no prices"
+type Priceless struct{}
+
+// NewPriceless returns a Priceless.
+func NewPriceless() *Priceless { return &Priceless{} }
+
+// Misplaced is a subject that excuses a check of Get under the callable Put.
+//
+//dokimi:subject store.Store new=NewMisplaced
+//dokimi:excuse Store.Put/keeps-the-item reason="the store drops each item"
+type Misplaced struct{}
+
+// NewMisplaced returns a Misplaced.
+func NewMisplaced() *Misplaced { return &Misplaced{} }
+
+// Fetchless is a subject that excuses a check of a callable that Store does
+// not have.
+//
+//dokimi:subject store.Store new=NewFetchless
+//dokimi:excuse Store.Fetch/finds-the-item reason="the store cannot fetch"
+type Fetchless struct{}
+
+// NewFetchless returns a Fetchless.
+func NewFetchless() *Fetchless { return &Fetchless{} }

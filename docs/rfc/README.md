@@ -14,3 +14,4 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0003](0003-the-suite-generator.md) | The suite generator | Accepted |
 | [0004](0004-doubles-builders-enumerations-and-errors.md) | Doubles, builders, enumerations and errors | Accepted |
 | [0005](0005-the-package-structure-of-dokimi.md) | The package structure of dokimi | Draft |
+| [0006](0006-generated-inputs-fuzz-targets-benchmarks-and-budgets.md) | Generated inputs, fuzz targets, benchmarks and budgets | Accepted |

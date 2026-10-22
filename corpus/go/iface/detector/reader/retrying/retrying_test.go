@@ -25,9 +25,9 @@ type outage struct {
 	region string
 }
 
-// ShouldFire fires for each call whose key opens with the region of the
+// ShouldTrigger fails each call whose key opens with the region of the
 // outage.
-func (o outage) ShouldFire(c readertest.ReaderGetCall, _ fault.Clock) (bool, error) {
+func (o outage) ShouldTrigger(c readertest.ReaderGetCall, _ fault.Clock) (bool, error) {
 	if !strings.HasPrefix(c.Key, o.region) {
 		return false, nil
 	}

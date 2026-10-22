@@ -67,7 +67,7 @@ type Sentinel struct {
 
 // Member is one field of an error type that a check writes. Value is the
 // sample that the check writes, and Text reports that the message contains
-// the text of the value unchanged, which holds for a field of text.
+// the text of the value unchanged, as it does for a field of text.
 type Member struct {
 	Value emit.Value
 	Name  string

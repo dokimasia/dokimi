@@ -43,7 +43,7 @@ func TestSentinel(t *testing.T) {
 			pkgs   []string
 		}{
 			{
-				name: "passes the plugin suite over the Go packages store and neighbour", target: golang.Target,
+				name: "passes the plugin suite over two Go packages", target: golang.Target,
 				dir: goTree, pkgs: []string{storePackage, neighbourPackage},
 			},
 			{
@@ -62,7 +62,7 @@ func TestSentinel(t *testing.T) {
 			})
 		}
 
-		t.Run("tests each package from outside", func(t *testing.T) {
+		t.Run("checks each package from outside", func(t *testing.T) {
 			t.Parallel()
 
 			gentest.External(t, sentinel.New(), sentinel.TestTag)
@@ -101,7 +101,7 @@ func TestSentinel(t *testing.T) {
 			want []string
 		}{
 			{
-				name: "records each public error type by name, with its pointer, its hooks and its cause",
+				name: "records what a check reads of each public error type",
 				pkg:  storePackage, give: "store",
 				want: []string{
 					"NotFoundError pointer compares members=Key:text,Attempt",
@@ -109,7 +109,7 @@ func TestSentinel(t *testing.T) {
 				},
 			},
 			{
-				name: "records the hooks and the cause that an embed by value promotes", pkg: embeddedPackage,
+				name: "records what an embed by value promotes", pkg: embeddedPackage,
 				give: "embedded",
 				want: []string{
 					"BaseError compares unwraps cause=Cause members=Op:text",
@@ -287,7 +287,7 @@ func TestSentinel(t *testing.T) {
 			want     bool
 		}{
 			{
-				name: "reports NoErrors at a package without an error value and an error type", pkg: emptyPackage,
+				name: "reports NoErrors at a package without errors", pkg: emptyPackage,
 				wantCode: sentinel.NoErrors,
 				wantMsg:  "the package empty has no error value and no error type, so it has no checks",
 			},

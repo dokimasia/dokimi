@@ -50,7 +50,7 @@ func TestTypeScript(t *testing.T) {
 		golden.MatchTree(t, "typescript", gentest.Rendered(t, res, p, tsbackend.New()), golden.ShouldUpdate())
 	})
 
-	t.Run("records each public error class by name, with its cause and its members", func(t *testing.T) {
+	t.Run("records each public error class with its members", func(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, typescript.Target, tsTree, storeModule).checks[storeModule]

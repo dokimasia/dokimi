@@ -37,7 +37,7 @@ func TestGolang(t *testing.T) {
 		golden.MatchTree(t, "golang", rendered(t), golden.ShouldUpdate())
 	})
 
-	t.Run("writes Go that vets and whose tests pass", func(t *testing.T) {
+	t.Run("writes Go that passes go vet then go test", func(t *testing.T) {
 		t.Parallel()
 
 		a := gotesting.New()

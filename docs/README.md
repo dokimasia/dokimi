@@ -9,6 +9,7 @@ Where each kind of document is kept, and which one to write.
 
 | Directory | Contains | Write one when |
 |---|---|---|
+| `guides/` | How to use dokimi in a project of one language, kept current | A user needs the steps of a task |
 | `architecture/` | How the system is put together, kept current | Someone needs to place a file or trace a dependency |
 | `roadmap/` | What we build in what order, and what has to be true first | Work needs sequencing rather than justifying |
 | `rfc/` | Proposals and the argument behind them | A change alters a contract, or several approaches are worth comparing |

@@ -17,8 +17,8 @@ import (
 //
 //dokimi:subject readernoerror.ReaderNoError new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]readernoerror.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [readernoerror.ReaderNoError].

@@ -21,8 +21,8 @@ var ErrNotFound = errors.New("embeddedtest: not found")
 //
 //dokimi:subject embedded.Composed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	items  map[string]string
+	mu     sync.Mutex
 	closed bool
 }
 

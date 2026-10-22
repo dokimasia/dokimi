@@ -27,9 +27,9 @@ const BreakKey = "chaintest-break"
 //
 //dokimi:subject chain.Contract new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
-	entries []chain.Entry
 	digest  string
+	entries []chain.Entry
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [chain.Contract].

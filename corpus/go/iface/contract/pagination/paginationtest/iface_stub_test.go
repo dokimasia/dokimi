@@ -39,7 +39,7 @@ func contractStubFetch(tb assert.TB, s *paginationtest.ContractStub) (pagination
 func contractStubFetchPins() (pagination.Page, error) {
 	var want0 pagination.Page
 	want1 := errors.New("Fetch-returns")
-	want0 = pagination.Page{Items: []pagination.Value{{Key: "Key-a"}}}
+	want0 = pagination.Page{Next: pagination.Cursor("Next-a")}
 	return want0, want1
 }
 
@@ -524,4 +524,4 @@ func TestContractPutStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1d2fdedfb728fd31fab56d172598a643720f224b7ccaf38fd4b5845cf635b057
+// dokimi:provenance sha256:86ced1aea70e77770715da0b67908ab9d048820492323d8edb93b37399bf42e7

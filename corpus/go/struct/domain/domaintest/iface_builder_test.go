@@ -29,51 +29,51 @@ func TestPrimitivesBuilder(t *testing.T) {
 			t.Parallel()
 
 			var seed domain.Primitives
-			seed.Bool = true
 			seed.String = "String-a"
-			seed.Rune = 1
-			seed.Byte = 1
+			seed.Ref = domain.ID("Ref-a")
 			seed.Int = 42
-			seed.Int8 = 42
-			seed.Int16 = 42
-			seed.Int32 = 42
 			seed.Int64 = 42
 			seed.Uint = 42
-			seed.Uint8 = 1
-			seed.Uint16 = 42
-			seed.Uint32 = 42
 			seed.Uint64 = 42
 			seed.Uintptr = 42
-			seed.Float32 = 1.5
 			seed.Float64 = 1.5
-			seed.Complex64 = 1.5
 			seed.Complex128 = 1.5
 			seed.Day = domain.Weekday(42)
 			seed.Temp = domain.Celsius(1.5)
-			seed.Ref = domain.ID("Ref-a")
+			seed.Complex64 = 1.5
+			seed.Rune = 1
+			seed.Int32 = 42
+			seed.Uint32 = 42
+			seed.Float32 = 1.5
+			seed.Int16 = 42
+			seed.Uint16 = 42
+			seed.Bool = true
+			seed.Byte = 1
+			seed.Int8 = 42
+			seed.Uint8 = 1
 			got := domaintest.NewPrimitivesBuilderFrom(seed).Build()
-			expect.Equal(t, got.Bool, seed.Bool, "NewPrimitivesBuilderFrom keeps Bool")
 			expect.Equal(t, got.String, seed.String, "NewPrimitivesBuilderFrom keeps String")
-			expect.Equal(t, got.Rune, seed.Rune, "NewPrimitivesBuilderFrom keeps Rune")
-			expect.Equal(t, got.Byte, seed.Byte, "NewPrimitivesBuilderFrom keeps Byte")
+			expect.Equal(t, got.Ref, seed.Ref, "NewPrimitivesBuilderFrom keeps Ref")
 			expect.Equal(t, got.Int, seed.Int, "NewPrimitivesBuilderFrom keeps Int")
-			expect.Equal(t, got.Int8, seed.Int8, "NewPrimitivesBuilderFrom keeps Int8")
-			expect.Equal(t, got.Int16, seed.Int16, "NewPrimitivesBuilderFrom keeps Int16")
-			expect.Equal(t, got.Int32, seed.Int32, "NewPrimitivesBuilderFrom keeps Int32")
 			expect.Equal(t, got.Int64, seed.Int64, "NewPrimitivesBuilderFrom keeps Int64")
 			expect.Equal(t, got.Uint, seed.Uint, "NewPrimitivesBuilderFrom keeps Uint")
-			expect.Equal(t, got.Uint8, seed.Uint8, "NewPrimitivesBuilderFrom keeps Uint8")
-			expect.Equal(t, got.Uint16, seed.Uint16, "NewPrimitivesBuilderFrom keeps Uint16")
-			expect.Equal(t, got.Uint32, seed.Uint32, "NewPrimitivesBuilderFrom keeps Uint32")
 			expect.Equal(t, got.Uint64, seed.Uint64, "NewPrimitivesBuilderFrom keeps Uint64")
 			expect.Equal(t, got.Uintptr, seed.Uintptr, "NewPrimitivesBuilderFrom keeps Uintptr")
-			expect.Equal(t, got.Float32, seed.Float32, "NewPrimitivesBuilderFrom keeps Float32")
 			expect.Equal(t, got.Float64, seed.Float64, "NewPrimitivesBuilderFrom keeps Float64")
-			expect.Equal(t, got.Complex64, seed.Complex64, "NewPrimitivesBuilderFrom keeps Complex64")
 			expect.Equal(t, got.Complex128, seed.Complex128, "NewPrimitivesBuilderFrom keeps Complex128")
 			expect.Equal(t, got.Day, seed.Day, "NewPrimitivesBuilderFrom keeps Day")
 			expect.Equal(t, got.Temp, seed.Temp, "NewPrimitivesBuilderFrom keeps Temp")
-			expect.Equal(t, got.Ref, seed.Ref, "NewPrimitivesBuilderFrom keeps Ref")
+			expect.Equal(t, got.Complex64, seed.Complex64, "NewPrimitivesBuilderFrom keeps Complex64")
+			expect.Equal(t, got.Rune, seed.Rune, "NewPrimitivesBuilderFrom keeps Rune")
+			expect.Equal(t, got.Int32, seed.Int32, "NewPrimitivesBuilderFrom keeps Int32")
+			expect.Equal(t, got.Uint32, seed.Uint32, "NewPrimitivesBuilderFrom keeps Uint32")
+			expect.Equal(t, got.Float32, seed.Float32, "NewPrimitivesBuilderFrom keeps Float32")
+			expect.Equal(t, got.Int16, seed.Int16, "NewPrimitivesBuilderFrom keeps Int16")
+			expect.Equal(t, got.Uint16, seed.Uint16, "NewPrimitivesBuilderFrom keeps Uint16")
+			expect.Equal(t, got.Bool, seed.Bool, "NewPrimitivesBuilderFrom keeps Bool")
+			expect.Equal(t, got.Byte, seed.Byte, "NewPrimitivesBuilderFrom keeps Byte")
+			expect.Equal(t, got.Int8, seed.Int8, "NewPrimitivesBuilderFrom keeps Int8")
+			expect.Equal(t, got.Uint8, seed.Uint8, "NewPrimitivesBuilderFrom keeps Uint8")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
@@ -87,29 +87,6 @@ func TestPrimitivesBuilder(t *testing.T) {
 				want,
 				"NewPrimitivesBuilderFrom keeps the value of its argument",
 			)
-		})
-	})
-
-	t.Run("WithBool", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Bool", func(t *testing.T) {
-			t.Parallel()
-
-			var want bool
-			want = true
-			got := domaintest.NewPrimitivesBuilder().WithBool(want).Build()
-			assert.Equal(t, got.Bool, want, "WithBool writes its argument to Bool")
-		})
-
-		t.Run("replaces the value of Bool", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want bool
-			first = true
-			want = false
-			got := domaintest.NewPrimitivesBuilder().WithBool(first).WithBool(want).Build()
-			assert.Equal(t, got.Bool, want, "the second call of WithBool replaces the first")
 		})
 	})
 
@@ -136,49 +113,26 @@ func TestPrimitivesBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithRune", func(t *testing.T) {
+	t.Run("WithRef", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("writes its argument to Rune", func(t *testing.T) {
+		t.Run("writes its argument to Ref", func(t *testing.T) {
 			t.Parallel()
 
-			var want rune
-			want = 1
-			got := domaintest.NewPrimitivesBuilder().WithRune(want).Build()
-			assert.Equal(t, got.Rune, want, "WithRune writes its argument to Rune")
+			var want domain.ID
+			want = domain.ID("Ref-a")
+			got := domaintest.NewPrimitivesBuilder().WithRef(want).Build()
+			assert.Equal(t, got.Ref, want, "WithRef writes its argument to Ref")
 		})
 
-		t.Run("replaces the value of Rune", func(t *testing.T) {
+		t.Run("replaces the value of Ref", func(t *testing.T) {
 			t.Parallel()
 
-			var first, want rune
-			first = 1
-			want = 2
-			got := domaintest.NewPrimitivesBuilder().WithRune(first).WithRune(want).Build()
-			assert.Equal(t, got.Rune, want, "the second call of WithRune replaces the first")
-		})
-	})
-
-	t.Run("WithByte", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Byte", func(t *testing.T) {
-			t.Parallel()
-
-			var want byte
-			want = 1
-			got := domaintest.NewPrimitivesBuilder().WithByte(want).Build()
-			assert.Equal(t, got.Byte, want, "WithByte writes its argument to Byte")
-		})
-
-		t.Run("replaces the value of Byte", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want byte
-			first = 1
-			want = 2
-			got := domaintest.NewPrimitivesBuilder().WithByte(first).WithByte(want).Build()
-			assert.Equal(t, got.Byte, want, "the second call of WithByte replaces the first")
+			var first, want domain.ID
+			first = domain.ID("Ref-a")
+			want = domain.ID("Ref-b")
+			got := domaintest.NewPrimitivesBuilder().WithRef(first).WithRef(want).Build()
+			assert.Equal(t, got.Ref, want, "the second call of WithRef replaces the first")
 		})
 	})
 
@@ -202,75 +156,6 @@ func TestPrimitivesBuilder(t *testing.T) {
 			want = 7
 			got := domaintest.NewPrimitivesBuilder().WithInt(first).WithInt(want).Build()
 			assert.Equal(t, got.Int, want, "the second call of WithInt replaces the first")
-		})
-	})
-
-	t.Run("WithInt8", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Int8", func(t *testing.T) {
-			t.Parallel()
-
-			var want int8
-			want = 42
-			got := domaintest.NewPrimitivesBuilder().WithInt8(want).Build()
-			assert.Equal(t, got.Int8, want, "WithInt8 writes its argument to Int8")
-		})
-
-		t.Run("replaces the value of Int8", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want int8
-			first = 42
-			want = 7
-			got := domaintest.NewPrimitivesBuilder().WithInt8(first).WithInt8(want).Build()
-			assert.Equal(t, got.Int8, want, "the second call of WithInt8 replaces the first")
-		})
-	})
-
-	t.Run("WithInt16", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Int16", func(t *testing.T) {
-			t.Parallel()
-
-			var want int16
-			want = 42
-			got := domaintest.NewPrimitivesBuilder().WithInt16(want).Build()
-			assert.Equal(t, got.Int16, want, "WithInt16 writes its argument to Int16")
-		})
-
-		t.Run("replaces the value of Int16", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want int16
-			first = 42
-			want = 7
-			got := domaintest.NewPrimitivesBuilder().WithInt16(first).WithInt16(want).Build()
-			assert.Equal(t, got.Int16, want, "the second call of WithInt16 replaces the first")
-		})
-	})
-
-	t.Run("WithInt32", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Int32", func(t *testing.T) {
-			t.Parallel()
-
-			var want int32
-			want = 42
-			got := domaintest.NewPrimitivesBuilder().WithInt32(want).Build()
-			assert.Equal(t, got.Int32, want, "WithInt32 writes its argument to Int32")
-		})
-
-		t.Run("replaces the value of Int32", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want int32
-			first = 42
-			want = 7
-			got := domaintest.NewPrimitivesBuilder().WithInt32(first).WithInt32(want).Build()
-			assert.Equal(t, got.Int32, want, "the second call of WithInt32 replaces the first")
 		})
 	})
 
@@ -320,75 +205,6 @@ func TestPrimitivesBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithUint8", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Uint8", func(t *testing.T) {
-			t.Parallel()
-
-			var want uint8
-			want = 1
-			got := domaintest.NewPrimitivesBuilder().WithUint8(want).Build()
-			assert.Equal(t, got.Uint8, want, "WithUint8 writes its argument to Uint8")
-		})
-
-		t.Run("replaces the value of Uint8", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want uint8
-			first = 1
-			want = 2
-			got := domaintest.NewPrimitivesBuilder().WithUint8(first).WithUint8(want).Build()
-			assert.Equal(t, got.Uint8, want, "the second call of WithUint8 replaces the first")
-		})
-	})
-
-	t.Run("WithUint16", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Uint16", func(t *testing.T) {
-			t.Parallel()
-
-			var want uint16
-			want = 42
-			got := domaintest.NewPrimitivesBuilder().WithUint16(want).Build()
-			assert.Equal(t, got.Uint16, want, "WithUint16 writes its argument to Uint16")
-		})
-
-		t.Run("replaces the value of Uint16", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want uint16
-			first = 42
-			want = 7
-			got := domaintest.NewPrimitivesBuilder().WithUint16(first).WithUint16(want).Build()
-			assert.Equal(t, got.Uint16, want, "the second call of WithUint16 replaces the first")
-		})
-	})
-
-	t.Run("WithUint32", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Uint32", func(t *testing.T) {
-			t.Parallel()
-
-			var want uint32
-			want = 42
-			got := domaintest.NewPrimitivesBuilder().WithUint32(want).Build()
-			assert.Equal(t, got.Uint32, want, "WithUint32 writes its argument to Uint32")
-		})
-
-		t.Run("replaces the value of Uint32", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want uint32
-			first = 42
-			want = 7
-			got := domaintest.NewPrimitivesBuilder().WithUint32(first).WithUint32(want).Build()
-			assert.Equal(t, got.Uint32, want, "the second call of WithUint32 replaces the first")
-		})
-	})
-
 	t.Run("WithUint64", func(t *testing.T) {
 		t.Parallel()
 
@@ -435,29 +251,6 @@ func TestPrimitivesBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithFloat32", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Float32", func(t *testing.T) {
-			t.Parallel()
-
-			var want float32
-			want = 1.5
-			got := domaintest.NewPrimitivesBuilder().WithFloat32(want).Build()
-			assert.Equal(t, got.Float32, want, "WithFloat32 writes its argument to Float32")
-		})
-
-		t.Run("replaces the value of Float32", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want float32
-			first = 1.5
-			want = 2.5
-			got := domaintest.NewPrimitivesBuilder().WithFloat32(first).WithFloat32(want).Build()
-			assert.Equal(t, got.Float32, want, "the second call of WithFloat32 replaces the first")
-		})
-	})
-
 	t.Run("WithFloat64", func(t *testing.T) {
 		t.Parallel()
 
@@ -478,29 +271,6 @@ func TestPrimitivesBuilder(t *testing.T) {
 			want = 2.5
 			got := domaintest.NewPrimitivesBuilder().WithFloat64(first).WithFloat64(want).Build()
 			assert.Equal(t, got.Float64, want, "the second call of WithFloat64 replaces the first")
-		})
-	})
-
-	t.Run("WithComplex64", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Complex64", func(t *testing.T) {
-			t.Parallel()
-
-			var want complex64
-			want = 1.5
-			got := domaintest.NewPrimitivesBuilder().WithComplex64(want).Build()
-			assert.Equal(t, got.Complex64, want, "WithComplex64 writes its argument to Complex64")
-		})
-
-		t.Run("replaces the value of Complex64", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want complex64
-			first = 1.5
-			want = 2.5
-			got := domaintest.NewPrimitivesBuilder().WithComplex64(first).WithComplex64(want).Build()
-			assert.Equal(t, got.Complex64, want, "the second call of WithComplex64 replaces the first")
 		})
 	})
 
@@ -573,26 +343,256 @@ func TestPrimitivesBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithRef", func(t *testing.T) {
+	t.Run("WithComplex64", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("writes its argument to Ref", func(t *testing.T) {
+		t.Run("writes its argument to Complex64", func(t *testing.T) {
 			t.Parallel()
 
-			var want domain.ID
-			want = domain.ID("Ref-a")
-			got := domaintest.NewPrimitivesBuilder().WithRef(want).Build()
-			assert.Equal(t, got.Ref, want, "WithRef writes its argument to Ref")
+			var want complex64
+			want = 1.5
+			got := domaintest.NewPrimitivesBuilder().WithComplex64(want).Build()
+			assert.Equal(t, got.Complex64, want, "WithComplex64 writes its argument to Complex64")
 		})
 
-		t.Run("replaces the value of Ref", func(t *testing.T) {
+		t.Run("replaces the value of Complex64", func(t *testing.T) {
 			t.Parallel()
 
-			var first, want domain.ID
-			first = domain.ID("Ref-a")
-			want = domain.ID("Ref-b")
-			got := domaintest.NewPrimitivesBuilder().WithRef(first).WithRef(want).Build()
-			assert.Equal(t, got.Ref, want, "the second call of WithRef replaces the first")
+			var first, want complex64
+			first = 1.5
+			want = 2.5
+			got := domaintest.NewPrimitivesBuilder().WithComplex64(first).WithComplex64(want).Build()
+			assert.Equal(t, got.Complex64, want, "the second call of WithComplex64 replaces the first")
+		})
+	})
+
+	t.Run("WithRune", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Rune", func(t *testing.T) {
+			t.Parallel()
+
+			var want rune
+			want = 1
+			got := domaintest.NewPrimitivesBuilder().WithRune(want).Build()
+			assert.Equal(t, got.Rune, want, "WithRune writes its argument to Rune")
+		})
+
+		t.Run("replaces the value of Rune", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want rune
+			first = 1
+			want = 2
+			got := domaintest.NewPrimitivesBuilder().WithRune(first).WithRune(want).Build()
+			assert.Equal(t, got.Rune, want, "the second call of WithRune replaces the first")
+		})
+	})
+
+	t.Run("WithInt32", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Int32", func(t *testing.T) {
+			t.Parallel()
+
+			var want int32
+			want = 42
+			got := domaintest.NewPrimitivesBuilder().WithInt32(want).Build()
+			assert.Equal(t, got.Int32, want, "WithInt32 writes its argument to Int32")
+		})
+
+		t.Run("replaces the value of Int32", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int32
+			first = 42
+			want = 7
+			got := domaintest.NewPrimitivesBuilder().WithInt32(first).WithInt32(want).Build()
+			assert.Equal(t, got.Int32, want, "the second call of WithInt32 replaces the first")
+		})
+	})
+
+	t.Run("WithUint32", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Uint32", func(t *testing.T) {
+			t.Parallel()
+
+			var want uint32
+			want = 42
+			got := domaintest.NewPrimitivesBuilder().WithUint32(want).Build()
+			assert.Equal(t, got.Uint32, want, "WithUint32 writes its argument to Uint32")
+		})
+
+		t.Run("replaces the value of Uint32", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want uint32
+			first = 42
+			want = 7
+			got := domaintest.NewPrimitivesBuilder().WithUint32(first).WithUint32(want).Build()
+			assert.Equal(t, got.Uint32, want, "the second call of WithUint32 replaces the first")
+		})
+	})
+
+	t.Run("WithFloat32", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Float32", func(t *testing.T) {
+			t.Parallel()
+
+			var want float32
+			want = 1.5
+			got := domaintest.NewPrimitivesBuilder().WithFloat32(want).Build()
+			assert.Equal(t, got.Float32, want, "WithFloat32 writes its argument to Float32")
+		})
+
+		t.Run("replaces the value of Float32", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want float32
+			first = 1.5
+			want = 2.5
+			got := domaintest.NewPrimitivesBuilder().WithFloat32(first).WithFloat32(want).Build()
+			assert.Equal(t, got.Float32, want, "the second call of WithFloat32 replaces the first")
+		})
+	})
+
+	t.Run("WithInt16", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Int16", func(t *testing.T) {
+			t.Parallel()
+
+			var want int16
+			want = 42
+			got := domaintest.NewPrimitivesBuilder().WithInt16(want).Build()
+			assert.Equal(t, got.Int16, want, "WithInt16 writes its argument to Int16")
+		})
+
+		t.Run("replaces the value of Int16", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int16
+			first = 42
+			want = 7
+			got := domaintest.NewPrimitivesBuilder().WithInt16(first).WithInt16(want).Build()
+			assert.Equal(t, got.Int16, want, "the second call of WithInt16 replaces the first")
+		})
+	})
+
+	t.Run("WithUint16", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Uint16", func(t *testing.T) {
+			t.Parallel()
+
+			var want uint16
+			want = 42
+			got := domaintest.NewPrimitivesBuilder().WithUint16(want).Build()
+			assert.Equal(t, got.Uint16, want, "WithUint16 writes its argument to Uint16")
+		})
+
+		t.Run("replaces the value of Uint16", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want uint16
+			first = 42
+			want = 7
+			got := domaintest.NewPrimitivesBuilder().WithUint16(first).WithUint16(want).Build()
+			assert.Equal(t, got.Uint16, want, "the second call of WithUint16 replaces the first")
+		})
+	})
+
+	t.Run("WithBool", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Bool", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := domaintest.NewPrimitivesBuilder().WithBool(want).Build()
+			assert.Equal(t, got.Bool, want, "WithBool writes its argument to Bool")
+		})
+
+		t.Run("replaces the value of Bool", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want bool
+			first = true
+			want = false
+			got := domaintest.NewPrimitivesBuilder().WithBool(first).WithBool(want).Build()
+			assert.Equal(t, got.Bool, want, "the second call of WithBool replaces the first")
+		})
+	})
+
+	t.Run("WithByte", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Byte", func(t *testing.T) {
+			t.Parallel()
+
+			var want byte
+			want = 1
+			got := domaintest.NewPrimitivesBuilder().WithByte(want).Build()
+			assert.Equal(t, got.Byte, want, "WithByte writes its argument to Byte")
+		})
+
+		t.Run("replaces the value of Byte", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want byte
+			first = 1
+			want = 2
+			got := domaintest.NewPrimitivesBuilder().WithByte(first).WithByte(want).Build()
+			assert.Equal(t, got.Byte, want, "the second call of WithByte replaces the first")
+		})
+	})
+
+	t.Run("WithInt8", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Int8", func(t *testing.T) {
+			t.Parallel()
+
+			var want int8
+			want = 42
+			got := domaintest.NewPrimitivesBuilder().WithInt8(want).Build()
+			assert.Equal(t, got.Int8, want, "WithInt8 writes its argument to Int8")
+		})
+
+		t.Run("replaces the value of Int8", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int8
+			first = 42
+			want = 7
+			got := domaintest.NewPrimitivesBuilder().WithInt8(first).WithInt8(want).Build()
+			assert.Equal(t, got.Int8, want, "the second call of WithInt8 replaces the first")
+		})
+	})
+
+	t.Run("WithUint8", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Uint8", func(t *testing.T) {
+			t.Parallel()
+
+			var want uint8
+			want = 1
+			got := domaintest.NewPrimitivesBuilder().WithUint8(want).Build()
+			assert.Equal(t, got.Uint8, want, "WithUint8 writes its argument to Uint8")
+		})
+
+		t.Run("replaces the value of Uint8", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want uint8
+			first = 1
+			want = 2
+			got := domaintest.NewPrimitivesBuilder().WithUint8(first).WithUint8(want).Build()
+			assert.Equal(t, got.Uint8, want, "the second call of WithUint8 replaces the first")
 		})
 	})
 
@@ -635,28 +635,28 @@ func TestPrimitivesBuilder(t *testing.T) {
 			t.Parallel()
 
 			var seed domain.Primitives
-			seed.Bool = true
 			seed.String = "String-a"
-			seed.Rune = 1
-			seed.Byte = 1
+			seed.Ref = domain.ID("Ref-a")
 			seed.Int = 42
-			seed.Int8 = 42
-			seed.Int16 = 42
-			seed.Int32 = 42
 			seed.Int64 = 42
 			seed.Uint = 42
-			seed.Uint8 = 1
-			seed.Uint16 = 42
-			seed.Uint32 = 42
 			seed.Uint64 = 42
 			seed.Uintptr = 42
-			seed.Float32 = 1.5
 			seed.Float64 = 1.5
-			seed.Complex64 = 1.5
 			seed.Complex128 = 1.5
 			seed.Day = domain.Weekday(42)
 			seed.Temp = domain.Celsius(1.5)
-			seed.Ref = domain.ID("Ref-a")
+			seed.Complex64 = 1.5
+			seed.Rune = 1
+			seed.Int32 = 42
+			seed.Uint32 = 42
+			seed.Float32 = 1.5
+			seed.Int16 = 42
+			seed.Uint16 = 42
+			seed.Bool = true
+			seed.Byte = 1
+			seed.Int8 = 42
+			seed.Uint8 = 1
 			b := domaintest.NewPrimitivesBuilder()
 			b.Mutate(func(v *domain.Primitives) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
@@ -676,28 +676,28 @@ func TestContainersBuilder(t *testing.T) {
 			t.Parallel()
 
 			var seed domain.Containers
-			seed.Array = [3]int{42}
 			seed.Callback = func(context.Context) error { return nil }
 			seed.Events = make(chan string)
 			seed.Extra = "Extra-a"
+			seed.Array = [3]int{42}
 			got := domaintest.NewContainersBuilderFrom(seed).Build()
-			expect.Equal(t, got.Array, seed.Array, "NewContainersBuilderFrom keeps Array")
 			expect.Equal(t, got.Callback, seed.Callback, "NewContainersBuilderFrom keeps Callback")
 			expect.Equal(t, got.Events, seed.Events, "NewContainersBuilderFrom keeps Events")
 			expect.Equal(t, got.Extra, seed.Extra, "NewContainersBuilderFrom keeps Extra")
+			expect.Equal(t, got.Array, seed.Array, "NewContainersBuilderFrom keeps Array")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
 			t.Parallel()
 
 			b := domaintest.NewContainersBuilder()
+			b.WithMap(map[string]string{"": ""})
+			b.WithMapOfStruct(map[string]domain.Address{"": {}})
+			b.WithSet(map[string]struct{}{"": {}})
 			b.WithSlice("")
 			b.WithSliceOfStruct(domain.Address{})
 			b.WithBody([]byte{0})
 			b.WithAliased(domain.Bytes{0})
-			b.WithMap(map[string]string{"": ""})
-			b.WithMapOfStruct(map[string]domain.Address{"": {}})
-			b.WithSet(map[string]struct{}{"": {}})
 			want := b.Build()
 			assert.Equal(
 				t,
@@ -705,121 +705,6 @@ func TestContainersBuilder(t *testing.T) {
 				want,
 				"NewContainersBuilderFrom keeps the value of its argument",
 			)
-		})
-	})
-
-	t.Run("WithSlice", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Slice", func(t *testing.T) {
-			t.Parallel()
-
-			var want []string
-			want = []string{"Slice-a"}
-			got := domaintest.NewContainersBuilder().WithSlice(want...).Build()
-			assert.Equal(t, got.Slice, want, "WithSlice writes its argument to Slice")
-		})
-
-		t.Run("replaces the value of Slice", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want []string
-			first = []string{"Slice-a"}
-			want = []string{"Slice-b"}
-			got := domaintest.NewContainersBuilder().WithSlice(first...).WithSlice(want...).Build()
-			assert.Equal(t, got.Slice, want, "the second call of WithSlice replaces the first")
-		})
-	})
-
-	t.Run("WithSliceOfStruct", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to SliceOfStruct", func(t *testing.T) {
-			t.Parallel()
-
-			var want []domain.Address
-			want = []domain.Address{{Street: "Street-a"}}
-			got := domaintest.NewContainersBuilder().WithSliceOfStruct(want...).Build()
-			assert.Equal(t, got.SliceOfStruct, want, "WithSliceOfStruct writes its argument to SliceOfStruct")
-		})
-
-		t.Run("replaces the value of SliceOfStruct", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want []domain.Address
-			first = []domain.Address{{Street: "Street-a"}}
-			want = []domain.Address{{Street: "Street-b"}}
-			got := domaintest.NewContainersBuilder().WithSliceOfStruct(first...).WithSliceOfStruct(want...).Build()
-			assert.Equal(t, got.SliceOfStruct, want, "the second call of WithSliceOfStruct replaces the first")
-		})
-	})
-
-	t.Run("WithArray", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Array", func(t *testing.T) {
-			t.Parallel()
-
-			var want [3]int
-			want = [3]int{42}
-			got := domaintest.NewContainersBuilder().WithArray(want).Build()
-			assert.Equal(t, got.Array, want, "WithArray writes its argument to Array")
-		})
-
-		t.Run("replaces the value of Array", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want [3]int
-			first = [3]int{42}
-			want = [3]int{7}
-			got := domaintest.NewContainersBuilder().WithArray(first).WithArray(want).Build()
-			assert.Equal(t, got.Array, want, "the second call of WithArray replaces the first")
-		})
-	})
-
-	t.Run("WithBody", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Body", func(t *testing.T) {
-			t.Parallel()
-
-			var want []byte
-			want = []byte{1}
-			got := domaintest.NewContainersBuilder().WithBody(want).Build()
-			assert.Equal(t, got.Body, want, "WithBody writes its argument to Body")
-		})
-
-		t.Run("replaces the value of Body", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want []byte
-			first = []byte{1}
-			want = []byte{2}
-			got := domaintest.NewContainersBuilder().WithBody(first).WithBody(want).Build()
-			assert.Equal(t, got.Body, want, "the second call of WithBody replaces the first")
-		})
-	})
-
-	t.Run("WithAliased", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Aliased", func(t *testing.T) {
-			t.Parallel()
-
-			var want domain.Bytes
-			want = []byte{1}
-			got := domaintest.NewContainersBuilder().WithAliased(want).Build()
-			assert.Equal(t, got.Aliased, want, "WithAliased writes its argument to Aliased")
-		})
-
-		t.Run("replaces the value of Aliased", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want domain.Bytes
-			first = []byte{1}
-			want = []byte{2}
-			got := domaintest.NewContainersBuilder().WithAliased(first).WithAliased(want).Build()
-			assert.Equal(t, got.Aliased, want, "the second call of WithAliased replaces the first")
 		})
 	})
 
@@ -986,63 +871,118 @@ func TestContainersBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("AppendSlice", func(t *testing.T) {
+	t.Run("WithSlice", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("appends to the elements of Slice", func(t *testing.T) {
+		t.Run("writes its argument to Slice", func(t *testing.T) {
+			t.Parallel()
+
+			var want []string
+			want = []string{"Slice-a"}
+			got := domaintest.NewContainersBuilder().WithSlice(want...).Build()
+			assert.Equal(t, got.Slice, want, "WithSlice writes its argument to Slice")
+		})
+
+		t.Run("replaces the value of Slice", func(t *testing.T) {
 			t.Parallel()
 
 			var first, want []string
 			first = []string{"Slice-a"}
 			want = []string{"Slice-b"}
-			got := domaintest.NewContainersBuilder().WithSlice(first...).AppendSlice(want...).Build()
-			assert.Equal(
-				t,
-				got.Slice,
-				slices.Concat(first, want),
-				"AppendSlice appends its elements after those of WithSlice",
-			)
+			got := domaintest.NewContainersBuilder().WithSlice(first...).WithSlice(want...).Build()
+			assert.Equal(t, got.Slice, want, "the second call of WithSlice replaces the first")
 		})
 	})
 
-	t.Run("AppendSliceOfStruct", func(t *testing.T) {
+	t.Run("WithSliceOfStruct", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("appends to the elements of SliceOfStruct", func(t *testing.T) {
+		t.Run("writes its argument to SliceOfStruct", func(t *testing.T) {
+			t.Parallel()
+
+			var want []domain.Address
+			want = []domain.Address{{Street: "Street-a"}}
+			got := domaintest.NewContainersBuilder().WithSliceOfStruct(want...).Build()
+			assert.Equal(t, got.SliceOfStruct, want, "WithSliceOfStruct writes its argument to SliceOfStruct")
+		})
+
+		t.Run("replaces the value of SliceOfStruct", func(t *testing.T) {
 			t.Parallel()
 
 			var first, want []domain.Address
 			first = []domain.Address{{Street: "Street-a"}}
 			want = []domain.Address{{Street: "Street-b"}}
-			got := domaintest.NewContainersBuilder().WithSliceOfStruct(first...).AppendSliceOfStruct(want...).Build()
-			assert.Equal(
-				t,
-				got.SliceOfStruct,
-				slices.Concat(first, want),
-				"AppendSliceOfStruct appends its elements after those of WithSliceOfStruct",
-			)
+			got := domaintest.NewContainersBuilder().WithSliceOfStruct(first...).WithSliceOfStruct(want...).Build()
+			assert.Equal(t, got.SliceOfStruct, want, "the second call of WithSliceOfStruct replaces the first")
 		})
 	})
 
-	t.Run("WithBodyString", func(t *testing.T) {
+	t.Run("WithBody", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("writes the bytes of the text to Body", func(t *testing.T) {
+		t.Run("writes its argument to Body", func(t *testing.T) {
 			t.Parallel()
 
-			got := domaintest.NewContainersBuilder().WithBodyString("a").Build()
-			assert.Equal(t, got.Body, []byte("a"), "WithBodyString writes the bytes of the text")
+			var want []byte
+			want = []byte{1}
+			got := domaintest.NewContainersBuilder().WithBody(want).Build()
+			assert.Equal(t, got.Body, want, "WithBody writes its argument to Body")
+		})
+
+		t.Run("replaces the value of Body", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []byte
+			first = []byte{1}
+			want = []byte{2}
+			got := domaintest.NewContainersBuilder().WithBody(first).WithBody(want).Build()
+			assert.Equal(t, got.Body, want, "the second call of WithBody replaces the first")
 		})
 	})
 
-	t.Run("WithAliasedString", func(t *testing.T) {
+	t.Run("WithAliased", func(t *testing.T) {
 		t.Parallel()
 
-		t.Run("writes the bytes of the text to Aliased", func(t *testing.T) {
+		t.Run("writes its argument to Aliased", func(t *testing.T) {
 			t.Parallel()
 
-			got := domaintest.NewContainersBuilder().WithAliasedString("a").Build()
-			assert.Equal(t, got.Aliased, domain.Bytes("a"), "WithAliasedString writes the bytes of the text")
+			var want domain.Bytes
+			want = []byte{1}
+			got := domaintest.NewContainersBuilder().WithAliased(want).Build()
+			assert.Equal(t, got.Aliased, want, "WithAliased writes its argument to Aliased")
+		})
+
+		t.Run("replaces the value of Aliased", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want domain.Bytes
+			first = []byte{1}
+			want = []byte{2}
+			got := domaintest.NewContainersBuilder().WithAliased(first).WithAliased(want).Build()
+			assert.Equal(t, got.Aliased, want, "the second call of WithAliased replaces the first")
+		})
+	})
+
+	t.Run("WithArray", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Array", func(t *testing.T) {
+			t.Parallel()
+
+			var want [3]int
+			want = [3]int{42}
+			got := domaintest.NewContainersBuilder().WithArray(want).Build()
+			assert.Equal(t, got.Array, want, "WithArray writes its argument to Array")
+		})
+
+		t.Run("replaces the value of Array", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want [3]int
+			first = [3]int{42}
+			want = [3]int{7}
+			got := domaintest.NewContainersBuilder().WithArray(first).WithArray(want).Build()
+			assert.Equal(t, got.Array, want, "the second call of WithArray replaces the first")
 		})
 	})
 
@@ -1158,6 +1098,66 @@ func TestContainersBuilder(t *testing.T) {
 		})
 	})
 
+	t.Run("AppendSlice", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("appends to the elements of Slice", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []string
+			first = []string{"Slice-a"}
+			want = []string{"Slice-b"}
+			got := domaintest.NewContainersBuilder().WithSlice(first...).AppendSlice(want...).Build()
+			assert.Equal(
+				t,
+				got.Slice,
+				slices.Concat(first, want),
+				"AppendSlice appends its elements after those of WithSlice",
+			)
+		})
+	})
+
+	t.Run("AppendSliceOfStruct", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("appends to the elements of SliceOfStruct", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []domain.Address
+			first = []domain.Address{{Street: "Street-a"}}
+			want = []domain.Address{{Street: "Street-b"}}
+			got := domaintest.NewContainersBuilder().WithSliceOfStruct(first...).AppendSliceOfStruct(want...).Build()
+			assert.Equal(
+				t,
+				got.SliceOfStruct,
+				slices.Concat(first, want),
+				"AppendSliceOfStruct appends its elements after those of WithSliceOfStruct",
+			)
+		})
+	})
+
+	t.Run("WithBodyString", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes the bytes of the text to Body", func(t *testing.T) {
+			t.Parallel()
+
+			got := domaintest.NewContainersBuilder().WithBodyString("a").Build()
+			assert.Equal(t, got.Body, []byte("a"), "WithBodyString writes the bytes of the text")
+		})
+	})
+
+	t.Run("WithAliasedString", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes the bytes of the text to Aliased", func(t *testing.T) {
+			t.Parallel()
+
+			got := domaintest.NewContainersBuilder().WithAliasedString("a").Build()
+			assert.Equal(t, got.Aliased, domain.Bytes("a"), "WithAliasedString writes the bytes of the text")
+		})
+	})
+
 	t.Run("Mutate", func(t *testing.T) {
 		t.Parallel()
 
@@ -1186,14 +1186,58 @@ func TestContainersBuilder(t *testing.T) {
 			t.Parallel()
 
 			b := domaintest.NewContainersBuilder()
+			b.WithMap(map[string]string{"": ""})
+			b.WithMapOfStruct(map[string]domain.Address{"": {}})
+			b.WithSet(map[string]struct{}{"": {}})
 			b.WithSlice("")
 			b.WithSliceOfStruct(domain.Address{})
 			b.WithBody([]byte{0})
 			b.WithAliased(domain.Bytes{0})
-			b.WithMap(map[string]string{"": ""})
-			b.WithMapOfStruct(map[string]domain.Address{"": {}})
-			b.WithSet(map[string]struct{}{"": {}})
 			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+
+		t.Run("copies Map into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other map[string]string
+			want = map[string]string{"Map-a": "Map-a"}
+			other = map[string]string{"Map-b": "Map-a"}
+			original := domaintest.NewContainersBuilder().WithMap(want)
+			before := maps.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *domain.Containers) { maps.Copy(v.Map, other) })
+			assert.Equal(t, original.Build().Map, before, "a change of Map in the clone leaves the original unchanged")
+		})
+
+		t.Run("copies MapOfStruct into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other map[string]domain.Address
+			want = map[string]domain.Address{"MapOfStruct-a": {Street: "Street-a"}}
+			other = map[string]domain.Address{"MapOfStruct-b": {Street: "Street-a"}}
+			original := domaintest.NewContainersBuilder().WithMapOfStruct(want)
+			before := maps.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *domain.Containers) { maps.Copy(v.MapOfStruct, other) })
+			assert.Equal(
+				t,
+				original.Build().MapOfStruct,
+				before,
+				"a change of MapOfStruct in the clone leaves the original unchanged",
+			)
+		})
+
+		t.Run("copies Set into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other map[string]struct{}
+			want = map[string]struct{}{"Set-a": {}}
+			other = map[string]struct{}{"Set-b": {}}
+			original := domaintest.NewContainersBuilder().WithSet(want)
+			before := maps.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *domain.Containers) { maps.Copy(v.Set, other) })
+			assert.Equal(t, original.Build().Set, before, "a change of Set in the clone leaves the original unchanged")
 		})
 
 		t.Run("copies Slice into the clone", func(t *testing.T) {
@@ -1267,50 +1311,6 @@ func TestContainersBuilder(t *testing.T) {
 				"a change of Aliased in the clone leaves the original unchanged",
 			)
 		})
-
-		t.Run("copies Map into the clone", func(t *testing.T) {
-			t.Parallel()
-
-			var want, other map[string]string
-			want = map[string]string{"Map-a": "Map-a"}
-			other = map[string]string{"Map-b": "Map-a"}
-			original := domaintest.NewContainersBuilder().WithMap(want)
-			before := maps.Clone(want)
-			clone := original.Clone()
-			clone.Mutate(func(v *domain.Containers) { maps.Copy(v.Map, other) })
-			assert.Equal(t, original.Build().Map, before, "a change of Map in the clone leaves the original unchanged")
-		})
-
-		t.Run("copies MapOfStruct into the clone", func(t *testing.T) {
-			t.Parallel()
-
-			var want, other map[string]domain.Address
-			want = map[string]domain.Address{"MapOfStruct-a": {Street: "Street-a"}}
-			other = map[string]domain.Address{"MapOfStruct-b": {Street: "Street-a"}}
-			original := domaintest.NewContainersBuilder().WithMapOfStruct(want)
-			before := maps.Clone(want)
-			clone := original.Clone()
-			clone.Mutate(func(v *domain.Containers) { maps.Copy(v.MapOfStruct, other) })
-			assert.Equal(
-				t,
-				original.Build().MapOfStruct,
-				before,
-				"a change of MapOfStruct in the clone leaves the original unchanged",
-			)
-		})
-
-		t.Run("copies Set into the clone", func(t *testing.T) {
-			t.Parallel()
-
-			var want, other map[string]struct{}
-			want = map[string]struct{}{"Set-a": {}}
-			other = map[string]struct{}{"Set-b": {}}
-			original := domaintest.NewContainersBuilder().WithSet(want)
-			before := maps.Clone(want)
-			clone := original.Clone()
-			clone.Mutate(func(v *domain.Containers) { maps.Copy(v.Set, other) })
-			assert.Equal(t, original.Build().Set, before, "a change of Set in the clone leaves the original unchanged")
-		})
 	})
 
 	t.Run("Build", func(t *testing.T) {
@@ -1320,10 +1320,10 @@ func TestContainersBuilder(t *testing.T) {
 			t.Parallel()
 
 			var seed domain.Containers
-			seed.Array = [3]int{42}
 			seed.Callback = func(context.Context) error { return nil }
 			seed.Events = make(chan string)
 			seed.Extra = "Extra-a"
+			seed.Array = [3]int{42}
 			b := domaintest.NewContainersBuilder()
 			b.Mutate(func(v *domain.Containers) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
@@ -1762,18 +1762,18 @@ func TestUserBuilder(t *testing.T) {
 
 			var seed domain.User
 			seed.Username = "Username-a"
-			seed.Age = 42
-			seed.Active = true
 			seed.Home = domain.Address{Street: "Street-a"}
 			seed.Deadline = time.Unix(1700000000, 0)
+			seed.Age = 42
 			seed.Timeout = time.Duration(1)
+			seed.Active = true
 			got := domaintest.NewUserBuilderFrom(seed).Build()
 			expect.Equal(t, got.Username, seed.Username, "NewUserBuilderFrom keeps Username")
-			expect.Equal(t, got.Age, seed.Age, "NewUserBuilderFrom keeps Age")
-			expect.Equal(t, got.Active, seed.Active, "NewUserBuilderFrom keeps Active")
 			expect.Equal(t, got.Home, seed.Home, "NewUserBuilderFrom keeps Home")
 			expect.Equal(t, got.Deadline, seed.Deadline, "NewUserBuilderFrom keeps Deadline")
+			expect.Equal(t, got.Age, seed.Age, "NewUserBuilderFrom keeps Age")
 			expect.Equal(t, got.Timeout, seed.Timeout, "NewUserBuilderFrom keeps Timeout")
+			expect.Equal(t, got.Active, seed.Active, "NewUserBuilderFrom keeps Active")
 		})
 
 		t.Run("keeps the value of its argument", func(t *testing.T) {
@@ -1811,52 +1811,6 @@ func TestUserBuilder(t *testing.T) {
 			want = "Username-b"
 			got := domaintest.NewUserBuilder().WithUsername(first).WithUsername(want).Build()
 			assert.Equal(t, got.Username, want, "the second call of WithUsername replaces the first")
-		})
-	})
-
-	t.Run("WithAge", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Age", func(t *testing.T) {
-			t.Parallel()
-
-			var want int
-			want = 42
-			got := domaintest.NewUserBuilder().WithAge(want).Build()
-			assert.Equal(t, got.Age, want, "WithAge writes its argument to Age")
-		})
-
-		t.Run("replaces the value of Age", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want int
-			first = 42
-			want = 7
-			got := domaintest.NewUserBuilder().WithAge(first).WithAge(want).Build()
-			assert.Equal(t, got.Age, want, "the second call of WithAge replaces the first")
-		})
-	})
-
-	t.Run("WithActive", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Active", func(t *testing.T) {
-			t.Parallel()
-
-			var want bool
-			want = true
-			got := domaintest.NewUserBuilder().WithActive(want).Build()
-			assert.Equal(t, got.Active, want, "WithActive writes its argument to Active")
-		})
-
-		t.Run("replaces the value of Active", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want bool
-			first = true
-			want = false
-			got := domaintest.NewUserBuilder().WithActive(first).WithActive(want).Build()
-			assert.Equal(t, got.Active, want, "the second call of WithActive replaces the first")
 		})
 	})
 
@@ -1908,29 +1862,6 @@ func TestUserBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithReports", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Reports", func(t *testing.T) {
-			t.Parallel()
-
-			var want []*domain.User
-			want = []*domain.User{{Username: "Username-a"}}
-			got := domaintest.NewUserBuilder().WithReports(want...).Build()
-			assert.Equal(t, got.Reports, want, "WithReports writes its argument to Reports")
-		})
-
-		t.Run("replaces the value of Reports", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want []*domain.User
-			first = []*domain.User{{Username: "Username-a"}}
-			want = []*domain.User{{Username: "Username-b"}}
-			got := domaintest.NewUserBuilder().WithReports(first...).WithReports(want...).Build()
-			assert.Equal(t, got.Reports, want, "the second call of WithReports replaces the first")
-		})
-	})
-
 	t.Run("WithDeadline", func(t *testing.T) {
 		t.Parallel()
 
@@ -1954,6 +1885,52 @@ func TestUserBuilder(t *testing.T) {
 		})
 	})
 
+	t.Run("WithReports", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Reports", func(t *testing.T) {
+			t.Parallel()
+
+			var want []*domain.User
+			want = []*domain.User{{Username: "Username-a"}}
+			got := domaintest.NewUserBuilder().WithReports(want...).Build()
+			assert.Equal(t, got.Reports, want, "WithReports writes its argument to Reports")
+		})
+
+		t.Run("replaces the value of Reports", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []*domain.User
+			first = []*domain.User{{Username: "Username-a"}}
+			want = []*domain.User{{Username: "Username-b"}}
+			got := domaintest.NewUserBuilder().WithReports(first...).WithReports(want...).Build()
+			assert.Equal(t, got.Reports, want, "the second call of WithReports replaces the first")
+		})
+	})
+
+	t.Run("WithAge", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Age", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := domaintest.NewUserBuilder().WithAge(want).Build()
+			assert.Equal(t, got.Age, want, "WithAge writes its argument to Age")
+		})
+
+		t.Run("replaces the value of Age", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := domaintest.NewUserBuilder().WithAge(first).WithAge(want).Build()
+			assert.Equal(t, got.Age, want, "the second call of WithAge replaces the first")
+		})
+	})
+
 	t.Run("WithTimeout", func(t *testing.T) {
 		t.Parallel()
 
@@ -1974,6 +1951,29 @@ func TestUserBuilder(t *testing.T) {
 			want = time.Duration(2)
 			got := domaintest.NewUserBuilder().WithTimeout(first).WithTimeout(want).Build()
 			assert.Equal(t, got.Timeout, want, "the second call of WithTimeout replaces the first")
+		})
+	})
+
+	t.Run("WithActive", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Active", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := domaintest.NewUserBuilder().WithActive(want).Build()
+			assert.Equal(t, got.Active, want, "WithActive writes its argument to Active")
+		})
+
+		t.Run("replaces the value of Active", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want bool
+			first = true
+			want = false
+			got := domaintest.NewUserBuilder().WithActive(first).WithActive(want).Build()
+			assert.Equal(t, got.Active, want, "the second call of WithActive replaces the first")
 		})
 	})
 
@@ -2079,11 +2079,11 @@ func TestUserBuilder(t *testing.T) {
 
 			var seed domain.User
 			seed.Username = "Username-a"
-			seed.Age = 42
-			seed.Active = true
 			seed.Home = domain.Address{Street: "Street-a"}
 			seed.Deadline = time.Unix(1700000000, 0)
+			seed.Age = 42
 			seed.Timeout = time.Duration(1)
+			seed.Active = true
 			b := domaintest.NewUserBuilder()
 			b.Mutate(func(v *domain.User) { *v = seed })
 			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
@@ -2091,4 +2091,4 @@ func TestUserBuilder(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:be08331436cd2471e15c6cad425707a097efcb1aa5d9b37f2d01690a17066899
+// dokimi:provenance sha256:61b7635da47b7c26c9249bb2d3b40286d039ec359c79084da631785caf4dfb8f

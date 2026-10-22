@@ -20,8 +20,8 @@ import (
 //
 //dokimi:subject streamreflectsmutations.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items []string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [streamreflectsmutations.Mixed].

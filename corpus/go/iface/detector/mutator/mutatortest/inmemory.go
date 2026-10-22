@@ -17,8 +17,8 @@ import (
 //
 //dokimi:subject mutator.Mutator new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
 	touched map[string]int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [mutator.Mutator].

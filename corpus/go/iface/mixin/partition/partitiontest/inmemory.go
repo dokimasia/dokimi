@@ -21,8 +21,8 @@ var ErrNotFound = errors.New("partitiontest: not found")
 //
 //dokimi:subject partition.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	parts map[string]map[string]string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [partition.Mixed].

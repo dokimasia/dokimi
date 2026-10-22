@@ -41,8 +41,8 @@ func AccountDefaults() Account {
 //
 //dokimi:builder
 type Page[T any] struct {
-	Items []T
 	Next  string
+	Items []T
 }
 
 // Note is a struct without a builder.

@@ -22,8 +22,8 @@ var ErrNotFound = errors.New("defaultonerrortest: not found")
 //
 //dokimi:subject defaultonerror.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]defaultonerror.Body
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [defaultonerror.Mixed].

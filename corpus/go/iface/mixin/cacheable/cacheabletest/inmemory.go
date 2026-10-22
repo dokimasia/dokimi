@@ -18,9 +18,9 @@ import (
 //
 //dokimi:subject cacheable.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	cache  map[string]string
 	misses int
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [cacheable.Mixed].

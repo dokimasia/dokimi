@@ -20,8 +20,8 @@ import (
 //
 //dokimi:subject overmatch.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items []overmatch.Value
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [overmatch.Mixed].

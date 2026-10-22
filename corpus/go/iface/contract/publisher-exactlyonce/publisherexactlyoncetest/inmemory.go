@@ -26,9 +26,9 @@ var ErrFull = errors.New("publisherexactlyoncetest: a subscriber is too far behi
 //
 //dokimi:subject publisherexactlyonce.Contract new=NewInMemory
 type InMemory struct {
-	mu          sync.Mutex
-	subscribers []chan publisherexactlyonce.Value
 	delivered   map[publisherexactlyonce.Value]bool
+	subscribers []chan publisherexactlyonce.Value
+	mu          sync.Mutex
 }
 
 // The compiler checks that InMemory implements [publisherexactlyonce.Contract].

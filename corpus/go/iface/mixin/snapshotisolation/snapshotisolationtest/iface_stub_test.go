@@ -23,7 +23,7 @@ func mixedStubRecordArgs(tb assert.TB) (context.Context, snapshotisolation.Entry
 	tb.Helper()
 	a0 := assert.Context(tb)
 	var a1 snapshotisolation.Entry
-	a1 = snapshotisolation.Entry{Txn: 42}
+	a1 = snapshotisolation.Entry{Key: "Key-a"}
 	return a0, a1
 }
 
@@ -60,7 +60,7 @@ func mixedStubHistory(tb assert.TB, s *snapshotisolationtest.MixedStub) ([]snaps
 func mixedStubHistoryPins() ([]snapshotisolation.Entry, error) {
 	var want0 []snapshotisolation.Entry
 	want1 := errors.New("History-returns")
-	want0 = []snapshotisolation.Entry{{Txn: 42}}
+	want0 = []snapshotisolation.Entry{{Key: "Key-a"}}
 	return want0, want1
 }
 
@@ -85,7 +85,7 @@ func mixedStubGet(tb assert.TB, s *snapshotisolationtest.MixedStub) (snapshotiso
 func mixedStubGetPins() (snapshotisolation.Entry, error) {
 	var want0 snapshotisolation.Entry
 	want1 := errors.New("Get-returns")
-	want0 = snapshotisolation.Entry{Txn: 42}
+	want0 = snapshotisolation.Entry{Key: "Key-a"}
 	return want0, want1
 }
 
@@ -729,4 +729,4 @@ func TestMixedGetStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d2db916fbed5ba86f462aaa57b951defd63d9d5b0ea2f3fb96b36fd3f646eb42
+// dokimi:provenance sha256:a160ed89229eb2c31a1b464181cf50a2a195abc951db685ddc83f3ddccec5300

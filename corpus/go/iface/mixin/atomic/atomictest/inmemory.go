@@ -25,8 +25,8 @@ var ErrHalfEntry = errors.New("atomictest: refuses an entry missing one half")
 //
 //dokimi:subject atomic.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]atomic.Entry
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [atomic.Mixed].

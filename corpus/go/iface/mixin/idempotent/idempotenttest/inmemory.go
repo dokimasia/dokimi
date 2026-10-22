@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("idempotenttest: not found")
 //
 //dokimi:subject idempotent.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	items  map[string]string
 	writes int
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [idempotent.Mixed].

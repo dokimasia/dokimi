@@ -70,29 +70,6 @@ func TestItemBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithCount", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Count", func(t *testing.T) {
-			t.Parallel()
-
-			var want int
-			want = 42
-			got := plaintest.NewItemBuilder().WithCount(want).Build()
-			assert.Equal(t, got.Count, want, "WithCount writes its argument to Count")
-		})
-
-		t.Run("replaces the value of Count", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want int
-			first = 42
-			want = 7
-			got := plaintest.NewItemBuilder().WithCount(first).WithCount(want).Build()
-			assert.Equal(t, got.Count, want, "the second call of WithCount replaces the first")
-		})
-	})
-
 	t.Run("WithTags", func(t *testing.T) {
 		t.Parallel()
 
@@ -113,6 +90,29 @@ func TestItemBuilder(t *testing.T) {
 			want = []string{"Tags-b"}
 			got := plaintest.NewItemBuilder().WithTags(first...).WithTags(want...).Build()
 			assert.Equal(t, got.Tags, want, "the second call of WithTags replaces the first")
+		})
+	})
+
+	t.Run("WithCount", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Count", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := plaintest.NewItemBuilder().WithCount(want).Build()
+			assert.Equal(t, got.Count, want, "WithCount writes its argument to Count")
+		})
+
+		t.Run("replaces the value of Count", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := plaintest.NewItemBuilder().WithCount(first).WithCount(want).Build()
+			assert.Equal(t, got.Count, want, "the second call of WithCount replaces the first")
 		})
 	})
 
@@ -202,4 +202,4 @@ func TestItemBuilder(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1f5bc55f5ebb28d24e83cf3cfcc7e41e7200c68fadeda84e4ebf321136eeb9ed
+// dokimi:provenance sha256:bf8bcc4a4fa80d0619d5f7374f5e80ae8c5f3ff2facf077b63d167c2865b6ac2

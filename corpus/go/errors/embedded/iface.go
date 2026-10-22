@@ -37,8 +37,8 @@ var ErrNotFound = errors.New("embedded: not found")
 
 // BaseError carries the whole contract, and is embedded rather than used.
 type BaseError struct {
-	Op    string
 	Cause error
+	Op    string
 }
 
 // Error satisfies the error interface for every type embedding this one.

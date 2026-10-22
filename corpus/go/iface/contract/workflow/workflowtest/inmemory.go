@@ -22,8 +22,8 @@ var ErrTerminal = errors.New("workflowtest: no transition out of the last state"
 //
 //dokimi:subject workflow.Contract new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	state map[string]string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [workflow.Contract].

@@ -18,9 +18,9 @@ import (
 //
 //dokimi:subject multireader.MultiReader new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]multireader.Value
 	metas  map[string]multireader.Meta
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [multireader.MultiReader].

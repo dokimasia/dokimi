@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("monotonicwritestest: not found")
 //
 //dokimi:subject monotonicwrites.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
-	rev    int64
 	values map[string]monotonicwrites.Value
+	rev    int64
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [monotonicwrites.Mixed].

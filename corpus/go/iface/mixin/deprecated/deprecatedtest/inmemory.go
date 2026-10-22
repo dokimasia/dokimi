@@ -21,8 +21,8 @@ var ErrNotFound = errors.New("deprecatedtest: not found")
 //
 //dokimi:subject deprecated.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [deprecated.Mixed].

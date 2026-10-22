@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("readyourwritestest: not found")
 //
 //dokimi:subject readyourwrites.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
-	rev    int64
 	values map[string]readyourwrites.Value
+	rev    int64
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [readyourwrites.Mixed].

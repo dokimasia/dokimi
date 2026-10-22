@@ -21,8 +21,8 @@ const gone = "gone"
 //
 //dokimi:subject errors.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [errors.Mixed].

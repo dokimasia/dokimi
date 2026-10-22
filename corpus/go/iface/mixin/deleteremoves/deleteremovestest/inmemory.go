@@ -23,8 +23,8 @@ var ErrNotFound = fmt.Errorf("deleteremovestest: %w", deleteremoves.ErrGone)
 //
 //dokimi:subject deleteremoves.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [deleteremoves.Mixed].

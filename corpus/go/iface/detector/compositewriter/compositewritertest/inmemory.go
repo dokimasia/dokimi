@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject compositewriter.CompositeWriter new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]compositewriter.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [compositewriter.CompositeWriter].

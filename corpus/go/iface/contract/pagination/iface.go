@@ -26,8 +26,8 @@ type Cursor string
 // A struct rather than a spread of results, because the cursor is the
 // member the directive names and a member has to live on something.
 type Page struct {
-	Items []Value
 	Next  Cursor
+	Items []Value
 }
 
 // Contract is the fixture interface.

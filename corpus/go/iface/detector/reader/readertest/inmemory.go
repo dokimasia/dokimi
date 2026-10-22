@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject reader.Reader new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]reader.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [reader.Reader].

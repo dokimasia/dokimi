@@ -21,8 +21,8 @@ var ErrMissing = errors.New("injectionsafetest: nothing stored under the key")
 //
 //dokimi:subject injectionsafe.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]string
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [injectionsafe.Mixed].

@@ -21,8 +21,8 @@ var ErrNotFound = errors.New("roledtypestest: not found")
 //
 //dokimi:subject roledtypes.Store new=NewInMemory
 type InMemory struct {
-	mu       sync.Mutex
 	payloads map[roledtypes.Key]roledtypes.Payload
+	mu       sync.Mutex
 }
 
 // The compiler checks that InMemory implements [roledtypes.Store].

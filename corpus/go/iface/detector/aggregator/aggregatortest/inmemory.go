@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject aggregator.Aggregator new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items []string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [aggregator.Aggregator].

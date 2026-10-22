@@ -22,10 +22,10 @@ var ErrNotFound = errors.New("cachetest: no value under that key")
 //
 //dokimi:subject cache.Contract new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
 	backing map[string]cache.Value
 	cached  map[string]cache.Value
 	fetches int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [cache.Contract].

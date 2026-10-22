@@ -23,7 +23,7 @@ func mixedStubRecordArgs(tb assert.TB) (context.Context, serializable.Entry) {
 	tb.Helper()
 	a0 := assert.Context(tb)
 	var a1 serializable.Entry
-	a1 = serializable.Entry{Txn: 42}
+	a1 = serializable.Entry{Key: "Key-a"}
 	return a0, a1
 }
 
@@ -60,7 +60,7 @@ func mixedStubHistory(tb assert.TB, s *serializabletest.MixedStub) ([]serializab
 func mixedStubHistoryPins() ([]serializable.Entry, error) {
 	var want0 []serializable.Entry
 	want1 := errors.New("History-returns")
-	want0 = []serializable.Entry{{Txn: 42}}
+	want0 = []serializable.Entry{{Key: "Key-a"}}
 	return want0, want1
 }
 
@@ -85,7 +85,7 @@ func mixedStubGet(tb assert.TB, s *serializabletest.MixedStub) (serializable.Ent
 func mixedStubGetPins() (serializable.Entry, error) {
 	var want0 serializable.Entry
 	want1 := errors.New("Get-returns")
-	want0 = serializable.Entry{Txn: 42}
+	want0 = serializable.Entry{Key: "Key-a"}
 	return want0, want1
 }
 
@@ -718,4 +718,4 @@ func TestMixedGetStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b43cb13d0af8452945e21fba344d97568036ad4d4ac4d4ce35065ce4d457a927
+// dokimi:provenance sha256:3708239655fa7c02fa5d0be069131f9a59fd0e6876e41ca702dfb1c81584216b

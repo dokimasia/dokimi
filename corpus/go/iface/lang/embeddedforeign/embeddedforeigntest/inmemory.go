@@ -22,8 +22,8 @@ var ErrNotFound = errors.New("embeddedforeigntest: not found")
 //
 //dokimi:subject embeddedforeign.Stream new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	items  map[string]string
+	mu     sync.Mutex
 	closed bool
 }
 

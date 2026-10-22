@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject hooks.Mixed new=NewInMemory
 type InMemory struct {
-	mu       sync.Mutex
 	handlers []func(event string)
+	mu       sync.Mutex
 }
 
 // The compiler checks that InMemory implements [hooks.Mixed].

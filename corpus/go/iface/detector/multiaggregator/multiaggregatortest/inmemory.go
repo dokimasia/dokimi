@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject multiaggregator.MultiAggregator new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items []int
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [multiaggregator.MultiAggregator].

@@ -20,8 +20,8 @@ import (
 
 // Entry is one recorded operation, with the transaction that made it.
 type Entry struct {
-	Txn     int
 	Key     string
+	Txn     int
 	Version int64
 	Write   bool
 }

@@ -57,8 +57,8 @@ func (*NotFoundError) Is(target error) bool { return target == ErrNotFound }
 // WrappedError wraps a cause, so the generated unwrap-chain check has
 // something to walk.
 type WrappedError struct {
-	Op    string
 	Cause error
+	Op    string
 }
 
 // Error implements error.

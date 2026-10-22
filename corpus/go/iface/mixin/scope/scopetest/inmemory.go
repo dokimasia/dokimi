@@ -21,8 +21,8 @@ var ErrNotFound = errors.New("scopetest: not found")
 //
 //dokimi:subject scope.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	scopes map[string]map[string]string
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [scope.Mixed].

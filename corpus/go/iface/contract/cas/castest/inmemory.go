@@ -21,9 +21,9 @@ var ErrEmpty = errors.New("castest: no write set the cell yet")
 //
 //dokimi:subject cas.Contract new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
 	value   cas.Value
 	current int64
+	mu      sync.Mutex
 	present bool
 }
 

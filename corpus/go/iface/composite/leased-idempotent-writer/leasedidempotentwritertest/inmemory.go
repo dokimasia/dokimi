@@ -17,8 +17,8 @@ import (
 // for. A holder is refused a lease only while another holder of the registry
 // has it.
 type Registry struct {
-	mu     sync.Mutex
 	leases map[string]*InMemory
+	mu     sync.Mutex
 }
 
 // NewRegistry returns a registry without leases.

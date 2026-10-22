@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("pointintimetest: not found")
 //
 //dokimi:subject pointintime.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	source map[string]pointintime.Value
 	view   map[string]pointintime.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [pointintime.Mixed].

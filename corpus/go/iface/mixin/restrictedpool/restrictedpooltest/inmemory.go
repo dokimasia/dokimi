@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject restrictedpool.Store new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	bodies map[restrictedpool.Key]restrictedpool.Body
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [restrictedpool.Store].

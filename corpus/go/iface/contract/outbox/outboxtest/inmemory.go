@@ -26,9 +26,9 @@ var ErrFull = errors.New("outboxtest: a subscriber is too far behind to take the
 //
 //dokimi:subject outbox.Contract new=NewInMemory
 type InMemory struct {
-	mu          sync.Mutex
 	records     []outbox.Value
 	subscribers []chan outbox.Value
+	mu          sync.Mutex
 }
 
 // The compiler checks that InMemory implements [outbox.Contract].

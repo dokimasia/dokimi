@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("stickytest: not found")
 //
 //dokimi:subject sticky.Mixed new=NewInMemory
 type InMemory struct {
-	mu       sync.Mutex
 	values   map[string]sticky.Value
 	resolved map[string]sticky.Value
+	mu       sync.Mutex
 }
 
 // The compiler checks that InMemory implements [sticky.Mixed].

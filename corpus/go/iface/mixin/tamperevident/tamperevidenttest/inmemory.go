@@ -22,9 +22,9 @@ var ErrTampered = errors.New("tamperevidenttest: stored value does not match its
 //
 //dokimi:subject tamperevident.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	body   string
 	digest string
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [tamperevident.Mixed].

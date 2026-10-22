@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject concurrent.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	counts map[string]int
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [concurrent.Mixed].

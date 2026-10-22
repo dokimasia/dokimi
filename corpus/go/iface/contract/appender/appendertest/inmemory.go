@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject appender.Contract new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
 	entries []appender.Value
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [appender.Contract].

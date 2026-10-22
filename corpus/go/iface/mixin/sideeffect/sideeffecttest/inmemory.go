@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject sideeffect.Mixed new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
 	touches map[string]int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [sideeffect.Mixed].

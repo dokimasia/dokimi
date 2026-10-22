@@ -27,11 +27,11 @@ var ErrNotAdmissible = errors.New("serializabletest: the isolation level refuses
 //
 //dokimi:subject serializable.Mixed new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
-	entries []serializable.Entry
-	txn     int
 	version map[string]int64
 	wrote   map[keyed]bool
+	entries []serializable.Entry
+	txn     int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [serializable.Mixed].
@@ -90,8 +90,8 @@ func (s *InMemory) Get(ctx context.Context, key string) (serializable.Entry, err
 
 // keyed is the pair of a transaction and a key that the transaction wrote.
 type keyed struct {
-	txn int
 	key string
+	txn int
 }
 
 // admits returns an error that wraps ErrNotAdmissible when the isolation level

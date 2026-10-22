@@ -86,6 +86,12 @@ func NewPageBuilderFrom[T any](v built.Page[T]) *PageBuilder[T] {
 	return &PageBuilder[T]{v: v}
 }
 
+// WithNext replaces Next with v.
+func (b *PageBuilder[T]) WithNext(v string) *PageBuilder[T] {
+	b.v.Next = v
+	return b
+}
+
 // WithItems replaces the elements of Items with v. A call without
 // arguments empties Items.
 func (b *PageBuilder[T]) WithItems(v ...T) *PageBuilder[T] {
@@ -96,12 +102,6 @@ func (b *PageBuilder[T]) WithItems(v ...T) *PageBuilder[T] {
 // AppendItems appends v to the elements of Items.
 func (b *PageBuilder[T]) AppendItems(v ...T) *PageBuilder[T] {
 	b.v.Items = append(b.v.Items, v...)
-	return b
-}
-
-// WithNext replaces Next with v.
-func (b *PageBuilder[T]) WithNext(v string) *PageBuilder[T] {
-	b.v.Next = v
 	return b
 }
 
@@ -130,4 +130,4 @@ func (b *PageBuilder[T]) Build() built.Page[T] {
 	return b.v
 }
 
-// dokimi:provenance sha256:ad026ec187e2cba9c3bbaeb4ed7774de9e86eb9cd07cb96511b0d224945d3eff
+// dokimi:provenance sha256:d8386b21254daacec57550cc5d2737a3b8bae112f47aa40a2a50e9523924bca4

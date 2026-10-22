@@ -24,9 +24,9 @@ var ErrNotFound = errors.New("batchwritertest: no value under that key")
 //
 //dokimi:subject batchwriter.Contract new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]batchwriter.Value
 	order  []string
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [batchwriter.Contract].

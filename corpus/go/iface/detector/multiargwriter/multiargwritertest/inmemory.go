@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject multiargwriter.MultiArgWriter new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]string
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [multiargwriter.MultiArgWriter].

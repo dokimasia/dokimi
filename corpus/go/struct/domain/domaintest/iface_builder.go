@@ -33,51 +33,21 @@ func NewPrimitivesBuilderFrom(v domain.Primitives) *PrimitivesBuilder {
 	return &PrimitivesBuilder{v: v}
 }
 
-// WithBool replaces Bool with v.
-func (b *PrimitivesBuilder) WithBool(v bool) *PrimitivesBuilder {
-	b.v.Bool = v
-	return b
-}
-
 // WithString replaces String with v.
 func (b *PrimitivesBuilder) WithString(v domain.String) *PrimitivesBuilder {
 	b.v.String = v
 	return b
 }
 
-// WithRune replaces Rune with v.
-func (b *PrimitivesBuilder) WithRune(v rune) *PrimitivesBuilder {
-	b.v.Rune = v
-	return b
-}
-
-// WithByte replaces Byte with v.
-func (b *PrimitivesBuilder) WithByte(v byte) *PrimitivesBuilder {
-	b.v.Byte = v
+// WithRef replaces Ref with v.
+func (b *PrimitivesBuilder) WithRef(v domain.ID) *PrimitivesBuilder {
+	b.v.Ref = v
 	return b
 }
 
 // WithInt replaces Int with v.
 func (b *PrimitivesBuilder) WithInt(v int) *PrimitivesBuilder {
 	b.v.Int = v
-	return b
-}
-
-// WithInt8 replaces Int8 with v.
-func (b *PrimitivesBuilder) WithInt8(v int8) *PrimitivesBuilder {
-	b.v.Int8 = v
-	return b
-}
-
-// WithInt16 replaces Int16 with v.
-func (b *PrimitivesBuilder) WithInt16(v int16) *PrimitivesBuilder {
-	b.v.Int16 = v
-	return b
-}
-
-// WithInt32 replaces Int32 with v.
-func (b *PrimitivesBuilder) WithInt32(v int32) *PrimitivesBuilder {
-	b.v.Int32 = v
 	return b
 }
 
@@ -93,24 +63,6 @@ func (b *PrimitivesBuilder) WithUint(v uint) *PrimitivesBuilder {
 	return b
 }
 
-// WithUint8 replaces Uint8 with v.
-func (b *PrimitivesBuilder) WithUint8(v uint8) *PrimitivesBuilder {
-	b.v.Uint8 = v
-	return b
-}
-
-// WithUint16 replaces Uint16 with v.
-func (b *PrimitivesBuilder) WithUint16(v uint16) *PrimitivesBuilder {
-	b.v.Uint16 = v
-	return b
-}
-
-// WithUint32 replaces Uint32 with v.
-func (b *PrimitivesBuilder) WithUint32(v uint32) *PrimitivesBuilder {
-	b.v.Uint32 = v
-	return b
-}
-
 // WithUint64 replaces Uint64 with v.
 func (b *PrimitivesBuilder) WithUint64(v uint64) *PrimitivesBuilder {
 	b.v.Uint64 = v
@@ -123,21 +75,9 @@ func (b *PrimitivesBuilder) WithUintptr(v uintptr) *PrimitivesBuilder {
 	return b
 }
 
-// WithFloat32 replaces Float32 with v.
-func (b *PrimitivesBuilder) WithFloat32(v float32) *PrimitivesBuilder {
-	b.v.Float32 = v
-	return b
-}
-
 // WithFloat64 replaces Float64 with v.
 func (b *PrimitivesBuilder) WithFloat64(v float64) *PrimitivesBuilder {
 	b.v.Float64 = v
-	return b
-}
-
-// WithComplex64 replaces Complex64 with v.
-func (b *PrimitivesBuilder) WithComplex64(v complex64) *PrimitivesBuilder {
-	b.v.Complex64 = v
 	return b
 }
 
@@ -159,9 +99,69 @@ func (b *PrimitivesBuilder) WithTemp(v domain.Celsius) *PrimitivesBuilder {
 	return b
 }
 
-// WithRef replaces Ref with v.
-func (b *PrimitivesBuilder) WithRef(v domain.ID) *PrimitivesBuilder {
-	b.v.Ref = v
+// WithComplex64 replaces Complex64 with v.
+func (b *PrimitivesBuilder) WithComplex64(v complex64) *PrimitivesBuilder {
+	b.v.Complex64 = v
+	return b
+}
+
+// WithRune replaces Rune with v.
+func (b *PrimitivesBuilder) WithRune(v rune) *PrimitivesBuilder {
+	b.v.Rune = v
+	return b
+}
+
+// WithInt32 replaces Int32 with v.
+func (b *PrimitivesBuilder) WithInt32(v int32) *PrimitivesBuilder {
+	b.v.Int32 = v
+	return b
+}
+
+// WithUint32 replaces Uint32 with v.
+func (b *PrimitivesBuilder) WithUint32(v uint32) *PrimitivesBuilder {
+	b.v.Uint32 = v
+	return b
+}
+
+// WithFloat32 replaces Float32 with v.
+func (b *PrimitivesBuilder) WithFloat32(v float32) *PrimitivesBuilder {
+	b.v.Float32 = v
+	return b
+}
+
+// WithInt16 replaces Int16 with v.
+func (b *PrimitivesBuilder) WithInt16(v int16) *PrimitivesBuilder {
+	b.v.Int16 = v
+	return b
+}
+
+// WithUint16 replaces Uint16 with v.
+func (b *PrimitivesBuilder) WithUint16(v uint16) *PrimitivesBuilder {
+	b.v.Uint16 = v
+	return b
+}
+
+// WithBool replaces Bool with v.
+func (b *PrimitivesBuilder) WithBool(v bool) *PrimitivesBuilder {
+	b.v.Bool = v
+	return b
+}
+
+// WithByte replaces Byte with v.
+func (b *PrimitivesBuilder) WithByte(v byte) *PrimitivesBuilder {
+	b.v.Byte = v
+	return b
+}
+
+// WithInt8 replaces Int8 with v.
+func (b *PrimitivesBuilder) WithInt8(v int8) *PrimitivesBuilder {
+	b.v.Int8 = v
+	return b
+}
+
+// WithUint8 replaces Uint8 with v.
+func (b *PrimitivesBuilder) WithUint8(v uint8) *PrimitivesBuilder {
+	b.v.Uint8 = v
 	return b
 }
 
@@ -206,62 +206,6 @@ func NewContainersBuilder() *ContainersBuilder {
 // NewContainersBuilderFrom returns a builder of v.
 func NewContainersBuilderFrom(v domain.Containers) *ContainersBuilder {
 	return &ContainersBuilder{v: v}
-}
-
-// WithSlice replaces the elements of Slice with v. A call without
-// arguments empties Slice.
-func (b *ContainersBuilder) WithSlice(v ...string) *ContainersBuilder {
-	b.v.Slice = v
-	return b
-}
-
-// AppendSlice appends v to the elements of Slice.
-func (b *ContainersBuilder) AppendSlice(v ...string) *ContainersBuilder {
-	b.v.Slice = append(b.v.Slice, v...)
-	return b
-}
-
-// WithSliceOfStruct replaces the elements of SliceOfStruct with v. A call
-// without arguments empties SliceOfStruct.
-func (b *ContainersBuilder) WithSliceOfStruct(v ...domain.Address) *ContainersBuilder {
-	b.v.SliceOfStruct = v
-	return b
-}
-
-// AppendSliceOfStruct appends v to the elements of SliceOfStruct.
-func (b *ContainersBuilder) AppendSliceOfStruct(v ...domain.Address) *ContainersBuilder {
-	b.v.SliceOfStruct = append(b.v.SliceOfStruct, v...)
-	return b
-}
-
-// WithArray replaces Array with v.
-func (b *ContainersBuilder) WithArray(v [3]int) *ContainersBuilder {
-	b.v.Array = v
-	return b
-}
-
-// WithBody replaces Body with v. The builder keeps v without a copy.
-func (b *ContainersBuilder) WithBody(v []byte) *ContainersBuilder {
-	b.v.Body = v
-	return b
-}
-
-// WithBodyString replaces Body with the bytes of s.
-func (b *ContainersBuilder) WithBodyString(s string) *ContainersBuilder {
-	b.v.Body = []byte(s)
-	return b
-}
-
-// WithAliased replaces Aliased with v. The builder keeps v without a copy.
-func (b *ContainersBuilder) WithAliased(v domain.Bytes) *ContainersBuilder {
-	b.v.Aliased = v
-	return b
-}
-
-// WithAliasedString replaces Aliased with the bytes of s.
-func (b *ContainersBuilder) WithAliasedString(s string) *ContainersBuilder {
-	b.v.Aliased = domain.Bytes(s)
-	return b
 }
 
 // WithMap replaces Map with v. The builder keeps v without a copy.
@@ -384,6 +328,62 @@ func (b *ContainersBuilder) WithErr(v error) *ContainersBuilder {
 	return b
 }
 
+// WithSlice replaces the elements of Slice with v. A call without
+// arguments empties Slice.
+func (b *ContainersBuilder) WithSlice(v ...string) *ContainersBuilder {
+	b.v.Slice = v
+	return b
+}
+
+// AppendSlice appends v to the elements of Slice.
+func (b *ContainersBuilder) AppendSlice(v ...string) *ContainersBuilder {
+	b.v.Slice = append(b.v.Slice, v...)
+	return b
+}
+
+// WithSliceOfStruct replaces the elements of SliceOfStruct with v. A call
+// without arguments empties SliceOfStruct.
+func (b *ContainersBuilder) WithSliceOfStruct(v ...domain.Address) *ContainersBuilder {
+	b.v.SliceOfStruct = v
+	return b
+}
+
+// AppendSliceOfStruct appends v to the elements of SliceOfStruct.
+func (b *ContainersBuilder) AppendSliceOfStruct(v ...domain.Address) *ContainersBuilder {
+	b.v.SliceOfStruct = append(b.v.SliceOfStruct, v...)
+	return b
+}
+
+// WithBody replaces Body with v. The builder keeps v without a copy.
+func (b *ContainersBuilder) WithBody(v []byte) *ContainersBuilder {
+	b.v.Body = v
+	return b
+}
+
+// WithBodyString replaces Body with the bytes of s.
+func (b *ContainersBuilder) WithBodyString(s string) *ContainersBuilder {
+	b.v.Body = []byte(s)
+	return b
+}
+
+// WithAliased replaces Aliased with v. The builder keeps v without a copy.
+func (b *ContainersBuilder) WithAliased(v domain.Bytes) *ContainersBuilder {
+	b.v.Aliased = v
+	return b
+}
+
+// WithAliasedString replaces Aliased with the bytes of s.
+func (b *ContainersBuilder) WithAliasedString(s string) *ContainersBuilder {
+	b.v.Aliased = domain.Bytes(s)
+	return b
+}
+
+// WithArray replaces Array with v.
+func (b *ContainersBuilder) WithArray(v [3]int) *ContainersBuilder {
+	b.v.Array = v
+	return b
+}
+
 // Mutate applies fn to the value under construction. It changes what no
 // setter changes, such as several members in one step.
 func (b *ContainersBuilder) Mutate(fn func(*domain.Containers)) *ContainersBuilder {
@@ -397,13 +397,13 @@ func (b *ContainersBuilder) Mutate(fn func(*domain.Containers)) *ContainersBuild
 // and the value of each optional member.
 func (b *ContainersBuilder) Clone() *ContainersBuilder {
 	out := &ContainersBuilder{v: b.v}
+	out.v.Map = maps.Clone(b.v.Map)
+	out.v.MapOfStruct = maps.Clone(b.v.MapOfStruct)
+	out.v.Set = maps.Clone(b.v.Set)
 	out.v.Slice = slices.Clone(b.v.Slice)
 	out.v.SliceOfStruct = slices.Clone(b.v.SliceOfStruct)
 	out.v.Body = slices.Clone(b.v.Body)
 	out.v.Aliased = slices.Clone(b.v.Aliased)
-	out.v.Map = maps.Clone(b.v.Map)
-	out.v.MapOfStruct = maps.Clone(b.v.MapOfStruct)
-	out.v.Set = maps.Clone(b.v.Set)
 	return out
 }
 
@@ -627,18 +627,6 @@ func (b *UserBuilder) WithUsername(v string) *UserBuilder {
 	return b
 }
 
-// WithAge replaces Age with v.
-func (b *UserBuilder) WithAge(v int) *UserBuilder {
-	b.v.Age = v
-	return b
-}
-
-// WithActive replaces Active with v.
-func (b *UserBuilder) WithActive(v bool) *UserBuilder {
-	b.v.Active = v
-	return b
-}
-
 // WithHome replaces Home with v.
 func (b *UserBuilder) WithHome(v domain.Address) *UserBuilder {
 	b.v.Home = v
@@ -649,6 +637,12 @@ func (b *UserBuilder) WithHome(v domain.Address) *UserBuilder {
 // Manager to nil or to another address.
 func (b *UserBuilder) WithManager(v domain.User) *UserBuilder {
 	b.v.Manager = &v
+	return b
+}
+
+// WithDeadline replaces Deadline with v.
+func (b *UserBuilder) WithDeadline(v time.Time) *UserBuilder {
+	b.v.Deadline = v
 	return b
 }
 
@@ -665,15 +659,21 @@ func (b *UserBuilder) AppendReports(v ...*domain.User) *UserBuilder {
 	return b
 }
 
-// WithDeadline replaces Deadline with v.
-func (b *UserBuilder) WithDeadline(v time.Time) *UserBuilder {
-	b.v.Deadline = v
+// WithAge replaces Age with v.
+func (b *UserBuilder) WithAge(v int) *UserBuilder {
+	b.v.Age = v
 	return b
 }
 
 // WithTimeout replaces Timeout with v.
 func (b *UserBuilder) WithTimeout(v time.Duration) *UserBuilder {
 	b.v.Timeout = v
+	return b
+}
+
+// WithActive replaces Active with v.
+func (b *UserBuilder) WithActive(v bool) *UserBuilder {
+	b.v.Active = v
 	return b
 }
 
@@ -702,4 +702,4 @@ func (b *UserBuilder) Build() domain.User {
 	return b.v
 }
 
-// dokimi:provenance sha256:eb31e15565a641d3fb1453b3e8e97bbb1495c795df6f3597d549961940c06326
+// dokimi:provenance sha256:bd5599c10ccc919fc117073dfb0bf37d6a5f681df6299603fc45d038736854f1

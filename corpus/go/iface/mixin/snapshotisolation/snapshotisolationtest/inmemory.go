@@ -27,11 +27,11 @@ var ErrNotAdmissible = errors.New("snapshotisolationtest: the isolation level re
 //
 //dokimi:subject snapshotisolation.Mixed new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
-	entries []snapshotisolation.Entry
-	txn     int
 	version map[string]int64
 	wrote   map[keyed]bool
+	entries []snapshotisolation.Entry
+	txn     int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [snapshotisolation.Mixed].
@@ -90,8 +90,8 @@ func (s *InMemory) Get(ctx context.Context, key string) (snapshotisolation.Entry
 
 // keyed is the pair of a transaction and a key that the transaction wrote.
 type keyed struct {
-	txn int
 	key string
+	txn int
 }
 
 // admits returns an error that wraps ErrNotAdmissible when the isolation level

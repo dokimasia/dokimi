@@ -20,10 +20,10 @@ import (
 //
 //dokimi:subject tx.Contract new=NewInMemory
 type InMemory struct {
-	mu        sync.Mutex
-	nextID    int64
 	staged    map[int64]map[string]tx.Value
 	committed map[string]tx.Value
+	nextID    int64
+	mu        sync.Mutex
 }
 
 // The compiler checks that InMemory implements [tx.Contract].

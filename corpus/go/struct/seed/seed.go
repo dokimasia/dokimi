@@ -19,8 +19,8 @@ const Retries = 3
 // the builder so the companion is genuinely cross-package.
 type Config struct {
 	Region  string
-	Retries int
 	Label   string
+	Retries int
 }
 
 // ConfigDefaults is the companion a builder in another package seeds from.

@@ -23,8 +23,8 @@ var ErrNotFound = errors.New("batchreadertest: not found")
 //
 //dokimi:subject batchreader.BatchReader new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]batchreader.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [batchreader.BatchReader].

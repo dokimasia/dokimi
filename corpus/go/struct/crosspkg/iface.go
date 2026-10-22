@@ -33,13 +33,9 @@ import (
 //
 //dokimi:builder
 type Settings struct {
-	// Timeout names a constant in a package imported for real code below,
-	// through the tag.
-	Timeout time.Duration `default:"time.Second"`
-
-	// Retries names a constant in a package this file imports, through the
-	// tag.
-	Retries int `default:"seed.Retries"`
+	// Deadline exists so the file's `time` import is used by real code and not
+	// only by a directive.
+	Deadline time.Time
 
 	// Region names a constant in a package this file imports, through the
 	// tag.
@@ -48,9 +44,13 @@ type Settings struct {
 	// Zone names the same constant by full import path, through the tag.
 	Zone string `default:"seed.Region"`
 
-	// Deadline exists so the file's `time` import is used by real code and not
-	// only by a directive.
-	Deadline time.Time
+	// Timeout names a constant in a package imported for real code below,
+	// through the tag.
+	Timeout time.Duration `default:"time.Second"`
+
+	// Retries names a constant in a package this file imports, through the
+	// tag.
+	Retries int `default:"seed.Retries"`
 }
 
 // Mirrored seeds from a companion in another package, named by full path.

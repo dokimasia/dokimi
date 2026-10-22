@@ -23,8 +23,8 @@ var ErrPresent = fmt.Errorf("ifabsenttest: key already present: %w", ifabsent.Er
 //
 //dokimi:subject ifabsent.Contract new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]ifabsent.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [ifabsent.Contract].

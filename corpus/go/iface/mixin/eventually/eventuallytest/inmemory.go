@@ -21,9 +21,9 @@ import (
 //
 //dokimi:subject eventually.Mixed new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
-	pending []string
 	settled map[string]bool
+	pending []string
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [eventually.Mixed].

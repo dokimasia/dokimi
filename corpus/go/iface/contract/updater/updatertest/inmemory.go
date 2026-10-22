@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("updatertest: no value under that key")
 //
 //dokimi:subject updater.Contract new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]updater.Value
 	writes map[string]int
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [updater.Contract].

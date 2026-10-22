@@ -19,8 +19,8 @@ import (
 //
 //dokimi:subject crdtmerge.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]struct{}
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [crdtmerge.Mixed] and

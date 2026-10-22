@@ -73,29 +73,6 @@ func TestContainerBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithItems", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Items", func(t *testing.T) {
-			t.Parallel()
-
-			var want []int
-			want = []int{42}
-			got := containertest.NewContainerBuilder[int]().WithItems(want...).Build()
-			assert.Equal(t, got.Items, want, "WithItems writes its argument to Items")
-		})
-
-		t.Run("replaces the value of Items", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want []int
-			first = []int{42}
-			want = []int{7}
-			got := containertest.NewContainerBuilder[int]().WithItems(first...).WithItems(want...).Build()
-			assert.Equal(t, got.Items, want, "the second call of WithItems replaces the first")
-		})
-	})
-
 	t.Run("WithLabel", func(t *testing.T) {
 		t.Parallel()
 
@@ -116,6 +93,29 @@ func TestContainerBuilder(t *testing.T) {
 			want = "Label-b"
 			got := containertest.NewContainerBuilder[int]().WithLabel(first).WithLabel(want).Build()
 			assert.Equal(t, got.Label, want, "the second call of WithLabel replaces the first")
+		})
+	})
+
+	t.Run("WithItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Items", func(t *testing.T) {
+			t.Parallel()
+
+			var want []int
+			want = []int{42}
+			got := containertest.NewContainerBuilder[int]().WithItems(want...).Build()
+			assert.Equal(t, got.Items, want, "WithItems writes its argument to Items")
+		})
+
+		t.Run("replaces the value of Items", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []int
+			first = []int{42}
+			want = []int{7}
+			got := containertest.NewContainerBuilder[int]().WithItems(first...).WithItems(want...).Build()
+			assert.Equal(t, got.Items, want, "the second call of WithItems replaces the first")
 		})
 	})
 
@@ -1087,4 +1087,4 @@ func TestQuadBuilder(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:348a73fc41fff2ffb9963220817cd572f40e0203b223c92345e4d7d559721191
+// dokimi:provenance sha256:19e2be070c422171c7f45074e68b79457ff4af4da0570f187554f8ca76ab233a

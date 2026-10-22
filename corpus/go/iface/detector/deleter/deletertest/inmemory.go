@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject deleter.Deleter new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [deleter.Deleter].

@@ -25,8 +25,8 @@ var ErrMismatch = errors.New("ifmatchtest: stored value does not match")
 //
 //dokimi:subject ifmatch.Contract new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]ifmatch.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [ifmatch.Contract].

@@ -26,8 +26,8 @@ var ErrFull = errors.New("publisherredelivertest: a subscriber is too far behind
 //
 //dokimi:subject publisherredeliver.Contract new=NewInMemory
 type InMemory struct {
-	mu          sync.Mutex
 	subscribers []chan publisherredeliver.Value
+	mu          sync.Mutex
 }
 
 // The compiler checks that InMemory implements [publisherredeliver.Contract].

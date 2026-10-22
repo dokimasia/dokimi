@@ -18,9 +18,9 @@ import (
 //
 //dokimi:subject conservative.Mixed new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
-	reserve int
 	buckets map[string]int
+	reserve int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [conservative.Mixed].

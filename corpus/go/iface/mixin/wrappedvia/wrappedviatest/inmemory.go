@@ -26,8 +26,8 @@ const failing = "closed"
 //
 //dokimi:subject wrappedvia.Mixed new=NewInMemory
 type InMemory struct {
-	mu   sync.Mutex
 	last error
+	mu   sync.Mutex
 }
 
 // The compiler checks that InMemory implements [wrappedvia.Mixed].

@@ -112,7 +112,7 @@ func ledgerStubList(tb assert.TB, s *builttest.LedgerStub) (built.Page[built.Acc
 func ledgerStubListPins() (built.Page[built.Account], error) {
 	var want0 built.Page[built.Account]
 	want1 := errors.New("List-returns")
-	want0 = built.Page[built.Account]{Items: []built.Account{{ID: "ID-a"}}}
+	want0 = built.Page[built.Account]{Next: "Next-a"}
 	return want0, want1
 }
 
@@ -1228,4 +1228,4 @@ func TestLedgerBillStub(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1efa959ec56f9d98ef3ead916a15a85ac273c0fbb4164a32c4549ed0ceebd9e4
+// dokimi:provenance sha256:951304a14f499210c7d5e249ae5b94adc5a3205ccf2565f35fe28f530ba30d6d

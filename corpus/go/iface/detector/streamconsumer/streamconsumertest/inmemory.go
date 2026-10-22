@@ -26,8 +26,8 @@ var ErrSourceFailed = errors.New("streamconsumertest: source failed")
 //
 //dokimi:subject streamconsumer.StreamConsumer new=NewInMemory
 type InMemory struct {
-	mu       sync.Mutex
 	ingested []streamconsumer.Value
+	mu       sync.Mutex
 }
 
 // The compiler checks that InMemory implements [streamconsumer.StreamConsumer].

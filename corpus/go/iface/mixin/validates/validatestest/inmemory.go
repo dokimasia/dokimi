@@ -24,8 +24,8 @@ var ErrInvalid = errors.New("validatestest: invalid payload")
 //
 //dokimi:subject validates.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]validates.Payload
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [validates.Mixed].

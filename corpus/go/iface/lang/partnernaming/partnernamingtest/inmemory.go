@@ -18,10 +18,10 @@ import (
 //
 //dokimi:subject partnernaming.Store new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
 	weights map[string]int
 	at      map[string]int
 	buckets map[int]int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [partnernaming.Store].

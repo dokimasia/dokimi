@@ -21,8 +21,8 @@ var ErrOutOfRange = errors.New("indexedtest: index out of range")
 //
 //dokimi:subject indexed.Ranked new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values []indexed.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [indexed.Ranked].

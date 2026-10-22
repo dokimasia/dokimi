@@ -23,6 +23,6 @@ package plain
 //dokimi:builder
 type Item struct {
 	ID    string
-	Count int
 	Tags  []string
+	Count int
 }

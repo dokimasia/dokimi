@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject lease.Contract new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	leased map[string]bool
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [lease.Contract].

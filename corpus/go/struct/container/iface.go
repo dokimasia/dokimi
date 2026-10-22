@@ -27,12 +27,12 @@ import "time"
 type Container[T any] struct {
 	Value T
 
-	// Items is a slice of the parameter, so its Append takes T rather than any.
-	Items []T
-
 	// Label is not parameterised, so its setter must not acquire a type
 	// parameter it does not need.
 	Label string
+
+	// Items is a slice of the parameter, so its Append takes T rather than any.
+	Items []T
 }
 
 // Pair is generic over two parameters with different constraints. A generator

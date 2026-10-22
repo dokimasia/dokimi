@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject accumulates.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	totals map[string]int
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [accumulates.Mixed].

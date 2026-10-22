@@ -16,9 +16,9 @@ import (
 //
 //dokimi:subject lookup.Lookup new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]lookup.Value
 	metas  map[string]lookup.Meta
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [lookup.Lookup].

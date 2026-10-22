@@ -21,9 +21,9 @@ var ErrNotFound = errors.New("causaltest: not found")
 //
 //dokimi:subject causal.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
-	rev    int64
 	values map[string]causal.Value
+	rev    int64
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [causal.Mixed].

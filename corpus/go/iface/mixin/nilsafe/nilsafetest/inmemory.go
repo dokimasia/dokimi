@@ -21,8 +21,8 @@ var ErrNilPayload = errors.New("nilsafetest: nil payload")
 //
 //dokimi:subject nilsafe.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]nilsafe.Payload
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [nilsafe.Mixed].

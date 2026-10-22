@@ -172,29 +172,6 @@ func TestPageBuilder(t *testing.T) {
 		})
 	})
 
-	t.Run("WithItems", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("writes its argument to Items", func(t *testing.T) {
-			t.Parallel()
-
-			var want []int
-			want = []int{42}
-			got := builttest.NewPageBuilder[int]().WithItems(want...).Build()
-			assert.Equal(t, got.Items, want, "WithItems writes its argument to Items")
-		})
-
-		t.Run("replaces the value of Items", func(t *testing.T) {
-			t.Parallel()
-
-			var first, want []int
-			first = []int{42}
-			want = []int{7}
-			got := builttest.NewPageBuilder[int]().WithItems(first...).WithItems(want...).Build()
-			assert.Equal(t, got.Items, want, "the second call of WithItems replaces the first")
-		})
-	})
-
 	t.Run("WithNext", func(t *testing.T) {
 		t.Parallel()
 
@@ -215,6 +192,29 @@ func TestPageBuilder(t *testing.T) {
 			want = "Next-b"
 			got := builttest.NewPageBuilder[int]().WithNext(first).WithNext(want).Build()
 			assert.Equal(t, got.Next, want, "the second call of WithNext replaces the first")
+		})
+	})
+
+	t.Run("WithItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Items", func(t *testing.T) {
+			t.Parallel()
+
+			var want []int
+			want = []int{42}
+			got := builttest.NewPageBuilder[int]().WithItems(want...).Build()
+			assert.Equal(t, got.Items, want, "WithItems writes its argument to Items")
+		})
+
+		t.Run("replaces the value of Items", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []int
+			first = []int{42}
+			want = []int{7}
+			got := builttest.NewPageBuilder[int]().WithItems(first...).WithItems(want...).Build()
+			assert.Equal(t, got.Items, want, "the second call of WithItems replaces the first")
 		})
 	})
 
@@ -303,4 +303,4 @@ func TestPageBuilder(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b6898d657c1317d0e65d626fbfcb86ad3b9aae64cda1a7d55794047d82a36d9a
+// dokimi:provenance sha256:3037b193f11fb54e0cb8c98f2b5705e88cf576274f9b00fcb7b3a2884934dad6

@@ -30,11 +30,17 @@ package config
 //
 //dokimi:builder
 type Config struct {
+	// Fallback is a pointer defaulted to nil. Its literal is the same as the
+	// zero value, so it tests that the directive is read rather than inferred.
+	Fallback *string //dokimi:default nil
+
 	Host string //dokimi:default "localhost"
 
-	Port int //dokimi:default 8080
+	// Undirected carries no directive and must stay at its zero value even
+	// though its neighbours do not.
+	Undirected string
 
-	Verbose bool //dokimi:default true
+	Port int //dokimi:default 8080
 
 	Ratio float64 //dokimi:default 0.75
 
@@ -43,13 +49,7 @@ type Config struct {
 	// is the field that catches it.
 	Retries int //dokimi:default 0
 
-	// Fallback is a pointer defaulted to nil. Its literal is the same as the
-	// zero value, so it tests that the directive is read rather than inferred.
-	Fallback *string //dokimi:default nil
-
-	// Undirected carries no directive and must stay at its zero value even
-	// though its neighbours do not.
-	Undirected string
+	Verbose bool //dokimi:default true
 }
 
 // TagConfig carries the same defaults as [Config], one literal kind per
@@ -70,12 +70,18 @@ type Config struct {
 //
 //dokimi:builder
 type TagConfig struct {
+	// Fallback is a pointer defaulted to nil, through the tag rather than
+	// the directive.
+	Fallback *string `default:"nil"`
+
 	// Host's tag needs no escaping; see the type's docblock.
 	Host string `default:"localhost"`
 
-	Port int `default:"8080"`
+	// Undirected carries no tag and must stay at its zero value even though
+	// its neighbours do not.
+	Undirected string
 
-	Verbose bool `default:"true"`
+	Port int `default:"8080"`
 
 	Ratio float64 `default:"0.75"`
 
@@ -83,13 +89,7 @@ type TagConfig struct {
 	// [Config.Retries] states one through the directive.
 	Retries int `default:"0"`
 
-	// Fallback is a pointer defaulted to nil, through the tag rather than
-	// the directive.
-	Fallback *string `default:"nil"`
-
-	// Undirected carries no tag and must stay at its zero value even though
-	// its neighbours do not.
-	Undirected string
+	Verbose bool `default:"true"`
 }
 
 // MixedConfig declares one field's default both ways at once, with

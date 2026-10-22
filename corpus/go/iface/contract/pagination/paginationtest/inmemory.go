@@ -24,8 +24,8 @@ const PageSize = 1
 //
 //dokimi:subject pagination.Contract new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]pagination.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [pagination.Contract].

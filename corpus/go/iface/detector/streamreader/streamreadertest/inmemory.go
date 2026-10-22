@@ -19,8 +19,8 @@ import (
 //
 //dokimi:subject streamreader.StreamReader new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values []streamreader.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [streamreader.StreamReader].

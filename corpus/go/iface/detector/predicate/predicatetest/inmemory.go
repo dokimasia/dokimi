@@ -16,8 +16,8 @@ import (
 //
 //dokimi:subject predicate.Predicate new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items []string
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [predicate.Predicate].

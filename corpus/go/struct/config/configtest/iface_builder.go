@@ -20,12 +20,12 @@ type ConfigBuilder struct {
 // without a declared default has its zero value.
 func NewConfigBuilder() *ConfigBuilder {
 	var v config.Config
+	v.Fallback = nil
 	v.Host = "localhost"
 	v.Port = 8080
-	v.Verbose = true
 	v.Ratio = 0.75
 	v.Retries = 0
-	v.Fallback = nil
+	v.Verbose = true
 	return &ConfigBuilder{v: v}
 }
 
@@ -34,21 +34,28 @@ func NewConfigBuilderFrom(v config.Config) *ConfigBuilder {
 	return &ConfigBuilder{v: v}
 }
 
+// WithFallback points Fallback at a copy of v. [ConfigBuilder.Mutate] can
+// set Fallback to nil or to another address.
+func (b *ConfigBuilder) WithFallback(v string) *ConfigBuilder {
+	b.v.Fallback = &v
+	return b
+}
+
 // WithHost replaces Host with v.
 func (b *ConfigBuilder) WithHost(v string) *ConfigBuilder {
 	b.v.Host = v
 	return b
 }
 
-// WithPort replaces Port with v.
-func (b *ConfigBuilder) WithPort(v int) *ConfigBuilder {
-	b.v.Port = v
+// WithUndirected replaces Undirected with v.
+func (b *ConfigBuilder) WithUndirected(v string) *ConfigBuilder {
+	b.v.Undirected = v
 	return b
 }
 
-// WithVerbose replaces Verbose with v.
-func (b *ConfigBuilder) WithVerbose(v bool) *ConfigBuilder {
-	b.v.Verbose = v
+// WithPort replaces Port with v.
+func (b *ConfigBuilder) WithPort(v int) *ConfigBuilder {
+	b.v.Port = v
 	return b
 }
 
@@ -64,16 +71,9 @@ func (b *ConfigBuilder) WithRetries(v int) *ConfigBuilder {
 	return b
 }
 
-// WithFallback points Fallback at a copy of v. [ConfigBuilder.Mutate] can
-// set Fallback to nil or to another address.
-func (b *ConfigBuilder) WithFallback(v string) *ConfigBuilder {
-	b.v.Fallback = &v
-	return b
-}
-
-// WithUndirected replaces Undirected with v.
-func (b *ConfigBuilder) WithUndirected(v string) *ConfigBuilder {
-	b.v.Undirected = v
+// WithVerbose replaces Verbose with v.
+func (b *ConfigBuilder) WithVerbose(v bool) *ConfigBuilder {
+	b.v.Verbose = v
 	return b
 }
 
@@ -114,12 +114,12 @@ type TagConfigBuilder struct {
 // without a declared default has its zero value.
 func NewTagConfigBuilder() *TagConfigBuilder {
 	var v config.TagConfig
+	v.Fallback = nil
 	v.Host = "localhost"
 	v.Port = 8080
-	v.Verbose = true
 	v.Ratio = 0.75
 	v.Retries = 0
-	v.Fallback = nil
+	v.Verbose = true
 	return &TagConfigBuilder{v: v}
 }
 
@@ -128,21 +128,28 @@ func NewTagConfigBuilderFrom(v config.TagConfig) *TagConfigBuilder {
 	return &TagConfigBuilder{v: v}
 }
 
+// WithFallback points Fallback at a copy of v. [TagConfigBuilder.Mutate]
+// can set Fallback to nil or to another address.
+func (b *TagConfigBuilder) WithFallback(v string) *TagConfigBuilder {
+	b.v.Fallback = &v
+	return b
+}
+
 // WithHost replaces Host with v.
 func (b *TagConfigBuilder) WithHost(v string) *TagConfigBuilder {
 	b.v.Host = v
 	return b
 }
 
-// WithPort replaces Port with v.
-func (b *TagConfigBuilder) WithPort(v int) *TagConfigBuilder {
-	b.v.Port = v
+// WithUndirected replaces Undirected with v.
+func (b *TagConfigBuilder) WithUndirected(v string) *TagConfigBuilder {
+	b.v.Undirected = v
 	return b
 }
 
-// WithVerbose replaces Verbose with v.
-func (b *TagConfigBuilder) WithVerbose(v bool) *TagConfigBuilder {
-	b.v.Verbose = v
+// WithPort replaces Port with v.
+func (b *TagConfigBuilder) WithPort(v int) *TagConfigBuilder {
+	b.v.Port = v
 	return b
 }
 
@@ -158,16 +165,9 @@ func (b *TagConfigBuilder) WithRetries(v int) *TagConfigBuilder {
 	return b
 }
 
-// WithFallback points Fallback at a copy of v. [TagConfigBuilder.Mutate]
-// can set Fallback to nil or to another address.
-func (b *TagConfigBuilder) WithFallback(v string) *TagConfigBuilder {
-	b.v.Fallback = &v
-	return b
-}
-
-// WithUndirected replaces Undirected with v.
-func (b *TagConfigBuilder) WithUndirected(v string) *TagConfigBuilder {
-	b.v.Undirected = v
+// WithVerbose replaces Verbose with v.
+func (b *TagConfigBuilder) WithVerbose(v bool) *TagConfigBuilder {
+	b.v.Verbose = v
 	return b
 }
 
@@ -247,4 +247,4 @@ func (b *MixedConfigBuilder) Build() config.MixedConfig {
 	return b.v
 }
 
-// dokimi:provenance sha256:60129614b1e19453f38ce9b88fc45ed40331dbe01030aaa2f4b61c2fe2ae3166
+// dokimi:provenance sha256:e92ea99160dfe738471888a6901b62cfc6f056b3305018293f3aec457e93733d

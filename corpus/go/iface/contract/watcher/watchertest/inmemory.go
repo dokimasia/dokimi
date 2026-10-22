@@ -48,8 +48,8 @@ func (s *subscription) Stop() { s.once.Do(s.stop) }
 //
 //dokimi:subject watcher.Contract new=NewInMemory
 type InMemory struct {
-	mu       sync.Mutex
 	watchers map[string][]*subscription
+	mu       sync.Mutex
 }
 
 // The compiler checks that InMemory implements [watcher.Contract].

@@ -21,8 +21,8 @@ var ErrNotAcquired = errors.New("leakfreetest: nothing to release")
 //
 //dokimi:subject leakfree.Mixed new=NewInMemory
 type InMemory struct {
-	mu       sync.Mutex
 	acquired []*acquisition
+	mu       sync.Mutex
 }
 
 // acquisition is one call of Acquire with the goroutine that it starts.

@@ -34,12 +34,6 @@ func (b *ItemBuilder) WithID(v string) *ItemBuilder {
 	return b
 }
 
-// WithCount replaces Count with v.
-func (b *ItemBuilder) WithCount(v int) *ItemBuilder {
-	b.v.Count = v
-	return b
-}
-
 // WithTags replaces the elements of Tags with v. A call without arguments
 // empties Tags.
 func (b *ItemBuilder) WithTags(v ...string) *ItemBuilder {
@@ -50,6 +44,12 @@ func (b *ItemBuilder) WithTags(v ...string) *ItemBuilder {
 // AppendTags appends v to the elements of Tags.
 func (b *ItemBuilder) AppendTags(v ...string) *ItemBuilder {
 	b.v.Tags = append(b.v.Tags, v...)
+	return b
+}
+
+// WithCount replaces Count with v.
+func (b *ItemBuilder) WithCount(v int) *ItemBuilder {
+	b.v.Count = v
 	return b
 }
 
@@ -78,4 +78,4 @@ func (b *ItemBuilder) Build() plain.Item {
 	return b.v
 }
 
-// dokimi:provenance sha256:ecfe47f5229d1d103d24686408ac2c09453d2f2979334919de04e7ce9c7a9bc1
+// dokimi:provenance sha256:a63a76ee69352977ab2e1e40dc8854491b687fe889cd05dcee294bfcb375353f

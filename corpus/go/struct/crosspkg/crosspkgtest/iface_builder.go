@@ -24,10 +24,10 @@ type SettingsBuilder struct {
 // without a declared default has its zero value.
 func NewSettingsBuilder() *SettingsBuilder {
 	var v crosspkg.Settings
-	v.Timeout = time.Second
-	v.Retries = seed.Retries
 	v.Region = seed.Region
 	v.Zone = seed.Region
+	v.Timeout = time.Second
+	v.Retries = seed.Retries
 	return &SettingsBuilder{v: v}
 }
 
@@ -36,15 +36,9 @@ func NewSettingsBuilderFrom(v crosspkg.Settings) *SettingsBuilder {
 	return &SettingsBuilder{v: v}
 }
 
-// WithTimeout replaces Timeout with v.
-func (b *SettingsBuilder) WithTimeout(v time.Duration) *SettingsBuilder {
-	b.v.Timeout = v
-	return b
-}
-
-// WithRetries replaces Retries with v.
-func (b *SettingsBuilder) WithRetries(v int) *SettingsBuilder {
-	b.v.Retries = v
+// WithDeadline replaces Deadline with v.
+func (b *SettingsBuilder) WithDeadline(v time.Time) *SettingsBuilder {
+	b.v.Deadline = v
 	return b
 }
 
@@ -60,9 +54,15 @@ func (b *SettingsBuilder) WithZone(v string) *SettingsBuilder {
 	return b
 }
 
-// WithDeadline replaces Deadline with v.
-func (b *SettingsBuilder) WithDeadline(v time.Time) *SettingsBuilder {
-	b.v.Deadline = v
+// WithTimeout replaces Timeout with v.
+func (b *SettingsBuilder) WithTimeout(v time.Duration) *SettingsBuilder {
+	b.v.Timeout = v
+	return b
+}
+
+// WithRetries replaces Retries with v.
+func (b *SettingsBuilder) WithRetries(v int) *SettingsBuilder {
+	b.v.Retries = v
 	return b
 }
 
@@ -118,15 +118,15 @@ func (b *MirroredBuilder) WithRegion(v string) *MirroredBuilder {
 	return b
 }
 
-// WithRetries replaces Retries with v.
-func (b *MirroredBuilder) WithRetries(v int) *MirroredBuilder {
-	b.v.Retries = v
-	return b
-}
-
 // WithLabel replaces Label with v.
 func (b *MirroredBuilder) WithLabel(v string) *MirroredBuilder {
 	b.v.Label = v
+	return b
+}
+
+// WithRetries replaces Retries with v.
+func (b *MirroredBuilder) WithRetries(v int) *MirroredBuilder {
+	b.v.Retries = v
 	return b
 }
 
@@ -182,15 +182,15 @@ func (b *ShorthandBuilder) WithRegion(v string) *ShorthandBuilder {
 	return b
 }
 
-// WithRetries replaces Retries with v.
-func (b *ShorthandBuilder) WithRetries(v int) *ShorthandBuilder {
-	b.v.Retries = v
-	return b
-}
-
 // WithLabel replaces Label with v.
 func (b *ShorthandBuilder) WithLabel(v string) *ShorthandBuilder {
 	b.v.Label = v
+	return b
+}
+
+// WithRetries replaces Retries with v.
+func (b *ShorthandBuilder) WithRetries(v int) *ShorthandBuilder {
+	b.v.Retries = v
 	return b
 }
 
@@ -218,4 +218,4 @@ func (b *ShorthandBuilder) Build() crosspkg.Shorthand {
 	return b.v
 }
 
-// dokimi:provenance sha256:7455c21c7d467fd4a04ec1a60192cfe07d6237fa5b3a47e11a81152025a86506
+// dokimi:provenance sha256:ab97b8c744fddba169b5507f303303953d97e9ad3609383891d69b300000fec0

@@ -20,8 +20,8 @@ import (
 //
 //dokimi:subject stableorder.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values []stableorder.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [stableorder.Mixed].

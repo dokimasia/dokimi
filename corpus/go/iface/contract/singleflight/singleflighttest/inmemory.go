@@ -25,9 +25,9 @@ type call struct {
 //
 //dokimi:subject singleflight.Contract new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
-	flights int
 	calls   map[string]*call
+	flights int
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [singleflight.Contract].

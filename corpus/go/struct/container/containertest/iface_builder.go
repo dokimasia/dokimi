@@ -37,6 +37,12 @@ func (b *ContainerBuilder[T]) WithValue(v T) *ContainerBuilder[T] {
 	return b
 }
 
+// WithLabel replaces Label with v.
+func (b *ContainerBuilder[T]) WithLabel(v string) *ContainerBuilder[T] {
+	b.v.Label = v
+	return b
+}
+
 // WithItems replaces the elements of Items with v. A call without
 // arguments empties Items.
 func (b *ContainerBuilder[T]) WithItems(v ...T) *ContainerBuilder[T] {
@@ -47,12 +53,6 @@ func (b *ContainerBuilder[T]) WithItems(v ...T) *ContainerBuilder[T] {
 // AppendItems appends v to the elements of Items.
 func (b *ContainerBuilder[T]) AppendItems(v ...T) *ContainerBuilder[T] {
 	b.v.Items = append(b.v.Items, v...)
-	return b
-}
-
-// WithLabel replaces Label with v.
-func (b *ContainerBuilder[T]) WithLabel(v string) *ContainerBuilder[T] {
-	b.v.Label = v
 	return b
 }
 
@@ -456,4 +456,4 @@ func (b *QuadBuilder[A, B, C, D]) Build() container.Quad[A, B, C, D] {
 	return b.v
 }
 
-// dokimi:provenance sha256:9a0923e1b8f8ad303df47611e54ced4ddcb6a8594df585664c23ae916db7b055
+// dokimi:provenance sha256:42f934595ccd049f4ae7be0a46d0bdfd38012ef310e43522af61336c5084a6ce

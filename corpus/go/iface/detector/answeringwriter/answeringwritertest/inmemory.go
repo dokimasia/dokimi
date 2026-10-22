@@ -18,8 +18,8 @@ import (
 //
 //dokimi:subject answeringwriter.AnsweringWriter new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]answeringwriter.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [answeringwriter.AnsweringWriter].

@@ -20,8 +20,8 @@ import (
 //
 //dokimi:subject noduplicates.Mixed new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]noduplicates.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [noduplicates.Mixed].

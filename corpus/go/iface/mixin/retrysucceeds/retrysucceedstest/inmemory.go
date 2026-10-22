@@ -26,8 +26,8 @@ const failuresBeforeSuccess = 2
 //
 //dokimi:subject retrysucceeds.Mixed new=NewInMemory
 type InMemory struct {
-	mu       sync.Mutex
 	attempts map[string]int
+	mu       sync.Mutex
 }
 
 // The compiler checks that InMemory implements [retrysucceeds.Mixed].

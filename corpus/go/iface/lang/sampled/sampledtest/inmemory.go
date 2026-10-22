@@ -18,9 +18,9 @@ import (
 //
 //dokimi:subject sampled.Labeller new=NewInMemory
 type InMemory struct {
-	mu      sync.Mutex
 	known   map[sampled.Tag]bool
 	applied map[sampled.Tag]sampled.Level
+	mu      sync.Mutex
 }
 
 // The compiler checks that InMemory implements [sampled.Labeller].

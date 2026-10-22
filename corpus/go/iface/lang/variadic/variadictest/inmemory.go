@@ -21,8 +21,8 @@ var ErrNoKeys = errors.New("variadictest: no keys requested")
 //
 //dokimi:subject variadic.Finder new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]string
+	mu    sync.Mutex
 }
 
 // NewInMemory returns a new InMemory.

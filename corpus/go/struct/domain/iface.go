@@ -56,39 +56,41 @@ type Bytes = []byte
 //
 // Width and signedness do not change the setter's shape, which is exactly why
 // they belong in one struct: if a builder handles int and int64 differently,
-// that is a bug this fixture surfaces by having both.
+// that is a bug this fixture surfaces by having both. The fields are in the
+// order of their sizes, so the struct has no padding.
+//
+// Ref, Day and Temp are named types over builtins. The setter must preserve
+// the defined type.
 //
 //dokimi:builder
 type Primitives struct {
-	Bool bool
-
 	String String
-	Rune   rune
-	Byte   byte
+	Ref    ID
 
-	Int   int
-	Int8  int8
-	Int16 int16
-	Int32 int32
-	Int64 int64
-
+	Int     int
+	Int64   int64
 	Uint    uint
-	Uint8   uint8
-	Uint16  uint16
-	Uint32  uint32
 	Uint64  uint64
 	Uintptr uintptr
-
-	Float32 float32
 	Float64 float64
 
-	Complex64  complex64
 	Complex128 complex128
+	Day        Weekday
+	Temp       Celsius
+	Complex64  complex64
 
-	// Named types over builtins. The setter must preserve the defined type.
-	Day  Weekday
-	Temp Celsius
-	Ref  ID
+	Rune    rune
+	Int32   int32
+	Uint32  uint32
+	Float32 float32
+
+	Int16  int16
+	Uint16 uint16
+
+	Bool  bool
+	Byte  byte
+	Int8  int8
+	Uint8 uint8
 }
 
 // String is a defined string type used as a field type in [Primitives], so the
@@ -99,22 +101,6 @@ type String = string
 //
 //dokimi:builder
 type Containers struct {
-	// Slice owes both With and Append.
-	Slice []string
-
-	// SliceOfStruct owes an Append taking the element type, which a builder
-	// that only handles scalar elements gets wrong.
-	SliceOfStruct []Address
-
-	// Array is fixed-length, so it cannot take an Append and must reject one.
-	Array [3]int
-
-	// Bytes owes a string-accepting setter so callers need not convert.
-	Body []byte
-
-	// Aliased is []byte under another name and must take the same setter.
-	Aliased Bytes
-
 	// Map owes WithEntry for one pair and WithEntries for many.
 	Map map[string]string
 
@@ -149,6 +135,22 @@ type Containers struct {
 	// Err is an interface with a well-known name, present because a builder
 	// that special-cases the identifier rather than the type gets it wrong.
 	Err error
+
+	// Slice owes both With and Append.
+	Slice []string
+
+	// SliceOfStruct owes an Append taking the element type, which a builder
+	// that only handles scalar elements gets wrong.
+	SliceOfStruct []Address
+
+	// Bytes owes a string-accepting setter so callers need not convert.
+	Body []byte
+
+	// Aliased is []byte under another name and must take the same setter.
+	Aliased Bytes
+
+	// Array is fixed-length, so it cannot take an Append and must reject one.
+	Array [3]int
 }
 
 // Address is nested inside [User] and used as a slice and map element in
@@ -193,9 +195,6 @@ type User struct {
 
 	Username string `default:"anonymous"`
 
-	Age    int
-	Active bool
-
 	// Home is a nested struct set as a whole.
 	Home Address
 
@@ -203,20 +202,24 @@ type User struct {
 	// types without a cycle check never terminates here.
 	Manager *User
 
-	// Reports is a self-referential slice, the same cycle by another route.
-	Reports []*User
-
 	// Deadline is a stdlib struct the builder must treat as opaque rather than
 	// walking into its unexported fields.
 	Deadline time.Time
+
+	// unexported is not settable from another package, so a generated builder
+	// must skip it. Its presence is the test.
+	_ string
+
+	// Reports is a self-referential slice, the same cycle by another route.
+	Reports []*User
+
+	Age int
 
 	// Timeout is a defined type over int64 in the stdlib, which must keep its
 	// type rather than degrading to a bare duration count.
 	Timeout time.Duration
 
-	// unexported is not settable from another package, so a generated builder
-	// must skip it. Its presence is the test.
-	_ string
+	Active bool
 }
 
 // UserDefaults is the companion the builder generator seeds New<User>() from.
@@ -227,7 +230,8 @@ type User struct {
 // [go.dokimi.dev/dokimi/corpus/go/struct/plain] covers.
 func UserDefaults() User {
 	return User{
-		Role:     Role{Name: "member", Level: 1},
+		Name:     "member",
+		Level:    1,
 		Username: "anonymous",
 		Age:      30,
 		Active:   true,

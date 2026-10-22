@@ -21,8 +21,8 @@ var ErrNotFound = errors.New("namedreturnstest: not found")
 //
 //dokimi:subject namedreturns.Service new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items map[string]string
+	mu    sync.Mutex
 }
 
 // NewInMemory returns a new InMemory.

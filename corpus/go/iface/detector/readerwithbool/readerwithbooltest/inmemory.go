@@ -17,8 +17,8 @@ import (
 //
 //dokimi:subject readerwithbool.ReaderWithBool new=NewInMemory
 type InMemory struct {
-	mu     sync.Mutex
 	values map[string]readerwithbool.Value
+	mu     sync.Mutex
 }
 
 // The compiler checks that InMemory implements [readerwithbool.ReaderWithBool].

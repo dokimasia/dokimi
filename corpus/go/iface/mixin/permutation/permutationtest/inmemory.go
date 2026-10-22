@@ -20,8 +20,8 @@ import (
 //
 //dokimi:subject permutation.Mixed new=NewInMemory
 type InMemory struct {
-	mu    sync.Mutex
 	items []permutation.Value
+	mu    sync.Mutex
 }
 
 // The compiler checks that InMemory implements [permutation.Mixed].

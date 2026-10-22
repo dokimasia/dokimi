@@ -91,11 +91,11 @@ The call generator of a callable gives each parameter a value by its kind:
 | In the role `context` | The context of the case | The signal of the case |
 | Of a type whose shape the assert library reads | A value of `prop.Of[T]()` | A value of the shape definition that dokimi writes from the facts of eidos |
 | A pointer, or a type with `undefined` | A pointer to a value of the type, and also nil under the mixin `nil-safe` | A value of the type, and also `undefined` under the mixin `nil-safe` |
-| Variadic | A list of values of the element type | A list of values of the element type |
+| Variadic | A list of values of the element type. A variadic parameter of functions or of interfaces outside the standard library takes no values | A list of values of the element type |
 | Of an enumeration | One of its members | One of its members |
-| Of a struct or a class with a builder | The value that the builder builds from the starting value of the type, with the changed fields through its setters | The instance that the builder builds from the starting value of the class, with the changed fields through its setters |
-| Of a function type | A function that generates its results at each call. An error result is nil or a declared error | A function that returns or resolves with values that it generates at each call, or throws a declared error |
-| Of an interface with a double of dokimi | The double, whose methods generate their results as a function does. It takes its random numbers from the case | The double, whose methods generate their results as a function does. It takes its random numbers from the case |
+| Of a struct or a class with a builder | The value that the builder builds, with each changed field from a value of the shape of the type | The instance that the builder builds from the starting value of the class, with the changed fields through its setters |
+| Of a function type | A function whose nth call returns the nth value of the generated list of each result. After the last values it returns its zero results with the end error of each error result. An error of a list is nil or a declared error | A function that returns or resolves with values that it generates at each call, or throws a declared error |
+| Of an interface | An implementation that the suite declares for an interface outside the standard library. Its methods return generated results as a function does. An interface of the standard library takes the generator of its registration | The double of an interface with a double of dokimi, whose methods generate their results as a function does. It takes its random numbers from the case |
 | A channel that the callable receives from | A closed channel of a generated list | — |
 | Of any other type | The generator that a registration of the test process states for the type | The generator that a registration of the test file states for the type |
 | The receiver of a method | A fresh subject of the factory of the application for each case | A fresh subject of the factory of the application for each case |
@@ -117,18 +117,18 @@ The simplest generated value of a type is its starting value. The first source t
 
 1. The sample that the kernel directive `sample` authors for the type.
 2. The value of the builder of the type. `NewConfigBuilder()` starts from the companion function `ConfigDefaults()` and the declared defaults of the fields.
-3. The default that the annotator `defaults` stamps on the type.
+3. The default that the annotator `defaults` stamps on the type, and for a struct the default of each field. The rules of the language read the text of a default. A type of text takes a text that the rules do not read as its content.
 4. The simplest value of the shape of the type, such as the zero value.
 
 This is the order of the first sample in RFC-0003, with the builder added. A callable with the mixin `sample` takes the value of the builder of the mixin as the starting value of its inputs.
 
 A generated value of a struct keeps or changes each field of its starting value, by a choice of the case. So the cases cluster around a value that the declaration accepts, and a failure shrinks back towards that value. A counterexample then shows only the fields that differ from it. `config.Config` of the corpus declares the defaults `localhost`, `8080` and `0.75`, so a counterexample such as `Port: 0` shows the one field that breaks the call.
 
-The generator of a type with a builder passes each changed field to the setter of the builder. The builder then applies its forms of lists, maps, sets, optional pointers and copies. The changed values come from the shape of the type through a defined type over it, such as `type configShape config.Config`, so the tags of `prop` on its fields apply. The store of the property engine replays a case from its choices alone, so a case of such a generator replays as every other case does.
+The generator of a type draws a value of the shape of the type and assigns each changed field of that value to the starting value. Inside the generator of a type, `prop.Of` of the type takes the shape without the generator, so the tags of `prop` on its fields apply. A field with the tag `prop:"-"` keeps its starting value. A defined type that is no struct, such as `type Tag string`, keeps or changes its starting value whole. A generic type takes the simplest value of its shape. The store of the property engine replays a case from its choices alone, so a case of such a generator replays as every other case does.
 
 ### Types inside other types
 
-The rules of the values of parameters apply to a type at every depth. An enumeration inside a struct takes one of its members, and a type with a builder inside a list takes the value of its builder. The shape reader of `prop` reads a defined type over an integer over every integer, so the generator overrides each enumeration.
+The rules of the values of parameters apply to a type at every depth. An enumeration inside a struct takes one of its members, and a type with a builder inside a list takes the value of its builder. The shape reader of `prop` reads a defined type over an integer over every integer, so the generator overrides each enumeration. The generator leaves the types of the standard library to the shape reader, because their sets of constants include flags such as `fs.FileMode` and units such as `time.Duration`.
 
 Each property run passes an override of each such type through the option `Using` of `prop`. An override applies to each value of the type inside the inputs of the run, and to no other run. A registration applies to the whole test process. A second registration of one type panics, and two suites in one test binary can need the same type. `Using` is an option of the property forms alone, so this design requests it for `ForAll` and `Fuzz` from assert-spec, in every language.
 
@@ -141,6 +141,8 @@ An error result of a generated function or of a double is nil, or an error that 
 3. `conform.ErrGenerated`.
 
 A caller of a dependency then meets the errors that its code handles, such as `ErrNotFound`. A TypeScript function or double throws the error, or rejects with it.
+
+The nth call of a generated function of Go returns the nth value of each of its lists. After the last values it returns its zero results. Each error result of those zero results is the end error: the first declared error of the method, or `conform.ErrGenerated`. A caller that reads until an error, such as the loop over a feed, then ends.
 
 Each double that a property check builds takes the random source of the case through its option `WithRandSource`. Its probabilistic faults then replay and shrink with the case. A factory reaches the same source through the method `Rand` of the handle.
 
@@ -293,6 +295,9 @@ Get(ctx context.Context, id string) (Session, error)
 | `bytes` | The most bytes that one call allocates | `byte-budget` | The benchmark | `bench-max-bytes` | `bytes-over-budget` |
 | `p99` | The highest p99 latency of a call | `latency-budget` | The benchmark | `bench-max-latency` | `latency-over-budget` |
 | `mean` | The highest mean latency of a call | `mean-latency-budget` | The benchmark | `bench-max-mean` | `mean-over-budget` |
+| `warmup` | The number of iterations that each benchmark of the callable runs before it measures | — | The benchmark | — | — |
+
+A warm-up is no ceiling and has no check. The benchmark contract runs it through its option `Warmup`, so the first calls build their caches outside the measurement, such as the cache of an interface conversion. Without `warmup` each benchmark runs each of its calls once before it measures. A budget may state a warm-up without a ceiling.
 
 A budget on a callable of a declaration applies to every subject of the declaration. For a function and for a method of a concrete type the declaration is the implementation. A budget on a subject applies to that subject alone. Its first argument is the identity of the callable, as in the directive `excuse`:
 
@@ -304,12 +309,19 @@ A budget on a callable of a declaration applies to every subject of the declarat
 type Store struct{ … }
 ```
 
-The generator reports each of these mistakes at the directive under `BadBudget`:
+eidos refuses a directive that states one ceiling twice, and an `allocs` or a `bytes` that is not a whole number, before the generator reads the directive. The generator reports each of these mistakes at the directive under `BadBudget`:
 
-- a budget without a ceiling, or with one ceiling twice
-- an `allocs` or a `bytes` that is not a whole number, and a `p99` or a `mean` that is not a duration
+- a budget without a ceiling and without a warm-up
+- an `allocs`, a `bytes` or a `warmup` below 0, and a `p99` or a `mean` that is not a duration above 0
 - a `mean` without a `p99`, because a mean alone passes a tail that grows
+- a second budget of one callable
+- a callable argument in a budget on a method or a function, because only a budget on a subject takes one
+- a budget on a method that is not exported, or on a callable of a declaration without the directive `suite`
+- a budget on a struct without the directive `subject`
+- a budget on a subject without an argument, or with an argument that is not a callable of its declaration
 - a budget on a subject for a callable whose declaration states a budget. The subject excuses the check of the declaration instead
+
+The names of the callables of a suite have a method for each ceiling of a budget, such as `StoreChecks.Get.LatencyBudget()`, which returns the identity of its check. An excusal of a ceiling takes that identity. A check of a consumer with the segment of a ceiling, such as the function `LatencyBudget`, would have the identity of that ceiling, so the generator refuses it under `BadCheck`.
 
 TypeScript refuses `allocs` and `bytes` with the reason of its overlay in assert-spec: V8 does not count the allocations of an iteration.
 
@@ -322,7 +334,7 @@ Each ceiling has a planted defect whose callable returns its zero results and ex
 | Defect form | The callable of the defect |
 |---|---|
 | `allocates-over-budget` | Allocates one time more per call than the ceiling admits |
-| `allocates-bytes-over-budget` | Allocates one byte more per call than the ceiling admits |
+| `allocates-bytes-over-budget` | Allocates more bytes per call than the ceiling admits |
 | `waits-over-budget` | Returns after twice the ceiling. In Go it sleeps, because the benchmark contract of assert-go times a call on the clock of the system. In TypeScript it advances the controlled clock of its handle. The contract of assert-typescript reads that clock |
 
 A defect only adds allocations, bytes and time to a call, and a count or a clock does not go back. So each defect fails its check in every run. RFC-0001 reverses its verdict on benchmarks when a budget check cannot fail on its planted defect without flaking. These defects fail without flaking.
@@ -335,12 +347,12 @@ Each callable of each application has a benchmark:
 
 1. It builds one subject from the factory, outside the measurement.
 2. It takes 100 calls from the call generator of the callable, under the seed of the benchmark. The seed comes from `DOKIMI_SEED` when the variable is set, and from the key of the callable otherwise, so every run measures the same inputs.
-3. It makes each call once as a warm-up. It then repeats the calls in their order under a benchmark contract with the ceilings of the budget of the callable.
-4. It publishes the share of calls that returned an error as `errors/op`. The contract publishes the allocations, the bytes and the latencies.
+3. It repeats the calls in their order under a benchmark contract with the ceilings of the budget of the callable. The contract first runs the warm-up of the budget, or each call once, through its option `Warmup`. A parallel benchmark runs the warm-up on its goroutines.
+4. It publishes the share of the calls that returned an error as `errors/op`. The share includes the calls of the warm-up. The contract publishes the allocations, the bytes and the latencies.
 
 A benchmark does not assert the results of its calls, because the checks of the suite assert them. The share of errors shows which path the benchmark measured. A benchmark of `Get` on an empty store measures the path of a miss, with `errors/op` at 1. A factory that stores sessions first makes it measure the path of a hit.
 
-In Go the conformance test of a subject declares `Benchmark<Subject>`, with a level for each callable, such as `BenchmarkStore/Get`. A subject of two declarations has a level for each declaration above the levels of its callables. `Benchmark<Subject>Parallel` measures the calls of each callable with the mixin `concurrent` or `concurrent-readers` under `RunParallel`. The test of the suite of a function declares `Benchmark<Function>`.
+In Go the conformance test of a subject declares `Benchmark<Subject>`, with a level for each callable, such as `BenchmarkStore/Get`. A subject of two declarations has a level for each declaration above the levels of its callables. `Benchmark<Subject>Parallel` measures the calls of each callable with the mixin `concurrent` or `concurrent-readers` under `RunParallel`. Each level of both benchmarks passes the options of the application, which the benchmark declares once as `opts`. The test of the suite of a function declares `Benchmark<Function>`, and `Benchmark<Function>Parallel` for a function with the mixin `concurrent` or `concurrent-readers`.
 
 In TypeScript the file `<file>.suite.bench.ts` declares a test for each callable. `vitest bench` runs the file, and `vitest run` leaves it out. The test measures the calls with the `bench` fixture of vitest. A budget adds a `Contract` of `@dokimi/assert` with `maxLatency` and `maxMean` over the same calls.
 
@@ -358,16 +370,30 @@ In TypeScript the file `<file>.suite.bench.ts` declares a test for each callable
 
 A function is the only subject of its suite, so the test of its suite applies the suite to the function. The level `<Function>` of `Test<Function>Suite` contains that application. The test also declares `Test<Function>Allocs`, `Benchmark<Function>` and `Fuzz<Function>`. A concrete type becomes the subject of its own suite through the directive `subject` on the type, as in `//dokimi:subject Store new=NewStore`. Its methods then get the conformance test, the benchmarks and the fuzz targets of a subject.
 
-The Go suite of `Store` declares three entry points beside `RunStoreSuite` and `RunStoreSuiteFromHandle`:
+The Go suite of `Store` declares four entry points beside `RunStoreSuite` and `RunStoreSuiteFromHandle`:
 
 ```go
 // RunStoreBudgets applies the allocation ceilings of Store to a fresh subject
 // of newSubject for each case.
 func RunStoreBudgets[T session.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption)
 
-// BenchStoreSuite measures each callable of Store on a subject of
-// newSubject, under the ceilings of its budget.
-func BenchStoreSuite[T session.Store](b *testing.B, newSubject func(h *StoreHandle) T, opts ...StoreOption)
+// BenchStoreSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchStoreSuite[T session.Store](
+	b conform.B,
+	callable conform.Callable[session.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+)
+
+// BenchStoreSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once.
+func BenchStoreSuiteParallel[T session.Store](
+	b *testing.B,
+	callable conform.Callable[session.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+)
 
 // FuzzStoreSuite registers the fuzz target of the property checks of
 // callable on f.
@@ -379,7 +405,7 @@ func FuzzStoreSuite[T session.Store](
 )
 ```
 
-Each takes the factory of the handle alone, because a subject that reads the clock needs the handle in a benchmark and in a fuzz target as well. The suffix `FromHandle` separates the two forms of `RunStoreSuite`, so a function of one form does not take it. The suite of a function takes the function itself, as in `FuzzSlugSuite(f, Slug)`.
+Each takes the factory of the handle alone, because a subject that reads the clock needs the handle in a benchmark and in a fuzz target as well. The suffix `FromHandle` separates the two forms of `RunStoreSuite`, so a function of one form does not take it. A benchmark and a fuzz target take one callable. The generated test writes a level of a benchmark and a fuzz target for each callable. The suite of a function takes the function itself, as in `FuzzSlugSuite(f, Slug)`.
 
 ### The runtime
 
@@ -387,7 +413,7 @@ Each takes the factory of the handle alone, because a subject that reads the clo
 |---|---|---|
 | A property check | The field `Property func(h *Handle[S], c *prop.Case)` of `Check[S]`, in place of `Apply` | The field `property` of `Check<S>` |
 | The call generator of a callable | `Call[S]`: the callable, its call generator, its budget, whether it admits concurrent calls, and `Over`, which builds the planted defect of each kind of ceiling | `Call<S>` |
-| A budget | `Budget`, with the optional fields `Allocs`, `Bytes`, `Latency` and `Mean` | `Budget`, with the optional fields `latency` and `mean` |
+| A budget | `Budget`, with the optional fields `Allocs`, `Bytes`, `Latency`, `Mean` and `Warmup` | `Budget`, with the optional fields `latency` and `mean` |
 | The calls of a suite | The field `Calls` of `Suite[S]` | The field `calls` of `Suite<S>` |
 | The handle of a case | `Handle[S]`, whose `Unwrap` returns the case | `Handle<S>`, on the case |
 | The random source of a check | The method `Rand` of `Handle[S]`: the source of the case in a property check, and a source of the seed of the run in any other check | The method `rand` of `Handle<S>` |
@@ -395,12 +421,12 @@ Each takes the factory of the handle alone, because a subject that reads the clo
 | The number of cases of an application | The option `Cases(n)` | The field `cases` of `Options<S>` |
 | The budget of a subject | The option `Ceilings(callable, budget)` | The field `ceilings` of `Options<S>` |
 | The application of the allocation ceilings | `RunBudgets(t, suite, newSubject, opts...)` | — |
-| The benchmarks | `Bench(b, suite, newSubject, opts...)` | `bench(fixture, suite, newSubject, options)` |
+| The benchmarks | `Bench(b, suite, callable, newSubject, opts...)` on a `conform.B`, which `*testing.B` implements, and `BenchParallel(b, suite, callable, newSubject, opts...)` | `bench(fixture, suite, newSubject, options)` |
 | A fuzz target | `Fuzz(f, suite, callable, newSubject, opts...)` | `fuzz(seat, suite, callable, newSubject, options)`, which returns a promise of a `Target` |
 | The falsification of the allocation ceilings | `FalsifyAllocs(t, suite)` | — |
 | The error of a generated function | `ErrGenerated` | `ErrGenerated` |
 
-The runtime derives the check of each ceiling from the calls of the suite. The check has its identity, such as `Store.Get/allocation-budget`, a statement such as "Get allocates at most 1 time per call", and the planted defect of its kind of ceiling. A ceiling that the option `Ceilings` adds for one subject is a check of that application alone. The application falsifies it before it applies it, as it does with a check that `conform.With` adds.
+The runtime derives the check of each ceiling from the calls of the suite. The check has its identity, such as `Store.Get/allocation-budget`, and the planted defect of its kind of ceiling. The check of an allocation ceiling also has a statement, such as "Get allocates at most 1 time per call", which is the contract of its property run. A ceiling that the option `Ceilings` adds for one subject is a check of that application alone. The application falsifies it before it applies it, as it does with a check that `conform.With` adds.
 
 ### Falsification
 
@@ -464,7 +490,7 @@ func TestStoreConformsToStore(t *testing.T) {
 	sessiontest.RunStoreSuite(
 		t,
 		postgres.NewTestStore,
-		conform.Cases(20),
+		conform.Cases[session.Store](20),
 		conform.Excuse(
 			sessiontest.StoreChecks.Get.Expires(),
 			"PostgreSQL computes the expiry with now(), which a test cannot advance",
@@ -472,18 +498,28 @@ func TestStoreConformsToStore(t *testing.T) {
 	)
 }
 
-// BenchmarkStore measures each callable of Store on Store.
+// BenchmarkStore measures each callable of the suite of Store on Store.
 func BenchmarkStore(b *testing.B) {
-	sessiontest.BenchStoreSuite(
-		b,
-		func(*sessiontest.StoreHandle) *postgres.Store {
-			return postgres.NewTestStore()
-		},
+	opts := []sessiontest.StoreOption{
 		conform.Ceilings(
 			sessiontest.StoreChecks.Get.Callable,
-			conform.Budget{Latency: 3 * time.Millisecond, Mean: time.Millisecond},
+			conform.Budget{
+				Latency: 3 * time.Millisecond,
+				Mean:    time.Millisecond,
+			},
 		),
-	)
+		conform.Excuse(
+			sessiontest.StoreChecks.Get.Expires(),
+			"PostgreSQL computes the expiry with now(), which a test cannot advance",
+		),
+	}
+	b.Run("Get", func(b *testing.B) {
+		sessiontest.BenchStoreSuite(
+			b,
+			sessiontest.StoreChecks.Get.Callable,
+			func(*sessiontest.StoreHandle) *postgres.Store { return postgres.NewTestStore() },
+			opts...)
+	})
 }
 
 // FuzzStoreGet fuzzes the property checks of Store.Get on Store.
@@ -491,9 +527,7 @@ func FuzzStoreGet(f *testing.F) {
 	sessiontest.FuzzStoreSuite(
 		f,
 		sessiontest.StoreChecks.Get.Callable,
-		func(*sessiontest.StoreHandle) *postgres.Store {
-			return postgres.NewTestStore()
-		},
+		func(*sessiontest.StoreHandle) *postgres.Store { return postgres.NewTestStore() },
 		conform.Excuse(
 			sessiontest.StoreChecks.Get.Expires(),
 			"PostgreSQL computes the expiry with now(), which a test cannot advance",
@@ -502,7 +536,7 @@ func FuzzStoreGet(f *testing.F) {
 }
 ```
 
-`FuzzStorePut` and `FuzzStoreDelete` follow the same form. Each entry point takes the options of the application and checks its excusals against every check of the suite. The budget does not state an allocation ceiling, so the test does not declare `TestStoreAllocs`.
+The levels `Put` and `Delete` of `BenchmarkStore`, `FuzzStorePut` and `FuzzStoreDelete` follow the same form. Each entry point takes the options of the application and checks its excusals against every check of the suite. The budget does not state an allocation ceiling, so the test does not declare `TestStoreAllocs`.
 
 Among the failures of the first run, `Get/miss#generated` shrinks to the ID `"\x00"`. PostgreSQL refuses the byte 0x00 in a value of the type `text`, and `Get` returns the error of the driver in place of `ErrNotFound`. `KeepsTheLastPut` fails at the same byte, because `Put` returns that error for a session with the ID `"\x00"`. The team makes `Get` report `ErrNotFound` for an ID that the store cannot keep. It also states the domain of a session ID on the declaration, so every property check of a session generates IDs that the store keeps:
 
@@ -591,7 +625,7 @@ The benchmarks, the allocation ceilings and the property checks each need one of
 | Property checks of a consumer | In | A consumer states a relation that the declarations do not show, and gets falsification, a fuzz target and stored cases with it | — |
 | Every callable of a suite, and generic declarations at their witnesses | In | The facts of a parameter are the same in every kind of callable | — |
 | The starting value of a type: its sample, the value of its builder or its declared default | In | The cases cluster around a value that the declaration accepts, and a counterexample shows only the fields that differ from it | — |
-| The setters of the builder for the changed fields of a value | In | The builder already writes the forms of lists, maps, sets, optional pointers and copies | — |
+| The setters of the builder for the changed fields of a value | Out | Each changed field takes its value from a fresh value of the shape, which no other value shares, so the copies of the builder add nothing | A builder whose setters validate or normalize a field |
 | Overrides of enumerations and builders at every depth | In | The shape reader reads an enumeration of integers over every integer | — |
 | Declared errors as the generated errors | In | A caller meets the errors that its dependency declares, such as `ErrNotFound` | — |
 | The random source of the case in each double | In | The probabilistic faults of a double replay and shrink with the case | — |
@@ -607,6 +641,7 @@ The benchmarks, the allocation ceilings and the property checks each need one of
 | Latency ceilings in ordinary test runs | Out | The latency of a call differs per machine and per load | A class of runners repeats each latency within its ceiling |
 | A search for the slowest input | Out | A campaign reports its failures, but not the case with the best score of a label | The campaign of assert-spec reports the case with the best score of each label |
 | A benchmark of each callable over 100 generated calls | In | A trend needs the same inputs in every run, and one input measures one path | — |
+| A warm-up of the benchmarks of a callable in its budget | In | The first calls of a callable build caches that later calls reuse. A ceiling of 0 allocations then needs a warm-up of thousands of calls | — |
 | Parallel benchmarks of concurrent callables | In | The cost under contention differs from the serial cost, and the mixins state which callables admit concurrent calls | — |
 | A benchmark that prepares the subject through a declared partner | Out | The declarations do not state a relation between the value of a write and the key of a read | The shape catalog states that relation |
 | A committed baseline of benchmark results | Out | A measurement of one machine fails on another. The service compares the runs of one class of runners | CI runs the benchmarks on a dedicated runner that repeats within the threshold |

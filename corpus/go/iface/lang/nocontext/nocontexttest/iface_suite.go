@@ -74,4 +74,22 @@ func RunCalculatorSuiteFromHandle[T nocontext.Calculator](
 	conform.Run(t, CalculatorSuite(), func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:18e8a31c196fdf560190c0266e85dac489621a4d5a76c0c0836397e3c4a331e5
+// FuzzCalculatorSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzCalculatorSuite[T nocontext.Calculator](
+	f *testing.F,
+	callable conform.Callable[nocontext.Calculator],
+	newSubject func(h *CalculatorHandle) T,
+	opts ...CalculatorOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		CalculatorSuite(),
+		callable,
+		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:715944b05abcaf234b0002b87a1f7f3d00bd93350ada3b777c4cc6550da7edd6

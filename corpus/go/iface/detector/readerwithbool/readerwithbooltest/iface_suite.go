@@ -66,4 +66,22 @@ func RunReaderWithBoolSuiteFromHandle[T readerwithbool.ReaderWithBool](
 		opts...)
 }
 
-// dokimi:provenance sha256:fbe0268f01d28ffec6f1fa274bbacf174262fa9ce2a79403366222ab54361c4a
+// FuzzReaderWithBoolSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
+	f *testing.F,
+	callable conform.Callable[readerwithbool.ReaderWithBool],
+	newSubject func(h *ReaderWithBoolHandle) T,
+	opts ...ReaderWithBoolOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		ReaderWithBoolSuite(),
+		callable,
+		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:9e38fe1e5830c371546cce759f887c56d294ff97d087397ad2724844c912d956

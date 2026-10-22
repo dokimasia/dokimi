@@ -18,4 +18,34 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	cachetest.RunContractSuite(t, cachetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:5bd03b498d9d69e88ee0cb656a88518467d25653bd4b079157a6a1eba6b7ddb9
+// FuzzInMemoryStore fuzzes the property checks of Contract.Store on
+// InMemory.
+func FuzzInMemoryStore(f *testing.F) {
+	cachetest.FuzzContractSuite(
+		f,
+		cachetest.ContractChecks.Store.Callable,
+		func(*cachetest.ContractHandle) *cachetest.InMemory { return cachetest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryLookup fuzzes the property checks of Contract.Lookup on
+// InMemory.
+func FuzzInMemoryLookup(f *testing.F) {
+	cachetest.FuzzContractSuite(
+		f,
+		cachetest.ContractChecks.Lookup.Callable,
+		func(*cachetest.ContractHandle) *cachetest.InMemory { return cachetest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryFetch fuzzes the property checks of Contract.Fetch on
+// InMemory.
+func FuzzInMemoryFetch(f *testing.F) {
+	cachetest.FuzzContractSuite(
+		f,
+		cachetest.ContractChecks.Fetch.Callable,
+		func(*cachetest.ContractHandle) *cachetest.InMemory { return cachetest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:c88b2cdb1fbf4bd1a0a159f717541dcbf8cf49ba43120913f04d013c742d0764

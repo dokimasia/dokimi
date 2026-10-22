@@ -58,4 +58,17 @@ func RunDeleterSuiteFromHandle[T deleter.Deleter](
 	conform.Run(t, DeleterSuite(), func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:834e33171b6b4b3cad1f7a067e12eae06d6fb0fa5bbd7ee5db44fde5cd634b74
+// FuzzDeleterSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzDeleterSuite[T deleter.Deleter](
+	f *testing.F,
+	callable conform.Callable[deleter.Deleter],
+	newSubject func(h *DeleterHandle) T,
+	opts ...DeleterOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, DeleterSuite(), callable, func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:9118360b8decafd992607a75ff82686a7e15d6ccd533d9be6acb9aea352b04f0

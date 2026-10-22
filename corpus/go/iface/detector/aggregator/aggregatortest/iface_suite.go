@@ -58,4 +58,22 @@ func RunAggregatorSuiteFromHandle[T aggregator.Aggregator](
 	conform.Run(t, AggregatorSuite(), func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:763d3d65173800883afba7889217d9c487ad2df34120f783a7a155786c291b46
+// FuzzAggregatorSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzAggregatorSuite[T aggregator.Aggregator](
+	f *testing.F,
+	callable conform.Callable[aggregator.Aggregator],
+	newSubject func(h *AggregatorHandle) T,
+	opts ...AggregatorOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		AggregatorSuite(),
+		callable,
+		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:7896d57a1204591ecf383012ca6f90be26b477aff2e538ed2b3843d7362c0f39

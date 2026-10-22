@@ -58,4 +58,22 @@ func RunLifecycleSuiteFromHandle[T lifecycle.Lifecycle](
 	conform.Run(t, LifecycleSuite(), func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:dddd2e93157cfaf649fd146497cb231c1cfabd2686c91426ae14ba47a3f1a10a
+// FuzzLifecycleSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzLifecycleSuite[T lifecycle.Lifecycle](
+	f *testing.F,
+	callable conform.Callable[lifecycle.Lifecycle],
+	newSubject func(h *LifecycleHandle) T,
+	opts ...LifecycleOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		LifecycleSuite(),
+		callable,
+		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:064f0d94ddbd9bdc3cfceb7091d54a5cafb687029dc2cb380dd101bc6441a2b3

@@ -18,4 +18,27 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	singleflighttest.RunContractSuite(t, singleflighttest.NewInMemory)
 }
 
-// dokimi:provenance sha256:2f155275307e6fc576f46c7f49d0235895e4fd90cdb68a80cf51b42f7ae9f70f
+// FuzzInMemoryRun fuzzes the property checks of Contract.Run on InMemory.
+func FuzzInMemoryRun(f *testing.F) {
+	singleflighttest.FuzzContractSuite(
+		f,
+		singleflighttest.ContractChecks.Run.Callable,
+		func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
+			return singleflighttest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryFlights fuzzes the property checks of Contract.Flights on
+// InMemory.
+func FuzzInMemoryFlights(f *testing.F) {
+	singleflighttest.FuzzContractSuite(
+		f,
+		singleflighttest.ContractChecks.Flights.Callable,
+		func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
+			return singleflighttest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:d39a234504712fd4d880ae6a8f365061ca161739c79c1ef34fdc2a0293aadf6e

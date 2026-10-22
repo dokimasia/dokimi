@@ -18,4 +18,22 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	wrappedviatest.RunMixedSuite(t, wrappedviatest.NewInMemory)
 }
 
-// dokimi:provenance sha256:58102fc9474b2d82408e56be592d65b31e13e52079461f41b28c2ef4c64e1ce1
+// FuzzInMemoryOpen fuzzes the property checks of Mixed.Open on InMemory.
+func FuzzInMemoryOpen(f *testing.F) {
+	wrappedviatest.FuzzMixedSuite(
+		f,
+		wrappedviatest.MixedChecks.Open.Callable,
+		func(*wrappedviatest.MixedHandle) *wrappedviatest.InMemory { return wrappedviatest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryCause fuzzes the property checks of Mixed.Cause on InMemory.
+func FuzzInMemoryCause(f *testing.F) {
+	wrappedviatest.FuzzMixedSuite(
+		f,
+		wrappedviatest.MixedChecks.Cause.Callable,
+		func(*wrappedviatest.MixedHandle) *wrappedviatest.InMemory { return wrappedviatest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:8f6e815c889bd5700a83ff92507426fe38147543625800ad8aa472d649615569

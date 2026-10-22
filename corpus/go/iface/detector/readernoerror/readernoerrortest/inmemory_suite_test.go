@@ -18,4 +18,16 @@ func TestInMemoryConformsToReaderNoError(t *testing.T) {
 	readernoerrortest.RunReaderNoErrorSuite(t, readernoerrortest.NewInMemory)
 }
 
-// dokimi:provenance sha256:f5de8349938a47dd8f9fd77f0105d1fdf956b644a6d14e8ffb3d21f0123014eb
+// FuzzInMemoryLookup fuzzes the property checks of ReaderNoError.Lookup on
+// InMemory.
+func FuzzInMemoryLookup(f *testing.F) {
+	readernoerrortest.FuzzReaderNoErrorSuite(
+		f,
+		readernoerrortest.ReaderNoErrorChecks.Lookup.Callable,
+		func(*readernoerrortest.ReaderNoErrorHandle) *readernoerrortest.InMemory {
+			return readernoerrortest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:16ed39fc30985b173c07fd236ff9acaf55abb705aef45f988e94e5c7587641a0

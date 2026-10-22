@@ -23,7 +23,45 @@ func TestLogConformsToLog(t *testing.T) {
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
 		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+			"a replica refuses each append, so no body reaches its replay",
+		),
 	)
 }
 
-// dokimi:provenance sha256:83df9ab83e548a2a213f3851d89dc2a1ead2abeb1a28cbed3f815181c35afdc5
+// FuzzLogAppend fuzzes the property checks of Log.Append on Log.
+func FuzzLogAppend(f *testing.F) {
+	causalchaintest.FuzzLogSuite(
+		f,
+		causalchaintest.LogChecks.Append.Callable,
+		func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsTheBody(),
+			"a replica refuses each append, so no body reaches its replay",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+			"a replica refuses each append, so no body reaches its replay",
+		),
+	)
+}
+
+// FuzzLogReplay fuzzes the property checks of Log.Replay on Log.
+func FuzzLogReplay(f *testing.F) {
+	causalchaintest.FuzzLogSuite(
+		f,
+		causalchaintest.LogChecks.Replay.Callable,
+		func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsTheBody(),
+			"a replica refuses each append, so no body reaches its replay",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+			"a replica refuses each append, so no body reaches its replay",
+		),
+	)
+}
+
+// dokimi:provenance sha256:2495cc42ff9809b9a8bcfa9945cc2f117293062c95b59a4daa14f1d2bd9dcdad

@@ -18,4 +18,16 @@ func TestInMemoryConformsToReaderWithBool(t *testing.T) {
 	readerwithbooltest.RunReaderWithBoolSuite(t, readerwithbooltest.NewInMemory)
 }
 
-// dokimi:provenance sha256:d40478bef1d75f3a60cc72c890cd669e57125dd1c278bcd1d358dfc9be371f76
+// FuzzInMemoryLoad fuzzes the property checks of ReaderWithBool.Load on
+// InMemory.
+func FuzzInMemoryLoad(f *testing.F) {
+	readerwithbooltest.FuzzReaderWithBoolSuite(
+		f,
+		readerwithbooltest.ReaderWithBoolChecks.Load.Callable,
+		func(*readerwithbooltest.ReaderWithBoolHandle) *readerwithbooltest.InMemory {
+			return readerwithbooltest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:028f0c57be57a044b371aef7637a2ed277627835048e646a8033bcea3d323cc3

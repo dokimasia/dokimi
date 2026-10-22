@@ -65,4 +65,17 @@ func RunMixedSuiteFromHandle[T readyourwrites.Mixed](
 	conform.Run(t, MixedSuite(), func(h *MixedHandle) readyourwrites.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:55a4fe01083537e807c4d43ea323f08b084204691083a48762fa4517b0f05cee
+// FuzzMixedSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzMixedSuite[T readyourwrites.Mixed](
+	f *testing.F,
+	callable conform.Callable[readyourwrites.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) readyourwrites.Mixed { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:8e4e3a406b68cff2243408f608d7f70c3cd9f24b56ca788fd50440f25baecaf9

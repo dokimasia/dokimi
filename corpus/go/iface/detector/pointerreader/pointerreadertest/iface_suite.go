@@ -66,4 +66,22 @@ func RunPointerReaderSuiteFromHandle[T pointerreader.PointerReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:e4ec6c19914f0dc0a1dabe87d2268df6a24c50ac8cccf9632a3ee06b66873253
+// FuzzPointerReaderSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzPointerReaderSuite[T pointerreader.PointerReader](
+	f *testing.F,
+	callable conform.Callable[pointerreader.PointerReader],
+	newSubject func(h *PointerReaderHandle) T,
+	opts ...PointerReaderOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		PointerReaderSuite(),
+		callable,
+		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:900942c4bda828e82c010d907d83e7f5fbdc1e1ed4ca338fd659799180bd4f5d

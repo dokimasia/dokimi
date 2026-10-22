@@ -18,4 +18,24 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	leasetest.RunContractSuite(t, leasetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:921d39025d4dad82576ba93a569f77f2fc99a53276fd822c10e77a06b48b11b6
+// FuzzInMemoryAcquire fuzzes the property checks of Contract.Acquire on
+// InMemory.
+func FuzzInMemoryAcquire(f *testing.F) {
+	leasetest.FuzzContractSuite(
+		f,
+		leasetest.ContractChecks.Acquire.Callable,
+		func(*leasetest.ContractHandle) *leasetest.InMemory { return leasetest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryRelease fuzzes the property checks of Contract.Release on
+// InMemory.
+func FuzzInMemoryRelease(f *testing.F) {
+	leasetest.FuzzContractSuite(
+		f,
+		leasetest.ContractChecks.Release.Callable,
+		func(*leasetest.ContractHandle) *leasetest.InMemory { return leasetest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:cacb8a0e689a57e18abb34790cb4618c075ee12f5f192a9302b913643c5df9fa

@@ -26,8 +26,8 @@ func RootEntry() Entry {
 	return Entry{ID: "root", Body: "held"}
 }
 
-// Entry is the log's element: an identifier, the entries it depends on, the
-// payload they order, and the position the log stamped it at.
+// Entry is the log's element: an identifier, the payload, the entries the
+// payload depends on, and the position the log stamped it at.
 //
 // Seq is the store's, not the caller's. causal's version= names the member
 // carrying the ordering stamp, and a stamp the caller chose would make the
@@ -37,8 +37,8 @@ func RootEntry() Entry {
 //dokimi:sample value=RootEntry()
 type Entry struct {
 	ID        string
-	DependsOn []string
 	Body      string
+	DependsOn []string
 	Seq       int64
 }
 

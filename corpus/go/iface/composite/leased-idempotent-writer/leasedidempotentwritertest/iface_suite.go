@@ -74,4 +74,22 @@ func RunLeasedWriterSuiteFromHandle[T leasedidempotentwriter.LeasedWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:259f2976653c24454ccd0b1f6c4efbc982ec62857fc284db276a56caa0c49c15
+// FuzzLeasedWriterSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
+	f *testing.F,
+	callable conform.Callable[leasedidempotentwriter.LeasedWriter],
+	newSubject func(h *LeasedWriterHandle) T,
+	opts ...LeasedWriterOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		LeasedWriterSuite(),
+		callable,
+		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:432412e3c61e157dd33ef55f678b2eab06cd8755e22e1fac9152595f1005d2eb

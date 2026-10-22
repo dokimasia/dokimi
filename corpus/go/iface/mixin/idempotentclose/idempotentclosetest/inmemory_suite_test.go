@@ -18,4 +18,28 @@ func TestInMemoryConformsToCloser(t *testing.T) {
 	idempotentclosetest.RunCloserSuite(t, idempotentclosetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:7e02340f136a7dfb8ec6267f4c172b3e2b1ccd1305386e3a46cd0c4c29845fba
+// FuzzInMemoryClose fuzzes the property checks of Closer.Close on
+// InMemory.
+func FuzzInMemoryClose(f *testing.F) {
+	idempotentclosetest.FuzzCloserSuite(
+		f,
+		idempotentclosetest.CloserChecks.Close.Callable,
+		func(*idempotentclosetest.CloserHandle) *idempotentclosetest.InMemory {
+			return idempotentclosetest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryStats fuzzes the property checks of Closer.Stats on
+// InMemory.
+func FuzzInMemoryStats(f *testing.F) {
+	idempotentclosetest.FuzzCloserSuite(
+		f,
+		idempotentclosetest.CloserChecks.Stats.Callable,
+		func(*idempotentclosetest.CloserHandle) *idempotentclosetest.InMemory {
+			return idempotentclosetest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:a47d1e09b093c7ea121078859b765e81fd202e4122f06c9bd3ab746bbfd2e305

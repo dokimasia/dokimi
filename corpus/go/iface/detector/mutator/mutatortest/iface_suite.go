@@ -58,4 +58,17 @@ func RunMutatorSuiteFromHandle[T mutator.Mutator](
 	conform.Run(t, MutatorSuite(), func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:865df80786033d082121accac8d1a7872293efa323a6dad57f70884c1ed0cd49
+// FuzzMutatorSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzMutatorSuite[T mutator.Mutator](
+	f *testing.F,
+	callable conform.Callable[mutator.Mutator],
+	newSubject func(h *MutatorHandle) T,
+	opts ...MutatorOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, MutatorSuite(), callable, func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:c25ba53d92e5b2e295535708a09a292cd0cc93e4dd8d92cb903441976da0fb49

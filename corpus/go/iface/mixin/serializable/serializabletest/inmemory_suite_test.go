@@ -18,4 +18,33 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	serializabletest.RunMixedSuite(t, serializabletest.NewInMemory)
 }
 
-// dokimi:provenance sha256:fa877e25b09bfa0a555f23a5c0407c1ff115c8bb9921467e9c2d5b27dcf533e9
+// FuzzInMemoryRecord fuzzes the property checks of Mixed.Record on
+// InMemory.
+func FuzzInMemoryRecord(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.Record.Callable,
+		func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryHistory fuzzes the property checks of Mixed.History on
+// InMemory.
+func FuzzInMemoryHistory(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.History.Callable,
+		func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.Get.Callable,
+		func(*serializabletest.MixedHandle) *serializabletest.InMemory { return serializabletest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:d3158f30e53e0c6558aa5e13e8f9bbf0202f9dabbd8fabef45cfa48ebeb55ffc

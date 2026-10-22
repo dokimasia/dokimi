@@ -87,4 +87,22 @@ func RunBatchedSuiteFromHandle[T batchedmixins.Batched](
 	conform.Run(t, BatchedSuite(), func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:d114f58743c100804636a0f37243fe10fd76dd9218d1828484729e796689baae
+// FuzzBatchedSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzBatchedSuite[T batchedmixins.Batched](
+	f *testing.F,
+	callable conform.Callable[batchedmixins.Batched],
+	newSubject func(h *BatchedHandle) T,
+	opts ...BatchedOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		BatchedSuite(),
+		callable,
+		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:d09b502c1e5ca6eb068a0979dd4bc25d7ce0d6431e82b17d4b7524b413f94fe9

@@ -18,4 +18,14 @@ func TestInMemoryConformsToPredicate(t *testing.T) {
 	predicatetest.RunPredicateSuite(t, predicatetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:2f09b13780aebc9bb032d65ad627d88470d4ad8bbbec016761fce5f226b3b1f5
+// FuzzInMemoryIsEmpty fuzzes the property checks of Predicate.IsEmpty on
+// InMemory.
+func FuzzInMemoryIsEmpty(f *testing.F) {
+	predicatetest.FuzzPredicateSuite(
+		f,
+		predicatetest.PredicateChecks.IsEmpty.Callable,
+		func(*predicatetest.PredicateHandle) *predicatetest.InMemory { return predicatetest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:b34aae85408075c94e62ba52588bad17acb04ab8dc3ff01fcbf91213fd14b7e8

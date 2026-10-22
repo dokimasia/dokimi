@@ -18,4 +18,14 @@ func TestInMemoryConformsToPure(t *testing.T) {
 	puretest.RunPureSuite(t, puretest.NewInMemory)
 }
 
-// dokimi:provenance sha256:d8159a01423aa90456b3b6e59a27b2a0eba0fe9fc406265178be96586e3ed336
+// FuzzInMemoryDescribe fuzzes the property checks of Pure.Describe on
+// InMemory.
+func FuzzInMemoryDescribe(f *testing.F) {
+	puretest.FuzzPureSuite(
+		f,
+		puretest.PureChecks.Describe.Callable,
+		func(*puretest.PureHandle) *puretest.InMemory { return puretest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:a9473fb85c032f543dde2a8f9f46f87041142219a67f4be6fa9cd498a190829d

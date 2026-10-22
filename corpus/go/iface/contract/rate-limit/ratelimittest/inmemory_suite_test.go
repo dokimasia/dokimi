@@ -18,4 +18,13 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	ratelimittest.RunContractSuite(t, ratelimittest.NewInMemory)
 }
 
-// dokimi:provenance sha256:357e9bd9475d74b04999ce9a214a52e43d197bd3d0c1fbfe06c665e99f2ef2e6
+// FuzzInMemoryRun fuzzes the property checks of Contract.Run on InMemory.
+func FuzzInMemoryRun(f *testing.F) {
+	ratelimittest.FuzzContractSuite(
+		f,
+		ratelimittest.ContractChecks.Run.Callable,
+		func(*ratelimittest.ContractHandle) *ratelimittest.InMemory { return ratelimittest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:9b54d297d6d2becda2445eec2c015014dd587c3bcc09d17d5980640649c69530

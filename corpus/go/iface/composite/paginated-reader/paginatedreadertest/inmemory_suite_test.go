@@ -18,4 +18,28 @@ func TestInMemoryConformsToPaginatedReader(t *testing.T) {
 	paginatedreadertest.RunPaginatedReaderSuite(t, paginatedreadertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:f2f155805fa00690d9a261eb98df99f0b38436df4e3295dc6f645e7d99c148c9
+// FuzzInMemoryFetch fuzzes the property checks of PaginatedReader.Fetch on
+// InMemory.
+func FuzzInMemoryFetch(f *testing.F) {
+	paginatedreadertest.FuzzPaginatedReaderSuite(
+		f,
+		paginatedreadertest.PaginatedReaderChecks.Fetch.Callable,
+		func(*paginatedreadertest.PaginatedReaderHandle) *paginatedreadertest.InMemory {
+			return paginatedreadertest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryAdd fuzzes the property checks of PaginatedReader.Add on
+// InMemory.
+func FuzzInMemoryAdd(f *testing.F) {
+	paginatedreadertest.FuzzPaginatedReaderSuite(
+		f,
+		paginatedreadertest.PaginatedReaderChecks.Add.Callable,
+		func(*paginatedreadertest.PaginatedReaderHandle) *paginatedreadertest.InMemory {
+			return paginatedreadertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:5dc4751a1869ea2d3f67d8eb841c2f282a7e84edeed06b0efa925233789c05a0

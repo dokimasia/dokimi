@@ -18,4 +18,13 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	nilsafetest.RunMixedSuite(t, nilsafetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:8c6d61f76e0608ef4915c48e72e30ac57e56bb1d7b2589d2a379bf284872a8b0
+// FuzzInMemoryStore fuzzes the property checks of Mixed.Store on InMemory.
+func FuzzInMemoryStore(f *testing.F) {
+	nilsafetest.FuzzMixedSuite(
+		f,
+		nilsafetest.MixedChecks.Store.Callable,
+		func(*nilsafetest.MixedHandle) *nilsafetest.InMemory { return nilsafetest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:adbcec6404d72ade5993daf2d04664d3eaf299f83da26f2c1cfa192a0017613b

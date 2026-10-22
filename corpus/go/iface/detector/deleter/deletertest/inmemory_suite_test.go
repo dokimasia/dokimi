@@ -18,4 +18,14 @@ func TestInMemoryConformsToDeleter(t *testing.T) {
 	deletertest.RunDeleterSuite(t, deletertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:bea32fea45135c35466659313b41f768331ee12a1bb180724785091f3e49c855
+// FuzzInMemoryDelete fuzzes the property checks of Deleter.Delete on
+// InMemory.
+func FuzzInMemoryDelete(f *testing.F) {
+	deletertest.FuzzDeleterSuite(
+		f,
+		deletertest.DeleterChecks.Delete.Callable,
+		func(*deletertest.DeleterHandle) *deletertest.InMemory { return deletertest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:b1fbd2aed21aebad15e4e25b8d0b0df6cbf36a54dd60df411575aaad544b9f17

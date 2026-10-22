@@ -18,4 +18,22 @@ func TestInMemoryConformsToStore(t *testing.T) {
 	roledtypestest.RunStoreSuite(t, roledtypestest.NewInMemory)
 }
 
-// dokimi:provenance sha256:724a7df402ecd6cc5fb1c3ac3651430ad58c5d48a3caa2df074d752b8aecf18c
+// FuzzInMemoryPut fuzzes the property checks of Store.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	roledtypestest.FuzzStoreSuite(
+		f,
+		roledtypestest.StoreChecks.Put.Callable,
+		func(*roledtypestest.StoreHandle) *roledtypestest.InMemory { return roledtypestest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryGet fuzzes the property checks of Store.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	roledtypestest.FuzzStoreSuite(
+		f,
+		roledtypestest.StoreChecks.Get.Callable,
+		func(*roledtypestest.StoreHandle) *roledtypestest.InMemory { return roledtypestest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:2ba046662afc733cc6dcaa465a60b0ad19472ea10bf97bcea86bca66bc83f779

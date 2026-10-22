@@ -66,4 +66,22 @@ func RunAnsweringWriterSuiteFromHandle[T answeringwriter.AnsweringWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:9c241abf27aeda8f555c74914dbbe7176b69b765cbe765be38d37e03dfa290a5
+// FuzzAnsweringWriterSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
+	f *testing.F,
+	callable conform.Callable[answeringwriter.AnsweringWriter],
+	newSubject func(h *AnsweringWriterHandle) T,
+	opts ...AnsweringWriterOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		AnsweringWriterSuite(),
+		callable,
+		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:7214368d7370e7ab0cc0a3ae77395e88aacff6fe89aeed97ae141ea73518a320

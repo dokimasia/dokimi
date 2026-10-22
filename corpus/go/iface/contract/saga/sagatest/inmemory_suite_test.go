@@ -18,4 +18,54 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	sagatest.RunContractSuite(t, sagatest.NewInMemory)
 }
 
-// dokimi:provenance sha256:50ab71425c6b2d6d1368c21bb1b337c498224efc210ac398f9680af2685438ec
+// FuzzInMemoryStep fuzzes the property checks of Contract.Step on
+// InMemory.
+func FuzzInMemoryStep(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.Step.Callable,
+		func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryCompensate fuzzes the property checks of Contract.Compensate
+// on InMemory.
+func FuzzInMemoryCompensate(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.Compensate.Callable,
+		func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryShip fuzzes the property checks of Contract.Ship on
+// InMemory.
+func FuzzInMemoryShip(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.Ship.Callable,
+		func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryUndoShip fuzzes the property checks of Contract.UndoShip on
+// InMemory.
+func FuzzInMemoryUndoShip(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.UndoShip.Callable,
+		func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryState fuzzes the property checks of Contract.State on
+// InMemory.
+func FuzzInMemoryState(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.State.Callable,
+		func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:5e6f2fe8b0b4d3264a66b83ee51a996c139b4e2e3aa88c1f00bead88cbe9a8f2

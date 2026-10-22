@@ -74,4 +74,22 @@ func RunComposedSuiteFromHandle[T embedded.Composed](
 	conform.Run(t, ComposedSuite(), func(h *ComposedHandle) embedded.Composed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:4c94901d439114161f62b64bd8851f38599fe746ca40892e3b085766fa06f41a
+// FuzzComposedSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzComposedSuite[T embedded.Composed](
+	f *testing.F,
+	callable conform.Callable[embedded.Composed],
+	newSubject func(h *ComposedHandle) T,
+	opts ...ComposedOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		ComposedSuite(),
+		callable,
+		func(h *ComposedHandle) embedded.Composed { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:73e7e7a2108b2480d25ef8785e212e2d1104539276997cb47481ef2f2cfde315

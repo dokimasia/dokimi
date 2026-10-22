@@ -18,4 +18,16 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	integrationonlytest.RunMixedSuite(t, integrationonlytest.NewInMemory)
 }
 
-// dokimi:provenance sha256:b1cbf0ab1a1a0c1dc9953956f905f1d4676b41660751fbb9853010878ed7176f
+// FuzzInMemoryConnect fuzzes the property checks of Mixed.Connect on
+// InMemory.
+func FuzzInMemoryConnect(f *testing.F) {
+	integrationonlytest.FuzzMixedSuite(
+		f,
+		integrationonlytest.MixedChecks.Connect.Callable,
+		func(*integrationonlytest.MixedHandle) *integrationonlytest.InMemory {
+			return integrationonlytest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:843ab423b1ab44748c35ffbdf603fa65e1cf8ded4b3bf6bb7c96ea520cc92858

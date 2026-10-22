@@ -54,4 +54,17 @@ func RunLookupSuiteFromHandle[T lookup.Lookup](t *testing.T, newSubject func(h *
 	conform.Run(t, LookupSuite(), func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:a72fc1208854f2f322565e2fbc9e1d35dd458b660bd12b1d4bc34b19960003ae
+// FuzzLookupSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzLookupSuite[T lookup.Lookup](
+	f *testing.F,
+	callable conform.Callable[lookup.Lookup],
+	newSubject func(h *LookupHandle) T,
+	opts ...LookupOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, LookupSuite(), callable, func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:b15d7ae6e11ec188df95d73608a0e8838d338569e5e046a24e419691c4e301e4

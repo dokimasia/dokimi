@@ -53,4 +53,17 @@ func RunWriterSuiteFromHandle[T writer.Writer](t *testing.T, newSubject func(h *
 	conform.Run(t, WriterSuite(), func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:3929eb351528c1d0a638cd38df55f38cdb721bd9e08c8e7cdf5eae910b2819ab
+// FuzzWriterSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzWriterSuite[T writer.Writer](
+	f *testing.F,
+	callable conform.Callable[writer.Writer],
+	newSubject func(h *WriterHandle) T,
+	opts ...WriterOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, WriterSuite(), callable, func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:c8a3444eaa4f27f863df6c4a399663f5db3670515dfeeaee04842be6ded1d6b3

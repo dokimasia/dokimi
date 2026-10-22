@@ -18,4 +18,38 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	deleteremovestest.RunMixedSuite(t, deleteremovestest.NewInMemory)
 }
 
-// dokimi:provenance sha256:b17513a4f90be18a61f79698bf2914d2166e44905182d7de520b8f1bab846c84
+// FuzzInMemoryDelete fuzzes the property checks of Mixed.Delete on
+// InMemory.
+func FuzzInMemoryDelete(f *testing.F) {
+	deleteremovestest.FuzzMixedSuite(
+		f,
+		deleteremovestest.MixedChecks.Delete.Callable,
+		func(*deleteremovestest.MixedHandle) *deleteremovestest.InMemory {
+			return deleteremovestest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	deleteremovestest.FuzzMixedSuite(
+		f,
+		deleteremovestest.MixedChecks.Put.Callable,
+		func(*deleteremovestest.MixedHandle) *deleteremovestest.InMemory {
+			return deleteremovestest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryRead fuzzes the property checks of Mixed.Read on InMemory.
+func FuzzInMemoryRead(f *testing.F) {
+	deleteremovestest.FuzzMixedSuite(
+		f,
+		deleteremovestest.MixedChecks.Read.Callable,
+		func(*deleteremovestest.MixedHandle) *deleteremovestest.InMemory {
+			return deleteremovestest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:1fc6e93cbf7eb1a862aa307d007d08d0c45bf3773b70bb0d4a19f9e8c1f9a767

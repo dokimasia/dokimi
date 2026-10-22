@@ -26,4 +26,30 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	)
 }
 
-// dokimi:provenance sha256:8386f30c48eff0e7f351d98d4283169c012535f5ada6de5707769f3a1249432e
+// FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	ttltest.FuzzMixedSuite(
+		f,
+		ttltest.MixedChecks.Put.Callable,
+		func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			"the check does not advance the clock that NewInMemory reads",
+		),
+	)
+}
+
+// FuzzInMemoryRead fuzzes the property checks of Mixed.Read on InMemory.
+func FuzzInMemoryRead(f *testing.F) {
+	ttltest.FuzzMixedSuite(
+		f,
+		ttltest.MixedChecks.Read.Callable,
+		func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			"the check does not advance the clock that NewInMemory reads",
+		),
+	)
+}
+
+// dokimi:provenance sha256:7c5b8a3cd0f477349ca563fe3e5e4b3202e114e3461b396b0bdb1e3668662a8c

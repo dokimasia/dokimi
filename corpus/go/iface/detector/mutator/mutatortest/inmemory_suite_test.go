@@ -18,4 +18,14 @@ func TestInMemoryConformsToMutator(t *testing.T) {
 	mutatortest.RunMutatorSuite(t, mutatortest.NewInMemory)
 }
 
-// dokimi:provenance sha256:aca4e181c05d01743fa7e637ba410bee532668c5eecc7e6b9a2155079b1db97b
+// FuzzInMemoryTouch fuzzes the property checks of Mutator.Touch on
+// InMemory.
+func FuzzInMemoryTouch(f *testing.F) {
+	mutatortest.FuzzMutatorSuite(
+		f,
+		mutatortest.MutatorChecks.Touch.Callable,
+		func(*mutatortest.MutatorHandle) *mutatortest.InMemory { return mutatortest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:b88d90d5c5db79786bd9b50f4cc55ae13bc0093418d05646aa959772d56b6b05

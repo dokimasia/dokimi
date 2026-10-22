@@ -18,4 +18,33 @@ func TestInMemoryConformsToComposed(t *testing.T) {
 	embeddedtest.RunComposedSuite(t, embeddedtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:768347e273729012179cfa91e8f4c3e734a7322836276f0fcac7498f372482ef
+// FuzzInMemoryGet fuzzes the property checks of Composed.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	embeddedtest.FuzzComposedSuite(
+		f,
+		embeddedtest.ComposedChecks.Get.Callable,
+		func(*embeddedtest.ComposedHandle) *embeddedtest.InMemory { return embeddedtest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryPing fuzzes the property checks of Composed.Ping on
+// InMemory.
+func FuzzInMemoryPing(f *testing.F) {
+	embeddedtest.FuzzComposedSuite(
+		f,
+		embeddedtest.ComposedChecks.Ping.Callable,
+		func(*embeddedtest.ComposedHandle) *embeddedtest.InMemory { return embeddedtest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryClose fuzzes the property checks of Composed.Close on
+// InMemory.
+func FuzzInMemoryClose(f *testing.F) {
+	embeddedtest.FuzzComposedSuite(
+		f,
+		embeddedtest.ComposedChecks.Close.Callable,
+		func(*embeddedtest.ComposedHandle) *embeddedtest.InMemory { return embeddedtest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:428cbfdabe8ca7ceaf6f84aeab6987f89684c43e2f1036eab5d31f4c3f9cdc6e

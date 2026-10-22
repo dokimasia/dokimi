@@ -66,4 +66,22 @@ func RunMultiAggregatorSuiteFromHandle[T multiaggregator.MultiAggregator](
 		opts...)
 }
 
-// dokimi:provenance sha256:6f7b66350ccb2c104f1d028d78078e4181c6f6b85231dc7ff26326dea18d2ecf
+// FuzzMultiAggregatorSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzMultiAggregatorSuite[T multiaggregator.MultiAggregator](
+	f *testing.F,
+	callable conform.Callable[multiaggregator.MultiAggregator],
+	newSubject func(h *MultiAggregatorHandle) T,
+	opts ...MultiAggregatorOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		MultiAggregatorSuite(),
+		callable,
+		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:654295c00fc309452755cee32740ca87138485694a6b751a0b37cf4fbf9ff590

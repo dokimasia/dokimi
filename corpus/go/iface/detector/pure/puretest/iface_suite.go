@@ -54,4 +54,17 @@ func RunPureSuiteFromHandle[T pure.Pure](t *testing.T, newSubject func(h *PureHa
 	conform.Run(t, PureSuite(), func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:b73b5ceb1f61df80a6dd7bc8e31c10a06463099893b62ea4e3f232f0d0a722c7
+// FuzzPureSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzPureSuite[T pure.Pure](
+	f *testing.F,
+	callable conform.Callable[pure.Pure],
+	newSubject func(h *PureHandle) T,
+	opts ...PureOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:b1c8566f1dc1302e5d8bf198963bd52af6cfdd55e3eb4157304954cfc7c3acd6

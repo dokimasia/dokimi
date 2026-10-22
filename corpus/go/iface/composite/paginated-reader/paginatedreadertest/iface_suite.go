@@ -74,4 +74,22 @@ func RunPaginatedReaderSuiteFromHandle[T paginatedreader.PaginatedReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:cddf51b7869facbd59ca9adde80fbe1d2bebe4a505cc9597e49c39bed155354d
+// FuzzPaginatedReaderSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzPaginatedReaderSuite[T paginatedreader.PaginatedReader](
+	f *testing.F,
+	callable conform.Callable[paginatedreader.PaginatedReader],
+	newSubject func(h *PaginatedReaderHandle) T,
+	opts ...PaginatedReaderOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		PaginatedReaderSuite(),
+		callable,
+		func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:7922ca51339def0f051b96c50debdd275438976a0da514976b1356b51d0a2279

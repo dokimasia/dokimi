@@ -66,4 +66,22 @@ func RunCompositeWriterSuiteFromHandle[T compositewriter.CompositeWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:c8807c230202ce6f1a224c145ed1da3e9ac5e0e7f28cf601001d5aab9ea09b08
+// FuzzCompositeWriterSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzCompositeWriterSuite[T compositewriter.CompositeWriter](
+	f *testing.F,
+	callable conform.Callable[compositewriter.CompositeWriter],
+	newSubject func(h *CompositeWriterHandle) T,
+	opts ...CompositeWriterOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		CompositeWriterSuite(),
+		callable,
+		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:554ce4ac69fa85d02f7ab4d344e8b103f64e8f0abcb4d557d2f4737449ee452d

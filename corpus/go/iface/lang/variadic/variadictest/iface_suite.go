@@ -66,4 +66,17 @@ func RunFinderSuiteFromHandle[T variadic.Finder](
 	conform.Run(t, FinderSuite(), func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:e68549785eeb14ffb6fa2891ab858cb59f18b755b98661f6e734a635e9e4c268
+// FuzzFinderSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzFinderSuite[T variadic.Finder](
+	f *testing.F,
+	callable conform.Callable[variadic.Finder],
+	newSubject func(h *FinderHandle) T,
+	opts ...FinderOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, FinderSuite(), callable, func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:d44e681162ed761dab50e939936125ac63c9bc344cabf400aaf0cf6eac1c46da

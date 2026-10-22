@@ -66,4 +66,22 @@ func RunStreamSuiteFromHandle[T embeddedforeign.Stream](
 	conform.Run(t, StreamSuite(), func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:509a9c6949fb06621ddea87c6e8e0655932f3f252256fe44aedcc6775690272a
+// FuzzStreamSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzStreamSuite[T embeddedforeign.Stream](
+	f *testing.F,
+	callable conform.Callable[embeddedforeign.Stream],
+	newSubject func(h *StreamHandle) T,
+	opts ...StreamOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		StreamSuite(),
+		callable,
+		func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:744eb363629d043b8a0665134c09c91a8170b7ac405a7988830ec9dc0c355299

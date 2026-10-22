@@ -18,4 +18,13 @@ func TestInMemoryConformsToReader(t *testing.T) {
 	readertest.RunReaderSuite(t, readertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:a510c2852c639f9d36149c893c949ce3db3f6922c0bc4930109185342c8d8ef3
+// FuzzInMemoryGet fuzzes the property checks of Reader.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	readertest.FuzzReaderSuite(
+		f,
+		readertest.ReaderChecks.Get.Callable,
+		func(*readertest.ReaderHandle) *readertest.InMemory { return readertest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:c1c44153358aa6f623d55431d65b91abb7451e92a9b98f5dca6aea6defd6503e

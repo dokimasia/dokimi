@@ -78,4 +78,22 @@ func RunTxWithRetrySuiteFromHandle[T txwithretry.TxWithRetry](
 		opts...)
 }
 
-// dokimi:provenance sha256:f790f940509880c2ac9a024f49ef3bd2517d6338f0c956d68d32f5f686705183
+// FuzzTxWithRetrySuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzTxWithRetrySuite[T txwithretry.TxWithRetry](
+	f *testing.F,
+	callable conform.Callable[txwithretry.TxWithRetry],
+	newSubject func(h *TxWithRetryHandle) T,
+	opts ...TxWithRetryOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		TxWithRetrySuite(),
+		callable,
+		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:6e7c4257c9ec7819d741bdac75288364f869434401da1e2902fc223d3c272dcb

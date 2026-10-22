@@ -18,4 +18,34 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	chaintest.RunContractSuite(t, chaintest.NewInMemory)
 }
 
-// dokimi:provenance sha256:bb30b56648de181177b28fdec2bf1c8ef2a42e02e8f5bce9cfac479318c6730b
+// FuzzInMemoryAppend fuzzes the property checks of Contract.Append on
+// InMemory.
+func FuzzInMemoryAppend(f *testing.F) {
+	chaintest.FuzzContractSuite(
+		f,
+		chaintest.ContractChecks.Append.Callable,
+		func(*chaintest.ContractHandle) *chaintest.InMemory { return chaintest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryReplay fuzzes the property checks of Contract.Replay on
+// InMemory.
+func FuzzInMemoryReplay(f *testing.F) {
+	chaintest.FuzzContractSuite(
+		f,
+		chaintest.ContractChecks.Replay.Callable,
+		func(*chaintest.ContractHandle) *chaintest.InMemory { return chaintest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryVerify fuzzes the property checks of Contract.Verify on
+// InMemory.
+func FuzzInMemoryVerify(f *testing.F) {
+	chaintest.FuzzContractSuite(
+		f,
+		chaintest.ContractChecks.Verify.Callable,
+		func(*chaintest.ContractHandle) *chaintest.InMemory { return chaintest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:53ef8577fc5036d3d62389f43074499b633cb24b588a085c7826eadc12d8718c

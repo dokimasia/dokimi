@@ -58,4 +58,22 @@ func RunPredicateSuiteFromHandle[T predicate.Predicate](
 	conform.Run(t, PredicateSuite(), func(h *PredicateHandle) predicate.Predicate { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:605efdd894365fa303b3de4cfe4880b8cd316fddf02b63d463d1308ad1aba7e9
+// FuzzPredicateSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzPredicateSuite[T predicate.Predicate](
+	f *testing.F,
+	callable conform.Callable[predicate.Predicate],
+	newSubject func(h *PredicateHandle) T,
+	opts ...PredicateOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		PredicateSuite(),
+		callable,
+		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:aeeeb078b4088cbb8bb2f5662bc1f11897f009d49d57c40fdbcd577f3c941a5e

@@ -18,4 +18,22 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	deprecatedtest.RunMixedSuite(t, deprecatedtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:2b6733c2b9a80f4ec72849f6db57cd67b36d3c594eee0011856d25ebf00f5d44
+// FuzzInMemoryOld fuzzes the property checks of Mixed.Old on InMemory.
+func FuzzInMemoryOld(f *testing.F) {
+	deprecatedtest.FuzzMixedSuite(
+		f,
+		deprecatedtest.MixedChecks.Old.Callable,
+		func(*deprecatedtest.MixedHandle) *deprecatedtest.InMemory { return deprecatedtest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryNew fuzzes the property checks of Mixed.New on InMemory.
+func FuzzInMemoryNew(f *testing.F) {
+	deprecatedtest.FuzzMixedSuite(
+		f,
+		deprecatedtest.MixedChecks.New.Callable,
+		func(*deprecatedtest.MixedHandle) *deprecatedtest.InMemory { return deprecatedtest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:ce2831bb167daf40b7b59924fb57b05189860a51b58287dc9ad653f5dd367043

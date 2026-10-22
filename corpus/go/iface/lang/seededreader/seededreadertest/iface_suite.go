@@ -66,4 +66,22 @@ func RunCatalogSuiteFromHandle[T seededreader.Catalog](
 	conform.Run(t, CatalogSuite(), func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:1d78a7df07422cd06fc4dd974799c450bbaa736d62e99629d5bd993dd3447bc8
+// FuzzCatalogSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzCatalogSuite[T seededreader.Catalog](
+	f *testing.F,
+	callable conform.Callable[seededreader.Catalog],
+	newSubject func(h *CatalogHandle) T,
+	opts ...CatalogOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		CatalogSuite(),
+		callable,
+		func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:2cb3fc4401e82ae3e6adddd33b4442015274a52d91b60f006576b5e553c30478

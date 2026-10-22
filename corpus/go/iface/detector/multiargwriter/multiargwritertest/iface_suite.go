@@ -74,4 +74,22 @@ func RunMultiArgWriterSuiteFromHandle[T multiargwriter.MultiArgWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:1586be844d417cb8c74cfd75e02240d175b1ac8eb9a02615e29cdf414ece1df2
+// FuzzMultiArgWriterSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
+	f *testing.F,
+	callable conform.Callable[multiargwriter.MultiArgWriter],
+	newSubject func(h *MultiArgWriterHandle) T,
+	opts ...MultiArgWriterOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		MultiArgWriterSuite(),
+		callable,
+		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:9139ac829e90791c28d1202729b80d4ce04de5c50e78e0d434940206d4fa225a

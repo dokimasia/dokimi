@@ -18,4 +18,14 @@ func TestInMemoryConformsToLabeller(t *testing.T) {
 	sampledtest.RunLabellerSuite(t, sampledtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:4fb3f377e83eab4b47c971f30743b5d5b4f6e68aedae6c8d23f17c31c88a0810
+// FuzzInMemoryApply fuzzes the property checks of Labeller.Apply on
+// InMemory.
+func FuzzInMemoryApply(f *testing.F) {
+	sampledtest.FuzzLabellerSuite(
+		f,
+		sampledtest.LabellerChecks.Apply.Callable,
+		func(*sampledtest.LabellerHandle) *sampledtest.InMemory { return sampledtest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:8a049d3f30b7aedf5ebd484b74fd1d98db65e1f7d1e4d943ca0cb91bb99bf3f8

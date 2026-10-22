@@ -18,4 +18,40 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	leaderelectiontest.RunContractSuite(t, leaderelectiontest.NewInMemory)
 }
 
-// dokimi:provenance sha256:a8a3d87cb68f3891fcee2ee4cec7d22f6d9d6e071e50edf15e1428b2b4ce05ee
+// FuzzInMemoryCampaign fuzzes the property checks of Contract.Campaign on
+// InMemory.
+func FuzzInMemoryCampaign(f *testing.F) {
+	leaderelectiontest.FuzzContractSuite(
+		f,
+		leaderelectiontest.ContractChecks.Campaign.Callable,
+		func(*leaderelectiontest.ContractHandle) *leaderelectiontest.InMemory {
+			return leaderelectiontest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryResign fuzzes the property checks of Contract.Resign on
+// InMemory.
+func FuzzInMemoryResign(f *testing.F) {
+	leaderelectiontest.FuzzContractSuite(
+		f,
+		leaderelectiontest.ContractChecks.Resign.Callable,
+		func(*leaderelectiontest.ContractHandle) *leaderelectiontest.InMemory {
+			return leaderelectiontest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryIsLeader fuzzes the property checks of Contract.IsLeader on
+// InMemory.
+func FuzzInMemoryIsLeader(f *testing.F) {
+	leaderelectiontest.FuzzContractSuite(
+		f,
+		leaderelectiontest.ContractChecks.IsLeader.Callable,
+		func(*leaderelectiontest.ContractHandle) *leaderelectiontest.InMemory {
+			return leaderelectiontest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:4cc2d394eb44e12d44713320d63c243fad56feea17430c924f04bd41671fa422

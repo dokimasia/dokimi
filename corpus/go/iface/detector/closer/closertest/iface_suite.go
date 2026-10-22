@@ -54,4 +54,17 @@ func RunCloserSuiteFromHandle[T closer.Closer](t *testing.T, newSubject func(h *
 	conform.Run(t, CloserSuite(), func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:adb6a25f211e4dafc8b3ffcc74f56efbc040466b4f4689d65b5d6e86a7e34350
+// FuzzCloserSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzCloserSuite[T closer.Closer](
+	f *testing.F,
+	callable conform.Callable[closer.Closer],
+	newSubject func(h *CloserHandle) T,
+	opts ...CloserOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, CloserSuite(), callable, func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:9247fac56bae968598c49d37f5d35957e0b9bb082148363f6b66b18620a98070

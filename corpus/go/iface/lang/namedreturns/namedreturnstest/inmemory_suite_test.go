@@ -18,4 +18,40 @@ func TestInMemoryConformsToService(t *testing.T) {
 	namedreturnstest.RunServiceSuite(t, namedreturnstest.NewInMemory)
 }
 
-// dokimi:provenance sha256:2cdac10385c644e99b37a7ecfe69f3af32c21661271d950d856dd896bc6bdd36
+// FuzzInMemoryNamed fuzzes the property checks of Service.Named on
+// InMemory.
+func FuzzInMemoryNamed(f *testing.F) {
+	namedreturnstest.FuzzServiceSuite(
+		f,
+		namedreturnstest.ServiceChecks.Named.Callable,
+		func(*namedreturnstest.ServiceHandle) *namedreturnstest.InMemory {
+			return namedreturnstest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryUnnamed fuzzes the property checks of Service.Unnamed on
+// InMemory.
+func FuzzInMemoryUnnamed(f *testing.F) {
+	namedreturnstest.FuzzServiceSuite(
+		f,
+		namedreturnstest.ServiceChecks.Unnamed.Callable,
+		func(*namedreturnstest.ServiceHandle) *namedreturnstest.InMemory {
+			return namedreturnstest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryPartiallyNamed fuzzes the property checks of
+// Service.PartiallyNamed on InMemory.
+func FuzzInMemoryPartiallyNamed(f *testing.F) {
+	namedreturnstest.FuzzServiceSuite(
+		f,
+		namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
+		func(*namedreturnstest.ServiceHandle) *namedreturnstest.InMemory {
+			return namedreturnstest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:e7cd12374473be002da06939d612c6d70d75f215ed79bddcac6c04f5de7a6de7

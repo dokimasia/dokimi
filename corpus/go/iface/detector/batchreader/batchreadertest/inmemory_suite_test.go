@@ -18,4 +18,16 @@ func TestInMemoryConformsToBatchReader(t *testing.T) {
 	batchreadertest.RunBatchReaderSuite(t, batchreadertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:73df3a8477aada6a877f4e0fb7b4db969e810f9e190839e5d4408901a4708498
+// FuzzInMemoryGetAll fuzzes the property checks of BatchReader.GetAll on
+// InMemory.
+func FuzzInMemoryGetAll(f *testing.F) {
+	batchreadertest.FuzzBatchReaderSuite(
+		f,
+		batchreadertest.BatchReaderChecks.GetAll.Callable,
+		func(*batchreadertest.BatchReaderHandle) *batchreadertest.InMemory {
+			return batchreadertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:66b6e95de308a4910aedfd7ff64d81b4cc6973ee1bfea022ca89769545a07001

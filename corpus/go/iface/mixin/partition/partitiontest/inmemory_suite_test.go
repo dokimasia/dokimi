@@ -18,4 +18,22 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	partitiontest.RunMixedSuite(t, partitiontest.NewInMemory)
 }
 
-// dokimi:provenance sha256:432846a48539f446b561898cb50d777038323dd2faa0217b7e9a41575be87355
+// FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	partitiontest.FuzzMixedSuite(
+		f,
+		partitiontest.MixedChecks.Put.Callable,
+		func(*partitiontest.MixedHandle) *partitiontest.InMemory { return partitiontest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryRead fuzzes the property checks of Mixed.Read on InMemory.
+func FuzzInMemoryRead(f *testing.F) {
+	partitiontest.FuzzMixedSuite(
+		f,
+		partitiontest.MixedChecks.Read.Callable,
+		func(*partitiontest.MixedHandle) *partitiontest.InMemory { return partitiontest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:282b3d341f9b4e33fd6a89dba027ad6d90f243f9ef80ff3572b01dbf9699a356

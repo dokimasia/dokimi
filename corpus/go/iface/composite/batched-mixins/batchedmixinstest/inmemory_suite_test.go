@@ -18,4 +18,37 @@ func TestInMemoryConformsToBatched(t *testing.T) {
 	batchedmixinstest.RunBatchedSuite(t, batchedmixinstest.NewInMemory)
 }
 
-// dokimi:provenance sha256:19079ee762f1a8f7d55070ec399fa71fcfb3818ddbad603a280d337100b64944
+// FuzzInMemoryPut fuzzes the property checks of Batched.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	batchedmixinstest.FuzzBatchedSuite(
+		f,
+		batchedmixinstest.BatchedChecks.Put.Callable,
+		func(*batchedmixinstest.BatchedHandle) *batchedmixinstest.InMemory {
+			return batchedmixinstest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryRead fuzzes the property checks of Batched.Read on InMemory.
+func FuzzInMemoryRead(f *testing.F) {
+	batchedmixinstest.FuzzBatchedSuite(
+		f,
+		batchedmixinstest.BatchedChecks.Read.Callable,
+		func(*batchedmixinstest.BatchedHandle) *batchedmixinstest.InMemory {
+			return batchedmixinstest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryList fuzzes the property checks of Batched.List on InMemory.
+func FuzzInMemoryList(f *testing.F) {
+	batchedmixinstest.FuzzBatchedSuite(
+		f,
+		batchedmixinstest.BatchedChecks.List.Callable,
+		func(*batchedmixinstest.BatchedHandle) *batchedmixinstest.InMemory {
+			return batchedmixinstest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:44f79666427443c6934e5f1137deea43e9cb7a82a27e65151d9a16a54d52a8fe

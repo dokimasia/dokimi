@@ -62,4 +62,22 @@ func RunBatchReaderSuiteFromHandle[T batchreader.BatchReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:15c8c1242792e3ed049c370d90025b44482322b4c64359be082a52b684bbc31f
+// FuzzBatchReaderSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzBatchReaderSuite[T batchreader.BatchReader](
+	f *testing.F,
+	callable conform.Callable[batchreader.BatchReader],
+	newSubject func(h *BatchReaderHandle) T,
+	opts ...BatchReaderOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		BatchReaderSuite(),
+		callable,
+		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:11b8598e43fa95755089633df12ab7140c7a73834c3e096265cc175ea964f38f

@@ -66,4 +66,22 @@ func RunVoidLifecycleSuiteFromHandle[T voidlifecycle.VoidLifecycle](
 		opts...)
 }
 
-// dokimi:provenance sha256:c861c9802aa5a20f6b2ced65b5f4e3f34b6f33c859b7030f19267448a7e7a243
+// FuzzVoidLifecycleSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
+	f *testing.F,
+	callable conform.Callable[voidlifecycle.VoidLifecycle],
+	newSubject func(h *VoidLifecycleHandle) T,
+	opts ...VoidLifecycleOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		VoidLifecycleSuite(),
+		callable,
+		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:a9881a4ac8193385ac9dc49f768e11790e713018f337ba61c19d5142374dad34

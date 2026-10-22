@@ -74,4 +74,22 @@ func RunRankedSuiteFromHandle[T genericbound.Ranked[int, genericbound.Score]](
 		opts...)
 }
 
-// dokimi:provenance sha256:c5b9fdb12c78c7cb23d4bb84bdc48fc4f85edea9791afb23a04f62c81f0f6943
+// FuzzRankedSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzRankedSuite[T genericbound.Ranked[int, genericbound.Score]](
+	f *testing.F,
+	callable conform.Callable[genericbound.Ranked[int, genericbound.Score]],
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		RankedSuite(),
+		callable,
+		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:da12f63cbbc6bcf50ab40440f4e55b74edd9069f0894a4c020f9f36e5a0feafc

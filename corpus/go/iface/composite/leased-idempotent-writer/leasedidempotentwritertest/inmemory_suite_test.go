@@ -18,4 +18,28 @@ func TestInMemoryConformsToLeasedWriter(t *testing.T) {
 	leasedidempotentwritertest.RunLeasedWriterSuite(t, leasedidempotentwritertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:8d226dc61bc97a6f4c454d4dd18988d622b932a8b5a864c9b311d4e7890b2fd1
+// FuzzInMemoryAcquire fuzzes the property checks of LeasedWriter.Acquire
+// on InMemory.
+func FuzzInMemoryAcquire(f *testing.F) {
+	leasedidempotentwritertest.FuzzLeasedWriterSuite(
+		f,
+		leasedidempotentwritertest.LeasedWriterChecks.Acquire.Callable,
+		func(*leasedidempotentwritertest.LeasedWriterHandle) *leasedidempotentwritertest.InMemory {
+			return leasedidempotentwritertest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryRelease fuzzes the property checks of LeasedWriter.Release
+// on InMemory.
+func FuzzInMemoryRelease(f *testing.F) {
+	leasedidempotentwritertest.FuzzLeasedWriterSuite(
+		f,
+		leasedidempotentwritertest.LeasedWriterChecks.Release.Callable,
+		func(*leasedidempotentwritertest.LeasedWriterHandle) *leasedidempotentwritertest.InMemory {
+			return leasedidempotentwritertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:75ba69134f50838ee1dc412b70c6ca25f83c5b2205857361b249907ea654b30e

@@ -18,4 +18,22 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	permutationtest.RunMixedSuite(t, permutationtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:6a5ec0eaa4aa4962287265440588e3bbf066c6d86bca4fa111b786c3b160d69e
+// FuzzInMemoryAdd fuzzes the property checks of Mixed.Add on InMemory.
+func FuzzInMemoryAdd(f *testing.F) {
+	permutationtest.FuzzMixedSuite(
+		f,
+		permutationtest.MixedChecks.Add.Callable,
+		func(*permutationtest.MixedHandle) *permutationtest.InMemory { return permutationtest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryItems fuzzes the property checks of Mixed.Items on InMemory.
+func FuzzInMemoryItems(f *testing.F) {
+	permutationtest.FuzzMixedSuite(
+		f,
+		permutationtest.MixedChecks.Items.Callable,
+		func(*permutationtest.MixedHandle) *permutationtest.InMemory { return permutationtest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:bd4d124adf0e6ba684f728105ec14790712ef8a00779a9cf1c71803d236ee613

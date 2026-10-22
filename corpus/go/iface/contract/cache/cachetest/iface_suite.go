@@ -74,4 +74,17 @@ func RunContractSuiteFromHandle[T cache.Contract](
 	conform.Run(t, ContractSuite(), func(h *ContractHandle) cache.Contract { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:0dd9e9e96d03a621926a4974a0094c40507b54babc1f630d24d44d4dd515ff62
+// FuzzContractSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzContractSuite[T cache.Contract](
+	f *testing.F,
+	callable conform.Callable[cache.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) cache.Contract { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:c80521142b3a019798c0590e46330473ab85658eead2010d8c1720bf877ee7ee

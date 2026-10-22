@@ -18,4 +18,31 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	crdtmergetest.RunMixedSuite(t, crdtmergetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:ef7b7250d70a2dfb45625bb4466f911b6c85f0517c3e5b9335d9635eb49c12d0
+// FuzzInMemoryMerge fuzzes the property checks of Mixed.Merge on InMemory.
+func FuzzInMemoryMerge(f *testing.F) {
+	crdtmergetest.FuzzMixedSuite(
+		f,
+		crdtmergetest.MixedChecks.Merge.Callable,
+		func(*crdtmergetest.MixedHandle) *crdtmergetest.InMemory { return crdtmergetest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryAdd fuzzes the property checks of Mixed.Add on InMemory.
+func FuzzInMemoryAdd(f *testing.F) {
+	crdtmergetest.FuzzMixedSuite(
+		f,
+		crdtmergetest.MixedChecks.Add.Callable,
+		func(*crdtmergetest.MixedHandle) *crdtmergetest.InMemory { return crdtmergetest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryItems fuzzes the property checks of Mixed.Items on InMemory.
+func FuzzInMemoryItems(f *testing.F) {
+	crdtmergetest.FuzzMixedSuite(
+		f,
+		crdtmergetest.MixedChecks.Items.Callable,
+		func(*crdtmergetest.MixedHandle) *crdtmergetest.InMemory { return crdtmergetest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:85af2b891ac1fb82fcc498b511d3c3db4c588115e46a36e7b92c0a46d5101b28

@@ -18,4 +18,14 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	puretest.RunMixedSuite(t, puretest.NewInMemory)
 }
 
-// dokimi:provenance sha256:2942c4636d5860238af10366152e1387cd725d7c4e2cbcfe8af07c8ea8e7e7e7
+// FuzzInMemoryDerive fuzzes the property checks of Mixed.Derive on
+// InMemory.
+func FuzzInMemoryDerive(f *testing.F) {
+	puretest.FuzzMixedSuite(
+		f,
+		puretest.MixedChecks.Derive.Callable,
+		func(*puretest.MixedHandle) *puretest.InMemory { return puretest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:0aa49c8920904df52a8db977aa23ddbf9858bbc070e0cb8ea525ee27b248b320

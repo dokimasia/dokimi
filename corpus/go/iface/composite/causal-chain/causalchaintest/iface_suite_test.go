@@ -45,6 +45,10 @@ func TestLogSuite(t *testing.T) {
 				Defect: func(*causalchaintest.LogHandle) causalchain.Log { return &logSubject{} },
 			}),
 			conform.Excuse(
+				causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Replay.KeepsTheBody(),
 				"the test applies the check of its option alone",
 			),
@@ -70,6 +74,10 @@ func TestLogSuite(t *testing.T) {
 				Defect: func(*causalchaintest.LogHandle) causalchain.Log { return &logSubject{} },
 			}),
 			conform.Excuse(
+				causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Replay.KeepsTheBody(),
 				"the test applies the check of its option alone",
 			),
@@ -77,4 +85,4 @@ func TestLogSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:55d8d075ac190ffcd274fdfa5056d9ffa09f709c589ae54a64595e4b02feed22
+// dokimi:provenance sha256:898f2164c6df34c37a21f6c67bf002169c0f635eb793464a0b54c761e9644e01

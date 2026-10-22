@@ -18,4 +18,40 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	publisherredelivertest.RunContractSuite(t, publisherredelivertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:d45d1c8decc358875c2d1007684b855648bf33a1beaac4a470d2b54b25108e63
+// FuzzInMemoryPublish fuzzes the property checks of Contract.Publish on
+// InMemory.
+func FuzzInMemoryPublish(f *testing.F) {
+	publisherredelivertest.FuzzContractSuite(
+		f,
+		publisherredelivertest.ContractChecks.Publish.Callable,
+		func(*publisherredelivertest.ContractHandle) *publisherredelivertest.InMemory {
+			return publisherredelivertest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryRepublish fuzzes the property checks of Contract.Republish
+// on InMemory.
+func FuzzInMemoryRepublish(f *testing.F) {
+	publisherredelivertest.FuzzContractSuite(
+		f,
+		publisherredelivertest.ContractChecks.Republish.Callable,
+		func(*publisherredelivertest.ContractHandle) *publisherredelivertest.InMemory {
+			return publisherredelivertest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemorySubscribe fuzzes the property checks of Contract.Subscribe
+// on InMemory.
+func FuzzInMemorySubscribe(f *testing.F) {
+	publisherredelivertest.FuzzContractSuite(
+		f,
+		publisherredelivertest.ContractChecks.Subscribe.Callable,
+		func(*publisherredelivertest.ContractHandle) *publisherredelivertest.InMemory {
+			return publisherredelivertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:a18bc7cfda3a9a8fb9cd7b14ea6aaa7a6551d3ad6588c221f846b1d748408f62

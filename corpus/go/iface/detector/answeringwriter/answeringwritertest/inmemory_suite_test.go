@@ -18,4 +18,16 @@ func TestInMemoryConformsToAnsweringWriter(t *testing.T) {
 	answeringwritertest.RunAnsweringWriterSuite(t, answeringwritertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:b24e1fddbe96c6017f6d4a0b228f4097c9f05e7fae6859442dee413f763906ab
+// FuzzInMemoryPut fuzzes the property checks of AnsweringWriter.Put on
+// InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	answeringwritertest.FuzzAnsweringWriterSuite(
+		f,
+		answeringwritertest.AnsweringWriterChecks.Put.Callable,
+		func(*answeringwritertest.AnsweringWriterHandle) *answeringwritertest.InMemory {
+			return answeringwritertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:52bafad9da6369db32fc5ab6c0aae6bf2e2bd8a852c4184dd3c721296bec99df

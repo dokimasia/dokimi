@@ -18,4 +18,16 @@ func TestInMemoryConformsToVoidLifecycle(t *testing.T) {
 	voidlifecycletest.RunVoidLifecycleSuite(t, voidlifecycletest.NewInMemory)
 }
 
-// dokimi:provenance sha256:f2ac1b113ab3dcaf71aeae12e2869e63aa871a2191b58399688324645c2d1f83
+// FuzzInMemoryStop fuzzes the property checks of VoidLifecycle.Stop on
+// InMemory.
+func FuzzInMemoryStop(f *testing.F) {
+	voidlifecycletest.FuzzVoidLifecycleSuite(
+		f,
+		voidlifecycletest.VoidLifecycleChecks.Stop.Callable,
+		func(*voidlifecycletest.VoidLifecycleHandle) *voidlifecycletest.InMemory {
+			return voidlifecycletest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:0ba99ac283d8e182bc167ef928e9a883035ebf52872114412f8b497d754bdd71

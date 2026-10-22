@@ -18,4 +18,16 @@ func TestInMemoryConformsToMultiReader(t *testing.T) {
 	multireadertest.RunMultiReaderSuite(t, multireadertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:9d9c5308b01e56a65520679b24d12a206f98bda779450b03300edc65d7ebb141
+// FuzzInMemoryGetWithMeta fuzzes the property checks of
+// MultiReader.GetWithMeta on InMemory.
+func FuzzInMemoryGetWithMeta(f *testing.F) {
+	multireadertest.FuzzMultiReaderSuite(
+		f,
+		multireadertest.MultiReaderChecks.GetWithMeta.Callable,
+		func(*multireadertest.MultiReaderHandle) *multireadertest.InMemory {
+			return multireadertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:963517c366aa08b94d464da47bd18d90a24731eabed55777520fd876f09f14a7

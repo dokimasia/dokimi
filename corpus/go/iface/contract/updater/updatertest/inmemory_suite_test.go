@@ -18,4 +18,22 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	updatertest.RunContractSuite(t, updatertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:16d19ec893b395de748471490d672405a828e44dc09d08cb4f53bc7af7eb4c85
+// FuzzInMemoryPut fuzzes the property checks of Contract.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	updatertest.FuzzContractSuite(
+		f,
+		updatertest.ContractChecks.Put.Callable,
+		func(*updatertest.ContractHandle) *updatertest.InMemory { return updatertest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryGet fuzzes the property checks of Contract.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	updatertest.FuzzContractSuite(
+		f,
+		updatertest.ContractChecks.Get.Callable,
+		func(*updatertest.ContractHandle) *updatertest.InMemory { return updatertest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:f98d9e518a80eabfff607e9e174100e0dfd10d01d5b0cad703b3d6d8b15f4f0a

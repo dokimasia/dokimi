@@ -19,4 +19,22 @@ func TestStoreConformsToStore(t *testing.T) {
 	generictest.RunStoreSuite(t, memory.NewInts)
 }
 
-// dokimi:provenance sha256:9c4844f844f95e70115c046eb6b9579fc575b8b1c182085f6d3651834ed5d615
+// FuzzStoreGet fuzzes the property checks of Store.Get on Store.
+func FuzzStoreGet(f *testing.F) {
+	generictest.FuzzStoreSuite(
+		f,
+		generictest.StoreChecks.Get.Callable,
+		func(*generictest.StoreHandle) *memory.Store[int, int] { return memory.NewInts() },
+	)
+}
+
+// FuzzStorePut fuzzes the property checks of Store.Put on Store.
+func FuzzStorePut(f *testing.F) {
+	generictest.FuzzStoreSuite(
+		f,
+		generictest.StoreChecks.Put.Callable,
+		func(*generictest.StoreHandle) *memory.Store[int, int] { return memory.NewInts() },
+	)
+}
+
+// dokimi:provenance sha256:697a453dd16fbcac0fe64a36ec27d9ac1af250fc2e767d3c1807fc53c5b3419d

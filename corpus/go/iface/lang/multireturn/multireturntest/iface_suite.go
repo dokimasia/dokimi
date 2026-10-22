@@ -69,4 +69,17 @@ func RunWideSuiteFromHandle[T multireturn.Wide](t *testing.T, newSubject func(h 
 	conform.Run(t, WideSuite(), func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:15e9cb1a47d95fabece0c9e9a50aff47fe056c7114d1c44f5e5ffc4c2f3379ee
+// FuzzWideSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzWideSuite[T multireturn.Wide](
+	f *testing.F,
+	callable conform.Callable[multireturn.Wide],
+	newSubject func(h *WideHandle) T,
+	opts ...WideOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, WideSuite(), callable, func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:6413210d8a87d3e31923f7a4b77e8a07bf201f8c76358c7241d306b2b51798fb

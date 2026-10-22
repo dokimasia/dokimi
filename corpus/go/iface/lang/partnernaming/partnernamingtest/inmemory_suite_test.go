@@ -18,4 +18,70 @@ func TestInMemoryConformsToStore(t *testing.T) {
 	partnernamingtest.RunStoreSuite(t, partnernamingtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:acffacd5a965ed7e27b9106b26419c5a1ec2ad28a57fc11f61cb693b95e52b78
+// FuzzInMemoryTouch fuzzes the property checks of Store.Touch on InMemory.
+func FuzzInMemoryTouch(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Touch.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemorySeen fuzzes the property checks of Store.Seen on InMemory.
+func FuzzInMemorySeen(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Seen.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryMove fuzzes the property checks of Store.Move on InMemory.
+func FuzzInMemoryMove(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Move.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryAt fuzzes the property checks of Store.At on InMemory.
+func FuzzInMemoryAt(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.At.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryEmit fuzzes the property checks of Store.Emit on InMemory.
+func FuzzInMemoryEmit(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Emit.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryCount fuzzes the property checks of Store.Count on InMemory.
+func FuzzInMemoryCount(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Count.Callable,
+		func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+			return partnernamingtest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:3ea19ac5dc5270f141e94359afb0f37eaea73d5af46fe341a46e8c7d63bd14a3

@@ -18,4 +18,40 @@ func TestInMemoryConformsToTxWithRetry(t *testing.T) {
 	txwithretrytest.RunTxWithRetrySuite(t, txwithretrytest.NewInMemory)
 }
 
-// dokimi:provenance sha256:fd57d85fba3cd92792c51d0a5f641abfb8386f77e546fdd01e89a8eef4d23f28
+// FuzzInMemoryBegin fuzzes the property checks of TxWithRetry.Begin on
+// InMemory.
+func FuzzInMemoryBegin(f *testing.F) {
+	txwithretrytest.FuzzTxWithRetrySuite(
+		f,
+		txwithretrytest.TxWithRetryChecks.Begin.Callable,
+		func(*txwithretrytest.TxWithRetryHandle) *txwithretrytest.InMemory {
+			return txwithretrytest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryCommit fuzzes the property checks of TxWithRetry.Commit on
+// InMemory.
+func FuzzInMemoryCommit(f *testing.F) {
+	txwithretrytest.FuzzTxWithRetrySuite(
+		f,
+		txwithretrytest.TxWithRetryChecks.Commit.Callable,
+		func(*txwithretrytest.TxWithRetryHandle) *txwithretrytest.InMemory {
+			return txwithretrytest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryRollback fuzzes the property checks of TxWithRetry.Rollback
+// on InMemory.
+func FuzzInMemoryRollback(f *testing.F) {
+	txwithretrytest.FuzzTxWithRetrySuite(
+		f,
+		txwithretrytest.TxWithRetryChecks.Rollback.Callable,
+		func(*txwithretrytest.TxWithRetryHandle) *txwithretrytest.InMemory {
+			return txwithretrytest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:cdfb8a81388bd165bf0b000f66109f972efe84d5302664c2bff78ea56d7a2b56

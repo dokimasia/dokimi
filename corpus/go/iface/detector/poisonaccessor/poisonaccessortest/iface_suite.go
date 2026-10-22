@@ -66,4 +66,22 @@ func RunPoisonAccessorSuiteFromHandle[T poisonaccessor.PoisonAccessor](
 		opts...)
 }
 
-// dokimi:provenance sha256:7658c062c8b4bcbf1e5a2ad1dab9392f5ad2a476a68c12b18c582f5b70409133
+// FuzzPoisonAccessorSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzPoisonAccessorSuite[T poisonaccessor.PoisonAccessor](
+	f *testing.F,
+	callable conform.Callable[poisonaccessor.PoisonAccessor],
+	newSubject func(h *PoisonAccessorHandle) T,
+	opts ...PoisonAccessorOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		PoisonAccessorSuite(),
+		callable,
+		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:7f542d420a371b319e7e54ddf09870ed34b1cccff280c97f99bd3df3042234be

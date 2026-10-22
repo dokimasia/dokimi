@@ -18,4 +18,13 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	timeouttest.RunMixedSuite(t, timeouttest.NewInMemory)
 }
 
-// dokimi:provenance sha256:cc9e93eaeb5be586911d484142ce89b09ea11fbeba4b49173e50914845384bc5
+// FuzzInMemorySlow fuzzes the property checks of Mixed.Slow on InMemory.
+func FuzzInMemorySlow(f *testing.F) {
+	timeouttest.FuzzMixedSuite(
+		f,
+		timeouttest.MixedChecks.Slow.Callable,
+		func(*timeouttest.MixedHandle) *timeouttest.InMemory { return timeouttest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:eeed8528b2b23a1c1508621923ea1ba4209492d6eafa590259aaf198e5815b73

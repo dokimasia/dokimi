@@ -18,4 +18,16 @@ func TestInMemoryConformsToPointerReader(t *testing.T) {
 	pointerreadertest.RunPointerReaderSuite(t, pointerreadertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:1232f832bb64fe2ac4a89d95f5bf7881df87775a138c254aa831b24daceabebd
+// FuzzInMemoryFind fuzzes the property checks of PointerReader.Find on
+// InMemory.
+func FuzzInMemoryFind(f *testing.F) {
+	pointerreadertest.FuzzPointerReaderSuite(
+		f,
+		pointerreadertest.PointerReaderChecks.Find.Callable,
+		func(*pointerreadertest.PointerReaderHandle) *pointerreadertest.InMemory {
+			return pointerreadertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:196df8dfdb3443875024ffbf147d6c76310b5f2307f767150b908f45f5464f75

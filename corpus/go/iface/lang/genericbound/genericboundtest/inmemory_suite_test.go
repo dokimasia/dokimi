@@ -7,6 +7,7 @@ package genericboundtest_test
 import (
 	"testing"
 
+	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound/genericboundtest"
 )
 
@@ -18,4 +19,27 @@ func TestInMemoryConformsToRanked(t *testing.T) {
 	genericboundtest.RunRankedSuite(t, genericboundtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:0dda8b2f5d941e75906e6d5e39b7ae3bd70a0decc9774a1b37c71d89515793ff
+// FuzzInMemoryRank fuzzes the property checks of Ranked.Rank on InMemory.
+func FuzzInMemoryRank(f *testing.F) {
+	genericboundtest.FuzzRankedSuite(
+		f,
+		genericboundtest.RankedChecks.Rank.Callable,
+		func(*genericboundtest.RankedHandle) *genericboundtest.InMemory[int, genericbound.Score] {
+			return genericboundtest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryReset fuzzes the property checks of Ranked.Reset on
+// InMemory.
+func FuzzInMemoryReset(f *testing.F) {
+	genericboundtest.FuzzRankedSuite(
+		f,
+		genericboundtest.RankedChecks.Reset.Callable,
+		func(*genericboundtest.RankedHandle) *genericboundtest.InMemory[int, genericbound.Score] {
+			return genericboundtest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:9d64220adee6e648d40546e4bba94a43e145a6b1c3c44199765cd0590c98a64a

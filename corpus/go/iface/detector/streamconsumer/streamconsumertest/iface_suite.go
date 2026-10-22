@@ -66,4 +66,22 @@ func RunStreamConsumerSuiteFromHandle[T streamconsumer.StreamConsumer](
 		opts...)
 }
 
-// dokimi:provenance sha256:65029c618af4c7cbd75964f9f49829cfd623371cb92dbf2cf5638100ebcedab7
+// FuzzStreamConsumerSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzStreamConsumerSuite[T streamconsumer.StreamConsumer](
+	f *testing.F,
+	callable conform.Callable[streamconsumer.StreamConsumer],
+	newSubject func(h *StreamConsumerHandle) T,
+	opts ...StreamConsumerOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		StreamConsumerSuite(),
+		callable,
+		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:3944b719893bd4aacb3ce87e63b9023b3b6e99aed356e66944af296d4a86bba3

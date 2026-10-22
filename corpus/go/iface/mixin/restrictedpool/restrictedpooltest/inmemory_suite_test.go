@@ -18,4 +18,26 @@ func TestInMemoryConformsToStore(t *testing.T) {
 	restrictedpooltest.RunStoreSuite(t, restrictedpooltest.NewInMemory)
 }
 
-// dokimi:provenance sha256:85efcbca840d089ea7dd4a20ba82435b07a9a278871f8573d011aec02bf05373
+// FuzzInMemoryPut fuzzes the property checks of Store.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	restrictedpooltest.FuzzStoreSuite(
+		f,
+		restrictedpooltest.StoreChecks.Put.Callable,
+		func(*restrictedpooltest.StoreHandle) *restrictedpooltest.InMemory {
+			return restrictedpooltest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryGet fuzzes the property checks of Store.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	restrictedpooltest.FuzzStoreSuite(
+		f,
+		restrictedpooltest.StoreChecks.Get.Callable,
+		func(*restrictedpooltest.StoreHandle) *restrictedpooltest.InMemory {
+			return restrictedpooltest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:653bf28cd64cc3c7afbd25bc497df66ccd1bb90ac16eebf53c5cc1ffc416a7bc

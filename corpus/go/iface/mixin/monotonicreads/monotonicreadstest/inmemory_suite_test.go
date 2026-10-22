@@ -18,4 +18,26 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	monotonicreadstest.RunMixedSuite(t, monotonicreadstest.NewInMemory)
 }
 
-// dokimi:provenance sha256:7b4ab19f67df826dcf73646daf9958e94143a3e6564525372558c6bd0fb39c83
+// FuzzInMemoryStore fuzzes the property checks of Mixed.Store on InMemory.
+func FuzzInMemoryStore(f *testing.F) {
+	monotonicreadstest.FuzzMixedSuite(
+		f,
+		monotonicreadstest.MixedChecks.Store.Callable,
+		func(*monotonicreadstest.MixedHandle) *monotonicreadstest.InMemory {
+			return monotonicreadstest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	monotonicreadstest.FuzzMixedSuite(
+		f,
+		monotonicreadstest.MixedChecks.Get.Callable,
+		func(*monotonicreadstest.MixedHandle) *monotonicreadstest.InMemory {
+			return monotonicreadstest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:60a93206f0d15b0b84fe612cde99d5158277c1b78f901765dcde78723b84f4a0

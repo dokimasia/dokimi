@@ -94,4 +94,17 @@ func RunStoreSuiteFromHandle[T partnernaming.Store](
 	conform.Run(t, StoreSuite(), func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:ff12ad213cf814a323b58cb47aea122a1181286d362ddc90409af0475a916625
+// FuzzStoreSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzStoreSuite[T partnernaming.Store](
+	f *testing.F,
+	callable conform.Callable[partnernaming.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, StoreSuite(), callable, func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:fe4a0620e15129f5dab8499acf25167d64c2ffe030bb59734bd87d370cffaac2

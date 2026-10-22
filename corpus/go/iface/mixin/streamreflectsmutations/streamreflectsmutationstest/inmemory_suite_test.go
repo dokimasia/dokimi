@@ -18,4 +18,39 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	streamreflectsmutationstest.RunMixedSuite(t, streamreflectsmutationstest.NewInMemory)
 }
 
-// dokimi:provenance sha256:3539b17f0ff9792b9a44add8b45b69b555c32993a42f88a19ddc88196f4702da
+// FuzzInMemoryStream fuzzes the property checks of Mixed.Stream on
+// InMemory.
+func FuzzInMemoryStream(f *testing.F) {
+	streamreflectsmutationstest.FuzzMixedSuite(
+		f,
+		streamreflectsmutationstest.MixedChecks.Stream.Callable,
+		func(*streamreflectsmutationstest.MixedHandle) *streamreflectsmutationstest.InMemory {
+			return streamreflectsmutationstest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryAdd fuzzes the property checks of Mixed.Add on InMemory.
+func FuzzInMemoryAdd(f *testing.F) {
+	streamreflectsmutationstest.FuzzMixedSuite(
+		f,
+		streamreflectsmutationstest.MixedChecks.Add.Callable,
+		func(*streamreflectsmutationstest.MixedHandle) *streamreflectsmutationstest.InMemory {
+			return streamreflectsmutationstest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryRemove fuzzes the property checks of Mixed.Remove on
+// InMemory.
+func FuzzInMemoryRemove(f *testing.F) {
+	streamreflectsmutationstest.FuzzMixedSuite(
+		f,
+		streamreflectsmutationstest.MixedChecks.Remove.Callable,
+		func(*streamreflectsmutationstest.MixedHandle) *streamreflectsmutationstest.InMemory {
+			return streamreflectsmutationstest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:e493cea3c89b689832321826aec6487ac529c3400b11b493bc67753347c36ea1

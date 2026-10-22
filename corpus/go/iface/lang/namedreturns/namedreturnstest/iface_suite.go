@@ -74,4 +74,22 @@ func RunServiceSuiteFromHandle[T namedreturns.Service](
 	conform.Run(t, ServiceSuite(), func(h *ServiceHandle) namedreturns.Service { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:66c0b0404559b65cb53bec8703db82292a449bb20fdedd7146584f5b909870ae
+// FuzzServiceSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzServiceSuite[T namedreturns.Service](
+	f *testing.F,
+	callable conform.Callable[namedreturns.Service],
+	newSubject func(h *ServiceHandle) T,
+	opts ...ServiceOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		ServiceSuite(),
+		callable,
+		func(h *ServiceHandle) namedreturns.Service { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:447aa25a3144c0ea0365740377e94cabb580fc546b01b7b27c4b685004491586

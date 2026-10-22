@@ -18,4 +18,31 @@ func TestInMemoryConformsToRanked(t *testing.T) {
 	indexedtest.RunRankedSuite(t, indexedtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:78a0ae4c721184c233af28aab1b02867e523009d4c4d49dfb8883aaeb15e1e71
+// FuzzInMemoryAdd fuzzes the property checks of Ranked.Add on InMemory.
+func FuzzInMemoryAdd(f *testing.F) {
+	indexedtest.FuzzRankedSuite(
+		f,
+		indexedtest.RankedChecks.Add.Callable,
+		func(*indexedtest.RankedHandle) *indexedtest.InMemory { return indexedtest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryLen fuzzes the property checks of Ranked.Len on InMemory.
+func FuzzInMemoryLen(f *testing.F) {
+	indexedtest.FuzzRankedSuite(
+		f,
+		indexedtest.RankedChecks.Len.Callable,
+		func(*indexedtest.RankedHandle) *indexedtest.InMemory { return indexedtest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryAt fuzzes the property checks of Ranked.At on InMemory.
+func FuzzInMemoryAt(f *testing.F) {
+	indexedtest.FuzzRankedSuite(
+		f,
+		indexedtest.RankedChecks.At.Callable,
+		func(*indexedtest.RankedHandle) *indexedtest.InMemory { return indexedtest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:5e905fc045194aa07685e711b7f7bfa73f1f8a1d124c352884627db30810be0e

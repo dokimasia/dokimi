@@ -18,4 +18,42 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	eventuallytest.RunMixedSuite(t, eventuallytest.NewInMemory)
 }
 
-// dokimi:provenance sha256:12b891256aa5f9f6e74678d678035447d0cf3307f7354ef6a92b26f95d30a9d5
+// FuzzInMemoryPublish fuzzes the property checks of Mixed.Publish on
+// InMemory.
+func FuzzInMemoryPublish(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Publish.Callable,
+		func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+	)
+}
+
+// FuzzInMemorySettle fuzzes the property checks of Mixed.Settle on
+// InMemory.
+func FuzzInMemorySettle(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Settle.Callable,
+		func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+	)
+}
+
+// FuzzInMemorySync fuzzes the property checks of Mixed.Sync on InMemory.
+func FuzzInMemorySync(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Sync.Callable,
+		func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryItems fuzzes the property checks of Mixed.Items on InMemory.
+func FuzzInMemoryItems(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Items.Callable,
+		func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:652388b60bc87aeed7c9e09c554a59afdcc2782326cb333ad46d06c648adda30

@@ -18,4 +18,28 @@ func TestInMemoryConformsToStreamReader(t *testing.T) {
 	streamreadertest.RunStreamReaderSuite(t, streamreadertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:f8da38ff6bbe903ece95e82e46bd7119ad3e9b45b1806e6fa9debc82dfe16361
+// FuzzInMemoryAdd fuzzes the property checks of StreamReader.Add on
+// InMemory.
+func FuzzInMemoryAdd(f *testing.F) {
+	streamreadertest.FuzzStreamReaderSuite(
+		f,
+		streamreadertest.StreamReaderChecks.Add.Callable,
+		func(*streamreadertest.StreamReaderHandle) *streamreadertest.InMemory {
+			return streamreadertest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryList fuzzes the property checks of StreamReader.List on
+// InMemory.
+func FuzzInMemoryList(f *testing.F) {
+	streamreadertest.FuzzStreamReaderSuite(
+		f,
+		streamreadertest.StreamReaderChecks.List.Callable,
+		func(*streamreadertest.StreamReaderHandle) *streamreadertest.InMemory {
+			return streamreadertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:92c7c8296616cc4bfb70a7301464cb6c6471dd76afeb5e2eb23d7434790cbc9a

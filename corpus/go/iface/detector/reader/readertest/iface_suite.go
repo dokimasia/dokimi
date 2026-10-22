@@ -53,4 +53,17 @@ func RunReaderSuiteFromHandle[T reader.Reader](t *testing.T, newSubject func(h *
 	conform.Run(t, ReaderSuite(), func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:5d0c30393550e84ce2e7cad18862edd3dd1d131590fdf8f94170b8902d60a0e3
+// FuzzReaderSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzReaderSuite[T reader.Reader](
+	f *testing.F,
+	callable conform.Callable[reader.Reader],
+	newSubject func(h *ReaderHandle) T,
+	opts ...ReaderOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, ReaderSuite(), callable, func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:1d93aec75423f2909238b97c7b3191882f43c917b6321fb9575f5caa811dcf6f

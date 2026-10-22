@@ -18,4 +18,22 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	scopetest.RunMixedSuite(t, scopetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:7c71c754a15d4b15f926932ded6c58dd2d75d0c90ce5ca0d5e1fd8ee22e3b22c
+// FuzzInMemorySet fuzzes the property checks of Mixed.Set on InMemory.
+func FuzzInMemorySet(f *testing.F) {
+	scopetest.FuzzMixedSuite(
+		f,
+		scopetest.MixedChecks.Set.Callable,
+		func(*scopetest.MixedHandle) *scopetest.InMemory { return scopetest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	scopetest.FuzzMixedSuite(
+		f,
+		scopetest.MixedChecks.Get.Callable,
+		func(*scopetest.MixedHandle) *scopetest.InMemory { return scopetest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:b85d712b02c1c6eb3b30ec43b36f3f6c98a981cdd2dd5386d85a25dde62d04e4

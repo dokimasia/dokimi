@@ -66,4 +66,22 @@ func RunReaderNoErrorSuiteFromHandle[T readernoerror.ReaderNoError](
 		opts...)
 }
 
-// dokimi:provenance sha256:8c9c6d1ad7a4aa66b20e1f686d961e1231a04e0784ec8db20de02b5efe25d429
+// FuzzReaderNoErrorSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzReaderNoErrorSuite[T readernoerror.ReaderNoError](
+	f *testing.F,
+	callable conform.Callable[readernoerror.ReaderNoError],
+	newSubject func(h *ReaderNoErrorHandle) T,
+	opts ...ReaderNoErrorOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		ReaderNoErrorSuite(),
+		callable,
+		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:87ba9fd4fa3610637612127085c78390c68c13abf216db630084b485682796f5

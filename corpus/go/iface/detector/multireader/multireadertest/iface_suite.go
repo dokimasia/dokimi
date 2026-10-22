@@ -62,4 +62,22 @@ func RunMultiReaderSuiteFromHandle[T multireader.MultiReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:b27f4721b1bd4f3593a9cd5ba735d7463e2e8e42ce2aff5445a6d23131eccda3
+// FuzzMultiReaderSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzMultiReaderSuite[T multireader.MultiReader](
+	f *testing.F,
+	callable conform.Callable[multireader.MultiReader],
+	newSubject func(h *MultiReaderHandle) T,
+	opts ...MultiReaderOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		MultiReaderSuite(),
+		callable,
+		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:da798dc99eb11bb6de1401cc72022bcca2ab38ef56914c5db1ed7b2dc0fa6f54

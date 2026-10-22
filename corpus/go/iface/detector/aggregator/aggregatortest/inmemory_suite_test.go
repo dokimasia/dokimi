@@ -18,4 +18,14 @@ func TestInMemoryConformsToAggregator(t *testing.T) {
 	aggregatortest.RunAggregatorSuite(t, aggregatortest.NewInMemory)
 }
 
-// dokimi:provenance sha256:76402ba84d62335379d8e5476ae7fc787eef461543546aa8145b9e7edcb71def
+// FuzzInMemoryCount fuzzes the property checks of Aggregator.Count on
+// InMemory.
+func FuzzInMemoryCount(f *testing.F) {
+	aggregatortest.FuzzAggregatorSuite(
+		f,
+		aggregatortest.AggregatorChecks.Count.Callable,
+		func(*aggregatortest.AggregatorHandle) *aggregatortest.InMemory { return aggregatortest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:2c0b942cd8471874ece6f9fc69b34066fdd31bf9e6113edbd55e408c1017304f

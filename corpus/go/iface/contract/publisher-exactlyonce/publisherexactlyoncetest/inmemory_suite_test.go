@@ -18,4 +18,40 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	publisherexactlyoncetest.RunContractSuite(t, publisherexactlyoncetest.NewInMemory)
 }
 
-// dokimi:provenance sha256:8cc72c28ebdd6a4f1f8e48876b34fff8dead4c4c154129a2b0242a135cea7448
+// FuzzInMemoryPublish fuzzes the property checks of Contract.Publish on
+// InMemory.
+func FuzzInMemoryPublish(f *testing.F) {
+	publisherexactlyoncetest.FuzzContractSuite(
+		f,
+		publisherexactlyoncetest.ContractChecks.Publish.Callable,
+		func(*publisherexactlyoncetest.ContractHandle) *publisherexactlyoncetest.InMemory {
+			return publisherexactlyoncetest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemoryReplay fuzzes the property checks of Contract.Replay on
+// InMemory.
+func FuzzInMemoryReplay(f *testing.F) {
+	publisherexactlyoncetest.FuzzContractSuite(
+		f,
+		publisherexactlyoncetest.ContractChecks.Replay.Callable,
+		func(*publisherexactlyoncetest.ContractHandle) *publisherexactlyoncetest.InMemory {
+			return publisherexactlyoncetest.NewInMemory()
+		},
+	)
+}
+
+// FuzzInMemorySubscribe fuzzes the property checks of Contract.Subscribe
+// on InMemory.
+func FuzzInMemorySubscribe(f *testing.F) {
+	publisherexactlyoncetest.FuzzContractSuite(
+		f,
+		publisherexactlyoncetest.ContractChecks.Subscribe.Callable,
+		func(*publisherexactlyoncetest.ContractHandle) *publisherexactlyoncetest.InMemory {
+			return publisherexactlyoncetest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:df5077e4d53d6326b6a8765bb806b3b8c5ebdcac3e32ad36a0d2cafbed39eb6b

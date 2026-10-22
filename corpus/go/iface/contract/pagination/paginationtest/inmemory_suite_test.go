@@ -18,4 +18,23 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	paginationtest.RunContractSuite(t, paginationtest.NewInMemory)
 }
 
-// dokimi:provenance sha256:907f3e07b421d517849c72f0dff5c5deef9b2a1ff511588c43decf01e8c44b2b
+// FuzzInMemoryFetch fuzzes the property checks of Contract.Fetch on
+// InMemory.
+func FuzzInMemoryFetch(f *testing.F) {
+	paginationtest.FuzzContractSuite(
+		f,
+		paginationtest.ContractChecks.Fetch.Callable,
+		func(*paginationtest.ContractHandle) *paginationtest.InMemory { return paginationtest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryPut fuzzes the property checks of Contract.Put on InMemory.
+func FuzzInMemoryPut(f *testing.F) {
+	paginationtest.FuzzContractSuite(
+		f,
+		paginationtest.ContractChecks.Put.Callable,
+		func(*paginationtest.ContractHandle) *paginationtest.InMemory { return paginationtest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:2909051955676aa927ba2fe730596dbb1662509a04b68dcf985f0a84436069a0

@@ -18,4 +18,13 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	cacheabletest.RunMixedSuite(t, cacheabletest.NewInMemory)
 }
 
-// dokimi:provenance sha256:abee296744d2302e3bb36fee683373af64fdb24a81d5563526b827f5abb7a51e
+// FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
+func FuzzInMemoryGet(f *testing.F) {
+	cacheabletest.FuzzMixedSuite(
+		f,
+		cacheabletest.MixedChecks.Get.Callable,
+		func(*cacheabletest.MixedHandle) *cacheabletest.InMemory { return cacheabletest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:7ff73f8985bed9012fc35139d69ad0fd2bbea864a1b37a63cb9f91963915bf02

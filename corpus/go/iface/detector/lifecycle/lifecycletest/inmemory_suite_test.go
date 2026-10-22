@@ -18,4 +18,14 @@ func TestInMemoryConformsToLifecycle(t *testing.T) {
 	lifecycletest.RunLifecycleSuite(t, lifecycletest.NewInMemory)
 }
 
-// dokimi:provenance sha256:0696cb8643bd4529ea5f3087c80d7d6af25da6b30840fb06d31499cff587523f
+// FuzzInMemoryClose fuzzes the property checks of Lifecycle.Close on
+// InMemory.
+func FuzzInMemoryClose(f *testing.F) {
+	lifecycletest.FuzzLifecycleSuite(
+		f,
+		lifecycletest.LifecycleChecks.Close.Callable,
+		func(*lifecycletest.LifecycleHandle) *lifecycletest.InMemory { return lifecycletest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:963f371973233ea133c5d1c51921bf2e25339f547c61992d0574c47e26b40b65

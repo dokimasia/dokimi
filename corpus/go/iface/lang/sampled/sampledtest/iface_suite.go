@@ -58,4 +58,22 @@ func RunLabellerSuiteFromHandle[T sampled.Labeller](
 	conform.Run(t, LabellerSuite(), func(h *LabellerHandle) sampled.Labeller { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:95b55734d9f4ece47b2221208e8274f4fcf6a62a0d8ec7d6f909522cc03526f3
+// FuzzLabellerSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzLabellerSuite[T sampled.Labeller](
+	f *testing.F,
+	callable conform.Callable[sampled.Labeller],
+	newSubject func(h *LabellerHandle) T,
+	opts ...LabellerOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		LabellerSuite(),
+		callable,
+		func(h *LabellerHandle) sampled.Labeller { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:0fd6b006211e7fe6f82f0cf165d3f7f91cec4e1e6f59ba12c809dc238e892590

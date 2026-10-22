@@ -18,4 +18,23 @@ func TestInMemoryConformsToFinder(t *testing.T) {
 	variadictest.RunFinderSuite(t, variadictest.NewInMemory)
 }
 
-// dokimi:provenance sha256:4b2dc0bdf45378ee175a76340459bd44cc711fd82cb6006ae774be6c28105d04
+// FuzzInMemoryFind fuzzes the property checks of Finder.Find on InMemory.
+func FuzzInMemoryFind(f *testing.F) {
+	variadictest.FuzzFinderSuite(
+		f,
+		variadictest.FinderChecks.Find.Callable,
+		func(*variadictest.FinderHandle) *variadictest.InMemory { return variadictest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryFindWithLimit fuzzes the property checks of
+// Finder.FindWithLimit on InMemory.
+func FuzzInMemoryFindWithLimit(f *testing.F) {
+	variadictest.FuzzFinderSuite(
+		f,
+		variadictest.FinderChecks.FindWithLimit.Callable,
+		func(*variadictest.FinderHandle) *variadictest.InMemory { return variadictest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:aa9679f4abe4411e26faf9ad3a46f4ab70ba9182dbf603991b179e93c8bef843

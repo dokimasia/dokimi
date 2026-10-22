@@ -18,4 +18,16 @@ func TestInMemoryConformsToMultiAggregator(t *testing.T) {
 	multiaggregatortest.RunMultiAggregatorSuite(t, multiaggregatortest.NewInMemory)
 }
 
-// dokimi:provenance sha256:26363f3b46e795bb695458c269db511983fbe12eca2b2375c0348b50821dd632
+// FuzzInMemoryStats fuzzes the property checks of MultiAggregator.Stats on
+// InMemory.
+func FuzzInMemoryStats(f *testing.F) {
+	multiaggregatortest.FuzzMultiAggregatorSuite(
+		f,
+		multiaggregatortest.MultiAggregatorChecks.Stats.Callable,
+		func(*multiaggregatortest.MultiAggregatorHandle) *multiaggregatortest.InMemory {
+			return multiaggregatortest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:bb475903294a7699268a3315e8831e377d58e03a282cefb6bfa24e2d28fb3366

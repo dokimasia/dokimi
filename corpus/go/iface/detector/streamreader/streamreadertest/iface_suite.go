@@ -70,4 +70,22 @@ func RunStreamReaderSuiteFromHandle[T streamreader.StreamReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:4968b0de2ad55b1ccab3bec4af2a7457074d7c8fc09abe14a9a7d31cd58d94ec
+// FuzzStreamReaderSuite registers on f the fuzz target of the property
+// checks of callable, on a subject that newSubject builds from the handle
+// of each case.
+func FuzzStreamReaderSuite[T streamreader.StreamReader](
+	f *testing.F,
+	callable conform.Callable[streamreader.StreamReader],
+	newSubject func(h *StreamReaderHandle) T,
+	opts ...StreamReaderOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		StreamReaderSuite(),
+		callable,
+		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
+		opts...)
+}
+
+// dokimi:provenance sha256:86cfface0df4c935c2887d0fb898f2f48b3bb4bbe92283f13ea29ee057772e41

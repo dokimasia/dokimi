@@ -41,6 +41,12 @@ type logReplay struct {
 	conform.Callable[causalchain.Log]
 }
 
+// KeepsEveryBody returns the identity of the check that Replay returns
+// each body that Append admitted in a root entry.
+func (c logReplay) KeepsEveryBody() conform.ID[causalchain.Log] {
+	return c.Check("keeps-every-body")
+}
+
 // KeepsTheBody returns the identity of the check that Replay returns the
 // body that Append admitted.
 func (c logReplay) KeepsTheBody() conform.ID[causalchain.Log] {
@@ -50,6 +56,12 @@ func (c logReplay) KeepsTheBody() conform.ID[causalchain.Log] {
 // LogSuite returns the checks of Log.
 func LogSuite() conform.Suite[causalchain.Log] {
 	return conform.Suite[causalchain.Log]{Declaration: "Log", Checks: []conform.Check[causalchain.Log]{
+		{
+			ID:        LogChecks.Replay.KeepsEveryBody(),
+			Statement: "Replay returns each body that Append admitted in a root entry",
+			Property:  KeepsEveryBody,
+			Defect:    losesBodies,
+		},
 		{
 			ID:        LogChecks.Replay.KeepsTheBody(),
 			Statement: "Replay returns the body that Append admitted",
@@ -73,4 +85,17 @@ func RunLogSuiteFromHandle[T causalchain.Log](t *testing.T, newSubject func(h *L
 	conform.Run(t, LogSuite(), func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:35cebd5deac5456506872953a0a91d7d156e22670f4480c9d07ee5d591cd86f0
+// FuzzLogSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzLogSuite[T causalchain.Log](
+	f *testing.F,
+	callable conform.Callable[causalchain.Log],
+	newSubject func(h *LogHandle) T,
+	opts ...LogOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+}
+
+// dokimi:provenance sha256:3946d1caea69a39122ba44e0610611b4d0cb6d5e7511dae2343141cff9d48af5

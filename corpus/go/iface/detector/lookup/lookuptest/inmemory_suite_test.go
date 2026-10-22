@@ -18,4 +18,14 @@ func TestInMemoryConformsToLookup(t *testing.T) {
 	lookuptest.RunLookupSuite(t, lookuptest.NewInMemory)
 }
 
-// dokimi:provenance sha256:76cf0ce5a860734df6c5b3c75290a818862b8451f0318425e3f88529d5ccb3a5
+// FuzzInMemoryInspect fuzzes the property checks of Lookup.Inspect on
+// InMemory.
+func FuzzInMemoryInspect(f *testing.F) {
+	lookuptest.FuzzLookupSuite(
+		f,
+		lookuptest.LookupChecks.Inspect.Callable,
+		func(*lookuptest.LookupHandle) *lookuptest.InMemory { return lookuptest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:fc459be279884e62a1e57db7cfa9ef4cd78db8b855836da856dde6e3ea9804c5

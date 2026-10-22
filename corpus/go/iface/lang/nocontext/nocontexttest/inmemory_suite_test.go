@@ -18,4 +18,34 @@ func TestInMemoryConformsToCalculator(t *testing.T) {
 	nocontexttest.RunCalculatorSuite(t, nocontexttest.NewInMemory)
 }
 
-// dokimi:provenance sha256:c05632e20e92d50dc3ac753aef0d6896bb257d13479accfd114a81e1de3bf551
+// FuzzInMemoryAdd fuzzes the property checks of Calculator.Add on
+// InMemory.
+func FuzzInMemoryAdd(f *testing.F) {
+	nocontexttest.FuzzCalculatorSuite(
+		f,
+		nocontexttest.CalculatorChecks.Add.Callable,
+		func(*nocontexttest.CalculatorHandle) *nocontexttest.InMemory { return nocontexttest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryDivide fuzzes the property checks of Calculator.Divide on
+// InMemory.
+func FuzzInMemoryDivide(f *testing.F) {
+	nocontexttest.FuzzCalculatorSuite(
+		f,
+		nocontexttest.CalculatorChecks.Divide.Callable,
+		func(*nocontexttest.CalculatorHandle) *nocontexttest.InMemory { return nocontexttest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryReset fuzzes the property checks of Calculator.Reset on
+// InMemory.
+func FuzzInMemoryReset(f *testing.F) {
+	nocontexttest.FuzzCalculatorSuite(
+		f,
+		nocontexttest.CalculatorChecks.Reset.Callable,
+		func(*nocontexttest.CalculatorHandle) *nocontexttest.InMemory { return nocontexttest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:9823686bb1f51ec53f8cd6b3adcd7f20541ee3def9c74d1256ae461f4ae4c92f

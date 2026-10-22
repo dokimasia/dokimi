@@ -18,4 +18,24 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	codectest.RunContractSuite(t, codectest.NewInMemory)
 }
 
-// dokimi:provenance sha256:c7945d04bc583b4155fc8d18ea4eacc82546f8f3af06e79173e9bf4126e88261
+// FuzzInMemoryEncode fuzzes the property checks of Contract.Encode on
+// InMemory.
+func FuzzInMemoryEncode(f *testing.F) {
+	codectest.FuzzContractSuite(
+		f,
+		codectest.ContractChecks.Encode.Callable,
+		func(*codectest.ContractHandle) *codectest.InMemory { return codectest.NewInMemory() },
+	)
+}
+
+// FuzzInMemoryDecode fuzzes the property checks of Contract.Decode on
+// InMemory.
+func FuzzInMemoryDecode(f *testing.F) {
+	codectest.FuzzContractSuite(
+		f,
+		codectest.ContractChecks.Decode.Callable,
+		func(*codectest.ContractHandle) *codectest.InMemory { return codectest.NewInMemory() },
+	)
+}
+
+// dokimi:provenance sha256:3629f793bac5bd19a1aa5e8ff70d22711c3e2d6522a04ecf9aa40bcb5a92f61f

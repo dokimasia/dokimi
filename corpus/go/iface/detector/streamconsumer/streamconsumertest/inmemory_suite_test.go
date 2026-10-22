@@ -18,4 +18,16 @@ func TestInMemoryConformsToStreamConsumer(t *testing.T) {
 	streamconsumertest.RunStreamConsumerSuite(t, streamconsumertest.NewInMemory)
 }
 
-// dokimi:provenance sha256:b00328f8e1e55fb2f2f180c13b46e514ed381184d8f4c4663f410bc007e4622c
+// FuzzInMemoryIngest fuzzes the property checks of StreamConsumer.Ingest
+// on InMemory.
+func FuzzInMemoryIngest(f *testing.F) {
+	streamconsumertest.FuzzStreamConsumerSuite(
+		f,
+		streamconsumertest.StreamConsumerChecks.Ingest.Callable,
+		func(*streamconsumertest.StreamConsumerHandle) *streamconsumertest.InMemory {
+			return streamconsumertest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:90827b4570ea543c215c05071a8cedca9aeab5f38588fedc41562c5b94373c3e

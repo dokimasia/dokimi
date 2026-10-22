@@ -18,4 +18,16 @@ func TestInMemoryConformsToPoisonAccessor(t *testing.T) {
 	poisonaccessortest.RunPoisonAccessorSuite(t, poisonaccessortest.NewInMemory)
 }
 
-// dokimi:provenance sha256:4f9f25552be5f447c786ced8672b8768e62317fe0109a21d03e8d99cb4aca1eb
+// FuzzInMemoryErr fuzzes the property checks of PoisonAccessor.Err on
+// InMemory.
+func FuzzInMemoryErr(f *testing.F) {
+	poisonaccessortest.FuzzPoisonAccessorSuite(
+		f,
+		poisonaccessortest.PoisonAccessorChecks.Err.Callable,
+		func(*poisonaccessortest.PoisonAccessorHandle) *poisonaccessortest.InMemory {
+			return poisonaccessortest.NewInMemory()
+		},
+	)
+}
+
+// dokimi:provenance sha256:fbd287d7d2610674cbbdcddf92ffa916bb7c4d25e7f22500fbb4e513950b17c2

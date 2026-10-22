@@ -2,13 +2,11 @@
 // dokimi:plugin enum
 // dokimi:source enum/region/iface.ts
 
-import { Region } from './iface';
+import { Region } from "./iface";
 
 /**
- * regionToString returns the textual form of a Region.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * regionToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function regionToString(value: Region): string {
   switch (value) {
@@ -22,7 +20,7 @@ export function regionToString(value: Region): string {
   return String(value);
 }
 
-/** UnknownRegionError reports text that names no declared variant of Region. */
+/** UnknownRegionError is the error of text that names no declared variant of Region. */
 export class UnknownRegionError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -36,11 +34,8 @@ export class UnknownRegionError extends Error {
 }
 
 /**
- * parseRegion maps text back to a Region.
- *
- * The inverse of regionToString for every declared variant, which is what
- * lets a value survive a round trip through anything that carries it as
- * text — a log line, a JSON field, a database column.
+ * parseRegion returns the variant of Region whose text is text. It is the
+ * inverse of regionToString on the declared variants.
  *
  * @throws UnknownRegionError for text that names no declared variant.
  */
@@ -57,10 +52,8 @@ export function parseRegion(text: string): Region {
 }
 
 /**
- * regionValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * regionValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function regionValues(): Region[] {
   return [
@@ -72,9 +65,7 @@ export function regionValues(): Region[] {
 
 /**
  * isRegion reports whether value is a declared variant of Region.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isRegion(value: unknown): value is Region {
   switch (value) {
@@ -86,4 +77,4 @@ export function isRegion(value: unknown): value is Region {
   return false;
 }
 
-// dokimi:provenance sha256:d4c686691438456b120ebc776cca4606c550768d5674f57356489e4f566b2adf
+// dokimi:provenance sha256:8198d12908350c7080c9dd229a07504dcfd10ada8b011013f24ee19ced6a9e49

@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/codec-lossy/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { ContractStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { ContractStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of encode, or undefined. */
+/** Returns the samples of the arguments of encode. An argument without a sample is undefined. */
 function contractStubEncodeArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'encode-a';
+  a0 = "encode-a";
   return [a0];
 }
 
@@ -25,14 +24,14 @@ function contractStubEncode(double: ContractStub): Promise<string> {
 /** Returns the sample of the result of encode. */
 function contractStubEncodePin(): string {
   let want0: string;
-  want0 = 'encode-a';
+  want0 = "encode-a";
   return want0;
 }
 
-/** Returns the samples of the arguments of decode, or undefined. */
+/** Returns the samples of the arguments of decode. An argument without a sample is undefined. */
 function contractStubDecodeArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'decode-a';
+  a0 = "decode-a";
   return [a0];
 }
 
@@ -45,205 +44,354 @@ function contractStubDecode(double: ContractStub): Promise<string> {
 /** Returns the sample of the result of decode. */
 function contractStubDecodePin(): string {
   let want0: string;
-  want0 = 'decode-a';
+  want0 = "decode-a";
   return want0;
 }
 
-describe("ContractStub.encode", () => {
-  const checks = behaviour("Contract.encode", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onEncode,
-      call: () => contractStubEncode(double),
-      override: (mark) => {
-        double.onEncode.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubEncodePin();
-    double.onEncode.returns(want);
-    check.equal(seat, await contractStubEncode(double), want, "encode returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubEncode(double);
-    const got = double.onEncode.assertCalledOnce(seat, "encode records the call");
-    const args = contractStubEncodeArgs();
-    check.equal(seat, got?.input, args[0], "the call records input");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onEncode.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubEncode(double);
-    await contractStubEncode(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of encode");
-  });
-
-  test("sets the function of withContractEncode at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractEncode(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubEncode(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractEncode sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("encode-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubEncode(double));
-    const message = "encode fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubEncodePin();
-    double.onEncode.returns(want);
-    await contractStubEncode(double);
-    double.resetCalls();
-    check.equal(seat, await contractStubEncode(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("ContractStub.decode", () => {
-  const checks = behaviour("Contract.decode", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onDecode,
-      call: () => contractStubDecode(double),
-      override: (mark) => {
-        double.onDecode.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubDecodePin();
-    double.onDecode.returns(want);
-    check.equal(seat, await contractStubDecode(double), want, "decode returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubDecode(double);
-    const got = double.onDecode.assertCalledOnce(seat, "decode records the call");
-    const args = contractStubDecodeArgs();
-    check.equal(seat, got?.input, args[0], "the call records input");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onDecode.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubDecode(double);
-    await contractStubDecode(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of decode");
-  });
-
-  test("sets the function of withContractDecode at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractDecode(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubDecode(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractDecode sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("decode-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubDecode(double));
-    const message = "decode fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubDecodePin();
-    double.onDecode.returns(want);
-    await contractStubDecode(double);
-    double.resetCalls();
-    check.equal(seat, await contractStubDecode(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * encode alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onEncode,
     call: () => contractStubEncode(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes encode to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubEncode(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onEncode.assertCalledOnce(seat, "encode reaches the implementation");
+describe("ContractStub", () => {
+  describe("encode", () => {
+    const checks = behaviour("Contract.encode", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onEncode,
+        call: () => contractStubEncode(double),
+        override: (mark) => {
+          double.onEncode.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubEncode(double);
+      expect(double.onEncode.callCount).isEqualTo(1, "encode records the call");
+      const got = double.onEncode.calls[0];
+      const args = contractStubEncodeArgs();
+      expect(got?.input).isEqualTo(args[0], "the call records input");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onEncode.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubEncode(double);
+      await contractStubEncode(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of encode");
+    });
   });
 
-  test("fails encode with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("encode-delegate");
-    const inner = new ContractStub(seat);
-    inner.onEncode.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubEncode(double));
-    const message = "encode fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("decode", () => {
+    const checks = behaviour("Contract.decode", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onDecode,
+        call: () => contractStubDecode(double),
+        override: (mark) => {
+          double.onDecode.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubDecode(double);
+      expect(double.onDecode.callCount).isEqualTo(1, "decode records the call");
+      const got = double.onDecode.calls[0];
+      const args = contractStubDecodeArgs();
+      expect(got?.input).isEqualTo(args[0], "the call records input");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onDecode.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubDecode(double);
+      await contractStubDecode(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of decode");
+    });
   });
 
-  test("passes decode to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubDecode(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onDecode.assertCalledOnce(seat, "decode reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of encode", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubEncode(double);
+      double.resetCalls();
+      expect(double.onEncode.callCount).isEqualTo(0, "resetCalls clears the calls of encode");
+    });
+
+    it("keeps the result of returns of encode", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubEncodePin();
+      double.onEncode.returns(want);
+      double.resetCalls();
+      expect(await contractStubEncode(double)).isEqualTo(want, "resetCalls keeps the result of encode");
+    });
+
+    it("clears the recorded calls of decode", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubDecode(double);
+      double.resetCalls();
+      expect(double.onDecode.callCount).isEqualTo(0, "resetCalls clears the calls of decode");
+    });
+
+    it("keeps the result of returns of decode", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubDecodePin();
+      double.onDecode.returns(want);
+      double.resetCalls();
+      expect(await contractStubDecode(double)).isEqualTo(want, "resetCalls keeps the result of decode");
+    });
   });
 
-  test("fails decode with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("decode-delegate");
-    const inner = new ContractStub(seat);
-    inner.onDecode.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubDecode(double));
-    const message = "decode fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails encode with its error", async () => {
+      const want = new Error("encode-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubEncode(double));
+      const message = "encode fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails decode with its error", async () => {
+      const want = new Error("decode-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubDecode(double));
+      const message = "decode fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes encode to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubEncode(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onEncode.callCount).isEqualTo(1, "encode calls the implementation");
+    });
+
+    it("fails encode with the error of the implementation", async () => {
+      const want = new Error("encode-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onEncode.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubEncode(double));
+      const message = "encode fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes decode to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubDecode(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onDecode.callCount).isEqualTo(1, "decode calls the implementation");
+    });
+
+    it("fails decode with the error of the implementation", async () => {
+      const want = new Error("decode-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onDecode.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubDecode(double));
+      const message = "decode fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails encode with its error", async () => {
+      const want = new Error("encode-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubEncode(double));
+      const message = "encode fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails decode with its error", async () => {
+      const want = new Error("decode-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubDecode(double));
+      const message = "decode fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractEncode", () => {
+    it("sets the function of encode", async () => {
+      let called = false;
+      const option = ContractStub.withContractEncode(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubEncode(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractEncode sets the function of encode");
+    });
+  });
+
+  describe("withContractDecode", () => {
+    it("sets the function of decode", async () => {
+      let called = false;
+      const option = ContractStub.withContractDecode(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubDecode(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractDecode sets the function of decode");
+    });
   });
 });
 
-// dokimi:provenance sha256:6c95dbe2248faed14c92069af97013d297f6e3a08b89ebcc6e0cc7b3a733b6cc
+describe("ContractEncodeStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of encode", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubEncodePin();
+      double.onEncode.returns(want);
+      expect(await contractStubEncode(double)).isEqualTo(want, "encode returns the result that returns sets");
+    });
+
+    it("configures encode for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ContractStub(failures);
+      double.onEncode.strict();
+      double.onEncode.returns(undefined as never);
+      await settle(() => contractStubEncode(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of encode");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of encode to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onEncode.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubEncode(double);
+      const args = contractStubEncodeArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractDecodeStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of decode", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubDecodePin();
+      double.onDecode.returns(want);
+      expect(await contractStubDecode(double)).isEqualTo(want, "decode returns the result that returns sets");
+    });
+
+    it("configures decode for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ContractStub(failures);
+      double.onDecode.strict();
+      double.onDecode.returns(undefined as never);
+      await settle(() => contractStubDecode(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of decode");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of decode to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onDecode.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubDecode(double);
+      const args = contractStubDecodeArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:bb5950cb08f1d4336c7c7f35562d30d890c59718faaf26e5a6caf752f2a73991

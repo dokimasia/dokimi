@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/cache/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Contract, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Contract, Value } from "../iface";
 
 /** ContractStoreCall records one call of Contract.store. */
 export interface ContractStoreCall {
@@ -41,14 +41,14 @@ export interface ContractFetchCall {
 }
 
 /**
- * ContractStoreStub configures store, and records its calls. A fault armed
+ * ContractStoreStub configures store and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractStoreStub extends MethodStub<ContractStoreCall> {
   #fn: ((key: string, v: Value) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of store, for a result that depends on the
+   * Sets the function that computes the result of store from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -74,7 +74,7 @@ export class ContractStoreStub extends MethodStub<ContractStoreCall> {
 }
 
 /**
- * ContractLookupStub configures lookup, and records its calls. A fault armed
+ * ContractLookupStub configures lookup and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractLookupStub extends MethodStub<ContractLookupCall> {
@@ -94,7 +94,7 @@ export class ContractLookupStub extends MethodStub<ContractLookupCall> {
   }
 
   /**
-   * Sets the function of lookup, for a result that depends on the
+   * Sets the function that computes the result of lookup from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -124,7 +124,7 @@ export class ContractLookupStub extends MethodStub<ContractLookupCall> {
 }
 
 /**
- * ContractFetchStub configures fetch, and records its calls. A fault armed
+ * ContractFetchStub configures fetch and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractFetchStub extends MethodStub<ContractFetchCall> {
@@ -144,7 +144,7 @@ export class ContractFetchStub extends MethodStub<ContractFetchCall> {
   }
 
   /**
-   * Sets the function of fetch, for a result that depends on the
+   * Sets the function that computes the result of fetch from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -173,13 +173,13 @@ export class ContractFetchStub extends MethodStub<ContractFetchCall> {
   }
 }
 
-/** An option of a ContractStub, which its constructor applies. */
+/** Configures a ContractStub at its construction. */
 export type ContractStubOption = (double: ContractStub) => void;
 
 /**
  * ContractStub is a recording test double of Contract. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ContractStub implements Contract {
   /** Configures store. */
@@ -192,9 +192,9 @@ export class ContractStub implements Contract {
   #strict = false;
 
   /**
-   * Returns a double of Contract that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Contract that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -225,7 +225,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -239,8 +240,9 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -252,8 +254,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -290,7 +292,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -340,8 +343,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -364,8 +367,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -389,7 +392,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of store, and returns its result.
+   * Records the call of store and returns its result.
    */
   store(key: string, v: Value): Promise<void> {
     const call: ContractStoreCall = { key, v };
@@ -397,7 +400,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of lookup, and returns its result.
+   * Records the call of lookup and returns its result.
    */
   lookup(key: string): Promise<Value> {
     const call: ContractLookupCall = { key };
@@ -405,7 +408,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of fetch, and returns its result.
+   * Records the call of fetch and returns its result.
    */
   fetch(key: string): Promise<Value> {
     const call: ContractFetchCall = { key };
@@ -415,13 +418,13 @@ export class ContractStub implements Contract {
 
 // Value is a handle that a method of Contract returns.
 
-/** An option of a ValueStub, which its constructor applies. */
+/** Configures a ValueStub at its construction. */
 export type ValueStubOption = (double: ValueStub) => void;
 
 /**
  * ValueStub is a recording test double of Value. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ValueStub implements Value {
   /** The property key, which a test assigns. */
@@ -432,9 +435,9 @@ export class ValueStub implements Value {
   #strict = false;
 
   /**
-   * Returns a double of Value that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Value that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -462,8 +465,9 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -475,8 +479,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -513,8 +517,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -547,4 +551,4 @@ export class ValueStub implements Value {
 
 void compatV1;
 
-// dokimi:provenance sha256:65ed08bf66ebaa04f29ea7e098df8b0f6cb1b323bba1b947b513166b5f159510
+// dokimi:provenance sha256:bf2cb4a4a7460fba029a4ac7fefd3398b4defbbc5c764b5babca26797ce745d6

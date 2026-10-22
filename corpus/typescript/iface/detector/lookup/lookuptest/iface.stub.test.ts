@@ -2,141 +2,245 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/lookup/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Meta, Value } from '../iface';
-import { LookupStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Meta, Value } from "../iface";
+import { LookupStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of inspect, or undefined. */
+/** Returns the samples of the arguments of inspect. An argument without a sample is undefined. */
 function lookupStubInspectArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'inspect-a';
+  a0 = "inspect-a";
   return [a0];
 }
 
 /** Calls inspect of double with the samples of its arguments. */
-function lookupStubInspect(double: LookupStub): [Value,Meta]|undefined {
+function lookupStubInspect(double: LookupStub): [Value, Meta] | undefined {
   const args = lookupStubInspectArgs();
   return double.inspect(args[0]);
 }
 
 /** Returns the sample of the result of inspect. */
-function lookupStubInspectPin(): [Value,Meta]|undefined {
-  let want0: [Value,Meta]|undefined;
-  want0 = [{key: 'key-a'} as Value, {revision: 1.5} as Meta];
+function lookupStubInspectPin(): [Value, Meta] | undefined {
+  let want0: [Value, Meta] | undefined;
+  want0 = [{ key: "key-a", body: "body-a" }, { revision: 1.5 }];
   return want0;
 }
 
-describe("LookupStub.inspect", () => {
-  const checks = behaviour("Lookup.inspect", (seat) => {
-    const double = new LookupStub(seat);
-    return {
-      stub: double.onInspect,
-      call: () => lookupStubInspect(double),
-      override: (mark) => {
-        double.onInspect.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LookupStub(seat);
-    const want = lookupStubInspectPin();
-    double.onInspect.returns(want);
-    check.equal(seat, lookupStubInspect(double), want, "inspect returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LookupStub(seat);
-    lookupStubInspect(double);
-    const got = double.onInspect.assertCalledOnce(seat, "inspect records the call");
-    const args = lookupStubInspectArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LookupStub(seat);
-    let seen = 0;
-    double.onInspect.onRecord(() => {
-      seen += 1;
-    });
-    lookupStubInspect(double);
-    lookupStubInspect(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of inspect");
-  });
-
-  test("sets the function of withLookupInspect at construction", async ({ seat }) => {
-    let called = false;
-    const option = LookupStub.withLookupInspect(() => {
-      called = true;
-      return undefined as never;
-    });
-    lookupStubInspect(new LookupStub(seat, option));
-    check.isTrue(seat, called, "withLookupInspect sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("inspect-failing");
-    const double = LookupStub.newFailing(seat, want);
-    const outcome = await settle(() => lookupStubInspect(double));
-    const message = "inspect fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LookupStub(seat);
-    const want = lookupStubInspectPin();
-    double.onInspect.returns(want);
-    lookupStubInspect(double);
-    double.resetCalls();
-    check.equal(seat, lookupStubInspect(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LookupStub", () => {
-  const instance = (double: LookupStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * inspect alone.
+ */
+function lookupStubInstance(double: LookupStub) {
+  return {
     stub: double.onInspect,
     call: () => lookupStubInspect(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new LookupStub(seat)),
-    withClock: (seat, clock) => instance(new LookupStub(seat, LookupStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(LookupStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new LookupStub(seat, LookupStub.withRandSource(random))),
-    benchMode: (seat) => instance(new LookupStub(seat, LookupStub.benchMode())),
-    strict: (seat) => instance(new LookupStub(seat, LookupStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes inspect to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LookupStub(seat);
-    await settle(() => lookupStubInspect(new LookupStub(seat, LookupStub.delegateTo(inner))));
-    inner.onInspect.assertCalledOnce(seat, "inspect reaches the implementation");
+describe("LookupStub", () => {
+  describe("inspect", () => {
+    const checks = behaviour("Lookup.inspect", (seat) => {
+      const double = new LookupStub(seat);
+      return {
+        stub: double.onInspect,
+        call: () => lookupStubInspect(double),
+        override: (mark) => {
+          double.onInspect.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LookupStub(undefined);
+      lookupStubInspect(double);
+      expect(double.onInspect.callCount).isEqualTo(1, "inspect records the call");
+      const got = double.onInspect.calls[0];
+      const args = lookupStubInspectArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LookupStub(undefined);
+      let seen = 0;
+      double.onInspect.onRecord(() => {
+        seen += 1;
+      });
+      lookupStubInspect(double);
+      lookupStubInspect(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of inspect");
+    });
   });
 
-  test("fails inspect with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("inspect-delegate");
-    const inner = new LookupStub(seat);
-    inner.onInspect.faults(want, 1);
-    const double = new LookupStub(seat, LookupStub.delegateTo(inner));
-    const outcome = await settle(() => lookupStubInspect(double));
-    const message = "inspect fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => lookupStubInstance(new LookupStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of inspect", async () => {
+      const double = new LookupStub(undefined);
+      lookupStubInspect(double);
+      double.resetCalls();
+      expect(double.onInspect.callCount).isEqualTo(0, "resetCalls clears the calls of inspect");
+    });
+
+    it("keeps the result of returns of inspect", async () => {
+      const double = new LookupStub(undefined);
+      const want = lookupStubInspectPin();
+      double.onInspect.returns(want);
+      double.resetCalls();
+      expect(lookupStubInspect(double)).isEqualTo(want, "resetCalls keeps the result of inspect");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => lookupStubInstance(LookupStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails inspect with its error", async () => {
+      const want = new Error("inspect-failing");
+      const double = LookupStub.newFailing(undefined, want);
+      const outcome = await settle(() => lookupStubInspect(double));
+      const message = "inspect fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => lookupStubInstance(new LookupStub(seat, LookupStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes inspect to the implementation", async () => {
+      const inner = new LookupStub(undefined);
+      await settle(() => lookupStubInspect(new LookupStub(undefined, LookupStub.delegateTo(inner))));
+      expect(inner.onInspect.callCount).isEqualTo(1, "inspect calls the implementation");
+    });
+
+    it("fails inspect with the error of the implementation", async () => {
+      const want = new Error("inspect-delegate");
+      const inner = new LookupStub(undefined);
+      inner.onInspect.faults(want, 1);
+      const double = new LookupStub(undefined, LookupStub.delegateTo(inner));
+      const outcome = await settle(() => lookupStubInspect(double));
+      const message = "inspect fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => lookupStubInstance(new LookupStub(seat, LookupStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      lookupStubInstance(new LookupStub(seat, LookupStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => lookupStubInstance(new LookupStub(seat, LookupStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        lookupStubInstance(new LookupStub(seat, LookupStub.withClock(clock), LookupStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails inspect with its error", async () => {
+      const want = new Error("inspect-failing");
+      const double = new LookupStub(undefined, LookupStub.failing(want));
+      const outcome = await settle(() => lookupStubInspect(double));
+      const message = "inspect fails with the error of LookupStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withLookupInspect", () => {
+    it("sets the function of inspect", async () => {
+      let called = false;
+      const option = LookupStub.withLookupInspect(() => {
+        called = true;
+        return undefined as never;
+      });
+      lookupStubInspect(new LookupStub(undefined, option));
+      expect(called).isTrue("withLookupInspect sets the function of inspect");
+    });
   });
 });
 
-// dokimi:provenance sha256:0372981439eb0d639386389d8a4efc3404fe0f5080805aa254d51927f79c5fcb
+describe("LookupInspectStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of inspect", async () => {
+      const double = new LookupStub(undefined);
+      const want = lookupStubInspectPin();
+      double.onInspect.returns(want);
+      expect(lookupStubInspect(double)).isEqualTo(want, "inspect returns the result that returns sets");
+    });
+
+    it("configures inspect for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LookupStub(failures);
+      double.onInspect.strict();
+      double.onInspect.returns(undefined as never);
+      await settle(() => lookupStubInspect(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of inspect");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of inspect to the function", async () => {
+      const double = new LookupStub(undefined);
+      let got: unknown[] = [];
+      double.onInspect.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      lookupStubInspect(double);
+      const args = lookupStubInspectArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:e15af5bfdd070c2138d19cc3706ef4b69d70dc2766e0ba2ddea3d9656141674e

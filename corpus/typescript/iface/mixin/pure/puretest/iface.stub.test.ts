@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/pure/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MixedStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MixedStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of derive, or undefined. */
+/** Returns the samples of the arguments of derive. An argument without a sample is undefined. */
 function mixedStubDeriveArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'derive-a';
+  a0 = "derive-a";
   return [a0];
 }
 
@@ -25,117 +24,222 @@ function mixedStubDerive(double: MixedStub): string {
 /** Returns the sample of the result of derive. */
 function mixedStubDerivePin(): string {
   let want0: string;
-  want0 = 'derive-a';
+  want0 = "derive-a";
   return want0;
 }
 
-describe("MixedStub.derive", () => {
-  const checks = behaviour("Mixed.derive", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onDerive,
-      call: () => mixedStubDerive(double),
-      override: (mark) => {
-        double.onDerive.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    const want = mixedStubDerivePin();
-    double.onDerive.returns(want);
-    check.equal(seat, mixedStubDerive(double), want, "derive returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    mixedStubDerive(double);
-    const got = double.onDerive.assertCalledOnce(seat, "derive records the call");
-    const args = mixedStubDeriveArgs();
-    check.equal(seat, got?.input, args[0], "the call records input");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onDerive.onRecord(() => {
-      seen += 1;
-    });
-    mixedStubDerive(double);
-    mixedStubDerive(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of derive");
-  });
-
-  test("sets the function of withMixedDerive at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedDerive(() => {
-      called = true;
-      return undefined as never;
-    });
-    mixedStubDerive(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedDerive sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("derive-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubDerive(double));
-    const message = "derive fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    const want = mixedStubDerivePin();
-    double.onDerive.returns(want);
-    mixedStubDerive(double);
-    double.resetCalls();
-    check.equal(seat, mixedStubDerive(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("MixedStub", () => {
-  const instance = (double: MixedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * derive alone.
+ */
+function mixedStubInstance(double: MixedStub) {
+  return {
     stub: double.onDerive,
     call: () => mixedStubDerive(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MixedStub(seat)),
-    withClock: (seat, clock) => instance(new MixedStub(seat, MixedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MixedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MixedStub(seat, MixedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MixedStub(seat, MixedStub.benchMode())),
-    strict: (seat) => instance(new MixedStub(seat, MixedStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes derive to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubDerive(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onDerive.assertCalledOnce(seat, "derive reaches the implementation");
+describe("MixedStub", () => {
+  describe("derive", () => {
+    const checks = behaviour("Mixed.derive", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onDerive,
+        call: () => mixedStubDerive(double),
+        override: (mark) => {
+          double.onDerive.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MixedStub(undefined);
+      mixedStubDerive(double);
+      expect(double.onDerive.callCount).isEqualTo(1, "derive records the call");
+      const got = double.onDerive.calls[0];
+      const args = mixedStubDeriveArgs();
+      expect(got?.input).isEqualTo(args[0], "the call records input");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onDerive.onRecord(() => {
+        seen += 1;
+      });
+      mixedStubDerive(double);
+      mixedStubDerive(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of derive");
+    });
   });
 
-  test("fails derive with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("derive-delegate");
-    const inner = new MixedStub(seat);
-    inner.onDerive.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubDerive(double));
-    const message = "derive fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of derive", async () => {
+      const double = new MixedStub(undefined);
+      mixedStubDerive(double);
+      double.resetCalls();
+      expect(double.onDerive.callCount).isEqualTo(0, "resetCalls clears the calls of derive");
+    });
+
+    it("keeps the result of returns of derive", async () => {
+      const double = new MixedStub(undefined);
+      const want = mixedStubDerivePin();
+      double.onDerive.returns(want);
+      double.resetCalls();
+      expect(mixedStubDerive(double)).isEqualTo(want, "resetCalls keeps the result of derive");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails derive with its error", async () => {
+      const want = new Error("derive-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubDerive(double));
+      const message = "derive fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes derive to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubDerive(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onDerive.callCount).isEqualTo(1, "derive calls the implementation");
+    });
+
+    it("fails derive with the error of the implementation", async () => {
+      const want = new Error("derive-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onDerive.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubDerive(double));
+      const message = "derive fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mixedStubInstance(new MixedStub(seat, MixedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock), MixedStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails derive with its error", async () => {
+      const want = new Error("derive-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubDerive(double));
+      const message = "derive fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMixedDerive", () => {
+    it("sets the function of derive", async () => {
+      let called = false;
+      const option = MixedStub.withMixedDerive(() => {
+        called = true;
+        return undefined as never;
+      });
+      mixedStubDerive(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedDerive sets the function of derive");
+    });
   });
 });
 
-// dokimi:provenance sha256:605c4acc8b5f3cc8ce840448ce1365b29e203618ea450d99125d5ee73fa043aa
+describe("MixedDeriveStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of derive", async () => {
+      const double = new MixedStub(undefined);
+      const want = mixedStubDerivePin();
+      double.onDerive.returns(want);
+      expect(mixedStubDerive(double)).isEqualTo(want, "derive returns the result that returns sets");
+    });
+
+    it("configures derive for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new MixedStub(failures);
+      double.onDerive.strict();
+      double.onDerive.returns(undefined as never);
+      await settle(() => mixedStubDerive(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of derive");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of derive to the function", async () => {
+      const double = new MixedStub(undefined);
+      let got: unknown[] = [];
+      double.onDerive.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      mixedStubDerive(double);
+      const args = mixedStubDeriveArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:058d5279d46c3ae4e2366ac217bb40852bf7ad9640b69608a3197f4dcd4397b6

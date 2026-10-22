@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/integrationonly/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MixedStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MixedStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of connect, or undefined. */
+/** Returns the samples of the arguments of connect. An argument without a sample is undefined. */
 function mixedStubConnectArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'connect-a';
+  a0 = "connect-a";
   return [a0];
 }
 
@@ -22,97 +21,192 @@ function mixedStubConnect(double: MixedStub): Promise<void> {
   return double.connect(args[0]);
 }
 
-describe("MixedStub.connect", () => {
-  const checks = behaviour("Mixed.connect", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onConnect,
-      call: () => mixedStubConnect(double),
-      override: (mark) => {
-        double.onConnect.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubConnect(double);
-    const got = double.onConnect.assertCalledOnce(seat, "connect records the call");
-    const args = mixedStubConnectArgs();
-    check.equal(seat, got?.dsn, args[0], "the call records dsn");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onConnect.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubConnect(double);
-    await mixedStubConnect(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of connect");
-  });
-
-  test("sets the function of withMixedConnect at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedConnect(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubConnect(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedConnect sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("connect-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubConnect(double));
-    const message = "connect fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub", () => {
-  const instance = (double: MixedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * connect alone.
+ */
+function mixedStubInstance(double: MixedStub) {
+  return {
     stub: double.onConnect,
     call: () => mixedStubConnect(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MixedStub(seat)),
-    withClock: (seat, clock) => instance(new MixedStub(seat, MixedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MixedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MixedStub(seat, MixedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MixedStub(seat, MixedStub.benchMode())),
-    strict: (seat) => instance(new MixedStub(seat, MixedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes connect to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubConnect(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onConnect.assertCalledOnce(seat, "connect reaches the implementation");
+describe("MixedStub", () => {
+  describe("connect", () => {
+    const checks = behaviour("Mixed.connect", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onConnect,
+        call: () => mixedStubConnect(double),
+        override: (mark) => {
+          double.onConnect.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubConnect(double);
+      expect(double.onConnect.callCount).isEqualTo(1, "connect records the call");
+      const got = double.onConnect.calls[0];
+      const args = mixedStubConnectArgs();
+      expect(got?.dsn).isEqualTo(args[0], "the call records dsn");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onConnect.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubConnect(double);
+      await mixedStubConnect(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of connect");
+    });
   });
 
-  test("fails connect with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("connect-delegate");
-    const inner = new MixedStub(seat);
-    inner.onConnect.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubConnect(double));
-    const message = "connect fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of connect", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubConnect(double);
+      double.resetCalls();
+      expect(double.onConnect.callCount).isEqualTo(0, "resetCalls clears the calls of connect");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails connect with its error", async () => {
+      const want = new Error("connect-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubConnect(double));
+      const message = "connect fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes connect to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubConnect(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onConnect.callCount).isEqualTo(1, "connect calls the implementation");
+    });
+
+    it("fails connect with the error of the implementation", async () => {
+      const want = new Error("connect-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onConnect.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubConnect(double));
+      const message = "connect fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mixedStubInstance(new MixedStub(seat, MixedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock), MixedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails connect with its error", async () => {
+      const want = new Error("connect-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubConnect(double));
+      const message = "connect fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMixedConnect", () => {
+    it("sets the function of connect", async () => {
+      let called = false;
+      const option = MixedStub.withMixedConnect(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubConnect(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedConnect sets the function of connect");
+    });
   });
 });
 
-// dokimi:provenance sha256:efd37a3f7b0f0eaf21d277d195c69835c3d2ad13474a1d893a7d2674720da9c9
+describe("MixedConnectStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of connect to the function", async () => {
+      const double = new MixedStub(undefined);
+      let got: unknown[] = [];
+      double.onConnect.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await mixedStubConnect(double);
+      const args = mixedStubConnectArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:16235eb28071b9d46b345880299ff85d97e04da80fe2d26b4a88fba551863d74

@@ -2,141 +2,245 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/multireader/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Meta, Value } from '../iface';
-import { MultiReaderStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Meta, Value } from "../iface";
+import { MultiReaderStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of getWithMeta, or undefined. */
+/** Returns the samples of the arguments of getWithMeta. An argument without a sample is undefined. */
 function multiReaderStubGetWithMetaArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'getWithMeta-a';
+  a0 = "getWithMeta-a";
   return [a0];
 }
 
 /** Calls getWithMeta of double with the samples of its arguments. */
-function multiReaderStubGetWithMeta(double: MultiReaderStub): Promise<[Value,Meta]> {
+function multiReaderStubGetWithMeta(double: MultiReaderStub): Promise<[Value, Meta]> {
   const args = multiReaderStubGetWithMetaArgs();
   return double.getWithMeta(args[0]);
 }
 
 /** Returns the sample of the result of getWithMeta. */
-function multiReaderStubGetWithMetaPin(): [Value,Meta] {
-  let want0: [Value,Meta];
-  want0 = [{key: 'key-a'} as Value, {revision: 1.5} as Meta];
+function multiReaderStubGetWithMetaPin(): [Value, Meta] {
+  let want0: [Value, Meta];
+  want0 = [{ key: "key-a", body: "body-a" }, { revision: 1.5 }];
   return want0;
 }
 
-describe("MultiReaderStub.getWithMeta", () => {
-  const checks = behaviour("MultiReader.getWithMeta", (seat) => {
-    const double = new MultiReaderStub(seat);
-    return {
-      stub: double.onGetWithMeta,
-      call: () => multiReaderStubGetWithMeta(double),
-      override: (mark) => {
-        double.onGetWithMeta.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new MultiReaderStub(seat);
-    const want = multiReaderStubGetWithMetaPin();
-    double.onGetWithMeta.returns(want);
-    check.equal(seat, await multiReaderStubGetWithMeta(double), want, "getWithMeta returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MultiReaderStub(seat);
-    await multiReaderStubGetWithMeta(double);
-    const got = double.onGetWithMeta.assertCalledOnce(seat, "getWithMeta records the call");
-    const args = multiReaderStubGetWithMetaArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MultiReaderStub(seat);
-    let seen = 0;
-    double.onGetWithMeta.onRecord(() => {
-      seen += 1;
-    });
-    await multiReaderStubGetWithMeta(double);
-    await multiReaderStubGetWithMeta(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of getWithMeta");
-  });
-
-  test("sets the function of withMultiReaderGetWithMeta at construction", async ({ seat }) => {
-    let called = false;
-    const option = MultiReaderStub.withMultiReaderGetWithMeta(() => {
-      called = true;
-      return undefined as never;
-    });
-    await multiReaderStubGetWithMeta(new MultiReaderStub(seat, option));
-    check.isTrue(seat, called, "withMultiReaderGetWithMeta sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("getWithMeta-failing");
-    const double = MultiReaderStub.newFailing(seat, want);
-    const outcome = await settle(() => multiReaderStubGetWithMeta(double));
-    const message = "getWithMeta fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new MultiReaderStub(seat);
-    const want = multiReaderStubGetWithMetaPin();
-    double.onGetWithMeta.returns(want);
-    await multiReaderStubGetWithMeta(double);
-    double.resetCalls();
-    check.equal(seat, await multiReaderStubGetWithMeta(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("MultiReaderStub", () => {
-  const instance = (double: MultiReaderStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * getWithMeta alone.
+ */
+function multiReaderStubInstance(double: MultiReaderStub) {
+  return {
     stub: double.onGetWithMeta,
     call: () => multiReaderStubGetWithMeta(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MultiReaderStub(seat)),
-    withClock: (seat, clock) => instance(new MultiReaderStub(seat, MultiReaderStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MultiReaderStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MultiReaderStub(seat, MultiReaderStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MultiReaderStub(seat, MultiReaderStub.benchMode())),
-    strict: (seat) => instance(new MultiReaderStub(seat, MultiReaderStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes getWithMeta to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MultiReaderStub(seat);
-    await settle(() => multiReaderStubGetWithMeta(new MultiReaderStub(seat, MultiReaderStub.delegateTo(inner))));
-    inner.onGetWithMeta.assertCalledOnce(seat, "getWithMeta reaches the implementation");
+describe("MultiReaderStub", () => {
+  describe("getWithMeta", () => {
+    const checks = behaviour("MultiReader.getWithMeta", (seat) => {
+      const double = new MultiReaderStub(seat);
+      return {
+        stub: double.onGetWithMeta,
+        call: () => multiReaderStubGetWithMeta(double),
+        override: (mark) => {
+          double.onGetWithMeta.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MultiReaderStub(undefined);
+      await multiReaderStubGetWithMeta(double);
+      expect(double.onGetWithMeta.callCount).isEqualTo(1, "getWithMeta records the call");
+      const got = double.onGetWithMeta.calls[0];
+      const args = multiReaderStubGetWithMetaArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MultiReaderStub(undefined);
+      let seen = 0;
+      double.onGetWithMeta.onRecord(() => {
+        seen += 1;
+      });
+      await multiReaderStubGetWithMeta(double);
+      await multiReaderStubGetWithMeta(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of getWithMeta");
+    });
   });
 
-  test("fails getWithMeta with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("getWithMeta-delegate");
-    const inner = new MultiReaderStub(seat);
-    inner.onGetWithMeta.faults(want, 1);
-    const double = new MultiReaderStub(seat, MultiReaderStub.delegateTo(inner));
-    const outcome = await settle(() => multiReaderStubGetWithMeta(double));
-    const message = "getWithMeta fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => multiReaderStubInstance(new MultiReaderStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of getWithMeta", async () => {
+      const double = new MultiReaderStub(undefined);
+      await multiReaderStubGetWithMeta(double);
+      double.resetCalls();
+      expect(double.onGetWithMeta.callCount).isEqualTo(0, "resetCalls clears the calls of getWithMeta");
+    });
+
+    it("keeps the result of returns of getWithMeta", async () => {
+      const double = new MultiReaderStub(undefined);
+      const want = multiReaderStubGetWithMetaPin();
+      double.onGetWithMeta.returns(want);
+      double.resetCalls();
+      expect(await multiReaderStubGetWithMeta(double)).isEqualTo(want, "resetCalls keeps the result of getWithMeta");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => multiReaderStubInstance(MultiReaderStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails getWithMeta with its error", async () => {
+      const want = new Error("getWithMeta-failing");
+      const double = MultiReaderStub.newFailing(undefined, want);
+      const outcome = await settle(() => multiReaderStubGetWithMeta(double));
+      const message = "getWithMeta fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => multiReaderStubInstance(new MultiReaderStub(seat, MultiReaderStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes getWithMeta to the implementation", async () => {
+      const inner = new MultiReaderStub(undefined);
+      await settle(() => multiReaderStubGetWithMeta(new MultiReaderStub(undefined, MultiReaderStub.delegateTo(inner))));
+      expect(inner.onGetWithMeta.callCount).isEqualTo(1, "getWithMeta calls the implementation");
+    });
+
+    it("fails getWithMeta with the error of the implementation", async () => {
+      const want = new Error("getWithMeta-delegate");
+      const inner = new MultiReaderStub(undefined);
+      inner.onGetWithMeta.faults(want, 1);
+      const double = new MultiReaderStub(undefined, MultiReaderStub.delegateTo(inner));
+      const outcome = await settle(() => multiReaderStubGetWithMeta(double));
+      const message = "getWithMeta fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => multiReaderStubInstance(new MultiReaderStub(seat, MultiReaderStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      multiReaderStubInstance(new MultiReaderStub(seat, MultiReaderStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => multiReaderStubInstance(new MultiReaderStub(seat, MultiReaderStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        multiReaderStubInstance(new MultiReaderStub(seat, MultiReaderStub.withClock(clock), MultiReaderStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails getWithMeta with its error", async () => {
+      const want = new Error("getWithMeta-failing");
+      const double = new MultiReaderStub(undefined, MultiReaderStub.failing(want));
+      const outcome = await settle(() => multiReaderStubGetWithMeta(double));
+      const message = "getWithMeta fails with the error of MultiReaderStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMultiReaderGetWithMeta", () => {
+    it("sets the function of getWithMeta", async () => {
+      let called = false;
+      const option = MultiReaderStub.withMultiReaderGetWithMeta(() => {
+        called = true;
+        return undefined as never;
+      });
+      await multiReaderStubGetWithMeta(new MultiReaderStub(undefined, option));
+      expect(called).isTrue("withMultiReaderGetWithMeta sets the function of getWithMeta");
+    });
   });
 });
 
-// dokimi:provenance sha256:81fc4e20f1d5c87a2018492918ef572a88d037957c8304556ced53b8200db937
+describe("MultiReaderGetWithMetaStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of getWithMeta", async () => {
+      const double = new MultiReaderStub(undefined);
+      const want = multiReaderStubGetWithMetaPin();
+      double.onGetWithMeta.returns(want);
+      expect(await multiReaderStubGetWithMeta(double)).isEqualTo(want, "getWithMeta returns the result that returns sets");
+    });
+
+    it("configures getWithMeta for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new MultiReaderStub(failures);
+      double.onGetWithMeta.strict();
+      double.onGetWithMeta.returns(undefined as never);
+      await settle(() => multiReaderStubGetWithMeta(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of getWithMeta");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of getWithMeta to the function", async () => {
+      const double = new MultiReaderStub(undefined);
+      let got: unknown[] = [];
+      double.onGetWithMeta.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await multiReaderStubGetWithMeta(double);
+      const args = multiReaderStubGetWithMetaArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:4ecf10d64bae935197d0b34fa7dd9531ac5e6ac8f3a0b2e7c9434d8cb180e62f

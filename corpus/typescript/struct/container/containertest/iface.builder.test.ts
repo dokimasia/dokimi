@@ -2,611 +2,907 @@
 // dokimi:plugin builder
 // dokimi:source struct/container/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Bucket, Container, type Keyable, Pair, PartialPair, Quad, type Seconds, Solo, Triple } from '../iface';
-import { BucketBuilder, ContainerBuilder, PairBuilder, PartialPairBuilder, QuadBuilder, SoloBuilder, TripleBuilder } from './iface.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Bucket, Container, type Keyable, Pair, PartialPair, Quad, type Seconds, Solo, Triple } from "../iface";
+import { BucketBuilder, ContainerBuilder, PairBuilder, PartialPairBuilder, QuadBuilder, SoloBuilder, TripleBuilder } from "./iface.builder";
 
-describe("ContainerBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function containerBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Container<unknown>();
-    seed.value = 'value-a';
-    seed.label = 'label-a';
+    seed.value = "value-a";
+    seed.label = "label-a";
     const got = ContainerBuilder.from<unknown>(seed).build();
-    check.equal(seat, got.value, seed.value, "from keeps the member it was given");
-    check.equal(seat, got.label, seed.label, "from keeps the member it was given");
+    expect.soft(got.value).isEqualTo(seed.value, "from keeps value");
+    expect.soft(got.label).isEqualTo(seed.label, "from keeps label");
   });
-});
 
-describe("ContainerBuilder setters", () => {
-  test("withValue writes value", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = ContainerBuilder.create<unknown>().build();
+    expect(ContainerBuilder.from<unknown>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function containerBuilderWithValueCases(): void {
+  it("writes its argument to value", () => {
     let want: unknown;
-    want = 'value-a';
+    want = "value-a";
     const got = ContainerBuilder.create<unknown>().withValue(want).build();
-    check.equal(seat, got.value, want, "the setter writes what it was given");
+    expect(got.value).isEqualTo(want, "withValue writes its argument to value");
   });
 
-  test("withValue replaces what was already there", ({ seat }) => {
+  it("replaces the value of value", () => {
     let first: unknown;
     let want: unknown;
-    first = 'value-a';
-    want = 'value-b';
+    first = "value-a";
+    want = "value-b";
     const got = ContainerBuilder.create<unknown>().withValue(first).withValue(want).build();
-    check.equal(seat, got.value, want, "the later call wins");
+    expect(got.value).isEqualTo(want, "the second call of withValue replaces the first");
   });
+}
 
-  test("withItems writes items", ({ seat }) => {
+function containerBuilderWithItemsCases(): void {
+  it("writes its argument to items", () => {
     let want: unknown[];
-    want = ['items-a'];
+    want = ["items-a"];
     const got = ContainerBuilder.create<unknown>().withItems(...want).build();
-    check.length(seat, got.items, 1, "the setter replaces the sequence");
+    expect(got.items).isEqualTo(want, "withItems writes its argument to items");
   });
 
-  test("withLabel writes label", ({ seat }) => {
+  it("replaces the value of items", () => {
+    let first: unknown[];
+    let want: unknown[];
+    first = ["items-a"];
+    want = ["items-b"];
+    const got = ContainerBuilder.create<unknown>().withItems(...first).withItems(...want).build();
+    expect(got.items).isEqualTo(want, "the second call of withItems replaces the first");
+  });
+}
+
+function containerBuilderWithLabelCases(): void {
+  it("writes its argument to label", () => {
     let want: string;
-    want = 'label-a';
+    want = "label-a";
     const got = ContainerBuilder.create<unknown>().withLabel(want).build();
-    check.equal(seat, got.label, want, "the setter writes what it was given");
+    expect(got.label).isEqualTo(want, "withLabel writes its argument to label");
   });
 
-  test("withLabel replaces what was already there", ({ seat }) => {
+  it("replaces the value of label", () => {
     let first: string;
     let want: string;
-    first = 'label-a';
-    want = 'label-b';
+    first = "label-a";
+    want = "label-b";
     const got = ContainerBuilder.create<unknown>().withLabel(first).withLabel(want).build();
-    check.equal(seat, got.label, want, "the later call wins");
+    expect(got.label).isEqualTo(want, "the second call of withLabel replaces the first");
   });
+}
 
-  test("appendItems keeps what items holds", ({ seat }) => {
+function containerBuilderAppendItemsCases(): void {
+  it("appends to the elements of items", () => {
+    let first: unknown[];
     let want: unknown[];
-    want = ['items-a'];
-    const got = ContainerBuilder.create<unknown>().withItems(...want).appendItems(...want).build();
-    check.length(seat, got.items, 2, "the appender adds to the sequence");
+    first = ["items-a"];
+    want = ["items-b"];
+    const got = ContainerBuilder.create<unknown>().withItems(...first).appendItems(...want).build();
+    expect(got.items).isEqualTo([...first, ...want], "appendItems appends its elements after those of withItems");
   });
-});
+}
 
-describe("ContainerBuilder clone", () => {
-  test("items is not shared with a clone", ({ seat }) => {
-    let want: unknown[];
-    let other: unknown[];
-    want = ['items-a'];
-    other = ['items-b'];
-    const original = ContainerBuilder.create<unknown>().withItems(...want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      value.items.splice(0, other.length, ...other);
-    });
-    check.notEqual(seat, original.build().items, other, "writing through a clone must not reach the original");
-  });
-
-  test("clone copies items", ({ seat }) => {
-    let want: unknown[];
-    want = ['items-a'];
-    const original = ContainerBuilder.create<unknown>().withItems(...want);
-    check.equal(seat, original.clone().build().items, want, "a clone builds the same member as its original");
-  });
-});
-
-describe("ContainerBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function containerBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Container<unknown>[] = [];
     const record = (value: Container<unknown>): void => {
       seen.push(value);
     };
     ContainerBuilder.create<unknown>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function containerBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = ContainerBuilder.create<unknown>();
-    const want = original.build();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
+  });
+
+  it("builds the value of its original", () => {
+    const original = ContainerBuilder.create<unknown>();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+
+  it("copies items into the clone", () => {
+    let want: unknown[];
+    let other: unknown[];
+    want = ["items-a"];
+    other = ["items-b"];
+    const original = ContainerBuilder.create<unknown>().withItems(...want);
     const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, ContainerBuilder.from<unknown>(want).build(), want, "from keeps the value it was given");
+    const message = "a change of items in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      value.items.splice(0, other.length, ...other);
+    });
+    expect(original.build().items).isNotEqualTo(other, message);
   });
+
+  it("builds the items of its original", () => {
+    let want: unknown[];
+    want = ["items-a"];
+    const original = ContainerBuilder.create<unknown>().withItems(...want);
+    expect(original.clone().build().items).isEqualTo(want, "the clone builds the items of its original");
+  });
+}
+
+function containerBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = ContainerBuilder.create<unknown>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Container<unknown>();
+    seed.value = "value-a";
+    seed.label = "label-a";
+    const builder = ContainerBuilder.create<unknown>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("ContainerBuilder", () => {
+  describe("from", containerBuilderFromCases);
+  describe("withValue", containerBuilderWithValueCases);
+  describe("withItems", containerBuilderWithItemsCases);
+  describe("withLabel", containerBuilderWithLabelCases);
+  describe("appendItems", containerBuilderAppendItemsCases);
+  describe("mutate", containerBuilderMutateCases);
+  describe("clone", containerBuilderCloneCases);
+  describe("build", containerBuilderBuildCases);
 });
 
-describe("PairBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function pairBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Pair<unknown, unknown>();
-    seed.key = 'key-a';
-    seed.value = 'value-a';
+    seed.key = "key-a";
+    seed.value = "value-a";
     const got = PairBuilder.from<unknown, unknown>(seed).build();
-    check.equal(seat, got.key, seed.key, "from keeps the member it was given");
-    check.equal(seat, got.value, seed.value, "from keeps the member it was given");
+    expect.soft(got.key).isEqualTo(seed.key, "from keeps key");
+    expect.soft(got.value).isEqualTo(seed.value, "from keeps value");
   });
-});
 
-describe("PairBuilder setters", () => {
-  test("withKey writes key", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = PairBuilder.create<unknown, unknown>().build();
+    expect(PairBuilder.from<unknown, unknown>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function pairBuilderWithKeyCases(): void {
+  it("writes its argument to key", () => {
     let want: unknown;
-    want = 'key-a';
+    want = "key-a";
     const got = PairBuilder.create<unknown, unknown>().withKey(want).build();
-    check.equal(seat, got.key, want, "the setter writes what it was given");
+    expect(got.key).isEqualTo(want, "withKey writes its argument to key");
   });
 
-  test("withKey replaces what was already there", ({ seat }) => {
+  it("replaces the value of key", () => {
     let first: unknown;
     let want: unknown;
-    first = 'key-a';
-    want = 'key-b';
+    first = "key-a";
+    want = "key-b";
     const got = PairBuilder.create<unknown, unknown>().withKey(first).withKey(want).build();
-    check.equal(seat, got.key, want, "the later call wins");
+    expect(got.key).isEqualTo(want, "the second call of withKey replaces the first");
   });
+}
 
-  test("withValue writes value", ({ seat }) => {
+function pairBuilderWithValueCases(): void {
+  it("writes its argument to value", () => {
     let want: unknown;
-    want = 'value-a';
+    want = "value-a";
     const got = PairBuilder.create<unknown, unknown>().withValue(want).build();
-    check.equal(seat, got.value, want, "the setter writes what it was given");
+    expect(got.value).isEqualTo(want, "withValue writes its argument to value");
   });
 
-  test("withValue replaces what was already there", ({ seat }) => {
+  it("replaces the value of value", () => {
     let first: unknown;
     let want: unknown;
-    first = 'value-a';
-    want = 'value-b';
+    first = "value-a";
+    want = "value-b";
     const got = PairBuilder.create<unknown, unknown>().withValue(first).withValue(want).build();
-    check.equal(seat, got.value, want, "the later call wins");
+    expect(got.value).isEqualTo(want, "the second call of withValue replaces the first");
   });
+}
 
-  test("withIndex writes index", ({ seat }) => {
+function pairBuilderWithIndexCases(): void {
+  it("writes its argument to index", () => {
     let want: Map<unknown, unknown>;
-    want = new Map<unknown, unknown>([['index-a', 'index-a']]);
+    want = new Map<unknown, unknown>([["index-a", "index-a"]]);
     const got = PairBuilder.create<unknown, unknown>().withIndex(want).build();
-    check.length(seat, got.index, 1, "the setter replaces the collection");
+    expect(got.index).isEqualTo(want, "withIndex writes its argument to index");
   });
 
-  test("withIndexEntry adds one key to index", ({ seat }) => {
+  it("replaces the value of index", () => {
+    let first: Map<unknown, unknown>;
     let want: Map<unknown, unknown>;
-    want = new Map<unknown, unknown>([['index-a', 'index-a']]);
+    first = new Map<unknown, unknown>([["index-a", "index-a"]]);
+    want = new Map<unknown, unknown>([["index-b", "index-a"]]);
+    const got = PairBuilder.create<unknown, unknown>().withIndex(first).withIndex(want).build();
+    expect(got.index).isEqualTo(want, "the second call of withIndex replaces the first");
+  });
+}
+
+function pairBuilderWithIndexEntryCases(): void {
+  it("adds one key to index", () => {
+    let want: Map<unknown, unknown>;
+    want = new Map<unknown, unknown>([["index-a", "index-a"]]);
     const builder = PairBuilder.create<unknown, unknown>();
     for (const [key, item] of want) {
-      check.equal(seat, builder.withIndexEntry(key, item).build().index.get(key), item, "the setter sets the key");
+      expect(builder.withIndexEntry(key, item).build().index.get(key)).isEqualTo(item, "withIndexEntry sets the key");
     }
   });
+}
 
-  test("withIndexEntries adds each key to index", ({ seat }) => {
+function pairBuilderWithIndexEntriesCases(): void {
+  it("adds each key to index", () => {
     let want: Map<unknown, unknown>;
-    want = new Map<unknown, unknown>([['index-a', 'index-a']]);
+    want = new Map<unknown, unknown>([["index-a", "index-a"]]);
     const got = PairBuilder.create<unknown, unknown>().withIndexEntries(want).build();
     for (const [key, item] of want) {
-      check.equal(seat, got.index.get(key), item, "the setter merges each entry");
+      expect(got.index.get(key)).isEqualTo(item, "withIndexEntries copies each entry");
     }
   });
-});
+}
 
-describe("PairBuilder clone", () => {
-  test("index is not shared with a clone", ({ seat }) => {
-    let want: Map<unknown, unknown>;
-    let other: Map<unknown, unknown>;
-    want = new Map<unknown, unknown>([['index-a', 'index-a']]);
-    other = new Map<unknown, unknown>([['index-b', 'index-a']]);
-    const original = PairBuilder.create<unknown, unknown>().withIndex(want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      for (const [key, item] of other) {
-        value.index.set(key, item);
-      }
-    });
-    check.length(seat, original.build().index, 1, "writing through a clone must not reach the original");
-  });
-
-  test("clone copies index", ({ seat }) => {
-    let want: Map<unknown, unknown>;
-    want = new Map<unknown, unknown>([['index-a', 'index-a']]);
-    const original = PairBuilder.create<unknown, unknown>().withIndex(want);
-    check.equal(seat, original.clone().build().index, want, "a clone builds the same member as its original");
-  });
-});
-
-describe("PairBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function pairBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Pair<unknown, unknown>[] = [];
     const record = (value: Pair<unknown, unknown>): void => {
       seen.push(value);
     };
     PairBuilder.create<unknown, unknown>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function pairBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = PairBuilder.create<unknown, unknown>();
-    const want = original.build();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
+  });
+
+  it("builds the value of its original", () => {
+    const original = PairBuilder.create<unknown, unknown>();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+
+  it("copies index into the clone", () => {
+    let want: Map<unknown, unknown>;
+    let other: Map<unknown, unknown>;
+    want = new Map<unknown, unknown>([["index-a", "index-a"]]);
+    other = new Map<unknown, unknown>([["index-b", "index-a"]]);
+    const original = PairBuilder.create<unknown, unknown>().withIndex(want);
     const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, PairBuilder.from<unknown, unknown>(want).build(), want, "from keeps the value it was given");
+    const message = "a change of index in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      for (const [key, item] of other) {
+        value.index.set(key, item);
+      }
+    });
+    expect(original.build().index).hasLength(1, message);
   });
+
+  it("builds the index of its original", () => {
+    let want: Map<unknown, unknown>;
+    want = new Map<unknown, unknown>([["index-a", "index-a"]]);
+    const original = PairBuilder.create<unknown, unknown>().withIndex(want);
+    expect(original.clone().build().index).isEqualTo(want, "the clone builds the index of its original");
+  });
+}
+
+function pairBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = PairBuilder.create<unknown, unknown>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Pair<unknown, unknown>();
+    seed.key = "key-a";
+    seed.value = "value-a";
+    const builder = PairBuilder.create<unknown, unknown>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("PairBuilder", () => {
+  describe("from", pairBuilderFromCases);
+  describe("withKey", pairBuilderWithKeyCases);
+  describe("withValue", pairBuilderWithValueCases);
+  describe("withIndex", pairBuilderWithIndexCases);
+  describe("withIndexEntry", pairBuilderWithIndexEntryCases);
+  describe("withIndexEntries", pairBuilderWithIndexEntriesCases);
+  describe("mutate", pairBuilderMutateCases);
+  describe("clone", pairBuilderCloneCases);
+  describe("build", pairBuilderBuildCases);
 });
 
-describe("SoloBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function soloBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Solo<Keyable>();
-    seed.key = 'key-a';
+    seed.key = "key-a";
     const got = SoloBuilder.from<Keyable>(seed).build();
-    check.equal(seat, got.key, seed.key, "from keeps the member it was given");
+    expect(got.key).isEqualTo(seed.key, "from keeps key");
   });
-});
 
-describe("SoloBuilder setters", () => {
-  test("withKey writes key", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = SoloBuilder.create<Keyable>().build();
+    expect(SoloBuilder.from<Keyable>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function soloBuilderWithKeyCases(): void {
+  it("writes its argument to key", () => {
     let want: Keyable;
-    want = 'key-a';
+    want = "key-a";
     const got = SoloBuilder.create<Keyable>().withKey(want).build();
-    check.equal(seat, got.key, want, "the setter writes what it was given");
+    expect(got.key).isEqualTo(want, "withKey writes its argument to key");
   });
 
-  test("withKey replaces what was already there", ({ seat }) => {
+  it("replaces the value of key", () => {
     let first: Keyable;
     let want: Keyable;
-    first = 'key-a';
-    want = 'key-b';
+    first = "key-a";
+    want = "key-b";
     const got = SoloBuilder.create<Keyable>().withKey(first).withKey(want).build();
-    check.equal(seat, got.key, want, "the later call wins");
+    expect(got.key).isEqualTo(want, "the second call of withKey replaces the first");
   });
-});
+}
 
-describe("SoloBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function soloBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Solo<Keyable>[] = [];
     const record = (value: Solo<Keyable>): void => {
       seen.push(value);
     };
     SoloBuilder.create<Keyable>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function soloBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = SoloBuilder.create<Keyable>();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = SoloBuilder.create<Keyable>();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, SoloBuilder.from<Keyable>(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function soloBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = SoloBuilder.create<Keyable>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Solo<Keyable>();
+    seed.key = "key-a";
+    const builder = SoloBuilder.create<Keyable>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("SoloBuilder", () => {
+  describe("from", soloBuilderFromCases);
+  describe("withKey", soloBuilderWithKeyCases);
+  describe("mutate", soloBuilderMutateCases);
+  describe("clone", soloBuilderCloneCases);
+  describe("build", soloBuilderBuildCases);
 });
 
-describe("PartialPairBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function partialPairBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new PartialPair<Keyable, Seconds>();
-    seed.key = 'key-a';
+    seed.key = "key-a";
     seed.value = 1.5;
     const got = PartialPairBuilder.from<Keyable, Seconds>(seed).build();
-    check.equal(seat, got.key, seed.key, "from keeps the member it was given");
-    check.equal(seat, got.value, seed.value, "from keeps the member it was given");
+    expect.soft(got.key).isEqualTo(seed.key, "from keeps key");
+    expect.soft(got.value).isEqualTo(seed.value, "from keeps value");
   });
-});
 
-describe("PartialPairBuilder setters", () => {
-  test("withKey writes key", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = PartialPairBuilder.create<Keyable, Seconds>().build();
+    expect(PartialPairBuilder.from<Keyable, Seconds>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function partialPairBuilderWithKeyCases(): void {
+  it("writes its argument to key", () => {
     let want: Keyable;
-    want = 'key-a';
+    want = "key-a";
     const got = PartialPairBuilder.create<Keyable, Seconds>().withKey(want).build();
-    check.equal(seat, got.key, want, "the setter writes what it was given");
+    expect(got.key).isEqualTo(want, "withKey writes its argument to key");
   });
 
-  test("withKey replaces what was already there", ({ seat }) => {
+  it("replaces the value of key", () => {
     let first: Keyable;
     let want: Keyable;
-    first = 'key-a';
-    want = 'key-b';
+    first = "key-a";
+    want = "key-b";
     const got = PartialPairBuilder.create<Keyable, Seconds>().withKey(first).withKey(want).build();
-    check.equal(seat, got.key, want, "the later call wins");
+    expect(got.key).isEqualTo(want, "the second call of withKey replaces the first");
   });
+}
 
-  test("withValue writes value", ({ seat }) => {
+function partialPairBuilderWithValueCases(): void {
+  it("writes its argument to value", () => {
     let want: Seconds;
     want = 1.5;
     const got = PartialPairBuilder.create<Keyable, Seconds>().withValue(want).build();
-    check.equal(seat, got.value, want, "the setter writes what it was given");
+    expect(got.value).isEqualTo(want, "withValue writes its argument to value");
   });
 
-  test("withValue replaces what was already there", ({ seat }) => {
+  it("replaces the value of value", () => {
     let first: Seconds;
     let want: Seconds;
     first = 1.5;
     want = 2.5;
     const got = PartialPairBuilder.create<Keyable, Seconds>().withValue(first).withValue(want).build();
-    check.equal(seat, got.value, want, "the later call wins");
+    expect(got.value).isEqualTo(want, "the second call of withValue replaces the first");
   });
-});
+}
 
-describe("PartialPairBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function partialPairBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: PartialPair<Keyable, Seconds>[] = [];
     const record = (value: PartialPair<Keyable, Seconds>): void => {
       seen.push(value);
     };
     PartialPairBuilder.create<Keyable, Seconds>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function partialPairBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = PartialPairBuilder.create<Keyable, Seconds>();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = PartialPairBuilder.create<Keyable, Seconds>();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, PartialPairBuilder.from<Keyable, Seconds>(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function partialPairBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = PartialPairBuilder.create<Keyable, Seconds>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new PartialPair<Keyable, Seconds>();
+    seed.key = "key-a";
+    seed.value = 1.5;
+    const builder = PartialPairBuilder.create<Keyable, Seconds>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("PartialPairBuilder", () => {
+  describe("from", partialPairBuilderFromCases);
+  describe("withKey", partialPairBuilderWithKeyCases);
+  describe("withValue", partialPairBuilderWithValueCases);
+  describe("mutate", partialPairBuilderMutateCases);
+  describe("clone", partialPairBuilderCloneCases);
+  describe("build", partialPairBuilderBuildCases);
 });
 
-describe("BucketBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function bucketBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Bucket<string, Seconds>();
-    seed.key = 'key-a';
+    seed.key = "key-a";
     seed.value = 1.5;
     seed.ttl = 1.5;
     const got = BucketBuilder.from<string, Seconds>(seed).build();
-    check.equal(seat, got.key, seed.key, "from keeps the member it was given");
-    check.equal(seat, got.value, seed.value, "from keeps the member it was given");
-    check.equal(seat, got.ttl, seed.ttl, "from keeps the member it was given");
+    expect.soft(got.key).isEqualTo(seed.key, "from keeps key");
+    expect.soft(got.value).isEqualTo(seed.value, "from keeps value");
+    expect.soft(got.ttl).isEqualTo(seed.ttl, "from keeps ttl");
   });
-});
 
-describe("BucketBuilder setters", () => {
-  test("withKey writes key", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = BucketBuilder.create<string, Seconds>().build();
+    expect(BucketBuilder.from<string, Seconds>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function bucketBuilderWithKeyCases(): void {
+  it("writes its argument to key", () => {
     let want: string;
-    want = 'key-a';
+    want = "key-a";
     const got = BucketBuilder.create<string, Seconds>().withKey(want).build();
-    check.equal(seat, got.key, want, "the setter writes what it was given");
+    expect(got.key).isEqualTo(want, "withKey writes its argument to key");
   });
 
-  test("withKey replaces what was already there", ({ seat }) => {
+  it("replaces the value of key", () => {
     let first: string;
     let want: string;
-    first = 'key-a';
-    want = 'key-b';
+    first = "key-a";
+    want = "key-b";
     const got = BucketBuilder.create<string, Seconds>().withKey(first).withKey(want).build();
-    check.equal(seat, got.key, want, "the later call wins");
+    expect(got.key).isEqualTo(want, "the second call of withKey replaces the first");
   });
+}
 
-  test("withValue writes value", ({ seat }) => {
+function bucketBuilderWithValueCases(): void {
+  it("writes its argument to value", () => {
     let want: Seconds;
     want = 1.5;
     const got = BucketBuilder.create<string, Seconds>().withValue(want).build();
-    check.equal(seat, got.value, want, "the setter writes what it was given");
+    expect(got.value).isEqualTo(want, "withValue writes its argument to value");
   });
 
-  test("withValue replaces what was already there", ({ seat }) => {
+  it("replaces the value of value", () => {
     let first: Seconds;
     let want: Seconds;
     first = 1.5;
     want = 2.5;
     const got = BucketBuilder.create<string, Seconds>().withValue(first).withValue(want).build();
-    check.equal(seat, got.value, want, "the later call wins");
+    expect(got.value).isEqualTo(want, "the second call of withValue replaces the first");
   });
+}
 
-  test("withTtl writes ttl", ({ seat }) => {
+function bucketBuilderWithTtlCases(): void {
+  it("writes its argument to ttl", () => {
     let want: Seconds;
     want = 1.5;
     const got = BucketBuilder.create<string, Seconds>().withTtl(want).build();
-    check.equal(seat, got.ttl, want, "the setter writes what it was given");
+    expect(got.ttl).isEqualTo(want, "withTtl writes its argument to ttl");
   });
 
-  test("withTtl replaces what was already there", ({ seat }) => {
+  it("replaces the value of ttl", () => {
     let first: Seconds;
     let want: Seconds;
     first = 1.5;
     want = 2.5;
     const got = BucketBuilder.create<string, Seconds>().withTtl(first).withTtl(want).build();
-    check.equal(seat, got.ttl, want, "the later call wins");
+    expect(got.ttl).isEqualTo(want, "the second call of withTtl replaces the first");
   });
-});
+}
 
-describe("BucketBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function bucketBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Bucket<string, Seconds>[] = [];
     const record = (value: Bucket<string, Seconds>): void => {
       seen.push(value);
     };
     BucketBuilder.create<string, Seconds>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function bucketBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = BucketBuilder.create<string, Seconds>();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = BucketBuilder.create<string, Seconds>();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, BucketBuilder.from<string, Seconds>(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function bucketBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = BucketBuilder.create<string, Seconds>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Bucket<string, Seconds>();
+    seed.key = "key-a";
+    seed.value = 1.5;
+    seed.ttl = 1.5;
+    const builder = BucketBuilder.create<string, Seconds>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("BucketBuilder", () => {
+  describe("from", bucketBuilderFromCases);
+  describe("withKey", bucketBuilderWithKeyCases);
+  describe("withValue", bucketBuilderWithValueCases);
+  describe("withTtl", bucketBuilderWithTtlCases);
+  describe("mutate", bucketBuilderMutateCases);
+  describe("clone", bucketBuilderCloneCases);
+  describe("build", bucketBuilderBuildCases);
 });
 
-describe("TripleBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function tripleBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Triple<string, number, boolean>();
-    seed.first = 'first-a';
+    seed.first = "first-a";
     seed.second = 1.5;
     seed.third = true;
     const got = TripleBuilder.from<string, number, boolean>(seed).build();
-    check.equal(seat, got.first, seed.first, "from keeps the member it was given");
-    check.equal(seat, got.second, seed.second, "from keeps the member it was given");
-    check.equal(seat, got.third, seed.third, "from keeps the member it was given");
+    expect.soft(got.first).isEqualTo(seed.first, "from keeps first");
+    expect.soft(got.second).isEqualTo(seed.second, "from keeps second");
+    expect.soft(got.third).isEqualTo(seed.third, "from keeps third");
   });
-});
 
-describe("TripleBuilder setters", () => {
-  test("withFirst writes first", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = TripleBuilder.create<string, number, boolean>().build();
+    expect(TripleBuilder.from<string, number, boolean>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function tripleBuilderWithFirstCases(): void {
+  it("writes its argument to first", () => {
     let want: string;
-    want = 'first-a';
+    want = "first-a";
     const got = TripleBuilder.create<string, number, boolean>().withFirst(want).build();
-    check.equal(seat, got.first, want, "the setter writes what it was given");
+    expect(got.first).isEqualTo(want, "withFirst writes its argument to first");
   });
 
-  test("withFirst replaces what was already there", ({ seat }) => {
+  it("replaces the value of first", () => {
     let first: string;
     let want: string;
-    first = 'first-a';
-    want = 'first-b';
+    first = "first-a";
+    want = "first-b";
     const got = TripleBuilder.create<string, number, boolean>().withFirst(first).withFirst(want).build();
-    check.equal(seat, got.first, want, "the later call wins");
+    expect(got.first).isEqualTo(want, "the second call of withFirst replaces the first");
   });
+}
 
-  test("withSecond writes second", ({ seat }) => {
+function tripleBuilderWithSecondCases(): void {
+  it("writes its argument to second", () => {
     let want: number;
     want = 1.5;
     const got = TripleBuilder.create<string, number, boolean>().withSecond(want).build();
-    check.equal(seat, got.second, want, "the setter writes what it was given");
+    expect(got.second).isEqualTo(want, "withSecond writes its argument to second");
   });
 
-  test("withSecond replaces what was already there", ({ seat }) => {
+  it("replaces the value of second", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = TripleBuilder.create<string, number, boolean>().withSecond(first).withSecond(want).build();
-    check.equal(seat, got.second, want, "the later call wins");
+    expect(got.second).isEqualTo(want, "the second call of withSecond replaces the first");
   });
+}
 
-  test("withThird writes third", ({ seat }) => {
+function tripleBuilderWithThirdCases(): void {
+  it("writes its argument to third", () => {
     let want: boolean;
     want = true;
     const got = TripleBuilder.create<string, number, boolean>().withThird(want).build();
-    check.equal(seat, got.third, want, "the setter writes what it was given");
+    expect(got.third).isEqualTo(want, "withThird writes its argument to third");
   });
 
-  test("withThird replaces what was already there", ({ seat }) => {
+  it("replaces the value of third", () => {
     let first: boolean;
     let want: boolean;
     first = true;
     want = false;
     const got = TripleBuilder.create<string, number, boolean>().withThird(first).withThird(want).build();
-    check.equal(seat, got.third, want, "the later call wins");
+    expect(got.third).isEqualTo(want, "the second call of withThird replaces the first");
   });
-});
+}
 
-describe("TripleBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function tripleBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Triple<string, number, boolean>[] = [];
     const record = (value: Triple<string, number, boolean>): void => {
       seen.push(value);
     };
     TripleBuilder.create<string, number, boolean>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function tripleBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = TripleBuilder.create<string, number, boolean>();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, TripleBuilder.from<string, number, boolean>(want).build(), want, "from keeps the value it was given");
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
-});
 
-describe("QuadBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
-    const seed = new Quad<string, number, boolean, string>();
-    seed.first = 'first-a';
+  it("builds the value of its original", () => {
+    const original = TripleBuilder.create<string, number, boolean>();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+}
+
+function tripleBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = TripleBuilder.create<string, number, boolean>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Triple<string, number, boolean>();
+    seed.first = "first-a";
     seed.second = 1.5;
     seed.third = true;
-    seed.fourth = 'fourth-a';
-    const got = QuadBuilder.from<string, number, boolean, string>(seed).build();
-    check.equal(seat, got.first, seed.first, "from keeps the member it was given");
-    check.equal(seat, got.second, seed.second, "from keeps the member it was given");
-    check.equal(seat, got.third, seed.third, "from keeps the member it was given");
-    check.equal(seat, got.fourth, seed.fourth, "from keeps the member it was given");
+    const builder = TripleBuilder.create<string, number, boolean>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
   });
+}
+
+describe("TripleBuilder", () => {
+  describe("from", tripleBuilderFromCases);
+  describe("withFirst", tripleBuilderWithFirstCases);
+  describe("withSecond", tripleBuilderWithSecondCases);
+  describe("withThird", tripleBuilderWithThirdCases);
+  describe("mutate", tripleBuilderMutateCases);
+  describe("clone", tripleBuilderCloneCases);
+  describe("build", tripleBuilderBuildCases);
 });
 
-describe("QuadBuilder setters", () => {
-  test("withFirst writes first", ({ seat }) => {
-    let want: string;
-    want = 'first-a';
-    const got = QuadBuilder.create<string, number, boolean, string>().withFirst(want).build();
-    check.equal(seat, got.first, want, "the setter writes what it was given");
+function quadBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
+    const seed = new Quad<string, number, boolean, string>();
+    seed.first = "first-a";
+    seed.second = 1.5;
+    seed.third = true;
+    seed.fourth = "fourth-a";
+    const got = QuadBuilder.from<string, number, boolean, string>(seed).build();
+    expect.soft(got.first).isEqualTo(seed.first, "from keeps first");
+    expect.soft(got.second).isEqualTo(seed.second, "from keeps second");
+    expect.soft(got.third).isEqualTo(seed.third, "from keeps third");
+    expect.soft(got.fourth).isEqualTo(seed.fourth, "from keeps fourth");
   });
 
-  test("withFirst replaces what was already there", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = QuadBuilder.create<string, number, boolean, string>().build();
+    expect(QuadBuilder.from<string, number, boolean, string>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function quadBuilderWithFirstCases(): void {
+  it("writes its argument to first", () => {
+    let want: string;
+    want = "first-a";
+    const got = QuadBuilder.create<string, number, boolean, string>().withFirst(want).build();
+    expect(got.first).isEqualTo(want, "withFirst writes its argument to first");
+  });
+
+  it("replaces the value of first", () => {
     let first: string;
     let want: string;
-    first = 'first-a';
-    want = 'first-b';
+    first = "first-a";
+    want = "first-b";
     const got = QuadBuilder.create<string, number, boolean, string>().withFirst(first).withFirst(want).build();
-    check.equal(seat, got.first, want, "the later call wins");
+    expect(got.first).isEqualTo(want, "the second call of withFirst replaces the first");
   });
+}
 
-  test("withSecond writes second", ({ seat }) => {
+function quadBuilderWithSecondCases(): void {
+  it("writes its argument to second", () => {
     let want: number;
     want = 1.5;
     const got = QuadBuilder.create<string, number, boolean, string>().withSecond(want).build();
-    check.equal(seat, got.second, want, "the setter writes what it was given");
+    expect(got.second).isEqualTo(want, "withSecond writes its argument to second");
   });
 
-  test("withSecond replaces what was already there", ({ seat }) => {
+  it("replaces the value of second", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = QuadBuilder.create<string, number, boolean, string>().withSecond(first).withSecond(want).build();
-    check.equal(seat, got.second, want, "the later call wins");
+    expect(got.second).isEqualTo(want, "the second call of withSecond replaces the first");
   });
+}
 
-  test("withThird writes third", ({ seat }) => {
+function quadBuilderWithThirdCases(): void {
+  it("writes its argument to third", () => {
     let want: boolean;
     want = true;
     const got = QuadBuilder.create<string, number, boolean, string>().withThird(want).build();
-    check.equal(seat, got.third, want, "the setter writes what it was given");
+    expect(got.third).isEqualTo(want, "withThird writes its argument to third");
   });
 
-  test("withThird replaces what was already there", ({ seat }) => {
+  it("replaces the value of third", () => {
     let first: boolean;
     let want: boolean;
     first = true;
     want = false;
     const got = QuadBuilder.create<string, number, boolean, string>().withThird(first).withThird(want).build();
-    check.equal(seat, got.third, want, "the later call wins");
+    expect(got.third).isEqualTo(want, "the second call of withThird replaces the first");
   });
+}
 
-  test("withFourth writes fourth", ({ seat }) => {
+function quadBuilderWithFourthCases(): void {
+  it("writes its argument to fourth", () => {
     let want: string;
-    want = 'fourth-a';
+    want = "fourth-a";
     const got = QuadBuilder.create<string, number, boolean, string>().withFourth(want).build();
-    check.equal(seat, got.fourth, want, "the setter writes what it was given");
+    expect(got.fourth).isEqualTo(want, "withFourth writes its argument to fourth");
   });
 
-  test("withFourth replaces what was already there", ({ seat }) => {
+  it("replaces the value of fourth", () => {
     let first: string;
     let want: string;
-    first = 'fourth-a';
-    want = 'fourth-b';
+    first = "fourth-a";
+    want = "fourth-b";
     const got = QuadBuilder.create<string, number, boolean, string>().withFourth(first).withFourth(want).build();
-    check.equal(seat, got.fourth, want, "the later call wins");
+    expect(got.fourth).isEqualTo(want, "the second call of withFourth replaces the first");
   });
-});
+}
 
-describe("QuadBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function quadBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Quad<string, number, boolean, string>[] = [];
     const record = (value: Quad<string, number, boolean, string>): void => {
       seen.push(value);
     };
     QuadBuilder.create<string, number, boolean, string>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function quadBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = QuadBuilder.create<string, number, boolean, string>();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = QuadBuilder.create<string, number, boolean, string>();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, QuadBuilder.from<string, number, boolean, string>(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function quadBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = QuadBuilder.create<string, number, boolean, string>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Quad<string, number, boolean, string>();
+    seed.first = "first-a";
+    seed.second = 1.5;
+    seed.third = true;
+    seed.fourth = "fourth-a";
+    const builder = QuadBuilder.create<string, number, boolean, string>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("QuadBuilder", () => {
+  describe("from", quadBuilderFromCases);
+  describe("withFirst", quadBuilderWithFirstCases);
+  describe("withSecond", quadBuilderWithSecondCases);
+  describe("withThird", quadBuilderWithThirdCases);
+  describe("withFourth", quadBuilderWithFourthCases);
+  describe("mutate", quadBuilderMutateCases);
+  describe("clone", quadBuilderCloneCases);
+  describe("build", quadBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:031b48790d9367902d3e914c4eb3786bc0e4e791fee7001c3bbdca0b0a935a1f
+// dokimi:provenance sha256:7eff5d41f54cef7715286287870441298bf5123e0e35d5f7a79151fef6287cd6

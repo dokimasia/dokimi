@@ -2,20 +2,19 @@
 // dokimi:plugin stub
 // dokimi:source integration/built/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Invoice } from '../billing/billing';
-import type { Account, Note, Page } from '../iface';
-import { AccountBuilder, PageBuilder } from './iface.builder';
-import { LedgerStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { Invoice } from "../billing/billing";
+import { Account, Note, Page } from "../iface";
+import { AccountBuilder, PageBuilder } from "./iface.builder";
+import { LedgerStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of get, or undefined. */
+/** Returns the samples of the arguments of get. An argument without a sample is undefined. */
 function ledgerStubGetArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'get-a';
+  a0 = "get-a";
   return [a0];
 }
 
@@ -28,47 +27,47 @@ function ledgerStubGet(double: LedgerStub): Promise<Account> {
 /** Returns the sample of the result of get. */
 function ledgerStubGetPin(): Account {
   let want0: Account;
-  want0 = {id: 'id-a'} as Account;
+  want0 = Object.assign(new Account(), { id: "id-a" });
   return want0;
 }
 
-/** Returns the samples of the arguments of find, or undefined. */
+/** Returns the samples of the arguments of find. An argument without a sample is undefined. */
 function ledgerStubFindArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'find-a';
+  a0 = "find-a";
   return [a0];
 }
 
 /** Calls find of double with the samples of its arguments. */
-function ledgerStubFind(double: LedgerStub): Promise<Account|undefined> {
+function ledgerStubFind(double: LedgerStub): Promise<Account | undefined> {
   const args = ledgerStubFindArgs();
   return double.find(args[0]);
 }
 
 /** Returns the sample of the result of find. */
-function ledgerStubFindPin(): Account|undefined {
-  let want0: Account|undefined;
-  want0 = {id: 'id-a'} as Account;
+function ledgerStubFindPin(): Account | undefined {
+  let want0: Account | undefined;
+  want0 = Object.assign(new Account(), { id: "id-a" });
   return want0;
 }
 
-/** Returns the samples of the arguments of lookup, or undefined. */
+/** Returns the samples of the arguments of lookup. An argument without a sample is undefined. */
 function ledgerStubLookupArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'lookup-a';
+  a0 = "lookup-a";
   return [a0];
 }
 
 /** Calls lookup of double with the samples of its arguments. */
-function ledgerStubLookup(double: LedgerStub): Account|undefined {
+function ledgerStubLookup(double: LedgerStub): Account | undefined {
   const args = ledgerStubLookupArgs();
   return double.lookup(args[0]);
 }
 
 /** Returns the sample of the result of lookup. */
-function ledgerStubLookupPin(): Account|undefined {
-  let want0: Account|undefined;
-  want0 = {id: 'id-a'} as Account;
+function ledgerStubLookupPin(): Account | undefined {
+  let want0: Account | undefined;
+  want0 = Object.assign(new Account(), { id: "id-a" });
   return want0;
 }
 
@@ -80,14 +79,14 @@ function ledgerStubList(double: LedgerStub): Promise<Page<Account>> {
 /** Returns the sample of the result of list. */
 function ledgerStubListPin(): Page<Account> {
   let want0: Page<Account>;
-  want0 = {next: 'next-a'} as Page<Account>;
+  want0 = Object.assign(new Page<Account>(), { items: [Object.assign(new Account(), { id: "id-a" })] });
   return want0;
 }
 
-/** Returns the samples of the arguments of note, or undefined. */
+/** Returns the samples of the arguments of note. An argument without a sample is undefined. */
 function ledgerStubNoteArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'note-a';
+  a0 = "note-a";
   return [a0];
 }
 
@@ -100,14 +99,14 @@ function ledgerStubNote(double: LedgerStub): Note {
 /** Returns the sample of the result of note. */
 function ledgerStubNotePin(): Note {
   let want0: Note;
-  want0 = {text: 'text-a'} as Note;
+  want0 = Object.assign(new Note(), { text: "text-a" });
   return want0;
 }
 
-/** Returns the samples of the arguments of bill, or undefined. */
+/** Returns the samples of the arguments of bill. An argument without a sample is undefined. */
 function ledgerStubBillArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'bill-a';
+  a0 = "bill-a";
   return [a0];
 }
 
@@ -120,567 +119,871 @@ function ledgerStubBill(double: LedgerStub): Invoice {
 /** Returns the sample of the result of bill. */
 function ledgerStubBillPin(): Invoice {
   let want0: Invoice;
-  want0 = {number: 'number-a'} as Invoice;
+  want0 = Object.assign(new Invoice(), { number: "number-a" });
   return want0;
 }
 
-describe("LedgerStub.get", () => {
-  const checks = behaviour("Ledger.get", (seat) => {
-    const double = new LedgerStub(seat);
-    return {
-      stub: double.onGet,
-      call: () => ledgerStubGet(double),
-      override: (mark) => {
-        double.onGet.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-      default: () => AccountBuilder.create().build(),
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubGetPin();
-    const unset = AccountBuilder.create().build();
-    check.notEqual(seat, want, unset, "the sample of the result differs from its default result");
-    double.onGet.returns(want);
-    check.equal(seat, await ledgerStubGet(double), want, "get returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    await ledgerStubGet(double);
-    const got = double.onGet.assertCalledOnce(seat, "get records the call");
-    const args = ledgerStubGetArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    let seen = 0;
-    double.onGet.onRecord(() => {
-      seen += 1;
-    });
-    await ledgerStubGet(double);
-    await ledgerStubGet(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of get");
-  });
-
-  test("sets the function of withLedgerGet at construction", async ({ seat }) => {
-    let called = false;
-    const option = LedgerStub.withLedgerGet(() => {
-      called = true;
-      return undefined as never;
-    });
-    await ledgerStubGet(new LedgerStub(seat, option));
-    check.isTrue(seat, called, "withLedgerGet sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("get-failing");
-    const double = LedgerStub.newFailing(seat, want);
-    const outcome = await settle(() => ledgerStubGet(double));
-    const message = "get fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubGetPin();
-    double.onGet.returns(want);
-    await ledgerStubGet(double);
-    double.resetCalls();
-    check.equal(seat, await ledgerStubGet(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LedgerStub.find", () => {
-  const checks = behaviour("Ledger.find", (seat) => {
-    const double = new LedgerStub(seat);
-    return {
-      stub: double.onFind,
-      call: () => ledgerStubFind(double),
-      override: (mark) => {
-        double.onFind.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-      default: () => AccountBuilder.create().build(),
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubFindPin();
-    const unset = AccountBuilder.create().build();
-    check.notEqual(seat, want, unset, "the sample of the result differs from its default result");
-    double.onFind.returns(want);
-    check.equal(seat, await ledgerStubFind(double), want, "find returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    await ledgerStubFind(double);
-    const got = double.onFind.assertCalledOnce(seat, "find records the call");
-    const args = ledgerStubFindArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    let seen = 0;
-    double.onFind.onRecord(() => {
-      seen += 1;
-    });
-    await ledgerStubFind(double);
-    await ledgerStubFind(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of find");
-  });
-
-  test("sets the function of withLedgerFind at construction", async ({ seat }) => {
-    let called = false;
-    const option = LedgerStub.withLedgerFind(() => {
-      called = true;
-      return undefined as never;
-    });
-    await ledgerStubFind(new LedgerStub(seat, option));
-    check.isTrue(seat, called, "withLedgerFind sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("find-failing");
-    const double = LedgerStub.newFailing(seat, want);
-    const outcome = await settle(() => ledgerStubFind(double));
-    const message = "find fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubFindPin();
-    double.onFind.returns(want);
-    await ledgerStubFind(double);
-    double.resetCalls();
-    check.equal(seat, await ledgerStubFind(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LedgerStub.lookup", () => {
-  const checks = behaviour("Ledger.lookup", (seat) => {
-    const double = new LedgerStub(seat);
-    return {
-      stub: double.onLookup,
-      call: () => ledgerStubLookup(double),
-      override: (mark) => {
-        double.onLookup.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-      default: () => AccountBuilder.create().build(),
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubLookupPin();
-    const unset = AccountBuilder.create().build();
-    check.notEqual(seat, want, unset, "the sample of the result differs from its default result");
-    double.onLookup.returns(want);
-    check.equal(seat, ledgerStubLookup(double), want, "lookup returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    ledgerStubLookup(double);
-    const got = double.onLookup.assertCalledOnce(seat, "lookup records the call");
-    const args = ledgerStubLookupArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    let seen = 0;
-    double.onLookup.onRecord(() => {
-      seen += 1;
-    });
-    ledgerStubLookup(double);
-    ledgerStubLookup(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of lookup");
-  });
-
-  test("sets the function of withLedgerLookup at construction", async ({ seat }) => {
-    let called = false;
-    const option = LedgerStub.withLedgerLookup(() => {
-      called = true;
-      return undefined as never;
-    });
-    ledgerStubLookup(new LedgerStub(seat, option));
-    check.isTrue(seat, called, "withLedgerLookup sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("lookup-failing");
-    const double = LedgerStub.newFailing(seat, want);
-    const outcome = await settle(() => ledgerStubLookup(double));
-    const message = "lookup fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubLookupPin();
-    double.onLookup.returns(want);
-    ledgerStubLookup(double);
-    double.resetCalls();
-    check.equal(seat, ledgerStubLookup(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LedgerStub.list", () => {
-  const checks = behaviour("Ledger.list", (seat) => {
-    const double = new LedgerStub(seat);
-    return {
-      stub: double.onList,
-      call: () => ledgerStubList(double),
-      override: (mark) => {
-        double.onList.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-      default: () => PageBuilder.create<Account>().build(),
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubListPin();
-    const unset = PageBuilder.create<Account>().build();
-    check.notEqual(seat, want, unset, "the sample of the result differs from its default result");
-    double.onList.returns(want);
-    check.equal(seat, await ledgerStubList(double), want, "list returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    await ledgerStubList(double);
-    double.onList.assertCalledOnce(seat, "list records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    let seen = 0;
-    double.onList.onRecord(() => {
-      seen += 1;
-    });
-    await ledgerStubList(double);
-    await ledgerStubList(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of list");
-  });
-
-  test("sets the function of withLedgerList at construction", async ({ seat }) => {
-    let called = false;
-    const option = LedgerStub.withLedgerList(() => {
-      called = true;
-      return undefined as never;
-    });
-    await ledgerStubList(new LedgerStub(seat, option));
-    check.isTrue(seat, called, "withLedgerList sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("list-failing");
-    const double = LedgerStub.newFailing(seat, want);
-    const outcome = await settle(() => ledgerStubList(double));
-    const message = "list fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubListPin();
-    double.onList.returns(want);
-    await ledgerStubList(double);
-    double.resetCalls();
-    check.equal(seat, await ledgerStubList(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LedgerStub.note", () => {
-  const checks = behaviour("Ledger.note", (seat) => {
-    const double = new LedgerStub(seat);
-    return {
-      stub: double.onNote,
-      call: () => ledgerStubNote(double),
-      override: (mark) => {
-        double.onNote.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubNotePin();
-    double.onNote.returns(want);
-    check.equal(seat, ledgerStubNote(double), want, "note returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    ledgerStubNote(double);
-    const got = double.onNote.assertCalledOnce(seat, "note records the call");
-    const args = ledgerStubNoteArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    let seen = 0;
-    double.onNote.onRecord(() => {
-      seen += 1;
-    });
-    ledgerStubNote(double);
-    ledgerStubNote(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of note");
-  });
-
-  test("sets the function of withLedgerNote at construction", async ({ seat }) => {
-    let called = false;
-    const option = LedgerStub.withLedgerNote(() => {
-      called = true;
-      return undefined as never;
-    });
-    ledgerStubNote(new LedgerStub(seat, option));
-    check.isTrue(seat, called, "withLedgerNote sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("note-failing");
-    const double = LedgerStub.newFailing(seat, want);
-    const outcome = await settle(() => ledgerStubNote(double));
-    const message = "note fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubNotePin();
-    double.onNote.returns(want);
-    ledgerStubNote(double);
-    double.resetCalls();
-    check.equal(seat, ledgerStubNote(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LedgerStub.bill", () => {
-  const checks = behaviour("Ledger.bill", (seat) => {
-    const double = new LedgerStub(seat);
-    return {
-      stub: double.onBill,
-      call: () => ledgerStubBill(double),
-      override: (mark) => {
-        double.onBill.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubBillPin();
-    double.onBill.returns(want);
-    check.equal(seat, ledgerStubBill(double), want, "bill returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    ledgerStubBill(double);
-    const got = double.onBill.assertCalledOnce(seat, "bill records the call");
-    const args = ledgerStubBillArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    let seen = 0;
-    double.onBill.onRecord(() => {
-      seen += 1;
-    });
-    ledgerStubBill(double);
-    ledgerStubBill(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of bill");
-  });
-
-  test("sets the function of withLedgerBill at construction", async ({ seat }) => {
-    let called = false;
-    const option = LedgerStub.withLedgerBill(() => {
-      called = true;
-      return undefined as never;
-    });
-    ledgerStubBill(new LedgerStub(seat, option));
-    check.isTrue(seat, called, "withLedgerBill sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("bill-failing");
-    const double = LedgerStub.newFailing(seat, want);
-    const outcome = await settle(() => ledgerStubBill(double));
-    const message = "bill fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LedgerStub(seat);
-    const want = ledgerStubBillPin();
-    double.onBill.returns(want);
-    ledgerStubBill(double);
-    double.resetCalls();
-    check.equal(seat, ledgerStubBill(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LedgerStub", () => {
-  const instance = (double: LedgerStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * get alone.
+ */
+function ledgerStubInstance(double: LedgerStub) {
+  return {
     stub: double.onGet,
     call: () => ledgerStubGet(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new LedgerStub(seat)),
-    withClock: (seat, clock) => instance(new LedgerStub(seat, LedgerStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(LedgerStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new LedgerStub(seat, LedgerStub.withRandSource(random))),
-    benchMode: (seat) => instance(new LedgerStub(seat, LedgerStub.benchMode())),
-    strict: (seat) => instance(new LedgerStub(seat, LedgerStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes get to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LedgerStub(seat);
-    await settle(() => ledgerStubGet(new LedgerStub(seat, LedgerStub.delegateTo(inner))));
-    inner.onGet.assertCalledOnce(seat, "get reaches the implementation");
-  });
+describe("LedgerStub", () => {
+  describe("get", () => {
+    const checks = behaviour("Ledger.get", (seat) => {
+      const double = new LedgerStub(seat);
+      return {
+        stub: double.onGet,
+        call: () => ledgerStubGet(double),
+        override: (mark) => {
+          double.onGet.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+        default: () => AccountBuilder.create().build(),
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails get with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("get-delegate");
-    const inner = new LedgerStub(seat);
-    inner.onGet.faults(want, 1);
-    const double = new LedgerStub(seat, LedgerStub.delegateTo(inner));
-    const outcome = await settle(() => ledgerStubGet(double));
-    const message = "get fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new LedgerStub(undefined);
+      await ledgerStubGet(double);
+      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
+      const got = double.onGet.calls[0];
+      const args = ledgerStubGetArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
 
-  test("passes find to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LedgerStub(seat);
-    await settle(() => ledgerStubFind(new LedgerStub(seat, LedgerStub.delegateTo(inner))));
-    inner.onFind.assertCalledOnce(seat, "find reaches the implementation");
-  });
-
-  test("fails find with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("find-delegate");
-    const inner = new LedgerStub(seat);
-    inner.onFind.faults(want, 1);
-    const double = new LedgerStub(seat, LedgerStub.delegateTo(inner));
-    const outcome = await settle(() => ledgerStubFind(double));
-    const message = "find fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LedgerStub(undefined);
+      let seen = 0;
+      double.onGet.onRecord(() => {
+        seen += 1;
+      });
+      await ledgerStubGet(double);
+      await ledgerStubGet(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
+    });
   });
 
-  test("passes lookup to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LedgerStub(seat);
-    await settle(() => ledgerStubLookup(new LedgerStub(seat, LedgerStub.delegateTo(inner))));
-    inner.onLookup.assertCalledOnce(seat, "lookup reaches the implementation");
+  describe("find", () => {
+    const checks = behaviour("Ledger.find", (seat) => {
+      const double = new LedgerStub(seat);
+      return {
+        stub: double.onFind,
+        call: () => ledgerStubFind(double),
+        override: (mark) => {
+          double.onFind.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+        default: () => AccountBuilder.create().build(),
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LedgerStub(undefined);
+      await ledgerStubFind(double);
+      expect(double.onFind.callCount).isEqualTo(1, "find records the call");
+      const got = double.onFind.calls[0];
+      const args = ledgerStubFindArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LedgerStub(undefined);
+      let seen = 0;
+      double.onFind.onRecord(() => {
+        seen += 1;
+      });
+      await ledgerStubFind(double);
+      await ledgerStubFind(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of find");
+    });
   });
 
-  test("fails lookup with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("lookup-delegate");
-    const inner = new LedgerStub(seat);
-    inner.onLookup.faults(want, 1);
-    const double = new LedgerStub(seat, LedgerStub.delegateTo(inner));
-    const outcome = await settle(() => ledgerStubLookup(double));
-    const message = "lookup fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("lookup", () => {
+    const checks = behaviour("Ledger.lookup", (seat) => {
+      const double = new LedgerStub(seat);
+      return {
+        stub: double.onLookup,
+        call: () => ledgerStubLookup(double),
+        override: (mark) => {
+          double.onLookup.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+        default: () => AccountBuilder.create().build(),
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LedgerStub(undefined);
+      ledgerStubLookup(double);
+      expect(double.onLookup.callCount).isEqualTo(1, "lookup records the call");
+      const got = double.onLookup.calls[0];
+      const args = ledgerStubLookupArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LedgerStub(undefined);
+      let seen = 0;
+      double.onLookup.onRecord(() => {
+        seen += 1;
+      });
+      ledgerStubLookup(double);
+      ledgerStubLookup(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of lookup");
+    });
   });
 
-  test("passes list to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LedgerStub(seat);
-    await settle(() => ledgerStubList(new LedgerStub(seat, LedgerStub.delegateTo(inner))));
-    inner.onList.assertCalledOnce(seat, "list reaches the implementation");
+  describe("list", () => {
+    const checks = behaviour("Ledger.list", (seat) => {
+      const double = new LedgerStub(seat);
+      return {
+        stub: double.onList,
+        call: () => ledgerStubList(double),
+        override: (mark) => {
+          double.onList.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+        default: () => PageBuilder.create<Account>().build(),
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LedgerStub(undefined);
+      let seen = 0;
+      double.onList.onRecord(() => {
+        seen += 1;
+      });
+      await ledgerStubList(double);
+      await ledgerStubList(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of list");
+    });
   });
 
-  test("fails list with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("list-delegate");
-    const inner = new LedgerStub(seat);
-    inner.onList.faults(want, 1);
-    const double = new LedgerStub(seat, LedgerStub.delegateTo(inner));
-    const outcome = await settle(() => ledgerStubList(double));
-    const message = "list fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("note", () => {
+    const checks = behaviour("Ledger.note", (seat) => {
+      const double = new LedgerStub(seat);
+      return {
+        stub: double.onNote,
+        call: () => ledgerStubNote(double),
+        override: (mark) => {
+          double.onNote.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LedgerStub(undefined);
+      ledgerStubNote(double);
+      expect(double.onNote.callCount).isEqualTo(1, "note records the call");
+      const got = double.onNote.calls[0];
+      const args = ledgerStubNoteArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LedgerStub(undefined);
+      let seen = 0;
+      double.onNote.onRecord(() => {
+        seen += 1;
+      });
+      ledgerStubNote(double);
+      ledgerStubNote(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of note");
+    });
   });
 
-  test("passes note to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LedgerStub(seat);
-    await settle(() => ledgerStubNote(new LedgerStub(seat, LedgerStub.delegateTo(inner))));
-    inner.onNote.assertCalledOnce(seat, "note reaches the implementation");
+  describe("bill", () => {
+    const checks = behaviour("Ledger.bill", (seat) => {
+      const double = new LedgerStub(seat);
+      return {
+        stub: double.onBill,
+        call: () => ledgerStubBill(double),
+        override: (mark) => {
+          double.onBill.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LedgerStub(undefined);
+      ledgerStubBill(double);
+      expect(double.onBill.callCount).isEqualTo(1, "bill records the call");
+      const got = double.onBill.calls[0];
+      const args = ledgerStubBillArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LedgerStub(undefined);
+      let seen = 0;
+      double.onBill.onRecord(() => {
+        seen += 1;
+      });
+      ledgerStubBill(double);
+      ledgerStubBill(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of bill");
+    });
   });
 
-  test("fails note with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("note-delegate");
-    const inner = new LedgerStub(seat);
-    inner.onNote.faults(want, 1);
-    const double = new LedgerStub(seat, LedgerStub.delegateTo(inner));
-    const outcome = await settle(() => ledgerStubNote(double));
-    const message = "note fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => ledgerStubInstance(new LedgerStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of get", async () => {
+      const double = new LedgerStub(undefined);
+      await ledgerStubGet(double);
+      double.resetCalls();
+      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
+    });
+
+    it("keeps the result of returns of get", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubGetPin();
+      double.onGet.returns(want);
+      double.resetCalls();
+      expect(await ledgerStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
+    });
+
+    it("clears the recorded calls of find", async () => {
+      const double = new LedgerStub(undefined);
+      await ledgerStubFind(double);
+      double.resetCalls();
+      expect(double.onFind.callCount).isEqualTo(0, "resetCalls clears the calls of find");
+    });
+
+    it("keeps the result of returns of find", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubFindPin();
+      double.onFind.returns(want);
+      double.resetCalls();
+      expect(await ledgerStubFind(double)).isEqualTo(want, "resetCalls keeps the result of find");
+    });
+
+    it("clears the recorded calls of lookup", async () => {
+      const double = new LedgerStub(undefined);
+      ledgerStubLookup(double);
+      double.resetCalls();
+      expect(double.onLookup.callCount).isEqualTo(0, "resetCalls clears the calls of lookup");
+    });
+
+    it("keeps the result of returns of lookup", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubLookupPin();
+      double.onLookup.returns(want);
+      double.resetCalls();
+      expect(ledgerStubLookup(double)).isEqualTo(want, "resetCalls keeps the result of lookup");
+    });
+
+    it("clears the recorded calls of list", async () => {
+      const double = new LedgerStub(undefined);
+      await ledgerStubList(double);
+      double.resetCalls();
+      expect(double.onList.callCount).isEqualTo(0, "resetCalls clears the calls of list");
+    });
+
+    it("keeps the result of returns of list", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubListPin();
+      double.onList.returns(want);
+      double.resetCalls();
+      expect(await ledgerStubList(double)).isEqualTo(want, "resetCalls keeps the result of list");
+    });
+
+    it("clears the recorded calls of note", async () => {
+      const double = new LedgerStub(undefined);
+      ledgerStubNote(double);
+      double.resetCalls();
+      expect(double.onNote.callCount).isEqualTo(0, "resetCalls clears the calls of note");
+    });
+
+    it("keeps the result of returns of note", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubNotePin();
+      double.onNote.returns(want);
+      double.resetCalls();
+      expect(ledgerStubNote(double)).isEqualTo(want, "resetCalls keeps the result of note");
+    });
+
+    it("clears the recorded calls of bill", async () => {
+      const double = new LedgerStub(undefined);
+      ledgerStubBill(double);
+      double.resetCalls();
+      expect(double.onBill.callCount).isEqualTo(0, "resetCalls clears the calls of bill");
+    });
+
+    it("keeps the result of returns of bill", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubBillPin();
+      double.onBill.returns(want);
+      double.resetCalls();
+      expect(ledgerStubBill(double)).isEqualTo(want, "resetCalls keeps the result of bill");
+    });
   });
 
-  test("passes bill to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LedgerStub(seat);
-    await settle(() => ledgerStubBill(new LedgerStub(seat, LedgerStub.delegateTo(inner))));
-    inner.onBill.assertCalledOnce(seat, "bill reaches the implementation");
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => ledgerStubInstance(LedgerStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
   });
 
-  test("fails bill with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("bill-delegate");
-    const inner = new LedgerStub(seat);
-    inner.onBill.faults(want, 1);
-    const double = new LedgerStub(seat, LedgerStub.delegateTo(inner));
-    const outcome = await settle(() => ledgerStubBill(double));
-    const message = "bill fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newFailing", () => {
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = LedgerStub.newFailing(undefined, want);
+      const outcome = await settle(() => ledgerStubGet(double));
+      const message = "get fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails find with its error", async () => {
+      const want = new Error("find-failing");
+      const double = LedgerStub.newFailing(undefined, want);
+      const outcome = await settle(() => ledgerStubFind(double));
+      const message = "find fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails lookup with its error", async () => {
+      const want = new Error("lookup-failing");
+      const double = LedgerStub.newFailing(undefined, want);
+      const outcome = await settle(() => ledgerStubLookup(double));
+      const message = "lookup fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails list with its error", async () => {
+      const want = new Error("list-failing");
+      const double = LedgerStub.newFailing(undefined, want);
+      const outcome = await settle(() => ledgerStubList(double));
+      const message = "list fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails note with its error", async () => {
+      const want = new Error("note-failing");
+      const double = LedgerStub.newFailing(undefined, want);
+      const outcome = await settle(() => ledgerStubNote(double));
+      const message = "note fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails bill with its error", async () => {
+      const want = new Error("bill-failing");
+      const double = LedgerStub.newFailing(undefined, want);
+      const outcome = await settle(() => ledgerStubBill(double));
+      const message = "bill fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => ledgerStubInstance(new LedgerStub(seat, LedgerStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes get to the implementation", async () => {
+      const inner = new LedgerStub(undefined);
+      await settle(() => ledgerStubGet(new LedgerStub(undefined, LedgerStub.delegateTo(inner))));
+      expect(inner.onGet.callCount).isEqualTo(1, "get calls the implementation");
+    });
+
+    it("fails get with the error of the implementation", async () => {
+      const want = new Error("get-delegate");
+      const inner = new LedgerStub(undefined);
+      inner.onGet.faults(want, 1);
+      const double = new LedgerStub(undefined, LedgerStub.delegateTo(inner));
+      const outcome = await settle(() => ledgerStubGet(double));
+      const message = "get fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes find to the implementation", async () => {
+      const inner = new LedgerStub(undefined);
+      await settle(() => ledgerStubFind(new LedgerStub(undefined, LedgerStub.delegateTo(inner))));
+      expect(inner.onFind.callCount).isEqualTo(1, "find calls the implementation");
+    });
+
+    it("fails find with the error of the implementation", async () => {
+      const want = new Error("find-delegate");
+      const inner = new LedgerStub(undefined);
+      inner.onFind.faults(want, 1);
+      const double = new LedgerStub(undefined, LedgerStub.delegateTo(inner));
+      const outcome = await settle(() => ledgerStubFind(double));
+      const message = "find fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes lookup to the implementation", async () => {
+      const inner = new LedgerStub(undefined);
+      await settle(() => ledgerStubLookup(new LedgerStub(undefined, LedgerStub.delegateTo(inner))));
+      expect(inner.onLookup.callCount).isEqualTo(1, "lookup calls the implementation");
+    });
+
+    it("fails lookup with the error of the implementation", async () => {
+      const want = new Error("lookup-delegate");
+      const inner = new LedgerStub(undefined);
+      inner.onLookup.faults(want, 1);
+      const double = new LedgerStub(undefined, LedgerStub.delegateTo(inner));
+      const outcome = await settle(() => ledgerStubLookup(double));
+      const message = "lookup fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes list to the implementation", async () => {
+      const inner = new LedgerStub(undefined);
+      await settle(() => ledgerStubList(new LedgerStub(undefined, LedgerStub.delegateTo(inner))));
+      expect(inner.onList.callCount).isEqualTo(1, "list calls the implementation");
+    });
+
+    it("fails list with the error of the implementation", async () => {
+      const want = new Error("list-delegate");
+      const inner = new LedgerStub(undefined);
+      inner.onList.faults(want, 1);
+      const double = new LedgerStub(undefined, LedgerStub.delegateTo(inner));
+      const outcome = await settle(() => ledgerStubList(double));
+      const message = "list fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes note to the implementation", async () => {
+      const inner = new LedgerStub(undefined);
+      await settle(() => ledgerStubNote(new LedgerStub(undefined, LedgerStub.delegateTo(inner))));
+      expect(inner.onNote.callCount).isEqualTo(1, "note calls the implementation");
+    });
+
+    it("fails note with the error of the implementation", async () => {
+      const want = new Error("note-delegate");
+      const inner = new LedgerStub(undefined);
+      inner.onNote.faults(want, 1);
+      const double = new LedgerStub(undefined, LedgerStub.delegateTo(inner));
+      const outcome = await settle(() => ledgerStubNote(double));
+      const message = "note fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes bill to the implementation", async () => {
+      const inner = new LedgerStub(undefined);
+      await settle(() => ledgerStubBill(new LedgerStub(undefined, LedgerStub.delegateTo(inner))));
+      expect(inner.onBill.callCount).isEqualTo(1, "bill calls the implementation");
+    });
+
+    it("fails bill with the error of the implementation", async () => {
+      const want = new Error("bill-delegate");
+      const inner = new LedgerStub(undefined);
+      inner.onBill.faults(want, 1);
+      const double = new LedgerStub(undefined, LedgerStub.delegateTo(inner));
+      const outcome = await settle(() => ledgerStubBill(double));
+      const message = "bill fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => ledgerStubInstance(new LedgerStub(seat, LedgerStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      ledgerStubInstance(new LedgerStub(seat, LedgerStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => ledgerStubInstance(new LedgerStub(seat, LedgerStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        ledgerStubInstance(new LedgerStub(seat, LedgerStub.withClock(clock), LedgerStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = new LedgerStub(undefined, LedgerStub.failing(want));
+      const outcome = await settle(() => ledgerStubGet(double));
+      const message = "get fails with the error of LedgerStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails find with its error", async () => {
+      const want = new Error("find-failing");
+      const double = new LedgerStub(undefined, LedgerStub.failing(want));
+      const outcome = await settle(() => ledgerStubFind(double));
+      const message = "find fails with the error of LedgerStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails lookup with its error", async () => {
+      const want = new Error("lookup-failing");
+      const double = new LedgerStub(undefined, LedgerStub.failing(want));
+      const outcome = await settle(() => ledgerStubLookup(double));
+      const message = "lookup fails with the error of LedgerStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails list with its error", async () => {
+      const want = new Error("list-failing");
+      const double = new LedgerStub(undefined, LedgerStub.failing(want));
+      const outcome = await settle(() => ledgerStubList(double));
+      const message = "list fails with the error of LedgerStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails note with its error", async () => {
+      const want = new Error("note-failing");
+      const double = new LedgerStub(undefined, LedgerStub.failing(want));
+      const outcome = await settle(() => ledgerStubNote(double));
+      const message = "note fails with the error of LedgerStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails bill with its error", async () => {
+      const want = new Error("bill-failing");
+      const double = new LedgerStub(undefined, LedgerStub.failing(want));
+      const outcome = await settle(() => ledgerStubBill(double));
+      const message = "bill fails with the error of LedgerStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withLedgerGet", () => {
+    it("sets the function of get", async () => {
+      let called = false;
+      const option = LedgerStub.withLedgerGet(() => {
+        called = true;
+        return undefined as never;
+      });
+      await ledgerStubGet(new LedgerStub(undefined, option));
+      expect(called).isTrue("withLedgerGet sets the function of get");
+    });
+  });
+
+  describe("withLedgerFind", () => {
+    it("sets the function of find", async () => {
+      let called = false;
+      const option = LedgerStub.withLedgerFind(() => {
+        called = true;
+        return undefined as never;
+      });
+      await ledgerStubFind(new LedgerStub(undefined, option));
+      expect(called).isTrue("withLedgerFind sets the function of find");
+    });
+  });
+
+  describe("withLedgerLookup", () => {
+    it("sets the function of lookup", async () => {
+      let called = false;
+      const option = LedgerStub.withLedgerLookup(() => {
+        called = true;
+        return undefined as never;
+      });
+      ledgerStubLookup(new LedgerStub(undefined, option));
+      expect(called).isTrue("withLedgerLookup sets the function of lookup");
+    });
+  });
+
+  describe("withLedgerList", () => {
+    it("sets the function of list", async () => {
+      let called = false;
+      const option = LedgerStub.withLedgerList(() => {
+        called = true;
+        return undefined as never;
+      });
+      await ledgerStubList(new LedgerStub(undefined, option));
+      expect(called).isTrue("withLedgerList sets the function of list");
+    });
+  });
+
+  describe("withLedgerNote", () => {
+    it("sets the function of note", async () => {
+      let called = false;
+      const option = LedgerStub.withLedgerNote(() => {
+        called = true;
+        return undefined as never;
+      });
+      ledgerStubNote(new LedgerStub(undefined, option));
+      expect(called).isTrue("withLedgerNote sets the function of note");
+    });
+  });
+
+  describe("withLedgerBill", () => {
+    it("sets the function of bill", async () => {
+      let called = false;
+      const option = LedgerStub.withLedgerBill(() => {
+        called = true;
+        return undefined as never;
+      });
+      ledgerStubBill(new LedgerStub(undefined, option));
+      expect(called).isTrue("withLedgerBill sets the function of bill");
+    });
   });
 });
 
-// dokimi:provenance sha256:d2a269503c39e67b7733fc8d80b463d1a89153d00eea596c8d99d802209cf3b6
+describe("LedgerGetStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of get", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubGetPin();
+      const unset = AccountBuilder.create().build();
+      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
+      double.onGet.returns(want);
+      expect(await ledgerStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
+    });
+
+    it("configures get for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LedgerStub(failures);
+      double.onGet.strict();
+      double.onGet.returns(undefined as never);
+      await settle(() => ledgerStubGet(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of get");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of get to the function", async () => {
+      const double = new LedgerStub(undefined);
+      let got: unknown[] = [];
+      double.onGet.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await ledgerStubGet(double);
+      const args = ledgerStubGetArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("LedgerFindStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of find", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubFindPin();
+      const unset = AccountBuilder.create().build();
+      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
+      double.onFind.returns(want);
+      expect(await ledgerStubFind(double)).isEqualTo(want, "find returns the result that returns sets");
+    });
+
+    it("configures find for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LedgerStub(failures);
+      double.onFind.strict();
+      double.onFind.returns(undefined as never);
+      await settle(() => ledgerStubFind(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of find");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of find to the function", async () => {
+      const double = new LedgerStub(undefined);
+      let got: unknown[] = [];
+      double.onFind.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await ledgerStubFind(double);
+      const args = ledgerStubFindArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("LedgerLookupStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of lookup", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubLookupPin();
+      const unset = AccountBuilder.create().build();
+      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
+      double.onLookup.returns(want);
+      expect(ledgerStubLookup(double)).isEqualTo(want, "lookup returns the result that returns sets");
+    });
+
+    it("configures lookup for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LedgerStub(failures);
+      double.onLookup.strict();
+      double.onLookup.returns(undefined as never);
+      await settle(() => ledgerStubLookup(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of lookup");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of lookup to the function", async () => {
+      const double = new LedgerStub(undefined);
+      let got: unknown[] = [];
+      double.onLookup.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      ledgerStubLookup(double);
+      const args = ledgerStubLookupArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("LedgerListStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of list", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubListPin();
+      const unset = PageBuilder.create<Account>().build();
+      expect(want).isNotEqualTo(unset, "the sample of the result differs from its default result");
+      double.onList.returns(want);
+      expect(await ledgerStubList(double)).isEqualTo(want, "list returns the result that returns sets");
+    });
+
+    it("configures list for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LedgerStub(failures);
+      double.onList.strict();
+      double.onList.returns(undefined as never);
+      await settle(() => ledgerStubList(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of list");
+    });
+  });
+});
+
+describe("LedgerNoteStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of note", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubNotePin();
+      double.onNote.returns(want);
+      expect(ledgerStubNote(double)).isEqualTo(want, "note returns the result that returns sets");
+    });
+
+    it("configures note for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LedgerStub(failures);
+      double.onNote.strict();
+      double.onNote.returns(undefined as never);
+      await settle(() => ledgerStubNote(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of note");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of note to the function", async () => {
+      const double = new LedgerStub(undefined);
+      let got: unknown[] = [];
+      double.onNote.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      ledgerStubNote(double);
+      const args = ledgerStubNoteArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("LedgerBillStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of bill", async () => {
+      const double = new LedgerStub(undefined);
+      const want = ledgerStubBillPin();
+      double.onBill.returns(want);
+      expect(ledgerStubBill(double)).isEqualTo(want, "bill returns the result that returns sets");
+    });
+
+    it("configures bill for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LedgerStub(failures);
+      double.onBill.strict();
+      double.onBill.returns(undefined as never);
+      await settle(() => ledgerStubBill(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of bill");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of bill to the function", async () => {
+      const double = new LedgerStub(undefined);
+      let got: unknown[] = [];
+      double.onBill.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      ledgerStubBill(double);
+      const args = ledgerStubBillArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:18873a6b9c341791ed99546c03f1798e3538342d6d445a84f713bfbd59f3d0b5

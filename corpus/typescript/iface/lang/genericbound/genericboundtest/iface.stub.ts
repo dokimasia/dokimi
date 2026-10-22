@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/genericbound/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Ordered, Ranked } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Ordered, Ranked } from "../iface";
 
 /** RankedRankCall records one call of Ranked.rank. */
 export interface RankedRankCall<K extends Ordered, V> {
@@ -27,7 +27,7 @@ export interface RankedResetCall {
 }
 
 /**
- * RankedRankStub configures rank, and records its calls. A fault armed
+ * RankedRankStub configures rank and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class RankedRankStub<K extends Ordered, V> extends MethodStub<RankedRankCall<K, V>> {
@@ -47,7 +47,7 @@ export class RankedRankStub<K extends Ordered, V> extends MethodStub<RankedRankC
   }
 
   /**
-   * Sets the function of rank, for a result that depends on the
+   * Sets the function that computes the result of rank from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -77,14 +77,14 @@ export class RankedRankStub<K extends Ordered, V> extends MethodStub<RankedRankC
 }
 
 /**
- * RankedResetStub configures reset, and records its calls. A fault armed
+ * RankedResetStub configures reset and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class RankedResetStub extends MethodStub<RankedResetCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of reset, for a result that depends on the
+   * Sets the function that computes the result of reset from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -109,13 +109,13 @@ export class RankedResetStub extends MethodStub<RankedResetCall> {
   }
 }
 
-/** An option of a RankedStub, which its constructor applies. */
+/** Configures a RankedStub at its construction. */
 export type RankedStubOption<K extends Ordered, V> = (double: RankedStub<K, V>) => void;
 
 /**
  * RankedStub is a recording test double of Ranked. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   /** Configures rank. */
@@ -126,9 +126,9 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   #strict = false;
 
   /**
-   * Returns a double of Ranked that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Ranked that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -158,7 +158,8 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -171,8 +172,9 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -184,8 +186,8 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -222,7 +224,8 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -259,8 +262,8 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -283,8 +286,8 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -308,7 +311,7 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Records the call of rank, and returns its result.
+   * Records the call of rank and returns its result.
    */
   rank(key: K): Promise<V> {
     const call: RankedRankCall<K, V> = { key };
@@ -316,7 +319,7 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
   }
 
   /**
-   * Records the call of reset, and returns its result.
+   * Records the call of reset and returns its result.
    */
   reset(): Promise<void> {
     const call: RankedResetCall = {};
@@ -326,4 +329,4 @@ export class RankedStub<K extends Ordered, V> implements Ranked<K, V> {
 
 void compatV1;
 
-// dokimi:provenance sha256:acad33f32bdd4fdbd1dc930b2bc1b47ae8aed5d9a2a4f8cd84a5f6b15dcaba2f
+// dokimi:provenance sha256:ab5b61b4a70038030783645a92121967f2816941a97771019b6e8feed2303fe4

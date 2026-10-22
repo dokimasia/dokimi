@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/watcher/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Subscription, Value } from '../iface';
-import { ContractStub, SubscriptionStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Subscription, Value } from "../iface";
+import { ContractStub, SubscriptionStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of watch, or undefined. */
+/** Returns the samples of the arguments of watch. An argument without a sample is undefined. */
 function contractStubWatchArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'watch-a';
+  a0 = "watch-a";
   return [a0];
 }
 
@@ -23,12 +22,12 @@ function contractStubWatch(double: ContractStub): Promise<Subscription> {
   return double.watch(args[0]);
 }
 
-/** Returns the samples of the arguments of trigger, or undefined. */
+/** Returns the samples of the arguments of trigger. An argument without a sample is undefined. */
 function contractStubTriggerArgs(): [string, Value] {
   let a0 = undefined as unknown as string;
   let a1 = undefined as unknown as Value;
-  a0 = 'trigger-a';
-  a1 = {key: 'key-a'} as Value;
+  a0 = "trigger-a";
+  a1 = { key: "key-a", body: "body-a" };
   return [a0, a1];
 }
 
@@ -38,182 +37,313 @@ function contractStubTrigger(double: ContractStub): Promise<void> {
   return double.trigger(args[0], args[1]);
 }
 
-describe("ContractStub.watch", () => {
-  const checks = behaviour("Contract.watch", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onWatch,
-      call: () => contractStubWatch(double),
-      override: (mark) => {
-        double.onWatch.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubWatch(double);
-    const got = double.onWatch.assertCalledOnce(seat, "watch records the call");
-    const args = contractStubWatchArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onWatch.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubWatch(double);
-    await contractStubWatch(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of watch");
-  });
-
-  test("sets the function of withContractWatch at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractWatch(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubWatch(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractWatch sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("watch-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubWatch(double));
-    const message = "watch fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps recording across a reset", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    double.onWatch.returns(undefined as never);
-    await contractStubWatch(double);
-    double.resetCalls();
-    await contractStubWatch(double);
-    double.onWatch.assertCalledOnce(seat, "watch records the call after the reset");
-  });
-});
-
-describe("ContractStub.trigger", () => {
-  const checks = behaviour("Contract.trigger", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onTrigger,
-      call: () => contractStubTrigger(double),
-      override: (mark) => {
-        double.onTrigger.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubTrigger(double);
-    const got = double.onTrigger.assertCalledOnce(seat, "trigger records the call");
-    const args = contractStubTriggerArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-    check.equal(seat, got?.v, args[1], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onTrigger.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubTrigger(double);
-    await contractStubTrigger(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of trigger");
-  });
-
-  test("sets the function of withContractTrigger at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractTrigger(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubTrigger(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractTrigger sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("trigger-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubTrigger(double));
-    const message = "trigger fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * watch alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onWatch,
     call: () => contractStubWatch(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes watch to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubWatch(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onWatch.assertCalledOnce(seat, "watch reaches the implementation");
+describe("ContractStub", () => {
+  describe("watch", () => {
+    const checks = behaviour("Contract.watch", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onWatch,
+        call: () => contractStubWatch(double),
+        override: (mark) => {
+          double.onWatch.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubWatch(double);
+      expect(double.onWatch.callCount).isEqualTo(1, "watch records the call");
+      const got = double.onWatch.calls[0];
+      const args = contractStubWatchArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onWatch.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubWatch(double);
+      await contractStubWatch(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of watch");
+    });
   });
 
-  test("fails watch with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("watch-delegate");
-    const inner = new ContractStub(seat);
-    inner.onWatch.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubWatch(double));
-    const message = "watch fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("trigger", () => {
+    const checks = behaviour("Contract.trigger", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onTrigger,
+        call: () => contractStubTrigger(double),
+        override: (mark) => {
+          double.onTrigger.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubTrigger(double);
+      expect(double.onTrigger.callCount).isEqualTo(1, "trigger records the call");
+      const got = double.onTrigger.calls[0];
+      const args = contractStubTriggerArgs();
+      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
+      expect.soft(got?.v).isEqualTo(args[1], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onTrigger.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubTrigger(double);
+      await contractStubTrigger(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of trigger");
+    });
   });
 
-  test("passes trigger to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubTrigger(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onTrigger.assertCalledOnce(seat, "trigger reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of watch", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubWatch(double);
+      double.resetCalls();
+      expect(double.onWatch.callCount).isEqualTo(0, "resetCalls clears the calls of watch");
+    });
+
+    it("clears the recorded calls of trigger", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubTrigger(double);
+      double.resetCalls();
+      expect(double.onTrigger.callCount).isEqualTo(0, "resetCalls clears the calls of trigger");
+    });
   });
 
-  test("fails trigger with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("trigger-delegate");
-    const inner = new ContractStub(seat);
-    inner.onTrigger.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubTrigger(double));
-    const message = "trigger fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails watch with its error", async () => {
+      const want = new Error("watch-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubWatch(double));
+      const message = "watch fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails trigger with its error", async () => {
+      const want = new Error("trigger-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubTrigger(double));
+      const message = "trigger fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes watch to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubWatch(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onWatch.callCount).isEqualTo(1, "watch calls the implementation");
+    });
+
+    it("fails watch with the error of the implementation", async () => {
+      const want = new Error("watch-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onWatch.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubWatch(double));
+      const message = "watch fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes trigger to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubTrigger(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onTrigger.callCount).isEqualTo(1, "trigger calls the implementation");
+    });
+
+    it("fails trigger with the error of the implementation", async () => {
+      const want = new Error("trigger-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onTrigger.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubTrigger(double));
+      const message = "trigger fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails watch with its error", async () => {
+      const want = new Error("watch-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubWatch(double));
+      const message = "watch fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails trigger with its error", async () => {
+      const want = new Error("trigger-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubTrigger(double));
+      const message = "trigger fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractWatch", () => {
+    it("sets the function of watch", async () => {
+      let called = false;
+      const option = ContractStub.withContractWatch(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubWatch(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractWatch sets the function of watch");
+    });
+  });
+
+  describe("withContractTrigger", () => {
+    it("sets the function of trigger", async () => {
+      let called = false;
+      const option = ContractStub.withContractTrigger(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubTrigger(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractTrigger sets the function of trigger");
+    });
   });
 });
 
-/** Returns the samples of the arguments of next, or undefined. */
+describe("ContractWatchStub", () => {
+  describe("returns", () => {
+    it("configures watch for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ContractStub(failures);
+      double.onWatch.strict();
+      double.onWatch.returns(undefined as never);
+      await settle(() => contractStubWatch(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of watch");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of watch to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onWatch.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubWatch(double);
+      const args = contractStubWatchArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractTriggerStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of trigger to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onTrigger.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubTrigger(double);
+      const args = contractStubTriggerArgs();
+      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+/** Returns the samples of the arguments of next. An argument without a sample is undefined. */
 function subscriptionStubNextArgs(): [number] {
   let a0 = undefined as unknown as number;
   a0 = 1.5;
@@ -221,15 +351,15 @@ function subscriptionStubNextArgs(): [number] {
 }
 
 /** Calls next of double with the samples of its arguments. */
-function subscriptionStubNext(double: SubscriptionStub): Value|undefined {
+function subscriptionStubNext(double: SubscriptionStub): Value | undefined {
   const args = subscriptionStubNextArgs();
   return double.next(args[0]);
 }
 
 /** Returns the sample of the result of next. */
-function subscriptionStubNextPin(): Value|undefined {
-  let want0: Value|undefined;
-  want0 = {key: 'key-a'} as Value;
+function subscriptionStubNextPin(): Value | undefined {
+  let want0: Value | undefined;
+  want0 = { key: "key-a", body: "body-a" };
   return want0;
 }
 
@@ -238,183 +368,299 @@ function subscriptionStubStop(double: SubscriptionStub): void {
   return double.stop();
 }
 
-describe("SubscriptionStub.next", () => {
-  const checks = behaviour("Subscription.next", (seat) => {
-    const double = new SubscriptionStub(seat);
-    return {
-      stub: double.onNext,
-      call: () => subscriptionStubNext(double),
-      override: (mark) => {
-        double.onNext.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new SubscriptionStub(seat);
-    const want = subscriptionStubNextPin();
-    double.onNext.returns(want);
-    check.equal(seat, subscriptionStubNext(double), want, "next returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new SubscriptionStub(seat);
-    subscriptionStubNext(double);
-    const got = double.onNext.assertCalledOnce(seat, "next records the call");
-    const args = subscriptionStubNextArgs();
-    check.equal(seat, got?.timeout, args[0], "the call records timeout");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new SubscriptionStub(seat);
-    let seen = 0;
-    double.onNext.onRecord(() => {
-      seen += 1;
-    });
-    subscriptionStubNext(double);
-    subscriptionStubNext(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of next");
-  });
-
-  test("sets the function of withSubscriptionNext at construction", async ({ seat }) => {
-    let called = false;
-    const option = SubscriptionStub.withSubscriptionNext(() => {
-      called = true;
-      return undefined as never;
-    });
-    subscriptionStubNext(new SubscriptionStub(seat, option));
-    check.isTrue(seat, called, "withSubscriptionNext sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("next-failing");
-    const double = SubscriptionStub.newFailing(seat, want);
-    const outcome = await settle(() => subscriptionStubNext(double));
-    const message = "next fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new SubscriptionStub(seat);
-    const want = subscriptionStubNextPin();
-    double.onNext.returns(want);
-    subscriptionStubNext(double);
-    double.resetCalls();
-    check.equal(seat, subscriptionStubNext(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("SubscriptionStub.stop", () => {
-  const checks = behaviour("Subscription.stop", (seat) => {
-    const double = new SubscriptionStub(seat);
-    return {
-      stub: double.onStop,
-      call: () => subscriptionStubStop(double),
-      override: (mark) => {
-        double.onStop.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new SubscriptionStub(seat);
-    subscriptionStubStop(double);
-    double.onStop.assertCalledOnce(seat, "stop records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new SubscriptionStub(seat);
-    let seen = 0;
-    double.onStop.onRecord(() => {
-      seen += 1;
-    });
-    subscriptionStubStop(double);
-    subscriptionStubStop(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of stop");
-  });
-
-  test("sets the function of withSubscriptionStop at construction", async ({ seat }) => {
-    let called = false;
-    const option = SubscriptionStub.withSubscriptionStop(() => {
-      called = true;
-      return undefined as never;
-    });
-    subscriptionStubStop(new SubscriptionStub(seat, option));
-    check.isTrue(seat, called, "withSubscriptionStop sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("stop-failing");
-    const double = SubscriptionStub.newFailing(seat, want);
-    const outcome = await settle(() => subscriptionStubStop(double));
-    const message = "stop fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("SubscriptionStub", () => {
-  const instance = (double: SubscriptionStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * next alone.
+ */
+function subscriptionStubInstance(double: SubscriptionStub) {
+  return {
     stub: double.onNext,
     call: () => subscriptionStubNext(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new SubscriptionStub(seat)),
-    withClock: (seat, clock) => instance(new SubscriptionStub(seat, SubscriptionStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(SubscriptionStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new SubscriptionStub(seat, SubscriptionStub.withRandSource(random))),
-    benchMode: (seat) => instance(new SubscriptionStub(seat, SubscriptionStub.benchMode())),
-    strict: (seat) => instance(new SubscriptionStub(seat, SubscriptionStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes next to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new SubscriptionStub(seat);
-    await settle(() => subscriptionStubNext(new SubscriptionStub(seat, SubscriptionStub.delegateTo(inner))));
-    inner.onNext.assertCalledOnce(seat, "next reaches the implementation");
+describe("SubscriptionStub", () => {
+  describe("next", () => {
+    const checks = behaviour("Subscription.next", (seat) => {
+      const double = new SubscriptionStub(seat);
+      return {
+        stub: double.onNext,
+        call: () => subscriptionStubNext(double),
+        override: (mark) => {
+          double.onNext.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new SubscriptionStub(undefined);
+      subscriptionStubNext(double);
+      expect(double.onNext.callCount).isEqualTo(1, "next records the call");
+      const got = double.onNext.calls[0];
+      const args = subscriptionStubNextArgs();
+      expect(got?.timeout).isEqualTo(args[0], "the call records timeout");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new SubscriptionStub(undefined);
+      let seen = 0;
+      double.onNext.onRecord(() => {
+        seen += 1;
+      });
+      subscriptionStubNext(double);
+      subscriptionStubNext(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of next");
+    });
   });
 
-  test("fails next with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("next-delegate");
-    const inner = new SubscriptionStub(seat);
-    inner.onNext.faults(want, 1);
-    const double = new SubscriptionStub(seat, SubscriptionStub.delegateTo(inner));
-    const outcome = await settle(() => subscriptionStubNext(double));
-    const message = "next fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("stop", () => {
+    const checks = behaviour("Subscription.stop", (seat) => {
+      const double = new SubscriptionStub(seat);
+      return {
+        stub: double.onStop,
+        call: () => subscriptionStubStop(double),
+        override: (mark) => {
+          double.onStop.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new SubscriptionStub(undefined);
+      let seen = 0;
+      double.onStop.onRecord(() => {
+        seen += 1;
+      });
+      subscriptionStubStop(double);
+      subscriptionStubStop(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of stop");
+    });
   });
 
-  test("passes stop to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new SubscriptionStub(seat);
-    await settle(() => subscriptionStubStop(new SubscriptionStub(seat, SubscriptionStub.delegateTo(inner))));
-    inner.onStop.assertCalledOnce(seat, "stop reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => subscriptionStubInstance(new SubscriptionStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of next", async () => {
+      const double = new SubscriptionStub(undefined);
+      subscriptionStubNext(double);
+      double.resetCalls();
+      expect(double.onNext.callCount).isEqualTo(0, "resetCalls clears the calls of next");
+    });
+
+    it("keeps the result of returns of next", async () => {
+      const double = new SubscriptionStub(undefined);
+      const want = subscriptionStubNextPin();
+      double.onNext.returns(want);
+      double.resetCalls();
+      expect(subscriptionStubNext(double)).isEqualTo(want, "resetCalls keeps the result of next");
+    });
+
+    it("clears the recorded calls of stop", async () => {
+      const double = new SubscriptionStub(undefined);
+      subscriptionStubStop(double);
+      double.resetCalls();
+      expect(double.onStop.callCount).isEqualTo(0, "resetCalls clears the calls of stop");
+    });
   });
 
-  test("fails stop with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("stop-delegate");
-    const inner = new SubscriptionStub(seat);
-    inner.onStop.faults(want, 1);
-    const double = new SubscriptionStub(seat, SubscriptionStub.delegateTo(inner));
-    const outcome = await settle(() => subscriptionStubStop(double));
-    const message = "stop fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => subscriptionStubInstance(SubscriptionStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails next with its error", async () => {
+      const want = new Error("next-failing");
+      const double = SubscriptionStub.newFailing(undefined, want);
+      const outcome = await settle(() => subscriptionStubNext(double));
+      const message = "next fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails stop with its error", async () => {
+      const want = new Error("stop-failing");
+      const double = SubscriptionStub.newFailing(undefined, want);
+      const outcome = await settle(() => subscriptionStubStop(double));
+      const message = "stop fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => subscriptionStubInstance(new SubscriptionStub(seat, SubscriptionStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes next to the implementation", async () => {
+      const inner = new SubscriptionStub(undefined);
+      await settle(() => subscriptionStubNext(new SubscriptionStub(undefined, SubscriptionStub.delegateTo(inner))));
+      expect(inner.onNext.callCount).isEqualTo(1, "next calls the implementation");
+    });
+
+    it("fails next with the error of the implementation", async () => {
+      const want = new Error("next-delegate");
+      const inner = new SubscriptionStub(undefined);
+      inner.onNext.faults(want, 1);
+      const double = new SubscriptionStub(undefined, SubscriptionStub.delegateTo(inner));
+      const outcome = await settle(() => subscriptionStubNext(double));
+      const message = "next fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes stop to the implementation", async () => {
+      const inner = new SubscriptionStub(undefined);
+      await settle(() => subscriptionStubStop(new SubscriptionStub(undefined, SubscriptionStub.delegateTo(inner))));
+      expect(inner.onStop.callCount).isEqualTo(1, "stop calls the implementation");
+    });
+
+    it("fails stop with the error of the implementation", async () => {
+      const want = new Error("stop-delegate");
+      const inner = new SubscriptionStub(undefined);
+      inner.onStop.faults(want, 1);
+      const double = new SubscriptionStub(undefined, SubscriptionStub.delegateTo(inner));
+      const outcome = await settle(() => subscriptionStubStop(double));
+      const message = "stop fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => subscriptionStubInstance(new SubscriptionStub(seat, SubscriptionStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      subscriptionStubInstance(new SubscriptionStub(seat, SubscriptionStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => subscriptionStubInstance(new SubscriptionStub(seat, SubscriptionStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        subscriptionStubInstance(new SubscriptionStub(seat, SubscriptionStub.withClock(clock), SubscriptionStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails next with its error", async () => {
+      const want = new Error("next-failing");
+      const double = new SubscriptionStub(undefined, SubscriptionStub.failing(want));
+      const outcome = await settle(() => subscriptionStubNext(double));
+      const message = "next fails with the error of SubscriptionStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails stop with its error", async () => {
+      const want = new Error("stop-failing");
+      const double = new SubscriptionStub(undefined, SubscriptionStub.failing(want));
+      const outcome = await settle(() => subscriptionStubStop(double));
+      const message = "stop fails with the error of SubscriptionStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withSubscriptionNext", () => {
+    it("sets the function of next", async () => {
+      let called = false;
+      const option = SubscriptionStub.withSubscriptionNext(() => {
+        called = true;
+        return undefined as never;
+      });
+      subscriptionStubNext(new SubscriptionStub(undefined, option));
+      expect(called).isTrue("withSubscriptionNext sets the function of next");
+    });
+  });
+
+  describe("withSubscriptionStop", () => {
+    it("sets the function of stop", async () => {
+      let called = false;
+      const option = SubscriptionStub.withSubscriptionStop(() => {
+        called = true;
+        return undefined as never;
+      });
+      subscriptionStubStop(new SubscriptionStub(undefined, option));
+      expect(called).isTrue("withSubscriptionStop sets the function of stop");
+    });
   });
 });
 
-// dokimi:provenance sha256:c701813dc4dcbfb0bf7c3908781adbc01beb892350993fd12824ba459f47ecb2
+describe("SubscriptionNextStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of next", async () => {
+      const double = new SubscriptionStub(undefined);
+      const want = subscriptionStubNextPin();
+      double.onNext.returns(want);
+      expect(subscriptionStubNext(double)).isEqualTo(want, "next returns the result that returns sets");
+    });
+
+    it("configures next for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new SubscriptionStub(failures);
+      double.onNext.strict();
+      double.onNext.returns(undefined as never);
+      await settle(() => subscriptionStubNext(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of next");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of next to the function", async () => {
+      const double = new SubscriptionStub(undefined);
+      let got: unknown[] = [];
+      double.onNext.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      subscriptionStubNext(double);
+      const args = subscriptionStubNextArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:bf65a64c656bd17ee695c88dae47971e92098805bc6beff5425313d245b63ba9

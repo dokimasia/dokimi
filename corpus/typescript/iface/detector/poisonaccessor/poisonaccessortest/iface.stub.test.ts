@@ -2,130 +2,213 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/poisonaccessor/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { PoisonAccessorStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { PoisonAccessorStub } from "./iface.stub";
 
 /** Calls err of double with the samples of its arguments. */
-function poisonAccessorStubErr(double: PoisonAccessorStub): Error|undefined {
+function poisonAccessorStubErr(double: PoisonAccessorStub): Error | undefined {
   return double.err();
 }
 
 /** Returns the sample of the result of err. */
-function poisonAccessorStubErrPin(): Error|undefined {
-  let want0: Error|undefined;
-  want0 = new Error('err-a');
+function poisonAccessorStubErrPin(): Error | undefined {
+  let want0: Error | undefined;
+  want0 = new Error("err-a");
   return want0;
 }
 
-describe("PoisonAccessorStub.err", () => {
-  const checks = behaviour("PoisonAccessor.err", (seat) => {
-    const double = new PoisonAccessorStub(seat);
-    return {
-      stub: double.onErr,
-      call: () => poisonAccessorStubErr(double),
-      override: (mark) => {
-        double.onErr.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new PoisonAccessorStub(seat);
-    const want = poisonAccessorStubErrPin();
-    double.onErr.returns(want);
-    check.equal(seat, poisonAccessorStubErr(double), want, "err returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new PoisonAccessorStub(seat);
-    poisonAccessorStubErr(double);
-    double.onErr.assertCalledOnce(seat, "err records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new PoisonAccessorStub(seat);
-    let seen = 0;
-    double.onErr.onRecord(() => {
-      seen += 1;
-    });
-    poisonAccessorStubErr(double);
-    poisonAccessorStubErr(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of err");
-  });
-
-  test("sets the function of withPoisonAccessorErr at construction", async ({ seat }) => {
-    let called = false;
-    const option = PoisonAccessorStub.withPoisonAccessorErr(() => {
-      called = true;
-      return undefined as never;
-    });
-    poisonAccessorStubErr(new PoisonAccessorStub(seat, option));
-    check.isTrue(seat, called, "withPoisonAccessorErr sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("err-failing");
-    const double = PoisonAccessorStub.newFailing(seat, want);
-    const outcome = await settle(() => poisonAccessorStubErr(double));
-    const message = "err fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new PoisonAccessorStub(seat);
-    const want = poisonAccessorStubErrPin();
-    double.onErr.returns(want);
-    poisonAccessorStubErr(double);
-    double.resetCalls();
-    check.equal(seat, poisonAccessorStubErr(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("PoisonAccessorStub", () => {
-  const instance = (double: PoisonAccessorStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * err alone.
+ */
+function poisonAccessorStubInstance(double: PoisonAccessorStub) {
+  return {
     stub: double.onErr,
     call: () => poisonAccessorStubErr(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new PoisonAccessorStub(seat)),
-    withClock: (seat, clock) => instance(new PoisonAccessorStub(seat, PoisonAccessorStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(PoisonAccessorStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new PoisonAccessorStub(seat, PoisonAccessorStub.withRandSource(random))),
-    benchMode: (seat) => instance(new PoisonAccessorStub(seat, PoisonAccessorStub.benchMode())),
-    strict: (seat) => instance(new PoisonAccessorStub(seat, PoisonAccessorStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes err to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new PoisonAccessorStub(seat);
-    await settle(() => poisonAccessorStubErr(new PoisonAccessorStub(seat, PoisonAccessorStub.delegateTo(inner))));
-    inner.onErr.assertCalledOnce(seat, "err reaches the implementation");
+describe("PoisonAccessorStub", () => {
+  describe("err", () => {
+    const checks = behaviour("PoisonAccessor.err", (seat) => {
+      const double = new PoisonAccessorStub(seat);
+      return {
+        stub: double.onErr,
+        call: () => poisonAccessorStubErr(double),
+        override: (mark) => {
+          double.onErr.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new PoisonAccessorStub(undefined);
+      let seen = 0;
+      double.onErr.onRecord(() => {
+        seen += 1;
+      });
+      poisonAccessorStubErr(double);
+      poisonAccessorStubErr(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of err");
+    });
   });
 
-  test("fails err with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("err-delegate");
-    const inner = new PoisonAccessorStub(seat);
-    inner.onErr.faults(want, 1);
-    const double = new PoisonAccessorStub(seat, PoisonAccessorStub.delegateTo(inner));
-    const outcome = await settle(() => poisonAccessorStubErr(double));
-    const message = "err fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => poisonAccessorStubInstance(new PoisonAccessorStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of err", async () => {
+      const double = new PoisonAccessorStub(undefined);
+      poisonAccessorStubErr(double);
+      double.resetCalls();
+      expect(double.onErr.callCount).isEqualTo(0, "resetCalls clears the calls of err");
+    });
+
+    it("keeps the result of returns of err", async () => {
+      const double = new PoisonAccessorStub(undefined);
+      const want = poisonAccessorStubErrPin();
+      double.onErr.returns(want);
+      double.resetCalls();
+      expect(poisonAccessorStubErr(double)).isEqualTo(want, "resetCalls keeps the result of err");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => poisonAccessorStubInstance(PoisonAccessorStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails err with its error", async () => {
+      const want = new Error("err-failing");
+      const double = PoisonAccessorStub.newFailing(undefined, want);
+      const outcome = await settle(() => poisonAccessorStubErr(double));
+      const message = "err fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => poisonAccessorStubInstance(new PoisonAccessorStub(seat, PoisonAccessorStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes err to the implementation", async () => {
+      const inner = new PoisonAccessorStub(undefined);
+      await settle(() => poisonAccessorStubErr(new PoisonAccessorStub(undefined, PoisonAccessorStub.delegateTo(inner))));
+      expect(inner.onErr.callCount).isEqualTo(1, "err calls the implementation");
+    });
+
+    it("fails err with the error of the implementation", async () => {
+      const want = new Error("err-delegate");
+      const inner = new PoisonAccessorStub(undefined);
+      inner.onErr.faults(want, 1);
+      const double = new PoisonAccessorStub(undefined, PoisonAccessorStub.delegateTo(inner));
+      const outcome = await settle(() => poisonAccessorStubErr(double));
+      const message = "err fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => poisonAccessorStubInstance(new PoisonAccessorStub(seat, PoisonAccessorStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      poisonAccessorStubInstance(new PoisonAccessorStub(seat, PoisonAccessorStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => poisonAccessorStubInstance(new PoisonAccessorStub(seat, PoisonAccessorStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        poisonAccessorStubInstance(new PoisonAccessorStub(seat, PoisonAccessorStub.withClock(clock), PoisonAccessorStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails err with its error", async () => {
+      const want = new Error("err-failing");
+      const double = new PoisonAccessorStub(undefined, PoisonAccessorStub.failing(want));
+      const outcome = await settle(() => poisonAccessorStubErr(double));
+      const message = "err fails with the error of PoisonAccessorStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withPoisonAccessorErr", () => {
+    it("sets the function of err", async () => {
+      let called = false;
+      const option = PoisonAccessorStub.withPoisonAccessorErr(() => {
+        called = true;
+        return undefined as never;
+      });
+      poisonAccessorStubErr(new PoisonAccessorStub(undefined, option));
+      expect(called).isTrue("withPoisonAccessorErr sets the function of err");
+    });
   });
 });
 
-// dokimi:provenance sha256:de58a737828c9cac02c210260821196cd19005e05ea1f5ce35dd99da50e77c22
+describe("PoisonAccessorErrStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of err", async () => {
+      const double = new PoisonAccessorStub(undefined);
+      const want = poisonAccessorStubErrPin();
+      double.onErr.returns(want);
+      expect(poisonAccessorStubErr(double)).isEqualTo(want, "err returns the result that returns sets");
+    });
+
+    it("configures err for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new PoisonAccessorStub(failures);
+      double.onErr.strict();
+      double.onErr.returns(undefined as never);
+      await settle(() => poisonAccessorStubErr(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of err");
+    });
+  });
+});
+
+// dokimi:provenance sha256:62368cc49429a60778150e9770bdcc73aeb0d77473908919c20661a4b1421cf8

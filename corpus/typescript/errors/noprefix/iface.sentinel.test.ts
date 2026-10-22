@@ -2,39 +2,45 @@
 // dokimi:plugin sentinel
 // dokimi:source errors/noprefix/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { GiveUpError, RetryError } from './iface';
+import { describe, expect, it } from "vitest";
+import { GiveUpError, RetryError } from "./iface";
 
-describe("GiveUpError contract", () => {
-  test("reports a message", ({ seat }) => {
+function giveUpErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new GiveUpError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("GiveUpError", () => {
+  it("matches no other error class of its module", () => {
     const got = new GiveUpError();
     const others = [new RetryError()];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", giveUpErrorMessageCases);
 });
 
-describe("RetryError contract", () => {
-  test("reports a message", ({ seat }) => {
+function retryErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new RetryError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("RetryError", () => {
+  it("matches no other error class of its module", () => {
     const got = new RetryError();
     const others = [new GiveUpError()];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", retryErrorMessageCases);
 });
 
-// dokimi:provenance sha256:34cfdac9d40a839f1192510edf2122b5d7c30d8b5b5f0f55894bf667468ae605
+// dokimi:provenance sha256:021d4385cbb8d172fe9f8e3756ac2430a85d94e89514eb2d4fc4774231fc9236

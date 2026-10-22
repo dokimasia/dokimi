@@ -2,21 +2,20 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/multiargwriter/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MultiArgWriterStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MultiArgWriterStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of set, or undefined. */
+/** Returns the samples of the arguments of set. An argument without a sample is undefined. */
 function multiArgWriterStubSetArgs(): [string, string, string] {
   let a0 = undefined as unknown as string;
   let a1 = undefined as unknown as string;
   let a2 = undefined as unknown as string;
-  a0 = 'set-a';
-  a1 = 'set-a';
-  a2 = 'set-a';
+  a0 = "set-a";
+  a1 = "set-a";
+  a2 = "set-a";
   return [a0, a1, a2];
 }
 
@@ -26,10 +25,10 @@ function multiArgWriterStubSet(double: MultiArgWriterStub): Promise<void> {
   return double.set(args[0], args[1], args[2]);
 }
 
-/** Returns the samples of the arguments of get, or undefined. */
+/** Returns the samples of the arguments of get. An argument without a sample is undefined. */
 function multiArgWriterStubGetArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'get-a';
+  a0 = "get-a";
   return [a0];
 }
 
@@ -42,191 +41,330 @@ function multiArgWriterStubGet(double: MultiArgWriterStub): Promise<string> {
 /** Returns the sample of the result of get. */
 function multiArgWriterStubGetPin(): string {
   let want0: string;
-  want0 = 'get-a';
+  want0 = "get-a";
   return want0;
 }
 
-describe("MultiArgWriterStub.set", () => {
-  const checks = behaviour("MultiArgWriter.set", (seat) => {
-    const double = new MultiArgWriterStub(seat);
-    return {
-      stub: double.onSet,
-      call: () => multiArgWriterStubSet(double),
-      override: (mark) => {
-        double.onSet.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MultiArgWriterStub(seat);
-    await multiArgWriterStubSet(double);
-    const got = double.onSet.assertCalledOnce(seat, "set records the call");
-    const args = multiArgWriterStubSetArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-    check.equal(seat, got?.body, args[1], "the call records body");
-    check.equal(seat, got?.mime, args[2], "the call records mime");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MultiArgWriterStub(seat);
-    let seen = 0;
-    double.onSet.onRecord(() => {
-      seen += 1;
-    });
-    await multiArgWriterStubSet(double);
-    await multiArgWriterStubSet(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of set");
-  });
-
-  test("sets the function of withMultiArgWriterSet at construction", async ({ seat }) => {
-    let called = false;
-    const option = MultiArgWriterStub.withMultiArgWriterSet(() => {
-      called = true;
-      return undefined as never;
-    });
-    await multiArgWriterStubSet(new MultiArgWriterStub(seat, option));
-    check.isTrue(seat, called, "withMultiArgWriterSet sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("set-failing");
-    const double = MultiArgWriterStub.newFailing(seat, want);
-    const outcome = await settle(() => multiArgWriterStubSet(double));
-    const message = "set fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MultiArgWriterStub.get", () => {
-  const checks = behaviour("MultiArgWriter.get", (seat) => {
-    const double = new MultiArgWriterStub(seat);
-    return {
-      stub: double.onGet,
-      call: () => multiArgWriterStubGet(double),
-      override: (mark) => {
-        double.onGet.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new MultiArgWriterStub(seat);
-    const want = multiArgWriterStubGetPin();
-    double.onGet.returns(want);
-    check.equal(seat, await multiArgWriterStubGet(double), want, "get returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MultiArgWriterStub(seat);
-    await multiArgWriterStubGet(double);
-    const got = double.onGet.assertCalledOnce(seat, "get records the call");
-    const args = multiArgWriterStubGetArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MultiArgWriterStub(seat);
-    let seen = 0;
-    double.onGet.onRecord(() => {
-      seen += 1;
-    });
-    await multiArgWriterStubGet(double);
-    await multiArgWriterStubGet(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of get");
-  });
-
-  test("sets the function of withMultiArgWriterGet at construction", async ({ seat }) => {
-    let called = false;
-    const option = MultiArgWriterStub.withMultiArgWriterGet(() => {
-      called = true;
-      return undefined as never;
-    });
-    await multiArgWriterStubGet(new MultiArgWriterStub(seat, option));
-    check.isTrue(seat, called, "withMultiArgWriterGet sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("get-failing");
-    const double = MultiArgWriterStub.newFailing(seat, want);
-    const outcome = await settle(() => multiArgWriterStubGet(double));
-    const message = "get fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new MultiArgWriterStub(seat);
-    const want = multiArgWriterStubGetPin();
-    double.onGet.returns(want);
-    await multiArgWriterStubGet(double);
-    double.resetCalls();
-    check.equal(seat, await multiArgWriterStubGet(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("MultiArgWriterStub", () => {
-  const instance = (double: MultiArgWriterStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * set alone.
+ */
+function multiArgWriterStubInstance(double: MultiArgWriterStub) {
+  return {
     stub: double.onSet,
     call: () => multiArgWriterStubSet(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MultiArgWriterStub(seat)),
-    withClock: (seat, clock) => instance(new MultiArgWriterStub(seat, MultiArgWriterStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MultiArgWriterStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MultiArgWriterStub(seat, MultiArgWriterStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MultiArgWriterStub(seat, MultiArgWriterStub.benchMode())),
-    strict: (seat) => instance(new MultiArgWriterStub(seat, MultiArgWriterStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes set to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MultiArgWriterStub(seat);
-    await settle(() => multiArgWriterStubSet(new MultiArgWriterStub(seat, MultiArgWriterStub.delegateTo(inner))));
-    inner.onSet.assertCalledOnce(seat, "set reaches the implementation");
+describe("MultiArgWriterStub", () => {
+  describe("set", () => {
+    const checks = behaviour("MultiArgWriter.set", (seat) => {
+      const double = new MultiArgWriterStub(seat);
+      return {
+        stub: double.onSet,
+        call: () => multiArgWriterStubSet(double),
+        override: (mark) => {
+          double.onSet.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      await multiArgWriterStubSet(double);
+      expect(double.onSet.callCount).isEqualTo(1, "set records the call");
+      const got = double.onSet.calls[0];
+      const args = multiArgWriterStubSetArgs();
+      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
+      expect.soft(got?.body).isEqualTo(args[1], "the call records body");
+      expect.soft(got?.mime).isEqualTo(args[2], "the call records mime");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      let seen = 0;
+      double.onSet.onRecord(() => {
+        seen += 1;
+      });
+      await multiArgWriterStubSet(double);
+      await multiArgWriterStubSet(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of set");
+    });
   });
 
-  test("fails set with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("set-delegate");
-    const inner = new MultiArgWriterStub(seat);
-    inner.onSet.faults(want, 1);
-    const double = new MultiArgWriterStub(seat, MultiArgWriterStub.delegateTo(inner));
-    const outcome = await settle(() => multiArgWriterStubSet(double));
-    const message = "set fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("get", () => {
+    const checks = behaviour("MultiArgWriter.get", (seat) => {
+      const double = new MultiArgWriterStub(seat);
+      return {
+        stub: double.onGet,
+        call: () => multiArgWriterStubGet(double),
+        override: (mark) => {
+          double.onGet.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      await multiArgWriterStubGet(double);
+      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
+      const got = double.onGet.calls[0];
+      const args = multiArgWriterStubGetArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      let seen = 0;
+      double.onGet.onRecord(() => {
+        seen += 1;
+      });
+      await multiArgWriterStubGet(double);
+      await multiArgWriterStubGet(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
+    });
   });
 
-  test("passes get to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MultiArgWriterStub(seat);
-    await settle(() => multiArgWriterStubGet(new MultiArgWriterStub(seat, MultiArgWriterStub.delegateTo(inner))));
-    inner.onGet.assertCalledOnce(seat, "get reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => multiArgWriterStubInstance(new MultiArgWriterStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of set", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      await multiArgWriterStubSet(double);
+      double.resetCalls();
+      expect(double.onSet.callCount).isEqualTo(0, "resetCalls clears the calls of set");
+    });
+
+    it("clears the recorded calls of get", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      await multiArgWriterStubGet(double);
+      double.resetCalls();
+      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
+    });
+
+    it("keeps the result of returns of get", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      const want = multiArgWriterStubGetPin();
+      double.onGet.returns(want);
+      double.resetCalls();
+      expect(await multiArgWriterStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
+    });
   });
 
-  test("fails get with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("get-delegate");
-    const inner = new MultiArgWriterStub(seat);
-    inner.onGet.faults(want, 1);
-    const double = new MultiArgWriterStub(seat, MultiArgWriterStub.delegateTo(inner));
-    const outcome = await settle(() => multiArgWriterStubGet(double));
-    const message = "get fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => multiArgWriterStubInstance(MultiArgWriterStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails set with its error", async () => {
+      const want = new Error("set-failing");
+      const double = MultiArgWriterStub.newFailing(undefined, want);
+      const outcome = await settle(() => multiArgWriterStubSet(double));
+      const message = "set fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = MultiArgWriterStub.newFailing(undefined, want);
+      const outcome = await settle(() => multiArgWriterStubGet(double));
+      const message = "get fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => multiArgWriterStubInstance(new MultiArgWriterStub(seat, MultiArgWriterStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes set to the implementation", async () => {
+      const inner = new MultiArgWriterStub(undefined);
+      await settle(() => multiArgWriterStubSet(new MultiArgWriterStub(undefined, MultiArgWriterStub.delegateTo(inner))));
+      expect(inner.onSet.callCount).isEqualTo(1, "set calls the implementation");
+    });
+
+    it("fails set with the error of the implementation", async () => {
+      const want = new Error("set-delegate");
+      const inner = new MultiArgWriterStub(undefined);
+      inner.onSet.faults(want, 1);
+      const double = new MultiArgWriterStub(undefined, MultiArgWriterStub.delegateTo(inner));
+      const outcome = await settle(() => multiArgWriterStubSet(double));
+      const message = "set fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes get to the implementation", async () => {
+      const inner = new MultiArgWriterStub(undefined);
+      await settle(() => multiArgWriterStubGet(new MultiArgWriterStub(undefined, MultiArgWriterStub.delegateTo(inner))));
+      expect(inner.onGet.callCount).isEqualTo(1, "get calls the implementation");
+    });
+
+    it("fails get with the error of the implementation", async () => {
+      const want = new Error("get-delegate");
+      const inner = new MultiArgWriterStub(undefined);
+      inner.onGet.faults(want, 1);
+      const double = new MultiArgWriterStub(undefined, MultiArgWriterStub.delegateTo(inner));
+      const outcome = await settle(() => multiArgWriterStubGet(double));
+      const message = "get fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => multiArgWriterStubInstance(new MultiArgWriterStub(seat, MultiArgWriterStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      multiArgWriterStubInstance(new MultiArgWriterStub(seat, MultiArgWriterStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => multiArgWriterStubInstance(new MultiArgWriterStub(seat, MultiArgWriterStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        multiArgWriterStubInstance(new MultiArgWriterStub(seat, MultiArgWriterStub.withClock(clock), MultiArgWriterStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails set with its error", async () => {
+      const want = new Error("set-failing");
+      const double = new MultiArgWriterStub(undefined, MultiArgWriterStub.failing(want));
+      const outcome = await settle(() => multiArgWriterStubSet(double));
+      const message = "set fails with the error of MultiArgWriterStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = new MultiArgWriterStub(undefined, MultiArgWriterStub.failing(want));
+      const outcome = await settle(() => multiArgWriterStubGet(double));
+      const message = "get fails with the error of MultiArgWriterStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMultiArgWriterSet", () => {
+    it("sets the function of set", async () => {
+      let called = false;
+      const option = MultiArgWriterStub.withMultiArgWriterSet(() => {
+        called = true;
+        return undefined as never;
+      });
+      await multiArgWriterStubSet(new MultiArgWriterStub(undefined, option));
+      expect(called).isTrue("withMultiArgWriterSet sets the function of set");
+    });
+  });
+
+  describe("withMultiArgWriterGet", () => {
+    it("sets the function of get", async () => {
+      let called = false;
+      const option = MultiArgWriterStub.withMultiArgWriterGet(() => {
+        called = true;
+        return undefined as never;
+      });
+      await multiArgWriterStubGet(new MultiArgWriterStub(undefined, option));
+      expect(called).isTrue("withMultiArgWriterGet sets the function of get");
+    });
   });
 });
 
-// dokimi:provenance sha256:979726d019d552f17727822053508d4a6e06b93f7f622e578dd7c7bde2203c4f
+describe("MultiArgWriterSetStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of set to the function", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      let got: unknown[] = [];
+      double.onSet.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await multiArgWriterStubSet(double);
+      const args = multiArgWriterStubSetArgs();
+      expect(got).isEqualTo([args[0], args[1], args[2]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("MultiArgWriterGetStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of get", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      const want = multiArgWriterStubGetPin();
+      double.onGet.returns(want);
+      expect(await multiArgWriterStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
+    });
+
+    it("configures get for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new MultiArgWriterStub(failures);
+      double.onGet.strict();
+      double.onGet.returns(undefined as never);
+      await settle(() => multiArgWriterStubGet(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of get");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of get to the function", async () => {
+      const double = new MultiArgWriterStub(undefined);
+      let got: unknown[] = [];
+      double.onGet.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await multiArgWriterStubGet(double);
+      const args = multiArgWriterStubGetArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:a684540beab0bee66f075f7c7c852630f7134b0ee7e49e7f67522ec294e6352a

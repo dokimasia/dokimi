@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/poisonable/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Mixed } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Mixed } from "../iface";
 
 /** MixedFailCall records one call of Mixed.fail. */
 export interface MixedFailCall {
@@ -19,20 +19,20 @@ export interface MixedFailCall {
 /** MixedProbeCall records one call of Mixed.probe. */
 export interface MixedProbeCall {
   /** The result of the call, where it returned one. */
-  result?: Error|undefined | undefined;
+  result?: Error | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * MixedFailStub configures fail, and records its calls. A fault armed
+ * MixedFailStub configures fail and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedFailStub extends MethodStub<MixedFailCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of fail, for a result that depends on the
+   * Sets the function that computes the result of fail from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -58,12 +58,12 @@ export class MixedFailStub extends MethodStub<MixedFailCall> {
 }
 
 /**
- * MixedProbeStub configures probe, and records its calls. A fault armed
+ * MixedProbeStub configures probe and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedProbeStub extends MethodStub<MixedProbeCall> {
-  #fn: (() => Error|undefined) | undefined;
-  #fallback: { readonly value: Error|undefined } | undefined;
+  #fn: (() => Error | undefined) | undefined;
+  #fallback: { readonly value: Error | undefined } | undefined;
 
   /**
    * Sets the result of every call of probe. A function and an injected
@@ -72,19 +72,19 @@ export class MixedProbeStub extends MethodStub<MixedProbeCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Error|undefined): this {
+  returns(result: Error | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of probe, for a result that depends on the
+   * Sets the function that computes the result of probe from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => Error|undefined): this {
+  func(fn: () => Error | undefined): this {
     this.#fn = fn;
     return this;
   }
@@ -92,7 +92,7 @@ export class MixedProbeStub extends MethodStub<MixedProbeCall> {
   /**
    * Returns the arms of a call of probe with its arguments.
    */
-  arms(): Arms<MixedProbeCall, Error|undefined, Error|undefined> {
+  arms(): Arms<MixedProbeCall, Error | undefined, Error | undefined> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn()),
@@ -107,13 +107,13 @@ export class MixedProbeStub extends MethodStub<MixedProbeCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures fail. */
@@ -124,9 +124,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -156,7 +156,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -169,8 +170,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -182,8 +184,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -220,7 +222,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -250,15 +253,15 @@ export class MixedStub implements Mixed {
    * @param fn - The function.
    * @returns The option.
    */
-  static withMixedProbe(fn: () => Error|undefined): MixedStubOption {
+  static withMixedProbe(fn: () => Error | undefined): MixedStubOption {
     return (double) => {
       double.onProbe.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -281,8 +284,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -306,7 +309,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of fail, and returns its result.
+   * Records the call of fail and returns its result.
    */
   fail(): Promise<void> {
     const call: MixedFailCall = {};
@@ -314,9 +317,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of probe, and returns its result.
+   * Records the call of probe and returns its result.
    */
-  probe(): Error|undefined {
+  probe(): Error | undefined {
     const call: MixedProbeCall = {};
     return answer(this.onProbe, call, this.onProbe.arms());
   }
@@ -324,4 +327,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:c178c9ddec2b1ee854440a1e677cc50f5bfec2d48e5907dc68cc5ec2b1d6c0ee
+// dokimi:provenance sha256:8d82b5befa2f1e74959f730ecbea8667df8e4ca9c52c693e8b3491117eaad57d

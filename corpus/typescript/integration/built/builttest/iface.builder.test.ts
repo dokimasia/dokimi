@@ -2,160 +2,243 @@
 // dokimi:plugin builder
 // dokimi:source integration/built/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Account, Page } from '../iface';
-import { AccountBuilder, PageBuilder } from './iface.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Account, Page } from "../iface";
+import { AccountBuilder, PageBuilder } from "./iface.builder";
 
-describe("AccountBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function accountBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Account();
-    seed.id = 'id-a';
-    seed.email = 'email-a';
+    seed.id = "id-a";
+    seed.email = "email-a";
     const got = AccountBuilder.from(seed).build();
-    check.equal(seat, got.id, seed.id, "from keeps the member it was given");
-    check.equal(seat, got.email, seed.email, "from keeps the member it was given");
+    expect.soft(got.id).isEqualTo(seed.id, "from keeps id");
+    expect.soft(got.email).isEqualTo(seed.email, "from keeps email");
   });
-});
 
-describe("AccountBuilder setters", () => {
-  test("withId writes id", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = AccountBuilder.create().build();
+    expect(AccountBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function accountBuilderWithIdCases(): void {
+  it("writes its argument to id", () => {
     let want: string;
-    want = 'id-a';
+    want = "id-a";
     const got = AccountBuilder.create().withId(want).build();
-    check.equal(seat, got.id, want, "the setter writes what it was given");
+    expect(got.id).isEqualTo(want, "withId writes its argument to id");
   });
 
-  test("withId replaces what was already there", ({ seat }) => {
+  it("replaces the value of id", () => {
     let first: string;
     let want: string;
-    first = 'id-a';
-    want = 'id-b';
+    first = "id-a";
+    want = "id-b";
     const got = AccountBuilder.create().withId(first).withId(want).build();
-    check.equal(seat, got.id, want, "the later call wins");
+    expect(got.id).isEqualTo(want, "the second call of withId replaces the first");
   });
+}
 
-  test("withEmail writes email", ({ seat }) => {
+function accountBuilderWithEmailCases(): void {
+  it("writes its argument to email", () => {
     let want: string;
-    want = 'email-a';
+    want = "email-a";
     const got = AccountBuilder.create().withEmail(want).build();
-    check.equal(seat, got.email, want, "the setter writes what it was given");
+    expect(got.email).isEqualTo(want, "withEmail writes its argument to email");
   });
 
-  test("withEmail replaces what was already there", ({ seat }) => {
+  it("replaces the value of email", () => {
     let first: string;
     let want: string;
-    first = 'email-a';
-    want = 'email-b';
+    first = "email-a";
+    want = "email-b";
     const got = AccountBuilder.create().withEmail(first).withEmail(want).build();
-    check.equal(seat, got.email, want, "the later call wins");
+    expect(got.email).isEqualTo(want, "the second call of withEmail replaces the first");
   });
-});
+}
 
-describe("AccountBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function accountBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Account[] = [];
     const record = (value: Account): void => {
       seen.push(value);
     };
     AccountBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function accountBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = AccountBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, AccountBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
+
+  it("builds the value of its original", () => {
+    const original = AccountBuilder.create();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+}
+
+function accountBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = AccountBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Account();
+    seed.id = "id-a";
+    seed.email = "email-a";
+    const builder = AccountBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("AccountBuilder", () => {
+  describe("from", accountBuilderFromCases);
+  describe("withId", accountBuilderWithIdCases);
+  describe("withEmail", accountBuilderWithEmailCases);
+  describe("mutate", accountBuilderMutateCases);
+  describe("clone", accountBuilderCloneCases);
+  describe("build", accountBuilderBuildCases);
 });
 
-describe("PageBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function pageBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Page<unknown>();
-    seed.next = 'next-a';
+    seed.next = "next-a";
     const got = PageBuilder.from<unknown>(seed).build();
-    check.equal(seat, got.next, seed.next, "from keeps the member it was given");
+    expect(got.next).isEqualTo(seed.next, "from keeps next");
   });
-});
 
-describe("PageBuilder setters", () => {
-  test("withItems writes items", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = PageBuilder.create<unknown>().build();
+    expect(PageBuilder.from<unknown>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function pageBuilderWithItemsCases(): void {
+  it("writes its argument to items", () => {
     let want: unknown[];
-    want = ['items-a'];
+    want = ["items-a"];
     const got = PageBuilder.create<unknown>().withItems(...want).build();
-    check.length(seat, got.items, 1, "the setter replaces the sequence");
+    expect(got.items).isEqualTo(want, "withItems writes its argument to items");
   });
 
-  test("withNext writes next", ({ seat }) => {
+  it("replaces the value of items", () => {
+    let first: unknown[];
+    let want: unknown[];
+    first = ["items-a"];
+    want = ["items-b"];
+    const got = PageBuilder.create<unknown>().withItems(...first).withItems(...want).build();
+    expect(got.items).isEqualTo(want, "the second call of withItems replaces the first");
+  });
+}
+
+function pageBuilderWithNextCases(): void {
+  it("writes its argument to next", () => {
     let want: string;
-    want = 'next-a';
+    want = "next-a";
     const got = PageBuilder.create<unknown>().withNext(want).build();
-    check.equal(seat, got.next, want, "the setter writes what it was given");
+    expect(got.next).isEqualTo(want, "withNext writes its argument to next");
   });
 
-  test("withNext replaces what was already there", ({ seat }) => {
+  it("replaces the value of next", () => {
     let first: string;
     let want: string;
-    first = 'next-a';
-    want = 'next-b';
+    first = "next-a";
+    want = "next-b";
     const got = PageBuilder.create<unknown>().withNext(first).withNext(want).build();
-    check.equal(seat, got.next, want, "the later call wins");
+    expect(got.next).isEqualTo(want, "the second call of withNext replaces the first");
   });
+}
 
-  test("appendItems keeps what items holds", ({ seat }) => {
+function pageBuilderAppendItemsCases(): void {
+  it("appends to the elements of items", () => {
+    let first: unknown[];
     let want: unknown[];
-    want = ['items-a'];
-    const got = PageBuilder.create<unknown>().withItems(...want).appendItems(...want).build();
-    check.length(seat, got.items, 2, "the appender adds to the sequence");
+    first = ["items-a"];
+    want = ["items-b"];
+    const got = PageBuilder.create<unknown>().withItems(...first).appendItems(...want).build();
+    expect(got.items).isEqualTo([...first, ...want], "appendItems appends its elements after those of withItems");
   });
-});
+}
 
-describe("PageBuilder clone", () => {
-  test("items is not shared with a clone", ({ seat }) => {
-    let want: unknown[];
-    let other: unknown[];
-    want = ['items-a'];
-    other = ['items-b'];
-    const original = PageBuilder.create<unknown>().withItems(...want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      value.items.splice(0, other.length, ...other);
-    });
-    check.notEqual(seat, original.build().items, other, "writing through a clone must not reach the original");
-  });
-
-  test("clone copies items", ({ seat }) => {
-    let want: unknown[];
-    want = ['items-a'];
-    const original = PageBuilder.create<unknown>().withItems(...want);
-    check.equal(seat, original.clone().build().items, want, "a clone builds the same member as its original");
-  });
-});
-
-describe("PageBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function pageBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Page<unknown>[] = [];
     const record = (value: Page<unknown>): void => {
       seen.push(value);
     };
     PageBuilder.create<unknown>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function pageBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = PageBuilder.create<unknown>();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = PageBuilder.create<unknown>();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, PageBuilder.from<unknown>(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+
+  it("copies items into the clone", () => {
+    let want: unknown[];
+    let other: unknown[];
+    want = ["items-a"];
+    other = ["items-b"];
+    const original = PageBuilder.create<unknown>().withItems(...want);
+    const clone = original.clone();
+    const message = "a change of items in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      value.items.splice(0, other.length, ...other);
+    });
+    expect(original.build().items).isNotEqualTo(other, message);
+  });
+
+  it("builds the items of its original", () => {
+    let want: unknown[];
+    want = ["items-a"];
+    const original = PageBuilder.create<unknown>().withItems(...want);
+    expect(original.clone().build().items).isEqualTo(want, "the clone builds the items of its original");
+  });
+}
+
+function pageBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = PageBuilder.create<unknown>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Page<unknown>();
+    seed.next = "next-a";
+    const builder = PageBuilder.create<unknown>().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("PageBuilder", () => {
+  describe("from", pageBuilderFromCases);
+  describe("withItems", pageBuilderWithItemsCases);
+  describe("withNext", pageBuilderWithNextCases);
+  describe("appendItems", pageBuilderAppendItemsCases);
+  describe("mutate", pageBuilderMutateCases);
+  describe("clone", pageBuilderCloneCases);
+  describe("build", pageBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:040fcb6e88414408faca1bdacd3e8103bf8570b4688a23a508f0b6d19bc26dad
+// dokimi:provenance sha256:b83cfa8018e2c099eccebef03695914fa3d5ab96c99cbb164c557c8a29c73816

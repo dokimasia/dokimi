@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/embedded/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Base, Closer, Composed } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Base, Closer, Composed } from "../iface";
 
 /** BasePingCall records one call of Base.ping. */
 export interface BasePingCall {
@@ -17,14 +17,14 @@ export interface BasePingCall {
 }
 
 /**
- * BasePingStub configures ping, and records its calls. A fault armed
+ * BasePingStub configures ping and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class BasePingStub extends MethodStub<BasePingCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of ping, for a result that depends on the
+   * Sets the function that computes the result of ping from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -49,13 +49,13 @@ export class BasePingStub extends MethodStub<BasePingCall> {
   }
 }
 
-/** An option of a BaseStub, which its constructor applies. */
+/** Configures a BaseStub at its construction. */
 export type BaseStubOption = (double: BaseStub) => void;
 
 /**
  * BaseStub is a recording test double of Base. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class BaseStub implements Base {
   /** Configures ping. */
@@ -64,9 +64,9 @@ export class BaseStub implements Base {
   #strict = false;
 
   /**
-   * Returns a double of Base that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Base that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -95,7 +95,8 @@ export class BaseStub implements Base {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -107,8 +108,9 @@ export class BaseStub implements Base {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -120,8 +122,8 @@ export class BaseStub implements Base {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -158,7 +160,8 @@ export class BaseStub implements Base {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -182,8 +185,8 @@ export class BaseStub implements Base {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -206,8 +209,8 @@ export class BaseStub implements Base {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -231,7 +234,7 @@ export class BaseStub implements Base {
   }
 
   /**
-   * Records the call of ping, and returns its result.
+   * Records the call of ping and returns its result.
    */
   ping(): Promise<void> {
     const call: BasePingCall = {};
@@ -246,14 +249,14 @@ export interface CloserCloseCall {
 }
 
 /**
- * CloserCloseStub configures close, and records its calls. A fault armed
+ * CloserCloseStub configures close and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CloserCloseStub extends MethodStub<CloserCloseCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of close, for a result that depends on the
+   * Sets the function that computes the result of close from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -278,13 +281,13 @@ export class CloserCloseStub extends MethodStub<CloserCloseCall> {
   }
 }
 
-/** An option of a CloserStub, which its constructor applies. */
+/** Configures a CloserStub at its construction. */
 export type CloserStubOption = (double: CloserStub) => void;
 
 /**
  * CloserStub is a recording test double of Closer. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class CloserStub implements Closer {
   /** Configures close. */
@@ -293,9 +296,9 @@ export class CloserStub implements Closer {
   #strict = false;
 
   /**
-   * Returns a double of Closer that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Closer that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -324,7 +327,8 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -336,8 +340,9 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -349,8 +354,8 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -387,7 +392,8 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -411,8 +417,8 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -435,8 +441,8 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -460,7 +466,7 @@ export class CloserStub implements Closer {
   }
 
   /**
-   * Records the call of close, and returns its result.
+   * Records the call of close and returns its result.
    */
   close(): Promise<void> {
     const call: CloserCloseCall = {};
@@ -491,7 +497,7 @@ export interface ComposedCloseCall {
 }
 
 /**
- * ComposedGetStub configures get, and records its calls. A fault armed
+ * ComposedGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ComposedGetStub extends MethodStub<ComposedGetCall> {
@@ -511,7 +517,7 @@ export class ComposedGetStub extends MethodStub<ComposedGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -541,14 +547,14 @@ export class ComposedGetStub extends MethodStub<ComposedGetCall> {
 }
 
 /**
- * ComposedPingStub configures ping, and records its calls. A fault armed
+ * ComposedPingStub configures ping and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ComposedPingStub extends MethodStub<ComposedPingCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of ping, for a result that depends on the
+   * Sets the function that computes the result of ping from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -574,14 +580,14 @@ export class ComposedPingStub extends MethodStub<ComposedPingCall> {
 }
 
 /**
- * ComposedCloseStub configures close, and records its calls. A fault armed
+ * ComposedCloseStub configures close and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ComposedCloseStub extends MethodStub<ComposedCloseCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of close, for a result that depends on the
+   * Sets the function that computes the result of close from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -606,13 +612,13 @@ export class ComposedCloseStub extends MethodStub<ComposedCloseCall> {
   }
 }
 
-/** An option of a ComposedStub, which its constructor applies. */
+/** Configures a ComposedStub at its construction. */
 export type ComposedStubOption = (double: ComposedStub) => void;
 
 /**
  * ComposedStub is a recording test double of Composed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ComposedStub implements Composed {
   /** Configures get. */
@@ -625,9 +631,9 @@ export class ComposedStub implements Composed {
   #strict = false;
 
   /**
-   * Returns a double of Composed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Composed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -658,7 +664,8 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -672,8 +679,9 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -685,8 +693,8 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -723,7 +731,8 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -773,8 +782,8 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -797,8 +806,8 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -822,7 +831,7 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(key: string): Promise<string> {
     const call: ComposedGetCall = { key };
@@ -830,7 +839,7 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Records the call of ping, and returns its result.
+   * Records the call of ping and returns its result.
    */
   ping(): Promise<void> {
     const call: ComposedPingCall = {};
@@ -838,7 +847,7 @@ export class ComposedStub implements Composed {
   }
 
   /**
-   * Records the call of close, and returns its result.
+   * Records the call of close and returns its result.
    */
   close(): Promise<void> {
     const call: ComposedCloseCall = {};
@@ -848,4 +857,4 @@ export class ComposedStub implements Composed {
 
 void compatV1;
 
-// dokimi:provenance sha256:410c003f01c3926b8b4fc91d11c913f4a88ef84fa05d9c724873eca726aab4c5
+// dokimi:provenance sha256:61db2d22368ba5461ed6abc3f566c574c949c5deffe69011ae2bed5428a549d0

@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/saga/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { ContractStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { ContractStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of step, or undefined. */
+/** Returns the samples of the arguments of step. An argument without a sample is undefined. */
 function contractStubStepArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -23,10 +22,10 @@ function contractStubStep(double: ContractStub): Promise<void> {
   return double.step(args[0]);
 }
 
-/** Returns the samples of the arguments of compensate, or undefined. */
+/** Returns the samples of the arguments of compensate. An argument without a sample is undefined. */
 function contractStubCompensateArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -36,10 +35,10 @@ function contractStubCompensate(double: ContractStub): Promise<void> {
   return double.compensate(args[0]);
 }
 
-/** Returns the samples of the arguments of ship, or undefined. */
+/** Returns the samples of the arguments of ship. An argument without a sample is undefined. */
 function contractStubShipArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -49,10 +48,10 @@ function contractStubShip(double: ContractStub): Promise<void> {
   return double.ship(args[0]);
 }
 
-/** Returns the samples of the arguments of undoShip, or undefined. */
+/** Returns the samples of the arguments of undoShip. An argument without a sample is undefined. */
 function contractStubUndoShipArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -70,403 +69,623 @@ function contractStubState(double: ContractStub): Promise<string> {
 /** Returns the sample of the result of state. */
 function contractStubStatePin(): string {
   let want0: string;
-  want0 = 'state-a';
+  want0 = "state-a";
   return want0;
 }
 
-describe("ContractStub.step", () => {
-  const checks = behaviour("Contract.step", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onStep,
-      call: () => contractStubStep(double),
-      override: (mark) => {
-        double.onStep.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubStep(double);
-    const got = double.onStep.assertCalledOnce(seat, "step records the call");
-    const args = contractStubStepArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onStep.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubStep(double);
-    await contractStubStep(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of step");
-  });
-
-  test("sets the function of withContractStep at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractStep(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubStep(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractStep sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("step-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubStep(double));
-    const message = "step fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub.compensate", () => {
-  const checks = behaviour("Contract.compensate", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onCompensate,
-      call: () => contractStubCompensate(double),
-      override: (mark) => {
-        double.onCompensate.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubCompensate(double);
-    const got = double.onCompensate.assertCalledOnce(seat, "compensate records the call");
-    const args = contractStubCompensateArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onCompensate.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubCompensate(double);
-    await contractStubCompensate(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of compensate");
-  });
-
-  test("sets the function of withContractCompensate at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractCompensate(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubCompensate(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractCompensate sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("compensate-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubCompensate(double));
-    const message = "compensate fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub.ship", () => {
-  const checks = behaviour("Contract.ship", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onShip,
-      call: () => contractStubShip(double),
-      override: (mark) => {
-        double.onShip.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubShip(double);
-    const got = double.onShip.assertCalledOnce(seat, "ship records the call");
-    const args = contractStubShipArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onShip.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubShip(double);
-    await contractStubShip(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of ship");
-  });
-
-  test("sets the function of withContractShip at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractShip(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubShip(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractShip sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("ship-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubShip(double));
-    const message = "ship fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub.undoShip", () => {
-  const checks = behaviour("Contract.undoShip", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onUndoShip,
-      call: () => contractStubUndoShip(double),
-      override: (mark) => {
-        double.onUndoShip.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubUndoShip(double);
-    const got = double.onUndoShip.assertCalledOnce(seat, "undoShip records the call");
-    const args = contractStubUndoShipArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onUndoShip.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubUndoShip(double);
-    await contractStubUndoShip(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of undoShip");
-  });
-
-  test("sets the function of withContractUndoShip at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractUndoShip(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubUndoShip(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractUndoShip sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("undoShip-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubUndoShip(double));
-    const message = "undoShip fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub.state", () => {
-  const checks = behaviour("Contract.state", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onState,
-      call: () => contractStubState(double),
-      override: (mark) => {
-        double.onState.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubStatePin();
-    double.onState.returns(want);
-    check.equal(seat, await contractStubState(double), want, "state returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubState(double);
-    double.onState.assertCalledOnce(seat, "state records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onState.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubState(double);
-    await contractStubState(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of state");
-  });
-
-  test("sets the function of withContractState at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractState(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubState(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractState sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("state-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubState(double));
-    const message = "state fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubStatePin();
-    double.onState.returns(want);
-    await contractStubState(double);
-    double.resetCalls();
-    check.equal(seat, await contractStubState(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * step alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onStep,
     call: () => contractStubStep(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes step to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubStep(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onStep.assertCalledOnce(seat, "step reaches the implementation");
-  });
+describe("ContractStub", () => {
+  describe("step", () => {
+    const checks = behaviour("Contract.step", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onStep,
+        call: () => contractStubStep(double),
+        override: (mark) => {
+          double.onStep.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails step with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("step-delegate");
-    const inner = new ContractStub(seat);
-    inner.onStep.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubStep(double));
-    const message = "step fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubStep(double);
+      expect(double.onStep.callCount).isEqualTo(1, "step records the call");
+      const got = double.onStep.calls[0];
+      const args = contractStubStepArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
 
-  test("passes compensate to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubCompensate(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onCompensate.assertCalledOnce(seat, "compensate reaches the implementation");
-  });
-
-  test("fails compensate with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("compensate-delegate");
-    const inner = new ContractStub(seat);
-    inner.onCompensate.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubCompensate(double));
-    const message = "compensate fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onStep.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubStep(double);
+      await contractStubStep(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of step");
+    });
   });
 
-  test("passes ship to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubShip(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onShip.assertCalledOnce(seat, "ship reaches the implementation");
+  describe("compensate", () => {
+    const checks = behaviour("Contract.compensate", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onCompensate,
+        call: () => contractStubCompensate(double),
+        override: (mark) => {
+          double.onCompensate.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubCompensate(double);
+      expect(double.onCompensate.callCount).isEqualTo(1, "compensate records the call");
+      const got = double.onCompensate.calls[0];
+      const args = contractStubCompensateArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onCompensate.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubCompensate(double);
+      await contractStubCompensate(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of compensate");
+    });
   });
 
-  test("fails ship with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("ship-delegate");
-    const inner = new ContractStub(seat);
-    inner.onShip.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubShip(double));
-    const message = "ship fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("ship", () => {
+    const checks = behaviour("Contract.ship", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onShip,
+        call: () => contractStubShip(double),
+        override: (mark) => {
+          double.onShip.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubShip(double);
+      expect(double.onShip.callCount).isEqualTo(1, "ship records the call");
+      const got = double.onShip.calls[0];
+      const args = contractStubShipArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onShip.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubShip(double);
+      await contractStubShip(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of ship");
+    });
   });
 
-  test("passes undoShip to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubUndoShip(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onUndoShip.assertCalledOnce(seat, "undoShip reaches the implementation");
+  describe("undoShip", () => {
+    const checks = behaviour("Contract.undoShip", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onUndoShip,
+        call: () => contractStubUndoShip(double),
+        override: (mark) => {
+          double.onUndoShip.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubUndoShip(double);
+      expect(double.onUndoShip.callCount).isEqualTo(1, "undoShip records the call");
+      const got = double.onUndoShip.calls[0];
+      const args = contractStubUndoShipArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onUndoShip.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubUndoShip(double);
+      await contractStubUndoShip(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of undoShip");
+    });
   });
 
-  test("fails undoShip with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("undoShip-delegate");
-    const inner = new ContractStub(seat);
-    inner.onUndoShip.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubUndoShip(double));
-    const message = "undoShip fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("state", () => {
+    const checks = behaviour("Contract.state", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onState,
+        call: () => contractStubState(double),
+        override: (mark) => {
+          double.onState.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onState.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubState(double);
+      await contractStubState(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of state");
+    });
   });
 
-  test("passes state to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubState(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onState.assertCalledOnce(seat, "state reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of step", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubStep(double);
+      double.resetCalls();
+      expect(double.onStep.callCount).isEqualTo(0, "resetCalls clears the calls of step");
+    });
+
+    it("clears the recorded calls of compensate", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubCompensate(double);
+      double.resetCalls();
+      expect(double.onCompensate.callCount).isEqualTo(0, "resetCalls clears the calls of compensate");
+    });
+
+    it("clears the recorded calls of ship", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubShip(double);
+      double.resetCalls();
+      expect(double.onShip.callCount).isEqualTo(0, "resetCalls clears the calls of ship");
+    });
+
+    it("clears the recorded calls of undoShip", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubUndoShip(double);
+      double.resetCalls();
+      expect(double.onUndoShip.callCount).isEqualTo(0, "resetCalls clears the calls of undoShip");
+    });
+
+    it("clears the recorded calls of state", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubState(double);
+      double.resetCalls();
+      expect(double.onState.callCount).isEqualTo(0, "resetCalls clears the calls of state");
+    });
+
+    it("keeps the result of returns of state", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubStatePin();
+      double.onState.returns(want);
+      double.resetCalls();
+      expect(await contractStubState(double)).isEqualTo(want, "resetCalls keeps the result of state");
+    });
   });
 
-  test("fails state with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("state-delegate");
-    const inner = new ContractStub(seat);
-    inner.onState.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubState(double));
-    const message = "state fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails step with its error", async () => {
+      const want = new Error("step-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubStep(double));
+      const message = "step fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails compensate with its error", async () => {
+      const want = new Error("compensate-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubCompensate(double));
+      const message = "compensate fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails ship with its error", async () => {
+      const want = new Error("ship-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubShip(double));
+      const message = "ship fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails undoShip with its error", async () => {
+      const want = new Error("undoShip-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubUndoShip(double));
+      const message = "undoShip fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails state with its error", async () => {
+      const want = new Error("state-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubState(double));
+      const message = "state fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes step to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubStep(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onStep.callCount).isEqualTo(1, "step calls the implementation");
+    });
+
+    it("fails step with the error of the implementation", async () => {
+      const want = new Error("step-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onStep.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubStep(double));
+      const message = "step fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes compensate to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubCompensate(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onCompensate.callCount).isEqualTo(1, "compensate calls the implementation");
+    });
+
+    it("fails compensate with the error of the implementation", async () => {
+      const want = new Error("compensate-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onCompensate.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubCompensate(double));
+      const message = "compensate fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes ship to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubShip(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onShip.callCount).isEqualTo(1, "ship calls the implementation");
+    });
+
+    it("fails ship with the error of the implementation", async () => {
+      const want = new Error("ship-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onShip.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubShip(double));
+      const message = "ship fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes undoShip to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubUndoShip(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onUndoShip.callCount).isEqualTo(1, "undoShip calls the implementation");
+    });
+
+    it("fails undoShip with the error of the implementation", async () => {
+      const want = new Error("undoShip-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onUndoShip.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubUndoShip(double));
+      const message = "undoShip fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes state to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubState(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onState.callCount).isEqualTo(1, "state calls the implementation");
+    });
+
+    it("fails state with the error of the implementation", async () => {
+      const want = new Error("state-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onState.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubState(double));
+      const message = "state fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails step with its error", async () => {
+      const want = new Error("step-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubStep(double));
+      const message = "step fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails compensate with its error", async () => {
+      const want = new Error("compensate-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubCompensate(double));
+      const message = "compensate fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails ship with its error", async () => {
+      const want = new Error("ship-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubShip(double));
+      const message = "ship fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails undoShip with its error", async () => {
+      const want = new Error("undoShip-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubUndoShip(double));
+      const message = "undoShip fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails state with its error", async () => {
+      const want = new Error("state-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubState(double));
+      const message = "state fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractStep", () => {
+    it("sets the function of step", async () => {
+      let called = false;
+      const option = ContractStub.withContractStep(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubStep(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractStep sets the function of step");
+    });
+  });
+
+  describe("withContractCompensate", () => {
+    it("sets the function of compensate", async () => {
+      let called = false;
+      const option = ContractStub.withContractCompensate(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubCompensate(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractCompensate sets the function of compensate");
+    });
+  });
+
+  describe("withContractShip", () => {
+    it("sets the function of ship", async () => {
+      let called = false;
+      const option = ContractStub.withContractShip(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubShip(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractShip sets the function of ship");
+    });
+  });
+
+  describe("withContractUndoShip", () => {
+    it("sets the function of undoShip", async () => {
+      let called = false;
+      const option = ContractStub.withContractUndoShip(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubUndoShip(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractUndoShip sets the function of undoShip");
+    });
+  });
+
+  describe("withContractState", () => {
+    it("sets the function of state", async () => {
+      let called = false;
+      const option = ContractStub.withContractState(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubState(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractState sets the function of state");
+    });
   });
 });
 
-// dokimi:provenance sha256:71d4da1b348e1393e52b55a29df172ebcc8eda74e518578b070606da9696cb54
+describe("ContractStepStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of step to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onStep.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubStep(double);
+      const args = contractStubStepArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractCompensateStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of compensate to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onCompensate.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubCompensate(double);
+      const args = contractStubCompensateArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractShipStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of ship to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onShip.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubShip(double);
+      const args = contractStubShipArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractUndoShipStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of undoShip to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onUndoShip.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubUndoShip(double);
+      const args = contractStubUndoShipArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractStateStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of state", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubStatePin();
+      double.onState.returns(want);
+      expect(await contractStubState(double)).isEqualTo(want, "state returns the result that returns sets");
+    });
+
+    it("configures state for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ContractStub(failures);
+      double.onState.strict();
+      double.onState.returns(undefined as never);
+      await settle(() => contractStubState(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of state");
+    });
+  });
+});
+
+// dokimi:provenance sha256:8b07503cb45159017e3e69a0c69c557194d90c894c2fceeca98c076615dfe1e7

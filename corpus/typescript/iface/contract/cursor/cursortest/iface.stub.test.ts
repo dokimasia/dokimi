@@ -2,23 +2,22 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/cursor/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { ContractStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { ContractStub } from "./iface.stub";
 
 /** Calls next of double with the samples of its arguments. */
-function contractStubNext(double: ContractStub): Promise<Value|undefined> {
+function contractStubNext(double: ContractStub): Promise<Value | undefined> {
   return double.next();
 }
 
 /** Returns the sample of the result of next. */
-function contractStubNextPin(): Value|undefined {
-  let want0: Value|undefined;
-  want0 = {key: 'key-a'} as Value;
+function contractStubNextPin(): Value | undefined {
+  let want0: Value | undefined;
+  want0 = { key: "key-a", body: "body-a" };
   return want0;
 }
 
@@ -27,181 +26,276 @@ function contractStubClose(double: ContractStub): Promise<void> {
   return double.close();
 }
 
-describe("ContractStub.next", () => {
-  const checks = behaviour("Contract.next", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onNext,
-      call: () => contractStubNext(double),
-      override: (mark) => {
-        double.onNext.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubNextPin();
-    double.onNext.returns(want);
-    check.equal(seat, await contractStubNext(double), want, "next returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubNext(double);
-    double.onNext.assertCalledOnce(seat, "next records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onNext.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubNext(double);
-    await contractStubNext(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of next");
-  });
-
-  test("sets the function of withContractNext at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractNext(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubNext(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractNext sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("next-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubNext(double));
-    const message = "next fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubNextPin();
-    double.onNext.returns(want);
-    await contractStubNext(double);
-    double.resetCalls();
-    check.equal(seat, await contractStubNext(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("ContractStub.close", () => {
-  const checks = behaviour("Contract.close", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onClose,
-      call: () => contractStubClose(double),
-      override: (mark) => {
-        double.onClose.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubClose(double);
-    double.onClose.assertCalledOnce(seat, "close records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onClose.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubClose(double);
-    await contractStubClose(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of close");
-  });
-
-  test("sets the function of withContractClose at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractClose(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubClose(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractClose sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("close-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubClose(double));
-    const message = "close fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * next alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onNext,
     call: () => contractStubNext(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes next to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubNext(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onNext.assertCalledOnce(seat, "next reaches the implementation");
-  });
+describe("ContractStub", () => {
+  describe("next", () => {
+    const checks = behaviour("Contract.next", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onNext,
+        call: () => contractStubNext(double),
+        override: (mark) => {
+          double.onNext.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails next with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("next-delegate");
-    const inner = new ContractStub(seat);
-    inner.onNext.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubNext(double));
-    const message = "next fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("passes close to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubClose(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onClose.assertCalledOnce(seat, "close reaches the implementation");
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onNext.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubNext(double);
+      await contractStubNext(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of next");
+    });
   });
 
-  test("fails close with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("close-delegate");
-    const inner = new ContractStub(seat);
-    inner.onClose.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubClose(double));
-    const message = "close fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("close", () => {
+    const checks = behaviour("Contract.close", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onClose,
+        call: () => contractStubClose(double),
+        override: (mark) => {
+          double.onClose.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onClose.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubClose(double);
+      await contractStubClose(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of next", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubNext(double);
+      double.resetCalls();
+      expect(double.onNext.callCount).isEqualTo(0, "resetCalls clears the calls of next");
+    });
+
+    it("keeps the result of returns of next", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubNextPin();
+      double.onNext.returns(want);
+      double.resetCalls();
+      expect(await contractStubNext(double)).isEqualTo(want, "resetCalls keeps the result of next");
+    });
+
+    it("clears the recorded calls of close", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubClose(double);
+      double.resetCalls();
+      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails next with its error", async () => {
+      const want = new Error("next-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubNext(double));
+      const message = "next fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubClose(double));
+      const message = "close fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes next to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubNext(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onNext.callCount).isEqualTo(1, "next calls the implementation");
+    });
+
+    it("fails next with the error of the implementation", async () => {
+      const want = new Error("next-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onNext.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubNext(double));
+      const message = "next fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes close to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubClose(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onClose.callCount).isEqualTo(1, "close calls the implementation");
+    });
+
+    it("fails close with the error of the implementation", async () => {
+      const want = new Error("close-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onClose.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubClose(double));
+      const message = "close fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails next with its error", async () => {
+      const want = new Error("next-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubNext(double));
+      const message = "next fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubClose(double));
+      const message = "close fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractNext", () => {
+    it("sets the function of next", async () => {
+      let called = false;
+      const option = ContractStub.withContractNext(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubNext(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractNext sets the function of next");
+    });
+  });
+
+  describe("withContractClose", () => {
+    it("sets the function of close", async () => {
+      let called = false;
+      const option = ContractStub.withContractClose(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubClose(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractClose sets the function of close");
+    });
   });
 });
 
-// dokimi:provenance sha256:300132f4f95120b5a66685d54bae0e9f812c8d0bccb6ca02e05925ebb6d4644d
+describe("ContractNextStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of next", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubNextPin();
+      double.onNext.returns(want);
+      expect(await contractStubNext(double)).isEqualTo(want, "next returns the result that returns sets");
+    });
+
+    it("configures next for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ContractStub(failures);
+      double.onNext.strict();
+      double.onNext.returns(undefined as never);
+      await settle(() => contractStubNext(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of next");
+    });
+  });
+});
+
+// dokimi:provenance sha256:85bea0550151cfda64f056636cdda766dc368bc2e23bb1aff479df4d1494a6d8

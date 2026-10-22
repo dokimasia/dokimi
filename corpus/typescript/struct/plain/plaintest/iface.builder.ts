@@ -2,22 +2,12 @@
 // dokimi:plugin builder
 // dokimi:source struct/plain/iface.ts
 
-import { Item } from '../iface';
+import { Item } from "../iface";
 
 /**
- * ItemBuilder constructs Item values.
- *
- * Start with ItemBuilder.create or ItemBuilder.from, set what you care
- * about, and call build.
- *
- * The point is what you do not have to write. An object literal restates
- * every member each time, so a member added to Item breaks every literal
- * at once and a reader cannot tell which members a given call site
- * actually cares about. Here the constructor supplies the rest, and each
- * call states only what it varies.
- *
- * Every setter returns the builder, so calls chain. clone is how one
- * builder becomes two.
+ * ItemBuilder constructs Item values. ItemBuilder.create and
+ * ItemBuilder.from return a new builder. Each setter sets one member and
+ * returns the builder, so the calls chain. build returns the value.
  */
 export class ItemBuilder {
   private readonly v: Item;
@@ -26,86 +16,46 @@ export class ItemBuilder {
     this.v = v;
   }
 
-  /**
-   * create returns a builder holding a new Item.
-   *
-   * No member declares a default, so there is nothing to seed. A caller that
-   * builds immediately gets the same value that a new Item has,
-   * and the setters are what make it differ.
-   */
+  /** create returns a builder of a new Item. */
   static create(): ItemBuilder {
     return new ItemBuilder(new Item());
   }
 
-  /**
-   * from returns a builder seeded with a copy of value.
-   *
-   * For the case where a caller already holds a value and wants one member
-   * different — a round trip, a near-copy, a regression fixture built from
-   * something a previous step produced.
-   */
+  /** from returns a builder of a copy of value. */
   static from(value: Item): ItemBuilder {
     return new ItemBuilder(Object.assign(new Item(), value));
   }
 
-  /**
-   * withId replaces id.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withId replaces id with value. */
   withId(value: string): this {
     this.v.id = value;
     return this;
   }
 
-  /**
-   * withCount replaces count.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withCount replaces count with value. */
   withCount(value: number): this {
     this.v.count = value;
     return this;
   }
 
   /**
-   * withTags replaces tags with the elements given.
-   *
-   * Variadic, and replacing: whatever the collection held is discarded,
-   * including anything a constructor seeded. appendTags is the counterpart
-   * that keeps it. Called with no arguments this empties the member rather
-   * than leaving it alone, which is how a caller clears a seeded default.
+   * withTags replaces the elements of tags with values. A call without
+   * arguments empties tags.
    */
   withTags(...values: string[]): this {
     this.v.tags = values;
     return this;
   }
 
-  /**
-   * appendTags adds to tags, keeping what is already there.
-   *
-   * The counterpart to withTags, which discards it. Both are offered
-   * because a caller extending a seeded default and a caller replacing it
-   * want opposite things, and one method cannot mean both.
-   */
+  /** appendTags appends values to the elements of tags. */
   appendTags(...values: string[]): this {
     this.v.tags = [...this.v.tags, ...values];
     return this;
   }
 
   /**
-   * mutate applies fn to the value under construction.
-   *
-   * The way out for what the setters do not reach: a member this builder
-   * cannot name, a shape it does not model, or a change that touches several
-   * members at once and only makes sense as one edit.
-   *
-   * Prefer a setter where one exists. A setter says which member it writes,
-   * and a reader of the call site learns that without following a closure.
+   * mutate applies fn to the value under construction. It changes what no
+   * setter changes, such as several members in one step.
    */
   mutate(fn: (value: Item) => void): this {
     fn(this.v);
@@ -113,14 +63,10 @@ export class ItemBuilder {
   }
 
   /**
-   * clone returns a builder that can be configured without affecting this
-   * one.
-   *
-   * One level deep, and the boundary matters. The array, byte-array and keyed
-   * members are copied, so writing through one clone is not visible through
-   * another. What is shared is anything held inside those, and every other
-   * member that refers to an object. Use mutate to replace such a member
-   * outright rather than editing it in place.
+   * clone returns a builder of a copy of the value under construction. The
+   * copy has its own arrays, maps, sets and byte arrays, so a change of one
+   * builder leaves the other unchanged. The two builders share the elements of
+   * those members and every other member that refers to an object.
    */
   clone(): ItemBuilder {
     const out = new ItemBuilder(Object.assign(new Item(), this.v));
@@ -129,18 +75,14 @@ export class ItemBuilder {
   }
 
   /**
-   * build returns the constructed Item.
-   *
-   * The builder stays usable afterwards, and a second call returns the value
-   * as it stands then — so a caller may build, set one more member, and
-   * build again. What it returns is a shallow copy of the value under
-   * construction: a member holding an array, a map or a set is shared with
-   * the builder and with every value built from it, and clone is what
-   * separates them.
+   * build returns a shallow copy of the value under construction. The builder
+   * stays usable, and a later call returns the value with the changes since.
+   * The copy shares its arrays, maps and sets with the builder, and clone
+   * returns a builder that shares none of them.
    */
   build(): Item {
     return Object.assign(new Item(), this.v);
   }
 }
 
-// dokimi:provenance sha256:9dc9208b5b290cda7979a50430a750cdaac1c76adca3e41316706b3cf15a24d9
+// dokimi:provenance sha256:ef460acc131416aac9e419e9765e5ff1aa974e12c8942ca0493daa047598cadd

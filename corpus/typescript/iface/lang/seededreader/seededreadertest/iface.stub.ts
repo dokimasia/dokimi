@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/seededreader/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Body, Catalog, Key } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Body, Catalog, Key } from "../iface";
 
 /** CatalogLookupCall records one call of Catalog.lookup. */
 export interface CatalogLookupCall {
@@ -29,7 +29,7 @@ export interface CatalogLenCall {
 }
 
 /**
- * CatalogLookupStub configures lookup, and records its calls. A fault armed
+ * CatalogLookupStub configures lookup and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CatalogLookupStub extends MethodStub<CatalogLookupCall> {
@@ -49,7 +49,7 @@ export class CatalogLookupStub extends MethodStub<CatalogLookupCall> {
   }
 
   /**
-   * Sets the function of lookup, for a result that depends on the
+   * Sets the function that computes the result of lookup from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -79,7 +79,7 @@ export class CatalogLookupStub extends MethodStub<CatalogLookupCall> {
 }
 
 /**
- * CatalogLenStub configures len, and records its calls. A fault armed
+ * CatalogLenStub configures len and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CatalogLenStub extends MethodStub<CatalogLenCall> {
@@ -99,7 +99,7 @@ export class CatalogLenStub extends MethodStub<CatalogLenCall> {
   }
 
   /**
-   * Sets the function of len, for a result that depends on the
+   * Sets the function that computes the result of len from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -128,13 +128,13 @@ export class CatalogLenStub extends MethodStub<CatalogLenCall> {
   }
 }
 
-/** An option of a CatalogStub, which its constructor applies. */
+/** Configures a CatalogStub at its construction. */
 export type CatalogStubOption = (double: CatalogStub) => void;
 
 /**
  * CatalogStub is a recording test double of Catalog. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class CatalogStub implements Catalog {
   /** Configures lookup. */
@@ -145,9 +145,9 @@ export class CatalogStub implements Catalog {
   #strict = false;
 
   /**
-   * Returns a double of Catalog that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Catalog that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -177,7 +177,8 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -190,8 +191,9 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -203,8 +205,8 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -241,7 +243,8 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -278,8 +281,8 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -302,8 +305,8 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -327,7 +330,7 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Records the call of lookup, and returns its result.
+   * Records the call of lookup and returns its result.
    */
   lookup(key: Key): Promise<Body> {
     const call: CatalogLookupCall = { key };
@@ -335,7 +338,7 @@ export class CatalogStub implements Catalog {
   }
 
   /**
-   * Records the call of len, and returns its result.
+   * Records the call of len and returns its result.
    */
   len(): Promise<number> {
     const call: CatalogLenCall = {};
@@ -345,4 +348,4 @@ export class CatalogStub implements Catalog {
 
 void compatV1;
 
-// dokimi:provenance sha256:ed3e76b1e471ee24764dd34f3aad981a46af96f90350ac57875c547c8dcba0b1
+// dokimi:provenance sha256:2209568af92102017376b29715e7e817de750545fb275e95f53a974dd25323cf

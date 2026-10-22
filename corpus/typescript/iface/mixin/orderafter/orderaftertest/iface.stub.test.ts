@@ -2,12 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/orderafter/iface.ts
 
-import { Recorder, byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MixedStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MixedStub } from "./iface.stub";
 
 /** Calls commit of double with the samples of its arguments. */
 function mixedStubCommit(double: MixedStub): Promise<void> {
@@ -19,172 +18,256 @@ function mixedStubPrepare(double: MixedStub): Promise<void> {
   return double.prepare();
 }
 
-describe("MixedStub.commit", () => {
-  const checks = behaviour("Mixed.commit", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onCommit,
-      call: () => mixedStubCommit(double),
-      override: (mark) => {
-        double.onCommit.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubCommit(double);
-    double.onCommit.assertCalledOnce(seat, "commit records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onCommit.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubCommit(double);
-    await mixedStubCommit(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of commit");
-  });
-
-  test("sets the function of withMixedCommit at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedCommit(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubCommit(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedCommit sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("commit-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubCommit(double));
-    const message = "commit fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("refuses commit before prepare in strict mode", async ({ seat }) => {
-    const failures = new Recorder();
-    const double = new MixedStub(failures, MixedStub.strict());
-    await settle(() => mixedStubCommit(double));
-    check.isTrue(seat, failures.failed, "commit before prepare is refused");
-  });
-});
-
-describe("MixedStub.prepare", () => {
-  const checks = behaviour("Mixed.prepare", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onPrepare,
-      call: () => mixedStubPrepare(double),
-      override: (mark) => {
-        double.onPrepare.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubPrepare(double);
-    double.onPrepare.assertCalledOnce(seat, "prepare records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onPrepare.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubPrepare(double);
-    await mixedStubPrepare(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of prepare");
-  });
-
-  test("sets the function of withMixedPrepare at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedPrepare(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubPrepare(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedPrepare sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("prepare-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubPrepare(double));
-    const message = "prepare fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub", () => {
-  const instance = (double: MixedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * commit alone.
+ */
+function mixedStubInstance(double: MixedStub) {
+  return {
     stub: double.onCommit,
     call: () => mixedStubCommit(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MixedStub(seat)),
-    withClock: (seat, clock) => instance(new MixedStub(seat, MixedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MixedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MixedStub(seat, MixedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MixedStub(seat, MixedStub.benchMode())),
-    strict: (seat) => instance(new MixedStub(seat, MixedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes commit to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubCommit(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onCommit.assertCalledOnce(seat, "commit reaches the implementation");
-  });
+describe("MixedStub", () => {
+  describe("commit", () => {
+    const checks = behaviour("Mixed.commit", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onCommit,
+        call: () => mixedStubCommit(double),
+        override: (mark) => {
+          double.onCommit.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails commit with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("commit-delegate");
-    const inner = new MixedStub(seat);
-    inner.onCommit.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubCommit(double));
-    const message = "commit fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("passes prepare to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubPrepare(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onPrepare.assertCalledOnce(seat, "prepare reaches the implementation");
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onCommit.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubCommit(double);
+      await mixedStubCommit(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of commit");
+    });
   });
 
-  test("fails prepare with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("prepare-delegate");
-    const inner = new MixedStub(seat);
-    inner.onPrepare.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubPrepare(double));
-    const message = "prepare fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("prepare", () => {
+    const checks = behaviour("Mixed.prepare", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onPrepare,
+        call: () => mixedStubPrepare(double),
+        override: (mark) => {
+          double.onPrepare.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onPrepare.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubPrepare(double);
+      await mixedStubPrepare(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of prepare");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of commit", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubCommit(double);
+      double.resetCalls();
+      expect(double.onCommit.callCount).isEqualTo(0, "resetCalls clears the calls of commit");
+    });
+
+    it("clears the recorded calls of prepare", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubPrepare(double);
+      double.resetCalls();
+      expect(double.onPrepare.callCount).isEqualTo(0, "resetCalls clears the calls of prepare");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails commit with its error", async () => {
+      const want = new Error("commit-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubCommit(double));
+      const message = "commit fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails prepare with its error", async () => {
+      const want = new Error("prepare-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubPrepare(double));
+      const message = "prepare fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("refuses commit before prepare", async () => {
+      const failures = new Recorder();
+      const option = MixedStub.withMixedCommit(() => undefined as never);
+      const double = new MixedStub(failures, MixedStub.strict(), option);
+      await settle(() => mixedStubCommit(double));
+      expect(failures.failed).isTrue("a strict double refuses commit before prepare");
+    });
+  });
+
+  describe("delegateTo", () => {
+    it("passes commit to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubCommit(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onCommit.callCount).isEqualTo(1, "commit calls the implementation");
+    });
+
+    it("fails commit with the error of the implementation", async () => {
+      const want = new Error("commit-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onCommit.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubCommit(double));
+      const message = "commit fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes prepare to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubPrepare(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onPrepare.callCount).isEqualTo(1, "prepare calls the implementation");
+    });
+
+    it("fails prepare with the error of the implementation", async () => {
+      const want = new Error("prepare-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onPrepare.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubPrepare(double));
+      const message = "prepare fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mixedStubInstance(new MixedStub(seat, MixedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock), MixedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails commit with its error", async () => {
+      const want = new Error("commit-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubCommit(double));
+      const message = "commit fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails prepare with its error", async () => {
+      const want = new Error("prepare-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubPrepare(double));
+      const message = "prepare fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMixedCommit", () => {
+    it("sets the function of commit", async () => {
+      let called = false;
+      const option = MixedStub.withMixedCommit(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubCommit(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedCommit sets the function of commit");
+    });
+  });
+
+  describe("withMixedPrepare", () => {
+    it("sets the function of prepare", async () => {
+      let called = false;
+      const option = MixedStub.withMixedPrepare(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubPrepare(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedPrepare sets the function of prepare");
+    });
   });
 });
 
-// dokimi:provenance sha256:0f03a92820bb6d3bdce9a32921945e16beec6aade73c9ad527c94acd48946c49
+// dokimi:provenance sha256:3302cba90507f66037ec69ee3a024587524244627d40636b4b19634098091d3d

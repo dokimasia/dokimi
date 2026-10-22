@@ -2,90 +2,128 @@
 // dokimi:plugin builder
 // dokimi:source iface/contract/persister/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Value } from '../iface';
-import { ValueBuilder } from './iface.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Value } from "../iface";
+import { ValueBuilder } from "./iface.builder";
 
-describe("ValueBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function valueBuilderCreateCases(): void {
+  it("applies the declared default of key", () => {
+    let want: string;
+    want = "test-key";
+    const got = ValueBuilder.create().build();
+    expect(got.key).isEqualTo(want, "create applies the declared default of key");
+  });
+
+  it("applies the declared default of body", () => {
+    let want: string;
+    want = "test-body";
+    const got = ValueBuilder.create().build();
+    expect(got.body).isEqualTo(want, "create applies the declared default of body");
+  });
+}
+
+function valueBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Value();
-    seed.key = 'key-a';
-    seed.body = 'body-a';
+    seed.key = "key-a";
+    seed.body = "body-a";
     const got = ValueBuilder.from(seed).build();
-    check.equal(seat, got.key, seed.key, "from keeps the member it was given");
-    check.equal(seat, got.body, seed.body, "from keeps the member it was given");
+    expect.soft(got.key).isEqualTo(seed.key, "from keeps key");
+    expect.soft(got.body).isEqualTo(seed.body, "from keeps body");
   });
 
-  test("key carries its declared default", ({ seat }) => {
-    let want: string;
-    want = 'test-key';
-    const got = ValueBuilder.create().build();
-    check.equal(seat, got.key, want, "the constructor applies the declared default");
+  it("keeps the value of its argument", () => {
+    const want = ValueBuilder.create().build();
+    expect(ValueBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
   });
+}
 
-  test("body carries its declared default", ({ seat }) => {
+function valueBuilderWithKeyCases(): void {
+  it("writes its argument to key", () => {
     let want: string;
-    want = 'test-body';
-    const got = ValueBuilder.create().build();
-    check.equal(seat, got.body, want, "the constructor applies the declared default");
-  });
-});
-
-describe("ValueBuilder setters", () => {
-  test("withKey writes key", ({ seat }) => {
-    let want: string;
-    want = 'key-a';
+    want = "key-a";
     const got = ValueBuilder.create().withKey(want).build();
-    check.equal(seat, got.key, want, "the setter writes what it was given");
+    expect(got.key).isEqualTo(want, "withKey writes its argument to key");
   });
 
-  test("withKey replaces what was already there", ({ seat }) => {
+  it("replaces the value of key", () => {
     let first: string;
     let want: string;
-    first = 'key-a';
-    want = 'key-b';
+    first = "key-a";
+    want = "key-b";
     const got = ValueBuilder.create().withKey(first).withKey(want).build();
-    check.equal(seat, got.key, want, "the later call wins");
+    expect(got.key).isEqualTo(want, "the second call of withKey replaces the first");
   });
+}
 
-  test("withBody writes body", ({ seat }) => {
+function valueBuilderWithBodyCases(): void {
+  it("writes its argument to body", () => {
     let want: string;
-    want = 'body-a';
+    want = "body-a";
     const got = ValueBuilder.create().withBody(want).build();
-    check.equal(seat, got.body, want, "the setter writes what it was given");
+    expect(got.body).isEqualTo(want, "withBody writes its argument to body");
   });
 
-  test("withBody replaces what was already there", ({ seat }) => {
+  it("replaces the value of body", () => {
     let first: string;
     let want: string;
-    first = 'body-a';
-    want = 'body-b';
+    first = "body-a";
+    want = "body-b";
     const got = ValueBuilder.create().withBody(first).withBody(want).build();
-    check.equal(seat, got.body, want, "the later call wins");
+    expect(got.body).isEqualTo(want, "the second call of withBody replaces the first");
   });
-});
+}
 
-describe("ValueBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function valueBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Value[] = [];
     const record = (value: Value): void => {
       seen.push(value);
     };
     ValueBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function valueBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = ValueBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = ValueBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, ValueBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function valueBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = ValueBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Value();
+    seed.key = "key-a";
+    seed.body = "body-a";
+    const builder = ValueBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("ValueBuilder", () => {
+  describe("create", valueBuilderCreateCases);
+  describe("from", valueBuilderFromCases);
+  describe("withKey", valueBuilderWithKeyCases);
+  describe("withBody", valueBuilderWithBodyCases);
+  describe("mutate", valueBuilderMutateCases);
+  describe("clone", valueBuilderCloneCases);
+  describe("build", valueBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:7e773228fe4aefa4ccb3b249d0f7c163828e858bb5cba4b87f5a123b39fa9cd0
+// dokimi:provenance sha256:8e6bec9857632837061269d198a2f6c503bcb8970987da9669172a392c849049

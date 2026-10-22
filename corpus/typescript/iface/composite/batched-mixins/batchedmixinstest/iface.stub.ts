@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/batched-mixins/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Batched } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Batched } from "../iface";
 
 /** BatchedPutCall records one call of Batched.put. */
 export interface BatchedPutCall {
@@ -39,14 +39,14 @@ export interface BatchedListCall {
 }
 
 /**
- * BatchedPutStub configures put, and records its calls. A fault armed
+ * BatchedPutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class BatchedPutStub extends MethodStub<BatchedPutCall> {
   #fn: ((key: string, value: string) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -72,7 +72,7 @@ export class BatchedPutStub extends MethodStub<BatchedPutCall> {
 }
 
 /**
- * BatchedReadStub configures read, and records its calls. A fault armed
+ * BatchedReadStub configures read and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class BatchedReadStub extends MethodStub<BatchedReadCall> {
@@ -92,7 +92,7 @@ export class BatchedReadStub extends MethodStub<BatchedReadCall> {
   }
 
   /**
-   * Sets the function of read, for a result that depends on the
+   * Sets the function that computes the result of read from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -122,7 +122,7 @@ export class BatchedReadStub extends MethodStub<BatchedReadCall> {
 }
 
 /**
- * BatchedListStub configures list, and records its calls. A fault armed
+ * BatchedListStub configures list and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class BatchedListStub extends MethodStub<BatchedListCall> {
@@ -142,7 +142,7 @@ export class BatchedListStub extends MethodStub<BatchedListCall> {
   }
 
   /**
-   * Sets the function of list, for a result that depends on the
+   * Sets the function that computes the result of list from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -171,13 +171,13 @@ export class BatchedListStub extends MethodStub<BatchedListCall> {
   }
 }
 
-/** An option of a BatchedStub, which its constructor applies. */
+/** Configures a BatchedStub at its construction. */
 export type BatchedStubOption = (double: BatchedStub) => void;
 
 /**
  * BatchedStub is a recording test double of Batched. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class BatchedStub implements Batched {
   /** Configures put. */
@@ -190,9 +190,9 @@ export class BatchedStub implements Batched {
   #strict = false;
 
   /**
-   * Returns a double of Batched that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Batched that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -223,7 +223,8 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -237,8 +238,9 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -250,8 +252,8 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -288,7 +290,8 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -338,8 +341,8 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -362,8 +365,8 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -387,7 +390,7 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(key: string, value: string): Promise<void> {
     const call: BatchedPutCall = { key, value };
@@ -395,7 +398,7 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Records the call of read, and returns its result.
+   * Records the call of read and returns its result.
    */
   read(key: string): Promise<string> {
     const call: BatchedReadCall = { key };
@@ -403,7 +406,7 @@ export class BatchedStub implements Batched {
   }
 
   /**
-   * Records the call of list, and returns its result.
+   * Records the call of list and returns its result.
    */
   list(): Promise<string[]> {
     const call: BatchedListCall = {};
@@ -413,4 +416,4 @@ export class BatchedStub implements Batched {
 
 void compatV1;
 
-// dokimi:provenance sha256:b66a87f7a5396fc795c4ddc69d5d1c41719461fadca9f8790f986897a6775de0
+// dokimi:provenance sha256:d5b76d20cf71a19c210b20a42360adce5935bb8d15ceb9b61598762c00e5cfa8

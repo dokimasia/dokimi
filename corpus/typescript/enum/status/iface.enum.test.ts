@@ -2,66 +2,80 @@
 // dokimi:plugin enum
 // dokimi:source enum/status/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Status } from './iface';
-import { UnknownStatusError, isStatus, parseStatus, statusToString, statusValues } from './iface.enum';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Status } from "./iface";
+import { UnknownStatusError, isStatus, parseStatus, statusToString, statusValues } from "./iface.enum";
 
-describe("Status variants", () => {
-  const all = statusValues();
-
-  test("declares exactly 3 variants", ({ seat }) => {
-    check.length(seat, all, 3, "the declared set must not change unnoticed");
+describe("Status", () => {
+  it("gives each variant a value of its own", () => {
+    const values = [Status.Draft, Status.Published, Status.Archived];
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
   });
 
-  test("no two variants share a value", ({ seat }) => {
-    const seen = new Set<Status>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(value), "each variant must hold a distinct value");
-      seen.add(value);
+  describe("statusValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Status.Draft, Status.Published, Status.Archived];
+      expect(statusValues()).isEqualTo(want, "statusValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(statusValues()).isNotEqualTo(statusValues(), "the two calls return two arrays", byIdentity());
+    });
+  });
+
+  describe("statusToString", () => {
+    it("returns a text of its own for each variant", () => {
+      const texts = [Status.Draft, Status.Published, Status.Archived].map((value) => statusToString(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+
+    it("renders a value outside the declared set with a text of its own", () => {
+      const out = 4 as unknown as Status;
+      const texts = [Status.Draft, Status.Published, Status.Archived].map((value) => statusToString(value));
+      expect(texts).doesNotContain(statusToString(out), "an undeclared value has a text of its own");
+    });
+  });
+
+  describe("isStatus", () => {
+    const tests = [
+      { name: "accepts Draft", give: Status.Draft },
+      { name: "accepts Published", give: Status.Published },
+      { name: "accepts Archived", give: Status.Archived },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(isStatus(tt.give)).isTrue("isStatus accepts each declared variant");
+      });
     }
+
+    it("refuses a value outside the declared set", () => {
+      expect(isStatus(4)).isFalse("isStatus refuses an undeclared value");
+    });
   });
 
-  test("no two variants share a textual form", ({ seat }) => {
-    const seen = new Set<string>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(statusToString(value)), "each variant must render distinctly");
-      seen.add(statusToString(value));
+  describe("parseStatus", () => {
+    const tests = [
+      { name: "returns Draft for its text", give: Status.Draft },
+      { name: "returns Published for its text", give: Status.Published },
+      { name: "returns Archived for its text", give: Status.Archived },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(parseStatus(statusToString(tt.give))).isEqualTo(tt.give, "parseStatus returns the variant of the text");
+      });
     }
-  });
 
-  test("a value outside the set is not valid", ({ seat }) => {
-    check.isFalse(seat, isStatus(4), "an undeclared value must not be valid");
-  });
-
-  test("every declared variant is valid", ({ seat }) => {
-    for (const value of all) {
-      check.isTrue(seat, isStatus(value), "a declared variant must be valid");
-    }
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        parseStatus("??????????");
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).errorAs(UnknownStatusError, "parseStatus refuses the text with UnknownStatusError");
+    });
   });
 });
 
-describe("Status text", () => {
-  const all = statusValues();
-
-  test("every variant survives a text round trip", ({ seat }) => {
-    for (const value of all) {
-      check.equal(seat, parseStatus(statusToString(value)), value, "the round trip must be lossless");
-    }
-  });
-
-  test("text naming no variant is refused", ({ seat }) => {
-    const err = check.throws(seat, () => parseStatus("??????????"), "unknown text must be refused");
-    check.errorAs(seat, err, UnknownStatusError, "unknown text must be refused with the declared refusal");
-  });
-
-  test("a value outside the set does not render as one inside it", ({ seat }) => {
-    const out = 4 as unknown as Status;
-    for (const value of all) {
-      check.notEqual(seat, statusToString(out), statusToString(value), "an undeclared value must render distinctly");
-    }
-  });
-});
-
-// dokimi:provenance sha256:7cdc64c2f9102f081be6a86e31720741cf5957fb68611f684fbf74304c34efc9
+// dokimi:provenance sha256:66ef572463ea18354f70ce6fe9800e6f255715dfb9368e0435fcbedf5289f9e9

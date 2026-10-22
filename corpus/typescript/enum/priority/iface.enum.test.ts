@@ -2,66 +2,82 @@
 // dokimi:plugin enum
 // dokimi:source enum/priority/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Priority } from './iface';
-import { UnknownPriorityError, isPriority, parsePriority, priorityToString, priorityValues } from './iface.enum';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Priority } from "./iface";
+import { UnknownPriorityError, isPriority, parsePriority, priorityToString, priorityValues } from "./iface.enum";
 
-describe("Priority variants", () => {
-  const all = priorityValues();
-
-  test("declares exactly 4 variants", ({ seat }) => {
-    check.length(seat, all, 4, "the declared set must not change unnoticed");
+describe("Priority", () => {
+  it("gives each variant a value of its own", () => {
+    const values = [Priority.Low, Priority.Medium, Priority.High, Priority.Critical];
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
   });
 
-  test("no two variants share a value", ({ seat }) => {
-    const seen = new Set<Priority>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(value), "each variant must hold a distinct value");
-      seen.add(value);
+  describe("priorityValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Priority.Low, Priority.Medium, Priority.High, Priority.Critical];
+      expect(priorityValues()).isEqualTo(want, "priorityValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(priorityValues()).isNotEqualTo(priorityValues(), "the two calls return two arrays", byIdentity());
+    });
+  });
+
+  describe("priorityToString", () => {
+    it("returns a text of its own for each variant", () => {
+      const texts = [Priority.Low, Priority.Medium, Priority.High, Priority.Critical].map((value) => priorityToString(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+
+    it("renders a value outside the declared set with a text of its own", () => {
+      const out = 4 as unknown as Priority;
+      const texts = [Priority.Low, Priority.Medium, Priority.High, Priority.Critical].map((value) => priorityToString(value));
+      expect(texts).doesNotContain(priorityToString(out), "an undeclared value has a text of its own");
+    });
+  });
+
+  describe("isPriority", () => {
+    const tests = [
+      { name: "accepts Low", give: Priority.Low },
+      { name: "accepts Medium", give: Priority.Medium },
+      { name: "accepts High", give: Priority.High },
+      { name: "accepts Critical", give: Priority.Critical },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(isPriority(tt.give)).isTrue("isPriority accepts each declared variant");
+      });
     }
+
+    it("refuses a value outside the declared set", () => {
+      expect(isPriority(4)).isFalse("isPriority refuses an undeclared value");
+    });
   });
 
-  test("no two variants share a textual form", ({ seat }) => {
-    const seen = new Set<string>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(priorityToString(value)), "each variant must render distinctly");
-      seen.add(priorityToString(value));
+  describe("parsePriority", () => {
+    const tests = [
+      { name: "returns Low for its text", give: Priority.Low },
+      { name: "returns Medium for its text", give: Priority.Medium },
+      { name: "returns High for its text", give: Priority.High },
+      { name: "returns Critical for its text", give: Priority.Critical },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(parsePriority(priorityToString(tt.give))).isEqualTo(tt.give, "parsePriority returns the variant of the text");
+      });
     }
-  });
 
-  test("a value outside the set is not valid", ({ seat }) => {
-    check.isFalse(seat, isPriority(4), "an undeclared value must not be valid");
-  });
-
-  test("every declared variant is valid", ({ seat }) => {
-    for (const value of all) {
-      check.isTrue(seat, isPriority(value), "a declared variant must be valid");
-    }
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        parsePriority("?????????");
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).errorAs(UnknownPriorityError, "parsePriority refuses the text with UnknownPriorityError");
+    });
   });
 });
 
-describe("Priority text", () => {
-  const all = priorityValues();
-
-  test("every variant survives a text round trip", ({ seat }) => {
-    for (const value of all) {
-      check.equal(seat, parsePriority(priorityToString(value)), value, "the round trip must be lossless");
-    }
-  });
-
-  test("text naming no variant is refused", ({ seat }) => {
-    const err = check.throws(seat, () => parsePriority("?????????"), "unknown text must be refused");
-    check.errorAs(seat, err, UnknownPriorityError, "unknown text must be refused with the declared refusal");
-  });
-
-  test("a value outside the set does not render as one inside it", ({ seat }) => {
-    const out = 4 as unknown as Priority;
-    for (const value of all) {
-      check.notEqual(seat, priorityToString(out), priorityToString(value), "an undeclared value must render distinctly");
-    }
-  });
-});
-
-// dokimi:provenance sha256:9e66825c93109f8dfe5b200af6e4980d6fdd947aa802971145fdf37f5b9e1bfb
+// dokimi:provenance sha256:37864fd423866ce137f19b08dbfa2ef46fe26d1c6cd84a68accacb6e7b7e8d0c

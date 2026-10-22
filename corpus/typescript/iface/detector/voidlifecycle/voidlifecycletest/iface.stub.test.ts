@@ -2,107 +2,178 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/voidlifecycle/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { VoidLifecycleStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { VoidLifecycleStub } from "./iface.stub";
 
 /** Calls stop of double with the samples of its arguments. */
 function voidLifecycleStubStop(double: VoidLifecycleStub): void {
   return double.stop();
 }
 
-describe("VoidLifecycleStub.stop", () => {
-  const checks = behaviour("VoidLifecycle.stop", (seat) => {
-    const double = new VoidLifecycleStub(seat);
-    return {
-      stub: double.onStop,
-      call: () => voidLifecycleStubStop(double),
-      override: (mark) => {
-        double.onStop.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new VoidLifecycleStub(seat);
-    voidLifecycleStubStop(double);
-    double.onStop.assertCalledOnce(seat, "stop records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new VoidLifecycleStub(seat);
-    let seen = 0;
-    double.onStop.onRecord(() => {
-      seen += 1;
-    });
-    voidLifecycleStubStop(double);
-    voidLifecycleStubStop(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of stop");
-  });
-
-  test("sets the function of withVoidLifecycleStop at construction", async ({ seat }) => {
-    let called = false;
-    const option = VoidLifecycleStub.withVoidLifecycleStop(() => {
-      called = true;
-      return undefined as never;
-    });
-    voidLifecycleStubStop(new VoidLifecycleStub(seat, option));
-    check.isTrue(seat, called, "withVoidLifecycleStop sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("stop-failing");
-    const double = VoidLifecycleStub.newFailing(seat, want);
-    const outcome = await settle(() => voidLifecycleStubStop(double));
-    const message = "stop fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("VoidLifecycleStub", () => {
-  const instance = (double: VoidLifecycleStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * stop alone.
+ */
+function voidLifecycleStubInstance(double: VoidLifecycleStub) {
+  return {
     stub: double.onStop,
     call: () => voidLifecycleStubStop(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new VoidLifecycleStub(seat)),
-    withClock: (seat, clock) => instance(new VoidLifecycleStub(seat, VoidLifecycleStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(VoidLifecycleStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new VoidLifecycleStub(seat, VoidLifecycleStub.withRandSource(random))),
-    benchMode: (seat) => instance(new VoidLifecycleStub(seat, VoidLifecycleStub.benchMode())),
-    strict: (seat) => instance(new VoidLifecycleStub(seat, VoidLifecycleStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes stop to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new VoidLifecycleStub(seat);
-    await settle(() => voidLifecycleStubStop(new VoidLifecycleStub(seat, VoidLifecycleStub.delegateTo(inner))));
-    inner.onStop.assertCalledOnce(seat, "stop reaches the implementation");
+describe("VoidLifecycleStub", () => {
+  describe("stop", () => {
+    const checks = behaviour("VoidLifecycle.stop", (seat) => {
+      const double = new VoidLifecycleStub(seat);
+      return {
+        stub: double.onStop,
+        call: () => voidLifecycleStubStop(double),
+        override: (mark) => {
+          double.onStop.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new VoidLifecycleStub(undefined);
+      let seen = 0;
+      double.onStop.onRecord(() => {
+        seen += 1;
+      });
+      voidLifecycleStubStop(double);
+      voidLifecycleStubStop(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of stop");
+    });
   });
 
-  test("fails stop with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("stop-delegate");
-    const inner = new VoidLifecycleStub(seat);
-    inner.onStop.faults(want, 1);
-    const double = new VoidLifecycleStub(seat, VoidLifecycleStub.delegateTo(inner));
-    const outcome = await settle(() => voidLifecycleStubStop(double));
-    const message = "stop fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => voidLifecycleStubInstance(new VoidLifecycleStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of stop", async () => {
+      const double = new VoidLifecycleStub(undefined);
+      voidLifecycleStubStop(double);
+      double.resetCalls();
+      expect(double.onStop.callCount).isEqualTo(0, "resetCalls clears the calls of stop");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => voidLifecycleStubInstance(VoidLifecycleStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails stop with its error", async () => {
+      const want = new Error("stop-failing");
+      const double = VoidLifecycleStub.newFailing(undefined, want);
+      const outcome = await settle(() => voidLifecycleStubStop(double));
+      const message = "stop fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => voidLifecycleStubInstance(new VoidLifecycleStub(seat, VoidLifecycleStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes stop to the implementation", async () => {
+      const inner = new VoidLifecycleStub(undefined);
+      await settle(() => voidLifecycleStubStop(new VoidLifecycleStub(undefined, VoidLifecycleStub.delegateTo(inner))));
+      expect(inner.onStop.callCount).isEqualTo(1, "stop calls the implementation");
+    });
+
+    it("fails stop with the error of the implementation", async () => {
+      const want = new Error("stop-delegate");
+      const inner = new VoidLifecycleStub(undefined);
+      inner.onStop.faults(want, 1);
+      const double = new VoidLifecycleStub(undefined, VoidLifecycleStub.delegateTo(inner));
+      const outcome = await settle(() => voidLifecycleStubStop(double));
+      const message = "stop fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => voidLifecycleStubInstance(new VoidLifecycleStub(seat, VoidLifecycleStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      voidLifecycleStubInstance(new VoidLifecycleStub(seat, VoidLifecycleStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => voidLifecycleStubInstance(new VoidLifecycleStub(seat, VoidLifecycleStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        voidLifecycleStubInstance(new VoidLifecycleStub(seat, VoidLifecycleStub.withClock(clock), VoidLifecycleStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails stop with its error", async () => {
+      const want = new Error("stop-failing");
+      const double = new VoidLifecycleStub(undefined, VoidLifecycleStub.failing(want));
+      const outcome = await settle(() => voidLifecycleStubStop(double));
+      const message = "stop fails with the error of VoidLifecycleStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withVoidLifecycleStop", () => {
+    it("sets the function of stop", async () => {
+      let called = false;
+      const option = VoidLifecycleStub.withVoidLifecycleStop(() => {
+        called = true;
+        return undefined as never;
+      });
+      voidLifecycleStubStop(new VoidLifecycleStub(undefined, option));
+      expect(called).isTrue("withVoidLifecycleStop sets the function of stop");
+    });
   });
 });
 
-// dokimi:provenance sha256:0689e7356c28c8849ec2eff986cdcd21a76e4ce764cdf93654bf37085b0c7f74
+// dokimi:provenance sha256:0715387ec41a89e0bfdc25146ad7f86c8142ebc80a74b4d0f5559bf647295cbc

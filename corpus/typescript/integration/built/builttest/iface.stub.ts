@@ -2,15 +2,15 @@
 // dokimi:plugin stub
 // dokimi:source integration/built/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Invoice } from '../billing/billing';
-import type { Account, Ledger, Note, Page } from '../iface';
-import { AccountBuilder, PageBuilder } from './iface.builder';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Invoice } from "../billing/billing";
+import type { Account, Ledger, Note, Page } from "../iface";
+import { AccountBuilder, PageBuilder } from "./iface.builder";
 
 /** LedgerGetCall records one call of Ledger.get. */
 export interface LedgerGetCall {
@@ -27,7 +27,7 @@ export interface LedgerFindCall {
   /** The argument id. */
   id: string;
   /** The result of the call, where it returned one. */
-  result?: Account|undefined | undefined;
+  result?: Account | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -37,7 +37,7 @@ export interface LedgerLookupCall {
   /** The argument id. */
   id: string;
   /** The result of the call, where it returned one. */
-  result?: Account|undefined | undefined;
+  result?: Account | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -71,7 +71,7 @@ export interface LedgerBillCall {
 }
 
 /**
- * LedgerGetStub configures get, and records its calls. A fault armed
+ * LedgerGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class LedgerGetStub extends MethodStub<LedgerGetCall> {
@@ -91,7 +91,7 @@ export class LedgerGetStub extends MethodStub<LedgerGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -122,12 +122,12 @@ export class LedgerGetStub extends MethodStub<LedgerGetCall> {
 }
 
 /**
- * LedgerFindStub configures find, and records its calls. A fault armed
+ * LedgerFindStub configures find and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class LedgerFindStub extends MethodStub<LedgerFindCall> {
-  #fn: ((id: string) => Account|undefined | PromiseLike<Account|undefined>) | undefined;
-  #fallback: { readonly value: Account|undefined } | undefined;
+  #fn: ((id: string) => Account | undefined | PromiseLike<Account | undefined>) | undefined;
+  #fallback: { readonly value: Account | undefined } | undefined;
 
   /**
    * Sets the result of every call of find. A function and an injected
@@ -136,19 +136,19 @@ export class LedgerFindStub extends MethodStub<LedgerFindCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Account|undefined): this {
+  returns(result: Account | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of find, for a result that depends on the
+   * Sets the function that computes the result of find from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => Account|undefined | PromiseLike<Account|undefined>): this {
+  func(fn: (id: string) => Account | undefined | PromiseLike<Account | undefined>): this {
     this.#fn = fn;
     return this;
   }
@@ -156,7 +156,7 @@ export class LedgerFindStub extends MethodStub<LedgerFindCall> {
   /**
    * Returns the arms of a call of find with its arguments.
    */
-  arms(id: string): Arms<LedgerFindCall, Account|undefined, Account|undefined | PromiseLike<Account|undefined>> {
+  arms(id: string): Arms<LedgerFindCall, Account | undefined, Account | undefined | PromiseLike<Account | undefined>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(id)),
@@ -173,12 +173,12 @@ export class LedgerFindStub extends MethodStub<LedgerFindCall> {
 }
 
 /**
- * LedgerLookupStub configures lookup, and records its calls. A fault armed
+ * LedgerLookupStub configures lookup and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class LedgerLookupStub extends MethodStub<LedgerLookupCall> {
-  #fn: ((id: string) => Account|undefined) | undefined;
-  #fallback: { readonly value: Account|undefined } | undefined;
+  #fn: ((id: string) => Account | undefined) | undefined;
+  #fallback: { readonly value: Account | undefined } | undefined;
 
   /**
    * Sets the result of every call of lookup. A function and an injected
@@ -187,19 +187,19 @@ export class LedgerLookupStub extends MethodStub<LedgerLookupCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Account|undefined): this {
+  returns(result: Account | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of lookup, for a result that depends on the
+   * Sets the function that computes the result of lookup from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => Account|undefined): this {
+  func(fn: (id: string) => Account | undefined): this {
     this.#fn = fn;
     return this;
   }
@@ -207,7 +207,7 @@ export class LedgerLookupStub extends MethodStub<LedgerLookupCall> {
   /**
    * Returns the arms of a call of lookup with its arguments.
    */
-  arms(id: string): Arms<LedgerLookupCall, Account|undefined, Account|undefined> {
+  arms(id: string): Arms<LedgerLookupCall, Account | undefined, Account | undefined> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(id)),
@@ -224,7 +224,7 @@ export class LedgerLookupStub extends MethodStub<LedgerLookupCall> {
 }
 
 /**
- * LedgerListStub configures list, and records its calls. A fault armed
+ * LedgerListStub configures list and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class LedgerListStub extends MethodStub<LedgerListCall> {
@@ -244,7 +244,7 @@ export class LedgerListStub extends MethodStub<LedgerListCall> {
   }
 
   /**
-   * Sets the function of list, for a result that depends on the
+   * Sets the function that computes the result of list from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -275,7 +275,7 @@ export class LedgerListStub extends MethodStub<LedgerListCall> {
 }
 
 /**
- * LedgerNoteStub configures note, and records its calls. A fault armed
+ * LedgerNoteStub configures note and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class LedgerNoteStub extends MethodStub<LedgerNoteCall> {
@@ -295,7 +295,7 @@ export class LedgerNoteStub extends MethodStub<LedgerNoteCall> {
   }
 
   /**
-   * Sets the function of note, for a result that depends on the
+   * Sets the function that computes the result of note from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -325,7 +325,7 @@ export class LedgerNoteStub extends MethodStub<LedgerNoteCall> {
 }
 
 /**
- * LedgerBillStub configures bill, and records its calls. A fault armed
+ * LedgerBillStub configures bill and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class LedgerBillStub extends MethodStub<LedgerBillCall> {
@@ -345,7 +345,7 @@ export class LedgerBillStub extends MethodStub<LedgerBillCall> {
   }
 
   /**
-   * Sets the function of bill, for a result that depends on the
+   * Sets the function that computes the result of bill from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -374,14 +374,14 @@ export class LedgerBillStub extends MethodStub<LedgerBillCall> {
   }
 }
 
-/** An option of a LedgerStub, which its constructor applies. */
+/** Configures a LedgerStub at its construction. */
 export type LedgerStubOption = (double: LedgerStub) => void;
 
 /**
  * LedgerStub is a recording test double of Ledger. Each property
- * on<Method> configures its method. Left alone, a method records the call
- * and returns a new value from the builder of its result type, or undefined
- * where the type has no builder.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns a new value from the builder of its result type. It returns
+ * undefined where the type has no builder.
  */
 export class LedgerStub implements Ledger {
   /** Configures get. */
@@ -400,9 +400,9 @@ export class LedgerStub implements Ledger {
   #strict = false;
 
   /**
-   * Returns a double of Ledger that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Ledger that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -436,7 +436,8 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -453,8 +454,9 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -466,8 +468,8 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -504,7 +506,8 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -538,7 +541,7 @@ export class LedgerStub implements Ledger {
    * @param fn - The function.
    * @returns The option.
    */
-  static withLedgerFind(fn: (id: string) => Account|undefined | PromiseLike<Account|undefined>): LedgerStubOption {
+  static withLedgerFind(fn: (id: string) => Account | undefined | PromiseLike<Account | undefined>): LedgerStubOption {
     return (double) => {
       double.onFind.func(fn);
     };
@@ -550,7 +553,7 @@ export class LedgerStub implements Ledger {
    * @param fn - The function.
    * @returns The option.
    */
-  static withLedgerLookup(fn: (id: string) => Account|undefined): LedgerStubOption {
+  static withLedgerLookup(fn: (id: string) => Account | undefined): LedgerStubOption {
     return (double) => {
       double.onLookup.func(fn);
     };
@@ -593,8 +596,8 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -617,8 +620,8 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -642,7 +645,7 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(id: string): Promise<Account> {
     const call: LedgerGetCall = { id };
@@ -650,23 +653,23 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Records the call of find, and returns its result.
+   * Records the call of find and returns its result.
    */
-  find(id: string): Promise<Account|undefined> {
+  find(id: string): Promise<Account | undefined> {
     const call: LedgerFindCall = { id };
     return answerAsync(this.onFind, call, this.onFind.arms(id));
   }
 
   /**
-   * Records the call of lookup, and returns its result.
+   * Records the call of lookup and returns its result.
    */
-  lookup(id: string): Account|undefined {
+  lookup(id: string): Account | undefined {
     const call: LedgerLookupCall = { id };
     return answer(this.onLookup, call, this.onLookup.arms(id));
   }
 
   /**
-   * Records the call of list, and returns its result.
+   * Records the call of list and returns its result.
    */
   list(): Promise<Page<Account>> {
     const call: LedgerListCall = {};
@@ -674,7 +677,7 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Records the call of note, and returns its result.
+   * Records the call of note and returns its result.
    */
   note(id: string): Note {
     const call: LedgerNoteCall = { id };
@@ -682,7 +685,7 @@ export class LedgerStub implements Ledger {
   }
 
   /**
-   * Records the call of bill, and returns its result.
+   * Records the call of bill and returns its result.
    */
   bill(id: string): Invoice {
     const call: LedgerBillCall = { id };
@@ -692,4 +695,4 @@ export class LedgerStub implements Ledger {
 
 void compatV1;
 
-// dokimi:provenance sha256:fbad0c753319406879a7519b4ea921caa41d19dbe68aad0e2b583c1a2872f92c
+// dokimi:provenance sha256:547478cd952fb218391b1bfec43fef4344ebac0cf8d1ee9f81a79c49ad1f35b8

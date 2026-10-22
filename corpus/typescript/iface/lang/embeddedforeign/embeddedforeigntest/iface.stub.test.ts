@@ -2,12 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/embeddedforeign/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { FailureStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { FailureStub } from "./iface.stub";
 
 /** Calls retryable of double with the samples of its arguments. */
 function failureStubRetryable(double: FailureStub): boolean {
@@ -21,111 +20,195 @@ function failureStubRetryablePin(): boolean {
   return want0;
 }
 
-describe("FailureStub.retryable", () => {
-  const checks = behaviour("Failure.retryable", (seat) => {
-    const double = new FailureStub(seat);
-    return {
-      stub: double.onRetryable,
-      call: () => failureStubRetryable(double),
-      override: (mark) => {
-        double.onRetryable.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new FailureStub(seat);
-    const want = failureStubRetryablePin();
-    double.onRetryable.returns(want);
-    check.equal(seat, failureStubRetryable(double), want, "retryable returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new FailureStub(seat);
-    failureStubRetryable(double);
-    double.onRetryable.assertCalledOnce(seat, "retryable records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new FailureStub(seat);
-    let seen = 0;
-    double.onRetryable.onRecord(() => {
-      seen += 1;
-    });
-    failureStubRetryable(double);
-    failureStubRetryable(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of retryable");
-  });
-
-  test("sets the function of withFailureRetryable at construction", async ({ seat }) => {
-    let called = false;
-    const option = FailureStub.withFailureRetryable(() => {
-      called = true;
-      return undefined as never;
-    });
-    failureStubRetryable(new FailureStub(seat, option));
-    check.isTrue(seat, called, "withFailureRetryable sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("retryable-failing");
-    const double = FailureStub.newFailing(seat, want);
-    const outcome = await settle(() => failureStubRetryable(double));
-    const message = "retryable fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new FailureStub(seat);
-    const want = failureStubRetryablePin();
-    double.onRetryable.returns(want);
-    failureStubRetryable(double);
-    double.resetCalls();
-    check.equal(seat, failureStubRetryable(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("FailureStub", () => {
-  const instance = (double: FailureStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * retryable alone.
+ */
+function failureStubInstance(double: FailureStub) {
+  return {
     stub: double.onRetryable,
     call: () => failureStubRetryable(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new FailureStub(seat)),
-    withClock: (seat, clock) => instance(new FailureStub(seat, FailureStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(FailureStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new FailureStub(seat, FailureStub.withRandSource(random))),
-    benchMode: (seat) => instance(new FailureStub(seat, FailureStub.benchMode())),
-    strict: (seat) => instance(new FailureStub(seat, FailureStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes retryable to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new FailureStub(seat);
-    await settle(() => failureStubRetryable(new FailureStub(seat, FailureStub.delegateTo(inner))));
-    inner.onRetryable.assertCalledOnce(seat, "retryable reaches the implementation");
+describe("FailureStub", () => {
+  describe("retryable", () => {
+    const checks = behaviour("Failure.retryable", (seat) => {
+      const double = new FailureStub(seat);
+      return {
+        stub: double.onRetryable,
+        call: () => failureStubRetryable(double),
+        override: (mark) => {
+          double.onRetryable.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new FailureStub(undefined);
+      let seen = 0;
+      double.onRetryable.onRecord(() => {
+        seen += 1;
+      });
+      failureStubRetryable(double);
+      failureStubRetryable(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of retryable");
+    });
   });
 
-  test("fails retryable with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("retryable-delegate");
-    const inner = new FailureStub(seat);
-    inner.onRetryable.faults(want, 1);
-    const double = new FailureStub(seat, FailureStub.delegateTo(inner));
-    const outcome = await settle(() => failureStubRetryable(double));
-    const message = "retryable fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => failureStubInstance(new FailureStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of retryable", async () => {
+      const double = new FailureStub(undefined);
+      failureStubRetryable(double);
+      double.resetCalls();
+      expect(double.onRetryable.callCount).isEqualTo(0, "resetCalls clears the calls of retryable");
+    });
+
+    it("keeps the result of returns of retryable", async () => {
+      const double = new FailureStub(undefined);
+      const want = failureStubRetryablePin();
+      double.onRetryable.returns(want);
+      double.resetCalls();
+      expect(failureStubRetryable(double)).isEqualTo(want, "resetCalls keeps the result of retryable");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => failureStubInstance(FailureStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails retryable with its error", async () => {
+      const want = new Error("retryable-failing");
+      const double = FailureStub.newFailing(undefined, want);
+      const outcome = await settle(() => failureStubRetryable(double));
+      const message = "retryable fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => failureStubInstance(new FailureStub(seat, FailureStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes retryable to the implementation", async () => {
+      const inner = new FailureStub(undefined);
+      await settle(() => failureStubRetryable(new FailureStub(undefined, FailureStub.delegateTo(inner))));
+      expect(inner.onRetryable.callCount).isEqualTo(1, "retryable calls the implementation");
+    });
+
+    it("fails retryable with the error of the implementation", async () => {
+      const want = new Error("retryable-delegate");
+      const inner = new FailureStub(undefined);
+      inner.onRetryable.faults(want, 1);
+      const double = new FailureStub(undefined, FailureStub.delegateTo(inner));
+      const outcome = await settle(() => failureStubRetryable(double));
+      const message = "retryable fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => failureStubInstance(new FailureStub(seat, FailureStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      failureStubInstance(new FailureStub(seat, FailureStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => failureStubInstance(new FailureStub(seat, FailureStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        failureStubInstance(new FailureStub(seat, FailureStub.withClock(clock), FailureStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails retryable with its error", async () => {
+      const want = new Error("retryable-failing");
+      const double = new FailureStub(undefined, FailureStub.failing(want));
+      const outcome = await settle(() => failureStubRetryable(double));
+      const message = "retryable fails with the error of FailureStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withFailureRetryable", () => {
+    it("sets the function of retryable", async () => {
+      let called = false;
+      const option = FailureStub.withFailureRetryable(() => {
+        called = true;
+        return undefined as never;
+      });
+      failureStubRetryable(new FailureStub(undefined, option));
+      expect(called).isTrue("withFailureRetryable sets the function of retryable");
+    });
   });
 });
 
-// dokimi:provenance sha256:451b648e72ed2bd9fb169ded7abe96c69467c56a3cb3eacf2d2d5123a0a07d4c
+describe("FailureRetryableStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of retryable", async () => {
+      const double = new FailureStub(undefined);
+      const want = failureStubRetryablePin();
+      double.onRetryable.returns(want);
+      expect(failureStubRetryable(double)).isEqualTo(want, "retryable returns the result that returns sets");
+    });
+
+    it("configures retryable for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new FailureStub(failures);
+      double.onRetryable.strict();
+      double.onRetryable.returns(undefined as never);
+      await settle(() => failureStubRetryable(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of retryable");
+    });
+  });
+});
+
+// dokimi:provenance sha256:a815ca14ff56f744dfa3775c3071e4c8a4576f72ff4cd4f8f35fb02aeec7dfa3

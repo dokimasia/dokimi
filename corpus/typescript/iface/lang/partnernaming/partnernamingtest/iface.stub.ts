@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/partnernaming/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Store } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Store } from "../iface";
 
 /** StoreTouchCall records one call of Store.touch. */
 export interface StoreTouchCall {
@@ -69,14 +69,14 @@ export interface StoreCountCall {
 }
 
 /**
- * StoreTouchStub configures touch, and records its calls. A fault armed
+ * StoreTouchStub configures touch and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreTouchStub extends MethodStub<StoreTouchCall> {
   #fn: ((key: string, weight: number) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of touch, for a result that depends on the
+   * Sets the function that computes the result of touch from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -102,7 +102,7 @@ export class StoreTouchStub extends MethodStub<StoreTouchCall> {
 }
 
 /**
- * StoreSeenStub configures seen, and records its calls. A fault armed
+ * StoreSeenStub configures seen and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreSeenStub extends MethodStub<StoreSeenCall> {
@@ -122,7 +122,7 @@ export class StoreSeenStub extends MethodStub<StoreSeenCall> {
   }
 
   /**
-   * Sets the function of seen, for a result that depends on the
+   * Sets the function that computes the result of seen from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -152,14 +152,14 @@ export class StoreSeenStub extends MethodStub<StoreSeenCall> {
 }
 
 /**
- * StoreMoveStub configures move, and records its calls. A fault armed
+ * StoreMoveStub configures move and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreMoveStub extends MethodStub<StoreMoveCall> {
   #fn: ((from: string, to: string) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of move, for a result that depends on the
+   * Sets the function that computes the result of move from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -185,7 +185,7 @@ export class StoreMoveStub extends MethodStub<StoreMoveCall> {
 }
 
 /**
- * StoreAtStub configures at, and records its calls. A fault armed
+ * StoreAtStub configures at and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreAtStub extends MethodStub<StoreAtCall> {
@@ -205,7 +205,7 @@ export class StoreAtStub extends MethodStub<StoreAtCall> {
   }
 
   /**
-   * Sets the function of at, for a result that depends on the
+   * Sets the function that computes the result of at from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -235,14 +235,14 @@ export class StoreAtStub extends MethodStub<StoreAtCall> {
 }
 
 /**
- * StoreEmitStub configures emit, and records its calls. A fault armed
+ * StoreEmitStub configures emit and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreEmitStub extends MethodStub<StoreEmitCall> {
   #fn: ((id: string) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of emit, for a result that depends on the
+   * Sets the function that computes the result of emit from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -268,7 +268,7 @@ export class StoreEmitStub extends MethodStub<StoreEmitCall> {
 }
 
 /**
- * StoreCountStub configures count, and records its calls. A fault armed
+ * StoreCountStub configures count and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreCountStub extends MethodStub<StoreCountCall> {
@@ -288,7 +288,7 @@ export class StoreCountStub extends MethodStub<StoreCountCall> {
   }
 
   /**
-   * Sets the function of count, for a result that depends on the
+   * Sets the function that computes the result of count from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -317,13 +317,13 @@ export class StoreCountStub extends MethodStub<StoreCountCall> {
   }
 }
 
-/** An option of a StoreStub, which its constructor applies. */
+/** Configures a StoreStub at its construction. */
 export type StoreStubOption = (double: StoreStub) => void;
 
 /**
  * StoreStub is a recording test double of Store. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class StoreStub implements Store {
   /** Configures touch. */
@@ -342,9 +342,9 @@ export class StoreStub implements Store {
   #strict = false;
 
   /**
-   * Returns a double of Store that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Store that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -378,7 +378,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -395,8 +396,9 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -408,8 +410,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -446,7 +448,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -535,8 +538,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -559,8 +562,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -584,7 +587,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of touch, and returns its result.
+   * Records the call of touch and returns its result.
    */
   touch(key: string, weight: number): Promise<void> {
     const call: StoreTouchCall = { key, weight };
@@ -592,7 +595,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of seen, and returns its result.
+   * Records the call of seen and returns its result.
    */
   seen(k: string): Promise<number> {
     const call: StoreSeenCall = { k };
@@ -600,7 +603,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of move, and returns its result.
+   * Records the call of move and returns its result.
    */
   move(from: string, to: string): Promise<void> {
     const call: StoreMoveCall = { from, to };
@@ -608,7 +611,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of at, and returns its result.
+   * Records the call of at and returns its result.
    */
   at(where: string): Promise<number> {
     const call: StoreAtCall = { where };
@@ -616,7 +619,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of emit, and returns its result.
+   * Records the call of emit and returns its result.
    */
   emit(id: string): Promise<void> {
     const call: StoreEmitCall = { id };
@@ -624,7 +627,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of count, and returns its result.
+   * Records the call of count and returns its result.
    */
   count(bucket: number): Promise<number> {
     const call: StoreCountCall = { bucket };
@@ -634,4 +637,4 @@ export class StoreStub implements Store {
 
 void compatV1;
 
-// dokimi:provenance sha256:dda40d6ec323aa6d037deb91c591a732b205c3f4cd0c2e203aacef8272128cb6
+// dokimi:provenance sha256:84d886651b34ad03832a2c6b3c06af711b1ca9d2af0de0176c8d7ccef8dbd905

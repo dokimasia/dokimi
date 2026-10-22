@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/circuit-breaker/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { ContractStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { ContractStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of run, or undefined. */
+/** Returns the samples of the arguments of run. An argument without a sample is undefined. */
 function contractStubRunArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'run-a';
+  a0 = "run-a";
   return [a0];
 }
 
@@ -22,97 +21,192 @@ function contractStubRun(double: ContractStub): Promise<void> {
   return double.run(args[0]);
 }
 
-describe("ContractStub.run", () => {
-  const checks = behaviour("Contract.run", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onRun,
-      call: () => contractStubRun(double),
-      override: (mark) => {
-        double.onRun.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubRun(double);
-    const got = double.onRun.assertCalledOnce(seat, "run records the call");
-    const args = contractStubRunArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onRun.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubRun(double);
-    await contractStubRun(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of run");
-  });
-
-  test("sets the function of withContractRun at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractRun(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubRun(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractRun sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("run-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubRun(double));
-    const message = "run fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * run alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onRun,
     call: () => contractStubRun(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes run to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubRun(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onRun.assertCalledOnce(seat, "run reaches the implementation");
+describe("ContractStub", () => {
+  describe("run", () => {
+    const checks = behaviour("Contract.run", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onRun,
+        call: () => contractStubRun(double),
+        override: (mark) => {
+          double.onRun.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubRun(double);
+      expect(double.onRun.callCount).isEqualTo(1, "run records the call");
+      const got = double.onRun.calls[0];
+      const args = contractStubRunArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onRun.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubRun(double);
+      await contractStubRun(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of run");
+    });
   });
 
-  test("fails run with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("run-delegate");
-    const inner = new ContractStub(seat);
-    inner.onRun.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubRun(double));
-    const message = "run fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of run", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubRun(double);
+      double.resetCalls();
+      expect(double.onRun.callCount).isEqualTo(0, "resetCalls clears the calls of run");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails run with its error", async () => {
+      const want = new Error("run-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubRun(double));
+      const message = "run fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes run to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubRun(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onRun.callCount).isEqualTo(1, "run calls the implementation");
+    });
+
+    it("fails run with the error of the implementation", async () => {
+      const want = new Error("run-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onRun.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubRun(double));
+      const message = "run fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails run with its error", async () => {
+      const want = new Error("run-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubRun(double));
+      const message = "run fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractRun", () => {
+    it("sets the function of run", async () => {
+      let called = false;
+      const option = ContractStub.withContractRun(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubRun(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractRun sets the function of run");
+    });
   });
 });
 
-// dokimi:provenance sha256:acd56da8248e0f62155611cd5feb4c66c1636e6cd8772ddd2346d94f44c4284a
+describe("ContractRunStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of run to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onRun.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubRun(double);
+      const args = contractStubRunArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:49455ea2ba05039718d652e09bbded1c6f3ee1adbfe1ae21909eda80710e30d7

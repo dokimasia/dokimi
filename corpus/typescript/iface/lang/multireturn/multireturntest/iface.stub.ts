@@ -2,20 +2,20 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/multireturn/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Wide } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Wide } from "../iface";
 
 /** WideQuadCall records one call of Wide.quad. */
 export interface WideQuadCall {
   /** The argument id. */
   id: string;
   /** The result of the call, where it returned one. */
-  result?: [string,number,boolean] | undefined;
+  result?: [string, number, boolean] | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -25,7 +25,7 @@ export interface WideTripleCall {
   /** The argument id. */
   id: string;
   /** The result of the call, where it returned one. */
-  result?: [string,number,boolean] | undefined;
+  result?: [string, number, boolean] | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -35,18 +35,18 @@ export interface WideNoErrorCall {
   /** The argument id. */
   id: string;
   /** The result of the call, where it returned one. */
-  result?: [string,number] | undefined;
+  result?: [string, number] | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * WideQuadStub configures quad, and records its calls. A fault armed
+ * WideQuadStub configures quad and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class WideQuadStub extends MethodStub<WideQuadCall> {
-  #fn: ((id: string) => [string,number,boolean] | PromiseLike<[string,number,boolean]>) | undefined;
-  #fallback: { readonly value: [string,number,boolean] } | undefined;
+  #fn: ((id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>) | undefined;
+  #fallback: { readonly value: [string, number, boolean] } | undefined;
 
   /**
    * Sets the result of every call of quad. A function and an injected
@@ -55,19 +55,19 @@ export class WideQuadStub extends MethodStub<WideQuadCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: [string,number,boolean]): this {
+  returns(result: [string, number, boolean]): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of quad, for a result that depends on the
+   * Sets the function that computes the result of quad from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => [string,number,boolean] | PromiseLike<[string,number,boolean]>): this {
+  func(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): this {
     this.#fn = fn;
     return this;
   }
@@ -75,7 +75,7 @@ export class WideQuadStub extends MethodStub<WideQuadCall> {
   /**
    * Returns the arms of a call of quad with its arguments.
    */
-  arms(id: string): Arms<WideQuadCall, [string,number,boolean], [string,number,boolean] | PromiseLike<[string,number,boolean]>> {
+  arms(id: string): Arms<WideQuadCall, [string, number, boolean], [string, number, boolean] | PromiseLike<[string, number, boolean]>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(id)),
@@ -91,12 +91,12 @@ export class WideQuadStub extends MethodStub<WideQuadCall> {
 }
 
 /**
- * WideTripleStub configures triple, and records its calls. A fault armed
+ * WideTripleStub configures triple and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class WideTripleStub extends MethodStub<WideTripleCall> {
-  #fn: ((id: string) => [string,number,boolean] | PromiseLike<[string,number,boolean]>) | undefined;
-  #fallback: { readonly value: [string,number,boolean] } | undefined;
+  #fn: ((id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>) | undefined;
+  #fallback: { readonly value: [string, number, boolean] } | undefined;
 
   /**
    * Sets the result of every call of triple. A function and an injected
@@ -105,19 +105,19 @@ export class WideTripleStub extends MethodStub<WideTripleCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: [string,number,boolean]): this {
+  returns(result: [string, number, boolean]): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of triple, for a result that depends on the
+   * Sets the function that computes the result of triple from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => [string,number,boolean] | PromiseLike<[string,number,boolean]>): this {
+  func(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): this {
     this.#fn = fn;
     return this;
   }
@@ -125,7 +125,7 @@ export class WideTripleStub extends MethodStub<WideTripleCall> {
   /**
    * Returns the arms of a call of triple with its arguments.
    */
-  arms(id: string): Arms<WideTripleCall, [string,number,boolean], [string,number,boolean] | PromiseLike<[string,number,boolean]>> {
+  arms(id: string): Arms<WideTripleCall, [string, number, boolean], [string, number, boolean] | PromiseLike<[string, number, boolean]>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(id)),
@@ -141,12 +141,12 @@ export class WideTripleStub extends MethodStub<WideTripleCall> {
 }
 
 /**
- * WideNoErrorStub configures noError, and records its calls. A fault armed
+ * WideNoErrorStub configures noError and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class WideNoErrorStub extends MethodStub<WideNoErrorCall> {
-  #fn: ((id: string) => [string,number] | PromiseLike<[string,number]>) | undefined;
-  #fallback: { readonly value: [string,number] } | undefined;
+  #fn: ((id: string) => [string, number] | PromiseLike<[string, number]>) | undefined;
+  #fallback: { readonly value: [string, number] } | undefined;
 
   /**
    * Sets the result of every call of noError. A function and an injected
@@ -155,19 +155,19 @@ export class WideNoErrorStub extends MethodStub<WideNoErrorCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: [string,number]): this {
+  returns(result: [string, number]): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of noError, for a result that depends on the
+   * Sets the function that computes the result of noError from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (id: string) => [string,number] | PromiseLike<[string,number]>): this {
+  func(fn: (id: string) => [string, number] | PromiseLike<[string, number]>): this {
     this.#fn = fn;
     return this;
   }
@@ -175,7 +175,7 @@ export class WideNoErrorStub extends MethodStub<WideNoErrorCall> {
   /**
    * Returns the arms of a call of noError with its arguments.
    */
-  arms(id: string): Arms<WideNoErrorCall, [string,number], [string,number] | PromiseLike<[string,number]>> {
+  arms(id: string): Arms<WideNoErrorCall, [string, number], [string, number] | PromiseLike<[string, number]>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(id)),
@@ -190,13 +190,13 @@ export class WideNoErrorStub extends MethodStub<WideNoErrorCall> {
   }
 }
 
-/** An option of a WideStub, which its constructor applies. */
+/** Configures a WideStub at its construction. */
 export type WideStubOption = (double: WideStub) => void;
 
 /**
  * WideStub is a recording test double of Wide. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class WideStub implements Wide {
   /** Configures quad. */
@@ -209,9 +209,9 @@ export class WideStub implements Wide {
   #strict = false;
 
   /**
-   * Returns a double of Wide that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Wide that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -242,7 +242,8 @@ export class WideStub implements Wide {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -256,8 +257,9 @@ export class WideStub implements Wide {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -269,8 +271,8 @@ export class WideStub implements Wide {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -307,7 +309,8 @@ export class WideStub implements Wide {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -326,7 +329,7 @@ export class WideStub implements Wide {
    * @param fn - The function.
    * @returns The option.
    */
-  static withWideQuad(fn: (id: string) => [string,number,boolean] | PromiseLike<[string,number,boolean]>): WideStubOption {
+  static withWideQuad(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): WideStubOption {
     return (double) => {
       double.onQuad.func(fn);
     };
@@ -338,7 +341,7 @@ export class WideStub implements Wide {
    * @param fn - The function.
    * @returns The option.
    */
-  static withWideTriple(fn: (id: string) => [string,number,boolean] | PromiseLike<[string,number,boolean]>): WideStubOption {
+  static withWideTriple(fn: (id: string) => [string, number, boolean] | PromiseLike<[string, number, boolean]>): WideStubOption {
     return (double) => {
       double.onTriple.func(fn);
     };
@@ -350,15 +353,15 @@ export class WideStub implements Wide {
    * @param fn - The function.
    * @returns The option.
    */
-  static withWideNoError(fn: (id: string) => [string,number] | PromiseLike<[string,number]>): WideStubOption {
+  static withWideNoError(fn: (id: string) => [string, number] | PromiseLike<[string, number]>): WideStubOption {
     return (double) => {
       double.onNoError.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -381,8 +384,8 @@ export class WideStub implements Wide {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -406,25 +409,25 @@ export class WideStub implements Wide {
   }
 
   /**
-   * Records the call of quad, and returns its result.
+   * Records the call of quad and returns its result.
    */
-  quad(id: string): Promise<[string,number,boolean]> {
+  quad(id: string): Promise<[string, number, boolean]> {
     const call: WideQuadCall = { id };
     return answerAsync(this.onQuad, call, this.onQuad.arms(id));
   }
 
   /**
-   * Records the call of triple, and returns its result.
+   * Records the call of triple and returns its result.
    */
-  triple(id: string): Promise<[string,number,boolean]> {
+  triple(id: string): Promise<[string, number, boolean]> {
     const call: WideTripleCall = { id };
     return answerAsync(this.onTriple, call, this.onTriple.arms(id));
   }
 
   /**
-   * Records the call of noError, and returns its result.
+   * Records the call of noError and returns its result.
    */
-  noError(id: string): Promise<[string,number]> {
+  noError(id: string): Promise<[string, number]> {
     const call: WideNoErrorCall = { id };
     return answerAsync(this.onNoError, call, this.onNoError.arms(id));
   }
@@ -432,4 +435,4 @@ export class WideStub implements Wide {
 
 void compatV1;
 
-// dokimi:provenance sha256:da99cec6eec5339b5b8d7edf94b7ae7eef7dfa959aee8457060b7b1b4c9e474a
+// dokimi:provenance sha256:47a198cae911b11c9c0facb523217e967226647e0238a0e1e4731bc14ca771d6

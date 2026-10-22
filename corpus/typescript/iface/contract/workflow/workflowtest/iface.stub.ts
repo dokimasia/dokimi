@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/workflow/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Contract } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Contract } from "../iface";
 
 /** ContractRunCall records one call of Contract.run. */
 export interface ContractRunCall {
@@ -29,14 +29,14 @@ export interface ContractStateCall {
 }
 
 /**
- * ContractRunStub configures run, and records its calls. A fault armed
+ * ContractRunStub configures run and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractRunStub extends MethodStub<ContractRunCall> {
   #fn: ((key: string) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of run, for a result that depends on the
+   * Sets the function that computes the result of run from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -62,7 +62,7 @@ export class ContractRunStub extends MethodStub<ContractRunCall> {
 }
 
 /**
- * ContractStateStub configures state, and records its calls. A fault armed
+ * ContractStateStub configures state and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractStateStub extends MethodStub<ContractStateCall> {
@@ -82,7 +82,7 @@ export class ContractStateStub extends MethodStub<ContractStateCall> {
   }
 
   /**
-   * Sets the function of state, for a result that depends on the
+   * Sets the function that computes the result of state from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -111,13 +111,13 @@ export class ContractStateStub extends MethodStub<ContractStateCall> {
   }
 }
 
-/** An option of a ContractStub, which its constructor applies. */
+/** Configures a ContractStub at its construction. */
 export type ContractStubOption = (double: ContractStub) => void;
 
 /**
  * ContractStub is a recording test double of Contract. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ContractStub implements Contract {
   /** Configures run. */
@@ -128,9 +128,9 @@ export class ContractStub implements Contract {
   #strict = false;
 
   /**
-   * Returns a double of Contract that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Contract that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -160,7 +160,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -173,8 +174,9 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -186,8 +188,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -224,7 +226,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -261,8 +264,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -285,8 +288,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -310,7 +313,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of run, and returns its result.
+   * Records the call of run and returns its result.
    */
   run(key: string): Promise<void> {
     const call: ContractRunCall = { key };
@@ -318,7 +321,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of state, and returns its result.
+   * Records the call of state and returns its result.
    */
   state(key: string): Promise<string> {
     const call: ContractStateCall = { key };
@@ -328,4 +331,4 @@ export class ContractStub implements Contract {
 
 void compatV1;
 
-// dokimi:provenance sha256:21314d4e79a414eb944c1d993499d3957815bfaad462497c53d1d85d8cfedc68
+// dokimi:provenance sha256:26f5907a4e5ac46558e793ad9aea7efa491155dc42c12c4c69cd7fccc542b0ec

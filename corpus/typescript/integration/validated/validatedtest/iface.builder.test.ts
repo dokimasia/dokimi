@@ -2,76 +2,111 @@
 // dokimi:plugin builder
 // dokimi:source integration/validated/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Account } from '../iface';
-import { AccountBuilder } from './iface.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Account } from "../iface";
+import { AccountBuilder } from "./iface.builder";
 
-describe("AccountBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function accountBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Account();
-    seed.id = 'id-a';
-    seed.email = 'email-a';
+    seed.id = "id-a";
+    seed.email = "email-a";
     const got = AccountBuilder.from(seed).build();
-    check.equal(seat, got.id, seed.id, "from keeps the member it was given");
-    check.equal(seat, got.email, seed.email, "from keeps the member it was given");
+    expect.soft(got.id).isEqualTo(seed.id, "from keeps id");
+    expect.soft(got.email).isEqualTo(seed.email, "from keeps email");
   });
-});
 
-describe("AccountBuilder setters", () => {
-  test("withId writes id", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = AccountBuilder.create().build();
+    expect(AccountBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function accountBuilderWithIdCases(): void {
+  it("writes its argument to id", () => {
     let want: string;
-    want = 'id-a';
+    want = "id-a";
     const got = AccountBuilder.create().withId(want).build();
-    check.equal(seat, got.id, want, "the setter writes what it was given");
+    expect(got.id).isEqualTo(want, "withId writes its argument to id");
   });
 
-  test("withId replaces what was already there", ({ seat }) => {
+  it("replaces the value of id", () => {
     let first: string;
     let want: string;
-    first = 'id-a';
-    want = 'id-b';
+    first = "id-a";
+    want = "id-b";
     const got = AccountBuilder.create().withId(first).withId(want).build();
-    check.equal(seat, got.id, want, "the later call wins");
+    expect(got.id).isEqualTo(want, "the second call of withId replaces the first");
   });
+}
 
-  test("withEmail writes email", ({ seat }) => {
+function accountBuilderWithEmailCases(): void {
+  it("writes its argument to email", () => {
     let want: string;
-    want = 'email-a';
+    want = "email-a";
     const got = AccountBuilder.create().withEmail(want).build();
-    check.equal(seat, got.email, want, "the setter writes what it was given");
+    expect(got.email).isEqualTo(want, "withEmail writes its argument to email");
   });
 
-  test("withEmail replaces what was already there", ({ seat }) => {
+  it("replaces the value of email", () => {
     let first: string;
     let want: string;
-    first = 'email-a';
-    want = 'email-b';
+    first = "email-a";
+    want = "email-b";
     const got = AccountBuilder.create().withEmail(first).withEmail(want).build();
-    check.equal(seat, got.email, want, "the later call wins");
+    expect(got.email).isEqualTo(want, "the second call of withEmail replaces the first");
   });
-});
+}
 
-describe("AccountBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function accountBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Account[] = [];
     const record = (value: Account): void => {
       seen.push(value);
     };
     AccountBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function accountBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = AccountBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = AccountBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, AccountBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function accountBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = AccountBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Account();
+    seed.id = "id-a";
+    seed.email = "email-a";
+    const builder = AccountBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("AccountBuilder", () => {
+  describe("from", accountBuilderFromCases);
+  describe("withId", accountBuilderWithIdCases);
+  describe("withEmail", accountBuilderWithEmailCases);
+  describe("mutate", accountBuilderMutateCases);
+  describe("clone", accountBuilderCloneCases);
+  describe("build", accountBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:5dbb70c1c9b2feb629e9a7f9edb62438676470084c795105aaafd8c7d02aba81
+// dokimi:provenance sha256:a990ada5c3bf2d7bffd6d6cfb594e37f9ded87be7a81010d5308c9a055760308

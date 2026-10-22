@@ -2,14 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/variadic/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { FinderStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { FinderStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of find, or undefined. */
+/** Returns the samples of the arguments of find. An argument without a sample is undefined. */
 function finderStubFindArgs(): [string[]] {
   const a0: string[] = [];
   return [a0];
@@ -24,11 +23,11 @@ function finderStubFind(double: FinderStub): Promise<string[]> {
 /** Returns the sample of the result of find. */
 function finderStubFindPin(): string[] {
   let want0: string[];
-  want0 = ['find-a'];
+  want0 = ["find-a"];
   return want0;
 }
 
-/** Returns the samples of the arguments of findWithLimit, or undefined. */
+/** Returns the samples of the arguments of findWithLimit. An argument without a sample is undefined. */
 function finderStubFindWithLimitArgs(): [number, string[]] {
   let a0 = undefined as unknown as number;
   const a1: string[] = [];
@@ -45,206 +44,355 @@ function finderStubFindWithLimit(double: FinderStub): Promise<string[]> {
 /** Returns the sample of the result of findWithLimit. */
 function finderStubFindWithLimitPin(): string[] {
   let want0: string[];
-  want0 = ['findWithLimit-a'];
+  want0 = ["findWithLimit-a"];
   return want0;
 }
 
-describe("FinderStub.find", () => {
-  const checks = behaviour("Finder.find", (seat) => {
-    const double = new FinderStub(seat);
-    return {
-      stub: double.onFind,
-      call: () => finderStubFind(double),
-      override: (mark) => {
-        double.onFind.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    const want = finderStubFindPin();
-    double.onFind.returns(want);
-    check.equal(seat, await finderStubFind(double), want, "find returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    await finderStubFind(double);
-    const got = double.onFind.assertCalledOnce(seat, "find records the call");
-    const args = finderStubFindArgs();
-    check.equal(seat, got?.keys, args[0], "the call records keys");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    let seen = 0;
-    double.onFind.onRecord(() => {
-      seen += 1;
-    });
-    await finderStubFind(double);
-    await finderStubFind(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of find");
-  });
-
-  test("sets the function of withFinderFind at construction", async ({ seat }) => {
-    let called = false;
-    const option = FinderStub.withFinderFind(() => {
-      called = true;
-      return undefined as never;
-    });
-    await finderStubFind(new FinderStub(seat, option));
-    check.isTrue(seat, called, "withFinderFind sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("find-failing");
-    const double = FinderStub.newFailing(seat, want);
-    const outcome = await settle(() => finderStubFind(double));
-    const message = "find fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    const want = finderStubFindPin();
-    double.onFind.returns(want);
-    await finderStubFind(double);
-    double.resetCalls();
-    check.equal(seat, await finderStubFind(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("FinderStub.findWithLimit", () => {
-  const checks = behaviour("Finder.findWithLimit", (seat) => {
-    const double = new FinderStub(seat);
-    return {
-      stub: double.onFindWithLimit,
-      call: () => finderStubFindWithLimit(double),
-      override: (mark) => {
-        double.onFindWithLimit.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    const want = finderStubFindWithLimitPin();
-    double.onFindWithLimit.returns(want);
-    check.equal(seat, await finderStubFindWithLimit(double), want, "findWithLimit returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    await finderStubFindWithLimit(double);
-    const got = double.onFindWithLimit.assertCalledOnce(seat, "findWithLimit records the call");
-    const args = finderStubFindWithLimitArgs();
-    check.equal(seat, got?.limit, args[0], "the call records limit");
-    check.equal(seat, got?.keys, args[1], "the call records keys");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    let seen = 0;
-    double.onFindWithLimit.onRecord(() => {
-      seen += 1;
-    });
-    await finderStubFindWithLimit(double);
-    await finderStubFindWithLimit(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of findWithLimit");
-  });
-
-  test("sets the function of withFinderFindWithLimit at construction", async ({ seat }) => {
-    let called = false;
-    const option = FinderStub.withFinderFindWithLimit(() => {
-      called = true;
-      return undefined as never;
-    });
-    await finderStubFindWithLimit(new FinderStub(seat, option));
-    check.isTrue(seat, called, "withFinderFindWithLimit sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("findWithLimit-failing");
-    const double = FinderStub.newFailing(seat, want);
-    const outcome = await settle(() => finderStubFindWithLimit(double));
-    const message = "findWithLimit fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new FinderStub(seat);
-    const want = finderStubFindWithLimitPin();
-    double.onFindWithLimit.returns(want);
-    await finderStubFindWithLimit(double);
-    double.resetCalls();
-    check.equal(seat, await finderStubFindWithLimit(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("FinderStub", () => {
-  const instance = (double: FinderStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * find alone.
+ */
+function finderStubInstance(double: FinderStub) {
+  return {
     stub: double.onFind,
     call: () => finderStubFind(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new FinderStub(seat)),
-    withClock: (seat, clock) => instance(new FinderStub(seat, FinderStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(FinderStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new FinderStub(seat, FinderStub.withRandSource(random))),
-    benchMode: (seat) => instance(new FinderStub(seat, FinderStub.benchMode())),
-    strict: (seat) => instance(new FinderStub(seat, FinderStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes find to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new FinderStub(seat);
-    await settle(() => finderStubFind(new FinderStub(seat, FinderStub.delegateTo(inner))));
-    inner.onFind.assertCalledOnce(seat, "find reaches the implementation");
+describe("FinderStub", () => {
+  describe("find", () => {
+    const checks = behaviour("Finder.find", (seat) => {
+      const double = new FinderStub(seat);
+      return {
+        stub: double.onFind,
+        call: () => finderStubFind(double),
+        override: (mark) => {
+          double.onFind.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new FinderStub(undefined);
+      await finderStubFind(double);
+      expect(double.onFind.callCount).isEqualTo(1, "find records the call");
+      const got = double.onFind.calls[0];
+      const args = finderStubFindArgs();
+      expect(got?.keys).isEqualTo(args[0], "the call records keys");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new FinderStub(undefined);
+      let seen = 0;
+      double.onFind.onRecord(() => {
+        seen += 1;
+      });
+      await finderStubFind(double);
+      await finderStubFind(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of find");
+    });
   });
 
-  test("fails find with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("find-delegate");
-    const inner = new FinderStub(seat);
-    inner.onFind.faults(want, 1);
-    const double = new FinderStub(seat, FinderStub.delegateTo(inner));
-    const outcome = await settle(() => finderStubFind(double));
-    const message = "find fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("findWithLimit", () => {
+    const checks = behaviour("Finder.findWithLimit", (seat) => {
+      const double = new FinderStub(seat);
+      return {
+        stub: double.onFindWithLimit,
+        call: () => finderStubFindWithLimit(double),
+        override: (mark) => {
+          double.onFindWithLimit.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new FinderStub(undefined);
+      await finderStubFindWithLimit(double);
+      expect(double.onFindWithLimit.callCount).isEqualTo(1, "findWithLimit records the call");
+      const got = double.onFindWithLimit.calls[0];
+      const args = finderStubFindWithLimitArgs();
+      expect.soft(got?.limit).isEqualTo(args[0], "the call records limit");
+      expect.soft(got?.keys).isEqualTo(args[1], "the call records keys");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new FinderStub(undefined);
+      let seen = 0;
+      double.onFindWithLimit.onRecord(() => {
+        seen += 1;
+      });
+      await finderStubFindWithLimit(double);
+      await finderStubFindWithLimit(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of findWithLimit");
+    });
   });
 
-  test("passes findWithLimit to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new FinderStub(seat);
-    await settle(() => finderStubFindWithLimit(new FinderStub(seat, FinderStub.delegateTo(inner))));
-    inner.onFindWithLimit.assertCalledOnce(seat, "findWithLimit reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => finderStubInstance(new FinderStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of find", async () => {
+      const double = new FinderStub(undefined);
+      await finderStubFind(double);
+      double.resetCalls();
+      expect(double.onFind.callCount).isEqualTo(0, "resetCalls clears the calls of find");
+    });
+
+    it("keeps the result of returns of find", async () => {
+      const double = new FinderStub(undefined);
+      const want = finderStubFindPin();
+      double.onFind.returns(want);
+      double.resetCalls();
+      expect(await finderStubFind(double)).isEqualTo(want, "resetCalls keeps the result of find");
+    });
+
+    it("clears the recorded calls of findWithLimit", async () => {
+      const double = new FinderStub(undefined);
+      await finderStubFindWithLimit(double);
+      double.resetCalls();
+      expect(double.onFindWithLimit.callCount).isEqualTo(0, "resetCalls clears the calls of findWithLimit");
+    });
+
+    it("keeps the result of returns of findWithLimit", async () => {
+      const double = new FinderStub(undefined);
+      const want = finderStubFindWithLimitPin();
+      double.onFindWithLimit.returns(want);
+      double.resetCalls();
+      expect(await finderStubFindWithLimit(double)).isEqualTo(want, "resetCalls keeps the result of findWithLimit");
+    });
   });
 
-  test("fails findWithLimit with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("findWithLimit-delegate");
-    const inner = new FinderStub(seat);
-    inner.onFindWithLimit.faults(want, 1);
-    const double = new FinderStub(seat, FinderStub.delegateTo(inner));
-    const outcome = await settle(() => finderStubFindWithLimit(double));
-    const message = "findWithLimit fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => finderStubInstance(FinderStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails find with its error", async () => {
+      const want = new Error("find-failing");
+      const double = FinderStub.newFailing(undefined, want);
+      const outcome = await settle(() => finderStubFind(double));
+      const message = "find fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails findWithLimit with its error", async () => {
+      const want = new Error("findWithLimit-failing");
+      const double = FinderStub.newFailing(undefined, want);
+      const outcome = await settle(() => finderStubFindWithLimit(double));
+      const message = "findWithLimit fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => finderStubInstance(new FinderStub(seat, FinderStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes find to the implementation", async () => {
+      const inner = new FinderStub(undefined);
+      await settle(() => finderStubFind(new FinderStub(undefined, FinderStub.delegateTo(inner))));
+      expect(inner.onFind.callCount).isEqualTo(1, "find calls the implementation");
+    });
+
+    it("fails find with the error of the implementation", async () => {
+      const want = new Error("find-delegate");
+      const inner = new FinderStub(undefined);
+      inner.onFind.faults(want, 1);
+      const double = new FinderStub(undefined, FinderStub.delegateTo(inner));
+      const outcome = await settle(() => finderStubFind(double));
+      const message = "find fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes findWithLimit to the implementation", async () => {
+      const inner = new FinderStub(undefined);
+      await settle(() => finderStubFindWithLimit(new FinderStub(undefined, FinderStub.delegateTo(inner))));
+      expect(inner.onFindWithLimit.callCount).isEqualTo(1, "findWithLimit calls the implementation");
+    });
+
+    it("fails findWithLimit with the error of the implementation", async () => {
+      const want = new Error("findWithLimit-delegate");
+      const inner = new FinderStub(undefined);
+      inner.onFindWithLimit.faults(want, 1);
+      const double = new FinderStub(undefined, FinderStub.delegateTo(inner));
+      const outcome = await settle(() => finderStubFindWithLimit(double));
+      const message = "findWithLimit fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => finderStubInstance(new FinderStub(seat, FinderStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      finderStubInstance(new FinderStub(seat, FinderStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => finderStubInstance(new FinderStub(seat, FinderStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        finderStubInstance(new FinderStub(seat, FinderStub.withClock(clock), FinderStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails find with its error", async () => {
+      const want = new Error("find-failing");
+      const double = new FinderStub(undefined, FinderStub.failing(want));
+      const outcome = await settle(() => finderStubFind(double));
+      const message = "find fails with the error of FinderStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails findWithLimit with its error", async () => {
+      const want = new Error("findWithLimit-failing");
+      const double = new FinderStub(undefined, FinderStub.failing(want));
+      const outcome = await settle(() => finderStubFindWithLimit(double));
+      const message = "findWithLimit fails with the error of FinderStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withFinderFind", () => {
+    it("sets the function of find", async () => {
+      let called = false;
+      const option = FinderStub.withFinderFind(() => {
+        called = true;
+        return undefined as never;
+      });
+      await finderStubFind(new FinderStub(undefined, option));
+      expect(called).isTrue("withFinderFind sets the function of find");
+    });
+  });
+
+  describe("withFinderFindWithLimit", () => {
+    it("sets the function of findWithLimit", async () => {
+      let called = false;
+      const option = FinderStub.withFinderFindWithLimit(() => {
+        called = true;
+        return undefined as never;
+      });
+      await finderStubFindWithLimit(new FinderStub(undefined, option));
+      expect(called).isTrue("withFinderFindWithLimit sets the function of findWithLimit");
+    });
   });
 });
 
-// dokimi:provenance sha256:de3c79990af92780f962472154644de112aba5c3c215a0c3b32c3e937239b32b
+describe("FinderFindStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of find", async () => {
+      const double = new FinderStub(undefined);
+      const want = finderStubFindPin();
+      double.onFind.returns(want);
+      expect(await finderStubFind(double)).isEqualTo(want, "find returns the result that returns sets");
+    });
+
+    it("configures find for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new FinderStub(failures);
+      double.onFind.strict();
+      double.onFind.returns(undefined as never);
+      await settle(() => finderStubFind(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of find");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of find to the function", async () => {
+      const double = new FinderStub(undefined);
+      let got: unknown[] = [];
+      double.onFind.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await finderStubFind(double);
+      const args = finderStubFindArgs();
+      expect(got).isEqualTo([...args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("FinderFindWithLimitStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of findWithLimit", async () => {
+      const double = new FinderStub(undefined);
+      const want = finderStubFindWithLimitPin();
+      double.onFindWithLimit.returns(want);
+      expect(await finderStubFindWithLimit(double)).isEqualTo(want, "findWithLimit returns the result that returns sets");
+    });
+
+    it("configures findWithLimit for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new FinderStub(failures);
+      double.onFindWithLimit.strict();
+      double.onFindWithLimit.returns(undefined as never);
+      await settle(() => finderStubFindWithLimit(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of findWithLimit");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of findWithLimit to the function", async () => {
+      const double = new FinderStub(undefined);
+      let got: unknown[] = [];
+      double.onFindWithLimit.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await finderStubFindWithLimit(double);
+      const args = finderStubFindWithLimitArgs();
+      expect(got).isEqualTo([args[0], ...args[1]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:49cc21700ed80fe2d27c7e0994f72a725dd266e54fd6316cc036abc1291a9520

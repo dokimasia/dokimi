@@ -2,22 +2,12 @@
 // dokimi:plugin builder
 // dokimi:source iface/contract/persister/iface.ts
 
-import { Value } from '../iface';
+import { Value } from "../iface";
 
 /**
- * ValueBuilder constructs Value values.
- *
- * Start with ValueBuilder.create or ValueBuilder.from, set what you care
- * about, and call build.
- *
- * The point is what you do not have to write. An object literal restates
- * every member each time, so a member added to Value breaks every literal
- * at once and a reader cannot tell which members a given call site
- * actually cares about. Here the constructor supplies the rest, and each
- * call states only what it varies.
- *
- * Every setter returns the builder, so calls chain. clone is how one
- * builder becomes two.
+ * ValueBuilder constructs Value values. ValueBuilder.create and
+ * ValueBuilder.from return a new builder. Each setter sets one member and
+ * returns the builder, so the calls chain. build returns the value.
  */
 export class ValueBuilder {
   private readonly v: Value;
@@ -27,64 +17,36 @@ export class ValueBuilder {
   }
 
   /**
-   * create returns a builder seeded with the declared defaults.
-   *
-   * Only the members that declare one. Everything else holds the value that
-   * a new Value has, so a caller that sets nothing gets a mixture
-   * rather than either extreme — which is what makes a check against a built
-   * value worth writing.
+   * create returns a builder of the declared defaults. A member without a
+   * declared default has the value of a new Value.
    */
   static create(): ValueBuilder {
     const v = new Value();
-    v.key = 'test-key';
-    v.body = 'test-body';
+    v.key = "test-key";
+    v.body = "test-body";
     return new ValueBuilder(v);
   }
 
-  /**
-   * from returns a builder seeded with a copy of value.
-   *
-   * For the case where a caller already holds a value and wants one member
-   * different — a round trip, a near-copy, a regression fixture built from
-   * something a previous step produced.
-   */
+  /** from returns a builder of a copy of value. */
   static from(value: Value): ValueBuilder {
     return new ValueBuilder(Object.assign(new Value(), value));
   }
 
-  /**
-   * withKey replaces key.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withKey replaces key with value. */
   withKey(value: string): this {
     this.v.key = value;
     return this;
   }
 
-  /**
-   * withBody replaces body.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withBody replaces body with value. */
   withBody(value: string): this {
     this.v.body = value;
     return this;
   }
 
   /**
-   * mutate applies fn to the value under construction.
-   *
-   * The way out for what the setters do not reach: a member this builder
-   * cannot name, a shape it does not model, or a change that touches several
-   * members at once and only makes sense as one edit.
-   *
-   * Prefer a setter where one exists. A setter says which member it writes,
-   * and a reader of the call site learns that without following a closure.
+   * mutate applies fn to the value under construction. It changes what no
+   * setter changes, such as several members in one step.
    */
   mutate(fn: (value: Value) => void): this {
     fn(this.v);
@@ -92,14 +54,10 @@ export class ValueBuilder {
   }
 
   /**
-   * clone returns a builder that can be configured without affecting this
-   * one.
-   *
-   * One level deep, and the boundary matters. The array, byte-array and keyed
-   * members are copied, so writing through one clone is not visible through
-   * another. What is shared is anything held inside those, and every other
-   * member that refers to an object. Use mutate to replace such a member
-   * outright rather than editing it in place.
+   * clone returns a builder of a copy of the value under construction. The
+   * copy has its own arrays, maps, sets and byte arrays, so a change of one
+   * builder leaves the other unchanged. The two builders share the elements of
+   * those members and every other member that refers to an object.
    */
   clone(): ValueBuilder {
     const out = new ValueBuilder(Object.assign(new Value(), this.v));
@@ -107,18 +65,14 @@ export class ValueBuilder {
   }
 
   /**
-   * build returns the constructed Value.
-   *
-   * The builder stays usable afterwards, and a second call returns the value
-   * as it stands then — so a caller may build, set one more member, and
-   * build again. What it returns is a shallow copy of the value under
-   * construction: a member holding an array, a map or a set is shared with
-   * the builder and with every value built from it, and clone is what
-   * separates them.
+   * build returns a shallow copy of the value under construction. The builder
+   * stays usable, and a later call returns the value with the changes since.
+   * The copy shares its arrays, maps and sets with the builder, and clone
+   * returns a builder that shares none of them.
    */
   build(): Value {
     return Object.assign(new Value(), this.v);
   }
 }
 
-// dokimi:provenance sha256:0a3eaac6c82701862b94a6d64b6078a58d4f28c274d57103f412cb4b9ce188be
+// dokimi:provenance sha256:6babd868417d76ccc944f8556049e0d38f9742a3fdcba02ae1839487a9c328ec

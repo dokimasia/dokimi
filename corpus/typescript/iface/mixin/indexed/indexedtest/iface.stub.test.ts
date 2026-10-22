@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/indexed/iface.ts
 
-import { Controlled, type Seat, byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { RankedStub, ValueStub } from './iface.stub';
+import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { RankedStub, ValueStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of add, or undefined. */
+/** Returns the samples of the arguments of add. An argument without a sample is undefined. */
 function rankedStubAddArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -35,7 +34,7 @@ function rankedStubLenPin(): number {
   return want0;
 }
 
-/** Returns the samples of the arguments of at, or undefined. */
+/** Returns the samples of the arguments of at. An argument without a sample is undefined. */
 function rankedStubAtArgs(): [number] {
   let a0 = undefined as unknown as number;
   a0 = 1.5;
@@ -51,304 +50,489 @@ function rankedStubAt(double: RankedStub): Promise<Value> {
 /** Returns the sample of the result of at. */
 function rankedStubAtPin(): Value {
   let want0: Value;
-  want0 = {key: 'key-a'} as Value;
+  want0 = { key: "key-a", body: "body-a" };
   return want0;
 }
 
-describe("RankedStub.add", () => {
-  const checks = behaviour("Ranked.add", (seat) => {
-    const double = new RankedStub(seat);
-    return {
-      stub: double.onAdd,
-      call: () => rankedStubAdd(double),
-      override: (mark) => {
-        double.onAdd.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    await rankedStubAdd(double);
-    const got = double.onAdd.assertCalledOnce(seat, "add records the call");
-    const args = rankedStubAddArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    let seen = 0;
-    double.onAdd.onRecord(() => {
-      seen += 1;
-    });
-    await rankedStubAdd(double);
-    await rankedStubAdd(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of add");
-  });
-
-  test("sets the function of withRankedAdd at construction", async ({ seat }) => {
-    let called = false;
-    const option = RankedStub.withRankedAdd(() => {
-      called = true;
-      return undefined as never;
-    });
-    await rankedStubAdd(new RankedStub(seat, option));
-    check.isTrue(seat, called, "withRankedAdd sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("add-failing");
-    const double = RankedStub.newFailing(seat, want);
-    const outcome = await settle(() => rankedStubAdd(double));
-    const message = "add fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("RankedStub.len", () => {
-  const checks = behaviour("Ranked.len", (seat) => {
-    const double = new RankedStub(seat);
-    return {
-      stub: double.onLen,
-      call: () => rankedStubLen(double),
-      override: (mark) => {
-        double.onLen.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    const want = rankedStubLenPin();
-    double.onLen.returns(want);
-    check.equal(seat, await rankedStubLen(double), want, "len returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    await rankedStubLen(double);
-    double.onLen.assertCalledOnce(seat, "len records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    let seen = 0;
-    double.onLen.onRecord(() => {
-      seen += 1;
-    });
-    await rankedStubLen(double);
-    await rankedStubLen(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of len");
-  });
-
-  test("sets the function of withRankedLen at construction", async ({ seat }) => {
-    let called = false;
-    const option = RankedStub.withRankedLen(() => {
-      called = true;
-      return undefined as never;
-    });
-    await rankedStubLen(new RankedStub(seat, option));
-    check.isTrue(seat, called, "withRankedLen sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("len-failing");
-    const double = RankedStub.newFailing(seat, want);
-    const outcome = await settle(() => rankedStubLen(double));
-    const message = "len fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    const want = rankedStubLenPin();
-    double.onLen.returns(want);
-    await rankedStubLen(double);
-    double.resetCalls();
-    check.equal(seat, await rankedStubLen(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("RankedStub.at", () => {
-  const checks = behaviour("Ranked.at", (seat) => {
-    const double = new RankedStub(seat);
-    return {
-      stub: double.onAt,
-      call: () => rankedStubAt(double),
-      override: (mark) => {
-        double.onAt.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    const want = rankedStubAtPin();
-    double.onAt.returns(want);
-    check.equal(seat, await rankedStubAt(double), want, "at returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    await rankedStubAt(double);
-    const got = double.onAt.assertCalledOnce(seat, "at records the call");
-    const args = rankedStubAtArgs();
-    check.equal(seat, got?.i, args[0], "the call records i");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    let seen = 0;
-    double.onAt.onRecord(() => {
-      seen += 1;
-    });
-    await rankedStubAt(double);
-    await rankedStubAt(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of at");
-  });
-
-  test("sets the function of withRankedAt at construction", async ({ seat }) => {
-    let called = false;
-    const option = RankedStub.withRankedAt(() => {
-      called = true;
-      return undefined as never;
-    });
-    await rankedStubAt(new RankedStub(seat, option));
-    check.isTrue(seat, called, "withRankedAt sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("at-failing");
-    const double = RankedStub.newFailing(seat, want);
-    const outcome = await settle(() => rankedStubAt(double));
-    const message = "at fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new RankedStub(seat);
-    const want = rankedStubAtPin();
-    double.onAt.returns(want);
-    await rankedStubAt(double);
-    double.resetCalls();
-    check.equal(seat, await rankedStubAt(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("RankedStub", () => {
-  const instance = (double: RankedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * add alone.
+ */
+function rankedStubInstance(double: RankedStub) {
+  return {
     stub: double.onAdd,
     call: () => rankedStubAdd(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new RankedStub(seat)),
-    withClock: (seat, clock) => instance(new RankedStub(seat, RankedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(RankedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new RankedStub(seat, RankedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new RankedStub(seat, RankedStub.benchMode())),
-    strict: (seat) => instance(new RankedStub(seat, RankedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes add to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new RankedStub(seat);
-    await settle(() => rankedStubAdd(new RankedStub(seat, RankedStub.delegateTo(inner))));
-    inner.onAdd.assertCalledOnce(seat, "add reaches the implementation");
-  });
+describe("RankedStub", () => {
+  describe("add", () => {
+    const checks = behaviour("Ranked.add", (seat) => {
+      const double = new RankedStub(seat);
+      return {
+        stub: double.onAdd,
+        call: () => rankedStubAdd(double),
+        override: (mark) => {
+          double.onAdd.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails add with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("add-delegate");
-    const inner = new RankedStub(seat);
-    inner.onAdd.faults(want, 1);
-    const double = new RankedStub(seat, RankedStub.delegateTo(inner));
-    const outcome = await settle(() => rankedStubAdd(double));
-    const message = "add fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new RankedStub(undefined);
+      await rankedStubAdd(double);
+      expect(double.onAdd.callCount).isEqualTo(1, "add records the call");
+      const got = double.onAdd.calls[0];
+      const args = rankedStubAddArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
 
-  test("passes len to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new RankedStub(seat);
-    await settle(() => rankedStubLen(new RankedStub(seat, RankedStub.delegateTo(inner))));
-    inner.onLen.assertCalledOnce(seat, "len reaches the implementation");
-  });
-
-  test("fails len with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("len-delegate");
-    const inner = new RankedStub(seat);
-    inner.onLen.faults(want, 1);
-    const double = new RankedStub(seat, RankedStub.delegateTo(inner));
-    const outcome = await settle(() => rankedStubLen(double));
-    const message = "len fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new RankedStub(undefined);
+      let seen = 0;
+      double.onAdd.onRecord(() => {
+        seen += 1;
+      });
+      await rankedStubAdd(double);
+      await rankedStubAdd(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of add");
+    });
   });
 
-  test("passes at to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new RankedStub(seat);
-    await settle(() => rankedStubAt(new RankedStub(seat, RankedStub.delegateTo(inner))));
-    inner.onAt.assertCalledOnce(seat, "at reaches the implementation");
+  describe("len", () => {
+    const checks = behaviour("Ranked.len", (seat) => {
+      const double = new RankedStub(seat);
+      return {
+        stub: double.onLen,
+        call: () => rankedStubLen(double),
+        override: (mark) => {
+          double.onLen.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new RankedStub(undefined);
+      let seen = 0;
+      double.onLen.onRecord(() => {
+        seen += 1;
+      });
+      await rankedStubLen(double);
+      await rankedStubLen(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of len");
+    });
   });
 
-  test("fails at with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("at-delegate");
-    const inner = new RankedStub(seat);
-    inner.onAt.faults(want, 1);
-    const double = new RankedStub(seat, RankedStub.delegateTo(inner));
-    const outcome = await settle(() => rankedStubAt(double));
-    const message = "at fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("at", () => {
+    const checks = behaviour("Ranked.at", (seat) => {
+      const double = new RankedStub(seat);
+      return {
+        stub: double.onAt,
+        call: () => rankedStubAt(double),
+        override: (mark) => {
+          double.onAt.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new RankedStub(undefined);
+      await rankedStubAt(double);
+      expect(double.onAt.callCount).isEqualTo(1, "at records the call");
+      const got = double.onAt.calls[0];
+      const args = rankedStubAtArgs();
+      expect(got?.i).isEqualTo(args[0], "the call records i");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new RankedStub(undefined);
+      let seen = 0;
+      double.onAt.onRecord(() => {
+        seen += 1;
+      });
+      await rankedStubAt(double);
+      await rankedStubAt(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of at");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => rankedStubInstance(new RankedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of add", async () => {
+      const double = new RankedStub(undefined);
+      await rankedStubAdd(double);
+      double.resetCalls();
+      expect(double.onAdd.callCount).isEqualTo(0, "resetCalls clears the calls of add");
+    });
+
+    it("clears the recorded calls of len", async () => {
+      const double = new RankedStub(undefined);
+      await rankedStubLen(double);
+      double.resetCalls();
+      expect(double.onLen.callCount).isEqualTo(0, "resetCalls clears the calls of len");
+    });
+
+    it("keeps the result of returns of len", async () => {
+      const double = new RankedStub(undefined);
+      const want = rankedStubLenPin();
+      double.onLen.returns(want);
+      double.resetCalls();
+      expect(await rankedStubLen(double)).isEqualTo(want, "resetCalls keeps the result of len");
+    });
+
+    it("clears the recorded calls of at", async () => {
+      const double = new RankedStub(undefined);
+      await rankedStubAt(double);
+      double.resetCalls();
+      expect(double.onAt.callCount).isEqualTo(0, "resetCalls clears the calls of at");
+    });
+
+    it("keeps the result of returns of at", async () => {
+      const double = new RankedStub(undefined);
+      const want = rankedStubAtPin();
+      double.onAt.returns(want);
+      double.resetCalls();
+      expect(await rankedStubAt(double)).isEqualTo(want, "resetCalls keeps the result of at");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => rankedStubInstance(RankedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails add with its error", async () => {
+      const want = new Error("add-failing");
+      const double = RankedStub.newFailing(undefined, want);
+      const outcome = await settle(() => rankedStubAdd(double));
+      const message = "add fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails len with its error", async () => {
+      const want = new Error("len-failing");
+      const double = RankedStub.newFailing(undefined, want);
+      const outcome = await settle(() => rankedStubLen(double));
+      const message = "len fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails at with its error", async () => {
+      const want = new Error("at-failing");
+      const double = RankedStub.newFailing(undefined, want);
+      const outcome = await settle(() => rankedStubAt(double));
+      const message = "at fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => rankedStubInstance(new RankedStub(seat, RankedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes add to the implementation", async () => {
+      const inner = new RankedStub(undefined);
+      await settle(() => rankedStubAdd(new RankedStub(undefined, RankedStub.delegateTo(inner))));
+      expect(inner.onAdd.callCount).isEqualTo(1, "add calls the implementation");
+    });
+
+    it("fails add with the error of the implementation", async () => {
+      const want = new Error("add-delegate");
+      const inner = new RankedStub(undefined);
+      inner.onAdd.faults(want, 1);
+      const double = new RankedStub(undefined, RankedStub.delegateTo(inner));
+      const outcome = await settle(() => rankedStubAdd(double));
+      const message = "add fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes len to the implementation", async () => {
+      const inner = new RankedStub(undefined);
+      await settle(() => rankedStubLen(new RankedStub(undefined, RankedStub.delegateTo(inner))));
+      expect(inner.onLen.callCount).isEqualTo(1, "len calls the implementation");
+    });
+
+    it("fails len with the error of the implementation", async () => {
+      const want = new Error("len-delegate");
+      const inner = new RankedStub(undefined);
+      inner.onLen.faults(want, 1);
+      const double = new RankedStub(undefined, RankedStub.delegateTo(inner));
+      const outcome = await settle(() => rankedStubLen(double));
+      const message = "len fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes at to the implementation", async () => {
+      const inner = new RankedStub(undefined);
+      await settle(() => rankedStubAt(new RankedStub(undefined, RankedStub.delegateTo(inner))));
+      expect(inner.onAt.callCount).isEqualTo(1, "at calls the implementation");
+    });
+
+    it("fails at with the error of the implementation", async () => {
+      const want = new Error("at-delegate");
+      const inner = new RankedStub(undefined);
+      inner.onAt.faults(want, 1);
+      const double = new RankedStub(undefined, RankedStub.delegateTo(inner));
+      const outcome = await settle(() => rankedStubAt(double));
+      const message = "at fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => rankedStubInstance(new RankedStub(seat, RankedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      rankedStubInstance(new RankedStub(seat, RankedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => rankedStubInstance(new RankedStub(seat, RankedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        rankedStubInstance(new RankedStub(seat, RankedStub.withClock(clock), RankedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails add with its error", async () => {
+      const want = new Error("add-failing");
+      const double = new RankedStub(undefined, RankedStub.failing(want));
+      const outcome = await settle(() => rankedStubAdd(double));
+      const message = "add fails with the error of RankedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails len with its error", async () => {
+      const want = new Error("len-failing");
+      const double = new RankedStub(undefined, RankedStub.failing(want));
+      const outcome = await settle(() => rankedStubLen(double));
+      const message = "len fails with the error of RankedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails at with its error", async () => {
+      const want = new Error("at-failing");
+      const double = new RankedStub(undefined, RankedStub.failing(want));
+      const outcome = await settle(() => rankedStubAt(double));
+      const message = "at fails with the error of RankedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withRankedAdd", () => {
+    it("sets the function of add", async () => {
+      let called = false;
+      const option = RankedStub.withRankedAdd(() => {
+        called = true;
+        return undefined as never;
+      });
+      await rankedStubAdd(new RankedStub(undefined, option));
+      expect(called).isTrue("withRankedAdd sets the function of add");
+    });
+  });
+
+  describe("withRankedLen", () => {
+    it("sets the function of len", async () => {
+      let called = false;
+      const option = RankedStub.withRankedLen(() => {
+        called = true;
+        return undefined as never;
+      });
+      await rankedStubLen(new RankedStub(undefined, option));
+      expect(called).isTrue("withRankedLen sets the function of len");
+    });
+  });
+
+  describe("withRankedAt", () => {
+    it("sets the function of at", async () => {
+      let called = false;
+      const option = RankedStub.withRankedAt(() => {
+        called = true;
+        return undefined as never;
+      });
+      await rankedStubAt(new RankedStub(undefined, option));
+      expect(called).isTrue("withRankedAt sets the function of at");
+    });
+  });
+});
+
+describe("RankedAddStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of add to the function", async () => {
+      const double = new RankedStub(undefined);
+      let got: unknown[] = [];
+      double.onAdd.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await rankedStubAdd(double);
+      const args = rankedStubAddArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("RankedLenStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of len", async () => {
+      const double = new RankedStub(undefined);
+      const want = rankedStubLenPin();
+      double.onLen.returns(want);
+      expect(await rankedStubLen(double)).isEqualTo(want, "len returns the result that returns sets");
+    });
+
+    it("configures len for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new RankedStub(failures);
+      double.onLen.strict();
+      double.onLen.returns(undefined as never);
+      await settle(() => rankedStubLen(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of len");
+    });
+  });
+});
+
+describe("RankedAtStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of at", async () => {
+      const double = new RankedStub(undefined);
+      const want = rankedStubAtPin();
+      double.onAt.returns(want);
+      expect(await rankedStubAt(double)).isEqualTo(want, "at returns the result that returns sets");
+    });
+
+    it("configures at for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new RankedStub(failures);
+      double.onAt.strict();
+      double.onAt.returns(undefined as never);
+      await settle(() => rankedStubAt(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of at");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of at to the function", async () => {
+      const double = new RankedStub(undefined);
+      let got: unknown[] = [];
+      double.onAt.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await rankedStubAt(double);
+      const args = rankedStubAtArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
   });
 });
 
 /** Assigns the sample of each property of ValueStub to double. */
 function valueStubProps(double: ValueStub): void {
-  double.key = 'key-a';
-  double.body = 'body-a';
+  double.key = "key-a";
+  double.body = "body-a";
 }
 
 describe("ValueStub", () => {
-  const builds: [string, (seat: Seat) => ValueStub][] = [
-    ["new", (seat) => new ValueStub(seat)],
-    ["strict", (seat) => new ValueStub(seat, ValueStub.strict())],
-    ["withClock", (seat) => new ValueStub(seat, ValueStub.withClock(new Controlled()))],
-    ["withRandSource", (seat) => new ValueStub(seat, ValueStub.withRandSource(() => 0))],
-    ["benchMode", (seat) => new ValueStub(seat, ValueStub.benchMode())],
-    ["withLatency", (seat) => new ValueStub(seat, ValueStub.withLatency(1))],
-    ["newDelayed", (seat) => ValueStub.newDelayed(seat, 1, new Controlled())],
-  ];
-  for (const [name, build] of builds) {
-    test(`keeps each property across a reset of a double built by ${name}`, ({ seat }) => {
-      const double = build(seat);
-      valueStubProps(double);
-      double.resetCalls();
-      const want = new ValueStub(undefined);
-      valueStubProps(want);
-      check.equal(seat, double.key, want.key, "the reset keeps the property key");
-      check.equal(seat, double.body, want.body, "the reset keeps the property body");
-    });
-  }
+  describe("resetCalls", () => {
+    const tests: { name: string; giveDouble: () => ValueStub }[] = [
+      {
+        name: "keeps each property of a new double",
+        giveDouble: () => new ValueStub(undefined),
+      },
+      {
+        name: "keeps each property of a strict double",
+        giveDouble: () => new ValueStub(undefined, ValueStub.strict()),
+      },
+      {
+        name: "keeps each property of a double with a clock",
+        giveDouble: () => new ValueStub(undefined, ValueStub.withClock(new Controlled())),
+      },
+      {
+        name: "keeps each property of a double with a random source",
+        giveDouble: () => new ValueStub(undefined, ValueStub.withRandSource(() => 0)),
+      },
+      {
+        name: "keeps each property of a double in bench mode",
+        giveDouble: () => new ValueStub(undefined, ValueStub.benchMode()),
+      },
+      {
+        name: "keeps each property of a double with a latency",
+        giveDouble: () => new ValueStub(undefined, ValueStub.withLatency(1)),
+      },
+      {
+        name: "keeps each property of a delayed double",
+        giveDouble: () => ValueStub.newDelayed(undefined, 1, new Controlled()),
+      },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        const double = tt.giveDouble();
+        valueStubProps(double);
+        double.resetCalls();
+        const want = new ValueStub(undefined);
+        valueStubProps(want);
+        expect.soft(double.key).isEqualTo(want.key, "resetCalls keeps the property key");
+        expect.soft(double.body).isEqualTo(want.body, "resetCalls keeps the property body");
+      });
+    }
+  });
 });
 
-// dokimi:provenance sha256:00913971bc7482348d8a3c773a6f20fd4ab09aa374320058d69d2e62ffccefa9
+// dokimi:provenance sha256:62bf62198ab800d73f6e497563fc341fa1d7b1ed2ce0fb32b507150dc7cede83

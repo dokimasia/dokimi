@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/outbox/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { ContractStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { ContractStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of append, or undefined. */
+/** Returns the samples of the arguments of append. An argument without a sample is undefined. */
 function contractStubAppendArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -28,197 +27,309 @@ function contractStubSubscribe(double: ContractStub): AsyncIterable<Value> {
   return double.subscribe();
 }
 
-describe("ContractStub.append", () => {
-  const checks = behaviour("Contract.append", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onAppend,
-      call: () => contractStubAppend(double),
-      override: (mark) => {
-        double.onAppend.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubAppend(double);
-    const got = double.onAppend.assertCalledOnce(seat, "append records the call");
-    const args = contractStubAppendArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onAppend.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubAppend(double);
-    await contractStubAppend(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of append");
-  });
-
-  test("sets the function of withContractAppend at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractAppend(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubAppend(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractAppend sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("append-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubAppend(double));
-    const message = "append fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub.subscribe", () => {
-  const checks = behaviour("Contract.subscribe", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onSubscribe,
-      call: () => contractStubSubscribe(double),
-      override: (mark) => {
-        double.onSubscribe.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    contractStubSubscribe(double);
-    double.onSubscribe.assertCalledOnce(seat, "subscribe records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onSubscribe.onRecord(() => {
-      seen += 1;
-    });
-    contractStubSubscribe(double);
-    contractStubSubscribe(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of subscribe");
-  });
-
-  test("sets the function of withContractSubscribe at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractSubscribe(() => {
-      called = true;
-      return undefined as never;
-    });
-    contractStubSubscribe(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractSubscribe sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("subscribe-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubSubscribe(double));
-    const message = "subscribe fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps recording across a reset", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    double.onSubscribe.returns(undefined as never);
-    contractStubSubscribe(double);
-    double.resetCalls();
-    contractStubSubscribe(double);
-    double.onSubscribe.assertCalledOnce(seat, "subscribe records the call after the reset");
-  });
-
-  test("yields the items of yields", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    double.onSubscribe.yields(undefined as never, undefined as never);
-    let seen = 0;
-    for await (const _ of contractStubSubscribe(double)) {
-      seen += 1;
-    }
-    check.equal(seat, seen, 2, "subscribe yields each item");
-  });
-
-  test("stops yielding when the caller breaks", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    double.onSubscribe.yields(undefined as never, undefined as never, undefined as never);
-    let seen = 0;
-    for await (const _ of contractStubSubscribe(double)) {
-      seen += 1;
-      break;
-    }
-    check.equal(seat, seen, 1, "subscribe stops when the caller breaks");
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * append alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onAppend,
     call: () => contractStubAppend(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes append to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubAppend(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onAppend.assertCalledOnce(seat, "append reaches the implementation");
+describe("ContractStub", () => {
+  describe("append", () => {
+    const checks = behaviour("Contract.append", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onAppend,
+        call: () => contractStubAppend(double),
+        override: (mark) => {
+          double.onAppend.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubAppend(double);
+      expect(double.onAppend.callCount).isEqualTo(1, "append records the call");
+      const got = double.onAppend.calls[0];
+      const args = contractStubAppendArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onAppend.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubAppend(double);
+      await contractStubAppend(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of append");
+    });
   });
 
-  test("fails append with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("append-delegate");
-    const inner = new ContractStub(seat);
-    inner.onAppend.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubAppend(double));
-    const message = "append fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("subscribe", () => {
+    const checks = behaviour("Contract.subscribe", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onSubscribe,
+        call: () => contractStubSubscribe(double),
+        override: (mark) => {
+          double.onSubscribe.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onSubscribe.onRecord(() => {
+        seen += 1;
+      });
+      contractStubSubscribe(double);
+      contractStubSubscribe(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of subscribe");
+    });
   });
 
-  test("passes subscribe to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubSubscribe(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onSubscribe.assertCalledOnce(seat, "subscribe reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of append", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubAppend(double);
+      double.resetCalls();
+      expect(double.onAppend.callCount).isEqualTo(0, "resetCalls clears the calls of append");
+    });
+
+    it("clears the recorded calls of subscribe", async () => {
+      const double = new ContractStub(undefined);
+      contractStubSubscribe(double);
+      double.resetCalls();
+      expect(double.onSubscribe.callCount).isEqualTo(0, "resetCalls clears the calls of subscribe");
+    });
   });
 
-  test("fails subscribe with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("subscribe-delegate");
-    const inner = new ContractStub(seat);
-    inner.onSubscribe.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubSubscribe(double));
-    const message = "subscribe fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails append with its error", async () => {
+      const want = new Error("append-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubAppend(double));
+      const message = "append fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails subscribe with its error", async () => {
+      const want = new Error("subscribe-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubSubscribe(double));
+      const message = "subscribe fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes append to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubAppend(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onAppend.callCount).isEqualTo(1, "append calls the implementation");
+    });
+
+    it("fails append with the error of the implementation", async () => {
+      const want = new Error("append-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onAppend.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubAppend(double));
+      const message = "append fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes subscribe to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubSubscribe(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onSubscribe.callCount).isEqualTo(1, "subscribe calls the implementation");
+    });
+
+    it("fails subscribe with the error of the implementation", async () => {
+      const want = new Error("subscribe-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onSubscribe.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubSubscribe(double));
+      const message = "subscribe fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails append with its error", async () => {
+      const want = new Error("append-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubAppend(double));
+      const message = "append fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails subscribe with its error", async () => {
+      const want = new Error("subscribe-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubSubscribe(double));
+      const message = "subscribe fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractAppend", () => {
+    it("sets the function of append", async () => {
+      let called = false;
+      const option = ContractStub.withContractAppend(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubAppend(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractAppend sets the function of append");
+    });
+  });
+
+  describe("withContractSubscribe", () => {
+    it("sets the function of subscribe", async () => {
+      let called = false;
+      const option = ContractStub.withContractSubscribe(() => {
+        called = true;
+        return undefined as never;
+      });
+      contractStubSubscribe(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractSubscribe sets the function of subscribe");
+    });
   });
 });
 
-// dokimi:provenance sha256:9d2b3f0fd1794518b6b9d8c43308be71dd8a1a82527d2dfdf6d6f8364aa689cd
+describe("ContractAppendStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of append to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onAppend.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubAppend(double);
+      const args = contractStubAppendArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractSubscribeStub", () => {
+  describe("returns", () => {
+    it("configures subscribe for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ContractStub(failures);
+      double.onSubscribe.strict();
+      double.onSubscribe.returns(undefined as never);
+      await settle(() => contractStubSubscribe(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of subscribe");
+    });
+  });
+
+  describe("yields", () => {
+    it("yields each item", async () => {
+      const double = new ContractStub(undefined);
+      double.onSubscribe.yields(undefined as never, undefined as never);
+      let seen = 0;
+      for await (const _ of contractStubSubscribe(double)) {
+        seen += 1;
+      }
+      expect(seen).isEqualTo(2, "subscribe yields each item");
+    });
+
+    it("stops yielding when the caller breaks", async () => {
+      const double = new ContractStub(undefined);
+      double.onSubscribe.yields(undefined as never, undefined as never, undefined as never);
+      let seen = 0;
+      for await (const _ of contractStubSubscribe(double)) {
+        seen += 1;
+        break;
+      }
+      expect(seen).isEqualTo(1, "subscribe stops when the caller breaks");
+    });
+  });
+});
+
+// dokimi:provenance sha256:7776c2030f2f98096268be06b673c42fb9371ddb39cb707d3991ca95aee85eed

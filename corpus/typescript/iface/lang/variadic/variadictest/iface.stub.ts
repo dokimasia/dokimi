@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/variadic/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Finder } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Finder } from "../iface";
 
 /** FinderFindCall records one call of Finder.find. */
 export interface FinderFindCall {
@@ -33,7 +33,7 @@ export interface FinderFindWithLimitCall {
 }
 
 /**
- * FinderFindStub configures find, and records its calls. A fault armed
+ * FinderFindStub configures find and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class FinderFindStub extends MethodStub<FinderFindCall> {
@@ -53,7 +53,7 @@ export class FinderFindStub extends MethodStub<FinderFindCall> {
   }
 
   /**
-   * Sets the function of find, for a result that depends on the
+   * Sets the function that computes the result of find from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -83,7 +83,7 @@ export class FinderFindStub extends MethodStub<FinderFindCall> {
 }
 
 /**
- * FinderFindWithLimitStub configures findWithLimit, and records its calls. A fault armed
+ * FinderFindWithLimitStub configures findWithLimit and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class FinderFindWithLimitStub extends MethodStub<FinderFindWithLimitCall> {
@@ -103,7 +103,7 @@ export class FinderFindWithLimitStub extends MethodStub<FinderFindWithLimitCall>
   }
 
   /**
-   * Sets the function of findWithLimit, for a result that depends on the
+   * Sets the function that computes the result of findWithLimit from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -132,13 +132,13 @@ export class FinderFindWithLimitStub extends MethodStub<FinderFindWithLimitCall>
   }
 }
 
-/** An option of a FinderStub, which its constructor applies. */
+/** Configures a FinderStub at its construction. */
 export type FinderStubOption = (double: FinderStub) => void;
 
 /**
  * FinderStub is a recording test double of Finder. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class FinderStub implements Finder {
   /** Configures find. */
@@ -149,9 +149,9 @@ export class FinderStub implements Finder {
   #strict = false;
 
   /**
-   * Returns a double of Finder that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Finder that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -181,7 +181,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -194,8 +195,9 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -207,8 +209,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -245,7 +247,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -282,8 +285,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -306,8 +309,8 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -331,7 +334,7 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Records the call of find, and returns its result.
+   * Records the call of find and returns its result.
    */
   find(...keys: string[]): Promise<string[]> {
     const call: FinderFindCall = { keys };
@@ -339,7 +342,7 @@ export class FinderStub implements Finder {
   }
 
   /**
-   * Records the call of findWithLimit, and returns its result.
+   * Records the call of findWithLimit and returns its result.
    */
   findWithLimit(limit: number, ...keys: string[]): Promise<string[]> {
     const call: FinderFindWithLimitCall = { limit, keys };
@@ -349,4 +352,4 @@ export class FinderStub implements Finder {
 
 void compatV1;
 
-// dokimi:provenance sha256:ae53f750ace907b58d989901a3f3833c06a0b7cff857266d80a1e5bb541297e4
+// dokimi:provenance sha256:fab5d726876f9806be28f25366d2c10ce04c171c391ea1b22ce56c7a5d8fa59c

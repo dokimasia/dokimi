@@ -2,72 +2,91 @@
 // dokimi:plugin enum
 // dokimi:source enum/zerolast/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Region } from './iface';
-import { UnknownRegionError, isRegion, parseRegion, regionToString, regionValues } from './iface.enum';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Region } from "./iface";
+import { UnknownRegionError, isRegion, parseRegion, regionToString, regionValues } from "./iface.enum";
 
-describe("Region variants", () => {
-  const all = regionValues();
-
-  test("declares exactly 3 variants", ({ seat }) => {
-    check.length(seat, all, 3, "the declared set must not change unnoticed");
+describe("Region", () => {
+  it("gives each variant a value of its own", () => {
+    const values = [Region.US, Region.EU, Region.Unset];
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
   });
 
-  test("no two variants share a value", ({ seat }) => {
-    const seen = new Set<Region>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(value), "each variant must hold a distinct value");
-      seen.add(value);
+  describe("regionValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Region.US, Region.EU, Region.Unset];
+      expect(regionValues()).isEqualTo(want, "regionValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(regionValues()).isNotEqualTo(regionValues(), "the two calls return two arrays", byIdentity());
+    });
+  });
+
+  describe("regionToString", () => {
+    const tests = [
+      { name: "returns the declared text of US", give: Region.US, want: "us-east" },
+      { name: "returns the declared text of EU", give: Region.EU, want: "eu-west" },
+      { name: "returns the declared text of Unset", give: Region.Unset, want: "" },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(regionToString(tt.give)).isEqualTo(tt.want, "regionToString returns the declared text of the variant");
+      });
     }
+
+    it("returns a text of its own for each variant", () => {
+      const texts = [Region.US, Region.EU, Region.Unset].map((value) => regionToString(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+
+    it("renders a value outside the declared set with a text of its own", () => {
+      const out = "????????" as unknown as Region;
+      const texts = [Region.US, Region.EU, Region.Unset].map((value) => regionToString(value));
+      expect(texts).doesNotContain(regionToString(out), "an undeclared value has a text of its own");
+    });
   });
 
-  test("every variant renders the value it declares", ({ seat }) => {
-    check.equal(seat, regionToString(Region.US), "us-east", "the declared value is the textual form");
-    check.equal(seat, regionToString(Region.EU), "eu-west", "the declared value is the textual form");
-    check.equal(seat, regionToString(Region.Unset), "", "the declared value is the textual form");
-  });
-
-  test("no two variants share a textual form", ({ seat }) => {
-    const seen = new Set<string>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(regionToString(value)), "each variant must render distinctly");
-      seen.add(regionToString(value));
+  describe("isRegion", () => {
+    const tests = [
+      { name: "accepts US", give: Region.US },
+      { name: "accepts EU", give: Region.EU },
+      { name: "accepts Unset", give: Region.Unset },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(isRegion(tt.give)).isTrue("isRegion accepts each declared variant");
+      });
     }
+
+    it("refuses a value outside the declared set", () => {
+      expect(isRegion("????????")).isFalse("isRegion refuses an undeclared value");
+    });
   });
 
-  test("a value outside the set is not valid", ({ seat }) => {
-    check.isFalse(seat, isRegion("????????"), "an undeclared value must not be valid");
-  });
-
-  test("every declared variant is valid", ({ seat }) => {
-    for (const value of all) {
-      check.isTrue(seat, isRegion(value), "a declared variant must be valid");
+  describe("parseRegion", () => {
+    const tests = [
+      { name: "returns US for its text", give: Region.US },
+      { name: "returns EU for its text", give: Region.EU },
+      { name: "returns Unset for its text", give: Region.Unset },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(parseRegion(regionToString(tt.give))).isEqualTo(tt.give, "parseRegion returns the variant of the text");
+      });
     }
+
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        parseRegion("????????");
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).errorAs(UnknownRegionError, "parseRegion refuses the text with UnknownRegionError");
+    });
   });
 });
 
-describe("Region text", () => {
-  const all = regionValues();
-
-  test("every variant survives a text round trip", ({ seat }) => {
-    for (const value of all) {
-      check.equal(seat, parseRegion(regionToString(value)), value, "the round trip must be lossless");
-    }
-  });
-
-  test("text naming no variant is refused", ({ seat }) => {
-    const err = check.throws(seat, () => parseRegion("????????"), "unknown text must be refused");
-    check.errorAs(seat, err, UnknownRegionError, "unknown text must be refused with the declared refusal");
-  });
-
-  test("a value outside the set does not render as one inside it", ({ seat }) => {
-    const out = "????????" as unknown as Region;
-    for (const value of all) {
-      check.notEqual(seat, regionToString(out), regionToString(value), "an undeclared value must render distinctly");
-    }
-  });
-});
-
-// dokimi:provenance sha256:eae8c2441bd89bead80993585c060957556abb5e6390241e5f5342b31110762d
+// dokimi:provenance sha256:35b234536c8129ed3fa025852363e782cdaad29be916bdb59d2b6344e32fb26e

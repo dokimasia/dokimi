@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/streamreader/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { StreamReaderStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { StreamReaderStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of add, or undefined. */
+/** Returns the samples of the arguments of add. An argument without a sample is undefined. */
 function streamReaderStubAddArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -28,197 +27,309 @@ function streamReaderStubList(double: StreamReaderStub): AsyncIterable<Value> {
   return double.list();
 }
 
-describe("StreamReaderStub.add", () => {
-  const checks = behaviour("StreamReader.add", (seat) => {
-    const double = new StreamReaderStub(seat);
-    return {
-      stub: double.onAdd,
-      call: () => streamReaderStubAdd(double),
-      override: (mark) => {
-        double.onAdd.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new StreamReaderStub(seat);
-    await streamReaderStubAdd(double);
-    const got = double.onAdd.assertCalledOnce(seat, "add records the call");
-    const args = streamReaderStubAddArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new StreamReaderStub(seat);
-    let seen = 0;
-    double.onAdd.onRecord(() => {
-      seen += 1;
-    });
-    await streamReaderStubAdd(double);
-    await streamReaderStubAdd(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of add");
-  });
-
-  test("sets the function of withStreamReaderAdd at construction", async ({ seat }) => {
-    let called = false;
-    const option = StreamReaderStub.withStreamReaderAdd(() => {
-      called = true;
-      return undefined as never;
-    });
-    await streamReaderStubAdd(new StreamReaderStub(seat, option));
-    check.isTrue(seat, called, "withStreamReaderAdd sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("add-failing");
-    const double = StreamReaderStub.newFailing(seat, want);
-    const outcome = await settle(() => streamReaderStubAdd(double));
-    const message = "add fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("StreamReaderStub.list", () => {
-  const checks = behaviour("StreamReader.list", (seat) => {
-    const double = new StreamReaderStub(seat);
-    return {
-      stub: double.onList,
-      call: () => streamReaderStubList(double),
-      override: (mark) => {
-        double.onList.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new StreamReaderStub(seat);
-    streamReaderStubList(double);
-    double.onList.assertCalledOnce(seat, "list records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new StreamReaderStub(seat);
-    let seen = 0;
-    double.onList.onRecord(() => {
-      seen += 1;
-    });
-    streamReaderStubList(double);
-    streamReaderStubList(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of list");
-  });
-
-  test("sets the function of withStreamReaderList at construction", async ({ seat }) => {
-    let called = false;
-    const option = StreamReaderStub.withStreamReaderList(() => {
-      called = true;
-      return undefined as never;
-    });
-    streamReaderStubList(new StreamReaderStub(seat, option));
-    check.isTrue(seat, called, "withStreamReaderList sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("list-failing");
-    const double = StreamReaderStub.newFailing(seat, want);
-    const outcome = await settle(() => streamReaderStubList(double));
-    const message = "list fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps recording across a reset", async ({ seat }) => {
-    const double = new StreamReaderStub(seat);
-    double.onList.returns(undefined as never);
-    streamReaderStubList(double);
-    double.resetCalls();
-    streamReaderStubList(double);
-    double.onList.assertCalledOnce(seat, "list records the call after the reset");
-  });
-
-  test("yields the items of yields", async ({ seat }) => {
-    const double = new StreamReaderStub(seat);
-    double.onList.yields(undefined as never, undefined as never);
-    let seen = 0;
-    for await (const _ of streamReaderStubList(double)) {
-      seen += 1;
-    }
-    check.equal(seat, seen, 2, "list yields each item");
-  });
-
-  test("stops yielding when the caller breaks", async ({ seat }) => {
-    const double = new StreamReaderStub(seat);
-    double.onList.yields(undefined as never, undefined as never, undefined as never);
-    let seen = 0;
-    for await (const _ of streamReaderStubList(double)) {
-      seen += 1;
-      break;
-    }
-    check.equal(seat, seen, 1, "list stops when the caller breaks");
-  });
-});
-
-describe("StreamReaderStub", () => {
-  const instance = (double: StreamReaderStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * add alone.
+ */
+function streamReaderStubInstance(double: StreamReaderStub) {
+  return {
     stub: double.onAdd,
     call: () => streamReaderStubAdd(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new StreamReaderStub(seat)),
-    withClock: (seat, clock) => instance(new StreamReaderStub(seat, StreamReaderStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(StreamReaderStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new StreamReaderStub(seat, StreamReaderStub.withRandSource(random))),
-    benchMode: (seat) => instance(new StreamReaderStub(seat, StreamReaderStub.benchMode())),
-    strict: (seat) => instance(new StreamReaderStub(seat, StreamReaderStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes add to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new StreamReaderStub(seat);
-    await settle(() => streamReaderStubAdd(new StreamReaderStub(seat, StreamReaderStub.delegateTo(inner))));
-    inner.onAdd.assertCalledOnce(seat, "add reaches the implementation");
+describe("StreamReaderStub", () => {
+  describe("add", () => {
+    const checks = behaviour("StreamReader.add", (seat) => {
+      const double = new StreamReaderStub(seat);
+      return {
+        stub: double.onAdd,
+        call: () => streamReaderStubAdd(double),
+        override: (mark) => {
+          double.onAdd.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new StreamReaderStub(undefined);
+      await streamReaderStubAdd(double);
+      expect(double.onAdd.callCount).isEqualTo(1, "add records the call");
+      const got = double.onAdd.calls[0];
+      const args = streamReaderStubAddArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new StreamReaderStub(undefined);
+      let seen = 0;
+      double.onAdd.onRecord(() => {
+        seen += 1;
+      });
+      await streamReaderStubAdd(double);
+      await streamReaderStubAdd(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of add");
+    });
   });
 
-  test("fails add with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("add-delegate");
-    const inner = new StreamReaderStub(seat);
-    inner.onAdd.faults(want, 1);
-    const double = new StreamReaderStub(seat, StreamReaderStub.delegateTo(inner));
-    const outcome = await settle(() => streamReaderStubAdd(double));
-    const message = "add fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("list", () => {
+    const checks = behaviour("StreamReader.list", (seat) => {
+      const double = new StreamReaderStub(seat);
+      return {
+        stub: double.onList,
+        call: () => streamReaderStubList(double),
+        override: (mark) => {
+          double.onList.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new StreamReaderStub(undefined);
+      let seen = 0;
+      double.onList.onRecord(() => {
+        seen += 1;
+      });
+      streamReaderStubList(double);
+      streamReaderStubList(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of list");
+    });
   });
 
-  test("passes list to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new StreamReaderStub(seat);
-    await settle(() => streamReaderStubList(new StreamReaderStub(seat, StreamReaderStub.delegateTo(inner))));
-    inner.onList.assertCalledOnce(seat, "list reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => streamReaderStubInstance(new StreamReaderStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of add", async () => {
+      const double = new StreamReaderStub(undefined);
+      await streamReaderStubAdd(double);
+      double.resetCalls();
+      expect(double.onAdd.callCount).isEqualTo(0, "resetCalls clears the calls of add");
+    });
+
+    it("clears the recorded calls of list", async () => {
+      const double = new StreamReaderStub(undefined);
+      streamReaderStubList(double);
+      double.resetCalls();
+      expect(double.onList.callCount).isEqualTo(0, "resetCalls clears the calls of list");
+    });
   });
 
-  test("fails list with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("list-delegate");
-    const inner = new StreamReaderStub(seat);
-    inner.onList.faults(want, 1);
-    const double = new StreamReaderStub(seat, StreamReaderStub.delegateTo(inner));
-    const outcome = await settle(() => streamReaderStubList(double));
-    const message = "list fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => streamReaderStubInstance(StreamReaderStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails add with its error", async () => {
+      const want = new Error("add-failing");
+      const double = StreamReaderStub.newFailing(undefined, want);
+      const outcome = await settle(() => streamReaderStubAdd(double));
+      const message = "add fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails list with its error", async () => {
+      const want = new Error("list-failing");
+      const double = StreamReaderStub.newFailing(undefined, want);
+      const outcome = await settle(() => streamReaderStubList(double));
+      const message = "list fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => streamReaderStubInstance(new StreamReaderStub(seat, StreamReaderStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes add to the implementation", async () => {
+      const inner = new StreamReaderStub(undefined);
+      await settle(() => streamReaderStubAdd(new StreamReaderStub(undefined, StreamReaderStub.delegateTo(inner))));
+      expect(inner.onAdd.callCount).isEqualTo(1, "add calls the implementation");
+    });
+
+    it("fails add with the error of the implementation", async () => {
+      const want = new Error("add-delegate");
+      const inner = new StreamReaderStub(undefined);
+      inner.onAdd.faults(want, 1);
+      const double = new StreamReaderStub(undefined, StreamReaderStub.delegateTo(inner));
+      const outcome = await settle(() => streamReaderStubAdd(double));
+      const message = "add fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes list to the implementation", async () => {
+      const inner = new StreamReaderStub(undefined);
+      await settle(() => streamReaderStubList(new StreamReaderStub(undefined, StreamReaderStub.delegateTo(inner))));
+      expect(inner.onList.callCount).isEqualTo(1, "list calls the implementation");
+    });
+
+    it("fails list with the error of the implementation", async () => {
+      const want = new Error("list-delegate");
+      const inner = new StreamReaderStub(undefined);
+      inner.onList.faults(want, 1);
+      const double = new StreamReaderStub(undefined, StreamReaderStub.delegateTo(inner));
+      const outcome = await settle(() => streamReaderStubList(double));
+      const message = "list fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => streamReaderStubInstance(new StreamReaderStub(seat, StreamReaderStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      streamReaderStubInstance(new StreamReaderStub(seat, StreamReaderStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => streamReaderStubInstance(new StreamReaderStub(seat, StreamReaderStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        streamReaderStubInstance(new StreamReaderStub(seat, StreamReaderStub.withClock(clock), StreamReaderStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails add with its error", async () => {
+      const want = new Error("add-failing");
+      const double = new StreamReaderStub(undefined, StreamReaderStub.failing(want));
+      const outcome = await settle(() => streamReaderStubAdd(double));
+      const message = "add fails with the error of StreamReaderStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails list with its error", async () => {
+      const want = new Error("list-failing");
+      const double = new StreamReaderStub(undefined, StreamReaderStub.failing(want));
+      const outcome = await settle(() => streamReaderStubList(double));
+      const message = "list fails with the error of StreamReaderStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withStreamReaderAdd", () => {
+    it("sets the function of add", async () => {
+      let called = false;
+      const option = StreamReaderStub.withStreamReaderAdd(() => {
+        called = true;
+        return undefined as never;
+      });
+      await streamReaderStubAdd(new StreamReaderStub(undefined, option));
+      expect(called).isTrue("withStreamReaderAdd sets the function of add");
+    });
+  });
+
+  describe("withStreamReaderList", () => {
+    it("sets the function of list", async () => {
+      let called = false;
+      const option = StreamReaderStub.withStreamReaderList(() => {
+        called = true;
+        return undefined as never;
+      });
+      streamReaderStubList(new StreamReaderStub(undefined, option));
+      expect(called).isTrue("withStreamReaderList sets the function of list");
+    });
   });
 });
 
-// dokimi:provenance sha256:2278959055af7770d6c8068a6cdaa13fa74448328d624a3231158b8e9a90dc53
+describe("StreamReaderAddStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of add to the function", async () => {
+      const double = new StreamReaderStub(undefined);
+      let got: unknown[] = [];
+      double.onAdd.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await streamReaderStubAdd(double);
+      const args = streamReaderStubAddArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("StreamReaderListStub", () => {
+  describe("returns", () => {
+    it("configures list for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new StreamReaderStub(failures);
+      double.onList.strict();
+      double.onList.returns(undefined as never);
+      await settle(() => streamReaderStubList(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of list");
+    });
+  });
+
+  describe("yields", () => {
+    it("yields each item", async () => {
+      const double = new StreamReaderStub(undefined);
+      double.onList.yields(undefined as never, undefined as never);
+      let seen = 0;
+      for await (const _ of streamReaderStubList(double)) {
+        seen += 1;
+      }
+      expect(seen).isEqualTo(2, "list yields each item");
+    });
+
+    it("stops yielding when the caller breaks", async () => {
+      const double = new StreamReaderStub(undefined);
+      double.onList.yields(undefined as never, undefined as never, undefined as never);
+      let seen = 0;
+      for await (const _ of streamReaderStubList(double)) {
+        seen += 1;
+        break;
+      }
+      expect(seen).isEqualTo(1, "list stops when the caller breaks");
+    });
+  });
+});
+
+// dokimi:provenance sha256:48c53f2debbba1428d69e40f1fa4969851f3614ad05850670b32127618392dfa

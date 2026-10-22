@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/boundedcache/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Key, Mixed, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Key, Mixed, Value } from "../iface";
 
 /** MixedPutCall records one call of Mixed.put. */
 export interface MixedPutCall {
@@ -25,7 +25,7 @@ export interface MixedGetCall {
   /** The argument key. */
   key: Key;
   /** The result of the call, where it returned one. */
-  result?: Value|undefined | undefined;
+  result?: Value | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -39,14 +39,14 @@ export interface MixedLenCall {
 }
 
 /**
- * MixedPutStub configures put, and records its calls. A fault armed
+ * MixedPutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedPutStub extends MethodStub<MixedPutCall> {
   #fn: ((key: Key, value: Value) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -72,12 +72,12 @@ export class MixedPutStub extends MethodStub<MixedPutCall> {
 }
 
 /**
- * MixedGetStub configures get, and records its calls. A fault armed
+ * MixedGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedGetStub extends MethodStub<MixedGetCall> {
-  #fn: ((key: Key) => Value|undefined | PromiseLike<Value|undefined>) | undefined;
-  #fallback: { readonly value: Value|undefined } | undefined;
+  #fn: ((key: Key) => Value | undefined | PromiseLike<Value | undefined>) | undefined;
+  #fallback: { readonly value: Value | undefined } | undefined;
 
   /**
    * Sets the result of every call of get. A function and an injected
@@ -86,19 +86,19 @@ export class MixedGetStub extends MethodStub<MixedGetCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Value|undefined): this {
+  returns(result: Value | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: Key) => Value|undefined | PromiseLike<Value|undefined>): this {
+  func(fn: (key: Key) => Value | undefined | PromiseLike<Value | undefined>): this {
     this.#fn = fn;
     return this;
   }
@@ -106,7 +106,7 @@ export class MixedGetStub extends MethodStub<MixedGetCall> {
   /**
    * Returns the arms of a call of get with its arguments.
    */
-  arms(key: Key): Arms<MixedGetCall, Value|undefined, Value|undefined | PromiseLike<Value|undefined>> {
+  arms(key: Key): Arms<MixedGetCall, Value | undefined, Value | undefined | PromiseLike<Value | undefined>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(key)),
@@ -122,7 +122,7 @@ export class MixedGetStub extends MethodStub<MixedGetCall> {
 }
 
 /**
- * MixedLenStub configures len, and records its calls. A fault armed
+ * MixedLenStub configures len and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedLenStub extends MethodStub<MixedLenCall> {
@@ -142,7 +142,7 @@ export class MixedLenStub extends MethodStub<MixedLenCall> {
   }
 
   /**
-   * Sets the function of len, for a result that depends on the
+   * Sets the function that computes the result of len from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -171,13 +171,13 @@ export class MixedLenStub extends MethodStub<MixedLenCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures put. */
@@ -190,9 +190,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -223,7 +223,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -237,8 +238,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -250,8 +252,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -288,7 +290,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -319,7 +322,7 @@ export class MixedStub implements Mixed {
    * @param fn - The function.
    * @returns The option.
    */
-  static withMixedGet(fn: (key: Key) => Value|undefined | PromiseLike<Value|undefined>): MixedStubOption {
+  static withMixedGet(fn: (key: Key) => Value | undefined | PromiseLike<Value | undefined>): MixedStubOption {
     return (double) => {
       double.onGet.func(fn);
     };
@@ -338,8 +341,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -362,8 +365,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -387,7 +390,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(key: Key, value: Value): Promise<void> {
     const call: MixedPutCall = { key, value };
@@ -395,15 +398,15 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
-  get(key: Key): Promise<Value|undefined> {
+  get(key: Key): Promise<Value | undefined> {
     const call: MixedGetCall = { key };
     return answerAsync(this.onGet, call, this.onGet.arms(key));
   }
 
   /**
-   * Records the call of len, and returns its result.
+   * Records the call of len and returns its result.
    */
   len(): Promise<number> {
     const call: MixedLenCall = {};
@@ -413,4 +416,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:d0ff7b7bd55b1df82cf22468b139e8ddfac2dac48bf89e0c88841ae5b3c42f52
+// dokimi:provenance sha256:eb7a3826865e0ef9878361a53729656558e7c48509411a425d67706a38610776

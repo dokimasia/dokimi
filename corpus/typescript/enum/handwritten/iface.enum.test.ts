@@ -2,48 +2,39 @@
 // dokimi:plugin enum
 // dokimi:source enum/handwritten/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Weekday, weekdayToString } from './iface';
-import { isWeekday } from './iface.enum';
+import { describe, expect, it } from "vitest";
+import { Weekday, weekdayToString } from "./iface";
+import { isWeekday } from "./iface.enum";
 
-describe("Weekday variants", () => {
-  const all = [
-    Weekday.Monday,
-    Weekday.Tuesday,
-    Weekday.Wednesday,
-  ];
-
-  test("declares exactly 3 variants", ({ seat }) => {
-    check.length(seat, all, 3, "the declared set must not change unnoticed");
+describe("Weekday", () => {
+  it("gives each variant a value of its own", () => {
+    const values = [Weekday.Monday, Weekday.Tuesday, Weekday.Wednesday];
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
   });
 
-  test("no two variants share a value", ({ seat }) => {
-    const seen = new Set<Weekday>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(value), "each variant must hold a distinct value");
-      seen.add(value);
+  describe("weekdayToString", () => {
+    it("returns a text of its own for each variant", () => {
+      const texts = [Weekday.Monday, Weekday.Tuesday, Weekday.Wednesday].map((value) => weekdayToString(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+  });
+
+  describe("isWeekday", () => {
+    const tests = [
+      { name: "accepts Monday", give: Weekday.Monday },
+      { name: "accepts Tuesday", give: Weekday.Tuesday },
+      { name: "accepts Wednesday", give: Weekday.Wednesday },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(isWeekday(tt.give)).isTrue("isWeekday accepts each declared variant");
+      });
     }
-  });
 
-  test("no two variants share a textual form", ({ seat }) => {
-    const seen = new Set<string>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(weekdayToString(value)), "each variant must render distinctly");
-      seen.add(weekdayToString(value));
-    }
-  });
-
-  test("a value outside the set is not valid", ({ seat }) => {
-    check.isFalse(seat, isWeekday(4), "an undeclared value must not be valid");
-  });
-
-  test("every declared variant is valid", ({ seat }) => {
-    for (const value of all) {
-      check.isTrue(seat, isWeekday(value), "a declared variant must be valid");
-    }
+    it("refuses a value outside the declared set", () => {
+      expect(isWeekday(4)).isFalse("isWeekday refuses an undeclared value");
+    });
   });
 });
 
-// dokimi:provenance sha256:b537f5e97980b614624bd005ccc92848a4ff9b523fbcc5768548871f8a1e52ce
+// dokimi:provenance sha256:1f09d9287fb02c9fd80d4a2723c0d087452b42ae5c3494db3da9f239cf49edd4

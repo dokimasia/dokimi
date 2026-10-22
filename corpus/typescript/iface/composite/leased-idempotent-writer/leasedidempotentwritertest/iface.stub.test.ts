@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/leased-idempotent-writer/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { LeasedWriterStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { LeasedWriterStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of acquire, or undefined. */
+/** Returns the samples of the arguments of acquire. An argument without a sample is undefined. */
 function leasedWriterStubAcquireArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'acquire-a';
+  a0 = "acquire-a";
   return [a0];
 }
 
@@ -22,10 +21,10 @@ function leasedWriterStubAcquire(double: LeasedWriterStub): Promise<void> {
   return double.acquire(args[0]);
 }
 
-/** Returns the samples of the arguments of release, or undefined. */
+/** Returns the samples of the arguments of release. An argument without a sample is undefined. */
 function leasedWriterStubReleaseArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'release-a';
+  a0 = "release-a";
   return [a0];
 }
 
@@ -35,169 +34,298 @@ function leasedWriterStubRelease(double: LeasedWriterStub): Promise<void> {
   return double.release(args[0]);
 }
 
-describe("LeasedWriterStub.acquire", () => {
-  const checks = behaviour("LeasedWriter.acquire", (seat) => {
-    const double = new LeasedWriterStub(seat);
-    return {
-      stub: double.onAcquire,
-      call: () => leasedWriterStubAcquire(double),
-      override: (mark) => {
-        double.onAcquire.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LeasedWriterStub(seat);
-    await leasedWriterStubAcquire(double);
-    const got = double.onAcquire.assertCalledOnce(seat, "acquire records the call");
-    const args = leasedWriterStubAcquireArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LeasedWriterStub(seat);
-    let seen = 0;
-    double.onAcquire.onRecord(() => {
-      seen += 1;
-    });
-    await leasedWriterStubAcquire(double);
-    await leasedWriterStubAcquire(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of acquire");
-  });
-
-  test("sets the function of withLeasedWriterAcquire at construction", async ({ seat }) => {
-    let called = false;
-    const option = LeasedWriterStub.withLeasedWriterAcquire(() => {
-      called = true;
-      return undefined as never;
-    });
-    await leasedWriterStubAcquire(new LeasedWriterStub(seat, option));
-    check.isTrue(seat, called, "withLeasedWriterAcquire sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("acquire-failing");
-    const double = LeasedWriterStub.newFailing(seat, want);
-    const outcome = await settle(() => leasedWriterStubAcquire(double));
-    const message = "acquire fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("LeasedWriterStub.release", () => {
-  const checks = behaviour("LeasedWriter.release", (seat) => {
-    const double = new LeasedWriterStub(seat);
-    return {
-      stub: double.onRelease,
-      call: () => leasedWriterStubRelease(double),
-      override: (mark) => {
-        double.onRelease.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LeasedWriterStub(seat);
-    await leasedWriterStubRelease(double);
-    const got = double.onRelease.assertCalledOnce(seat, "release records the call");
-    const args = leasedWriterStubReleaseArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LeasedWriterStub(seat);
-    let seen = 0;
-    double.onRelease.onRecord(() => {
-      seen += 1;
-    });
-    await leasedWriterStubRelease(double);
-    await leasedWriterStubRelease(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of release");
-  });
-
-  test("sets the function of withLeasedWriterRelease at construction", async ({ seat }) => {
-    let called = false;
-    const option = LeasedWriterStub.withLeasedWriterRelease(() => {
-      called = true;
-      return undefined as never;
-    });
-    await leasedWriterStubRelease(new LeasedWriterStub(seat, option));
-    check.isTrue(seat, called, "withLeasedWriterRelease sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("release-failing");
-    const double = LeasedWriterStub.newFailing(seat, want);
-    const outcome = await settle(() => leasedWriterStubRelease(double));
-    const message = "release fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("LeasedWriterStub", () => {
-  const instance = (double: LeasedWriterStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * acquire alone.
+ */
+function leasedWriterStubInstance(double: LeasedWriterStub) {
+  return {
     stub: double.onAcquire,
     call: () => leasedWriterStubAcquire(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new LeasedWriterStub(seat)),
-    withClock: (seat, clock) => instance(new LeasedWriterStub(seat, LeasedWriterStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(LeasedWriterStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new LeasedWriterStub(seat, LeasedWriterStub.withRandSource(random))),
-    benchMode: (seat) => instance(new LeasedWriterStub(seat, LeasedWriterStub.benchMode())),
-    strict: (seat) => instance(new LeasedWriterStub(seat, LeasedWriterStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes acquire to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LeasedWriterStub(seat);
-    await settle(() => leasedWriterStubAcquire(new LeasedWriterStub(seat, LeasedWriterStub.delegateTo(inner))));
-    inner.onAcquire.assertCalledOnce(seat, "acquire reaches the implementation");
+describe("LeasedWriterStub", () => {
+  describe("acquire", () => {
+    const checks = behaviour("LeasedWriter.acquire", (seat) => {
+      const double = new LeasedWriterStub(seat);
+      return {
+        stub: double.onAcquire,
+        call: () => leasedWriterStubAcquire(double),
+        override: (mark) => {
+          double.onAcquire.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LeasedWriterStub(undefined);
+      await leasedWriterStubAcquire(double);
+      expect(double.onAcquire.callCount).isEqualTo(1, "acquire records the call");
+      const got = double.onAcquire.calls[0];
+      const args = leasedWriterStubAcquireArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LeasedWriterStub(undefined);
+      let seen = 0;
+      double.onAcquire.onRecord(() => {
+        seen += 1;
+      });
+      await leasedWriterStubAcquire(double);
+      await leasedWriterStubAcquire(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of acquire");
+    });
   });
 
-  test("fails acquire with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("acquire-delegate");
-    const inner = new LeasedWriterStub(seat);
-    inner.onAcquire.faults(want, 1);
-    const double = new LeasedWriterStub(seat, LeasedWriterStub.delegateTo(inner));
-    const outcome = await settle(() => leasedWriterStubAcquire(double));
-    const message = "acquire fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("release", () => {
+    const checks = behaviour("LeasedWriter.release", (seat) => {
+      const double = new LeasedWriterStub(seat);
+      return {
+        stub: double.onRelease,
+        call: () => leasedWriterStubRelease(double),
+        override: (mark) => {
+          double.onRelease.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LeasedWriterStub(undefined);
+      await leasedWriterStubRelease(double);
+      expect(double.onRelease.callCount).isEqualTo(1, "release records the call");
+      const got = double.onRelease.calls[0];
+      const args = leasedWriterStubReleaseArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LeasedWriterStub(undefined);
+      let seen = 0;
+      double.onRelease.onRecord(() => {
+        seen += 1;
+      });
+      await leasedWriterStubRelease(double);
+      await leasedWriterStubRelease(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of release");
+    });
   });
 
-  test("passes release to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LeasedWriterStub(seat);
-    await settle(() => leasedWriterStubRelease(new LeasedWriterStub(seat, LeasedWriterStub.delegateTo(inner))));
-    inner.onRelease.assertCalledOnce(seat, "release reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => leasedWriterStubInstance(new LeasedWriterStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of acquire", async () => {
+      const double = new LeasedWriterStub(undefined);
+      await leasedWriterStubAcquire(double);
+      double.resetCalls();
+      expect(double.onAcquire.callCount).isEqualTo(0, "resetCalls clears the calls of acquire");
+    });
+
+    it("clears the recorded calls of release", async () => {
+      const double = new LeasedWriterStub(undefined);
+      await leasedWriterStubRelease(double);
+      double.resetCalls();
+      expect(double.onRelease.callCount).isEqualTo(0, "resetCalls clears the calls of release");
+    });
   });
 
-  test("fails release with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("release-delegate");
-    const inner = new LeasedWriterStub(seat);
-    inner.onRelease.faults(want, 1);
-    const double = new LeasedWriterStub(seat, LeasedWriterStub.delegateTo(inner));
-    const outcome = await settle(() => leasedWriterStubRelease(double));
-    const message = "release fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => leasedWriterStubInstance(LeasedWriterStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails acquire with its error", async () => {
+      const want = new Error("acquire-failing");
+      const double = LeasedWriterStub.newFailing(undefined, want);
+      const outcome = await settle(() => leasedWriterStubAcquire(double));
+      const message = "acquire fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails release with its error", async () => {
+      const want = new Error("release-failing");
+      const double = LeasedWriterStub.newFailing(undefined, want);
+      const outcome = await settle(() => leasedWriterStubRelease(double));
+      const message = "release fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => leasedWriterStubInstance(new LeasedWriterStub(seat, LeasedWriterStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes acquire to the implementation", async () => {
+      const inner = new LeasedWriterStub(undefined);
+      await settle(() => leasedWriterStubAcquire(new LeasedWriterStub(undefined, LeasedWriterStub.delegateTo(inner))));
+      expect(inner.onAcquire.callCount).isEqualTo(1, "acquire calls the implementation");
+    });
+
+    it("fails acquire with the error of the implementation", async () => {
+      const want = new Error("acquire-delegate");
+      const inner = new LeasedWriterStub(undefined);
+      inner.onAcquire.faults(want, 1);
+      const double = new LeasedWriterStub(undefined, LeasedWriterStub.delegateTo(inner));
+      const outcome = await settle(() => leasedWriterStubAcquire(double));
+      const message = "acquire fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes release to the implementation", async () => {
+      const inner = new LeasedWriterStub(undefined);
+      await settle(() => leasedWriterStubRelease(new LeasedWriterStub(undefined, LeasedWriterStub.delegateTo(inner))));
+      expect(inner.onRelease.callCount).isEqualTo(1, "release calls the implementation");
+    });
+
+    it("fails release with the error of the implementation", async () => {
+      const want = new Error("release-delegate");
+      const inner = new LeasedWriterStub(undefined);
+      inner.onRelease.faults(want, 1);
+      const double = new LeasedWriterStub(undefined, LeasedWriterStub.delegateTo(inner));
+      const outcome = await settle(() => leasedWriterStubRelease(double));
+      const message = "release fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => leasedWriterStubInstance(new LeasedWriterStub(seat, LeasedWriterStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      leasedWriterStubInstance(new LeasedWriterStub(seat, LeasedWriterStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => leasedWriterStubInstance(new LeasedWriterStub(seat, LeasedWriterStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        leasedWriterStubInstance(new LeasedWriterStub(seat, LeasedWriterStub.withClock(clock), LeasedWriterStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails acquire with its error", async () => {
+      const want = new Error("acquire-failing");
+      const double = new LeasedWriterStub(undefined, LeasedWriterStub.failing(want));
+      const outcome = await settle(() => leasedWriterStubAcquire(double));
+      const message = "acquire fails with the error of LeasedWriterStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails release with its error", async () => {
+      const want = new Error("release-failing");
+      const double = new LeasedWriterStub(undefined, LeasedWriterStub.failing(want));
+      const outcome = await settle(() => leasedWriterStubRelease(double));
+      const message = "release fails with the error of LeasedWriterStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withLeasedWriterAcquire", () => {
+    it("sets the function of acquire", async () => {
+      let called = false;
+      const option = LeasedWriterStub.withLeasedWriterAcquire(() => {
+        called = true;
+        return undefined as never;
+      });
+      await leasedWriterStubAcquire(new LeasedWriterStub(undefined, option));
+      expect(called).isTrue("withLeasedWriterAcquire sets the function of acquire");
+    });
+  });
+
+  describe("withLeasedWriterRelease", () => {
+    it("sets the function of release", async () => {
+      let called = false;
+      const option = LeasedWriterStub.withLeasedWriterRelease(() => {
+        called = true;
+        return undefined as never;
+      });
+      await leasedWriterStubRelease(new LeasedWriterStub(undefined, option));
+      expect(called).isTrue("withLeasedWriterRelease sets the function of release");
+    });
   });
 });
 
-// dokimi:provenance sha256:1652c55bf87b24f185b21d3ee588f53f22b324e45db177af8e5f05ef220bff72
+describe("LeasedWriterAcquireStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of acquire to the function", async () => {
+      const double = new LeasedWriterStub(undefined);
+      let got: unknown[] = [];
+      double.onAcquire.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await leasedWriterStubAcquire(double);
+      const args = leasedWriterStubAcquireArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("LeasedWriterReleaseStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of release to the function", async () => {
+      const double = new LeasedWriterStub(undefined);
+      let got: unknown[] = [];
+      double.onRelease.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await leasedWriterStubRelease(double);
+      const args = leasedWriterStubReleaseArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:2b4abd8793baab1c0f6d61bf4f0b56d1514e4dd92f8d02eabeba79c574948742

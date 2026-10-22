@@ -2,13 +2,11 @@
 // dokimi:plugin enum
 // dokimi:source enum/priority/iface.ts
 
-import { Priority } from './iface';
+import { Priority } from "./iface";
 
 /**
- * priorityToString returns the textual form of a Priority.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * priorityToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function priorityToString(value: Priority): string {
   switch (value) {
@@ -24,7 +22,7 @@ export function priorityToString(value: Priority): string {
   return `Priority(${String(value)})`;
 }
 
-/** UnknownPriorityError reports text that names no declared variant of Priority. */
+/** UnknownPriorityError is the error of text that names no declared variant of Priority. */
 export class UnknownPriorityError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -38,11 +36,8 @@ export class UnknownPriorityError extends Error {
 }
 
 /**
- * parsePriority maps text back to a Priority.
- *
- * The inverse of priorityToString for every declared variant, which is
- * what lets a value survive a round trip through anything that carries it
- * as text — a log line, a JSON field, a database column.
+ * parsePriority returns the variant of Priority whose text is text. It is
+ * the inverse of priorityToString on the declared variants.
  *
  * @throws UnknownPriorityError for text that names no declared variant.
  */
@@ -61,10 +56,8 @@ export function parsePriority(text: string): Priority {
 }
 
 /**
- * priorityValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * priorityValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function priorityValues(): Priority[] {
   return [
@@ -77,9 +70,7 @@ export function priorityValues(): Priority[] {
 
 /**
  * isPriority reports whether value is a declared variant of Priority.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isPriority(value: unknown): value is Priority {
   switch (value) {
@@ -92,4 +83,4 @@ export function isPriority(value: unknown): value is Priority {
   return false;
 }
 
-// dokimi:provenance sha256:0fdf20bc03a282ce5adc41795855ef8bba0d847f8dfbf8f7df1219d0730d1b47
+// dokimi:provenance sha256:04ca8c049a79e98260b70fdb28c1a44d63fcab98ac162bfbfac62abefa3d8dfa

@@ -2,13 +2,11 @@
 // dokimi:plugin enum
 // dokimi:source enum/status/iface.ts
 
-import { Status } from './iface';
+import { Status } from "./iface";
 
 /**
- * statusToString returns the textual form of a Status.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * statusToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function statusToString(value: Status): string {
   switch (value) {
@@ -22,7 +20,7 @@ export function statusToString(value: Status): string {
   return `Status(${String(value)})`;
 }
 
-/** UnknownStatusError reports text that names no declared variant of Status. */
+/** UnknownStatusError is the error of text that names no declared variant of Status. */
 export class UnknownStatusError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -36,11 +34,8 @@ export class UnknownStatusError extends Error {
 }
 
 /**
- * parseStatus maps text back to a Status.
- *
- * The inverse of statusToString for every declared variant, which is what
- * lets a value survive a round trip through anything that carries it as
- * text — a log line, a JSON field, a database column.
+ * parseStatus returns the variant of Status whose text is text. It is the
+ * inverse of statusToString on the declared variants.
  *
  * @throws UnknownStatusError for text that names no declared variant.
  */
@@ -57,10 +52,8 @@ export function parseStatus(text: string): Status {
 }
 
 /**
- * statusValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * statusValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function statusValues(): Status[] {
   return [
@@ -72,9 +65,7 @@ export function statusValues(): Status[] {
 
 /**
  * isStatus reports whether value is a declared variant of Status.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isStatus(value: unknown): value is Status {
   switch (value) {
@@ -86,4 +77,4 @@ export function isStatus(value: unknown): value is Status {
   return false;
 }
 
-// dokimi:provenance sha256:d1341256af5f2e2113f4063431e8478a0b026fb1a21282664d664ffb2d24efb3
+// dokimi:provenance sha256:2b01106bd327b4de073f787c8f090cd0f5bbb07929946945faa0256ef28289f1

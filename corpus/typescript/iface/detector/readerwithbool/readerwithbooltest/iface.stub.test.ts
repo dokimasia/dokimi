@@ -2,141 +2,245 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/readerwithbool/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { ReaderWithBoolStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { ReaderWithBoolStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of load, or undefined. */
+/** Returns the samples of the arguments of load. An argument without a sample is undefined. */
 function readerWithBoolStubLoadArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'load-a';
+  a0 = "load-a";
   return [a0];
 }
 
 /** Calls load of double with the samples of its arguments. */
-function readerWithBoolStubLoad(double: ReaderWithBoolStub): Promise<Value|undefined> {
+function readerWithBoolStubLoad(double: ReaderWithBoolStub): Promise<Value | undefined> {
   const args = readerWithBoolStubLoadArgs();
   return double.load(args[0]);
 }
 
 /** Returns the sample of the result of load. */
-function readerWithBoolStubLoadPin(): Value|undefined {
-  let want0: Value|undefined;
-  want0 = {key: 'key-a'} as Value;
+function readerWithBoolStubLoadPin(): Value | undefined {
+  let want0: Value | undefined;
+  want0 = { key: "key-a", body: "body-a" };
   return want0;
 }
 
-describe("ReaderWithBoolStub.load", () => {
-  const checks = behaviour("ReaderWithBool.load", (seat) => {
-    const double = new ReaderWithBoolStub(seat);
-    return {
-      stub: double.onLoad,
-      call: () => readerWithBoolStubLoad(double),
-      override: (mark) => {
-        double.onLoad.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new ReaderWithBoolStub(seat);
-    const want = readerWithBoolStubLoadPin();
-    double.onLoad.returns(want);
-    check.equal(seat, await readerWithBoolStubLoad(double), want, "load returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ReaderWithBoolStub(seat);
-    await readerWithBoolStubLoad(double);
-    const got = double.onLoad.assertCalledOnce(seat, "load records the call");
-    const args = readerWithBoolStubLoadArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ReaderWithBoolStub(seat);
-    let seen = 0;
-    double.onLoad.onRecord(() => {
-      seen += 1;
-    });
-    await readerWithBoolStubLoad(double);
-    await readerWithBoolStubLoad(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of load");
-  });
-
-  test("sets the function of withReaderWithBoolLoad at construction", async ({ seat }) => {
-    let called = false;
-    const option = ReaderWithBoolStub.withReaderWithBoolLoad(() => {
-      called = true;
-      return undefined as never;
-    });
-    await readerWithBoolStubLoad(new ReaderWithBoolStub(seat, option));
-    check.isTrue(seat, called, "withReaderWithBoolLoad sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("load-failing");
-    const double = ReaderWithBoolStub.newFailing(seat, want);
-    const outcome = await settle(() => readerWithBoolStubLoad(double));
-    const message = "load fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new ReaderWithBoolStub(seat);
-    const want = readerWithBoolStubLoadPin();
-    double.onLoad.returns(want);
-    await readerWithBoolStubLoad(double);
-    double.resetCalls();
-    check.equal(seat, await readerWithBoolStubLoad(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("ReaderWithBoolStub", () => {
-  const instance = (double: ReaderWithBoolStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * load alone.
+ */
+function readerWithBoolStubInstance(double: ReaderWithBoolStub) {
+  return {
     stub: double.onLoad,
     call: () => readerWithBoolStubLoad(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ReaderWithBoolStub(seat)),
-    withClock: (seat, clock) => instance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ReaderWithBoolStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.benchMode())),
-    strict: (seat) => instance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes load to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ReaderWithBoolStub(seat);
-    await settle(() => readerWithBoolStubLoad(new ReaderWithBoolStub(seat, ReaderWithBoolStub.delegateTo(inner))));
-    inner.onLoad.assertCalledOnce(seat, "load reaches the implementation");
+describe("ReaderWithBoolStub", () => {
+  describe("load", () => {
+    const checks = behaviour("ReaderWithBool.load", (seat) => {
+      const double = new ReaderWithBoolStub(seat);
+      return {
+        stub: double.onLoad,
+        call: () => readerWithBoolStubLoad(double),
+        override: (mark) => {
+          double.onLoad.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ReaderWithBoolStub(undefined);
+      await readerWithBoolStubLoad(double);
+      expect(double.onLoad.callCount).isEqualTo(1, "load records the call");
+      const got = double.onLoad.calls[0];
+      const args = readerWithBoolStubLoadArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ReaderWithBoolStub(undefined);
+      let seen = 0;
+      double.onLoad.onRecord(() => {
+        seen += 1;
+      });
+      await readerWithBoolStubLoad(double);
+      await readerWithBoolStubLoad(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of load");
+    });
   });
 
-  test("fails load with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("load-delegate");
-    const inner = new ReaderWithBoolStub(seat);
-    inner.onLoad.faults(want, 1);
-    const double = new ReaderWithBoolStub(seat, ReaderWithBoolStub.delegateTo(inner));
-    const outcome = await settle(() => readerWithBoolStubLoad(double));
-    const message = "load fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => readerWithBoolStubInstance(new ReaderWithBoolStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of load", async () => {
+      const double = new ReaderWithBoolStub(undefined);
+      await readerWithBoolStubLoad(double);
+      double.resetCalls();
+      expect(double.onLoad.callCount).isEqualTo(0, "resetCalls clears the calls of load");
+    });
+
+    it("keeps the result of returns of load", async () => {
+      const double = new ReaderWithBoolStub(undefined);
+      const want = readerWithBoolStubLoadPin();
+      double.onLoad.returns(want);
+      double.resetCalls();
+      expect(await readerWithBoolStubLoad(double)).isEqualTo(want, "resetCalls keeps the result of load");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => readerWithBoolStubInstance(ReaderWithBoolStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails load with its error", async () => {
+      const want = new Error("load-failing");
+      const double = ReaderWithBoolStub.newFailing(undefined, want);
+      const outcome = await settle(() => readerWithBoolStubLoad(double));
+      const message = "load fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => readerWithBoolStubInstance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes load to the implementation", async () => {
+      const inner = new ReaderWithBoolStub(undefined);
+      await settle(() => readerWithBoolStubLoad(new ReaderWithBoolStub(undefined, ReaderWithBoolStub.delegateTo(inner))));
+      expect(inner.onLoad.callCount).isEqualTo(1, "load calls the implementation");
+    });
+
+    it("fails load with the error of the implementation", async () => {
+      const want = new Error("load-delegate");
+      const inner = new ReaderWithBoolStub(undefined);
+      inner.onLoad.faults(want, 1);
+      const double = new ReaderWithBoolStub(undefined, ReaderWithBoolStub.delegateTo(inner));
+      const outcome = await settle(() => readerWithBoolStubLoad(double));
+      const message = "load fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => readerWithBoolStubInstance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      readerWithBoolStubInstance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => readerWithBoolStubInstance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        readerWithBoolStubInstance(new ReaderWithBoolStub(seat, ReaderWithBoolStub.withClock(clock), ReaderWithBoolStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails load with its error", async () => {
+      const want = new Error("load-failing");
+      const double = new ReaderWithBoolStub(undefined, ReaderWithBoolStub.failing(want));
+      const outcome = await settle(() => readerWithBoolStubLoad(double));
+      const message = "load fails with the error of ReaderWithBoolStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withReaderWithBoolLoad", () => {
+    it("sets the function of load", async () => {
+      let called = false;
+      const option = ReaderWithBoolStub.withReaderWithBoolLoad(() => {
+        called = true;
+        return undefined as never;
+      });
+      await readerWithBoolStubLoad(new ReaderWithBoolStub(undefined, option));
+      expect(called).isTrue("withReaderWithBoolLoad sets the function of load");
+    });
   });
 });
 
-// dokimi:provenance sha256:e89ccbae034693ceba02c80a5d96aa54ec46cf464804845c7f97c1dec3f5b9d3
+describe("ReaderWithBoolLoadStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of load", async () => {
+      const double = new ReaderWithBoolStub(undefined);
+      const want = readerWithBoolStubLoadPin();
+      double.onLoad.returns(want);
+      expect(await readerWithBoolStubLoad(double)).isEqualTo(want, "load returns the result that returns sets");
+    });
+
+    it("configures load for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ReaderWithBoolStub(failures);
+      double.onLoad.strict();
+      double.onLoad.returns(undefined as never);
+      await settle(() => readerWithBoolStubLoad(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of load");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of load to the function", async () => {
+      const double = new ReaderWithBoolStub(undefined);
+      let got: unknown[] = [];
+      double.onLoad.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await readerWithBoolStubLoad(double);
+      const args = readerWithBoolStubLoadArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:707fce09b446345a7a646b14680a35e8ca102095d472d7af81495c862ce52985

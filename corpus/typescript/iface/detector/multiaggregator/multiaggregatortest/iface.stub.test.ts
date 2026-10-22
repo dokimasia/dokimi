@@ -2,130 +2,213 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/multiaggregator/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MultiAggregatorStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MultiAggregatorStub } from "./iface.stub";
 
 /** Calls stats of double with the samples of its arguments. */
-function multiAggregatorStubStats(double: MultiAggregatorStub): Promise<[number,number]> {
+function multiAggregatorStubStats(double: MultiAggregatorStub): Promise<[number, number]> {
   return double.stats();
 }
 
 /** Returns the sample of the result of stats. */
-function multiAggregatorStubStatsPin(): [number,number] {
-  let want0: [number,number];
+function multiAggregatorStubStatsPin(): [number, number] {
+  let want0: [number, number];
   want0 = [1.5, 1.5];
   return want0;
 }
 
-describe("MultiAggregatorStub.stats", () => {
-  const checks = behaviour("MultiAggregator.stats", (seat) => {
-    const double = new MultiAggregatorStub(seat);
-    return {
-      stub: double.onStats,
-      call: () => multiAggregatorStubStats(double),
-      override: (mark) => {
-        double.onStats.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new MultiAggregatorStub(seat);
-    const want = multiAggregatorStubStatsPin();
-    double.onStats.returns(want);
-    check.equal(seat, await multiAggregatorStubStats(double), want, "stats returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MultiAggregatorStub(seat);
-    await multiAggregatorStubStats(double);
-    double.onStats.assertCalledOnce(seat, "stats records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MultiAggregatorStub(seat);
-    let seen = 0;
-    double.onStats.onRecord(() => {
-      seen += 1;
-    });
-    await multiAggregatorStubStats(double);
-    await multiAggregatorStubStats(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of stats");
-  });
-
-  test("sets the function of withMultiAggregatorStats at construction", async ({ seat }) => {
-    let called = false;
-    const option = MultiAggregatorStub.withMultiAggregatorStats(() => {
-      called = true;
-      return undefined as never;
-    });
-    await multiAggregatorStubStats(new MultiAggregatorStub(seat, option));
-    check.isTrue(seat, called, "withMultiAggregatorStats sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("stats-failing");
-    const double = MultiAggregatorStub.newFailing(seat, want);
-    const outcome = await settle(() => multiAggregatorStubStats(double));
-    const message = "stats fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new MultiAggregatorStub(seat);
-    const want = multiAggregatorStubStatsPin();
-    double.onStats.returns(want);
-    await multiAggregatorStubStats(double);
-    double.resetCalls();
-    check.equal(seat, await multiAggregatorStubStats(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("MultiAggregatorStub", () => {
-  const instance = (double: MultiAggregatorStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * stats alone.
+ */
+function multiAggregatorStubInstance(double: MultiAggregatorStub) {
+  return {
     stub: double.onStats,
     call: () => multiAggregatorStubStats(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MultiAggregatorStub(seat)),
-    withClock: (seat, clock) => instance(new MultiAggregatorStub(seat, MultiAggregatorStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MultiAggregatorStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MultiAggregatorStub(seat, MultiAggregatorStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MultiAggregatorStub(seat, MultiAggregatorStub.benchMode())),
-    strict: (seat) => instance(new MultiAggregatorStub(seat, MultiAggregatorStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes stats to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MultiAggregatorStub(seat);
-    await settle(() => multiAggregatorStubStats(new MultiAggregatorStub(seat, MultiAggregatorStub.delegateTo(inner))));
-    inner.onStats.assertCalledOnce(seat, "stats reaches the implementation");
+describe("MultiAggregatorStub", () => {
+  describe("stats", () => {
+    const checks = behaviour("MultiAggregator.stats", (seat) => {
+      const double = new MultiAggregatorStub(seat);
+      return {
+        stub: double.onStats,
+        call: () => multiAggregatorStubStats(double),
+        override: (mark) => {
+          double.onStats.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MultiAggregatorStub(undefined);
+      let seen = 0;
+      double.onStats.onRecord(() => {
+        seen += 1;
+      });
+      await multiAggregatorStubStats(double);
+      await multiAggregatorStubStats(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of stats");
+    });
   });
 
-  test("fails stats with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("stats-delegate");
-    const inner = new MultiAggregatorStub(seat);
-    inner.onStats.faults(want, 1);
-    const double = new MultiAggregatorStub(seat, MultiAggregatorStub.delegateTo(inner));
-    const outcome = await settle(() => multiAggregatorStubStats(double));
-    const message = "stats fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => multiAggregatorStubInstance(new MultiAggregatorStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of stats", async () => {
+      const double = new MultiAggregatorStub(undefined);
+      await multiAggregatorStubStats(double);
+      double.resetCalls();
+      expect(double.onStats.callCount).isEqualTo(0, "resetCalls clears the calls of stats");
+    });
+
+    it("keeps the result of returns of stats", async () => {
+      const double = new MultiAggregatorStub(undefined);
+      const want = multiAggregatorStubStatsPin();
+      double.onStats.returns(want);
+      double.resetCalls();
+      expect(await multiAggregatorStubStats(double)).isEqualTo(want, "resetCalls keeps the result of stats");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => multiAggregatorStubInstance(MultiAggregatorStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails stats with its error", async () => {
+      const want = new Error("stats-failing");
+      const double = MultiAggregatorStub.newFailing(undefined, want);
+      const outcome = await settle(() => multiAggregatorStubStats(double));
+      const message = "stats fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => multiAggregatorStubInstance(new MultiAggregatorStub(seat, MultiAggregatorStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes stats to the implementation", async () => {
+      const inner = new MultiAggregatorStub(undefined);
+      await settle(() => multiAggregatorStubStats(new MultiAggregatorStub(undefined, MultiAggregatorStub.delegateTo(inner))));
+      expect(inner.onStats.callCount).isEqualTo(1, "stats calls the implementation");
+    });
+
+    it("fails stats with the error of the implementation", async () => {
+      const want = new Error("stats-delegate");
+      const inner = new MultiAggregatorStub(undefined);
+      inner.onStats.faults(want, 1);
+      const double = new MultiAggregatorStub(undefined, MultiAggregatorStub.delegateTo(inner));
+      const outcome = await settle(() => multiAggregatorStubStats(double));
+      const message = "stats fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => multiAggregatorStubInstance(new MultiAggregatorStub(seat, MultiAggregatorStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      multiAggregatorStubInstance(new MultiAggregatorStub(seat, MultiAggregatorStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => multiAggregatorStubInstance(new MultiAggregatorStub(seat, MultiAggregatorStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        multiAggregatorStubInstance(new MultiAggregatorStub(seat, MultiAggregatorStub.withClock(clock), MultiAggregatorStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails stats with its error", async () => {
+      const want = new Error("stats-failing");
+      const double = new MultiAggregatorStub(undefined, MultiAggregatorStub.failing(want));
+      const outcome = await settle(() => multiAggregatorStubStats(double));
+      const message = "stats fails with the error of MultiAggregatorStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMultiAggregatorStats", () => {
+    it("sets the function of stats", async () => {
+      let called = false;
+      const option = MultiAggregatorStub.withMultiAggregatorStats(() => {
+        called = true;
+        return undefined as never;
+      });
+      await multiAggregatorStubStats(new MultiAggregatorStub(undefined, option));
+      expect(called).isTrue("withMultiAggregatorStats sets the function of stats");
+    });
   });
 });
 
-// dokimi:provenance sha256:68502fedad5999d0d530ae347dad4706afcc4bd28c0cb6aa6736954491c68c97
+describe("MultiAggregatorStatsStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of stats", async () => {
+      const double = new MultiAggregatorStub(undefined);
+      const want = multiAggregatorStubStatsPin();
+      double.onStats.returns(want);
+      expect(await multiAggregatorStubStats(double)).isEqualTo(want, "stats returns the result that returns sets");
+    });
+
+    it("configures stats for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new MultiAggregatorStub(failures);
+      double.onStats.strict();
+      double.onStats.returns(undefined as never);
+      await settle(() => multiAggregatorStubStats(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of stats");
+    });
+  });
+});
+
+// dokimi:provenance sha256:4de886d26f272a9aa40c1a17d986966ac2879dd80bfd6e0c3d5c883a56e2dc92

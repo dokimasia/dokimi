@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/nocontext/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Calculator } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Calculator } from "../iface";
 
 /** CalculatorAddCall records one call of Calculator.add. */
 export interface CalculatorAddCall {
@@ -41,7 +41,7 @@ export interface CalculatorResetCall {
 }
 
 /**
- * CalculatorAddStub configures add, and records its calls. A fault armed
+ * CalculatorAddStub configures add and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CalculatorAddStub extends MethodStub<CalculatorAddCall> {
@@ -61,7 +61,7 @@ export class CalculatorAddStub extends MethodStub<CalculatorAddCall> {
   }
 
   /**
-   * Sets the function of add, for a result that depends on the
+   * Sets the function that computes the result of add from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -91,7 +91,7 @@ export class CalculatorAddStub extends MethodStub<CalculatorAddCall> {
 }
 
 /**
- * CalculatorDivideStub configures divide, and records its calls. A fault armed
+ * CalculatorDivideStub configures divide and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CalculatorDivideStub extends MethodStub<CalculatorDivideCall> {
@@ -111,7 +111,7 @@ export class CalculatorDivideStub extends MethodStub<CalculatorDivideCall> {
   }
 
   /**
-   * Sets the function of divide, for a result that depends on the
+   * Sets the function that computes the result of divide from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -141,14 +141,14 @@ export class CalculatorDivideStub extends MethodStub<CalculatorDivideCall> {
 }
 
 /**
- * CalculatorResetStub configures reset, and records its calls. A fault armed
+ * CalculatorResetStub configures reset and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CalculatorResetStub extends MethodStub<CalculatorResetCall> {
   #fn: (() => void) | undefined;
 
   /**
-   * Sets the function of reset, for a result that depends on the
+   * Sets the function that computes the result of reset from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -173,13 +173,13 @@ export class CalculatorResetStub extends MethodStub<CalculatorResetCall> {
   }
 }
 
-/** An option of a CalculatorStub, which its constructor applies. */
+/** Configures a CalculatorStub at its construction. */
 export type CalculatorStubOption = (double: CalculatorStub) => void;
 
 /**
  * CalculatorStub is a recording test double of Calculator. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class CalculatorStub implements Calculator {
   /** Configures add. */
@@ -192,9 +192,9 @@ export class CalculatorStub implements Calculator {
   #strict = false;
 
   /**
-   * Returns a double of Calculator that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Calculator that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -225,7 +225,8 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -239,8 +240,9 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -252,8 +254,8 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -290,7 +292,8 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -340,8 +343,8 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -364,8 +367,8 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -389,7 +392,7 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Records the call of add, and returns its result.
+   * Records the call of add and returns its result.
    */
   add(a: number, b: number): number {
     const call: CalculatorAddCall = { a, b };
@@ -397,7 +400,7 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Records the call of divide, and returns its result.
+   * Records the call of divide and returns its result.
    */
   divide(a: number, b: number): number {
     const call: CalculatorDivideCall = { a, b };
@@ -405,7 +408,7 @@ export class CalculatorStub implements Calculator {
   }
 
   /**
-   * Records the call of reset, and returns its result.
+   * Records the call of reset and returns its result.
    */
   reset(): void {
     const call: CalculatorResetCall = {};
@@ -415,4 +418,4 @@ export class CalculatorStub implements Calculator {
 
 void compatV1;
 
-// dokimi:provenance sha256:c082d5fce6f4b9a2c613f2c8ac6435dc2ab6dcfe0c857dab906bc9b4d19e8078
+// dokimi:provenance sha256:0aefead34271e11c7213a2959851ee7bca3687d97f3a79f26aff85d87799054a

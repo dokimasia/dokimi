@@ -2,107 +2,178 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/lifecycle/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { LifecycleStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { LifecycleStub } from "./iface.stub";
 
 /** Calls close of double with the samples of its arguments. */
 function lifecycleStubClose(double: LifecycleStub): Promise<void> {
   return double.close();
 }
 
-describe("LifecycleStub.close", () => {
-  const checks = behaviour("Lifecycle.close", (seat) => {
-    const double = new LifecycleStub(seat);
-    return {
-      stub: double.onClose,
-      call: () => lifecycleStubClose(double),
-      override: (mark) => {
-        double.onClose.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LifecycleStub(seat);
-    await lifecycleStubClose(double);
-    double.onClose.assertCalledOnce(seat, "close records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LifecycleStub(seat);
-    let seen = 0;
-    double.onClose.onRecord(() => {
-      seen += 1;
-    });
-    await lifecycleStubClose(double);
-    await lifecycleStubClose(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of close");
-  });
-
-  test("sets the function of withLifecycleClose at construction", async ({ seat }) => {
-    let called = false;
-    const option = LifecycleStub.withLifecycleClose(() => {
-      called = true;
-      return undefined as never;
-    });
-    await lifecycleStubClose(new LifecycleStub(seat, option));
-    check.isTrue(seat, called, "withLifecycleClose sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("close-failing");
-    const double = LifecycleStub.newFailing(seat, want);
-    const outcome = await settle(() => lifecycleStubClose(double));
-    const message = "close fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("LifecycleStub", () => {
-  const instance = (double: LifecycleStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * close alone.
+ */
+function lifecycleStubInstance(double: LifecycleStub) {
+  return {
     stub: double.onClose,
     call: () => lifecycleStubClose(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new LifecycleStub(seat)),
-    withClock: (seat, clock) => instance(new LifecycleStub(seat, LifecycleStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(LifecycleStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new LifecycleStub(seat, LifecycleStub.withRandSource(random))),
-    benchMode: (seat) => instance(new LifecycleStub(seat, LifecycleStub.benchMode())),
-    strict: (seat) => instance(new LifecycleStub(seat, LifecycleStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes close to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LifecycleStub(seat);
-    await settle(() => lifecycleStubClose(new LifecycleStub(seat, LifecycleStub.delegateTo(inner))));
-    inner.onClose.assertCalledOnce(seat, "close reaches the implementation");
+describe("LifecycleStub", () => {
+  describe("close", () => {
+    const checks = behaviour("Lifecycle.close", (seat) => {
+      const double = new LifecycleStub(seat);
+      return {
+        stub: double.onClose,
+        call: () => lifecycleStubClose(double),
+        override: (mark) => {
+          double.onClose.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LifecycleStub(undefined);
+      let seen = 0;
+      double.onClose.onRecord(() => {
+        seen += 1;
+      });
+      await lifecycleStubClose(double);
+      await lifecycleStubClose(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
+    });
   });
 
-  test("fails close with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("close-delegate");
-    const inner = new LifecycleStub(seat);
-    inner.onClose.faults(want, 1);
-    const double = new LifecycleStub(seat, LifecycleStub.delegateTo(inner));
-    const outcome = await settle(() => lifecycleStubClose(double));
-    const message = "close fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => lifecycleStubInstance(new LifecycleStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of close", async () => {
+      const double = new LifecycleStub(undefined);
+      await lifecycleStubClose(double);
+      double.resetCalls();
+      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => lifecycleStubInstance(LifecycleStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = LifecycleStub.newFailing(undefined, want);
+      const outcome = await settle(() => lifecycleStubClose(double));
+      const message = "close fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => lifecycleStubInstance(new LifecycleStub(seat, LifecycleStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes close to the implementation", async () => {
+      const inner = new LifecycleStub(undefined);
+      await settle(() => lifecycleStubClose(new LifecycleStub(undefined, LifecycleStub.delegateTo(inner))));
+      expect(inner.onClose.callCount).isEqualTo(1, "close calls the implementation");
+    });
+
+    it("fails close with the error of the implementation", async () => {
+      const want = new Error("close-delegate");
+      const inner = new LifecycleStub(undefined);
+      inner.onClose.faults(want, 1);
+      const double = new LifecycleStub(undefined, LifecycleStub.delegateTo(inner));
+      const outcome = await settle(() => lifecycleStubClose(double));
+      const message = "close fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => lifecycleStubInstance(new LifecycleStub(seat, LifecycleStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      lifecycleStubInstance(new LifecycleStub(seat, LifecycleStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => lifecycleStubInstance(new LifecycleStub(seat, LifecycleStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        lifecycleStubInstance(new LifecycleStub(seat, LifecycleStub.withClock(clock), LifecycleStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = new LifecycleStub(undefined, LifecycleStub.failing(want));
+      const outcome = await settle(() => lifecycleStubClose(double));
+      const message = "close fails with the error of LifecycleStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withLifecycleClose", () => {
+    it("sets the function of close", async () => {
+      let called = false;
+      const option = LifecycleStub.withLifecycleClose(() => {
+        called = true;
+        return undefined as never;
+      });
+      await lifecycleStubClose(new LifecycleStub(undefined, option));
+      expect(called).isTrue("withLifecycleClose sets the function of close");
+    });
   });
 });
 
-// dokimi:provenance sha256:1aea9e1920f3cf496cfd622a39bd64bd23c715fd12fdbb0e7891af443e97f88d
+// dokimi:provenance sha256:5a7d4e7a67fabcdba477432db38bd1390df1f5fb48ac15cedc701f2da1da1437

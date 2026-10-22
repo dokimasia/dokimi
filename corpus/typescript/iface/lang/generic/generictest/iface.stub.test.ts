@@ -2,14 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/generic/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { StoreStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { StoreStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of get, or undefined. */
+/** Returns the samples of the arguments of get. An argument without a sample is undefined. */
 function storeStubGetArgs<K>(): [K] {
   let a0 = undefined as unknown as K;
   return [a0];
@@ -21,7 +20,7 @@ function storeStubGet<K, V>(double: StoreStub<K, V>): Promise<V> {
   return double.get(args[0]);
 }
 
-/** Returns the samples of the arguments of put, or undefined. */
+/** Returns the samples of the arguments of put. An argument without a sample is undefined. */
 function storeStubPutArgs<K, V>(): [K, V] {
   let a0 = undefined as unknown as K;
   let a1 = undefined as unknown as V;
@@ -34,179 +33,310 @@ function storeStubPut<K, V>(double: StoreStub<K, V>): Promise<void> {
   return double.put(args[0], args[1]);
 }
 
-describe("StoreStub.get", () => {
-  const checks = behaviour("Store.get", (seat) => {
-    const double = new StoreStub<unknown, unknown>(seat);
-    return {
-      stub: double.onGet,
-      call: () => storeStubGet(double),
-      override: (mark) => {
-        double.onGet.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new StoreStub<unknown, unknown>(seat);
-    await storeStubGet(double);
-    const got = double.onGet.assertCalledOnce(seat, "get records the call");
-    const args = storeStubGetArgs<unknown>();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new StoreStub<unknown, unknown>(seat);
-    let seen = 0;
-    double.onGet.onRecord(() => {
-      seen += 1;
-    });
-    await storeStubGet(double);
-    await storeStubGet(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of get");
-  });
-
-  test("sets the function of withStoreGet at construction", async ({ seat }) => {
-    let called = false;
-    const option = StoreStub.withStoreGet<unknown, unknown>(() => {
-      called = true;
-      return undefined as never;
-    });
-    await storeStubGet(new StoreStub<unknown, unknown>(seat, option));
-    check.isTrue(seat, called, "withStoreGet sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("get-failing");
-    const double = StoreStub.newFailing<unknown, unknown>(seat, want);
-    const outcome = await settle(() => storeStubGet(double));
-    const message = "get fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps recording across a reset", async ({ seat }) => {
-    const double = new StoreStub<unknown, unknown>(seat);
-    double.onGet.returns(undefined as never);
-    await storeStubGet(double);
-    double.resetCalls();
-    await storeStubGet(double);
-    double.onGet.assertCalledOnce(seat, "get records the call after the reset");
-  });
-});
-
-describe("StoreStub.put", () => {
-  const checks = behaviour("Store.put", (seat) => {
-    const double = new StoreStub<unknown, unknown>(seat);
-    return {
-      stub: double.onPut,
-      call: () => storeStubPut(double),
-      override: (mark) => {
-        double.onPut.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new StoreStub<unknown, unknown>(seat);
-    await storeStubPut(double);
-    const got = double.onPut.assertCalledOnce(seat, "put records the call");
-    const args = storeStubPutArgs<unknown, unknown>();
-    check.equal(seat, got?.key, args[0], "the call records key");
-    check.equal(seat, got?.value, args[1], "the call records value");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new StoreStub<unknown, unknown>(seat);
-    let seen = 0;
-    double.onPut.onRecord(() => {
-      seen += 1;
-    });
-    await storeStubPut(double);
-    await storeStubPut(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of put");
-  });
-
-  test("sets the function of withStorePut at construction", async ({ seat }) => {
-    let called = false;
-    const option = StoreStub.withStorePut<unknown, unknown>(() => {
-      called = true;
-      return undefined as never;
-    });
-    await storeStubPut(new StoreStub<unknown, unknown>(seat, option));
-    check.isTrue(seat, called, "withStorePut sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("put-failing");
-    const double = StoreStub.newFailing<unknown, unknown>(seat, want);
-    const outcome = await settle(() => storeStubPut(double));
-    const message = "put fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("StoreStub", () => {
-  const instance = (double: StoreStub<unknown, unknown>) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * get alone.
+ */
+function storeStubInstance(double: StoreStub<unknown, unknown>) {
+  return {
     stub: double.onGet,
     call: () => storeStubGet(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new StoreStub<unknown, unknown>(seat)),
-    withClock: (seat, clock) => instance(new StoreStub<unknown, unknown>(seat, StoreStub.withClock<unknown, unknown>(clock))),
-    withLatency: (seat, duration, clock) => instance(StoreStub.newDelayed<unknown, unknown>(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new StoreStub<unknown, unknown>(seat, StoreStub.withRandSource<unknown, unknown>(random))),
-    benchMode: (seat) => instance(new StoreStub<unknown, unknown>(seat, StoreStub.benchMode<unknown, unknown>())),
-    strict: (seat) => instance(new StoreStub<unknown, unknown>(seat, StoreStub.strict<unknown, unknown>())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes get to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new StoreStub<unknown, unknown>(seat);
-    await settle(() => storeStubGet(new StoreStub<unknown, unknown>(seat, StoreStub.delegateTo<unknown, unknown>(inner))));
-    inner.onGet.assertCalledOnce(seat, "get reaches the implementation");
+describe("StoreStub", () => {
+  describe("get", () => {
+    const checks = behaviour("Store.get", (seat) => {
+      const double = new StoreStub<unknown, unknown>(seat);
+      return {
+        stub: double.onGet,
+        call: () => storeStubGet(double),
+        override: (mark) => {
+          double.onGet.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      await storeStubGet(double);
+      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
+      const got = double.onGet.calls[0];
+      const args = storeStubGetArgs<unknown>();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      let seen = 0;
+      double.onGet.onRecord(() => {
+        seen += 1;
+      });
+      await storeStubGet(double);
+      await storeStubGet(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
+    });
   });
 
-  test("fails get with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("get-delegate");
-    const inner = new StoreStub<unknown, unknown>(seat);
-    inner.onGet.faults(want, 1);
-    const double = new StoreStub<unknown, unknown>(seat, StoreStub.delegateTo<unknown, unknown>(inner));
-    const outcome = await settle(() => storeStubGet(double));
-    const message = "get fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("put", () => {
+    const checks = behaviour("Store.put", (seat) => {
+      const double = new StoreStub<unknown, unknown>(seat);
+      return {
+        stub: double.onPut,
+        call: () => storeStubPut(double),
+        override: (mark) => {
+          double.onPut.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      await storeStubPut(double);
+      expect(double.onPut.callCount).isEqualTo(1, "put records the call");
+      const got = double.onPut.calls[0];
+      const args = storeStubPutArgs<unknown, unknown>();
+      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
+      expect.soft(got?.value).isEqualTo(args[1], "the call records value");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      let seen = 0;
+      double.onPut.onRecord(() => {
+        seen += 1;
+      });
+      await storeStubPut(double);
+      await storeStubPut(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of put");
+    });
   });
 
-  test("passes put to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new StoreStub<unknown, unknown>(seat);
-    await settle(() => storeStubPut(new StoreStub<unknown, unknown>(seat, StoreStub.delegateTo<unknown, unknown>(inner))));
-    inner.onPut.assertCalledOnce(seat, "put reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => storeStubInstance(new StoreStub<unknown, unknown>(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of get", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      await storeStubGet(double);
+      double.resetCalls();
+      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
+    });
+
+    it("clears the recorded calls of put", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      await storeStubPut(double);
+      double.resetCalls();
+      expect(double.onPut.callCount).isEqualTo(0, "resetCalls clears the calls of put");
+    });
   });
 
-  test("fails put with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("put-delegate");
-    const inner = new StoreStub<unknown, unknown>(seat);
-    inner.onPut.faults(want, 1);
-    const double = new StoreStub<unknown, unknown>(seat, StoreStub.delegateTo<unknown, unknown>(inner));
-    const outcome = await settle(() => storeStubPut(double));
-    const message = "put fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => storeStubInstance(StoreStub.newDelayed<unknown, unknown>(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = StoreStub.newFailing<unknown, unknown>(undefined, want);
+      const outcome = await settle(() => storeStubGet(double));
+      const message = "get fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = StoreStub.newFailing<unknown, unknown>(undefined, want);
+      const outcome = await settle(() => storeStubPut(double));
+      const message = "put fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => storeStubInstance(new StoreStub<unknown, unknown>(seat, StoreStub.strict<unknown, unknown>())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes get to the implementation", async () => {
+      const inner = new StoreStub<unknown, unknown>(undefined);
+      await settle(() => storeStubGet(new StoreStub<unknown, unknown>(undefined, StoreStub.delegateTo<unknown, unknown>(inner))));
+      expect(inner.onGet.callCount).isEqualTo(1, "get calls the implementation");
+    });
+
+    it("fails get with the error of the implementation", async () => {
+      const want = new Error("get-delegate");
+      const inner = new StoreStub<unknown, unknown>(undefined);
+      inner.onGet.faults(want, 1);
+      const double = new StoreStub<unknown, unknown>(undefined, StoreStub.delegateTo<unknown, unknown>(inner));
+      const outcome = await settle(() => storeStubGet(double));
+      const message = "get fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes put to the implementation", async () => {
+      const inner = new StoreStub<unknown, unknown>(undefined);
+      await settle(() => storeStubPut(new StoreStub<unknown, unknown>(undefined, StoreStub.delegateTo<unknown, unknown>(inner))));
+      expect(inner.onPut.callCount).isEqualTo(1, "put calls the implementation");
+    });
+
+    it("fails put with the error of the implementation", async () => {
+      const want = new Error("put-delegate");
+      const inner = new StoreStub<unknown, unknown>(undefined);
+      inner.onPut.faults(want, 1);
+      const double = new StoreStub<unknown, unknown>(undefined, StoreStub.delegateTo<unknown, unknown>(inner));
+      const outcome = await settle(() => storeStubPut(double));
+      const message = "put fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => storeStubInstance(new StoreStub<unknown, unknown>(seat, StoreStub.withClock<unknown, unknown>(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      storeStubInstance(new StoreStub<unknown, unknown>(seat, StoreStub.withRandSource<unknown, unknown>(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => storeStubInstance(new StoreStub<unknown, unknown>(seat, StoreStub.benchMode<unknown, unknown>())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        storeStubInstance(new StoreStub<unknown, unknown>(seat, StoreStub.withClock<unknown, unknown>(clock), StoreStub.withLatency<unknown, unknown>(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = new StoreStub<unknown, unknown>(undefined, StoreStub.failing<unknown, unknown>(want));
+      const outcome = await settle(() => storeStubGet(double));
+      const message = "get fails with the error of StoreStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = new StoreStub<unknown, unknown>(undefined, StoreStub.failing<unknown, unknown>(want));
+      const outcome = await settle(() => storeStubPut(double));
+      const message = "put fails with the error of StoreStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withStoreGet", () => {
+    it("sets the function of get", async () => {
+      let called = false;
+      const option = StoreStub.withStoreGet<unknown, unknown>(() => {
+        called = true;
+        return undefined as never;
+      });
+      await storeStubGet(new StoreStub<unknown, unknown>(undefined, option));
+      expect(called).isTrue("withStoreGet sets the function of get");
+    });
+  });
+
+  describe("withStorePut", () => {
+    it("sets the function of put", async () => {
+      let called = false;
+      const option = StoreStub.withStorePut<unknown, unknown>(() => {
+        called = true;
+        return undefined as never;
+      });
+      await storeStubPut(new StoreStub<unknown, unknown>(undefined, option));
+      expect(called).isTrue("withStorePut sets the function of put");
+    });
   });
 });
 
-// dokimi:provenance sha256:000fb05f0029748a90a4ad487bd40e0fe335b0abd85123b10204b28e254c5a73
+describe("StoreGetStub", () => {
+  describe("returns", () => {
+    it("configures get for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new StoreStub<unknown, unknown>(failures);
+      double.onGet.strict();
+      double.onGet.returns(undefined as never);
+      await settle(() => storeStubGet(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of get");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of get to the function", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      let got: unknown[] = [];
+      double.onGet.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await storeStubGet(double);
+      const args = storeStubGetArgs<unknown>();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("StorePutStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of put to the function", async () => {
+      const double = new StoreStub<unknown, unknown>(undefined);
+      let got: unknown[] = [];
+      double.onPut.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await storeStubPut(double);
+      const args = storeStubPutArgs<unknown, unknown>();
+      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:3d8d56e6266ad2e39c7654cef9c57455fe2549dc4790f42acd02bfa27d7bc358

@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/watcher/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Contract, Subscription, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Contract, Subscription, Value } from "../iface";
 
 /** ContractWatchCall records one call of Contract.watch. */
 export interface ContractWatchCall {
@@ -31,7 +31,7 @@ export interface ContractTriggerCall {
 }
 
 /**
- * ContractWatchStub configures watch, and records its calls. A fault armed
+ * ContractWatchStub configures watch and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractWatchStub extends MethodStub<ContractWatchCall> {
@@ -51,7 +51,7 @@ export class ContractWatchStub extends MethodStub<ContractWatchCall> {
   }
 
   /**
-   * Sets the function of watch, for a result that depends on the
+   * Sets the function that computes the result of watch from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -81,14 +81,14 @@ export class ContractWatchStub extends MethodStub<ContractWatchCall> {
 }
 
 /**
- * ContractTriggerStub configures trigger, and records its calls. A fault armed
+ * ContractTriggerStub configures trigger and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractTriggerStub extends MethodStub<ContractTriggerCall> {
   #fn: ((key: string, v: Value) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of trigger, for a result that depends on the
+   * Sets the function that computes the result of trigger from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -113,13 +113,13 @@ export class ContractTriggerStub extends MethodStub<ContractTriggerCall> {
   }
 }
 
-/** An option of a ContractStub, which its constructor applies. */
+/** Configures a ContractStub at its construction. */
 export type ContractStubOption = (double: ContractStub) => void;
 
 /**
  * ContractStub is a recording test double of Contract. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ContractStub implements Contract {
   /** Configures watch. */
@@ -130,9 +130,9 @@ export class ContractStub implements Contract {
   #strict = false;
 
   /**
-   * Returns a double of Contract that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Contract that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -162,7 +162,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -175,8 +176,9 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -188,8 +190,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -226,7 +228,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -263,8 +266,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -287,8 +290,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -312,7 +315,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of watch, and returns its result.
+   * Records the call of watch and returns its result.
    */
   watch(key: string): Promise<Subscription> {
     const call: ContractWatchCall = { key };
@@ -320,7 +323,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of trigger, and returns its result.
+   * Records the call of trigger and returns its result.
    */
   trigger(key: string, v: Value): Promise<void> {
     const call: ContractTriggerCall = { key, v };
@@ -335,7 +338,7 @@ export interface SubscriptionNextCall {
   /** The argument timeout. */
   timeout: number;
   /** The result of the call, where it returned one. */
-  result?: Value|undefined | undefined;
+  result?: Value | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -347,12 +350,12 @@ export interface SubscriptionStopCall {
 }
 
 /**
- * SubscriptionNextStub configures next, and records its calls. A fault armed
+ * SubscriptionNextStub configures next and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class SubscriptionNextStub extends MethodStub<SubscriptionNextCall> {
-  #fn: ((timeout: number) => Value|undefined) | undefined;
-  #fallback: { readonly value: Value|undefined } | undefined;
+  #fn: ((timeout: number) => Value | undefined) | undefined;
+  #fallback: { readonly value: Value | undefined } | undefined;
 
   /**
    * Sets the result of every call of next. A function and an injected
@@ -361,19 +364,19 @@ export class SubscriptionNextStub extends MethodStub<SubscriptionNextCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Value|undefined): this {
+  returns(result: Value | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of next, for a result that depends on the
+   * Sets the function that computes the result of next from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (timeout: number) => Value|undefined): this {
+  func(fn: (timeout: number) => Value | undefined): this {
     this.#fn = fn;
     return this;
   }
@@ -381,7 +384,7 @@ export class SubscriptionNextStub extends MethodStub<SubscriptionNextCall> {
   /**
    * Returns the arms of a call of next with its arguments.
    */
-  arms(timeout: number): Arms<SubscriptionNextCall, Value|undefined, Value|undefined> {
+  arms(timeout: number): Arms<SubscriptionNextCall, Value | undefined, Value | undefined> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(timeout)),
@@ -397,14 +400,14 @@ export class SubscriptionNextStub extends MethodStub<SubscriptionNextCall> {
 }
 
 /**
- * SubscriptionStopStub configures stop, and records its calls. A fault armed
+ * SubscriptionStopStub configures stop and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class SubscriptionStopStub extends MethodStub<SubscriptionStopCall> {
   #fn: (() => void) | undefined;
 
   /**
-   * Sets the function of stop, for a result that depends on the
+   * Sets the function that computes the result of stop from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -429,13 +432,13 @@ export class SubscriptionStopStub extends MethodStub<SubscriptionStopCall> {
   }
 }
 
-/** An option of a SubscriptionStub, which its constructor applies. */
+/** Configures a SubscriptionStub at its construction. */
 export type SubscriptionStubOption = (double: SubscriptionStub) => void;
 
 /**
  * SubscriptionStub is a recording test double of Subscription. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class SubscriptionStub implements Subscription {
   /** Configures next. */
@@ -446,9 +449,9 @@ export class SubscriptionStub implements Subscription {
   #strict = false;
 
   /**
-   * Returns a double of Subscription that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Subscription that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -478,7 +481,8 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -491,8 +495,9 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -504,8 +509,8 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -542,7 +547,8 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -560,7 +566,7 @@ export class SubscriptionStub implements Subscription {
    * @param fn - The function.
    * @returns The option.
    */
-  static withSubscriptionNext(fn: (timeout: number) => Value|undefined): SubscriptionStubOption {
+  static withSubscriptionNext(fn: (timeout: number) => Value | undefined): SubscriptionStubOption {
     return (double) => {
       double.onNext.func(fn);
     };
@@ -579,8 +585,8 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -603,8 +609,8 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -628,15 +634,15 @@ export class SubscriptionStub implements Subscription {
   }
 
   /**
-   * Records the call of next, and returns its result.
+   * Records the call of next and returns its result.
    */
-  next(timeout: number): Value|undefined {
+  next(timeout: number): Value | undefined {
     const call: SubscriptionNextCall = { timeout };
     return answer(this.onNext, call, this.onNext.arms(timeout));
   }
 
   /**
-   * Records the call of stop, and returns its result.
+   * Records the call of stop and returns its result.
    */
   stop(): void {
     const call: SubscriptionStopCall = {};
@@ -646,4 +652,4 @@ export class SubscriptionStub implements Subscription {
 
 void compatV1;
 
-// dokimi:provenance sha256:49db7ce98be2468bbe8b10243043b8767d1a344cc9f88cc55c8e25c0813ba529
+// dokimi:provenance sha256:0d26616832437f43780fc61947cbda683f78e25527091ca2400a0631750592b6

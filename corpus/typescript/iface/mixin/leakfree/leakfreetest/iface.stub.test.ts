@@ -2,12 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/leakfree/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MixedStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MixedStub } from "./iface.stub";
 
 /** Calls acquire of double with the samples of its arguments. */
 function mixedStubAcquire(double: MixedStub): Promise<void> {
@@ -31,251 +30,357 @@ function mixedStubOutstandingPin(): number {
   return want0;
 }
 
-describe("MixedStub.acquire", () => {
-  const checks = behaviour("Mixed.acquire", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onAcquire,
-      call: () => mixedStubAcquire(double),
-      override: (mark) => {
-        double.onAcquire.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubAcquire(double);
-    double.onAcquire.assertCalledOnce(seat, "acquire records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onAcquire.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubAcquire(double);
-    await mixedStubAcquire(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of acquire");
-  });
-
-  test("sets the function of withMixedAcquire at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedAcquire(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubAcquire(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedAcquire sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("acquire-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubAcquire(double));
-    const message = "acquire fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub.release", () => {
-  const checks = behaviour("Mixed.release", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onRelease,
-      call: () => mixedStubRelease(double),
-      override: (mark) => {
-        double.onRelease.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubRelease(double);
-    double.onRelease.assertCalledOnce(seat, "release records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onRelease.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubRelease(double);
-    await mixedStubRelease(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of release");
-  });
-
-  test("sets the function of withMixedRelease at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedRelease(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubRelease(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedRelease sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("release-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubRelease(double));
-    const message = "release fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub.outstanding", () => {
-  const checks = behaviour("Mixed.outstanding", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onOutstanding,
-      call: () => mixedStubOutstanding(double),
-      override: (mark) => {
-        double.onOutstanding.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    const want = mixedStubOutstandingPin();
-    double.onOutstanding.returns(want);
-    check.equal(seat, await mixedStubOutstanding(double), want, "outstanding returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubOutstanding(double);
-    double.onOutstanding.assertCalledOnce(seat, "outstanding records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onOutstanding.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubOutstanding(double);
-    await mixedStubOutstanding(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of outstanding");
-  });
-
-  test("sets the function of withMixedOutstanding at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedOutstanding(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubOutstanding(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedOutstanding sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("outstanding-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubOutstanding(double));
-    const message = "outstanding fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    const want = mixedStubOutstandingPin();
-    double.onOutstanding.returns(want);
-    await mixedStubOutstanding(double);
-    double.resetCalls();
-    check.equal(seat, await mixedStubOutstanding(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("MixedStub", () => {
-  const instance = (double: MixedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * acquire alone.
+ */
+function mixedStubInstance(double: MixedStub) {
+  return {
     stub: double.onAcquire,
     call: () => mixedStubAcquire(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MixedStub(seat)),
-    withClock: (seat, clock) => instance(new MixedStub(seat, MixedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MixedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MixedStub(seat, MixedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MixedStub(seat, MixedStub.benchMode())),
-    strict: (seat) => instance(new MixedStub(seat, MixedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes acquire to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubAcquire(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onAcquire.assertCalledOnce(seat, "acquire reaches the implementation");
-  });
+describe("MixedStub", () => {
+  describe("acquire", () => {
+    const checks = behaviour("Mixed.acquire", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onAcquire,
+        call: () => mixedStubAcquire(double),
+        override: (mark) => {
+          double.onAcquire.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails acquire with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("acquire-delegate");
-    const inner = new MixedStub(seat);
-    inner.onAcquire.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubAcquire(double));
-    const message = "acquire fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("passes release to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubRelease(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onRelease.assertCalledOnce(seat, "release reaches the implementation");
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onAcquire.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubAcquire(double);
+      await mixedStubAcquire(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of acquire");
+    });
   });
 
-  test("fails release with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("release-delegate");
-    const inner = new MixedStub(seat);
-    inner.onRelease.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubRelease(double));
-    const message = "release fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("release", () => {
+    const checks = behaviour("Mixed.release", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onRelease,
+        call: () => mixedStubRelease(double),
+        override: (mark) => {
+          double.onRelease.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onRelease.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubRelease(double);
+      await mixedStubRelease(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of release");
+    });
   });
 
-  test("passes outstanding to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubOutstanding(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onOutstanding.assertCalledOnce(seat, "outstanding reaches the implementation");
+  describe("outstanding", () => {
+    const checks = behaviour("Mixed.outstanding", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onOutstanding,
+        call: () => mixedStubOutstanding(double),
+        override: (mark) => {
+          double.onOutstanding.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onOutstanding.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubOutstanding(double);
+      await mixedStubOutstanding(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of outstanding");
+    });
   });
 
-  test("fails outstanding with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("outstanding-delegate");
-    const inner = new MixedStub(seat);
-    inner.onOutstanding.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubOutstanding(double));
-    const message = "outstanding fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of acquire", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubAcquire(double);
+      double.resetCalls();
+      expect(double.onAcquire.callCount).isEqualTo(0, "resetCalls clears the calls of acquire");
+    });
+
+    it("clears the recorded calls of release", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubRelease(double);
+      double.resetCalls();
+      expect(double.onRelease.callCount).isEqualTo(0, "resetCalls clears the calls of release");
+    });
+
+    it("clears the recorded calls of outstanding", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubOutstanding(double);
+      double.resetCalls();
+      expect(double.onOutstanding.callCount).isEqualTo(0, "resetCalls clears the calls of outstanding");
+    });
+
+    it("keeps the result of returns of outstanding", async () => {
+      const double = new MixedStub(undefined);
+      const want = mixedStubOutstandingPin();
+      double.onOutstanding.returns(want);
+      double.resetCalls();
+      expect(await mixedStubOutstanding(double)).isEqualTo(want, "resetCalls keeps the result of outstanding");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails acquire with its error", async () => {
+      const want = new Error("acquire-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubAcquire(double));
+      const message = "acquire fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails release with its error", async () => {
+      const want = new Error("release-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubRelease(double));
+      const message = "release fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails outstanding with its error", async () => {
+      const want = new Error("outstanding-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubOutstanding(double));
+      const message = "outstanding fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes acquire to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubAcquire(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onAcquire.callCount).isEqualTo(1, "acquire calls the implementation");
+    });
+
+    it("fails acquire with the error of the implementation", async () => {
+      const want = new Error("acquire-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onAcquire.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubAcquire(double));
+      const message = "acquire fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes release to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubRelease(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onRelease.callCount).isEqualTo(1, "release calls the implementation");
+    });
+
+    it("fails release with the error of the implementation", async () => {
+      const want = new Error("release-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onRelease.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubRelease(double));
+      const message = "release fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes outstanding to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubOutstanding(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onOutstanding.callCount).isEqualTo(1, "outstanding calls the implementation");
+    });
+
+    it("fails outstanding with the error of the implementation", async () => {
+      const want = new Error("outstanding-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onOutstanding.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubOutstanding(double));
+      const message = "outstanding fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mixedStubInstance(new MixedStub(seat, MixedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock), MixedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails acquire with its error", async () => {
+      const want = new Error("acquire-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubAcquire(double));
+      const message = "acquire fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails release with its error", async () => {
+      const want = new Error("release-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubRelease(double));
+      const message = "release fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails outstanding with its error", async () => {
+      const want = new Error("outstanding-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubOutstanding(double));
+      const message = "outstanding fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMixedAcquire", () => {
+    it("sets the function of acquire", async () => {
+      let called = false;
+      const option = MixedStub.withMixedAcquire(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubAcquire(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedAcquire sets the function of acquire");
+    });
+  });
+
+  describe("withMixedRelease", () => {
+    it("sets the function of release", async () => {
+      let called = false;
+      const option = MixedStub.withMixedRelease(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubRelease(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedRelease sets the function of release");
+    });
+  });
+
+  describe("withMixedOutstanding", () => {
+    it("sets the function of outstanding", async () => {
+      let called = false;
+      const option = MixedStub.withMixedOutstanding(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubOutstanding(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedOutstanding sets the function of outstanding");
+    });
   });
 });
 
-// dokimi:provenance sha256:e0bc41964550abb07fbc67df260fa455f23ea9efb217b9e18685b892b511b4d3
+describe("MixedOutstandingStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of outstanding", async () => {
+      const double = new MixedStub(undefined);
+      const want = mixedStubOutstandingPin();
+      double.onOutstanding.returns(want);
+      expect(await mixedStubOutstanding(double)).isEqualTo(want, "outstanding returns the result that returns sets");
+    });
+
+    it("configures outstanding for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new MixedStub(failures);
+      double.onOutstanding.strict();
+      double.onOutstanding.returns(undefined as never);
+      await settle(() => mixedStubOutstanding(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of outstanding");
+    });
+  });
+});
+
+// dokimi:provenance sha256:d27413232c163ecd1a10994a9c1ae08adee1fd964418dc96d0dfad33b013f9f1

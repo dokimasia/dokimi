@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/concurrent/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Mixed } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Mixed } from "../iface";
 
 /** MixedBumpCall records one call of Mixed.bump. */
 export interface MixedBumpCall {
@@ -27,14 +27,14 @@ export interface MixedCountCall {
 }
 
 /**
- * MixedBumpStub configures bump, and records its calls. A fault armed
+ * MixedBumpStub configures bump and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedBumpStub extends MethodStub<MixedBumpCall> {
   #fn: ((key: string) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of bump, for a result that depends on the
+   * Sets the function that computes the result of bump from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -60,7 +60,7 @@ export class MixedBumpStub extends MethodStub<MixedBumpCall> {
 }
 
 /**
- * MixedCountStub configures count, and records its calls. A fault armed
+ * MixedCountStub configures count and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedCountStub extends MethodStub<MixedCountCall> {
@@ -80,7 +80,7 @@ export class MixedCountStub extends MethodStub<MixedCountCall> {
   }
 
   /**
-   * Sets the function of count, for a result that depends on the
+   * Sets the function that computes the result of count from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -109,13 +109,13 @@ export class MixedCountStub extends MethodStub<MixedCountCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures bump. */
@@ -126,9 +126,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -158,7 +158,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -171,8 +172,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -184,8 +186,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -222,7 +224,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -259,8 +262,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -283,8 +286,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -308,7 +311,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of bump, and returns its result.
+   * Records the call of bump and returns its result.
    */
   bump(key: string): Promise<void> {
     const call: MixedBumpCall = { key };
@@ -316,7 +319,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of count, and returns its result.
+   * Records the call of count and returns its result.
    */
   count(): Promise<number> {
     const call: MixedCountCall = {};
@@ -326,4 +329,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:e75cfd449788513a31c7d8d6ad1e16be617b293df45631480817a5bbf97b736c
+// dokimi:provenance sha256:996c04c6e79ed851b7e53fa00be5237ec05ef9517db3574128cad78ea2ca094a

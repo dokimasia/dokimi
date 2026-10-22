@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/eventually/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Mixed } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Mixed } from "../iface";
 
 /** MixedPublishCall records one call of Mixed.publish. */
 export interface MixedPublishCall {
@@ -41,14 +41,14 @@ export interface MixedItemsCall {
 }
 
 /**
- * MixedPublishStub configures publish, and records its calls. A fault armed
+ * MixedPublishStub configures publish and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedPublishStub extends MethodStub<MixedPublishCall> {
   #fn: ((item: string) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of publish, for a result that depends on the
+   * Sets the function that computes the result of publish from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -74,14 +74,14 @@ export class MixedPublishStub extends MethodStub<MixedPublishCall> {
 }
 
 /**
- * MixedSettleStub configures settle, and records its calls. A fault armed
+ * MixedSettleStub configures settle and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedSettleStub extends MethodStub<MixedSettleCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of settle, for a result that depends on the
+   * Sets the function that computes the result of settle from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -107,14 +107,14 @@ export class MixedSettleStub extends MethodStub<MixedSettleCall> {
 }
 
 /**
- * MixedSyncStub configures sync, and records its calls. A fault armed
+ * MixedSyncStub configures sync and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedSyncStub extends MethodStub<MixedSyncCall> {
   #fn: ((peer: Mixed) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of sync, for a result that depends on the
+   * Sets the function that computes the result of sync from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -140,7 +140,7 @@ export class MixedSyncStub extends MethodStub<MixedSyncCall> {
 }
 
 /**
- * MixedItemsStub configures items, and records its calls. A fault armed
+ * MixedItemsStub configures items and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedItemsStub extends MethodStub<MixedItemsCall> {
@@ -160,7 +160,7 @@ export class MixedItemsStub extends MethodStub<MixedItemsCall> {
   }
 
   /**
-   * Sets the function of items, for a result that depends on the
+   * Sets the function that computes the result of items from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -189,13 +189,13 @@ export class MixedItemsStub extends MethodStub<MixedItemsCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures publish. */
@@ -210,9 +210,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -244,7 +244,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -259,8 +260,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -272,8 +274,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -310,7 +312,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -373,8 +376,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -397,8 +400,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -422,7 +425,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of publish, and returns its result.
+   * Records the call of publish and returns its result.
    */
   publish(item: string): Promise<void> {
     const call: MixedPublishCall = { item };
@@ -430,7 +433,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of settle, and returns its result.
+   * Records the call of settle and returns its result.
    */
   settle(): Promise<void> {
     const call: MixedSettleCall = {};
@@ -438,7 +441,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of sync, and returns its result.
+   * Records the call of sync and returns its result.
    */
   sync(peer: Mixed): Promise<void> {
     const call: MixedSyncCall = { peer };
@@ -446,7 +449,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of items, and returns its result.
+   * Records the call of items and returns its result.
    */
   items(): Promise<string[]> {
     const call: MixedItemsCall = {};
@@ -456,4 +459,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:ee91f2e32dc31eaf889f30ae9bfdf32bfb1e38493598f44a060a15c36308a92e
+// dokimi:provenance sha256:1bb1b6bdc0169af3710fe084a3c6911953a30ab877b7bcf8b91d7f93c6e97761

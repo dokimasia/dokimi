@@ -2,14 +2,14 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/persister/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Contract, Value } from '../iface';
-import { ValueBuilder } from './iface.builder';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Contract, Value } from "../iface";
+import { ValueBuilder } from "./iface.builder";
 
 /** ContractPutCall records one call of Contract.put. */
 export interface ContractPutCall {
@@ -32,7 +32,7 @@ export interface ContractGetCall {
 }
 
 /**
- * ContractPutStub configures put, and records its calls. A fault armed
+ * ContractPutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractPutStub extends MethodStub<ContractPutCall> {
@@ -52,7 +52,7 @@ export class ContractPutStub extends MethodStub<ContractPutCall> {
   }
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -83,7 +83,7 @@ export class ContractPutStub extends MethodStub<ContractPutCall> {
 }
 
 /**
- * ContractGetStub configures get, and records its calls. A fault armed
+ * ContractGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractGetStub extends MethodStub<ContractGetCall> {
@@ -103,7 +103,7 @@ export class ContractGetStub extends MethodStub<ContractGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -133,14 +133,14 @@ export class ContractGetStub extends MethodStub<ContractGetCall> {
   }
 }
 
-/** An option of a ContractStub, which its constructor applies. */
+/** Configures a ContractStub at its construction. */
 export type ContractStubOption = (double: ContractStub) => void;
 
 /**
  * ContractStub is a recording test double of Contract. Each property
- * on<Method> configures its method. Left alone, a method records the call
- * and returns a new value from the builder of its result type, or undefined
- * where the type has no builder.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns a new value from the builder of its result type. It returns
+ * undefined where the type has no builder.
  */
 export class ContractStub implements Contract {
   /** Configures put. */
@@ -151,9 +151,9 @@ export class ContractStub implements Contract {
   #strict = false;
 
   /**
-   * Returns a double of Contract that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Contract that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -183,7 +183,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -196,8 +197,9 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -209,8 +211,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -247,7 +249,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -284,8 +287,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -308,8 +311,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -333,7 +336,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(v: Value): Promise<Value> {
     const call: ContractPutCall = { v };
@@ -341,7 +344,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(key: string): Promise<Value> {
     const call: ContractGetCall = { key };
@@ -351,4 +354,4 @@ export class ContractStub implements Contract {
 
 void compatV1;
 
-// dokimi:provenance sha256:fb1c38d8936f00cd19888d32c82b10b2aa5753679367dde85fa7c6fc1377c017
+// dokimi:provenance sha256:dc8ac33f6946e8faba412f5b1fefc136acc6ec49cf8ad3523092837837b656f4

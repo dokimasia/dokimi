@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/compositewriter/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { CompositeWriter, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { CompositeWriter, Value } from "../iface";
 
 /** CompositeWriterSetCall records one call of CompositeWriter.set. */
 export interface CompositeWriterSetCall {
@@ -21,14 +21,14 @@ export interface CompositeWriterSetCall {
 }
 
 /**
- * CompositeWriterSetStub configures set, and records its calls. A fault armed
+ * CompositeWriterSetStub configures set and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class CompositeWriterSetStub extends MethodStub<CompositeWriterSetCall> {
   #fn: ((key: string, v: Value) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of set, for a result that depends on the
+   * Sets the function that computes the result of set from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -53,13 +53,13 @@ export class CompositeWriterSetStub extends MethodStub<CompositeWriterSetCall> {
   }
 }
 
-/** An option of a CompositeWriterStub, which its constructor applies. */
+/** Configures a CompositeWriterStub at its construction. */
 export type CompositeWriterStubOption = (double: CompositeWriterStub) => void;
 
 /**
  * CompositeWriterStub is a recording test double of CompositeWriter. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class CompositeWriterStub implements CompositeWriter {
   /** Configures set. */
@@ -68,9 +68,9 @@ export class CompositeWriterStub implements CompositeWriter {
   #strict = false;
 
   /**
-   * Returns a double of CompositeWriter that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of CompositeWriter that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -99,7 +99,8 @@ export class CompositeWriterStub implements CompositeWriter {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -111,8 +112,9 @@ export class CompositeWriterStub implements CompositeWriter {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -124,8 +126,8 @@ export class CompositeWriterStub implements CompositeWriter {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -162,7 +164,8 @@ export class CompositeWriterStub implements CompositeWriter {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -186,8 +189,8 @@ export class CompositeWriterStub implements CompositeWriter {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -210,8 +213,8 @@ export class CompositeWriterStub implements CompositeWriter {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -235,7 +238,7 @@ export class CompositeWriterStub implements CompositeWriter {
   }
 
   /**
-   * Records the call of set, and returns its result.
+   * Records the call of set and returns its result.
    */
   set(key: string, v: Value): Promise<void> {
     const call: CompositeWriterSetCall = { key, v };
@@ -245,4 +248,4 @@ export class CompositeWriterStub implements CompositeWriter {
 
 void compatV1;
 
-// dokimi:provenance sha256:4c21e41a25255d69456e1f487067c839c645e7c40c6fe3bdc156430f1a3926df
+// dokimi:provenance sha256:cc4723c864cef7346c95d6c105629aa5259b876f55b11fc8e37857d34d1382cf

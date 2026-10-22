@@ -18,7 +18,7 @@ npm --prefix corpus/typescript run types
 npm --prefix corpus/typescript test
 ```
 
-The script `test` measures the coverage of the doubles, the builders and the surfaces of the enumerations, and fails below 100%. The configuration in `tsconfig.json` turns on every strict check, `noUnusedLocals` and `noUnusedParameters` included, so the generated code compiles in the strictest project that consumes it.
+The script `test` measures the coverage of the doubles, the builders and the surfaces of the enumerations, and fails below 100%. `vitest.config.ts` runs `vitest.setup.ts` before each test file, and the setup file registers the assertions of `@dokimi/assert` on the `expect` of vitest, which the generated tests call. The configuration in `tsconfig.json` turns on every strict check, `noUnusedLocals` and `noUnusedParameters` included, so the generated code compiles in the strictest project that consumes it.
 
 ## The translation of a Go fixture
 

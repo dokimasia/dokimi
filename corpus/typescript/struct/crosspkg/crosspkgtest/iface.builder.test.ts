@@ -2,302 +2,428 @@
 // dokimi:plugin builder
 // dokimi:source struct/crosspkg/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Config, region, retries } from '../../seed/seed';
-import { type Mirrored, Settings, type Shorthand } from '../iface';
-import { MirroredBuilder, SettingsBuilder, ShorthandBuilder } from './iface.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Config, region, retries } from "../../seed/seed";
+import { type Mirrored, Settings, type Shorthand } from "../iface";
+import { MirroredBuilder, SettingsBuilder, ShorthandBuilder } from "./iface.builder";
 
-describe("SettingsBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
-    const seed = new Settings();
-    seed.retries = 1.5;
-    seed.region = 'region-a';
-    seed.zone = 'zone-a';
-    seed.deadline = new Date(1700000000000);
-    const got = SettingsBuilder.from(seed).build();
-    check.equal(seat, got.retries, seed.retries, "from keeps the member it was given");
-    check.equal(seat, got.region, seed.region, "from keeps the member it was given");
-    check.equal(seat, got.zone, seed.zone, "from keeps the member it was given");
-    check.equal(seat, got.deadline, seed.deadline, "from keeps the member it was given");
-  });
-
-  test("retries carries its declared default", ({ seat }) => {
+function settingsBuilderCreateCases(): void {
+  it("applies the declared default of retries", () => {
     let want: number;
     want = retries;
     const got = SettingsBuilder.create().build();
-    check.equal(seat, got.retries, want, "the constructor applies the declared default");
+    expect(got.retries).isEqualTo(want, "create applies the declared default of retries");
   });
 
-  test("region carries its declared default", ({ seat }) => {
+  it("applies the declared default of region", () => {
     let want: string;
     want = region;
     const got = SettingsBuilder.create().build();
-    check.equal(seat, got.region, want, "the constructor applies the declared default");
+    expect(got.region).isEqualTo(want, "create applies the declared default of region");
   });
 
-  test("zone carries its declared default", ({ seat }) => {
+  it("applies the declared default of zone", () => {
     let want: string;
     want = region;
     const got = SettingsBuilder.create().build();
-    check.equal(seat, got.zone, want, "the constructor applies the declared default");
+    expect(got.zone).isEqualTo(want, "create applies the declared default of zone");
   });
-});
+}
 
-describe("SettingsBuilder setters", () => {
-  test("withRetries writes retries", ({ seat }) => {
+function settingsBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
+    const seed = new Settings();
+    seed.retries = 1.5;
+    seed.region = "region-a";
+    seed.zone = "zone-a";
+    seed.deadline = new Date(1700000000000);
+    const got = SettingsBuilder.from(seed).build();
+    expect.soft(got.retries).isEqualTo(seed.retries, "from keeps retries");
+    expect.soft(got.region).isEqualTo(seed.region, "from keeps region");
+    expect.soft(got.zone).isEqualTo(seed.zone, "from keeps zone");
+    expect.soft(got.deadline).isEqualTo(seed.deadline, "from keeps deadline");
+  });
+
+  it("keeps the value of its argument", () => {
+    const want = SettingsBuilder.create().build();
+    expect(SettingsBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function settingsBuilderWithRetriesCases(): void {
+  it("writes its argument to retries", () => {
     let want: number;
     want = 1.5;
     const got = SettingsBuilder.create().withRetries(want).build();
-    check.equal(seat, got.retries, want, "the setter writes what it was given");
+    expect(got.retries).isEqualTo(want, "withRetries writes its argument to retries");
   });
 
-  test("withRetries replaces what was already there", ({ seat }) => {
+  it("replaces the value of retries", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = SettingsBuilder.create().withRetries(first).withRetries(want).build();
-    check.equal(seat, got.retries, want, "the later call wins");
+    expect(got.retries).isEqualTo(want, "the second call of withRetries replaces the first");
   });
+}
 
-  test("withRegion writes region", ({ seat }) => {
+function settingsBuilderWithRegionCases(): void {
+  it("writes its argument to region", () => {
     let want: string;
-    want = 'region-a';
+    want = "region-a";
     const got = SettingsBuilder.create().withRegion(want).build();
-    check.equal(seat, got.region, want, "the setter writes what it was given");
+    expect(got.region).isEqualTo(want, "withRegion writes its argument to region");
   });
 
-  test("withRegion replaces what was already there", ({ seat }) => {
+  it("replaces the value of region", () => {
     let first: string;
     let want: string;
-    first = 'region-a';
-    want = 'region-b';
+    first = "region-a";
+    want = "region-b";
     const got = SettingsBuilder.create().withRegion(first).withRegion(want).build();
-    check.equal(seat, got.region, want, "the later call wins");
+    expect(got.region).isEqualTo(want, "the second call of withRegion replaces the first");
   });
+}
 
-  test("withZone writes zone", ({ seat }) => {
+function settingsBuilderWithZoneCases(): void {
+  it("writes its argument to zone", () => {
     let want: string;
-    want = 'zone-a';
+    want = "zone-a";
     const got = SettingsBuilder.create().withZone(want).build();
-    check.equal(seat, got.zone, want, "the setter writes what it was given");
+    expect(got.zone).isEqualTo(want, "withZone writes its argument to zone");
   });
 
-  test("withZone replaces what was already there", ({ seat }) => {
+  it("replaces the value of zone", () => {
     let first: string;
     let want: string;
-    first = 'zone-a';
-    want = 'zone-b';
+    first = "zone-a";
+    want = "zone-b";
     const got = SettingsBuilder.create().withZone(first).withZone(want).build();
-    check.equal(seat, got.zone, want, "the later call wins");
+    expect(got.zone).isEqualTo(want, "the second call of withZone replaces the first");
   });
+}
 
-  test("withDeadline writes deadline", ({ seat }) => {
+function settingsBuilderWithDeadlineCases(): void {
+  it("writes its argument to deadline", () => {
     let want: Date;
     want = new Date(1700000000000);
     const got = SettingsBuilder.create().withDeadline(want).build();
-    check.equal(seat, got.deadline, want, "the setter writes what it was given");
+    expect(got.deadline).isEqualTo(want, "withDeadline writes its argument to deadline");
   });
 
-  test("withDeadline replaces what was already there", ({ seat }) => {
+  it("replaces the value of deadline", () => {
     let first: Date;
     let want: Date;
     first = new Date(1700000000000);
     want = new Date(1700000001000);
     const got = SettingsBuilder.create().withDeadline(first).withDeadline(want).build();
-    check.equal(seat, got.deadline, want, "the later call wins");
+    expect(got.deadline).isEqualTo(want, "the second call of withDeadline replaces the first");
   });
-});
+}
 
-describe("SettingsBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function settingsBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Settings[] = [];
     const record = (value: Settings): void => {
       seen.push(value);
     };
     SettingsBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function settingsBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = SettingsBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, SettingsBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
-});
 
-describe("MirroredBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
-    const seed = new Config();
-    seed.region = 'region-a';
+  it("builds the value of its original", () => {
+    const original = SettingsBuilder.create();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+}
+
+function settingsBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = SettingsBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Settings();
     seed.retries = 1.5;
-    seed.label = 'label-a';
-    const got = MirroredBuilder.from(seed).build();
-    check.equal(seat, got.region, seed.region, "from keeps the member it was given");
-    check.equal(seat, got.retries, seed.retries, "from keeps the member it was given");
-    check.equal(seat, got.label, seed.label, "from keeps the member it was given");
+    seed.region = "region-a";
+    seed.zone = "zone-a";
+    seed.deadline = new Date(1700000000000);
+    const builder = SettingsBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
   });
+}
+
+describe("SettingsBuilder", () => {
+  describe("create", settingsBuilderCreateCases);
+  describe("from", settingsBuilderFromCases);
+  describe("withRetries", settingsBuilderWithRetriesCases);
+  describe("withRegion", settingsBuilderWithRegionCases);
+  describe("withZone", settingsBuilderWithZoneCases);
+  describe("withDeadline", settingsBuilderWithDeadlineCases);
+  describe("mutate", settingsBuilderMutateCases);
+  describe("clone", settingsBuilderCloneCases);
+  describe("build", settingsBuilderBuildCases);
 });
 
-describe("MirroredBuilder setters", () => {
-  test("withRegion writes region", ({ seat }) => {
-    let want: string;
-    want = 'region-a';
-    const got = MirroredBuilder.create().withRegion(want).build();
-    check.equal(seat, got.region, want, "the setter writes what it was given");
+function mirroredBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
+    const seed = new Config();
+    seed.region = "region-a";
+    seed.retries = 1.5;
+    seed.label = "label-a";
+    const got = MirroredBuilder.from(seed).build();
+    expect.soft(got.region).isEqualTo(seed.region, "from keeps region");
+    expect.soft(got.retries).isEqualTo(seed.retries, "from keeps retries");
+    expect.soft(got.label).isEqualTo(seed.label, "from keeps label");
   });
 
-  test("withRegion replaces what was already there", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = MirroredBuilder.create().build();
+    expect(MirroredBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function mirroredBuilderWithRegionCases(): void {
+  it("writes its argument to region", () => {
+    let want: string;
+    want = "region-a";
+    const got = MirroredBuilder.create().withRegion(want).build();
+    expect(got.region).isEqualTo(want, "withRegion writes its argument to region");
+  });
+
+  it("replaces the value of region", () => {
     let first: string;
     let want: string;
-    first = 'region-a';
-    want = 'region-b';
+    first = "region-a";
+    want = "region-b";
     const got = MirroredBuilder.create().withRegion(first).withRegion(want).build();
-    check.equal(seat, got.region, want, "the later call wins");
+    expect(got.region).isEqualTo(want, "the second call of withRegion replaces the first");
   });
+}
 
-  test("withRetries writes retries", ({ seat }) => {
+function mirroredBuilderWithRetriesCases(): void {
+  it("writes its argument to retries", () => {
     let want: number;
     want = 1.5;
     const got = MirroredBuilder.create().withRetries(want).build();
-    check.equal(seat, got.retries, want, "the setter writes what it was given");
+    expect(got.retries).isEqualTo(want, "withRetries writes its argument to retries");
   });
 
-  test("withRetries replaces what was already there", ({ seat }) => {
+  it("replaces the value of retries", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = MirroredBuilder.create().withRetries(first).withRetries(want).build();
-    check.equal(seat, got.retries, want, "the later call wins");
+    expect(got.retries).isEqualTo(want, "the second call of withRetries replaces the first");
   });
+}
 
-  test("withLabel writes label", ({ seat }) => {
+function mirroredBuilderWithLabelCases(): void {
+  it("writes its argument to label", () => {
     let want: string;
-    want = 'label-a';
+    want = "label-a";
     const got = MirroredBuilder.create().withLabel(want).build();
-    check.equal(seat, got.label, want, "the setter writes what it was given");
+    expect(got.label).isEqualTo(want, "withLabel writes its argument to label");
   });
 
-  test("withLabel replaces what was already there", ({ seat }) => {
+  it("replaces the value of label", () => {
     let first: string;
     let want: string;
-    first = 'label-a';
-    want = 'label-b';
+    first = "label-a";
+    want = "label-b";
     const got = MirroredBuilder.create().withLabel(first).withLabel(want).build();
-    check.equal(seat, got.label, want, "the later call wins");
+    expect(got.label).isEqualTo(want, "the second call of withLabel replaces the first");
   });
-});
+}
 
-describe("MirroredBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function mirroredBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Mirrored[] = [];
     const record = (value: Mirrored): void => {
       seen.push(value);
     };
     MirroredBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function mirroredBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = MirroredBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, MirroredBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
-});
 
-describe("ShorthandBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+  it("builds the value of its original", () => {
+    const original = MirroredBuilder.create();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+}
+
+function mirroredBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = MirroredBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
     const seed = new Config();
-    seed.region = 'region-a';
+    seed.region = "region-a";
     seed.retries = 1.5;
-    seed.label = 'label-a';
-    const got = ShorthandBuilder.from(seed).build();
-    check.equal(seat, got.region, seed.region, "from keeps the member it was given");
-    check.equal(seat, got.retries, seed.retries, "from keeps the member it was given");
-    check.equal(seat, got.label, seed.label, "from keeps the member it was given");
+    seed.label = "label-a";
+    const builder = MirroredBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
   });
+}
+
+describe("MirroredBuilder", () => {
+  describe("from", mirroredBuilderFromCases);
+  describe("withRegion", mirroredBuilderWithRegionCases);
+  describe("withRetries", mirroredBuilderWithRetriesCases);
+  describe("withLabel", mirroredBuilderWithLabelCases);
+  describe("mutate", mirroredBuilderMutateCases);
+  describe("clone", mirroredBuilderCloneCases);
+  describe("build", mirroredBuilderBuildCases);
 });
 
-describe("ShorthandBuilder setters", () => {
-  test("withRegion writes region", ({ seat }) => {
-    let want: string;
-    want = 'region-a';
-    const got = ShorthandBuilder.create().withRegion(want).build();
-    check.equal(seat, got.region, want, "the setter writes what it was given");
+function shorthandBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
+    const seed = new Config();
+    seed.region = "region-a";
+    seed.retries = 1.5;
+    seed.label = "label-a";
+    const got = ShorthandBuilder.from(seed).build();
+    expect.soft(got.region).isEqualTo(seed.region, "from keeps region");
+    expect.soft(got.retries).isEqualTo(seed.retries, "from keeps retries");
+    expect.soft(got.label).isEqualTo(seed.label, "from keeps label");
   });
 
-  test("withRegion replaces what was already there", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = ShorthandBuilder.create().build();
+    expect(ShorthandBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function shorthandBuilderWithRegionCases(): void {
+  it("writes its argument to region", () => {
+    let want: string;
+    want = "region-a";
+    const got = ShorthandBuilder.create().withRegion(want).build();
+    expect(got.region).isEqualTo(want, "withRegion writes its argument to region");
+  });
+
+  it("replaces the value of region", () => {
     let first: string;
     let want: string;
-    first = 'region-a';
-    want = 'region-b';
+    first = "region-a";
+    want = "region-b";
     const got = ShorthandBuilder.create().withRegion(first).withRegion(want).build();
-    check.equal(seat, got.region, want, "the later call wins");
+    expect(got.region).isEqualTo(want, "the second call of withRegion replaces the first");
   });
+}
 
-  test("withRetries writes retries", ({ seat }) => {
+function shorthandBuilderWithRetriesCases(): void {
+  it("writes its argument to retries", () => {
     let want: number;
     want = 1.5;
     const got = ShorthandBuilder.create().withRetries(want).build();
-    check.equal(seat, got.retries, want, "the setter writes what it was given");
+    expect(got.retries).isEqualTo(want, "withRetries writes its argument to retries");
   });
 
-  test("withRetries replaces what was already there", ({ seat }) => {
+  it("replaces the value of retries", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = ShorthandBuilder.create().withRetries(first).withRetries(want).build();
-    check.equal(seat, got.retries, want, "the later call wins");
+    expect(got.retries).isEqualTo(want, "the second call of withRetries replaces the first");
   });
+}
 
-  test("withLabel writes label", ({ seat }) => {
+function shorthandBuilderWithLabelCases(): void {
+  it("writes its argument to label", () => {
     let want: string;
-    want = 'label-a';
+    want = "label-a";
     const got = ShorthandBuilder.create().withLabel(want).build();
-    check.equal(seat, got.label, want, "the setter writes what it was given");
+    expect(got.label).isEqualTo(want, "withLabel writes its argument to label");
   });
 
-  test("withLabel replaces what was already there", ({ seat }) => {
+  it("replaces the value of label", () => {
     let first: string;
     let want: string;
-    first = 'label-a';
-    want = 'label-b';
+    first = "label-a";
+    want = "label-b";
     const got = ShorthandBuilder.create().withLabel(first).withLabel(want).build();
-    check.equal(seat, got.label, want, "the later call wins");
+    expect(got.label).isEqualTo(want, "the second call of withLabel replaces the first");
   });
-});
+}
 
-describe("ShorthandBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function shorthandBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Shorthand[] = [];
     const record = (value: Shorthand): void => {
       seen.push(value);
     };
     ShorthandBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function shorthandBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = ShorthandBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = ShorthandBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, ShorthandBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function shorthandBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = ShorthandBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Config();
+    seed.region = "region-a";
+    seed.retries = 1.5;
+    seed.label = "label-a";
+    const builder = ShorthandBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("ShorthandBuilder", () => {
+  describe("from", shorthandBuilderFromCases);
+  describe("withRegion", shorthandBuilderWithRegionCases);
+  describe("withRetries", shorthandBuilderWithRetriesCases);
+  describe("withLabel", shorthandBuilderWithLabelCases);
+  describe("mutate", shorthandBuilderMutateCases);
+  describe("clone", shorthandBuilderCloneCases);
+  describe("build", shorthandBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:935e9c7bc808d48d5bebf3a5443e32eec29b5bf4c574d2bde620fa3e4aeec7bb
+// dokimi:provenance sha256:c3a38a117c5212a52a38a84fe4a15be2186a67b1eada2d757f7fd975cd2fac38

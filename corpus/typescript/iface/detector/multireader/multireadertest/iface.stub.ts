@@ -2,31 +2,31 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/multireader/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Meta, MultiReader, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Meta, MultiReader, Value } from "../iface";
 
 /** MultiReaderGetWithMetaCall records one call of MultiReader.getWithMeta. */
 export interface MultiReaderGetWithMetaCall {
   /** The argument key. */
   key: string;
   /** The result of the call, where it returned one. */
-  result?: [Value,Meta] | undefined;
+  result?: [Value, Meta] | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * MultiReaderGetWithMetaStub configures getWithMeta, and records its calls. A fault armed
+ * MultiReaderGetWithMetaStub configures getWithMeta and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MultiReaderGetWithMetaStub extends MethodStub<MultiReaderGetWithMetaCall> {
-  #fn: ((key: string) => [Value,Meta] | PromiseLike<[Value,Meta]>) | undefined;
-  #fallback: { readonly value: [Value,Meta] } | undefined;
+  #fn: ((key: string) => [Value, Meta] | PromiseLike<[Value, Meta]>) | undefined;
+  #fallback: { readonly value: [Value, Meta] } | undefined;
 
   /**
    * Sets the result of every call of getWithMeta. A function and an injected
@@ -35,19 +35,19 @@ export class MultiReaderGetWithMetaStub extends MethodStub<MultiReaderGetWithMet
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: [Value,Meta]): this {
+  returns(result: [Value, Meta]): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of getWithMeta, for a result that depends on the
+   * Sets the function that computes the result of getWithMeta from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: string) => [Value,Meta] | PromiseLike<[Value,Meta]>): this {
+  func(fn: (key: string) => [Value, Meta] | PromiseLike<[Value, Meta]>): this {
     this.#fn = fn;
     return this;
   }
@@ -55,7 +55,7 @@ export class MultiReaderGetWithMetaStub extends MethodStub<MultiReaderGetWithMet
   /**
    * Returns the arms of a call of getWithMeta with its arguments.
    */
-  arms(key: string): Arms<MultiReaderGetWithMetaCall, [Value,Meta], [Value,Meta] | PromiseLike<[Value,Meta]>> {
+  arms(key: string): Arms<MultiReaderGetWithMetaCall, [Value, Meta], [Value, Meta] | PromiseLike<[Value, Meta]>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(key)),
@@ -70,13 +70,13 @@ export class MultiReaderGetWithMetaStub extends MethodStub<MultiReaderGetWithMet
   }
 }
 
-/** An option of a MultiReaderStub, which its constructor applies. */
+/** Configures a MultiReaderStub at its construction. */
 export type MultiReaderStubOption = (double: MultiReaderStub) => void;
 
 /**
  * MultiReaderStub is a recording test double of MultiReader. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MultiReaderStub implements MultiReader {
   /** Configures getWithMeta. */
@@ -85,9 +85,9 @@ export class MultiReaderStub implements MultiReader {
   #strict = false;
 
   /**
-   * Returns a double of MultiReader that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of MultiReader that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -116,7 +116,8 @@ export class MultiReaderStub implements MultiReader {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -128,8 +129,9 @@ export class MultiReaderStub implements MultiReader {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -141,8 +143,8 @@ export class MultiReaderStub implements MultiReader {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -179,7 +181,8 @@ export class MultiReaderStub implements MultiReader {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -196,15 +199,15 @@ export class MultiReaderStub implements MultiReader {
    * @param fn - The function.
    * @returns The option.
    */
-  static withMultiReaderGetWithMeta(fn: (key: string) => [Value,Meta] | PromiseLike<[Value,Meta]>): MultiReaderStubOption {
+  static withMultiReaderGetWithMeta(fn: (key: string) => [Value, Meta] | PromiseLike<[Value, Meta]>): MultiReaderStubOption {
     return (double) => {
       double.onGetWithMeta.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -227,8 +230,8 @@ export class MultiReaderStub implements MultiReader {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -252,9 +255,9 @@ export class MultiReaderStub implements MultiReader {
   }
 
   /**
-   * Records the call of getWithMeta, and returns its result.
+   * Records the call of getWithMeta and returns its result.
    */
-  getWithMeta(key: string): Promise<[Value,Meta]> {
+  getWithMeta(key: string): Promise<[Value, Meta]> {
     const call: MultiReaderGetWithMetaCall = { key };
     return answerAsync(this.onGetWithMeta, call, this.onGetWithMeta.arms(key));
   }
@@ -262,4 +265,4 @@ export class MultiReaderStub implements MultiReader {
 
 void compatV1;
 
-// dokimi:provenance sha256:9480be7574f2c0ed283f2e30ff39ac9389b4f4cffaac600313377f5599a4be96
+// dokimi:provenance sha256:2b1ff30bed221b0db93b9bf91fb71c6f7d0a8bb0409196e4ff2db66a5bdd4b5d

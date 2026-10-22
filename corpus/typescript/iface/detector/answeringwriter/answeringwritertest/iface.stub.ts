@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/answeringwriter/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { AnsweringWriter, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { AnsweringWriter, Value } from "../iface";
 
 /** AnsweringWriterPutCall records one call of AnsweringWriter.put. */
 export interface AnsweringWriterPutCall {
@@ -21,7 +21,7 @@ export interface AnsweringWriterPutCall {
 }
 
 /**
- * AnsweringWriterPutStub configures put, and records its calls. A fault armed
+ * AnsweringWriterPutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class AnsweringWriterPutStub extends MethodStub<AnsweringWriterPutCall> {
@@ -41,7 +41,7 @@ export class AnsweringWriterPutStub extends MethodStub<AnsweringWriterPutCall> {
   }
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -70,13 +70,13 @@ export class AnsweringWriterPutStub extends MethodStub<AnsweringWriterPutCall> {
   }
 }
 
-/** An option of a AnsweringWriterStub, which its constructor applies. */
+/** Configures a AnsweringWriterStub at its construction. */
 export type AnsweringWriterStubOption = (double: AnsweringWriterStub) => void;
 
 /**
  * AnsweringWriterStub is a recording test double of AnsweringWriter. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class AnsweringWriterStub implements AnsweringWriter {
   /** Configures put. */
@@ -85,9 +85,9 @@ export class AnsweringWriterStub implements AnsweringWriter {
   #strict = false;
 
   /**
-   * Returns a double of AnsweringWriter that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of AnsweringWriter that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -116,7 +116,8 @@ export class AnsweringWriterStub implements AnsweringWriter {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -128,8 +129,9 @@ export class AnsweringWriterStub implements AnsweringWriter {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -141,8 +143,8 @@ export class AnsweringWriterStub implements AnsweringWriter {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -179,7 +181,8 @@ export class AnsweringWriterStub implements AnsweringWriter {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -203,8 +206,8 @@ export class AnsweringWriterStub implements AnsweringWriter {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -227,8 +230,8 @@ export class AnsweringWriterStub implements AnsweringWriter {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -252,7 +255,7 @@ export class AnsweringWriterStub implements AnsweringWriter {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(v: Value): Promise<Value> {
     const call: AnsweringWriterPutCall = { v };
@@ -262,13 +265,13 @@ export class AnsweringWriterStub implements AnsweringWriter {
 
 // Value is a handle that a method of AnsweringWriter returns.
 
-/** An option of a ValueStub, which its constructor applies. */
+/** Configures a ValueStub at its construction. */
 export type ValueStubOption = (double: ValueStub) => void;
 
 /**
  * ValueStub is a recording test double of Value. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ValueStub implements Value {
   /** The property key, which a test assigns. */
@@ -279,9 +282,9 @@ export class ValueStub implements Value {
   #strict = false;
 
   /**
-   * Returns a double of Value that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Value that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -309,8 +312,9 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -322,8 +326,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -360,8 +364,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -394,4 +398,4 @@ export class ValueStub implements Value {
 
 void compatV1;
 
-// dokimi:provenance sha256:79217761b5e5b743e0119c84af8d13d6d3ada7ce65beebc22d8cad4e1a4901b2
+// dokimi:provenance sha256:dc8d9fe113d0d7659c8f44bbd2aeb0d30fecf5c96e6a3f7b37811cfa20601308

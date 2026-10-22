@@ -2,18 +2,18 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/cursor/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Contract, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Contract, Value } from "../iface";
 
 /** ContractNextCall records one call of Contract.next. */
 export interface ContractNextCall {
   /** The result of the call, where it returned one. */
-  result?: Value|undefined | undefined;
+  result?: Value | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -25,12 +25,12 @@ export interface ContractCloseCall {
 }
 
 /**
- * ContractNextStub configures next, and records its calls. A fault armed
+ * ContractNextStub configures next and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractNextStub extends MethodStub<ContractNextCall> {
-  #fn: (() => Value|undefined | PromiseLike<Value|undefined>) | undefined;
-  #fallback: { readonly value: Value|undefined } | undefined;
+  #fn: (() => Value | undefined | PromiseLike<Value | undefined>) | undefined;
+  #fallback: { readonly value: Value | undefined } | undefined;
 
   /**
    * Sets the result of every call of next. A function and an injected
@@ -39,19 +39,19 @@ export class ContractNextStub extends MethodStub<ContractNextCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Value|undefined): this {
+  returns(result: Value | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of next, for a result that depends on the
+   * Sets the function that computes the result of next from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => Value|undefined | PromiseLike<Value|undefined>): this {
+  func(fn: () => Value | undefined | PromiseLike<Value | undefined>): this {
     this.#fn = fn;
     return this;
   }
@@ -59,7 +59,7 @@ export class ContractNextStub extends MethodStub<ContractNextCall> {
   /**
    * Returns the arms of a call of next with its arguments.
    */
-  arms(): Arms<ContractNextCall, Value|undefined, Value|undefined | PromiseLike<Value|undefined>> {
+  arms(): Arms<ContractNextCall, Value | undefined, Value | undefined | PromiseLike<Value | undefined>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn()),
@@ -75,14 +75,14 @@ export class ContractNextStub extends MethodStub<ContractNextCall> {
 }
 
 /**
- * ContractCloseStub configures close, and records its calls. A fault armed
+ * ContractCloseStub configures close and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractCloseStub extends MethodStub<ContractCloseCall> {
   #fn: (() => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of close, for a result that depends on the
+   * Sets the function that computes the result of close from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -107,13 +107,13 @@ export class ContractCloseStub extends MethodStub<ContractCloseCall> {
   }
 }
 
-/** An option of a ContractStub, which its constructor applies. */
+/** Configures a ContractStub at its construction. */
 export type ContractStubOption = (double: ContractStub) => void;
 
 /**
  * ContractStub is a recording test double of Contract. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ContractStub implements Contract {
   /** Configures next. */
@@ -124,9 +124,9 @@ export class ContractStub implements Contract {
   #strict = false;
 
   /**
-   * Returns a double of Contract that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Contract that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -156,7 +156,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -169,8 +170,9 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -182,8 +184,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -220,7 +222,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -238,7 +241,7 @@ export class ContractStub implements Contract {
    * @param fn - The function.
    * @returns The option.
    */
-  static withContractNext(fn: () => Value|undefined | PromiseLike<Value|undefined>): ContractStubOption {
+  static withContractNext(fn: () => Value | undefined | PromiseLike<Value | undefined>): ContractStubOption {
     return (double) => {
       double.onNext.func(fn);
     };
@@ -257,8 +260,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -281,8 +284,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -306,15 +309,15 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of next, and returns its result.
+   * Records the call of next and returns its result.
    */
-  next(): Promise<Value|undefined> {
+  next(): Promise<Value | undefined> {
     const call: ContractNextCall = {};
     return answerAsync(this.onNext, call, this.onNext.arms());
   }
 
   /**
-   * Records the call of close, and returns its result.
+   * Records the call of close and returns its result.
    */
   close(): Promise<void> {
     const call: ContractCloseCall = {};
@@ -324,4 +327,4 @@ export class ContractStub implements Contract {
 
 void compatV1;
 
-// dokimi:provenance sha256:8f6d7c3b02b10e805057cf413444205c1f699b098e7d7b9cc8af74de6bc9e38d
+// dokimi:provenance sha256:aa8c72bb5271a95b14f422ac34906d9bcdf14df8f4e74b04111c26098b10b233

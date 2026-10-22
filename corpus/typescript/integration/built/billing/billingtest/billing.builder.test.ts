@@ -2,58 +2,89 @@
 // dokimi:plugin builder
 // dokimi:source integration/built/billing/billing.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Invoice } from '../billing';
-import { InvoiceBuilder } from './billing.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Invoice } from "../billing";
+import { InvoiceBuilder } from "./billing.builder";
 
-describe("InvoiceBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function invoiceBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Invoice();
-    seed.number = 'number-a';
+    seed.number = "number-a";
     const got = InvoiceBuilder.from(seed).build();
-    check.equal(seat, got.number, seed.number, "from keeps the member it was given");
+    expect(got.number).isEqualTo(seed.number, "from keeps number");
   });
-});
 
-describe("InvoiceBuilder setters", () => {
-  test("withNumber writes number", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = InvoiceBuilder.create().build();
+    expect(InvoiceBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function invoiceBuilderWithNumberCases(): void {
+  it("writes its argument to number", () => {
     let want: string;
-    want = 'number-a';
+    want = "number-a";
     const got = InvoiceBuilder.create().withNumber(want).build();
-    check.equal(seat, got.number, want, "the setter writes what it was given");
+    expect(got.number).isEqualTo(want, "withNumber writes its argument to number");
   });
 
-  test("withNumber replaces what was already there", ({ seat }) => {
+  it("replaces the value of number", () => {
     let first: string;
     let want: string;
-    first = 'number-a';
-    want = 'number-b';
+    first = "number-a";
+    want = "number-b";
     const got = InvoiceBuilder.create().withNumber(first).withNumber(want).build();
-    check.equal(seat, got.number, want, "the later call wins");
+    expect(got.number).isEqualTo(want, "the second call of withNumber replaces the first");
   });
-});
+}
 
-describe("InvoiceBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function invoiceBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Invoice[] = [];
     const record = (value: Invoice): void => {
       seen.push(value);
     };
     InvoiceBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function invoiceBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = InvoiceBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = InvoiceBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, InvoiceBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function invoiceBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = InvoiceBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Invoice();
+    seed.number = "number-a";
+    const builder = InvoiceBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("InvoiceBuilder", () => {
+  describe("from", invoiceBuilderFromCases);
+  describe("withNumber", invoiceBuilderWithNumberCases);
+  describe("mutate", invoiceBuilderMutateCases);
+  describe("clone", invoiceBuilderCloneCases);
+  describe("build", invoiceBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:ad2c4f3ce7ded0a0b1b393cd5751e5b30c85d6691ff1f075f28c41033a358057
+// dokimi:provenance sha256:778344993d84935fb4bd598f11d0f0c6060e1f5be7fdde94003cd547d32dfe52

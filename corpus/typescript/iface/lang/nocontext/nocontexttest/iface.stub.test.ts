@@ -2,14 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/nocontext/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { CalculatorStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { CalculatorStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of add, or undefined. */
+/** Returns the samples of the arguments of add. An argument without a sample is undefined. */
 function calculatorStubAddArgs(): [number, number] {
   let a0 = undefined as unknown as number;
   let a1 = undefined as unknown as number;
@@ -31,7 +30,7 @@ function calculatorStubAddPin(): number {
   return want0;
 }
 
-/** Returns the samples of the arguments of divide, or undefined. */
+/** Returns the samples of the arguments of divide. An argument without a sample is undefined. */
 function calculatorStubDivideArgs(): [number, number] {
   let a0 = undefined as unknown as number;
   let a1 = undefined as unknown as number;
@@ -58,273 +57,433 @@ function calculatorStubReset(double: CalculatorStub): void {
   return double.reset();
 }
 
-describe("CalculatorStub.add", () => {
-  const checks = behaviour("Calculator.add", (seat) => {
-    const double = new CalculatorStub(seat);
-    return {
-      stub: double.onAdd,
-      call: () => calculatorStubAdd(double),
-      override: (mark) => {
-        double.onAdd.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    const want = calculatorStubAddPin();
-    double.onAdd.returns(want);
-    check.equal(seat, calculatorStubAdd(double), want, "add returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    calculatorStubAdd(double);
-    const got = double.onAdd.assertCalledOnce(seat, "add records the call");
-    const args = calculatorStubAddArgs();
-    check.equal(seat, got?.a, args[0], "the call records a");
-    check.equal(seat, got?.b, args[1], "the call records b");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    let seen = 0;
-    double.onAdd.onRecord(() => {
-      seen += 1;
-    });
-    calculatorStubAdd(double);
-    calculatorStubAdd(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of add");
-  });
-
-  test("sets the function of withCalculatorAdd at construction", async ({ seat }) => {
-    let called = false;
-    const option = CalculatorStub.withCalculatorAdd(() => {
-      called = true;
-      return undefined as never;
-    });
-    calculatorStubAdd(new CalculatorStub(seat, option));
-    check.isTrue(seat, called, "withCalculatorAdd sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("add-failing");
-    const double = CalculatorStub.newFailing(seat, want);
-    const outcome = await settle(() => calculatorStubAdd(double));
-    const message = "add fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    const want = calculatorStubAddPin();
-    double.onAdd.returns(want);
-    calculatorStubAdd(double);
-    double.resetCalls();
-    check.equal(seat, calculatorStubAdd(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("CalculatorStub.divide", () => {
-  const checks = behaviour("Calculator.divide", (seat) => {
-    const double = new CalculatorStub(seat);
-    return {
-      stub: double.onDivide,
-      call: () => calculatorStubDivide(double),
-      override: (mark) => {
-        double.onDivide.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    const want = calculatorStubDividePin();
-    double.onDivide.returns(want);
-    check.equal(seat, calculatorStubDivide(double), want, "divide returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    calculatorStubDivide(double);
-    const got = double.onDivide.assertCalledOnce(seat, "divide records the call");
-    const args = calculatorStubDivideArgs();
-    check.equal(seat, got?.a, args[0], "the call records a");
-    check.equal(seat, got?.b, args[1], "the call records b");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    let seen = 0;
-    double.onDivide.onRecord(() => {
-      seen += 1;
-    });
-    calculatorStubDivide(double);
-    calculatorStubDivide(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of divide");
-  });
-
-  test("sets the function of withCalculatorDivide at construction", async ({ seat }) => {
-    let called = false;
-    const option = CalculatorStub.withCalculatorDivide(() => {
-      called = true;
-      return undefined as never;
-    });
-    calculatorStubDivide(new CalculatorStub(seat, option));
-    check.isTrue(seat, called, "withCalculatorDivide sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("divide-failing");
-    const double = CalculatorStub.newFailing(seat, want);
-    const outcome = await settle(() => calculatorStubDivide(double));
-    const message = "divide fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    const want = calculatorStubDividePin();
-    double.onDivide.returns(want);
-    calculatorStubDivide(double);
-    double.resetCalls();
-    check.equal(seat, calculatorStubDivide(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("CalculatorStub.reset", () => {
-  const checks = behaviour("Calculator.reset", (seat) => {
-    const double = new CalculatorStub(seat);
-    return {
-      stub: double.onReset,
-      call: () => calculatorStubReset(double),
-      override: (mark) => {
-        double.onReset.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    calculatorStubReset(double);
-    double.onReset.assertCalledOnce(seat, "reset records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new CalculatorStub(seat);
-    let seen = 0;
-    double.onReset.onRecord(() => {
-      seen += 1;
-    });
-    calculatorStubReset(double);
-    calculatorStubReset(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of reset");
-  });
-
-  test("sets the function of withCalculatorReset at construction", async ({ seat }) => {
-    let called = false;
-    const option = CalculatorStub.withCalculatorReset(() => {
-      called = true;
-      return undefined as never;
-    });
-    calculatorStubReset(new CalculatorStub(seat, option));
-    check.isTrue(seat, called, "withCalculatorReset sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("reset-failing");
-    const double = CalculatorStub.newFailing(seat, want);
-    const outcome = await settle(() => calculatorStubReset(double));
-    const message = "reset fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("CalculatorStub", () => {
-  const instance = (double: CalculatorStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * add alone.
+ */
+function calculatorStubInstance(double: CalculatorStub) {
+  return {
     stub: double.onAdd,
     call: () => calculatorStubAdd(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new CalculatorStub(seat)),
-    withClock: (seat, clock) => instance(new CalculatorStub(seat, CalculatorStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(CalculatorStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new CalculatorStub(seat, CalculatorStub.withRandSource(random))),
-    benchMode: (seat) => instance(new CalculatorStub(seat, CalculatorStub.benchMode())),
-    strict: (seat) => instance(new CalculatorStub(seat, CalculatorStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes add to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new CalculatorStub(seat);
-    await settle(() => calculatorStubAdd(new CalculatorStub(seat, CalculatorStub.delegateTo(inner))));
-    inner.onAdd.assertCalledOnce(seat, "add reaches the implementation");
-  });
+describe("CalculatorStub", () => {
+  describe("add", () => {
+    const checks = behaviour("Calculator.add", (seat) => {
+      const double = new CalculatorStub(seat);
+      return {
+        stub: double.onAdd,
+        call: () => calculatorStubAdd(double),
+        override: (mark) => {
+          double.onAdd.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails add with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("add-delegate");
-    const inner = new CalculatorStub(seat);
-    inner.onAdd.faults(want, 1);
-    const double = new CalculatorStub(seat, CalculatorStub.delegateTo(inner));
-    const outcome = await settle(() => calculatorStubAdd(double));
-    const message = "add fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new CalculatorStub(undefined);
+      calculatorStubAdd(double);
+      expect(double.onAdd.callCount).isEqualTo(1, "add records the call");
+      const got = double.onAdd.calls[0];
+      const args = calculatorStubAddArgs();
+      expect.soft(got?.a).isEqualTo(args[0], "the call records a");
+      expect.soft(got?.b).isEqualTo(args[1], "the call records b");
+    });
 
-  test("passes divide to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new CalculatorStub(seat);
-    await settle(() => calculatorStubDivide(new CalculatorStub(seat, CalculatorStub.delegateTo(inner))));
-    inner.onDivide.assertCalledOnce(seat, "divide reaches the implementation");
-  });
-
-  test("fails divide with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("divide-delegate");
-    const inner = new CalculatorStub(seat);
-    inner.onDivide.faults(want, 1);
-    const double = new CalculatorStub(seat, CalculatorStub.delegateTo(inner));
-    const outcome = await settle(() => calculatorStubDivide(double));
-    const message = "divide fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new CalculatorStub(undefined);
+      let seen = 0;
+      double.onAdd.onRecord(() => {
+        seen += 1;
+      });
+      calculatorStubAdd(double);
+      calculatorStubAdd(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of add");
+    });
   });
 
-  test("passes reset to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new CalculatorStub(seat);
-    await settle(() => calculatorStubReset(new CalculatorStub(seat, CalculatorStub.delegateTo(inner))));
-    inner.onReset.assertCalledOnce(seat, "reset reaches the implementation");
+  describe("divide", () => {
+    const checks = behaviour("Calculator.divide", (seat) => {
+      const double = new CalculatorStub(seat);
+      return {
+        stub: double.onDivide,
+        call: () => calculatorStubDivide(double),
+        override: (mark) => {
+          double.onDivide.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new CalculatorStub(undefined);
+      calculatorStubDivide(double);
+      expect(double.onDivide.callCount).isEqualTo(1, "divide records the call");
+      const got = double.onDivide.calls[0];
+      const args = calculatorStubDivideArgs();
+      expect.soft(got?.a).isEqualTo(args[0], "the call records a");
+      expect.soft(got?.b).isEqualTo(args[1], "the call records b");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new CalculatorStub(undefined);
+      let seen = 0;
+      double.onDivide.onRecord(() => {
+        seen += 1;
+      });
+      calculatorStubDivide(double);
+      calculatorStubDivide(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of divide");
+    });
   });
 
-  test("fails reset with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("reset-delegate");
-    const inner = new CalculatorStub(seat);
-    inner.onReset.faults(want, 1);
-    const double = new CalculatorStub(seat, CalculatorStub.delegateTo(inner));
-    const outcome = await settle(() => calculatorStubReset(double));
-    const message = "reset fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("reset", () => {
+    const checks = behaviour("Calculator.reset", (seat) => {
+      const double = new CalculatorStub(seat);
+      return {
+        stub: double.onReset,
+        call: () => calculatorStubReset(double),
+        override: (mark) => {
+          double.onReset.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new CalculatorStub(undefined);
+      let seen = 0;
+      double.onReset.onRecord(() => {
+        seen += 1;
+      });
+      calculatorStubReset(double);
+      calculatorStubReset(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of reset");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => calculatorStubInstance(new CalculatorStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of add", async () => {
+      const double = new CalculatorStub(undefined);
+      calculatorStubAdd(double);
+      double.resetCalls();
+      expect(double.onAdd.callCount).isEqualTo(0, "resetCalls clears the calls of add");
+    });
+
+    it("keeps the result of returns of add", async () => {
+      const double = new CalculatorStub(undefined);
+      const want = calculatorStubAddPin();
+      double.onAdd.returns(want);
+      double.resetCalls();
+      expect(calculatorStubAdd(double)).isEqualTo(want, "resetCalls keeps the result of add");
+    });
+
+    it("clears the recorded calls of divide", async () => {
+      const double = new CalculatorStub(undefined);
+      calculatorStubDivide(double);
+      double.resetCalls();
+      expect(double.onDivide.callCount).isEqualTo(0, "resetCalls clears the calls of divide");
+    });
+
+    it("keeps the result of returns of divide", async () => {
+      const double = new CalculatorStub(undefined);
+      const want = calculatorStubDividePin();
+      double.onDivide.returns(want);
+      double.resetCalls();
+      expect(calculatorStubDivide(double)).isEqualTo(want, "resetCalls keeps the result of divide");
+    });
+
+    it("clears the recorded calls of reset", async () => {
+      const double = new CalculatorStub(undefined);
+      calculatorStubReset(double);
+      double.resetCalls();
+      expect(double.onReset.callCount).isEqualTo(0, "resetCalls clears the calls of reset");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => calculatorStubInstance(CalculatorStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails add with its error", async () => {
+      const want = new Error("add-failing");
+      const double = CalculatorStub.newFailing(undefined, want);
+      const outcome = await settle(() => calculatorStubAdd(double));
+      const message = "add fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails divide with its error", async () => {
+      const want = new Error("divide-failing");
+      const double = CalculatorStub.newFailing(undefined, want);
+      const outcome = await settle(() => calculatorStubDivide(double));
+      const message = "divide fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails reset with its error", async () => {
+      const want = new Error("reset-failing");
+      const double = CalculatorStub.newFailing(undefined, want);
+      const outcome = await settle(() => calculatorStubReset(double));
+      const message = "reset fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => calculatorStubInstance(new CalculatorStub(seat, CalculatorStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes add to the implementation", async () => {
+      const inner = new CalculatorStub(undefined);
+      await settle(() => calculatorStubAdd(new CalculatorStub(undefined, CalculatorStub.delegateTo(inner))));
+      expect(inner.onAdd.callCount).isEqualTo(1, "add calls the implementation");
+    });
+
+    it("fails add with the error of the implementation", async () => {
+      const want = new Error("add-delegate");
+      const inner = new CalculatorStub(undefined);
+      inner.onAdd.faults(want, 1);
+      const double = new CalculatorStub(undefined, CalculatorStub.delegateTo(inner));
+      const outcome = await settle(() => calculatorStubAdd(double));
+      const message = "add fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes divide to the implementation", async () => {
+      const inner = new CalculatorStub(undefined);
+      await settle(() => calculatorStubDivide(new CalculatorStub(undefined, CalculatorStub.delegateTo(inner))));
+      expect(inner.onDivide.callCount).isEqualTo(1, "divide calls the implementation");
+    });
+
+    it("fails divide with the error of the implementation", async () => {
+      const want = new Error("divide-delegate");
+      const inner = new CalculatorStub(undefined);
+      inner.onDivide.faults(want, 1);
+      const double = new CalculatorStub(undefined, CalculatorStub.delegateTo(inner));
+      const outcome = await settle(() => calculatorStubDivide(double));
+      const message = "divide fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes reset to the implementation", async () => {
+      const inner = new CalculatorStub(undefined);
+      await settle(() => calculatorStubReset(new CalculatorStub(undefined, CalculatorStub.delegateTo(inner))));
+      expect(inner.onReset.callCount).isEqualTo(1, "reset calls the implementation");
+    });
+
+    it("fails reset with the error of the implementation", async () => {
+      const want = new Error("reset-delegate");
+      const inner = new CalculatorStub(undefined);
+      inner.onReset.faults(want, 1);
+      const double = new CalculatorStub(undefined, CalculatorStub.delegateTo(inner));
+      const outcome = await settle(() => calculatorStubReset(double));
+      const message = "reset fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => calculatorStubInstance(new CalculatorStub(seat, CalculatorStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      calculatorStubInstance(new CalculatorStub(seat, CalculatorStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => calculatorStubInstance(new CalculatorStub(seat, CalculatorStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        calculatorStubInstance(new CalculatorStub(seat, CalculatorStub.withClock(clock), CalculatorStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails add with its error", async () => {
+      const want = new Error("add-failing");
+      const double = new CalculatorStub(undefined, CalculatorStub.failing(want));
+      const outcome = await settle(() => calculatorStubAdd(double));
+      const message = "add fails with the error of CalculatorStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails divide with its error", async () => {
+      const want = new Error("divide-failing");
+      const double = new CalculatorStub(undefined, CalculatorStub.failing(want));
+      const outcome = await settle(() => calculatorStubDivide(double));
+      const message = "divide fails with the error of CalculatorStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails reset with its error", async () => {
+      const want = new Error("reset-failing");
+      const double = new CalculatorStub(undefined, CalculatorStub.failing(want));
+      const outcome = await settle(() => calculatorStubReset(double));
+      const message = "reset fails with the error of CalculatorStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withCalculatorAdd", () => {
+    it("sets the function of add", async () => {
+      let called = false;
+      const option = CalculatorStub.withCalculatorAdd(() => {
+        called = true;
+        return undefined as never;
+      });
+      calculatorStubAdd(new CalculatorStub(undefined, option));
+      expect(called).isTrue("withCalculatorAdd sets the function of add");
+    });
+  });
+
+  describe("withCalculatorDivide", () => {
+    it("sets the function of divide", async () => {
+      let called = false;
+      const option = CalculatorStub.withCalculatorDivide(() => {
+        called = true;
+        return undefined as never;
+      });
+      calculatorStubDivide(new CalculatorStub(undefined, option));
+      expect(called).isTrue("withCalculatorDivide sets the function of divide");
+    });
+  });
+
+  describe("withCalculatorReset", () => {
+    it("sets the function of reset", async () => {
+      let called = false;
+      const option = CalculatorStub.withCalculatorReset(() => {
+        called = true;
+        return undefined as never;
+      });
+      calculatorStubReset(new CalculatorStub(undefined, option));
+      expect(called).isTrue("withCalculatorReset sets the function of reset");
+    });
   });
 });
 
-// dokimi:provenance sha256:0b87a62cf30a49c3196e54a2415e15b4bab946691cc852799a53189063cb7092
+describe("CalculatorAddStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of add", async () => {
+      const double = new CalculatorStub(undefined);
+      const want = calculatorStubAddPin();
+      double.onAdd.returns(want);
+      expect(calculatorStubAdd(double)).isEqualTo(want, "add returns the result that returns sets");
+    });
+
+    it("configures add for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new CalculatorStub(failures);
+      double.onAdd.strict();
+      double.onAdd.returns(undefined as never);
+      await settle(() => calculatorStubAdd(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of add");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of add to the function", async () => {
+      const double = new CalculatorStub(undefined);
+      let got: unknown[] = [];
+      double.onAdd.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      calculatorStubAdd(double);
+      const args = calculatorStubAddArgs();
+      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("CalculatorDivideStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of divide", async () => {
+      const double = new CalculatorStub(undefined);
+      const want = calculatorStubDividePin();
+      double.onDivide.returns(want);
+      expect(calculatorStubDivide(double)).isEqualTo(want, "divide returns the result that returns sets");
+    });
+
+    it("configures divide for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new CalculatorStub(failures);
+      double.onDivide.strict();
+      double.onDivide.returns(undefined as never);
+      await settle(() => calculatorStubDivide(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of divide");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of divide to the function", async () => {
+      const double = new CalculatorStub(undefined);
+      let got: unknown[] = [];
+      double.onDivide.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      calculatorStubDivide(double);
+      const args = calculatorStubDivideArgs();
+      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:99d18ac51a1ad5174a5d45123bdccce5243af0d6820fdeea4a7801eeb57f3d84

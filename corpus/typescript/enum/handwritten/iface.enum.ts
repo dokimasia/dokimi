@@ -2,13 +2,11 @@
 // dokimi:plugin enum
 // dokimi:source enum/handwritten/iface.ts
 
-import { Weekday } from './iface';
+import { Weekday } from "./iface";
 
 /**
  * isWeekday reports whether value is a declared variant of Weekday.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isWeekday(value: unknown): value is Weekday {
   switch (value) {
@@ -20,4 +18,4 @@ export function isWeekday(value: unknown): value is Weekday {
   return false;
 }
 
-// dokimi:provenance sha256:4189b9950a8e2855d2c93e00a0a2e8801b3a05a7b0a3795e65de9ea605c932bc
+// dokimi:provenance sha256:9f9d5471dc6732ad4cd1e136aedc12ec7d4569e595db70425ff114f8bd708527

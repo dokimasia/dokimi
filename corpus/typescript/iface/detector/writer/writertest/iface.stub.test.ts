@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/writer/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { WriterStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { WriterStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of put, or undefined. */
+/** Returns the samples of the arguments of put. An argument without a sample is undefined. */
 function writerStubPutArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -23,97 +22,192 @@ function writerStubPut(double: WriterStub): Promise<void> {
   return double.put(args[0]);
 }
 
-describe("WriterStub.put", () => {
-  const checks = behaviour("Writer.put", (seat) => {
-    const double = new WriterStub(seat);
-    return {
-      stub: double.onPut,
-      call: () => writerStubPut(double),
-      override: (mark) => {
-        double.onPut.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new WriterStub(seat);
-    await writerStubPut(double);
-    const got = double.onPut.assertCalledOnce(seat, "put records the call");
-    const args = writerStubPutArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new WriterStub(seat);
-    let seen = 0;
-    double.onPut.onRecord(() => {
-      seen += 1;
-    });
-    await writerStubPut(double);
-    await writerStubPut(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of put");
-  });
-
-  test("sets the function of withWriterPut at construction", async ({ seat }) => {
-    let called = false;
-    const option = WriterStub.withWriterPut(() => {
-      called = true;
-      return undefined as never;
-    });
-    await writerStubPut(new WriterStub(seat, option));
-    check.isTrue(seat, called, "withWriterPut sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("put-failing");
-    const double = WriterStub.newFailing(seat, want);
-    const outcome = await settle(() => writerStubPut(double));
-    const message = "put fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("WriterStub", () => {
-  const instance = (double: WriterStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * put alone.
+ */
+function writerStubInstance(double: WriterStub) {
+  return {
     stub: double.onPut,
     call: () => writerStubPut(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new WriterStub(seat)),
-    withClock: (seat, clock) => instance(new WriterStub(seat, WriterStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(WriterStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new WriterStub(seat, WriterStub.withRandSource(random))),
-    benchMode: (seat) => instance(new WriterStub(seat, WriterStub.benchMode())),
-    strict: (seat) => instance(new WriterStub(seat, WriterStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes put to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new WriterStub(seat);
-    await settle(() => writerStubPut(new WriterStub(seat, WriterStub.delegateTo(inner))));
-    inner.onPut.assertCalledOnce(seat, "put reaches the implementation");
+describe("WriterStub", () => {
+  describe("put", () => {
+    const checks = behaviour("Writer.put", (seat) => {
+      const double = new WriterStub(seat);
+      return {
+        stub: double.onPut,
+        call: () => writerStubPut(double),
+        override: (mark) => {
+          double.onPut.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new WriterStub(undefined);
+      await writerStubPut(double);
+      expect(double.onPut.callCount).isEqualTo(1, "put records the call");
+      const got = double.onPut.calls[0];
+      const args = writerStubPutArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new WriterStub(undefined);
+      let seen = 0;
+      double.onPut.onRecord(() => {
+        seen += 1;
+      });
+      await writerStubPut(double);
+      await writerStubPut(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of put");
+    });
   });
 
-  test("fails put with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("put-delegate");
-    const inner = new WriterStub(seat);
-    inner.onPut.faults(want, 1);
-    const double = new WriterStub(seat, WriterStub.delegateTo(inner));
-    const outcome = await settle(() => writerStubPut(double));
-    const message = "put fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => writerStubInstance(new WriterStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of put", async () => {
+      const double = new WriterStub(undefined);
+      await writerStubPut(double);
+      double.resetCalls();
+      expect(double.onPut.callCount).isEqualTo(0, "resetCalls clears the calls of put");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => writerStubInstance(WriterStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = WriterStub.newFailing(undefined, want);
+      const outcome = await settle(() => writerStubPut(double));
+      const message = "put fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => writerStubInstance(new WriterStub(seat, WriterStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes put to the implementation", async () => {
+      const inner = new WriterStub(undefined);
+      await settle(() => writerStubPut(new WriterStub(undefined, WriterStub.delegateTo(inner))));
+      expect(inner.onPut.callCount).isEqualTo(1, "put calls the implementation");
+    });
+
+    it("fails put with the error of the implementation", async () => {
+      const want = new Error("put-delegate");
+      const inner = new WriterStub(undefined);
+      inner.onPut.faults(want, 1);
+      const double = new WriterStub(undefined, WriterStub.delegateTo(inner));
+      const outcome = await settle(() => writerStubPut(double));
+      const message = "put fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => writerStubInstance(new WriterStub(seat, WriterStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      writerStubInstance(new WriterStub(seat, WriterStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => writerStubInstance(new WriterStub(seat, WriterStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        writerStubInstance(new WriterStub(seat, WriterStub.withClock(clock), WriterStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = new WriterStub(undefined, WriterStub.failing(want));
+      const outcome = await settle(() => writerStubPut(double));
+      const message = "put fails with the error of WriterStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withWriterPut", () => {
+    it("sets the function of put", async () => {
+      let called = false;
+      const option = WriterStub.withWriterPut(() => {
+        called = true;
+        return undefined as never;
+      });
+      await writerStubPut(new WriterStub(undefined, option));
+      expect(called).isTrue("withWriterPut sets the function of put");
+    });
   });
 });
 
-// dokimi:provenance sha256:4c820f544e36a6a43e53e6e742a8b34ea957579eaa2949b7af0daadf0be82d37
+describe("WriterPutStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of put to the function", async () => {
+      const double = new WriterStub(undefined);
+      let got: unknown[] = [];
+      double.onPut.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await writerStubPut(double);
+      const args = writerStubPutArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:d00cecd6fb248adb9db8f8bd7b736f016c26eeb1d233f90df421d9844a199a7d

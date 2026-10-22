@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/mutator/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MutatorStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MutatorStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of touch, or undefined. */
+/** Returns the samples of the arguments of touch. An argument without a sample is undefined. */
 function mutatorStubTouchArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'touch-a';
+  a0 = "touch-a";
   return [a0];
 }
 
@@ -22,97 +21,192 @@ function mutatorStubTouch(double: MutatorStub): Promise<void> {
   return double.touch(args[0]);
 }
 
-describe("MutatorStub.touch", () => {
-  const checks = behaviour("Mutator.touch", (seat) => {
-    const double = new MutatorStub(seat);
-    return {
-      stub: double.onTouch,
-      call: () => mutatorStubTouch(double),
-      override: (mark) => {
-        double.onTouch.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MutatorStub(seat);
-    await mutatorStubTouch(double);
-    const got = double.onTouch.assertCalledOnce(seat, "touch records the call");
-    const args = mutatorStubTouchArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MutatorStub(seat);
-    let seen = 0;
-    double.onTouch.onRecord(() => {
-      seen += 1;
-    });
-    await mutatorStubTouch(double);
-    await mutatorStubTouch(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of touch");
-  });
-
-  test("sets the function of withMutatorTouch at construction", async ({ seat }) => {
-    let called = false;
-    const option = MutatorStub.withMutatorTouch(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mutatorStubTouch(new MutatorStub(seat, option));
-    check.isTrue(seat, called, "withMutatorTouch sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("touch-failing");
-    const double = MutatorStub.newFailing(seat, want);
-    const outcome = await settle(() => mutatorStubTouch(double));
-    const message = "touch fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MutatorStub", () => {
-  const instance = (double: MutatorStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * touch alone.
+ */
+function mutatorStubInstance(double: MutatorStub) {
+  return {
     stub: double.onTouch,
     call: () => mutatorStubTouch(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MutatorStub(seat)),
-    withClock: (seat, clock) => instance(new MutatorStub(seat, MutatorStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MutatorStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MutatorStub(seat, MutatorStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MutatorStub(seat, MutatorStub.benchMode())),
-    strict: (seat) => instance(new MutatorStub(seat, MutatorStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes touch to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MutatorStub(seat);
-    await settle(() => mutatorStubTouch(new MutatorStub(seat, MutatorStub.delegateTo(inner))));
-    inner.onTouch.assertCalledOnce(seat, "touch reaches the implementation");
+describe("MutatorStub", () => {
+  describe("touch", () => {
+    const checks = behaviour("Mutator.touch", (seat) => {
+      const double = new MutatorStub(seat);
+      return {
+        stub: double.onTouch,
+        call: () => mutatorStubTouch(double),
+        override: (mark) => {
+          double.onTouch.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MutatorStub(undefined);
+      await mutatorStubTouch(double);
+      expect(double.onTouch.callCount).isEqualTo(1, "touch records the call");
+      const got = double.onTouch.calls[0];
+      const args = mutatorStubTouchArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MutatorStub(undefined);
+      let seen = 0;
+      double.onTouch.onRecord(() => {
+        seen += 1;
+      });
+      await mutatorStubTouch(double);
+      await mutatorStubTouch(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of touch");
+    });
   });
 
-  test("fails touch with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("touch-delegate");
-    const inner = new MutatorStub(seat);
-    inner.onTouch.faults(want, 1);
-    const double = new MutatorStub(seat, MutatorStub.delegateTo(inner));
-    const outcome = await settle(() => mutatorStubTouch(double));
-    const message = "touch fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mutatorStubInstance(new MutatorStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of touch", async () => {
+      const double = new MutatorStub(undefined);
+      await mutatorStubTouch(double);
+      double.resetCalls();
+      expect(double.onTouch.callCount).isEqualTo(0, "resetCalls clears the calls of touch");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mutatorStubInstance(MutatorStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails touch with its error", async () => {
+      const want = new Error("touch-failing");
+      const double = MutatorStub.newFailing(undefined, want);
+      const outcome = await settle(() => mutatorStubTouch(double));
+      const message = "touch fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mutatorStubInstance(new MutatorStub(seat, MutatorStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes touch to the implementation", async () => {
+      const inner = new MutatorStub(undefined);
+      await settle(() => mutatorStubTouch(new MutatorStub(undefined, MutatorStub.delegateTo(inner))));
+      expect(inner.onTouch.callCount).isEqualTo(1, "touch calls the implementation");
+    });
+
+    it("fails touch with the error of the implementation", async () => {
+      const want = new Error("touch-delegate");
+      const inner = new MutatorStub(undefined);
+      inner.onTouch.faults(want, 1);
+      const double = new MutatorStub(undefined, MutatorStub.delegateTo(inner));
+      const outcome = await settle(() => mutatorStubTouch(double));
+      const message = "touch fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mutatorStubInstance(new MutatorStub(seat, MutatorStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mutatorStubInstance(new MutatorStub(seat, MutatorStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mutatorStubInstance(new MutatorStub(seat, MutatorStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mutatorStubInstance(new MutatorStub(seat, MutatorStub.withClock(clock), MutatorStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails touch with its error", async () => {
+      const want = new Error("touch-failing");
+      const double = new MutatorStub(undefined, MutatorStub.failing(want));
+      const outcome = await settle(() => mutatorStubTouch(double));
+      const message = "touch fails with the error of MutatorStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMutatorTouch", () => {
+    it("sets the function of touch", async () => {
+      let called = false;
+      const option = MutatorStub.withMutatorTouch(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mutatorStubTouch(new MutatorStub(undefined, option));
+      expect(called).isTrue("withMutatorTouch sets the function of touch");
+    });
   });
 });
 
-// dokimi:provenance sha256:1f04624dd0321380dd71abcf9754a2a50dc3451997c60b380b05e7508ae9989d
+describe("MutatorTouchStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of touch to the function", async () => {
+      const double = new MutatorStub(undefined);
+      let got: unknown[] = [];
+      double.onTouch.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await mutatorStubTouch(double);
+      const args = mutatorStubTouchArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:850764605e0a01a7ac40b6d82e7d6bad7feda965d47cea586e1a86562044fc3b

@@ -2,23 +2,13 @@
 // dokimi:plugin builder
 // dokimi:source struct/crosspkg/iface.ts
 
-import { Config, configDefaults, region, retries } from '../../seed/seed';
-import { type Mirrored, Settings, type Shorthand } from '../iface';
+import { Config, configDefaults, region, retries } from "../../seed/seed";
+import { type Mirrored, Settings, type Shorthand } from "../iface";
 
 /**
- * SettingsBuilder constructs Settings values.
- *
- * Start with SettingsBuilder.create or SettingsBuilder.from, set what you
- * care about, and call build.
- *
- * The point is what you do not have to write. An object literal restates
- * every member each time, so a member added to Settings breaks every
- * literal at once and a reader cannot tell which members a given call site
- * actually cares about. Here the constructor supplies the rest, and each
- * call states only what it varies.
- *
- * Every setter returns the builder, so calls chain. clone is how one
- * builder becomes two.
+ * SettingsBuilder constructs Settings values. SettingsBuilder.create and
+ * SettingsBuilder.from return a new builder. Each setter sets one member
+ * and returns the builder, so the calls chain. build returns the value.
  */
 export class SettingsBuilder {
   private readonly v: Settings;
@@ -28,12 +18,8 @@ export class SettingsBuilder {
   }
 
   /**
-   * create returns a builder seeded with the declared defaults.
-   *
-   * Only the members that declare one. Everything else holds the value that
-   * a new Settings has, so a caller that sets nothing gets a mixture
-   * rather than either extreme — which is what makes a check against a built
-   * value worth writing.
+   * create returns a builder of the declared defaults. A member without a
+   * declared default has the value of a new Settings.
    */
   static create(): SettingsBuilder {
     const v = new Settings();
@@ -43,74 +29,38 @@ export class SettingsBuilder {
     return new SettingsBuilder(v);
   }
 
-  /**
-   * from returns a builder seeded with a copy of value.
-   *
-   * For the case where a caller already holds a value and wants one member
-   * different — a round trip, a near-copy, a regression fixture built from
-   * something a previous step produced.
-   */
+  /** from returns a builder of a copy of value. */
   static from(value: Settings): SettingsBuilder {
     return new SettingsBuilder(Object.assign(new Settings(), value));
   }
 
-  /**
-   * withRetries replaces retries.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRetries replaces retries with value. */
   withRetries(value: number): this {
     this.v.retries = value;
     return this;
   }
 
-  /**
-   * withRegion replaces region.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRegion replaces region with value. */
   withRegion(value: string): this {
     this.v.region = value;
     return this;
   }
 
-  /**
-   * withZone replaces zone.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withZone replaces zone with value. */
   withZone(value: string): this {
     this.v.zone = value;
     return this;
   }
 
-  /**
-   * withDeadline replaces deadline.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withDeadline replaces deadline with value. */
   withDeadline(value: Date): this {
     this.v.deadline = value;
     return this;
   }
 
   /**
-   * mutate applies fn to the value under construction.
-   *
-   * The way out for what the setters do not reach: a member this builder
-   * cannot name, a shape it does not model, or a change that touches several
-   * members at once and only makes sense as one edit.
-   *
-   * Prefer a setter where one exists. A setter says which member it writes,
-   * and a reader of the call site learns that without following a closure.
+   * mutate applies fn to the value under construction. It changes what no
+   * setter changes, such as several members in one step.
    */
   mutate(fn: (value: Settings) => void): this {
     fn(this.v);
@@ -118,14 +68,10 @@ export class SettingsBuilder {
   }
 
   /**
-   * clone returns a builder that can be configured without affecting this
-   * one.
-   *
-   * One level deep, and the boundary matters. The array, byte-array and keyed
-   * members are copied, so writing through one clone is not visible through
-   * another. What is shared is anything held inside those, and every other
-   * member that refers to an object. Use mutate to replace such a member
-   * outright rather than editing it in place.
+   * clone returns a builder of a copy of the value under construction. The
+   * copy has its own arrays, maps, sets and byte arrays, so a change of one
+   * builder leaves the other unchanged. The two builders share the elements of
+   * those members and every other member that refers to an object.
    */
   clone(): SettingsBuilder {
     const out = new SettingsBuilder(Object.assign(new Settings(), this.v));
@@ -133,14 +79,10 @@ export class SettingsBuilder {
   }
 
   /**
-   * build returns the constructed Settings.
-   *
-   * The builder stays usable afterwards, and a second call returns the value
-   * as it stands then — so a caller may build, set one more member, and
-   * build again. What it returns is a shallow copy of the value under
-   * construction: a member holding an array, a map or a set is shared with
-   * the builder and with every value built from it, and clone is what
-   * separates them.
+   * build returns a shallow copy of the value under construction. The builder
+   * stays usable, and a later call returns the value with the changes since.
+   * The copy shares its arrays, maps and sets with the builder, and clone
+   * returns a builder that shares none of them.
    */
   build(): Settings {
     return Object.assign(new Settings(), this.v);
@@ -148,19 +90,9 @@ export class SettingsBuilder {
 }
 
 /**
- * MirroredBuilder constructs Mirrored values.
- *
- * Start with MirroredBuilder.create or MirroredBuilder.from, set what you
- * care about, and call build.
- *
- * The point is what you do not have to write. An object literal restates
- * every member each time, so a member added to Mirrored breaks every
- * literal at once and a reader cannot tell which members a given call site
- * actually cares about. Here the constructor supplies the rest, and each
- * call states only what it varies.
- *
- * Every setter returns the builder, so calls chain. clone is how one
- * builder becomes two.
+ * MirroredBuilder constructs Mirrored values. MirroredBuilder.create and
+ * MirroredBuilder.from return a new builder. Each setter sets one member
+ * and returns the builder, so the calls chain. build returns the value.
  */
 export class MirroredBuilder {
   private readonly v: Mirrored;
@@ -170,75 +102,40 @@ export class MirroredBuilder {
   }
 
   /**
-   * create returns a builder seeded from the module's companion, with any
-   * declared per-member default applied over it.
-   *
-   * Two layers, in that order: whatever the companion supplies, then each
-   * member that declares its own default. A member the companion sets and
-   * the declaration does not keeps the companion's value, so the two sources
-   * compose rather than one replacing the other.
+   * create returns a builder of the value that the companion function
+   * returns. The declared default of each member applies over that value.
    */
   static create(): MirroredBuilder {
     const v = configDefaults();
     return new MirroredBuilder(v);
   }
 
-  /**
-   * from returns a builder seeded with a copy of value.
-   *
-   * For the case where a caller already holds a value and wants one member
-   * different — a round trip, a near-copy, a regression fixture built from
-   * something a previous step produced.
-   */
+  /** from returns a builder of a copy of value. */
   static from(value: Mirrored): MirroredBuilder {
     return new MirroredBuilder(Object.assign(new Config(), value));
   }
 
-  /**
-   * withRegion replaces region.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRegion replaces region with value. */
   withRegion(value: string): this {
     this.v.region = value;
     return this;
   }
 
-  /**
-   * withRetries replaces retries.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRetries replaces retries with value. */
   withRetries(value: number): this {
     this.v.retries = value;
     return this;
   }
 
-  /**
-   * withLabel replaces label.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withLabel replaces label with value. */
   withLabel(value: string): this {
     this.v.label = value;
     return this;
   }
 
   /**
-   * mutate applies fn to the value under construction.
-   *
-   * The way out for what the setters do not reach: a member this builder
-   * cannot name, a shape it does not model, or a change that touches several
-   * members at once and only makes sense as one edit.
-   *
-   * Prefer a setter where one exists. A setter says which member it writes,
-   * and a reader of the call site learns that without following a closure.
+   * mutate applies fn to the value under construction. It changes what no
+   * setter changes, such as several members in one step.
    */
   mutate(fn: (value: Mirrored) => void): this {
     fn(this.v);
@@ -246,14 +143,10 @@ export class MirroredBuilder {
   }
 
   /**
-   * clone returns a builder that can be configured without affecting this
-   * one.
-   *
-   * One level deep, and the boundary matters. The array, byte-array and keyed
-   * members are copied, so writing through one clone is not visible through
-   * another. What is shared is anything held inside those, and every other
-   * member that refers to an object. Use mutate to replace such a member
-   * outright rather than editing it in place.
+   * clone returns a builder of a copy of the value under construction. The
+   * copy has its own arrays, maps, sets and byte arrays, so a change of one
+   * builder leaves the other unchanged. The two builders share the elements of
+   * those members and every other member that refers to an object.
    */
   clone(): MirroredBuilder {
     const out = new MirroredBuilder(Object.assign(new Config(), this.v));
@@ -261,14 +154,10 @@ export class MirroredBuilder {
   }
 
   /**
-   * build returns the constructed Mirrored.
-   *
-   * The builder stays usable afterwards, and a second call returns the value
-   * as it stands then — so a caller may build, set one more member, and
-   * build again. What it returns is a shallow copy of the value under
-   * construction: a member holding an array, a map or a set is shared with
-   * the builder and with every value built from it, and clone is what
-   * separates them.
+   * build returns a shallow copy of the value under construction. The builder
+   * stays usable, and a later call returns the value with the changes since.
+   * The copy shares its arrays, maps and sets with the builder, and clone
+   * returns a builder that shares none of them.
    */
   build(): Mirrored {
     return Object.assign(new Config(), this.v);
@@ -276,19 +165,10 @@ export class MirroredBuilder {
 }
 
 /**
- * ShorthandBuilder constructs Shorthand values.
- *
- * Start with ShorthandBuilder.create or ShorthandBuilder.from, set what
- * you care about, and call build.
- *
- * The point is what you do not have to write. An object literal restates
- * every member each time, so a member added to Shorthand breaks every
- * literal at once and a reader cannot tell which members a given call site
- * actually cares about. Here the constructor supplies the rest, and each
- * call states only what it varies.
- *
- * Every setter returns the builder, so calls chain. clone is how one
- * builder becomes two.
+ * ShorthandBuilder constructs Shorthand values. ShorthandBuilder.create
+ * and ShorthandBuilder.from return a new builder. Each setter sets one
+ * member and returns the builder, so the calls chain. build returns the
+ * value.
  */
 export class ShorthandBuilder {
   private readonly v: Shorthand;
@@ -298,75 +178,40 @@ export class ShorthandBuilder {
   }
 
   /**
-   * create returns a builder seeded from the module's companion, with any
-   * declared per-member default applied over it.
-   *
-   * Two layers, in that order: whatever the companion supplies, then each
-   * member that declares its own default. A member the companion sets and
-   * the declaration does not keeps the companion's value, so the two sources
-   * compose rather than one replacing the other.
+   * create returns a builder of the value that the companion function
+   * returns. The declared default of each member applies over that value.
    */
   static create(): ShorthandBuilder {
     const v = configDefaults();
     return new ShorthandBuilder(v);
   }
 
-  /**
-   * from returns a builder seeded with a copy of value.
-   *
-   * For the case where a caller already holds a value and wants one member
-   * different — a round trip, a near-copy, a regression fixture built from
-   * something a previous step produced.
-   */
+  /** from returns a builder of a copy of value. */
   static from(value: Shorthand): ShorthandBuilder {
     return new ShorthandBuilder(Object.assign(new Config(), value));
   }
 
-  /**
-   * withRegion replaces region.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRegion replaces region with value. */
   withRegion(value: string): this {
     this.v.region = value;
     return this;
   }
 
-  /**
-   * withRetries replaces retries.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRetries replaces retries with value. */
   withRetries(value: number): this {
     this.v.retries = value;
     return this;
   }
 
-  /**
-   * withLabel replaces label.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withLabel replaces label with value. */
   withLabel(value: string): this {
     this.v.label = value;
     return this;
   }
 
   /**
-   * mutate applies fn to the value under construction.
-   *
-   * The way out for what the setters do not reach: a member this builder
-   * cannot name, a shape it does not model, or a change that touches several
-   * members at once and only makes sense as one edit.
-   *
-   * Prefer a setter where one exists. A setter says which member it writes,
-   * and a reader of the call site learns that without following a closure.
+   * mutate applies fn to the value under construction. It changes what no
+   * setter changes, such as several members in one step.
    */
   mutate(fn: (value: Shorthand) => void): this {
     fn(this.v);
@@ -374,14 +219,10 @@ export class ShorthandBuilder {
   }
 
   /**
-   * clone returns a builder that can be configured without affecting this
-   * one.
-   *
-   * One level deep, and the boundary matters. The array, byte-array and keyed
-   * members are copied, so writing through one clone is not visible through
-   * another. What is shared is anything held inside those, and every other
-   * member that refers to an object. Use mutate to replace such a member
-   * outright rather than editing it in place.
+   * clone returns a builder of a copy of the value under construction. The
+   * copy has its own arrays, maps, sets and byte arrays, so a change of one
+   * builder leaves the other unchanged. The two builders share the elements of
+   * those members and every other member that refers to an object.
    */
   clone(): ShorthandBuilder {
     const out = new ShorthandBuilder(Object.assign(new Config(), this.v));
@@ -389,18 +230,14 @@ export class ShorthandBuilder {
   }
 
   /**
-   * build returns the constructed Shorthand.
-   *
-   * The builder stays usable afterwards, and a second call returns the value
-   * as it stands then — so a caller may build, set one more member, and
-   * build again. What it returns is a shallow copy of the value under
-   * construction: a member holding an array, a map or a set is shared with
-   * the builder and with every value built from it, and clone is what
-   * separates them.
+   * build returns a shallow copy of the value under construction. The builder
+   * stays usable, and a later call returns the value with the changes since.
+   * The copy shares its arrays, maps and sets with the builder, and clone
+   * returns a builder that shares none of them.
    */
   build(): Shorthand {
     return Object.assign(new Config(), this.v);
   }
 }
 
-// dokimi:provenance sha256:0ca2704f435f0f1edf60f6d1ade7b838c4b4f65dfccd0721bfa44ee2f01d7d94
+// dokimi:provenance sha256:2c2b2babe1dfdd0244a34dfbe6debbb3db9f11386021389b13662a2a603e65fe

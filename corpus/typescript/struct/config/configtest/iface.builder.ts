@@ -2,22 +2,12 @@
 // dokimi:plugin builder
 // dokimi:source struct/config/iface.ts
 
-import { Config } from '../iface';
+import { Config } from "../iface";
 
 /**
- * ConfigBuilder constructs Config values.
- *
- * Start with ConfigBuilder.create or ConfigBuilder.from, set what you care
- * about, and call build.
- *
- * The point is what you do not have to write. An object literal restates
- * every member each time, so a member added to Config breaks every literal
- * at once and a reader cannot tell which members a given call site
- * actually cares about. Here the constructor supplies the rest, and each
- * call states only what it varies.
- *
- * Every setter returns the builder, so calls chain. clone is how one
- * builder becomes two.
+ * ConfigBuilder constructs Config values. ConfigBuilder.create and
+ * ConfigBuilder.from return a new builder. Each setter sets one member and
+ * returns the builder, so the calls chain. build returns the value.
  */
 export class ConfigBuilder {
   private readonly v: Config;
@@ -27,126 +17,70 @@ export class ConfigBuilder {
   }
 
   /**
-   * create returns a builder seeded with the declared defaults.
-   *
-   * Only the members that declare one. Everything else holds the value that
-   * a new Config has, so a caller that sets nothing gets a mixture
-   * rather than either extreme — which is what makes a check against a built
-   * value worth writing.
+   * create returns a builder of the declared defaults. A member without a
+   * declared default has the value of a new Config.
    */
   static create(): ConfigBuilder {
     const v = new Config();
-    v.host = 'localhost';
+    v.host = "localhost";
     v.port = 8080;
     v.verbose = true;
     v.ratio = 0.75;
     v.retries = 0;
-    v.fallback = 'undefined';
+    v.fallback = "undefined";
     return new ConfigBuilder(v);
   }
 
-  /**
-   * from returns a builder seeded with a copy of value.
-   *
-   * For the case where a caller already holds a value and wants one member
-   * different — a round trip, a near-copy, a regression fixture built from
-   * something a previous step produced.
-   */
+  /** from returns a builder of a copy of value. */
   static from(value: Config): ConfigBuilder {
     return new ConfigBuilder(Object.assign(new Config(), value));
   }
 
-  /**
-   * withHost replaces host.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withHost replaces host with value. */
   withHost(value: string): this {
     this.v.host = value;
     return this;
   }
 
-  /**
-   * withPort replaces port.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withPort replaces port with value. */
   withPort(value: number): this {
     this.v.port = value;
     return this;
   }
 
-  /**
-   * withVerbose replaces verbose.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withVerbose replaces verbose with value. */
   withVerbose(value: boolean): this {
     this.v.verbose = value;
     return this;
   }
 
-  /**
-   * withRatio replaces ratio.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRatio replaces ratio with value. */
   withRatio(value: number): this {
     this.v.ratio = value;
     return this;
   }
 
-  /**
-   * withRetries replaces retries.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withRetries replaces retries with value. */
   withRetries(value: number): this {
     this.v.retries = value;
     return this;
   }
 
-  /**
-   * withFallback replaces fallback.
-   *
-   * Use mutate to clear the member.
-   */
+  /** withFallback replaces fallback with value. mutate can set fallback to undefined. */
   withFallback(value: string): this {
     this.v.fallback = value;
     return this;
   }
 
-  /**
-   * withUndirected replaces undirected.
-   *
-   * The later call wins: a setter overwrites rather than merges, so a caller
-   * building from a constructor that seeded this member states only what it
-   * varies.
-   */
+  /** withUndirected replaces undirected with value. */
   withUndirected(value: string): this {
     this.v.undirected = value;
     return this;
   }
 
   /**
-   * mutate applies fn to the value under construction.
-   *
-   * The way out for what the setters do not reach: a member this builder
-   * cannot name, a shape it does not model, or a change that touches several
-   * members at once and only makes sense as one edit.
-   *
-   * Prefer a setter where one exists. A setter says which member it writes,
-   * and a reader of the call site learns that without following a closure.
+   * mutate applies fn to the value under construction. It changes what no
+   * setter changes, such as several members in one step.
    */
   mutate(fn: (value: Config) => void): this {
     fn(this.v);
@@ -154,14 +88,10 @@ export class ConfigBuilder {
   }
 
   /**
-   * clone returns a builder that can be configured without affecting this
-   * one.
-   *
-   * One level deep, and the boundary matters. The array, byte-array and keyed
-   * members are copied, so writing through one clone is not visible through
-   * another. What is shared is anything held inside those, and every other
-   * member that refers to an object. Use mutate to replace such a member
-   * outright rather than editing it in place.
+   * clone returns a builder of a copy of the value under construction. The
+   * copy has its own arrays, maps, sets and byte arrays, so a change of one
+   * builder leaves the other unchanged. The two builders share the elements of
+   * those members and every other member that refers to an object.
    */
   clone(): ConfigBuilder {
     const out = new ConfigBuilder(Object.assign(new Config(), this.v));
@@ -169,18 +99,14 @@ export class ConfigBuilder {
   }
 
   /**
-   * build returns the constructed Config.
-   *
-   * The builder stays usable afterwards, and a second call returns the value
-   * as it stands then — so a caller may build, set one more member, and
-   * build again. What it returns is a shallow copy of the value under
-   * construction: a member holding an array, a map or a set is shared with
-   * the builder and with every value built from it, and clone is what
-   * separates them.
+   * build returns a shallow copy of the value under construction. The builder
+   * stays usable, and a later call returns the value with the changes since.
+   * The copy shares its arrays, maps and sets with the builder, and clone
+   * returns a builder that shares none of them.
    */
   build(): Config {
     return Object.assign(new Config(), this.v);
   }
 }
 
-// dokimi:provenance sha256:ed5ff603be5c288844c2b6c1f2a1a0ab54cc1bdfef0c761ecfa20f6de08fed55
+// dokimi:provenance sha256:8abcbabefd22cb60f29b69def58c6ff25d09569a408e3f37b909fce2e809f379

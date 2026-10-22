@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/tamperevident/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { MixedStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { MixedStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of store, or undefined. */
+/** Returns the samples of the arguments of store. An argument without a sample is undefined. */
 function mixedStubStoreArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'store-a';
+  a0 = "store-a";
   return [a0];
 }
 
@@ -32,237 +31,354 @@ function mixedStubVerify(double: MixedStub): Promise<void> {
   return double.verify();
 }
 
-describe("MixedStub.store", () => {
-  const checks = behaviour("Mixed.store", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onStore,
-      call: () => mixedStubStore(double),
-      override: (mark) => {
-        double.onStore.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubStore(double);
-    const got = double.onStore.assertCalledOnce(seat, "store records the call");
-    const args = mixedStubStoreArgs();
-    check.equal(seat, got?.body, args[0], "the call records body");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onStore.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubStore(double);
-    await mixedStubStore(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of store");
-  });
-
-  test("sets the function of withMixedStore at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedStore(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubStore(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedStore sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("store-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubStore(double));
-    const message = "store fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub.corrupt", () => {
-  const checks = behaviour("Mixed.corrupt", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onCorrupt,
-      call: () => mixedStubCorrupt(double),
-      override: (mark) => {
-        double.onCorrupt.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubCorrupt(double);
-    double.onCorrupt.assertCalledOnce(seat, "corrupt records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onCorrupt.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubCorrupt(double);
-    await mixedStubCorrupt(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of corrupt");
-  });
-
-  test("sets the function of withMixedCorrupt at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedCorrupt(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubCorrupt(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedCorrupt sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("corrupt-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubCorrupt(double));
-    const message = "corrupt fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub.verify", () => {
-  const checks = behaviour("Mixed.verify", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onVerify,
-      call: () => mixedStubVerify(double),
-      override: (mark) => {
-        double.onVerify.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubVerify(double);
-    double.onVerify.assertCalledOnce(seat, "verify records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onVerify.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubVerify(double);
-    await mixedStubVerify(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of verify");
-  });
-
-  test("sets the function of withMixedVerify at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedVerify(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubVerify(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedVerify sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("verify-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubVerify(double));
-    const message = "verify fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub", () => {
-  const instance = (double: MixedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * store alone.
+ */
+function mixedStubInstance(double: MixedStub) {
+  return {
     stub: double.onStore,
     call: () => mixedStubStore(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MixedStub(seat)),
-    withClock: (seat, clock) => instance(new MixedStub(seat, MixedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MixedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MixedStub(seat, MixedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MixedStub(seat, MixedStub.benchMode())),
-    strict: (seat) => instance(new MixedStub(seat, MixedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes store to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubStore(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onStore.assertCalledOnce(seat, "store reaches the implementation");
-  });
+describe("MixedStub", () => {
+  describe("store", () => {
+    const checks = behaviour("Mixed.store", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onStore,
+        call: () => mixedStubStore(double),
+        override: (mark) => {
+          double.onStore.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails store with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("store-delegate");
-    const inner = new MixedStub(seat);
-    inner.onStore.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubStore(double));
-    const message = "store fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubStore(double);
+      expect(double.onStore.callCount).isEqualTo(1, "store records the call");
+      const got = double.onStore.calls[0];
+      const args = mixedStubStoreArgs();
+      expect(got?.body).isEqualTo(args[0], "the call records body");
+    });
 
-  test("passes corrupt to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubCorrupt(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onCorrupt.assertCalledOnce(seat, "corrupt reaches the implementation");
-  });
-
-  test("fails corrupt with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("corrupt-delegate");
-    const inner = new MixedStub(seat);
-    inner.onCorrupt.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubCorrupt(double));
-    const message = "corrupt fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onStore.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubStore(double);
+      await mixedStubStore(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of store");
+    });
   });
 
-  test("passes verify to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubVerify(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onVerify.assertCalledOnce(seat, "verify reaches the implementation");
+  describe("corrupt", () => {
+    const checks = behaviour("Mixed.corrupt", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onCorrupt,
+        call: () => mixedStubCorrupt(double),
+        override: (mark) => {
+          double.onCorrupt.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onCorrupt.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubCorrupt(double);
+      await mixedStubCorrupt(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of corrupt");
+    });
   });
 
-  test("fails verify with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("verify-delegate");
-    const inner = new MixedStub(seat);
-    inner.onVerify.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubVerify(double));
-    const message = "verify fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("verify", () => {
+    const checks = behaviour("Mixed.verify", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onVerify,
+        call: () => mixedStubVerify(double),
+        override: (mark) => {
+          double.onVerify.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onVerify.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubVerify(double);
+      await mixedStubVerify(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of verify");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of store", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubStore(double);
+      double.resetCalls();
+      expect(double.onStore.callCount).isEqualTo(0, "resetCalls clears the calls of store");
+    });
+
+    it("clears the recorded calls of corrupt", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubCorrupt(double);
+      double.resetCalls();
+      expect(double.onCorrupt.callCount).isEqualTo(0, "resetCalls clears the calls of corrupt");
+    });
+
+    it("clears the recorded calls of verify", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubVerify(double);
+      double.resetCalls();
+      expect(double.onVerify.callCount).isEqualTo(0, "resetCalls clears the calls of verify");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails store with its error", async () => {
+      const want = new Error("store-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubStore(double));
+      const message = "store fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails corrupt with its error", async () => {
+      const want = new Error("corrupt-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubCorrupt(double));
+      const message = "corrupt fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails verify with its error", async () => {
+      const want = new Error("verify-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubVerify(double));
+      const message = "verify fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes store to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubStore(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onStore.callCount).isEqualTo(1, "store calls the implementation");
+    });
+
+    it("fails store with the error of the implementation", async () => {
+      const want = new Error("store-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onStore.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubStore(double));
+      const message = "store fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes corrupt to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubCorrupt(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onCorrupt.callCount).isEqualTo(1, "corrupt calls the implementation");
+    });
+
+    it("fails corrupt with the error of the implementation", async () => {
+      const want = new Error("corrupt-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onCorrupt.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubCorrupt(double));
+      const message = "corrupt fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes verify to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubVerify(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onVerify.callCount).isEqualTo(1, "verify calls the implementation");
+    });
+
+    it("fails verify with the error of the implementation", async () => {
+      const want = new Error("verify-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onVerify.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubVerify(double));
+      const message = "verify fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mixedStubInstance(new MixedStub(seat, MixedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock), MixedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails store with its error", async () => {
+      const want = new Error("store-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubStore(double));
+      const message = "store fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails corrupt with its error", async () => {
+      const want = new Error("corrupt-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubCorrupt(double));
+      const message = "corrupt fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails verify with its error", async () => {
+      const want = new Error("verify-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubVerify(double));
+      const message = "verify fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMixedStore", () => {
+    it("sets the function of store", async () => {
+      let called = false;
+      const option = MixedStub.withMixedStore(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubStore(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedStore sets the function of store");
+    });
+  });
+
+  describe("withMixedCorrupt", () => {
+    it("sets the function of corrupt", async () => {
+      let called = false;
+      const option = MixedStub.withMixedCorrupt(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubCorrupt(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedCorrupt sets the function of corrupt");
+    });
+  });
+
+  describe("withMixedVerify", () => {
+    it("sets the function of verify", async () => {
+      let called = false;
+      const option = MixedStub.withMixedVerify(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubVerify(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedVerify sets the function of verify");
+    });
   });
 });
 
-// dokimi:provenance sha256:8e36860dbca746f30531e5c25e8b6f5ff8fe3302a1ed66c2ae8891f72954e011
+describe("MixedStoreStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of store to the function", async () => {
+      const double = new MixedStub(undefined);
+      let got: unknown[] = [];
+      double.onStore.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await mixedStubStore(double);
+      const args = mixedStubStoreArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:4345fc2fd9c98368160eeed2dd903832d76a5dac4a3c77eda59e6e644f23b297

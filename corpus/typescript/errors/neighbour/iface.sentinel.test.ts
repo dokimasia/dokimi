@@ -2,39 +2,45 @@
 // dokimi:plugin sentinel
 // dokimi:source errors/neighbour/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { ConflictError, NotFoundError } from './iface';
+import { describe, expect, it } from "vitest";
+import { ConflictError, NotFoundError } from "./iface";
 
-describe("ConflictError contract", () => {
-  test("reports a message", ({ seat }) => {
+function conflictErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new ConflictError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("ConflictError", () => {
+  it("matches no other error class of its module", () => {
     const got = new ConflictError();
     const others = [new NotFoundError()];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", conflictErrorMessageCases);
 });
 
-describe("NotFoundError contract", () => {
-  test("reports a message", ({ seat }) => {
+function notFoundErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new NotFoundError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("NotFoundError", () => {
+  it("matches no other error class of its module", () => {
     const got = new NotFoundError();
     const others = [new ConflictError()];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", notFoundErrorMessageCases);
 });
 
-// dokimi:provenance sha256:7ac3e485678e570ddcdceb341ee9a3f2a5a45c0f4b7f6123b8483f6de0a2c6c8
+// dokimi:provenance sha256:9b310429fc38ad0d73ebfc315a8e766c45540c814ffe5c962a523e4652f68f93

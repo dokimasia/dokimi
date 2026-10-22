@@ -2,134 +2,217 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/streamconsumer/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Source, Value } from '../iface';
-import { SourceStub, StreamConsumerStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Source, Value } from "../iface";
+import { SourceStub, StreamConsumerStub } from "./iface.stub";
 
 /** Calls next of double with the samples of its arguments. */
-function sourceStubNext(double: SourceStub): Promise<Value|undefined> {
+function sourceStubNext(double: SourceStub): Promise<Value | undefined> {
   return double.next();
 }
 
 /** Returns the sample of the result of next. */
-function sourceStubNextPin(): Value|undefined {
-  let want0: Value|undefined;
-  want0 = {key: 'key-a'} as Value;
+function sourceStubNextPin(): Value | undefined {
+  let want0: Value | undefined;
+  want0 = { key: "key-a", body: "body-a" };
   return want0;
 }
 
-describe("SourceStub.next", () => {
-  const checks = behaviour("Source.next", (seat) => {
-    const double = new SourceStub(seat);
-    return {
-      stub: double.onNext,
-      call: () => sourceStubNext(double),
-      override: (mark) => {
-        double.onNext.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new SourceStub(seat);
-    const want = sourceStubNextPin();
-    double.onNext.returns(want);
-    check.equal(seat, await sourceStubNext(double), want, "next returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new SourceStub(seat);
-    await sourceStubNext(double);
-    double.onNext.assertCalledOnce(seat, "next records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new SourceStub(seat);
-    let seen = 0;
-    double.onNext.onRecord(() => {
-      seen += 1;
-    });
-    await sourceStubNext(double);
-    await sourceStubNext(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of next");
-  });
-
-  test("sets the function of withSourceNext at construction", async ({ seat }) => {
-    let called = false;
-    const option = SourceStub.withSourceNext(() => {
-      called = true;
-      return undefined as never;
-    });
-    await sourceStubNext(new SourceStub(seat, option));
-    check.isTrue(seat, called, "withSourceNext sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("next-failing");
-    const double = SourceStub.newFailing(seat, want);
-    const outcome = await settle(() => sourceStubNext(double));
-    const message = "next fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new SourceStub(seat);
-    const want = sourceStubNextPin();
-    double.onNext.returns(want);
-    await sourceStubNext(double);
-    double.resetCalls();
-    check.equal(seat, await sourceStubNext(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("SourceStub", () => {
-  const instance = (double: SourceStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * next alone.
+ */
+function sourceStubInstance(double: SourceStub) {
+  return {
     stub: double.onNext,
     call: () => sourceStubNext(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new SourceStub(seat)),
-    withClock: (seat, clock) => instance(new SourceStub(seat, SourceStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(SourceStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new SourceStub(seat, SourceStub.withRandSource(random))),
-    benchMode: (seat) => instance(new SourceStub(seat, SourceStub.benchMode())),
-    strict: (seat) => instance(new SourceStub(seat, SourceStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes next to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new SourceStub(seat);
-    await settle(() => sourceStubNext(new SourceStub(seat, SourceStub.delegateTo(inner))));
-    inner.onNext.assertCalledOnce(seat, "next reaches the implementation");
+describe("SourceStub", () => {
+  describe("next", () => {
+    const checks = behaviour("Source.next", (seat) => {
+      const double = new SourceStub(seat);
+      return {
+        stub: double.onNext,
+        call: () => sourceStubNext(double),
+        override: (mark) => {
+          double.onNext.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new SourceStub(undefined);
+      let seen = 0;
+      double.onNext.onRecord(() => {
+        seen += 1;
+      });
+      await sourceStubNext(double);
+      await sourceStubNext(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of next");
+    });
   });
 
-  test("fails next with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("next-delegate");
-    const inner = new SourceStub(seat);
-    inner.onNext.faults(want, 1);
-    const double = new SourceStub(seat, SourceStub.delegateTo(inner));
-    const outcome = await settle(() => sourceStubNext(double));
-    const message = "next fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => sourceStubInstance(new SourceStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of next", async () => {
+      const double = new SourceStub(undefined);
+      await sourceStubNext(double);
+      double.resetCalls();
+      expect(double.onNext.callCount).isEqualTo(0, "resetCalls clears the calls of next");
+    });
+
+    it("keeps the result of returns of next", async () => {
+      const double = new SourceStub(undefined);
+      const want = sourceStubNextPin();
+      double.onNext.returns(want);
+      double.resetCalls();
+      expect(await sourceStubNext(double)).isEqualTo(want, "resetCalls keeps the result of next");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => sourceStubInstance(SourceStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails next with its error", async () => {
+      const want = new Error("next-failing");
+      const double = SourceStub.newFailing(undefined, want);
+      const outcome = await settle(() => sourceStubNext(double));
+      const message = "next fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => sourceStubInstance(new SourceStub(seat, SourceStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes next to the implementation", async () => {
+      const inner = new SourceStub(undefined);
+      await settle(() => sourceStubNext(new SourceStub(undefined, SourceStub.delegateTo(inner))));
+      expect(inner.onNext.callCount).isEqualTo(1, "next calls the implementation");
+    });
+
+    it("fails next with the error of the implementation", async () => {
+      const want = new Error("next-delegate");
+      const inner = new SourceStub(undefined);
+      inner.onNext.faults(want, 1);
+      const double = new SourceStub(undefined, SourceStub.delegateTo(inner));
+      const outcome = await settle(() => sourceStubNext(double));
+      const message = "next fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => sourceStubInstance(new SourceStub(seat, SourceStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      sourceStubInstance(new SourceStub(seat, SourceStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => sourceStubInstance(new SourceStub(seat, SourceStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        sourceStubInstance(new SourceStub(seat, SourceStub.withClock(clock), SourceStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails next with its error", async () => {
+      const want = new Error("next-failing");
+      const double = new SourceStub(undefined, SourceStub.failing(want));
+      const outcome = await settle(() => sourceStubNext(double));
+      const message = "next fails with the error of SourceStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withSourceNext", () => {
+    it("sets the function of next", async () => {
+      let called = false;
+      const option = SourceStub.withSourceNext(() => {
+        called = true;
+        return undefined as never;
+      });
+      await sourceStubNext(new SourceStub(undefined, option));
+      expect(called).isTrue("withSourceNext sets the function of next");
+    });
   });
 });
 
-/** Returns the samples of the arguments of ingest, or undefined. */
+describe("SourceNextStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of next", async () => {
+      const double = new SourceStub(undefined);
+      const want = sourceStubNextPin();
+      double.onNext.returns(want);
+      expect(await sourceStubNext(double)).isEqualTo(want, "next returns the result that returns sets");
+    });
+
+    it("configures next for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new SourceStub(failures);
+      double.onNext.strict();
+      double.onNext.returns(undefined as never);
+      await settle(() => sourceStubNext(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of next");
+    });
+  });
+});
+
+/** Returns the samples of the arguments of ingest. An argument without a sample is undefined. */
 function streamConsumerStubIngestArgs(): [Source] {
   let a0 = undefined as unknown as Source;
   return [a0];
@@ -148,113 +231,218 @@ function streamConsumerStubIngestPin(): number {
   return want0;
 }
 
-describe("StreamConsumerStub.ingest", () => {
-  const checks = behaviour("StreamConsumer.ingest", (seat) => {
-    const double = new StreamConsumerStub(seat);
-    return {
-      stub: double.onIngest,
-      call: () => streamConsumerStubIngest(double),
-      override: (mark) => {
-        double.onIngest.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new StreamConsumerStub(seat);
-    const want = streamConsumerStubIngestPin();
-    double.onIngest.returns(want);
-    check.equal(seat, await streamConsumerStubIngest(double), want, "ingest returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new StreamConsumerStub(seat);
-    await streamConsumerStubIngest(double);
-    const got = double.onIngest.assertCalledOnce(seat, "ingest records the call");
-    const args = streamConsumerStubIngestArgs();
-    check.equal(seat, got?.src, args[0], "the call records src");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new StreamConsumerStub(seat);
-    let seen = 0;
-    double.onIngest.onRecord(() => {
-      seen += 1;
-    });
-    await streamConsumerStubIngest(double);
-    await streamConsumerStubIngest(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of ingest");
-  });
-
-  test("sets the function of withStreamConsumerIngest at construction", async ({ seat }) => {
-    let called = false;
-    const option = StreamConsumerStub.withStreamConsumerIngest(() => {
-      called = true;
-      return undefined as never;
-    });
-    await streamConsumerStubIngest(new StreamConsumerStub(seat, option));
-    check.isTrue(seat, called, "withStreamConsumerIngest sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("ingest-failing");
-    const double = StreamConsumerStub.newFailing(seat, want);
-    const outcome = await settle(() => streamConsumerStubIngest(double));
-    const message = "ingest fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new StreamConsumerStub(seat);
-    const want = streamConsumerStubIngestPin();
-    double.onIngest.returns(want);
-    await streamConsumerStubIngest(double);
-    double.resetCalls();
-    check.equal(seat, await streamConsumerStubIngest(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("StreamConsumerStub", () => {
-  const instance = (double: StreamConsumerStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * ingest alone.
+ */
+function streamConsumerStubInstance(double: StreamConsumerStub) {
+  return {
     stub: double.onIngest,
     call: () => streamConsumerStubIngest(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new StreamConsumerStub(seat)),
-    withClock: (seat, clock) => instance(new StreamConsumerStub(seat, StreamConsumerStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(StreamConsumerStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new StreamConsumerStub(seat, StreamConsumerStub.withRandSource(random))),
-    benchMode: (seat) => instance(new StreamConsumerStub(seat, StreamConsumerStub.benchMode())),
-    strict: (seat) => instance(new StreamConsumerStub(seat, StreamConsumerStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes ingest to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new StreamConsumerStub(seat);
-    await settle(() => streamConsumerStubIngest(new StreamConsumerStub(seat, StreamConsumerStub.delegateTo(inner))));
-    inner.onIngest.assertCalledOnce(seat, "ingest reaches the implementation");
+describe("StreamConsumerStub", () => {
+  describe("ingest", () => {
+    const checks = behaviour("StreamConsumer.ingest", (seat) => {
+      const double = new StreamConsumerStub(seat);
+      return {
+        stub: double.onIngest,
+        call: () => streamConsumerStubIngest(double),
+        override: (mark) => {
+          double.onIngest.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new StreamConsumerStub(undefined);
+      await streamConsumerStubIngest(double);
+      expect(double.onIngest.callCount).isEqualTo(1, "ingest records the call");
+      const got = double.onIngest.calls[0];
+      const args = streamConsumerStubIngestArgs();
+      expect(got?.src).isEqualTo(args[0], "the call records src");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new StreamConsumerStub(undefined);
+      let seen = 0;
+      double.onIngest.onRecord(() => {
+        seen += 1;
+      });
+      await streamConsumerStubIngest(double);
+      await streamConsumerStubIngest(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of ingest");
+    });
   });
 
-  test("fails ingest with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("ingest-delegate");
-    const inner = new StreamConsumerStub(seat);
-    inner.onIngest.faults(want, 1);
-    const double = new StreamConsumerStub(seat, StreamConsumerStub.delegateTo(inner));
-    const outcome = await settle(() => streamConsumerStubIngest(double));
-    const message = "ingest fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => streamConsumerStubInstance(new StreamConsumerStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of ingest", async () => {
+      const double = new StreamConsumerStub(undefined);
+      await streamConsumerStubIngest(double);
+      double.resetCalls();
+      expect(double.onIngest.callCount).isEqualTo(0, "resetCalls clears the calls of ingest");
+    });
+
+    it("keeps the result of returns of ingest", async () => {
+      const double = new StreamConsumerStub(undefined);
+      const want = streamConsumerStubIngestPin();
+      double.onIngest.returns(want);
+      double.resetCalls();
+      expect(await streamConsumerStubIngest(double)).isEqualTo(want, "resetCalls keeps the result of ingest");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => streamConsumerStubInstance(StreamConsumerStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails ingest with its error", async () => {
+      const want = new Error("ingest-failing");
+      const double = StreamConsumerStub.newFailing(undefined, want);
+      const outcome = await settle(() => streamConsumerStubIngest(double));
+      const message = "ingest fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => streamConsumerStubInstance(new StreamConsumerStub(seat, StreamConsumerStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes ingest to the implementation", async () => {
+      const inner = new StreamConsumerStub(undefined);
+      await settle(() => streamConsumerStubIngest(new StreamConsumerStub(undefined, StreamConsumerStub.delegateTo(inner))));
+      expect(inner.onIngest.callCount).isEqualTo(1, "ingest calls the implementation");
+    });
+
+    it("fails ingest with the error of the implementation", async () => {
+      const want = new Error("ingest-delegate");
+      const inner = new StreamConsumerStub(undefined);
+      inner.onIngest.faults(want, 1);
+      const double = new StreamConsumerStub(undefined, StreamConsumerStub.delegateTo(inner));
+      const outcome = await settle(() => streamConsumerStubIngest(double));
+      const message = "ingest fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => streamConsumerStubInstance(new StreamConsumerStub(seat, StreamConsumerStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      streamConsumerStubInstance(new StreamConsumerStub(seat, StreamConsumerStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => streamConsumerStubInstance(new StreamConsumerStub(seat, StreamConsumerStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        streamConsumerStubInstance(new StreamConsumerStub(seat, StreamConsumerStub.withClock(clock), StreamConsumerStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails ingest with its error", async () => {
+      const want = new Error("ingest-failing");
+      const double = new StreamConsumerStub(undefined, StreamConsumerStub.failing(want));
+      const outcome = await settle(() => streamConsumerStubIngest(double));
+      const message = "ingest fails with the error of StreamConsumerStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withStreamConsumerIngest", () => {
+    it("sets the function of ingest", async () => {
+      let called = false;
+      const option = StreamConsumerStub.withStreamConsumerIngest(() => {
+        called = true;
+        return undefined as never;
+      });
+      await streamConsumerStubIngest(new StreamConsumerStub(undefined, option));
+      expect(called).isTrue("withStreamConsumerIngest sets the function of ingest");
+    });
   });
 });
 
-// dokimi:provenance sha256:bd6f887dddf0aebd39d6ebe3f9184a6f808b8ef847c8dc193e8dc64ab059f606
+describe("StreamConsumerIngestStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of ingest", async () => {
+      const double = new StreamConsumerStub(undefined);
+      const want = streamConsumerStubIngestPin();
+      double.onIngest.returns(want);
+      expect(await streamConsumerStubIngest(double)).isEqualTo(want, "ingest returns the result that returns sets");
+    });
+
+    it("configures ingest for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new StreamConsumerStub(failures);
+      double.onIngest.strict();
+      double.onIngest.returns(undefined as never);
+      await settle(() => streamConsumerStubIngest(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of ingest");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of ingest to the function", async () => {
+      const double = new StreamConsumerStub(undefined);
+      let got: unknown[] = [];
+      double.onIngest.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await streamConsumerStubIngest(double);
+      const args = streamConsumerStubIngestArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:49cc29af652749fe0229d77a1ca28fe628a7de9b01e8c9d418fe7cb5daa939ef

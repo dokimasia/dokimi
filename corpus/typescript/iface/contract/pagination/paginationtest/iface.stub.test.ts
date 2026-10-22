@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/pagination/iface.ts
 
-import { Controlled, type Seat, byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Cursor, Page, Value } from '../iface';
-import { ContractStub, PageStub } from './iface.stub';
+import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Cursor, Page, Value } from "../iface";
+import { ContractStub, PageStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of fetch, or undefined. */
+/** Returns the samples of the arguments of fetch. An argument without a sample is undefined. */
 function contractStubFetchArgs(): [Cursor] {
   let a0 = undefined as unknown as Cursor;
-  a0 = 'fetch-a';
+  a0 = "fetch-a";
   return [a0];
 }
 
@@ -26,14 +25,14 @@ function contractStubFetch(double: ContractStub): Promise<Page> {
 /** Returns the sample of the result of fetch. */
 function contractStubFetchPin(): Page {
   let want0: Page;
-  want0 = {items: [{key: 'key-a'} as Value]} as Page;
+  want0 = { items: [{ key: "key-a", body: "body-a" }], next: "next-a" };
   return want0;
 }
 
-/** Returns the samples of the arguments of put, or undefined. */
+/** Returns the samples of the arguments of put. An argument without a sample is undefined. */
 function contractStubPutArgs(): [Value] {
   let a0 = undefined as unknown as Value;
-  a0 = {key: 'key-a'} as Value;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -43,214 +42,376 @@ function contractStubPut(double: ContractStub): Promise<void> {
   return double.put(args[0]);
 }
 
-describe("ContractStub.fetch", () => {
-  const checks = behaviour("Contract.fetch", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onFetch,
-      call: () => contractStubFetch(double),
-      override: (mark) => {
-        double.onFetch.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubFetchPin();
-    double.onFetch.returns(want);
-    check.equal(seat, await contractStubFetch(double), want, "fetch returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubFetch(double);
-    const got = double.onFetch.assertCalledOnce(seat, "fetch records the call");
-    const args = contractStubFetchArgs();
-    check.equal(seat, got?.cur, args[0], "the call records cur");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onFetch.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubFetch(double);
-    await contractStubFetch(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of fetch");
-  });
-
-  test("sets the function of withContractFetch at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractFetch(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubFetch(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractFetch sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("fetch-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubFetch(double));
-    const message = "fetch fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    const want = contractStubFetchPin();
-    double.onFetch.returns(want);
-    await contractStubFetch(double);
-    double.resetCalls();
-    check.equal(seat, await contractStubFetch(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("ContractStub.put", () => {
-  const checks = behaviour("Contract.put", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onPut,
-      call: () => contractStubPut(double),
-      override: (mark) => {
-        double.onPut.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubPut(double);
-    const got = double.onPut.assertCalledOnce(seat, "put records the call");
-    const args = contractStubPutArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onPut.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubPut(double);
-    await contractStubPut(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of put");
-  });
-
-  test("sets the function of withContractPut at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractPut(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubPut(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractPut sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("put-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubPut(double));
-    const message = "put fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * fetch alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onFetch,
     call: () => contractStubFetch(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes fetch to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubFetch(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onFetch.assertCalledOnce(seat, "fetch reaches the implementation");
+describe("ContractStub", () => {
+  describe("fetch", () => {
+    const checks = behaviour("Contract.fetch", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onFetch,
+        call: () => contractStubFetch(double),
+        override: (mark) => {
+          double.onFetch.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubFetch(double);
+      expect(double.onFetch.callCount).isEqualTo(1, "fetch records the call");
+      const got = double.onFetch.calls[0];
+      const args = contractStubFetchArgs();
+      expect(got?.cur).isEqualTo(args[0], "the call records cur");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onFetch.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubFetch(double);
+      await contractStubFetch(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of fetch");
+    });
   });
 
-  test("fails fetch with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("fetch-delegate");
-    const inner = new ContractStub(seat);
-    inner.onFetch.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubFetch(double));
-    const message = "fetch fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("put", () => {
+    const checks = behaviour("Contract.put", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onPut,
+        call: () => contractStubPut(double),
+        override: (mark) => {
+          double.onPut.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubPut(double);
+      expect(double.onPut.callCount).isEqualTo(1, "put records the call");
+      const got = double.onPut.calls[0];
+      const args = contractStubPutArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onPut.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubPut(double);
+      await contractStubPut(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of put");
+    });
   });
 
-  test("passes put to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubPut(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onPut.assertCalledOnce(seat, "put reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of fetch", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubFetch(double);
+      double.resetCalls();
+      expect(double.onFetch.callCount).isEqualTo(0, "resetCalls clears the calls of fetch");
+    });
+
+    it("keeps the result of returns of fetch", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubFetchPin();
+      double.onFetch.returns(want);
+      double.resetCalls();
+      expect(await contractStubFetch(double)).isEqualTo(want, "resetCalls keeps the result of fetch");
+    });
+
+    it("clears the recorded calls of put", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubPut(double);
+      double.resetCalls();
+      expect(double.onPut.callCount).isEqualTo(0, "resetCalls clears the calls of put");
+    });
   });
 
-  test("fails put with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("put-delegate");
-    const inner = new ContractStub(seat);
-    inner.onPut.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubPut(double));
-    const message = "put fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails fetch with its error", async () => {
+      const want = new Error("fetch-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubFetch(double));
+      const message = "fetch fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubPut(double));
+      const message = "put fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes fetch to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubFetch(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onFetch.callCount).isEqualTo(1, "fetch calls the implementation");
+    });
+
+    it("fails fetch with the error of the implementation", async () => {
+      const want = new Error("fetch-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onFetch.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubFetch(double));
+      const message = "fetch fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes put to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubPut(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onPut.callCount).isEqualTo(1, "put calls the implementation");
+    });
+
+    it("fails put with the error of the implementation", async () => {
+      const want = new Error("put-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onPut.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubPut(double));
+      const message = "put fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails fetch with its error", async () => {
+      const want = new Error("fetch-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubFetch(double));
+      const message = "fetch fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubPut(double));
+      const message = "put fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractFetch", () => {
+    it("sets the function of fetch", async () => {
+      let called = false;
+      const option = ContractStub.withContractFetch(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubFetch(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractFetch sets the function of fetch");
+    });
+  });
+
+  describe("withContractPut", () => {
+    it("sets the function of put", async () => {
+      let called = false;
+      const option = ContractStub.withContractPut(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubPut(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractPut sets the function of put");
+    });
+  });
+});
+
+describe("ContractFetchStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of fetch", async () => {
+      const double = new ContractStub(undefined);
+      const want = contractStubFetchPin();
+      double.onFetch.returns(want);
+      expect(await contractStubFetch(double)).isEqualTo(want, "fetch returns the result that returns sets");
+    });
+
+    it("configures fetch for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ContractStub(failures);
+      double.onFetch.strict();
+      double.onFetch.returns(undefined as never);
+      await settle(() => contractStubFetch(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of fetch");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of fetch to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onFetch.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubFetch(double);
+      const args = contractStubFetchArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractPutStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of put to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onPut.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubPut(double);
+      const args = contractStubPutArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
   });
 });
 
 /** Assigns the sample of each property of PageStub to double. */
 function pageStubProps(double: PageStub): void {
-  double.items = [{key: 'key-a'} as Value];
-  double.next = 'next-a';
+  double.items = [{ key: "key-a", body: "body-a" }];
+  double.next = "next-a";
 }
 
 describe("PageStub", () => {
-  const builds: [string, (seat: Seat) => PageStub][] = [
-    ["new", (seat) => new PageStub(seat)],
-    ["strict", (seat) => new PageStub(seat, PageStub.strict())],
-    ["withClock", (seat) => new PageStub(seat, PageStub.withClock(new Controlled()))],
-    ["withRandSource", (seat) => new PageStub(seat, PageStub.withRandSource(() => 0))],
-    ["benchMode", (seat) => new PageStub(seat, PageStub.benchMode())],
-    ["withLatency", (seat) => new PageStub(seat, PageStub.withLatency(1))],
-    ["newDelayed", (seat) => PageStub.newDelayed(seat, 1, new Controlled())],
-  ];
-  for (const [name, build] of builds) {
-    test(`keeps each property across a reset of a double built by ${name}`, ({ seat }) => {
-      const double = build(seat);
-      pageStubProps(double);
-      double.resetCalls();
-      const want = new PageStub(undefined);
-      pageStubProps(want);
-      check.equal(seat, double.items, want.items, "the reset keeps the property items");
-      check.equal(seat, double.next, want.next, "the reset keeps the property next");
-    });
-  }
+  describe("resetCalls", () => {
+    const tests: { name: string; giveDouble: () => PageStub }[] = [
+      {
+        name: "keeps each property of a new double",
+        giveDouble: () => new PageStub(undefined),
+      },
+      {
+        name: "keeps each property of a strict double",
+        giveDouble: () => new PageStub(undefined, PageStub.strict()),
+      },
+      {
+        name: "keeps each property of a double with a clock",
+        giveDouble: () => new PageStub(undefined, PageStub.withClock(new Controlled())),
+      },
+      {
+        name: "keeps each property of a double with a random source",
+        giveDouble: () => new PageStub(undefined, PageStub.withRandSource(() => 0)),
+      },
+      {
+        name: "keeps each property of a double in bench mode",
+        giveDouble: () => new PageStub(undefined, PageStub.benchMode()),
+      },
+      {
+        name: "keeps each property of a double with a latency",
+        giveDouble: () => new PageStub(undefined, PageStub.withLatency(1)),
+      },
+      {
+        name: "keeps each property of a delayed double",
+        giveDouble: () => PageStub.newDelayed(undefined, 1, new Controlled()),
+      },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        const double = tt.giveDouble();
+        pageStubProps(double);
+        double.resetCalls();
+        const want = new PageStub(undefined);
+        pageStubProps(want);
+        expect.soft(double.items).isEqualTo(want.items, "resetCalls keeps the property items");
+        expect.soft(double.next).isEqualTo(want.next, "resetCalls keeps the property next");
+      });
+    }
+  });
 });
 
-// dokimi:provenance sha256:cf7fcd693913a627244ce66f16ab544f7d8094fae5d3ab8f0cfb55c4d4eab959
+// dokimi:provenance sha256:e003f6a2046924528b4046161239ce7a093eff89767d0966246b2eb3cbca7f98

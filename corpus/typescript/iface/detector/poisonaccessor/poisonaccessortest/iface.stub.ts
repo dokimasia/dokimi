@@ -2,29 +2,29 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/poisonaccessor/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { PoisonAccessor } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { PoisonAccessor } from "../iface";
 
 /** PoisonAccessorErrCall records one call of PoisonAccessor.err. */
 export interface PoisonAccessorErrCall {
   /** The result of the call, where it returned one. */
-  result?: Error|undefined | undefined;
+  result?: Error | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * PoisonAccessorErrStub configures err, and records its calls. A fault armed
+ * PoisonAccessorErrStub configures err and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class PoisonAccessorErrStub extends MethodStub<PoisonAccessorErrCall> {
-  #fn: (() => Error|undefined) | undefined;
-  #fallback: { readonly value: Error|undefined } | undefined;
+  #fn: (() => Error | undefined) | undefined;
+  #fallback: { readonly value: Error | undefined } | undefined;
 
   /**
    * Sets the result of every call of err. A function and an injected
@@ -33,19 +33,19 @@ export class PoisonAccessorErrStub extends MethodStub<PoisonAccessorErrCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Error|undefined): this {
+  returns(result: Error | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of err, for a result that depends on the
+   * Sets the function that computes the result of err from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => Error|undefined): this {
+  func(fn: () => Error | undefined): this {
     this.#fn = fn;
     return this;
   }
@@ -53,7 +53,7 @@ export class PoisonAccessorErrStub extends MethodStub<PoisonAccessorErrCall> {
   /**
    * Returns the arms of a call of err with its arguments.
    */
-  arms(): Arms<PoisonAccessorErrCall, Error|undefined, Error|undefined> {
+  arms(): Arms<PoisonAccessorErrCall, Error | undefined, Error | undefined> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn()),
@@ -68,13 +68,13 @@ export class PoisonAccessorErrStub extends MethodStub<PoisonAccessorErrCall> {
   }
 }
 
-/** An option of a PoisonAccessorStub, which its constructor applies. */
+/** Configures a PoisonAccessorStub at its construction. */
 export type PoisonAccessorStubOption = (double: PoisonAccessorStub) => void;
 
 /**
  * PoisonAccessorStub is a recording test double of PoisonAccessor. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class PoisonAccessorStub implements PoisonAccessor {
   /** Configures err. */
@@ -83,9 +83,9 @@ export class PoisonAccessorStub implements PoisonAccessor {
   #strict = false;
 
   /**
-   * Returns a double of PoisonAccessor that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of PoisonAccessor that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -114,7 +114,8 @@ export class PoisonAccessorStub implements PoisonAccessor {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -126,8 +127,9 @@ export class PoisonAccessorStub implements PoisonAccessor {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -139,8 +141,8 @@ export class PoisonAccessorStub implements PoisonAccessor {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -177,7 +179,8 @@ export class PoisonAccessorStub implements PoisonAccessor {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -194,15 +197,15 @@ export class PoisonAccessorStub implements PoisonAccessor {
    * @param fn - The function.
    * @returns The option.
    */
-  static withPoisonAccessorErr(fn: () => Error|undefined): PoisonAccessorStubOption {
+  static withPoisonAccessorErr(fn: () => Error | undefined): PoisonAccessorStubOption {
     return (double) => {
       double.onErr.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -225,8 +228,8 @@ export class PoisonAccessorStub implements PoisonAccessor {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -250,9 +253,9 @@ export class PoisonAccessorStub implements PoisonAccessor {
   }
 
   /**
-   * Records the call of err, and returns its result.
+   * Records the call of err and returns its result.
    */
-  err(): Error|undefined {
+  err(): Error | undefined {
     const call: PoisonAccessorErrCall = {};
     return answer(this.onErr, call, this.onErr.arms());
   }
@@ -260,4 +263,4 @@ export class PoisonAccessorStub implements PoisonAccessor {
 
 void compatV1;
 
-// dokimi:provenance sha256:331c00ff2f4393f8070bbd0e9fbda415e110c1e2a2c0eec2064aecc1c0ae6d72
+// dokimi:provenance sha256:45478fbb6f7beee3cb4bc2e1fe0e92b134687575b9d532d1b68b3cf6c2cfaa53

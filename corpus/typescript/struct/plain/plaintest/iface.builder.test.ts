@@ -2,112 +2,163 @@
 // dokimi:plugin builder
 // dokimi:source struct/plain/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Item } from '../iface';
-import { ItemBuilder } from './iface.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Item } from "../iface";
+import { ItemBuilder } from "./iface.builder";
 
-describe("ItemBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function itemBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Item();
-    seed.id = 'id-a';
+    seed.id = "id-a";
     seed.count = 1.5;
     const got = ItemBuilder.from(seed).build();
-    check.equal(seat, got.id, seed.id, "from keeps the member it was given");
-    check.equal(seat, got.count, seed.count, "from keeps the member it was given");
+    expect.soft(got.id).isEqualTo(seed.id, "from keeps id");
+    expect.soft(got.count).isEqualTo(seed.count, "from keeps count");
   });
-});
 
-describe("ItemBuilder setters", () => {
-  test("withId writes id", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = ItemBuilder.create().build();
+    expect(ItemBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function itemBuilderWithIdCases(): void {
+  it("writes its argument to id", () => {
     let want: string;
-    want = 'id-a';
+    want = "id-a";
     const got = ItemBuilder.create().withId(want).build();
-    check.equal(seat, got.id, want, "the setter writes what it was given");
+    expect(got.id).isEqualTo(want, "withId writes its argument to id");
   });
 
-  test("withId replaces what was already there", ({ seat }) => {
+  it("replaces the value of id", () => {
     let first: string;
     let want: string;
-    first = 'id-a';
-    want = 'id-b';
+    first = "id-a";
+    want = "id-b";
     const got = ItemBuilder.create().withId(first).withId(want).build();
-    check.equal(seat, got.id, want, "the later call wins");
+    expect(got.id).isEqualTo(want, "the second call of withId replaces the first");
   });
+}
 
-  test("withCount writes count", ({ seat }) => {
+function itemBuilderWithCountCases(): void {
+  it("writes its argument to count", () => {
     let want: number;
     want = 1.5;
     const got = ItemBuilder.create().withCount(want).build();
-    check.equal(seat, got.count, want, "the setter writes what it was given");
+    expect(got.count).isEqualTo(want, "withCount writes its argument to count");
   });
 
-  test("withCount replaces what was already there", ({ seat }) => {
+  it("replaces the value of count", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = ItemBuilder.create().withCount(first).withCount(want).build();
-    check.equal(seat, got.count, want, "the later call wins");
+    expect(got.count).isEqualTo(want, "the second call of withCount replaces the first");
   });
+}
 
-  test("withTags writes tags", ({ seat }) => {
+function itemBuilderWithTagsCases(): void {
+  it("writes its argument to tags", () => {
     let want: string[];
-    want = ['tags-a'];
+    want = ["tags-a"];
     const got = ItemBuilder.create().withTags(...want).build();
-    check.length(seat, got.tags, 1, "the setter replaces the sequence");
+    expect(got.tags).isEqualTo(want, "withTags writes its argument to tags");
   });
 
-  test("appendTags keeps what tags holds", ({ seat }) => {
+  it("replaces the value of tags", () => {
+    let first: string[];
     let want: string[];
-    want = ['tags-a'];
-    const got = ItemBuilder.create().withTags(...want).appendTags(...want).build();
-    check.length(seat, got.tags, 2, "the appender adds to the sequence");
+    first = ["tags-a"];
+    want = ["tags-b"];
+    const got = ItemBuilder.create().withTags(...first).withTags(...want).build();
+    expect(got.tags).isEqualTo(want, "the second call of withTags replaces the first");
   });
-});
+}
 
-describe("ItemBuilder clone", () => {
-  test("tags is not shared with a clone", ({ seat }) => {
+function itemBuilderAppendTagsCases(): void {
+  it("appends to the elements of tags", () => {
+    let first: string[];
     let want: string[];
-    let other: string[];
-    want = ['tags-a'];
-    other = ['tags-b'];
-    const original = ItemBuilder.create().withTags(...want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      value.tags.splice(0, other.length, ...other);
-    });
-    check.notEqual(seat, original.build().tags, other, "writing through a clone must not reach the original");
+    first = ["tags-a"];
+    want = ["tags-b"];
+    const got = ItemBuilder.create().withTags(...first).appendTags(...want).build();
+    expect(got.tags).isEqualTo([...first, ...want], "appendTags appends its elements after those of withTags");
   });
+}
 
-  test("clone copies tags", ({ seat }) => {
-    let want: string[];
-    want = ['tags-a'];
-    const original = ItemBuilder.create().withTags(...want);
-    check.equal(seat, original.clone().build().tags, want, "a clone builds the same member as its original");
-  });
-});
-
-describe("ItemBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function itemBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Item[] = [];
     const record = (value: Item): void => {
       seen.push(value);
     };
     ItemBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function itemBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = ItemBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = ItemBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, ItemBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+
+  it("copies tags into the clone", () => {
+    let want: string[];
+    let other: string[];
+    want = ["tags-a"];
+    other = ["tags-b"];
+    const original = ItemBuilder.create().withTags(...want);
+    const clone = original.clone();
+    const message = "a change of tags in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      value.tags.splice(0, other.length, ...other);
+    });
+    expect(original.build().tags).isNotEqualTo(other, message);
+  });
+
+  it("builds the tags of its original", () => {
+    let want: string[];
+    want = ["tags-a"];
+    const original = ItemBuilder.create().withTags(...want);
+    expect(original.clone().build().tags).isEqualTo(want, "the clone builds the tags of its original");
+  });
+}
+
+function itemBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = ItemBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Item();
+    seed.id = "id-a";
+    seed.count = 1.5;
+    const builder = ItemBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("ItemBuilder", () => {
+  describe("from", itemBuilderFromCases);
+  describe("withId", itemBuilderWithIdCases);
+  describe("withCount", itemBuilderWithCountCases);
+  describe("withTags", itemBuilderWithTagsCases);
+  describe("appendTags", itemBuilderAppendTagsCases);
+  describe("mutate", itemBuilderMutateCases);
+  describe("clone", itemBuilderCloneCases);
+  describe("build", itemBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:c0d178f2add48ef29ddfb1438b8438ebe4028523ec9dc28c0c7f25ad6d008632
+// dokimi:provenance sha256:e84e0c338ae52dd80e9166b9fc97091a0a36ebe387f6c5c98c8b1d47afc83465

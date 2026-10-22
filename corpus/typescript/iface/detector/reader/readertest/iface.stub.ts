@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/reader/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import { type RandomSource, retry } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import { type Reader, type Value, notFound } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import { type RandomSource, retry } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import { type Reader, type Value, notFound } from "../iface";
 
 /** ReaderGetCall records one call of Reader.get. */
 export interface ReaderGetCall {
@@ -21,7 +21,7 @@ export interface ReaderGetCall {
 }
 
 /**
- * ReaderGetStub configures get, and records its calls. A fault armed
+ * ReaderGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ReaderGetStub extends MethodStub<ReaderGetCall> {
@@ -41,7 +41,7 @@ export class ReaderGetStub extends MethodStub<ReaderGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -64,7 +64,7 @@ export class ReaderGetStub extends MethodStub<ReaderGetCall> {
 
   /**
    * Makes get fail with error on every call before call number
-   * 3, which succeeds along with every call after it.
+   * 3. Call 3 and every call after it succeed.
    *
    * @param error - The error.
    * @returns The stub.
@@ -74,9 +74,9 @@ export class ReaderGetStub extends MethodStub<ReaderGetCall> {
   }
 
   /**
-   * Makes get fail every nth call whose key matches key, and
-   * leaves the other partitions alone. A test that one outage does not reach
-   * another partition needs a fault that selects its calls.
+   * Makes get fail every nth call whose key matches key. The
+   * fault leaves the calls of the other partitions alone. A test of the
+   * isolation of a partition needs a fault that selects its calls.
    *
    * @param key - The key of the calls that fail.
    * @param error - The error.
@@ -88,8 +88,8 @@ export class ReaderGetStub extends MethodStub<ReaderGetCall> {
   }
 
   /**
-   * Makes get fail every nth call whose key differs from key,
-   * and leaves the partition of key alone.
+   * Makes get fail every nth call whose key differs from key.
+   * The fault leaves the calls of the partition of key alone.
    *
    * @param key - The key of the calls that pass.
    * @param error - The error.
@@ -118,13 +118,13 @@ export class ReaderGetStub extends MethodStub<ReaderGetCall> {
   }
 }
 
-/** An option of a ReaderStub, which its constructor applies. */
+/** Configures a ReaderStub at its construction. */
 export type ReaderStubOption = (double: ReaderStub) => void;
 
 /**
  * ReaderStub is a recording test double of Reader. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ReaderStub implements Reader {
   /** Configures get. */
@@ -133,9 +133,9 @@ export class ReaderStub implements Reader {
   #strict = false;
 
   /**
-   * Returns a double of Reader that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Reader that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -164,7 +164,8 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -176,8 +177,9 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -189,8 +191,8 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -227,7 +229,8 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -251,8 +254,8 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -275,8 +278,8 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -300,7 +303,7 @@ export class ReaderStub implements Reader {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(key: string): Promise<Value> {
     const call: ReaderGetCall = { key };
@@ -310,13 +313,13 @@ export class ReaderStub implements Reader {
 
 // Value is a handle that a method of Reader returns.
 
-/** An option of a ValueStub, which its constructor applies. */
+/** Configures a ValueStub at its construction. */
 export type ValueStubOption = (double: ValueStub) => void;
 
 /**
  * ValueStub is a recording test double of Value. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ValueStub implements Value {
   /** The property key, which a test assigns. */
@@ -327,9 +330,9 @@ export class ValueStub implements Value {
   #strict = false;
 
   /**
-   * Returns a double of Value that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Value that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -357,8 +360,9 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -370,8 +374,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -408,8 +412,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -442,4 +446,4 @@ export class ValueStub implements Value {
 
 void compatV1;
 
-// dokimi:provenance sha256:d93b606b536e6a55ebaaa8ded08af0bc953d404b76ceacb86207b3e07dcdb759
+// dokimi:provenance sha256:42d622afd2ff67fb4d767dca8933e91249f3997de05bf10a927cc597cf5376eb

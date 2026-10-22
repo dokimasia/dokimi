@@ -2,356 +2,548 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/multireturn/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { WideStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { WideStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of quad, or undefined. */
+/** Returns the samples of the arguments of quad. An argument without a sample is undefined. */
 function wideStubQuadArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'quad-a';
+  a0 = "quad-a";
   return [a0];
 }
 
 /** Calls quad of double with the samples of its arguments. */
-function wideStubQuad(double: WideStub): Promise<[string,number,boolean]> {
+function wideStubQuad(double: WideStub): Promise<[string, number, boolean]> {
   const args = wideStubQuadArgs();
   return double.quad(args[0]);
 }
 
 /** Returns the sample of the result of quad. */
-function wideStubQuadPin(): [string,number,boolean] {
-  let want0: [string,number,boolean];
-  want0 = ['quad-a', 1.5, true];
+function wideStubQuadPin(): [string, number, boolean] {
+  let want0: [string, number, boolean];
+  want0 = ["quad-a", 1.5, true];
   return want0;
 }
 
-/** Returns the samples of the arguments of triple, or undefined. */
+/** Returns the samples of the arguments of triple. An argument without a sample is undefined. */
 function wideStubTripleArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'triple-a';
+  a0 = "triple-a";
   return [a0];
 }
 
 /** Calls triple of double with the samples of its arguments. */
-function wideStubTriple(double: WideStub): Promise<[string,number,boolean]> {
+function wideStubTriple(double: WideStub): Promise<[string, number, boolean]> {
   const args = wideStubTripleArgs();
   return double.triple(args[0]);
 }
 
 /** Returns the sample of the result of triple. */
-function wideStubTriplePin(): [string,number,boolean] {
-  let want0: [string,number,boolean];
-  want0 = ['triple-a', 1.5, true];
+function wideStubTriplePin(): [string, number, boolean] {
+  let want0: [string, number, boolean];
+  want0 = ["triple-a", 1.5, true];
   return want0;
 }
 
-/** Returns the samples of the arguments of noError, or undefined. */
+/** Returns the samples of the arguments of noError. An argument without a sample is undefined. */
 function wideStubNoErrorArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'noError-a';
+  a0 = "noError-a";
   return [a0];
 }
 
 /** Calls noError of double with the samples of its arguments. */
-function wideStubNoError(double: WideStub): Promise<[string,number]> {
+function wideStubNoError(double: WideStub): Promise<[string, number]> {
   const args = wideStubNoErrorArgs();
   return double.noError(args[0]);
 }
 
 /** Returns the sample of the result of noError. */
-function wideStubNoErrorPin(): [string,number] {
-  let want0: [string,number];
-  want0 = ['noError-a', 1.5];
+function wideStubNoErrorPin(): [string, number] {
+  let want0: [string, number];
+  want0 = ["noError-a", 1.5];
   return want0;
 }
 
-describe("WideStub.quad", () => {
-  const checks = behaviour("Wide.quad", (seat) => {
-    const double = new WideStub(seat);
-    return {
-      stub: double.onQuad,
-      call: () => wideStubQuad(double),
-      override: (mark) => {
-        double.onQuad.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new WideStub(seat);
-    const want = wideStubQuadPin();
-    double.onQuad.returns(want);
-    check.equal(seat, await wideStubQuad(double), want, "quad returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new WideStub(seat);
-    await wideStubQuad(double);
-    const got = double.onQuad.assertCalledOnce(seat, "quad records the call");
-    const args = wideStubQuadArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new WideStub(seat);
-    let seen = 0;
-    double.onQuad.onRecord(() => {
-      seen += 1;
-    });
-    await wideStubQuad(double);
-    await wideStubQuad(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of quad");
-  });
-
-  test("sets the function of withWideQuad at construction", async ({ seat }) => {
-    let called = false;
-    const option = WideStub.withWideQuad(() => {
-      called = true;
-      return undefined as never;
-    });
-    await wideStubQuad(new WideStub(seat, option));
-    check.isTrue(seat, called, "withWideQuad sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("quad-failing");
-    const double = WideStub.newFailing(seat, want);
-    const outcome = await settle(() => wideStubQuad(double));
-    const message = "quad fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new WideStub(seat);
-    const want = wideStubQuadPin();
-    double.onQuad.returns(want);
-    await wideStubQuad(double);
-    double.resetCalls();
-    check.equal(seat, await wideStubQuad(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("WideStub.triple", () => {
-  const checks = behaviour("Wide.triple", (seat) => {
-    const double = new WideStub(seat);
-    return {
-      stub: double.onTriple,
-      call: () => wideStubTriple(double),
-      override: (mark) => {
-        double.onTriple.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new WideStub(seat);
-    const want = wideStubTriplePin();
-    double.onTriple.returns(want);
-    check.equal(seat, await wideStubTriple(double), want, "triple returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new WideStub(seat);
-    await wideStubTriple(double);
-    const got = double.onTriple.assertCalledOnce(seat, "triple records the call");
-    const args = wideStubTripleArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new WideStub(seat);
-    let seen = 0;
-    double.onTriple.onRecord(() => {
-      seen += 1;
-    });
-    await wideStubTriple(double);
-    await wideStubTriple(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of triple");
-  });
-
-  test("sets the function of withWideTriple at construction", async ({ seat }) => {
-    let called = false;
-    const option = WideStub.withWideTriple(() => {
-      called = true;
-      return undefined as never;
-    });
-    await wideStubTriple(new WideStub(seat, option));
-    check.isTrue(seat, called, "withWideTriple sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("triple-failing");
-    const double = WideStub.newFailing(seat, want);
-    const outcome = await settle(() => wideStubTriple(double));
-    const message = "triple fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new WideStub(seat);
-    const want = wideStubTriplePin();
-    double.onTriple.returns(want);
-    await wideStubTriple(double);
-    double.resetCalls();
-    check.equal(seat, await wideStubTriple(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("WideStub.noError", () => {
-  const checks = behaviour("Wide.noError", (seat) => {
-    const double = new WideStub(seat);
-    return {
-      stub: double.onNoError,
-      call: () => wideStubNoError(double),
-      override: (mark) => {
-        double.onNoError.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new WideStub(seat);
-    const want = wideStubNoErrorPin();
-    double.onNoError.returns(want);
-    check.equal(seat, await wideStubNoError(double), want, "noError returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new WideStub(seat);
-    await wideStubNoError(double);
-    const got = double.onNoError.assertCalledOnce(seat, "noError records the call");
-    const args = wideStubNoErrorArgs();
-    check.equal(seat, got?.id, args[0], "the call records id");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new WideStub(seat);
-    let seen = 0;
-    double.onNoError.onRecord(() => {
-      seen += 1;
-    });
-    await wideStubNoError(double);
-    await wideStubNoError(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of noError");
-  });
-
-  test("sets the function of withWideNoError at construction", async ({ seat }) => {
-    let called = false;
-    const option = WideStub.withWideNoError(() => {
-      called = true;
-      return undefined as never;
-    });
-    await wideStubNoError(new WideStub(seat, option));
-    check.isTrue(seat, called, "withWideNoError sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("noError-failing");
-    const double = WideStub.newFailing(seat, want);
-    const outcome = await settle(() => wideStubNoError(double));
-    const message = "noError fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new WideStub(seat);
-    const want = wideStubNoErrorPin();
-    double.onNoError.returns(want);
-    await wideStubNoError(double);
-    double.resetCalls();
-    check.equal(seat, await wideStubNoError(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("WideStub", () => {
-  const instance = (double: WideStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * quad alone.
+ */
+function wideStubInstance(double: WideStub) {
+  return {
     stub: double.onQuad,
     call: () => wideStubQuad(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new WideStub(seat)),
-    withClock: (seat, clock) => instance(new WideStub(seat, WideStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(WideStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new WideStub(seat, WideStub.withRandSource(random))),
-    benchMode: (seat) => instance(new WideStub(seat, WideStub.benchMode())),
-    strict: (seat) => instance(new WideStub(seat, WideStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes quad to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new WideStub(seat);
-    await settle(() => wideStubQuad(new WideStub(seat, WideStub.delegateTo(inner))));
-    inner.onQuad.assertCalledOnce(seat, "quad reaches the implementation");
-  });
+describe("WideStub", () => {
+  describe("quad", () => {
+    const checks = behaviour("Wide.quad", (seat) => {
+      const double = new WideStub(seat);
+      return {
+        stub: double.onQuad,
+        call: () => wideStubQuad(double),
+        override: (mark) => {
+          double.onQuad.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails quad with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("quad-delegate");
-    const inner = new WideStub(seat);
-    inner.onQuad.faults(want, 1);
-    const double = new WideStub(seat, WideStub.delegateTo(inner));
-    const outcome = await settle(() => wideStubQuad(double));
-    const message = "quad fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new WideStub(undefined);
+      await wideStubQuad(double);
+      expect(double.onQuad.callCount).isEqualTo(1, "quad records the call");
+      const got = double.onQuad.calls[0];
+      const args = wideStubQuadArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
 
-  test("passes triple to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new WideStub(seat);
-    await settle(() => wideStubTriple(new WideStub(seat, WideStub.delegateTo(inner))));
-    inner.onTriple.assertCalledOnce(seat, "triple reaches the implementation");
-  });
-
-  test("fails triple with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("triple-delegate");
-    const inner = new WideStub(seat);
-    inner.onTriple.faults(want, 1);
-    const double = new WideStub(seat, WideStub.delegateTo(inner));
-    const outcome = await settle(() => wideStubTriple(double));
-    const message = "triple fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new WideStub(undefined);
+      let seen = 0;
+      double.onQuad.onRecord(() => {
+        seen += 1;
+      });
+      await wideStubQuad(double);
+      await wideStubQuad(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of quad");
+    });
   });
 
-  test("passes noError to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new WideStub(seat);
-    await settle(() => wideStubNoError(new WideStub(seat, WideStub.delegateTo(inner))));
-    inner.onNoError.assertCalledOnce(seat, "noError reaches the implementation");
+  describe("triple", () => {
+    const checks = behaviour("Wide.triple", (seat) => {
+      const double = new WideStub(seat);
+      return {
+        stub: double.onTriple,
+        call: () => wideStubTriple(double),
+        override: (mark) => {
+          double.onTriple.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new WideStub(undefined);
+      await wideStubTriple(double);
+      expect(double.onTriple.callCount).isEqualTo(1, "triple records the call");
+      const got = double.onTriple.calls[0];
+      const args = wideStubTripleArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new WideStub(undefined);
+      let seen = 0;
+      double.onTriple.onRecord(() => {
+        seen += 1;
+      });
+      await wideStubTriple(double);
+      await wideStubTriple(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of triple");
+    });
   });
 
-  test("fails noError with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("noError-delegate");
-    const inner = new WideStub(seat);
-    inner.onNoError.faults(want, 1);
-    const double = new WideStub(seat, WideStub.delegateTo(inner));
-    const outcome = await settle(() => wideStubNoError(double));
-    const message = "noError fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("noError", () => {
+    const checks = behaviour("Wide.noError", (seat) => {
+      const double = new WideStub(seat);
+      return {
+        stub: double.onNoError,
+        call: () => wideStubNoError(double),
+        override: (mark) => {
+          double.onNoError.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new WideStub(undefined);
+      await wideStubNoError(double);
+      expect(double.onNoError.callCount).isEqualTo(1, "noError records the call");
+      const got = double.onNoError.calls[0];
+      const args = wideStubNoErrorArgs();
+      expect(got?.id).isEqualTo(args[0], "the call records id");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new WideStub(undefined);
+      let seen = 0;
+      double.onNoError.onRecord(() => {
+        seen += 1;
+      });
+      await wideStubNoError(double);
+      await wideStubNoError(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of noError");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => wideStubInstance(new WideStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of quad", async () => {
+      const double = new WideStub(undefined);
+      await wideStubQuad(double);
+      double.resetCalls();
+      expect(double.onQuad.callCount).isEqualTo(0, "resetCalls clears the calls of quad");
+    });
+
+    it("keeps the result of returns of quad", async () => {
+      const double = new WideStub(undefined);
+      const want = wideStubQuadPin();
+      double.onQuad.returns(want);
+      double.resetCalls();
+      expect(await wideStubQuad(double)).isEqualTo(want, "resetCalls keeps the result of quad");
+    });
+
+    it("clears the recorded calls of triple", async () => {
+      const double = new WideStub(undefined);
+      await wideStubTriple(double);
+      double.resetCalls();
+      expect(double.onTriple.callCount).isEqualTo(0, "resetCalls clears the calls of triple");
+    });
+
+    it("keeps the result of returns of triple", async () => {
+      const double = new WideStub(undefined);
+      const want = wideStubTriplePin();
+      double.onTriple.returns(want);
+      double.resetCalls();
+      expect(await wideStubTriple(double)).isEqualTo(want, "resetCalls keeps the result of triple");
+    });
+
+    it("clears the recorded calls of noError", async () => {
+      const double = new WideStub(undefined);
+      await wideStubNoError(double);
+      double.resetCalls();
+      expect(double.onNoError.callCount).isEqualTo(0, "resetCalls clears the calls of noError");
+    });
+
+    it("keeps the result of returns of noError", async () => {
+      const double = new WideStub(undefined);
+      const want = wideStubNoErrorPin();
+      double.onNoError.returns(want);
+      double.resetCalls();
+      expect(await wideStubNoError(double)).isEqualTo(want, "resetCalls keeps the result of noError");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => wideStubInstance(WideStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails quad with its error", async () => {
+      const want = new Error("quad-failing");
+      const double = WideStub.newFailing(undefined, want);
+      const outcome = await settle(() => wideStubQuad(double));
+      const message = "quad fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails triple with its error", async () => {
+      const want = new Error("triple-failing");
+      const double = WideStub.newFailing(undefined, want);
+      const outcome = await settle(() => wideStubTriple(double));
+      const message = "triple fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails noError with its error", async () => {
+      const want = new Error("noError-failing");
+      const double = WideStub.newFailing(undefined, want);
+      const outcome = await settle(() => wideStubNoError(double));
+      const message = "noError fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => wideStubInstance(new WideStub(seat, WideStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes quad to the implementation", async () => {
+      const inner = new WideStub(undefined);
+      await settle(() => wideStubQuad(new WideStub(undefined, WideStub.delegateTo(inner))));
+      expect(inner.onQuad.callCount).isEqualTo(1, "quad calls the implementation");
+    });
+
+    it("fails quad with the error of the implementation", async () => {
+      const want = new Error("quad-delegate");
+      const inner = new WideStub(undefined);
+      inner.onQuad.faults(want, 1);
+      const double = new WideStub(undefined, WideStub.delegateTo(inner));
+      const outcome = await settle(() => wideStubQuad(double));
+      const message = "quad fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes triple to the implementation", async () => {
+      const inner = new WideStub(undefined);
+      await settle(() => wideStubTriple(new WideStub(undefined, WideStub.delegateTo(inner))));
+      expect(inner.onTriple.callCount).isEqualTo(1, "triple calls the implementation");
+    });
+
+    it("fails triple with the error of the implementation", async () => {
+      const want = new Error("triple-delegate");
+      const inner = new WideStub(undefined);
+      inner.onTriple.faults(want, 1);
+      const double = new WideStub(undefined, WideStub.delegateTo(inner));
+      const outcome = await settle(() => wideStubTriple(double));
+      const message = "triple fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes noError to the implementation", async () => {
+      const inner = new WideStub(undefined);
+      await settle(() => wideStubNoError(new WideStub(undefined, WideStub.delegateTo(inner))));
+      expect(inner.onNoError.callCount).isEqualTo(1, "noError calls the implementation");
+    });
+
+    it("fails noError with the error of the implementation", async () => {
+      const want = new Error("noError-delegate");
+      const inner = new WideStub(undefined);
+      inner.onNoError.faults(want, 1);
+      const double = new WideStub(undefined, WideStub.delegateTo(inner));
+      const outcome = await settle(() => wideStubNoError(double));
+      const message = "noError fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => wideStubInstance(new WideStub(seat, WideStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      wideStubInstance(new WideStub(seat, WideStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => wideStubInstance(new WideStub(seat, WideStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        wideStubInstance(new WideStub(seat, WideStub.withClock(clock), WideStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails quad with its error", async () => {
+      const want = new Error("quad-failing");
+      const double = new WideStub(undefined, WideStub.failing(want));
+      const outcome = await settle(() => wideStubQuad(double));
+      const message = "quad fails with the error of WideStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails triple with its error", async () => {
+      const want = new Error("triple-failing");
+      const double = new WideStub(undefined, WideStub.failing(want));
+      const outcome = await settle(() => wideStubTriple(double));
+      const message = "triple fails with the error of WideStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails noError with its error", async () => {
+      const want = new Error("noError-failing");
+      const double = new WideStub(undefined, WideStub.failing(want));
+      const outcome = await settle(() => wideStubNoError(double));
+      const message = "noError fails with the error of WideStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withWideQuad", () => {
+    it("sets the function of quad", async () => {
+      let called = false;
+      const option = WideStub.withWideQuad(() => {
+        called = true;
+        return undefined as never;
+      });
+      await wideStubQuad(new WideStub(undefined, option));
+      expect(called).isTrue("withWideQuad sets the function of quad");
+    });
+  });
+
+  describe("withWideTriple", () => {
+    it("sets the function of triple", async () => {
+      let called = false;
+      const option = WideStub.withWideTriple(() => {
+        called = true;
+        return undefined as never;
+      });
+      await wideStubTriple(new WideStub(undefined, option));
+      expect(called).isTrue("withWideTriple sets the function of triple");
+    });
+  });
+
+  describe("withWideNoError", () => {
+    it("sets the function of noError", async () => {
+      let called = false;
+      const option = WideStub.withWideNoError(() => {
+        called = true;
+        return undefined as never;
+      });
+      await wideStubNoError(new WideStub(undefined, option));
+      expect(called).isTrue("withWideNoError sets the function of noError");
+    });
   });
 });
 
-// dokimi:provenance sha256:bd1c732cda1817a69a70879f1101b6ee00bb861e70f43e5b78b72a056c74e880
+describe("WideQuadStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of quad", async () => {
+      const double = new WideStub(undefined);
+      const want = wideStubQuadPin();
+      double.onQuad.returns(want);
+      expect(await wideStubQuad(double)).isEqualTo(want, "quad returns the result that returns sets");
+    });
+
+    it("configures quad for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new WideStub(failures);
+      double.onQuad.strict();
+      double.onQuad.returns(undefined as never);
+      await settle(() => wideStubQuad(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of quad");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of quad to the function", async () => {
+      const double = new WideStub(undefined);
+      let got: unknown[] = [];
+      double.onQuad.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await wideStubQuad(double);
+      const args = wideStubQuadArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("WideTripleStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of triple", async () => {
+      const double = new WideStub(undefined);
+      const want = wideStubTriplePin();
+      double.onTriple.returns(want);
+      expect(await wideStubTriple(double)).isEqualTo(want, "triple returns the result that returns sets");
+    });
+
+    it("configures triple for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new WideStub(failures);
+      double.onTriple.strict();
+      double.onTriple.returns(undefined as never);
+      await settle(() => wideStubTriple(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of triple");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of triple to the function", async () => {
+      const double = new WideStub(undefined);
+      let got: unknown[] = [];
+      double.onTriple.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await wideStubTriple(double);
+      const args = wideStubTripleArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("WideNoErrorStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of noError", async () => {
+      const double = new WideStub(undefined);
+      const want = wideStubNoErrorPin();
+      double.onNoError.returns(want);
+      expect(await wideStubNoError(double)).isEqualTo(want, "noError returns the result that returns sets");
+    });
+
+    it("configures noError for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new WideStub(failures);
+      double.onNoError.strict();
+      double.onNoError.returns(undefined as never);
+      await settle(() => wideStubNoError(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of noError");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of noError to the function", async () => {
+      const double = new WideStub(undefined);
+      let got: unknown[] = [];
+      double.onNoError.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await wideStubNoError(double);
+      const args = wideStubNoErrorArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:88ccf00c425b14547beca82b2bac045dbe8bbdfddd6b4f4876bbfc8a47415729

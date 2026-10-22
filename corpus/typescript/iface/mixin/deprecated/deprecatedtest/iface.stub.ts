@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/deprecated/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Mixed } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Mixed } from "../iface";
 
 /** MixedOldCall records one call of Mixed.old. */
 export interface MixedOldCall {
@@ -31,7 +31,7 @@ export interface MixedNewCall {
 }
 
 /**
- * MixedOldStub configures old, and records its calls. A fault armed
+ * MixedOldStub configures old and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedOldStub extends MethodStub<MixedOldCall> {
@@ -51,7 +51,7 @@ export class MixedOldStub extends MethodStub<MixedOldCall> {
   }
 
   /**
-   * Sets the function of old, for a result that depends on the
+   * Sets the function that computes the result of old from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -81,7 +81,7 @@ export class MixedOldStub extends MethodStub<MixedOldCall> {
 }
 
 /**
- * MixedNewStub configures new, and records its calls. A fault armed
+ * MixedNewStub configures new and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedNewStub extends MethodStub<MixedNewCall> {
@@ -101,7 +101,7 @@ export class MixedNewStub extends MethodStub<MixedNewCall> {
   }
 
   /**
-   * Sets the function of new, for a result that depends on the
+   * Sets the function that computes the result of new from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -130,13 +130,13 @@ export class MixedNewStub extends MethodStub<MixedNewCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures old. */
@@ -147,9 +147,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -179,7 +179,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -192,8 +193,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -205,8 +207,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -243,7 +245,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -280,8 +283,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -304,8 +307,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -329,7 +332,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of old, and returns its result.
+   * Records the call of old and returns its result.
    */
   old(key: string): Promise<string> {
     const call: MixedOldCall = { key };
@@ -337,7 +340,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of new, and returns its result.
+   * Records the call of new and returns its result.
    */
   new(key: string): Promise<string> {
     const call: MixedNewCall = { key };
@@ -347,4 +350,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:5fe57f527cf39251775f914a8293744c4cb79931a30f54666418575a89079a08
+// dokimi:provenance sha256:a5b461552fb9c7be73d5e80410fa750f5bdad5c8942c867c82106a39fb500f11

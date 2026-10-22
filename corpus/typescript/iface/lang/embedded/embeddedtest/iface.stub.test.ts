@@ -2,106 +2,177 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/embedded/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { BaseStub, CloserStub, ComposedStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { BaseStub, CloserStub, ComposedStub } from "./iface.stub";
 
 /** Calls ping of double with the samples of its arguments. */
 function baseStubPing(double: BaseStub): Promise<void> {
   return double.ping();
 }
 
-describe("BaseStub.ping", () => {
-  const checks = behaviour("Base.ping", (seat) => {
-    const double = new BaseStub(seat);
-    return {
-      stub: double.onPing,
-      call: () => baseStubPing(double),
-      override: (mark) => {
-        double.onPing.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new BaseStub(seat);
-    await baseStubPing(double);
-    double.onPing.assertCalledOnce(seat, "ping records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new BaseStub(seat);
-    let seen = 0;
-    double.onPing.onRecord(() => {
-      seen += 1;
-    });
-    await baseStubPing(double);
-    await baseStubPing(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of ping");
-  });
-
-  test("sets the function of withBasePing at construction", async ({ seat }) => {
-    let called = false;
-    const option = BaseStub.withBasePing(() => {
-      called = true;
-      return undefined as never;
-    });
-    await baseStubPing(new BaseStub(seat, option));
-    check.isTrue(seat, called, "withBasePing sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("ping-failing");
-    const double = BaseStub.newFailing(seat, want);
-    const outcome = await settle(() => baseStubPing(double));
-    const message = "ping fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("BaseStub", () => {
-  const instance = (double: BaseStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * ping alone.
+ */
+function baseStubInstance(double: BaseStub) {
+  return {
     stub: double.onPing,
     call: () => baseStubPing(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new BaseStub(seat)),
-    withClock: (seat, clock) => instance(new BaseStub(seat, BaseStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(BaseStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new BaseStub(seat, BaseStub.withRandSource(random))),
-    benchMode: (seat) => instance(new BaseStub(seat, BaseStub.benchMode())),
-    strict: (seat) => instance(new BaseStub(seat, BaseStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes ping to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new BaseStub(seat);
-    await settle(() => baseStubPing(new BaseStub(seat, BaseStub.delegateTo(inner))));
-    inner.onPing.assertCalledOnce(seat, "ping reaches the implementation");
+describe("BaseStub", () => {
+  describe("ping", () => {
+    const checks = behaviour("Base.ping", (seat) => {
+      const double = new BaseStub(seat);
+      return {
+        stub: double.onPing,
+        call: () => baseStubPing(double),
+        override: (mark) => {
+          double.onPing.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new BaseStub(undefined);
+      let seen = 0;
+      double.onPing.onRecord(() => {
+        seen += 1;
+      });
+      await baseStubPing(double);
+      await baseStubPing(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of ping");
+    });
   });
 
-  test("fails ping with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("ping-delegate");
-    const inner = new BaseStub(seat);
-    inner.onPing.faults(want, 1);
-    const double = new BaseStub(seat, BaseStub.delegateTo(inner));
-    const outcome = await settle(() => baseStubPing(double));
-    const message = "ping fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => baseStubInstance(new BaseStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of ping", async () => {
+      const double = new BaseStub(undefined);
+      await baseStubPing(double);
+      double.resetCalls();
+      expect(double.onPing.callCount).isEqualTo(0, "resetCalls clears the calls of ping");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => baseStubInstance(BaseStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails ping with its error", async () => {
+      const want = new Error("ping-failing");
+      const double = BaseStub.newFailing(undefined, want);
+      const outcome = await settle(() => baseStubPing(double));
+      const message = "ping fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => baseStubInstance(new BaseStub(seat, BaseStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes ping to the implementation", async () => {
+      const inner = new BaseStub(undefined);
+      await settle(() => baseStubPing(new BaseStub(undefined, BaseStub.delegateTo(inner))));
+      expect(inner.onPing.callCount).isEqualTo(1, "ping calls the implementation");
+    });
+
+    it("fails ping with the error of the implementation", async () => {
+      const want = new Error("ping-delegate");
+      const inner = new BaseStub(undefined);
+      inner.onPing.faults(want, 1);
+      const double = new BaseStub(undefined, BaseStub.delegateTo(inner));
+      const outcome = await settle(() => baseStubPing(double));
+      const message = "ping fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => baseStubInstance(new BaseStub(seat, BaseStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      baseStubInstance(new BaseStub(seat, BaseStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => baseStubInstance(new BaseStub(seat, BaseStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        baseStubInstance(new BaseStub(seat, BaseStub.withClock(clock), BaseStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails ping with its error", async () => {
+      const want = new Error("ping-failing");
+      const double = new BaseStub(undefined, BaseStub.failing(want));
+      const outcome = await settle(() => baseStubPing(double));
+      const message = "ping fails with the error of BaseStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withBasePing", () => {
+    it("sets the function of ping", async () => {
+      let called = false;
+      const option = BaseStub.withBasePing(() => {
+        called = true;
+        return undefined as never;
+      });
+      await baseStubPing(new BaseStub(undefined, option));
+      expect(called).isTrue("withBasePing sets the function of ping");
+    });
   });
 });
 
@@ -110,101 +181,173 @@ function closerStubClose(double: CloserStub): Promise<void> {
   return double.close();
 }
 
-describe("CloserStub.close", () => {
-  const checks = behaviour("Closer.close", (seat) => {
-    const double = new CloserStub(seat);
-    return {
-      stub: double.onClose,
-      call: () => closerStubClose(double),
-      override: (mark) => {
-        double.onClose.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new CloserStub(seat);
-    await closerStubClose(double);
-    double.onClose.assertCalledOnce(seat, "close records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new CloserStub(seat);
-    let seen = 0;
-    double.onClose.onRecord(() => {
-      seen += 1;
-    });
-    await closerStubClose(double);
-    await closerStubClose(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of close");
-  });
-
-  test("sets the function of withCloserClose at construction", async ({ seat }) => {
-    let called = false;
-    const option = CloserStub.withCloserClose(() => {
-      called = true;
-      return undefined as never;
-    });
-    await closerStubClose(new CloserStub(seat, option));
-    check.isTrue(seat, called, "withCloserClose sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("close-failing");
-    const double = CloserStub.newFailing(seat, want);
-    const outcome = await settle(() => closerStubClose(double));
-    const message = "close fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("CloserStub", () => {
-  const instance = (double: CloserStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * close alone.
+ */
+function closerStubInstance(double: CloserStub) {
+  return {
     stub: double.onClose,
     call: () => closerStubClose(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new CloserStub(seat)),
-    withClock: (seat, clock) => instance(new CloserStub(seat, CloserStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(CloserStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new CloserStub(seat, CloserStub.withRandSource(random))),
-    benchMode: (seat) => instance(new CloserStub(seat, CloserStub.benchMode())),
-    strict: (seat) => instance(new CloserStub(seat, CloserStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes close to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new CloserStub(seat);
-    await settle(() => closerStubClose(new CloserStub(seat, CloserStub.delegateTo(inner))));
-    inner.onClose.assertCalledOnce(seat, "close reaches the implementation");
+describe("CloserStub", () => {
+  describe("close", () => {
+    const checks = behaviour("Closer.close", (seat) => {
+      const double = new CloserStub(seat);
+      return {
+        stub: double.onClose,
+        call: () => closerStubClose(double),
+        override: (mark) => {
+          double.onClose.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new CloserStub(undefined);
+      let seen = 0;
+      double.onClose.onRecord(() => {
+        seen += 1;
+      });
+      await closerStubClose(double);
+      await closerStubClose(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
+    });
   });
 
-  test("fails close with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("close-delegate");
-    const inner = new CloserStub(seat);
-    inner.onClose.faults(want, 1);
-    const double = new CloserStub(seat, CloserStub.delegateTo(inner));
-    const outcome = await settle(() => closerStubClose(double));
-    const message = "close fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => closerStubInstance(new CloserStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of close", async () => {
+      const double = new CloserStub(undefined);
+      await closerStubClose(double);
+      double.resetCalls();
+      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => closerStubInstance(CloserStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = CloserStub.newFailing(undefined, want);
+      const outcome = await settle(() => closerStubClose(double));
+      const message = "close fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => closerStubInstance(new CloserStub(seat, CloserStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes close to the implementation", async () => {
+      const inner = new CloserStub(undefined);
+      await settle(() => closerStubClose(new CloserStub(undefined, CloserStub.delegateTo(inner))));
+      expect(inner.onClose.callCount).isEqualTo(1, "close calls the implementation");
+    });
+
+    it("fails close with the error of the implementation", async () => {
+      const want = new Error("close-delegate");
+      const inner = new CloserStub(undefined);
+      inner.onClose.faults(want, 1);
+      const double = new CloserStub(undefined, CloserStub.delegateTo(inner));
+      const outcome = await settle(() => closerStubClose(double));
+      const message = "close fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => closerStubInstance(new CloserStub(seat, CloserStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      closerStubInstance(new CloserStub(seat, CloserStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => closerStubInstance(new CloserStub(seat, CloserStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        closerStubInstance(new CloserStub(seat, CloserStub.withClock(clock), CloserStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = new CloserStub(undefined, CloserStub.failing(want));
+      const outcome = await settle(() => closerStubClose(double));
+      const message = "close fails with the error of CloserStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withCloserClose", () => {
+    it("sets the function of close", async () => {
+      let called = false;
+      const option = CloserStub.withCloserClose(() => {
+        called = true;
+        return undefined as never;
+      });
+      await closerStubClose(new CloserStub(undefined, option));
+      expect(called).isTrue("withCloserClose sets the function of close");
+    });
   });
 });
 
-/** Returns the samples of the arguments of get, or undefined. */
+/** Returns the samples of the arguments of get. An argument without a sample is undefined. */
 function composedStubGetArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'get-a';
+  a0 = "get-a";
   return [a0];
 }
 
@@ -217,7 +360,7 @@ function composedStubGet(double: ComposedStub): Promise<string> {
 /** Returns the sample of the result of get. */
 function composedStubGetPin(): string {
   let want0: string;
-  want0 = 'get-a';
+  want0 = "get-a";
   return want0;
 }
 
@@ -231,253 +374,380 @@ function composedStubClose(double: ComposedStub): Promise<void> {
   return double.close();
 }
 
-describe("ComposedStub.get", () => {
-  const checks = behaviour("Composed.get", (seat) => {
-    const double = new ComposedStub(seat);
-    return {
-      stub: double.onGet,
-      call: () => composedStubGet(double),
-      override: (mark) => {
-        double.onGet.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    const want = composedStubGetPin();
-    double.onGet.returns(want);
-    check.equal(seat, await composedStubGet(double), want, "get returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    await composedStubGet(double);
-    const got = double.onGet.assertCalledOnce(seat, "get records the call");
-    const args = composedStubGetArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    let seen = 0;
-    double.onGet.onRecord(() => {
-      seen += 1;
-    });
-    await composedStubGet(double);
-    await composedStubGet(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of get");
-  });
-
-  test("sets the function of withComposedGet at construction", async ({ seat }) => {
-    let called = false;
-    const option = ComposedStub.withComposedGet(() => {
-      called = true;
-      return undefined as never;
-    });
-    await composedStubGet(new ComposedStub(seat, option));
-    check.isTrue(seat, called, "withComposedGet sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("get-failing");
-    const double = ComposedStub.newFailing(seat, want);
-    const outcome = await settle(() => composedStubGet(double));
-    const message = "get fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    const want = composedStubGetPin();
-    double.onGet.returns(want);
-    await composedStubGet(double);
-    double.resetCalls();
-    check.equal(seat, await composedStubGet(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("ComposedStub.ping", () => {
-  const checks = behaviour("Composed.ping", (seat) => {
-    const double = new ComposedStub(seat);
-    return {
-      stub: double.onPing,
-      call: () => composedStubPing(double),
-      override: (mark) => {
-        double.onPing.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    await composedStubPing(double);
-    double.onPing.assertCalledOnce(seat, "ping records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    let seen = 0;
-    double.onPing.onRecord(() => {
-      seen += 1;
-    });
-    await composedStubPing(double);
-    await composedStubPing(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of ping");
-  });
-
-  test("sets the function of withComposedPing at construction", async ({ seat }) => {
-    let called = false;
-    const option = ComposedStub.withComposedPing(() => {
-      called = true;
-      return undefined as never;
-    });
-    await composedStubPing(new ComposedStub(seat, option));
-    check.isTrue(seat, called, "withComposedPing sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("ping-failing");
-    const double = ComposedStub.newFailing(seat, want);
-    const outcome = await settle(() => composedStubPing(double));
-    const message = "ping fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ComposedStub.close", () => {
-  const checks = behaviour("Composed.close", (seat) => {
-    const double = new ComposedStub(seat);
-    return {
-      stub: double.onClose,
-      call: () => composedStubClose(double),
-      override: (mark) => {
-        double.onClose.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    await composedStubClose(double);
-    double.onClose.assertCalledOnce(seat, "close records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ComposedStub(seat);
-    let seen = 0;
-    double.onClose.onRecord(() => {
-      seen += 1;
-    });
-    await composedStubClose(double);
-    await composedStubClose(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of close");
-  });
-
-  test("sets the function of withComposedClose at construction", async ({ seat }) => {
-    let called = false;
-    const option = ComposedStub.withComposedClose(() => {
-      called = true;
-      return undefined as never;
-    });
-    await composedStubClose(new ComposedStub(seat, option));
-    check.isTrue(seat, called, "withComposedClose sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("close-failing");
-    const double = ComposedStub.newFailing(seat, want);
-    const outcome = await settle(() => composedStubClose(double));
-    const message = "close fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ComposedStub", () => {
-  const instance = (double: ComposedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * get alone.
+ */
+function composedStubInstance(double: ComposedStub) {
+  return {
     stub: double.onGet,
     call: () => composedStubGet(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ComposedStub(seat)),
-    withClock: (seat, clock) => instance(new ComposedStub(seat, ComposedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ComposedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ComposedStub(seat, ComposedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ComposedStub(seat, ComposedStub.benchMode())),
-    strict: (seat) => instance(new ComposedStub(seat, ComposedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes get to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ComposedStub(seat);
-    await settle(() => composedStubGet(new ComposedStub(seat, ComposedStub.delegateTo(inner))));
-    inner.onGet.assertCalledOnce(seat, "get reaches the implementation");
-  });
+describe("ComposedStub", () => {
+  describe("get", () => {
+    const checks = behaviour("Composed.get", (seat) => {
+      const double = new ComposedStub(seat);
+      return {
+        stub: double.onGet,
+        call: () => composedStubGet(double),
+        override: (mark) => {
+          double.onGet.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails get with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("get-delegate");
-    const inner = new ComposedStub(seat);
-    inner.onGet.faults(want, 1);
-    const double = new ComposedStub(seat, ComposedStub.delegateTo(inner));
-    const outcome = await settle(() => composedStubGet(double));
-    const message = "get fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new ComposedStub(undefined);
+      await composedStubGet(double);
+      expect(double.onGet.callCount).isEqualTo(1, "get records the call");
+      const got = double.onGet.calls[0];
+      const args = composedStubGetArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
 
-  test("passes ping to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ComposedStub(seat);
-    await settle(() => composedStubPing(new ComposedStub(seat, ComposedStub.delegateTo(inner))));
-    inner.onPing.assertCalledOnce(seat, "ping reaches the implementation");
-  });
-
-  test("fails ping with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("ping-delegate");
-    const inner = new ComposedStub(seat);
-    inner.onPing.faults(want, 1);
-    const double = new ComposedStub(seat, ComposedStub.delegateTo(inner));
-    const outcome = await settle(() => composedStubPing(double));
-    const message = "ping fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ComposedStub(undefined);
+      let seen = 0;
+      double.onGet.onRecord(() => {
+        seen += 1;
+      });
+      await composedStubGet(double);
+      await composedStubGet(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of get");
+    });
   });
 
-  test("passes close to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ComposedStub(seat);
-    await settle(() => composedStubClose(new ComposedStub(seat, ComposedStub.delegateTo(inner))));
-    inner.onClose.assertCalledOnce(seat, "close reaches the implementation");
+  describe("ping", () => {
+    const checks = behaviour("Composed.ping", (seat) => {
+      const double = new ComposedStub(seat);
+      return {
+        stub: double.onPing,
+        call: () => composedStubPing(double),
+        override: (mark) => {
+          double.onPing.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ComposedStub(undefined);
+      let seen = 0;
+      double.onPing.onRecord(() => {
+        seen += 1;
+      });
+      await composedStubPing(double);
+      await composedStubPing(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of ping");
+    });
   });
 
-  test("fails close with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("close-delegate");
-    const inner = new ComposedStub(seat);
-    inner.onClose.faults(want, 1);
-    const double = new ComposedStub(seat, ComposedStub.delegateTo(inner));
-    const outcome = await settle(() => composedStubClose(double));
-    const message = "close fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("close", () => {
+    const checks = behaviour("Composed.close", (seat) => {
+      const double = new ComposedStub(seat);
+      return {
+        stub: double.onClose,
+        call: () => composedStubClose(double),
+        override: (mark) => {
+          double.onClose.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ComposedStub(undefined);
+      let seen = 0;
+      double.onClose.onRecord(() => {
+        seen += 1;
+      });
+      await composedStubClose(double);
+      await composedStubClose(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of close");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => composedStubInstance(new ComposedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of get", async () => {
+      const double = new ComposedStub(undefined);
+      await composedStubGet(double);
+      double.resetCalls();
+      expect(double.onGet.callCount).isEqualTo(0, "resetCalls clears the calls of get");
+    });
+
+    it("keeps the result of returns of get", async () => {
+      const double = new ComposedStub(undefined);
+      const want = composedStubGetPin();
+      double.onGet.returns(want);
+      double.resetCalls();
+      expect(await composedStubGet(double)).isEqualTo(want, "resetCalls keeps the result of get");
+    });
+
+    it("clears the recorded calls of ping", async () => {
+      const double = new ComposedStub(undefined);
+      await composedStubPing(double);
+      double.resetCalls();
+      expect(double.onPing.callCount).isEqualTo(0, "resetCalls clears the calls of ping");
+    });
+
+    it("clears the recorded calls of close", async () => {
+      const double = new ComposedStub(undefined);
+      await composedStubClose(double);
+      double.resetCalls();
+      expect(double.onClose.callCount).isEqualTo(0, "resetCalls clears the calls of close");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => composedStubInstance(ComposedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = ComposedStub.newFailing(undefined, want);
+      const outcome = await settle(() => composedStubGet(double));
+      const message = "get fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails ping with its error", async () => {
+      const want = new Error("ping-failing");
+      const double = ComposedStub.newFailing(undefined, want);
+      const outcome = await settle(() => composedStubPing(double));
+      const message = "ping fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = ComposedStub.newFailing(undefined, want);
+      const outcome = await settle(() => composedStubClose(double));
+      const message = "close fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => composedStubInstance(new ComposedStub(seat, ComposedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes get to the implementation", async () => {
+      const inner = new ComposedStub(undefined);
+      await settle(() => composedStubGet(new ComposedStub(undefined, ComposedStub.delegateTo(inner))));
+      expect(inner.onGet.callCount).isEqualTo(1, "get calls the implementation");
+    });
+
+    it("fails get with the error of the implementation", async () => {
+      const want = new Error("get-delegate");
+      const inner = new ComposedStub(undefined);
+      inner.onGet.faults(want, 1);
+      const double = new ComposedStub(undefined, ComposedStub.delegateTo(inner));
+      const outcome = await settle(() => composedStubGet(double));
+      const message = "get fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes ping to the implementation", async () => {
+      const inner = new ComposedStub(undefined);
+      await settle(() => composedStubPing(new ComposedStub(undefined, ComposedStub.delegateTo(inner))));
+      expect(inner.onPing.callCount).isEqualTo(1, "ping calls the implementation");
+    });
+
+    it("fails ping with the error of the implementation", async () => {
+      const want = new Error("ping-delegate");
+      const inner = new ComposedStub(undefined);
+      inner.onPing.faults(want, 1);
+      const double = new ComposedStub(undefined, ComposedStub.delegateTo(inner));
+      const outcome = await settle(() => composedStubPing(double));
+      const message = "ping fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes close to the implementation", async () => {
+      const inner = new ComposedStub(undefined);
+      await settle(() => composedStubClose(new ComposedStub(undefined, ComposedStub.delegateTo(inner))));
+      expect(inner.onClose.callCount).isEqualTo(1, "close calls the implementation");
+    });
+
+    it("fails close with the error of the implementation", async () => {
+      const want = new Error("close-delegate");
+      const inner = new ComposedStub(undefined);
+      inner.onClose.faults(want, 1);
+      const double = new ComposedStub(undefined, ComposedStub.delegateTo(inner));
+      const outcome = await settle(() => composedStubClose(double));
+      const message = "close fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => composedStubInstance(new ComposedStub(seat, ComposedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      composedStubInstance(new ComposedStub(seat, ComposedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => composedStubInstance(new ComposedStub(seat, ComposedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        composedStubInstance(new ComposedStub(seat, ComposedStub.withClock(clock), ComposedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails get with its error", async () => {
+      const want = new Error("get-failing");
+      const double = new ComposedStub(undefined, ComposedStub.failing(want));
+      const outcome = await settle(() => composedStubGet(double));
+      const message = "get fails with the error of ComposedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails ping with its error", async () => {
+      const want = new Error("ping-failing");
+      const double = new ComposedStub(undefined, ComposedStub.failing(want));
+      const outcome = await settle(() => composedStubPing(double));
+      const message = "ping fails with the error of ComposedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails close with its error", async () => {
+      const want = new Error("close-failing");
+      const double = new ComposedStub(undefined, ComposedStub.failing(want));
+      const outcome = await settle(() => composedStubClose(double));
+      const message = "close fails with the error of ComposedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withComposedGet", () => {
+    it("sets the function of get", async () => {
+      let called = false;
+      const option = ComposedStub.withComposedGet(() => {
+        called = true;
+        return undefined as never;
+      });
+      await composedStubGet(new ComposedStub(undefined, option));
+      expect(called).isTrue("withComposedGet sets the function of get");
+    });
+  });
+
+  describe("withComposedPing", () => {
+    it("sets the function of ping", async () => {
+      let called = false;
+      const option = ComposedStub.withComposedPing(() => {
+        called = true;
+        return undefined as never;
+      });
+      await composedStubPing(new ComposedStub(undefined, option));
+      expect(called).isTrue("withComposedPing sets the function of ping");
+    });
+  });
+
+  describe("withComposedClose", () => {
+    it("sets the function of close", async () => {
+      let called = false;
+      const option = ComposedStub.withComposedClose(() => {
+        called = true;
+        return undefined as never;
+      });
+      await composedStubClose(new ComposedStub(undefined, option));
+      expect(called).isTrue("withComposedClose sets the function of close");
+    });
   });
 });
 
-// dokimi:provenance sha256:b22ea3122d92136d3efb0b3dd1c2ba4049bd9ff680c37e0866a8cb55cbb0ab43
+describe("ComposedGetStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of get", async () => {
+      const double = new ComposedStub(undefined);
+      const want = composedStubGetPin();
+      double.onGet.returns(want);
+      expect(await composedStubGet(double)).isEqualTo(want, "get returns the result that returns sets");
+    });
+
+    it("configures get for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new ComposedStub(failures);
+      double.onGet.strict();
+      double.onGet.returns(undefined as never);
+      await settle(() => composedStubGet(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of get");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of get to the function", async () => {
+      const double = new ComposedStub(undefined);
+      let got: unknown[] = [];
+      double.onGet.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await composedStubGet(double);
+      const args = composedStubGetArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:e6f04520b95276a4575b8f51173bab3411c244a970254a9aba5cdf7a410bcd7b

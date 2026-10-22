@@ -2,20 +2,19 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/compositewriter/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Value } from '../iface';
-import { CompositeWriterStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Value } from "../iface";
+import { CompositeWriterStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of set, or undefined. */
+/** Returns the samples of the arguments of set. An argument without a sample is undefined. */
 function compositeWriterStubSetArgs(): [string, Value] {
   let a0 = undefined as unknown as string;
   let a1 = undefined as unknown as Value;
-  a0 = 'set-a';
-  a1 = {key: 'key-a'} as Value;
+  a0 = "set-a";
+  a1 = { key: "key-a", body: "body-a", rev: "rev-a" };
   return [a0, a1];
 }
 
@@ -25,98 +24,193 @@ function compositeWriterStubSet(double: CompositeWriterStub): Promise<void> {
   return double.set(args[0], args[1]);
 }
 
-describe("CompositeWriterStub.set", () => {
-  const checks = behaviour("CompositeWriter.set", (seat) => {
-    const double = new CompositeWriterStub(seat);
-    return {
-      stub: double.onSet,
-      call: () => compositeWriterStubSet(double),
-      override: (mark) => {
-        double.onSet.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new CompositeWriterStub(seat);
-    await compositeWriterStubSet(double);
-    const got = double.onSet.assertCalledOnce(seat, "set records the call");
-    const args = compositeWriterStubSetArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-    check.equal(seat, got?.v, args[1], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new CompositeWriterStub(seat);
-    let seen = 0;
-    double.onSet.onRecord(() => {
-      seen += 1;
-    });
-    await compositeWriterStubSet(double);
-    await compositeWriterStubSet(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of set");
-  });
-
-  test("sets the function of withCompositeWriterSet at construction", async ({ seat }) => {
-    let called = false;
-    const option = CompositeWriterStub.withCompositeWriterSet(() => {
-      called = true;
-      return undefined as never;
-    });
-    await compositeWriterStubSet(new CompositeWriterStub(seat, option));
-    check.isTrue(seat, called, "withCompositeWriterSet sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("set-failing");
-    const double = CompositeWriterStub.newFailing(seat, want);
-    const outcome = await settle(() => compositeWriterStubSet(double));
-    const message = "set fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("CompositeWriterStub", () => {
-  const instance = (double: CompositeWriterStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * set alone.
+ */
+function compositeWriterStubInstance(double: CompositeWriterStub) {
+  return {
     stub: double.onSet,
     call: () => compositeWriterStubSet(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new CompositeWriterStub(seat)),
-    withClock: (seat, clock) => instance(new CompositeWriterStub(seat, CompositeWriterStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(CompositeWriterStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new CompositeWriterStub(seat, CompositeWriterStub.withRandSource(random))),
-    benchMode: (seat) => instance(new CompositeWriterStub(seat, CompositeWriterStub.benchMode())),
-    strict: (seat) => instance(new CompositeWriterStub(seat, CompositeWriterStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes set to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new CompositeWriterStub(seat);
-    await settle(() => compositeWriterStubSet(new CompositeWriterStub(seat, CompositeWriterStub.delegateTo(inner))));
-    inner.onSet.assertCalledOnce(seat, "set reaches the implementation");
+describe("CompositeWriterStub", () => {
+  describe("set", () => {
+    const checks = behaviour("CompositeWriter.set", (seat) => {
+      const double = new CompositeWriterStub(seat);
+      return {
+        stub: double.onSet,
+        call: () => compositeWriterStubSet(double),
+        override: (mark) => {
+          double.onSet.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new CompositeWriterStub(undefined);
+      await compositeWriterStubSet(double);
+      expect(double.onSet.callCount).isEqualTo(1, "set records the call");
+      const got = double.onSet.calls[0];
+      const args = compositeWriterStubSetArgs();
+      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
+      expect.soft(got?.v).isEqualTo(args[1], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new CompositeWriterStub(undefined);
+      let seen = 0;
+      double.onSet.onRecord(() => {
+        seen += 1;
+      });
+      await compositeWriterStubSet(double);
+      await compositeWriterStubSet(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of set");
+    });
   });
 
-  test("fails set with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("set-delegate");
-    const inner = new CompositeWriterStub(seat);
-    inner.onSet.faults(want, 1);
-    const double = new CompositeWriterStub(seat, CompositeWriterStub.delegateTo(inner));
-    const outcome = await settle(() => compositeWriterStubSet(double));
-    const message = "set fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => compositeWriterStubInstance(new CompositeWriterStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of set", async () => {
+      const double = new CompositeWriterStub(undefined);
+      await compositeWriterStubSet(double);
+      double.resetCalls();
+      expect(double.onSet.callCount).isEqualTo(0, "resetCalls clears the calls of set");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => compositeWriterStubInstance(CompositeWriterStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails set with its error", async () => {
+      const want = new Error("set-failing");
+      const double = CompositeWriterStub.newFailing(undefined, want);
+      const outcome = await settle(() => compositeWriterStubSet(double));
+      const message = "set fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => compositeWriterStubInstance(new CompositeWriterStub(seat, CompositeWriterStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes set to the implementation", async () => {
+      const inner = new CompositeWriterStub(undefined);
+      await settle(() => compositeWriterStubSet(new CompositeWriterStub(undefined, CompositeWriterStub.delegateTo(inner))));
+      expect(inner.onSet.callCount).isEqualTo(1, "set calls the implementation");
+    });
+
+    it("fails set with the error of the implementation", async () => {
+      const want = new Error("set-delegate");
+      const inner = new CompositeWriterStub(undefined);
+      inner.onSet.faults(want, 1);
+      const double = new CompositeWriterStub(undefined, CompositeWriterStub.delegateTo(inner));
+      const outcome = await settle(() => compositeWriterStubSet(double));
+      const message = "set fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => compositeWriterStubInstance(new CompositeWriterStub(seat, CompositeWriterStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      compositeWriterStubInstance(new CompositeWriterStub(seat, CompositeWriterStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => compositeWriterStubInstance(new CompositeWriterStub(seat, CompositeWriterStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        compositeWriterStubInstance(new CompositeWriterStub(seat, CompositeWriterStub.withClock(clock), CompositeWriterStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails set with its error", async () => {
+      const want = new Error("set-failing");
+      const double = new CompositeWriterStub(undefined, CompositeWriterStub.failing(want));
+      const outcome = await settle(() => compositeWriterStubSet(double));
+      const message = "set fails with the error of CompositeWriterStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withCompositeWriterSet", () => {
+    it("sets the function of set", async () => {
+      let called = false;
+      const option = CompositeWriterStub.withCompositeWriterSet(() => {
+        called = true;
+        return undefined as never;
+      });
+      await compositeWriterStubSet(new CompositeWriterStub(undefined, option));
+      expect(called).isTrue("withCompositeWriterSet sets the function of set");
+    });
   });
 });
 
-// dokimi:provenance sha256:8dc9e7e7759baec36316ba5637a72ad0294d44b4d473a5dba0d6e32600b1c326
+describe("CompositeWriterSetStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of set to the function", async () => {
+      const double = new CompositeWriterStub(undefined);
+      let got: unknown[] = [];
+      double.onSet.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await compositeWriterStubSet(double);
+      const args = compositeWriterStubSetArgs();
+      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:d3b07b0c11c396a321b2bdc78359dced07dcdbf2a6e8fbbc197758a55b801a84

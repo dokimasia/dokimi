@@ -2,18 +2,18 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/transaction/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Contract, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Contract, Value } from "../iface";
 
 /** ContractRunCall records one call of Contract.run. */
 export interface ContractRunCall {
   /** The argument body. */
-  body: ()=>Promise<void>;
+  body: () => Promise<void>;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
@@ -39,20 +39,20 @@ export interface ContractGetCall {
 }
 
 /**
- * ContractRunStub configures run, and records its calls. A fault armed
+ * ContractRunStub configures run and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractRunStub extends MethodStub<ContractRunCall> {
-  #fn: ((body: ()=>Promise<void>) => void | PromiseLike<void>) | undefined;
+  #fn: ((body: () => Promise<void>) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of run, for a result that depends on the
+   * Sets the function that computes the result of run from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (body: ()=>Promise<void>) => void | PromiseLike<void>): this {
+  func(fn: (body: () => Promise<void>) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -60,7 +60,7 @@ export class ContractRunStub extends MethodStub<ContractRunCall> {
   /**
    * Returns the arms of a call of run with its arguments.
    */
-  arms(body: ()=>Promise<void>): Arms<ContractRunCall, void, void | PromiseLike<void>> {
+  arms(body: () => Promise<void>): Arms<ContractRunCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(body)),
@@ -72,14 +72,14 @@ export class ContractRunStub extends MethodStub<ContractRunCall> {
 }
 
 /**
- * ContractPutStub configures put, and records its calls. A fault armed
+ * ContractPutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractPutStub extends MethodStub<ContractPutCall> {
   #fn: ((key: string, v: Value) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -105,7 +105,7 @@ export class ContractPutStub extends MethodStub<ContractPutCall> {
 }
 
 /**
- * ContractGetStub configures get, and records its calls. A fault armed
+ * ContractGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ContractGetStub extends MethodStub<ContractGetCall> {
@@ -125,7 +125,7 @@ export class ContractGetStub extends MethodStub<ContractGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -154,13 +154,13 @@ export class ContractGetStub extends MethodStub<ContractGetCall> {
   }
 }
 
-/** An option of a ContractStub, which its constructor applies. */
+/** Configures a ContractStub at its construction. */
 export type ContractStubOption = (double: ContractStub) => void;
 
 /**
  * ContractStub is a recording test double of Contract. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ContractStub implements Contract {
   /** Configures run. */
@@ -173,9 +173,9 @@ export class ContractStub implements Contract {
   #strict = false;
 
   /**
-   * Returns a double of Contract that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Contract that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -206,7 +206,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -220,8 +221,9 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -233,8 +235,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -271,7 +273,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -290,7 +293,7 @@ export class ContractStub implements Contract {
    * @param fn - The function.
    * @returns The option.
    */
-  static withContractRun(fn: (body: ()=>Promise<void>) => void | PromiseLike<void>): ContractStubOption {
+  static withContractRun(fn: (body: () => Promise<void>) => void | PromiseLike<void>): ContractStubOption {
     return (double) => {
       double.onRun.func(fn);
     };
@@ -321,8 +324,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -345,8 +348,8 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -370,15 +373,15 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of run, and returns its result.
+   * Records the call of run and returns its result.
    */
-  run(body: ()=>Promise<void>): Promise<void> {
+  run(body: () => Promise<void>): Promise<void> {
     const call: ContractRunCall = { body };
     return answerAsync(this.onRun, call, this.onRun.arms(body));
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(key: string, v: Value): Promise<void> {
     const call: ContractPutCall = { key, v };
@@ -386,7 +389,7 @@ export class ContractStub implements Contract {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(key: string): Promise<Value> {
     const call: ContractGetCall = { key };
@@ -396,13 +399,13 @@ export class ContractStub implements Contract {
 
 // Value is a handle that a method of Contract returns.
 
-/** An option of a ValueStub, which its constructor applies. */
+/** Configures a ValueStub at its construction. */
 export type ValueStubOption = (double: ValueStub) => void;
 
 /**
  * ValueStub is a recording test double of Value. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ValueStub implements Value {
   /** The property key, which a test assigns. */
@@ -413,9 +416,9 @@ export class ValueStub implements Value {
   #strict = false;
 
   /**
-   * Returns a double of Value that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Value that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -443,8 +446,9 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -456,8 +460,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -494,8 +498,8 @@ export class ValueStub implements Value {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -528,4 +532,4 @@ export class ValueStub implements Value {
 
 void compatV1;
 
-// dokimi:provenance sha256:b216affb5d68a8422d40040a3276a8fc2a6498c85b87ba346c3583d722498cb7
+// dokimi:provenance sha256:d843d5573300ab6bad66279f483da42bb343586b3b0ef0d6b1c74190bed8493b

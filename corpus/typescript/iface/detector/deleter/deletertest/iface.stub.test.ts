@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/deleter/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { DeleterStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { DeleterStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of delete, or undefined. */
+/** Returns the samples of the arguments of delete. An argument without a sample is undefined. */
 function deleterStubDeleteArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'delete-a';
+  a0 = "delete-a";
   return [a0];
 }
 
@@ -22,97 +21,192 @@ function deleterStubDelete(double: DeleterStub): Promise<void> {
   return double.delete(args[0]);
 }
 
-describe("DeleterStub.delete", () => {
-  const checks = behaviour("Deleter.delete", (seat) => {
-    const double = new DeleterStub(seat);
-    return {
-      stub: double.onDelete,
-      call: () => deleterStubDelete(double),
-      override: (mark) => {
-        double.onDelete.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new DeleterStub(seat);
-    await deleterStubDelete(double);
-    const got = double.onDelete.assertCalledOnce(seat, "delete records the call");
-    const args = deleterStubDeleteArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new DeleterStub(seat);
-    let seen = 0;
-    double.onDelete.onRecord(() => {
-      seen += 1;
-    });
-    await deleterStubDelete(double);
-    await deleterStubDelete(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of delete");
-  });
-
-  test("sets the function of withDeleterDelete at construction", async ({ seat }) => {
-    let called = false;
-    const option = DeleterStub.withDeleterDelete(() => {
-      called = true;
-      return undefined as never;
-    });
-    await deleterStubDelete(new DeleterStub(seat, option));
-    check.isTrue(seat, called, "withDeleterDelete sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("delete-failing");
-    const double = DeleterStub.newFailing(seat, want);
-    const outcome = await settle(() => deleterStubDelete(double));
-    const message = "delete fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("DeleterStub", () => {
-  const instance = (double: DeleterStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * delete alone.
+ */
+function deleterStubInstance(double: DeleterStub) {
+  return {
     stub: double.onDelete,
     call: () => deleterStubDelete(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new DeleterStub(seat)),
-    withClock: (seat, clock) => instance(new DeleterStub(seat, DeleterStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(DeleterStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new DeleterStub(seat, DeleterStub.withRandSource(random))),
-    benchMode: (seat) => instance(new DeleterStub(seat, DeleterStub.benchMode())),
-    strict: (seat) => instance(new DeleterStub(seat, DeleterStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes delete to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new DeleterStub(seat);
-    await settle(() => deleterStubDelete(new DeleterStub(seat, DeleterStub.delegateTo(inner))));
-    inner.onDelete.assertCalledOnce(seat, "delete reaches the implementation");
+describe("DeleterStub", () => {
+  describe("delete", () => {
+    const checks = behaviour("Deleter.delete", (seat) => {
+      const double = new DeleterStub(seat);
+      return {
+        stub: double.onDelete,
+        call: () => deleterStubDelete(double),
+        override: (mark) => {
+          double.onDelete.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new DeleterStub(undefined);
+      await deleterStubDelete(double);
+      expect(double.onDelete.callCount).isEqualTo(1, "delete records the call");
+      const got = double.onDelete.calls[0];
+      const args = deleterStubDeleteArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new DeleterStub(undefined);
+      let seen = 0;
+      double.onDelete.onRecord(() => {
+        seen += 1;
+      });
+      await deleterStubDelete(double);
+      await deleterStubDelete(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of delete");
+    });
   });
 
-  test("fails delete with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("delete-delegate");
-    const inner = new DeleterStub(seat);
-    inner.onDelete.faults(want, 1);
-    const double = new DeleterStub(seat, DeleterStub.delegateTo(inner));
-    const outcome = await settle(() => deleterStubDelete(double));
-    const message = "delete fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => deleterStubInstance(new DeleterStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of delete", async () => {
+      const double = new DeleterStub(undefined);
+      await deleterStubDelete(double);
+      double.resetCalls();
+      expect(double.onDelete.callCount).isEqualTo(0, "resetCalls clears the calls of delete");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => deleterStubInstance(DeleterStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails delete with its error", async () => {
+      const want = new Error("delete-failing");
+      const double = DeleterStub.newFailing(undefined, want);
+      const outcome = await settle(() => deleterStubDelete(double));
+      const message = "delete fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => deleterStubInstance(new DeleterStub(seat, DeleterStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes delete to the implementation", async () => {
+      const inner = new DeleterStub(undefined);
+      await settle(() => deleterStubDelete(new DeleterStub(undefined, DeleterStub.delegateTo(inner))));
+      expect(inner.onDelete.callCount).isEqualTo(1, "delete calls the implementation");
+    });
+
+    it("fails delete with the error of the implementation", async () => {
+      const want = new Error("delete-delegate");
+      const inner = new DeleterStub(undefined);
+      inner.onDelete.faults(want, 1);
+      const double = new DeleterStub(undefined, DeleterStub.delegateTo(inner));
+      const outcome = await settle(() => deleterStubDelete(double));
+      const message = "delete fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => deleterStubInstance(new DeleterStub(seat, DeleterStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      deleterStubInstance(new DeleterStub(seat, DeleterStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => deleterStubInstance(new DeleterStub(seat, DeleterStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        deleterStubInstance(new DeleterStub(seat, DeleterStub.withClock(clock), DeleterStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails delete with its error", async () => {
+      const want = new Error("delete-failing");
+      const double = new DeleterStub(undefined, DeleterStub.failing(want));
+      const outcome = await settle(() => deleterStubDelete(double));
+      const message = "delete fails with the error of DeleterStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withDeleterDelete", () => {
+    it("sets the function of delete", async () => {
+      let called = false;
+      const option = DeleterStub.withDeleterDelete(() => {
+        called = true;
+        return undefined as never;
+      });
+      await deleterStubDelete(new DeleterStub(undefined, option));
+      expect(called).isTrue("withDeleterDelete sets the function of delete");
+    });
   });
 });
 
-// dokimi:provenance sha256:2758bb41d9a3ea8bb8ea88b140f4bfad94cbd23eeb2c75121b745ba8c5223537
+describe("DeleterDeleteStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of delete to the function", async () => {
+      const double = new DeleterStub(undefined);
+      let got: unknown[] = [];
+      double.onDelete.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await deleterStubDelete(double);
+      const args = deleterStubDeleteArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:1fd705274ce709bd8370d27ce95cccd6c17d421bc262079acf43363412c28181

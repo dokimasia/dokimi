@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/atomic/iface.ts
 
-import { Controlled, type Seat, byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Entry } from '../iface';
-import { EntryStub, MixedStub } from './iface.stub';
+import { Controlled, Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Entry } from "../iface";
+import { EntryStub, MixedStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of write, or undefined. */
+/** Returns the samples of the arguments of write. An argument without a sample is undefined. */
 function mixedStubWriteArgs(): [Entry] {
   let a0 = undefined as unknown as Entry;
-  a0 = {key: 'key-a'} as Entry;
+  a0 = { key: "key-a", left: "left-a", right: "right-a" };
   return [a0];
 }
 
@@ -23,10 +22,10 @@ function mixedStubWrite(double: MixedStub): Promise<void> {
   return double.write(args[0]);
 }
 
-/** Returns the samples of the arguments of read, or undefined. */
+/** Returns the samples of the arguments of read. An argument without a sample is undefined. */
 function mixedStubReadArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'read-a';
+  a0 = "read-a";
   return [a0];
 }
 
@@ -39,220 +38,382 @@ function mixedStubRead(double: MixedStub): Promise<Entry> {
 /** Returns the sample of the result of read. */
 function mixedStubReadPin(): Entry {
   let want0: Entry;
-  want0 = {key: 'key-a'} as Entry;
+  want0 = { key: "key-a", left: "left-a", right: "right-a" };
   return want0;
 }
 
-describe("MixedStub.write", () => {
-  const checks = behaviour("Mixed.write", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onWrite,
-      call: () => mixedStubWrite(double),
-      override: (mark) => {
-        double.onWrite.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubWrite(double);
-    const got = double.onWrite.assertCalledOnce(seat, "write records the call");
-    const args = mixedStubWriteArgs();
-    check.equal(seat, got?.e, args[0], "the call records e");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onWrite.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubWrite(double);
-    await mixedStubWrite(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of write");
-  });
-
-  test("sets the function of withMixedWrite at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedWrite(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubWrite(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedWrite sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("write-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubWrite(double));
-    const message = "write fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub.read", () => {
-  const checks = behaviour("Mixed.read", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onRead,
-      call: () => mixedStubRead(double),
-      override: (mark) => {
-        double.onRead.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    const want = mixedStubReadPin();
-    double.onRead.returns(want);
-    check.equal(seat, await mixedStubRead(double), want, "read returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubRead(double);
-    const got = double.onRead.assertCalledOnce(seat, "read records the call");
-    const args = mixedStubReadArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onRead.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubRead(double);
-    await mixedStubRead(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of read");
-  });
-
-  test("sets the function of withMixedRead at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedRead(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubRead(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedRead sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("read-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubRead(double));
-    const message = "read fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    const want = mixedStubReadPin();
-    double.onRead.returns(want);
-    await mixedStubRead(double);
-    double.resetCalls();
-    check.equal(seat, await mixedStubRead(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("MixedStub", () => {
-  const instance = (double: MixedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * write alone.
+ */
+function mixedStubInstance(double: MixedStub) {
+  return {
     stub: double.onWrite,
     call: () => mixedStubWrite(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MixedStub(seat)),
-    withClock: (seat, clock) => instance(new MixedStub(seat, MixedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MixedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MixedStub(seat, MixedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MixedStub(seat, MixedStub.benchMode())),
-    strict: (seat) => instance(new MixedStub(seat, MixedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes write to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubWrite(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onWrite.assertCalledOnce(seat, "write reaches the implementation");
+describe("MixedStub", () => {
+  describe("write", () => {
+    const checks = behaviour("Mixed.write", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onWrite,
+        call: () => mixedStubWrite(double),
+        override: (mark) => {
+          double.onWrite.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubWrite(double);
+      expect(double.onWrite.callCount).isEqualTo(1, "write records the call");
+      const got = double.onWrite.calls[0];
+      const args = mixedStubWriteArgs();
+      expect(got?.e).isEqualTo(args[0], "the call records e");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onWrite.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubWrite(double);
+      await mixedStubWrite(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of write");
+    });
   });
 
-  test("fails write with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("write-delegate");
-    const inner = new MixedStub(seat);
-    inner.onWrite.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubWrite(double));
-    const message = "write fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("read", () => {
+    const checks = behaviour("Mixed.read", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onRead,
+        call: () => mixedStubRead(double),
+        override: (mark) => {
+          double.onRead.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubRead(double);
+      expect(double.onRead.callCount).isEqualTo(1, "read records the call");
+      const got = double.onRead.calls[0];
+      const args = mixedStubReadArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onRead.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubRead(double);
+      await mixedStubRead(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of read");
+    });
   });
 
-  test("passes read to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubRead(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onRead.assertCalledOnce(seat, "read reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of write", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubWrite(double);
+      double.resetCalls();
+      expect(double.onWrite.callCount).isEqualTo(0, "resetCalls clears the calls of write");
+    });
+
+    it("clears the recorded calls of read", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubRead(double);
+      double.resetCalls();
+      expect(double.onRead.callCount).isEqualTo(0, "resetCalls clears the calls of read");
+    });
+
+    it("keeps the result of returns of read", async () => {
+      const double = new MixedStub(undefined);
+      const want = mixedStubReadPin();
+      double.onRead.returns(want);
+      double.resetCalls();
+      expect(await mixedStubRead(double)).isEqualTo(want, "resetCalls keeps the result of read");
+    });
   });
 
-  test("fails read with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("read-delegate");
-    const inner = new MixedStub(seat);
-    inner.onRead.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubRead(double));
-    const message = "read fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails write with its error", async () => {
+      const want = new Error("write-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubWrite(double));
+      const message = "write fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails read with its error", async () => {
+      const want = new Error("read-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubRead(double));
+      const message = "read fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes write to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubWrite(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onWrite.callCount).isEqualTo(1, "write calls the implementation");
+    });
+
+    it("fails write with the error of the implementation", async () => {
+      const want = new Error("write-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onWrite.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubWrite(double));
+      const message = "write fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes read to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubRead(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onRead.callCount).isEqualTo(1, "read calls the implementation");
+    });
+
+    it("fails read with the error of the implementation", async () => {
+      const want = new Error("read-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onRead.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubRead(double));
+      const message = "read fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mixedStubInstance(new MixedStub(seat, MixedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock), MixedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails write with its error", async () => {
+      const want = new Error("write-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubWrite(double));
+      const message = "write fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails read with its error", async () => {
+      const want = new Error("read-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubRead(double));
+      const message = "read fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMixedWrite", () => {
+    it("sets the function of write", async () => {
+      let called = false;
+      const option = MixedStub.withMixedWrite(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubWrite(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedWrite sets the function of write");
+    });
+  });
+
+  describe("withMixedRead", () => {
+    it("sets the function of read", async () => {
+      let called = false;
+      const option = MixedStub.withMixedRead(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubRead(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedRead sets the function of read");
+    });
+  });
+});
+
+describe("MixedWriteStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of write to the function", async () => {
+      const double = new MixedStub(undefined);
+      let got: unknown[] = [];
+      double.onWrite.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await mixedStubWrite(double);
+      const args = mixedStubWriteArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("MixedReadStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of read", async () => {
+      const double = new MixedStub(undefined);
+      const want = mixedStubReadPin();
+      double.onRead.returns(want);
+      expect(await mixedStubRead(double)).isEqualTo(want, "read returns the result that returns sets");
+    });
+
+    it("configures read for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new MixedStub(failures);
+      double.onRead.strict();
+      double.onRead.returns(undefined as never);
+      await settle(() => mixedStubRead(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of read");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of read to the function", async () => {
+      const double = new MixedStub(undefined);
+      let got: unknown[] = [];
+      double.onRead.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await mixedStubRead(double);
+      const args = mixedStubReadArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
   });
 });
 
 /** Assigns the sample of each property of EntryStub to double. */
 function entryStubProps(double: EntryStub): void {
-  double.key = 'key-a';
-  double.left = 'left-a';
-  double.right = 'right-a';
+  double.key = "key-a";
+  double.left = "left-a";
+  double.right = "right-a";
 }
 
 describe("EntryStub", () => {
-  const builds: [string, (seat: Seat) => EntryStub][] = [
-    ["new", (seat) => new EntryStub(seat)],
-    ["strict", (seat) => new EntryStub(seat, EntryStub.strict())],
-    ["withClock", (seat) => new EntryStub(seat, EntryStub.withClock(new Controlled()))],
-    ["withRandSource", (seat) => new EntryStub(seat, EntryStub.withRandSource(() => 0))],
-    ["benchMode", (seat) => new EntryStub(seat, EntryStub.benchMode())],
-    ["withLatency", (seat) => new EntryStub(seat, EntryStub.withLatency(1))],
-    ["newDelayed", (seat) => EntryStub.newDelayed(seat, 1, new Controlled())],
-  ];
-  for (const [name, build] of builds) {
-    test(`keeps each property across a reset of a double built by ${name}`, ({ seat }) => {
-      const double = build(seat);
-      entryStubProps(double);
-      double.resetCalls();
-      const want = new EntryStub(undefined);
-      entryStubProps(want);
-      check.equal(seat, double.key, want.key, "the reset keeps the property key");
-      check.equal(seat, double.left, want.left, "the reset keeps the property left");
-      check.equal(seat, double.right, want.right, "the reset keeps the property right");
-    });
-  }
+  describe("resetCalls", () => {
+    const tests: { name: string; giveDouble: () => EntryStub }[] = [
+      {
+        name: "keeps each property of a new double",
+        giveDouble: () => new EntryStub(undefined),
+      },
+      {
+        name: "keeps each property of a strict double",
+        giveDouble: () => new EntryStub(undefined, EntryStub.strict()),
+      },
+      {
+        name: "keeps each property of a double with a clock",
+        giveDouble: () => new EntryStub(undefined, EntryStub.withClock(new Controlled())),
+      },
+      {
+        name: "keeps each property of a double with a random source",
+        giveDouble: () => new EntryStub(undefined, EntryStub.withRandSource(() => 0)),
+      },
+      {
+        name: "keeps each property of a double in bench mode",
+        giveDouble: () => new EntryStub(undefined, EntryStub.benchMode()),
+      },
+      {
+        name: "keeps each property of a double with a latency",
+        giveDouble: () => new EntryStub(undefined, EntryStub.withLatency(1)),
+      },
+      {
+        name: "keeps each property of a delayed double",
+        giveDouble: () => EntryStub.newDelayed(undefined, 1, new Controlled()),
+      },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        const double = tt.giveDouble();
+        entryStubProps(double);
+        double.resetCalls();
+        const want = new EntryStub(undefined);
+        entryStubProps(want);
+        expect.soft(double.key).isEqualTo(want.key, "resetCalls keeps the property key");
+        expect.soft(double.left).isEqualTo(want.left, "resetCalls keeps the property left");
+        expect.soft(double.right).isEqualTo(want.right, "resetCalls keeps the property right");
+      });
+    }
+  });
 });
 
-// dokimi:provenance sha256:2dee6c4ee94e92f3bd1fb130902b81c6d53c281d6e039536505793557235030d
+// dokimi:provenance sha256:055a4804f58cd9ba7dab0d680213da67e7e78c5555c46f002fb6ebd6e9ab8838

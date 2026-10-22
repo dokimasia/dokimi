@@ -2,54 +2,64 @@
 // dokimi:plugin sentinel
 // dokimi:source errors/bare/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { EmptyError, FullError, InvalidError } from './iface';
+import { describe, expect, it } from "vitest";
+import { EmptyError, FullError, InvalidError } from "./iface";
 
-describe("EmptyError contract", () => {
-  test("reports a message", ({ seat }) => {
+function emptyErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new EmptyError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("EmptyError", () => {
+  it("matches no other error class of its module", () => {
     const got = new EmptyError();
     const others = [new FullError(), new InvalidError()];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", emptyErrorMessageCases);
 });
 
-describe("FullError contract", () => {
-  test("reports a message", ({ seat }) => {
+function fullErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new FullError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("FullError", () => {
+  it("matches no other error class of its module", () => {
     const got = new FullError();
     const others = [new EmptyError(), new InvalidError()];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", fullErrorMessageCases);
 });
 
-describe("InvalidError contract", () => {
-  test("reports a message", ({ seat }) => {
+function invalidErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new InvalidError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("InvalidError", () => {
+  it("matches no other error class of its module", () => {
     const got = new InvalidError();
     const others = [new EmptyError(), new FullError()];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", invalidErrorMessageCases);
 });
 
-// dokimi:provenance sha256:7779e257dadf675de180903f9a77d8ed7502d52fef540f4c7e08bc4ed7e81bdb
+// dokimi:provenance sha256:65de155a95b5fabd8f35e5a242c7b4e5923ac5531b629e2fd12d84dd1262e527

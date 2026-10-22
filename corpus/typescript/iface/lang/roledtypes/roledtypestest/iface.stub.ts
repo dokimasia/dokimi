@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/lang/roledtypes/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Key, Payload, Store } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Key, Payload, Store } from "../iface";
 
 /** StorePutCall records one call of Store.put. */
 export interface StorePutCall {
@@ -31,14 +31,14 @@ export interface StoreGetCall {
 }
 
 /**
- * StorePutStub configures put, and records its calls. A fault armed
+ * StorePutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StorePutStub extends MethodStub<StorePutCall> {
   #fn: ((key: Key, payload: Payload) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -64,7 +64,7 @@ export class StorePutStub extends MethodStub<StorePutCall> {
 }
 
 /**
- * StoreGetStub configures get, and records its calls. A fault armed
+ * StoreGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreGetStub extends MethodStub<StoreGetCall> {
@@ -84,7 +84,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -113,13 +113,13 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   }
 }
 
-/** An option of a StoreStub, which its constructor applies. */
+/** Configures a StoreStub at its construction. */
 export type StoreStubOption = (double: StoreStub) => void;
 
 /**
  * StoreStub is a recording test double of Store. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class StoreStub implements Store {
   /** Configures put. */
@@ -130,9 +130,9 @@ export class StoreStub implements Store {
   #strict = false;
 
   /**
-   * Returns a double of Store that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Store that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -162,7 +162,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -175,8 +176,9 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -188,8 +190,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -226,7 +228,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -263,8 +266,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -287,8 +290,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -312,7 +315,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(key: Key, payload: Payload): Promise<void> {
     const call: StorePutCall = { key, payload };
@@ -320,7 +323,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(key: Key): Promise<Payload> {
     const call: StoreGetCall = { key };
@@ -330,13 +333,13 @@ export class StoreStub implements Store {
 
 // Payload is a handle that a method of Store returns.
 
-/** An option of a PayloadStub, which its constructor applies. */
+/** Configures a PayloadStub at its construction. */
 export type PayloadStubOption = (double: PayloadStub) => void;
 
 /**
  * PayloadStub is a recording test double of Payload. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class PayloadStub implements Payload {
   /** The property body, which a test assigns. */
@@ -345,9 +348,9 @@ export class PayloadStub implements Payload {
   #strict = false;
 
   /**
-   * Returns a double of Payload that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Payload that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -375,8 +378,9 @@ export class PayloadStub implements Payload {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -388,8 +392,8 @@ export class PayloadStub implements Payload {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -426,8 +430,8 @@ export class PayloadStub implements Payload {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -460,4 +464,4 @@ export class PayloadStub implements Payload {
 
 void compatV1;
 
-// dokimi:provenance sha256:bb24d11e223a6eed885ed3579e34a1e2d1234d93a08509bcb6d12dbd15b63f74
+// dokimi:provenance sha256:382756a31fece463a92ef234f1ae531f02a54c857e408e25cd4f302646c7dd7e

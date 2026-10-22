@@ -2,56 +2,68 @@
 // dokimi:plugin sentinel
 // dokimi:source errors/embedded/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { BaseError, NotFoundError } from './iface';
+import { describe, expect, it } from "vitest";
+import { BaseError, NotFoundError } from "./iface";
 
-describe("BaseError contract", () => {
-  test("reports a message", ({ seat }) => {
-    const got = new BaseError('op-a', 'cause-a');
-    check.notEqual(seat, got.message, "", "an error must report a message");
+function baseErrorMessageCases(): void {
+  it("is not empty", () => {
+    const got = new BaseError("op-a", "cause-a");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 
-  test("does not match the other error classes of its module", ({ seat }) => {
-    const got = new BaseError('op-a', 'cause-a');
-    const others = [new NotFoundError('op-a', 'cause-a')];
+  it("contains each text member", () => {
+    const got = new BaseError("op-a", "cause-a");
+    expect(got.message).doesContain(got.op, "the message contains op");
+  });
+}
+
+function baseErrorCauseCases(): void {
+  it("is the cause of the construction", () => {
+    const cause = new Error("cause");
+    const got = new BaseError("op-a", cause);
+    expect(got.cause).isEqualTo(cause, "the error keeps its cause");
+  });
+}
+
+describe("BaseError", () => {
+  it("matches no other error class of its module", () => {
+    const got = new BaseError("op-a", "cause-a");
+    const others = [new NotFoundError("op-a", "cause-a")];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
 
-  test("exposes the cause it was given", ({ seat }) => {
-    const cause = new Error("cause");
-    const got = new BaseError('op-a', cause);
-    check.equal(seat, got.cause, cause, "an error naming a cause must expose it");
-  });
-
-  test("puts every member it carries into its message", ({ seat }) => {
-    const got = new BaseError('op-a', 'cause-a');
-    check.isTrue(seat, got.message.includes(got.op), "op must reach the message");
-  });
+  describe("message", baseErrorMessageCases);
+  describe("cause", baseErrorCauseCases);
 });
 
-describe("NotFoundError contract", () => {
-  test("reports a message", ({ seat }) => {
-    const got = new NotFoundError('op-a', 'cause-a');
-    check.notEqual(seat, got.message, "", "an error must report a message");
+function notFoundErrorMessageCases(): void {
+  it("is not empty", () => {
+    const got = new NotFoundError("op-a", "cause-a");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
-    const got = new NotFoundError('op-a', 'cause-a');
-    const others = [new BaseError('op-a', 'cause-a')];
+function notFoundErrorCauseCases(): void {
+  it("is the cause of the construction", () => {
+    const cause = new Error("cause");
+    const got = new NotFoundError("op-a", cause);
+    expect(got.cause).isEqualTo(cause, "the error keeps its cause");
+  });
+}
+
+describe("NotFoundError", () => {
+  it("matches no other error class of its module", () => {
+    const got = new NotFoundError("op-a", "cause-a");
+    const others = [new BaseError("op-a", "cause-a")];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
 
-  test("exposes the cause it was given", ({ seat }) => {
-    const cause = new Error("cause");
-    const got = new NotFoundError('op-a', cause);
-    check.equal(seat, got.cause, cause, "an error naming a cause must expose it");
-  });
+  describe("message", notFoundErrorMessageCases);
+  describe("cause", notFoundErrorCauseCases);
 });
 
-// dokimi:provenance sha256:17a920d10f126934fddf155f1e55b10565d194c4472ecf72b4b9fcc556e8edd6
+// dokimi:provenance sha256:ffc82a0a5e5dcd543d0cc85efad9cf892e974bd3539c0b358fa345a89e380d40

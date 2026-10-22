@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/batchreader/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { BatchReader, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { BatchReader, Value } from "../iface";
 
 /** BatchReaderGetAllCall records one call of BatchReader.getAll. */
 export interface BatchReaderGetAllCall {
@@ -21,7 +21,7 @@ export interface BatchReaderGetAllCall {
 }
 
 /**
- * BatchReaderGetAllStub configures getAll, and records its calls. A fault armed
+ * BatchReaderGetAllStub configures getAll and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class BatchReaderGetAllStub extends MethodStub<BatchReaderGetAllCall> {
@@ -41,7 +41,7 @@ export class BatchReaderGetAllStub extends MethodStub<BatchReaderGetAllCall> {
   }
 
   /**
-   * Sets the function of getAll, for a result that depends on the
+   * Sets the function that computes the result of getAll from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -70,13 +70,13 @@ export class BatchReaderGetAllStub extends MethodStub<BatchReaderGetAllCall> {
   }
 }
 
-/** An option of a BatchReaderStub, which its constructor applies. */
+/** Configures a BatchReaderStub at its construction. */
 export type BatchReaderStubOption = (double: BatchReaderStub) => void;
 
 /**
  * BatchReaderStub is a recording test double of BatchReader. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class BatchReaderStub implements BatchReader {
   /** Configures getAll. */
@@ -85,9 +85,9 @@ export class BatchReaderStub implements BatchReader {
   #strict = false;
 
   /**
-   * Returns a double of BatchReader that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of BatchReader that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -116,7 +116,8 @@ export class BatchReaderStub implements BatchReader {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -128,8 +129,9 @@ export class BatchReaderStub implements BatchReader {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -141,8 +143,8 @@ export class BatchReaderStub implements BatchReader {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -179,7 +181,8 @@ export class BatchReaderStub implements BatchReader {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -203,8 +206,8 @@ export class BatchReaderStub implements BatchReader {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -227,8 +230,8 @@ export class BatchReaderStub implements BatchReader {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -252,7 +255,7 @@ export class BatchReaderStub implements BatchReader {
   }
 
   /**
-   * Records the call of getAll, and returns its result.
+   * Records the call of getAll and returns its result.
    */
   getAll(...keys: string[]): Promise<Value[]> {
     const call: BatchReaderGetAllCall = { keys };
@@ -262,4 +265,4 @@ export class BatchReaderStub implements BatchReader {
 
 void compatV1;
 
-// dokimi:provenance sha256:3430a24ee94dd2eef0cf4e338a9aa4d6b5103adaedf34c10454f958ecd9e7f49
+// dokimi:provenance sha256:3f2e6dfc43ea14ae42563d433285e7d455003cf5889ea8bd9ccbc72f26d30559

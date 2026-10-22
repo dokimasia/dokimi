@@ -2,105 +2,122 @@
 // dokimi:plugin sentinel
 // dokimi:source errors/store/iface.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { ClosedError, ConflictError, NotFoundError, WrappedError } from './iface';
+import { describe, expect, it } from "vitest";
+import { ClosedError, ConflictError, NotFoundError, WrappedError } from "./iface";
 
-describe("ClosedError contract", () => {
-  test("reports a message", ({ seat }) => {
+function closedErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new ClosedError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 
-  test("carries the prefix of its module", ({ seat }) => {
+  it("opens with the prefix of its module", () => {
     const got = new ClosedError();
-    check.isTrue(seat, got.message.startsWith("kv: "), "an error class must carry the prefix of its module");
+    expect(got.message).hasPrefix("kv: ", "the message opens with the prefix of the module");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("ClosedError", () => {
+  it("matches no other error class of its module", () => {
     const got = new ClosedError();
-    const others = [new ConflictError(), new NotFoundError('key-a'), new WrappedError('op-a', 'cause-a')];
+    const others = [new ConflictError(), new NotFoundError("key-a"), new WrappedError("op-a", "cause-a")];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", closedErrorMessageCases);
 });
 
-describe("ConflictError contract", () => {
-  test("reports a message", ({ seat }) => {
+function conflictErrorMessageCases(): void {
+  it("is not empty", () => {
     const got = new ConflictError();
-    check.notEqual(seat, got.message, "", "an error must report a message");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 
-  test("carries the prefix of its module", ({ seat }) => {
+  it("opens with the prefix of its module", () => {
     const got = new ConflictError();
-    check.isTrue(seat, got.message.startsWith("kv: "), "an error class must carry the prefix of its module");
+    expect(got.message).hasPrefix("kv: ", "the message opens with the prefix of the module");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
+describe("ConflictError", () => {
+  it("matches no other error class of its module", () => {
     const got = new ConflictError();
-    const others = [new ClosedError(), new NotFoundError('key-a'), new WrappedError('op-a', 'cause-a')];
+    const others = [new ClosedError(), new NotFoundError("key-a"), new WrappedError("op-a", "cause-a")];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
+
+  describe("message", conflictErrorMessageCases);
 });
 
-describe("NotFoundError contract", () => {
-  test("reports a message", ({ seat }) => {
-    const got = new NotFoundError('key-a');
-    check.notEqual(seat, got.message, "", "an error must report a message");
+function notFoundErrorMessageCases(): void {
+  it("is not empty", () => {
+    const got = new NotFoundError("key-a");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 
-  test("carries the prefix of its module", ({ seat }) => {
-    const got = new NotFoundError('key-a');
-    check.isTrue(seat, got.message.startsWith("kv: "), "an error class must carry the prefix of its module");
+  it("opens with the prefix of its module", () => {
+    const got = new NotFoundError("key-a");
+    expect(got.message).hasPrefix("kv: ", "the message opens with the prefix of the module");
   });
 
-  test("does not match the other error classes of its module", ({ seat }) => {
-    const got = new NotFoundError('key-a');
-    const others = [new ClosedError(), new ConflictError(), new WrappedError('op-a', 'cause-a')];
+  it("contains each text member", () => {
+    const got = new NotFoundError("key-a");
+    expect(got.message).doesContain(got.key, "the message contains key");
+  });
+}
+
+describe("NotFoundError", () => {
+  it("matches no other error class of its module", () => {
+    const got = new NotFoundError("key-a");
+    const others = [new ClosedError(), new ConflictError(), new WrappedError("op-a", "cause-a")];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
 
-  test("puts every member it carries into its message", ({ seat }) => {
-    const got = new NotFoundError('key-a');
-    check.isTrue(seat, got.message.includes(got.key), "key must reach the message");
-  });
+  describe("message", notFoundErrorMessageCases);
 });
 
-describe("WrappedError contract", () => {
-  test("reports a message", ({ seat }) => {
-    const got = new WrappedError('op-a', 'cause-a');
-    check.notEqual(seat, got.message, "", "an error must report a message");
+function wrappedErrorMessageCases(): void {
+  it("is not empty", () => {
+    const got = new WrappedError("op-a", "cause-a");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 
-  test("carries the prefix of its module", ({ seat }) => {
-    const got = new WrappedError('op-a', 'cause-a');
-    check.isTrue(seat, got.message.startsWith("kv: "), "an error class must carry the prefix of its module");
+  it("opens with the prefix of its module", () => {
+    const got = new WrappedError("op-a", "cause-a");
+    expect(got.message).hasPrefix("kv: ", "the message opens with the prefix of the module");
   });
 
-  test("does not match the other error classes of its module", ({ seat }) => {
-    const got = new WrappedError('op-a', 'cause-a');
-    const others = [new ClosedError(), new ConflictError(), new NotFoundError('key-a')];
-    for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
-    }
+  it("contains each text member", () => {
+    const got = new WrappedError("op-a", "cause-a");
+    expect(got.message).doesContain(got.op, "the message contains op");
   });
+}
 
-  test("exposes the cause it was given", ({ seat }) => {
+function wrappedErrorCauseCases(): void {
+  it("is the cause of the construction", () => {
     const cause = new Error("cause");
-    const got = new WrappedError('op-a', cause);
-    check.equal(seat, got.cause, cause, "an error naming a cause must expose it");
+    const got = new WrappedError("op-a", cause);
+    expect(got.cause).isEqualTo(cause, "the error keeps its cause");
+  });
+}
+
+describe("WrappedError", () => {
+  it("matches no other error class of its module", () => {
+    const got = new WrappedError("op-a", "cause-a");
+    const others = [new ClosedError(), new ConflictError(), new NotFoundError("key-a")];
+    for (const other of others) {
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
+    }
   });
 
-  test("puts every member it carries into its message", ({ seat }) => {
-    const got = new WrappedError('op-a', 'cause-a');
-    check.isTrue(seat, got.message.includes(got.op), "op must reach the message");
-  });
+  describe("message", wrappedErrorMessageCases);
+  describe("cause", wrappedErrorCauseCases);
 });
 
-// dokimi:provenance sha256:2f2140921cc021c4916fb4c5b7ed22e47720313fb9403c9738220b6271720dda
+// dokimi:provenance sha256:ac1265b23b5fa2b44261d316be0a2f581bd30a4681bc577c7287cb79fd17e441

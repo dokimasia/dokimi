@@ -2,17 +2,16 @@
 // dokimi:plugin stub
 // dokimi:source iface/contract/lease/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { ContractStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { ContractStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of acquire, or undefined. */
+/** Returns the samples of the arguments of acquire. An argument without a sample is undefined. */
 function contractStubAcquireArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'acquire-a';
+  a0 = "acquire-a";
   return [a0];
 }
 
@@ -22,10 +21,10 @@ function contractStubAcquire(double: ContractStub): Promise<void> {
   return double.acquire(args[0]);
 }
 
-/** Returns the samples of the arguments of release, or undefined. */
+/** Returns the samples of the arguments of release. An argument without a sample is undefined. */
 function contractStubReleaseArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'release-a';
+  a0 = "release-a";
   return [a0];
 }
 
@@ -35,169 +34,298 @@ function contractStubRelease(double: ContractStub): Promise<void> {
   return double.release(args[0]);
 }
 
-describe("ContractStub.acquire", () => {
-  const checks = behaviour("Contract.acquire", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onAcquire,
-      call: () => contractStubAcquire(double),
-      override: (mark) => {
-        double.onAcquire.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubAcquire(double);
-    const got = double.onAcquire.assertCalledOnce(seat, "acquire records the call");
-    const args = contractStubAcquireArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onAcquire.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubAcquire(double);
-    await contractStubAcquire(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of acquire");
-  });
-
-  test("sets the function of withContractAcquire at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractAcquire(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubAcquire(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractAcquire sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("acquire-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubAcquire(double));
-    const message = "acquire fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub.release", () => {
-  const checks = behaviour("Contract.release", (seat) => {
-    const double = new ContractStub(seat);
-    return {
-      stub: double.onRelease,
-      call: () => contractStubRelease(double),
-      override: (mark) => {
-        double.onRelease.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    await contractStubRelease(double);
-    const got = double.onRelease.assertCalledOnce(seat, "release records the call");
-    const args = contractStubReleaseArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new ContractStub(seat);
-    let seen = 0;
-    double.onRelease.onRecord(() => {
-      seen += 1;
-    });
-    await contractStubRelease(double);
-    await contractStubRelease(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of release");
-  });
-
-  test("sets the function of withContractRelease at construction", async ({ seat }) => {
-    let called = false;
-    const option = ContractStub.withContractRelease(() => {
-      called = true;
-      return undefined as never;
-    });
-    await contractStubRelease(new ContractStub(seat, option));
-    check.isTrue(seat, called, "withContractRelease sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("release-failing");
-    const double = ContractStub.newFailing(seat, want);
-    const outcome = await settle(() => contractStubRelease(double));
-    const message = "release fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("ContractStub", () => {
-  const instance = (double: ContractStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * acquire alone.
+ */
+function contractStubInstance(double: ContractStub) {
+  return {
     stub: double.onAcquire,
     call: () => contractStubAcquire(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new ContractStub(seat)),
-    withClock: (seat, clock) => instance(new ContractStub(seat, ContractStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(ContractStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new ContractStub(seat, ContractStub.withRandSource(random))),
-    benchMode: (seat) => instance(new ContractStub(seat, ContractStub.benchMode())),
-    strict: (seat) => instance(new ContractStub(seat, ContractStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes acquire to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubAcquire(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onAcquire.assertCalledOnce(seat, "acquire reaches the implementation");
+describe("ContractStub", () => {
+  describe("acquire", () => {
+    const checks = behaviour("Contract.acquire", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onAcquire,
+        call: () => contractStubAcquire(double),
+        override: (mark) => {
+          double.onAcquire.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubAcquire(double);
+      expect(double.onAcquire.callCount).isEqualTo(1, "acquire records the call");
+      const got = double.onAcquire.calls[0];
+      const args = contractStubAcquireArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onAcquire.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubAcquire(double);
+      await contractStubAcquire(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of acquire");
+    });
   });
 
-  test("fails acquire with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("acquire-delegate");
-    const inner = new ContractStub(seat);
-    inner.onAcquire.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubAcquire(double));
-    const message = "acquire fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("release", () => {
+    const checks = behaviour("Contract.release", (seat) => {
+      const double = new ContractStub(seat);
+      return {
+        stub: double.onRelease,
+        call: () => contractStubRelease(double),
+        override: (mark) => {
+          double.onRelease.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubRelease(double);
+      expect(double.onRelease.callCount).isEqualTo(1, "release records the call");
+      const got = double.onRelease.calls[0];
+      const args = contractStubReleaseArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new ContractStub(undefined);
+      let seen = 0;
+      double.onRelease.onRecord(() => {
+        seen += 1;
+      });
+      await contractStubRelease(double);
+      await contractStubRelease(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of release");
+    });
   });
 
-  test("passes release to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new ContractStub(seat);
-    await settle(() => contractStubRelease(new ContractStub(seat, ContractStub.delegateTo(inner))));
-    inner.onRelease.assertCalledOnce(seat, "release reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => contractStubInstance(new ContractStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of acquire", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubAcquire(double);
+      double.resetCalls();
+      expect(double.onAcquire.callCount).isEqualTo(0, "resetCalls clears the calls of acquire");
+    });
+
+    it("clears the recorded calls of release", async () => {
+      const double = new ContractStub(undefined);
+      await contractStubRelease(double);
+      double.resetCalls();
+      expect(double.onRelease.callCount).isEqualTo(0, "resetCalls clears the calls of release");
+    });
   });
 
-  test("fails release with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("release-delegate");
-    const inner = new ContractStub(seat);
-    inner.onRelease.faults(want, 1);
-    const double = new ContractStub(seat, ContractStub.delegateTo(inner));
-    const outcome = await settle(() => contractStubRelease(double));
-    const message = "release fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => contractStubInstance(ContractStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails acquire with its error", async () => {
+      const want = new Error("acquire-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubAcquire(double));
+      const message = "acquire fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails release with its error", async () => {
+      const want = new Error("release-failing");
+      const double = ContractStub.newFailing(undefined, want);
+      const outcome = await settle(() => contractStubRelease(double));
+      const message = "release fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes acquire to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubAcquire(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onAcquire.callCount).isEqualTo(1, "acquire calls the implementation");
+    });
+
+    it("fails acquire with the error of the implementation", async () => {
+      const want = new Error("acquire-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onAcquire.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubAcquire(double));
+      const message = "acquire fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes release to the implementation", async () => {
+      const inner = new ContractStub(undefined);
+      await settle(() => contractStubRelease(new ContractStub(undefined, ContractStub.delegateTo(inner))));
+      expect(inner.onRelease.callCount).isEqualTo(1, "release calls the implementation");
+    });
+
+    it("fails release with the error of the implementation", async () => {
+      const want = new Error("release-delegate");
+      const inner = new ContractStub(undefined);
+      inner.onRelease.faults(want, 1);
+      const double = new ContractStub(undefined, ContractStub.delegateTo(inner));
+      const outcome = await settle(() => contractStubRelease(double));
+      const message = "release fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      contractStubInstance(new ContractStub(seat, ContractStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => contractStubInstance(new ContractStub(seat, ContractStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        contractStubInstance(new ContractStub(seat, ContractStub.withClock(clock), ContractStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails acquire with its error", async () => {
+      const want = new Error("acquire-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubAcquire(double));
+      const message = "acquire fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails release with its error", async () => {
+      const want = new Error("release-failing");
+      const double = new ContractStub(undefined, ContractStub.failing(want));
+      const outcome = await settle(() => contractStubRelease(double));
+      const message = "release fails with the error of ContractStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withContractAcquire", () => {
+    it("sets the function of acquire", async () => {
+      let called = false;
+      const option = ContractStub.withContractAcquire(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubAcquire(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractAcquire sets the function of acquire");
+    });
+  });
+
+  describe("withContractRelease", () => {
+    it("sets the function of release", async () => {
+      let called = false;
+      const option = ContractStub.withContractRelease(() => {
+        called = true;
+        return undefined as never;
+      });
+      await contractStubRelease(new ContractStub(undefined, option));
+      expect(called).isTrue("withContractRelease sets the function of release");
+    });
   });
 });
 
-// dokimi:provenance sha256:7ad946b37a7ef7196cb4cda7d27cdb5534a71a1c6eca3d2c13f32ec62b5e2d80
+describe("ContractAcquireStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of acquire to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onAcquire.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubAcquire(double);
+      const args = contractStubAcquireArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("ContractReleaseStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of release to the function", async () => {
+      const double = new ContractStub(undefined);
+      let got: unknown[] = [];
+      double.onRelease.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await contractStubRelease(double);
+      const args = contractStubReleaseArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:24962d08b1205788dfc2a2958d21122f53d9b72deb87a9b09444900e747a9fd4

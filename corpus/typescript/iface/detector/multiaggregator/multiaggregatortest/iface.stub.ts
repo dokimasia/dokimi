@@ -2,29 +2,29 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/multiaggregator/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { MultiAggregator } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { MultiAggregator } from "../iface";
 
 /** MultiAggregatorStatsCall records one call of MultiAggregator.stats. */
 export interface MultiAggregatorStatsCall {
   /** The result of the call, where it returned one. */
-  result?: [number,number] | undefined;
+  result?: [number, number] | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * MultiAggregatorStatsStub configures stats, and records its calls. A fault armed
+ * MultiAggregatorStatsStub configures stats and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MultiAggregatorStatsStub extends MethodStub<MultiAggregatorStatsCall> {
-  #fn: (() => [number,number] | PromiseLike<[number,number]>) | undefined;
-  #fallback: { readonly value: [number,number] } | undefined;
+  #fn: (() => [number, number] | PromiseLike<[number, number]>) | undefined;
+  #fallback: { readonly value: [number, number] } | undefined;
 
   /**
    * Sets the result of every call of stats. A function and an injected
@@ -33,19 +33,19 @@ export class MultiAggregatorStatsStub extends MethodStub<MultiAggregatorStatsCal
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: [number,number]): this {
+  returns(result: [number, number]): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of stats, for a result that depends on the
+   * Sets the function that computes the result of stats from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => [number,number] | PromiseLike<[number,number]>): this {
+  func(fn: () => [number, number] | PromiseLike<[number, number]>): this {
     this.#fn = fn;
     return this;
   }
@@ -53,7 +53,7 @@ export class MultiAggregatorStatsStub extends MethodStub<MultiAggregatorStatsCal
   /**
    * Returns the arms of a call of stats with its arguments.
    */
-  arms(): Arms<MultiAggregatorStatsCall, [number,number], [number,number] | PromiseLike<[number,number]>> {
+  arms(): Arms<MultiAggregatorStatsCall, [number, number], [number, number] | PromiseLike<[number, number]>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn()),
@@ -68,13 +68,13 @@ export class MultiAggregatorStatsStub extends MethodStub<MultiAggregatorStatsCal
   }
 }
 
-/** An option of a MultiAggregatorStub, which its constructor applies. */
+/** Configures a MultiAggregatorStub at its construction. */
 export type MultiAggregatorStubOption = (double: MultiAggregatorStub) => void;
 
 /**
  * MultiAggregatorStub is a recording test double of MultiAggregator. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MultiAggregatorStub implements MultiAggregator {
   /** Configures stats. */
@@ -83,9 +83,9 @@ export class MultiAggregatorStub implements MultiAggregator {
   #strict = false;
 
   /**
-   * Returns a double of MultiAggregator that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of MultiAggregator that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -114,7 +114,8 @@ export class MultiAggregatorStub implements MultiAggregator {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -126,8 +127,9 @@ export class MultiAggregatorStub implements MultiAggregator {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -139,8 +141,8 @@ export class MultiAggregatorStub implements MultiAggregator {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -177,7 +179,8 @@ export class MultiAggregatorStub implements MultiAggregator {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -194,15 +197,15 @@ export class MultiAggregatorStub implements MultiAggregator {
    * @param fn - The function.
    * @returns The option.
    */
-  static withMultiAggregatorStats(fn: () => [number,number] | PromiseLike<[number,number]>): MultiAggregatorStubOption {
+  static withMultiAggregatorStats(fn: () => [number, number] | PromiseLike<[number, number]>): MultiAggregatorStubOption {
     return (double) => {
       double.onStats.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -225,8 +228,8 @@ export class MultiAggregatorStub implements MultiAggregator {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -250,9 +253,9 @@ export class MultiAggregatorStub implements MultiAggregator {
   }
 
   /**
-   * Records the call of stats, and returns its result.
+   * Records the call of stats and returns its result.
    */
-  stats(): Promise<[number,number]> {
+  stats(): Promise<[number, number]> {
     const call: MultiAggregatorStatsCall = {};
     return answerAsync(this.onStats, call, this.onStats.arms());
   }
@@ -260,4 +263,4 @@ export class MultiAggregatorStub implements MultiAggregator {
 
 void compatV1;
 
-// dokimi:provenance sha256:ba7a0efcce75e2af98d56bfb4b5ea0522c3f20a1b981074819308189459b03e0
+// dokimi:provenance sha256:9dbf1b23badfa99227e82629924e46e6fd43b0cfbe73f1c4803b815363a58c8d

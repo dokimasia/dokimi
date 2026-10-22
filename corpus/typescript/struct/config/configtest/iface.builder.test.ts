@@ -2,190 +2,256 @@
 // dokimi:plugin builder
 // dokimi:source struct/config/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Config } from '../iface';
-import { ConfigBuilder } from './iface.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Config } from "../iface";
+import { ConfigBuilder } from "./iface.builder";
 
-describe("ConfigBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
+function configBuilderCreateCases(): void {
+  it("applies the declared default of host", () => {
+    let want: string;
+    want = "localhost";
+    const got = ConfigBuilder.create().build();
+    expect(got.host).isEqualTo(want, "create applies the declared default of host");
+  });
+
+  it("applies the declared default of port", () => {
+    let want: number;
+    want = 8080;
+    const got = ConfigBuilder.create().build();
+    expect(got.port).isEqualTo(want, "create applies the declared default of port");
+  });
+
+  it("applies the declared default of verbose", () => {
+    let want: boolean;
+    want = true;
+    const got = ConfigBuilder.create().build();
+    expect(got.verbose).isEqualTo(want, "create applies the declared default of verbose");
+  });
+
+  it("applies the declared default of ratio", () => {
+    let want: number;
+    want = 0.75;
+    const got = ConfigBuilder.create().build();
+    expect(got.ratio).isEqualTo(want, "create applies the declared default of ratio");
+  });
+
+  it("applies the declared default of fallback", () => {
+    let want: string;
+    want = "undefined";
+    const got = ConfigBuilder.create().build();
+    expect(got.fallback).isEqualTo(want, "create applies the declared default of fallback");
+  });
+}
+
+function configBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
     const seed = new Config();
-    seed.host = 'host-a';
+    seed.host = "host-a";
     seed.port = 1.5;
     seed.verbose = true;
     seed.ratio = 1.5;
     seed.retries = 1.5;
-    seed.undirected = 'undirected-a';
+    seed.undirected = "undirected-a";
     const got = ConfigBuilder.from(seed).build();
-    check.equal(seat, got.host, seed.host, "from keeps the member it was given");
-    check.equal(seat, got.port, seed.port, "from keeps the member it was given");
-    check.equal(seat, got.verbose, seed.verbose, "from keeps the member it was given");
-    check.equal(seat, got.ratio, seed.ratio, "from keeps the member it was given");
-    check.equal(seat, got.retries, seed.retries, "from keeps the member it was given");
-    check.equal(seat, got.undirected, seed.undirected, "from keeps the member it was given");
+    expect.soft(got.host).isEqualTo(seed.host, "from keeps host");
+    expect.soft(got.port).isEqualTo(seed.port, "from keeps port");
+    expect.soft(got.verbose).isEqualTo(seed.verbose, "from keeps verbose");
+    expect.soft(got.ratio).isEqualTo(seed.ratio, "from keeps ratio");
+    expect.soft(got.retries).isEqualTo(seed.retries, "from keeps retries");
+    expect.soft(got.undirected).isEqualTo(seed.undirected, "from keeps undirected");
   });
 
-  test("host carries its declared default", ({ seat }) => {
+  it("keeps the value of its argument", () => {
+    const want = ConfigBuilder.create().build();
+    expect(ConfigBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function configBuilderWithHostCases(): void {
+  it("writes its argument to host", () => {
     let want: string;
-    want = 'localhost';
-    const got = ConfigBuilder.create().build();
-    check.equal(seat, got.host, want, "the constructor applies the declared default");
-  });
-
-  test("port carries its declared default", ({ seat }) => {
-    let want: number;
-    want = 8080;
-    const got = ConfigBuilder.create().build();
-    check.equal(seat, got.port, want, "the constructor applies the declared default");
-  });
-
-  test("verbose carries its declared default", ({ seat }) => {
-    let want: boolean;
-    want = true;
-    const got = ConfigBuilder.create().build();
-    check.equal(seat, got.verbose, want, "the constructor applies the declared default");
-  });
-
-  test("ratio carries its declared default", ({ seat }) => {
-    let want: number;
-    want = 0.75;
-    const got = ConfigBuilder.create().build();
-    check.equal(seat, got.ratio, want, "the constructor applies the declared default");
-  });
-
-  test("fallback carries its declared default", ({ seat }) => {
-    let want: string;
-    want = 'undefined';
-    const got = ConfigBuilder.create().build();
-    check.equal(seat, got.fallback, want, "the constructor applies the declared default");
-  });
-});
-
-describe("ConfigBuilder setters", () => {
-  test("withHost writes host", ({ seat }) => {
-    let want: string;
-    want = 'host-a';
+    want = "host-a";
     const got = ConfigBuilder.create().withHost(want).build();
-    check.equal(seat, got.host, want, "the setter writes what it was given");
+    expect(got.host).isEqualTo(want, "withHost writes its argument to host");
   });
 
-  test("withHost replaces what was already there", ({ seat }) => {
+  it("replaces the value of host", () => {
     let first: string;
     let want: string;
-    first = 'host-a';
-    want = 'host-b';
+    first = "host-a";
+    want = "host-b";
     const got = ConfigBuilder.create().withHost(first).withHost(want).build();
-    check.equal(seat, got.host, want, "the later call wins");
+    expect(got.host).isEqualTo(want, "the second call of withHost replaces the first");
   });
+}
 
-  test("withPort writes port", ({ seat }) => {
+function configBuilderWithPortCases(): void {
+  it("writes its argument to port", () => {
     let want: number;
     want = 1.5;
     const got = ConfigBuilder.create().withPort(want).build();
-    check.equal(seat, got.port, want, "the setter writes what it was given");
+    expect(got.port).isEqualTo(want, "withPort writes its argument to port");
   });
 
-  test("withPort replaces what was already there", ({ seat }) => {
+  it("replaces the value of port", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = ConfigBuilder.create().withPort(first).withPort(want).build();
-    check.equal(seat, got.port, want, "the later call wins");
+    expect(got.port).isEqualTo(want, "the second call of withPort replaces the first");
   });
+}
 
-  test("withVerbose writes verbose", ({ seat }) => {
+function configBuilderWithVerboseCases(): void {
+  it("writes its argument to verbose", () => {
     let want: boolean;
     want = true;
     const got = ConfigBuilder.create().withVerbose(want).build();
-    check.equal(seat, got.verbose, want, "the setter writes what it was given");
+    expect(got.verbose).isEqualTo(want, "withVerbose writes its argument to verbose");
   });
 
-  test("withVerbose replaces what was already there", ({ seat }) => {
+  it("replaces the value of verbose", () => {
     let first: boolean;
     let want: boolean;
     first = true;
     want = false;
     const got = ConfigBuilder.create().withVerbose(first).withVerbose(want).build();
-    check.equal(seat, got.verbose, want, "the later call wins");
+    expect(got.verbose).isEqualTo(want, "the second call of withVerbose replaces the first");
   });
+}
 
-  test("withRatio writes ratio", ({ seat }) => {
+function configBuilderWithRatioCases(): void {
+  it("writes its argument to ratio", () => {
     let want: number;
     want = 1.5;
     const got = ConfigBuilder.create().withRatio(want).build();
-    check.equal(seat, got.ratio, want, "the setter writes what it was given");
+    expect(got.ratio).isEqualTo(want, "withRatio writes its argument to ratio");
   });
 
-  test("withRatio replaces what was already there", ({ seat }) => {
+  it("replaces the value of ratio", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = ConfigBuilder.create().withRatio(first).withRatio(want).build();
-    check.equal(seat, got.ratio, want, "the later call wins");
+    expect(got.ratio).isEqualTo(want, "the second call of withRatio replaces the first");
   });
+}
 
-  test("withRetries writes retries", ({ seat }) => {
+function configBuilderWithRetriesCases(): void {
+  it("writes its argument to retries", () => {
     let want: number;
     want = 1.5;
     const got = ConfigBuilder.create().withRetries(want).build();
-    check.equal(seat, got.retries, want, "the setter writes what it was given");
+    expect(got.retries).isEqualTo(want, "withRetries writes its argument to retries");
   });
 
-  test("withRetries replaces what was already there", ({ seat }) => {
+  it("replaces the value of retries", () => {
     let first: number;
     let want: number;
     first = 1.5;
     want = 2.5;
     const got = ConfigBuilder.create().withRetries(first).withRetries(want).build();
-    check.equal(seat, got.retries, want, "the later call wins");
+    expect(got.retries).isEqualTo(want, "the second call of withRetries replaces the first");
   });
+}
 
-  test("withFallback writes fallback", ({ seat }) => {
+function configBuilderWithFallbackCases(): void {
+  it("writes its argument to fallback", () => {
     let want: string;
-    want = 'fallback-a';
+    want = "fallback-a";
     const got = ConfigBuilder.create().withFallback(want).build();
-    check.isNotNil(seat, got.fallback, "the setter writes the value it was given");
+    expect(got.fallback).isEqualTo(want, "withFallback writes its argument to fallback");
   });
 
-  test("withUndirected writes undirected", ({ seat }) => {
-    let want: string;
-    want = 'undirected-a';
-    const got = ConfigBuilder.create().withUndirected(want).build();
-    check.equal(seat, got.undirected, want, "the setter writes what it was given");
-  });
-
-  test("withUndirected replaces what was already there", ({ seat }) => {
+  it("replaces the value of fallback", () => {
     let first: string;
     let want: string;
-    first = 'undirected-a';
-    want = 'undirected-b';
-    const got = ConfigBuilder.create().withUndirected(first).withUndirected(want).build();
-    check.equal(seat, got.undirected, want, "the later call wins");
+    first = "fallback-a";
+    want = "fallback-b";
+    const got = ConfigBuilder.create().withFallback(first).withFallback(want).build();
+    expect(got.fallback).isEqualTo(want, "the second call of withFallback replaces the first");
   });
-});
+}
 
-describe("ConfigBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function configBuilderWithUndirectedCases(): void {
+  it("writes its argument to undirected", () => {
+    let want: string;
+    want = "undirected-a";
+    const got = ConfigBuilder.create().withUndirected(want).build();
+    expect(got.undirected).isEqualTo(want, "withUndirected writes its argument to undirected");
+  });
+
+  it("replaces the value of undirected", () => {
+    let first: string;
+    let want: string;
+    first = "undirected-a";
+    want = "undirected-b";
+    const got = ConfigBuilder.create().withUndirected(first).withUndirected(want).build();
+    expect(got.undirected).isEqualTo(want, "the second call of withUndirected replaces the first");
+  });
+}
+
+function configBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Config[] = [];
     const record = (value: Config): void => {
       seen.push(value);
     };
     ConfigBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function configBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = ConfigBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = ConfigBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, ConfigBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function configBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = ConfigBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Config();
+    seed.host = "host-a";
+    seed.port = 1.5;
+    seed.verbose = true;
+    seed.ratio = 1.5;
+    seed.retries = 1.5;
+    seed.undirected = "undirected-a";
+    const builder = ConfigBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("ConfigBuilder", () => {
+  describe("create", configBuilderCreateCases);
+  describe("from", configBuilderFromCases);
+  describe("withHost", configBuilderWithHostCases);
+  describe("withPort", configBuilderWithPortCases);
+  describe("withVerbose", configBuilderWithVerboseCases);
+  describe("withRatio", configBuilderWithRatioCases);
+  describe("withRetries", configBuilderWithRetriesCases);
+  describe("withFallback", configBuilderWithFallbackCases);
+  describe("withUndirected", configBuilderWithUndirectedCases);
+  describe("mutate", configBuilderMutateCases);
+  describe("clone", configBuilderCloneCases);
+  describe("build", configBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:a70b83a1efeccd0cc09d9cfcdca90c061f57507aef55e0bd987a3bc97cd241d8
+// dokimi:provenance sha256:0c51ff01408374277fae9798dd53eb6c013bd92a83c4496c46ea7be873d131bb

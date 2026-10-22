@@ -2,12 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/predicate/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { PredicateStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { PredicateStub } from "./iface.stub";
 
 /** Calls isEmpty of double with the samples of its arguments. */
 function predicateStubIsEmpty(double: PredicateStub): boolean {
@@ -21,111 +20,195 @@ function predicateStubIsEmptyPin(): boolean {
   return want0;
 }
 
-describe("PredicateStub.isEmpty", () => {
-  const checks = behaviour("Predicate.isEmpty", (seat) => {
-    const double = new PredicateStub(seat);
-    return {
-      stub: double.onIsEmpty,
-      call: () => predicateStubIsEmpty(double),
-      override: (mark) => {
-        double.onIsEmpty.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new PredicateStub(seat);
-    const want = predicateStubIsEmptyPin();
-    double.onIsEmpty.returns(want);
-    check.equal(seat, predicateStubIsEmpty(double), want, "isEmpty returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new PredicateStub(seat);
-    predicateStubIsEmpty(double);
-    double.onIsEmpty.assertCalledOnce(seat, "isEmpty records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new PredicateStub(seat);
-    let seen = 0;
-    double.onIsEmpty.onRecord(() => {
-      seen += 1;
-    });
-    predicateStubIsEmpty(double);
-    predicateStubIsEmpty(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of isEmpty");
-  });
-
-  test("sets the function of withPredicateIsEmpty at construction", async ({ seat }) => {
-    let called = false;
-    const option = PredicateStub.withPredicateIsEmpty(() => {
-      called = true;
-      return undefined as never;
-    });
-    predicateStubIsEmpty(new PredicateStub(seat, option));
-    check.isTrue(seat, called, "withPredicateIsEmpty sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("isEmpty-failing");
-    const double = PredicateStub.newFailing(seat, want);
-    const outcome = await settle(() => predicateStubIsEmpty(double));
-    const message = "isEmpty fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new PredicateStub(seat);
-    const want = predicateStubIsEmptyPin();
-    double.onIsEmpty.returns(want);
-    predicateStubIsEmpty(double);
-    double.resetCalls();
-    check.equal(seat, predicateStubIsEmpty(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("PredicateStub", () => {
-  const instance = (double: PredicateStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * isEmpty alone.
+ */
+function predicateStubInstance(double: PredicateStub) {
+  return {
     stub: double.onIsEmpty,
     call: () => predicateStubIsEmpty(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new PredicateStub(seat)),
-    withClock: (seat, clock) => instance(new PredicateStub(seat, PredicateStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(PredicateStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new PredicateStub(seat, PredicateStub.withRandSource(random))),
-    benchMode: (seat) => instance(new PredicateStub(seat, PredicateStub.benchMode())),
-    strict: (seat) => instance(new PredicateStub(seat, PredicateStub.strict())),
-    async: false,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes isEmpty to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new PredicateStub(seat);
-    await settle(() => predicateStubIsEmpty(new PredicateStub(seat, PredicateStub.delegateTo(inner))));
-    inner.onIsEmpty.assertCalledOnce(seat, "isEmpty reaches the implementation");
+describe("PredicateStub", () => {
+  describe("isEmpty", () => {
+    const checks = behaviour("Predicate.isEmpty", (seat) => {
+      const double = new PredicateStub(seat);
+      return {
+        stub: double.onIsEmpty,
+        call: () => predicateStubIsEmpty(double),
+        override: (mark) => {
+          double.onIsEmpty.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new PredicateStub(undefined);
+      let seen = 0;
+      double.onIsEmpty.onRecord(() => {
+        seen += 1;
+      });
+      predicateStubIsEmpty(double);
+      predicateStubIsEmpty(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of isEmpty");
+    });
   });
 
-  test("fails isEmpty with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("isEmpty-delegate");
-    const inner = new PredicateStub(seat);
-    inner.onIsEmpty.faults(want, 1);
-    const double = new PredicateStub(seat, PredicateStub.delegateTo(inner));
-    const outcome = await settle(() => predicateStubIsEmpty(double));
-    const message = "isEmpty fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => predicateStubInstance(new PredicateStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of isEmpty", async () => {
+      const double = new PredicateStub(undefined);
+      predicateStubIsEmpty(double);
+      double.resetCalls();
+      expect(double.onIsEmpty.callCount).isEqualTo(0, "resetCalls clears the calls of isEmpty");
+    });
+
+    it("keeps the result of returns of isEmpty", async () => {
+      const double = new PredicateStub(undefined);
+      const want = predicateStubIsEmptyPin();
+      double.onIsEmpty.returns(want);
+      double.resetCalls();
+      expect(predicateStubIsEmpty(double)).isEqualTo(want, "resetCalls keeps the result of isEmpty");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => predicateStubInstance(PredicateStub.newDelayed(seat, duration, clock)),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails isEmpty with its error", async () => {
+      const want = new Error("isEmpty-failing");
+      const double = PredicateStub.newFailing(undefined, want);
+      const outcome = await settle(() => predicateStubIsEmpty(double));
+      const message = "isEmpty fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => predicateStubInstance(new PredicateStub(seat, PredicateStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes isEmpty to the implementation", async () => {
+      const inner = new PredicateStub(undefined);
+      await settle(() => predicateStubIsEmpty(new PredicateStub(undefined, PredicateStub.delegateTo(inner))));
+      expect(inner.onIsEmpty.callCount).isEqualTo(1, "isEmpty calls the implementation");
+    });
+
+    it("fails isEmpty with the error of the implementation", async () => {
+      const want = new Error("isEmpty-delegate");
+      const inner = new PredicateStub(undefined);
+      inner.onIsEmpty.faults(want, 1);
+      const double = new PredicateStub(undefined, PredicateStub.delegateTo(inner));
+      const outcome = await settle(() => predicateStubIsEmpty(double));
+      const message = "isEmpty fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => predicateStubInstance(new PredicateStub(seat, PredicateStub.withClock(clock))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      predicateStubInstance(new PredicateStub(seat, PredicateStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => predicateStubInstance(new PredicateStub(seat, PredicateStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        predicateStubInstance(new PredicateStub(seat, PredicateStub.withClock(clock), PredicateStub.withLatency(duration))),
+      false,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails isEmpty with its error", async () => {
+      const want = new Error("isEmpty-failing");
+      const double = new PredicateStub(undefined, PredicateStub.failing(want));
+      const outcome = await settle(() => predicateStubIsEmpty(double));
+      const message = "isEmpty fails with the error of PredicateStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withPredicateIsEmpty", () => {
+    it("sets the function of isEmpty", async () => {
+      let called = false;
+      const option = PredicateStub.withPredicateIsEmpty(() => {
+        called = true;
+        return undefined as never;
+      });
+      predicateStubIsEmpty(new PredicateStub(undefined, option));
+      expect(called).isTrue("withPredicateIsEmpty sets the function of isEmpty");
+    });
   });
 });
 
-// dokimi:provenance sha256:fc4b825aa462181960162fbbfdef454ed5b78723768ee1af80f394bc087563d9
+describe("PredicateIsEmptyStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of isEmpty", async () => {
+      const double = new PredicateStub(undefined);
+      const want = predicateStubIsEmptyPin();
+      double.onIsEmpty.returns(want);
+      expect(predicateStubIsEmpty(double)).isEqualTo(want, "isEmpty returns the result that returns sets");
+    });
+
+    it("configures isEmpty for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new PredicateStub(failures);
+      double.onIsEmpty.strict();
+      double.onIsEmpty.returns(undefined as never);
+      await settle(() => predicateStubIsEmpty(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of isEmpty");
+    });
+  });
+});
+
+// dokimi:provenance sha256:d83d7f8b125e72ff1fd1e35c6d678068cc8c348a5da4c05d04c27c558ab02c4c

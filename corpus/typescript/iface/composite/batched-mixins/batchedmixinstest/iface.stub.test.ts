@@ -2,19 +2,18 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/batched-mixins/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { BatchedStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { BatchedStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of put, or undefined. */
+/** Returns the samples of the arguments of put. An argument without a sample is undefined. */
 function batchedStubPutArgs(): [string, string] {
   let a0 = undefined as unknown as string;
   let a1 = undefined as unknown as string;
-  a0 = 'put-a';
-  a1 = 'put-a';
+  a0 = "put-a";
+  a1 = "put-a";
   return [a0, a1];
 }
 
@@ -24,10 +23,10 @@ function batchedStubPut(double: BatchedStub): Promise<void> {
   return double.put(args[0], args[1]);
 }
 
-/** Returns the samples of the arguments of read, or undefined. */
+/** Returns the samples of the arguments of read. An argument without a sample is undefined. */
 function batchedStubReadArgs(): [string] {
   let a0 = undefined as unknown as string;
-  a0 = 'read-a';
+  a0 = "read-a";
   return [a0];
 }
 
@@ -40,7 +39,7 @@ function batchedStubRead(double: BatchedStub): Promise<string> {
 /** Returns the sample of the result of read. */
 function batchedStubReadPin(): string {
   let want0: string;
-  want0 = 'read-a';
+  want0 = "read-a";
   return want0;
 }
 
@@ -52,276 +51,438 @@ function batchedStubList(double: BatchedStub): Promise<string[]> {
 /** Returns the sample of the result of list. */
 function batchedStubListPin(): string[] {
   let want0: string[];
-  want0 = ['list-a'];
+  want0 = ["list-a"];
   return want0;
 }
 
-describe("BatchedStub.put", () => {
-  const checks = behaviour("Batched.put", (seat) => {
-    const double = new BatchedStub(seat);
-    return {
-      stub: double.onPut,
-      call: () => batchedStubPut(double),
-      override: (mark) => {
-        double.onPut.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    await batchedStubPut(double);
-    const got = double.onPut.assertCalledOnce(seat, "put records the call");
-    const args = batchedStubPutArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-    check.equal(seat, got?.value, args[1], "the call records value");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    let seen = 0;
-    double.onPut.onRecord(() => {
-      seen += 1;
-    });
-    await batchedStubPut(double);
-    await batchedStubPut(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of put");
-  });
-
-  test("sets the function of withBatchedPut at construction", async ({ seat }) => {
-    let called = false;
-    const option = BatchedStub.withBatchedPut(() => {
-      called = true;
-      return undefined as never;
-    });
-    await batchedStubPut(new BatchedStub(seat, option));
-    check.isTrue(seat, called, "withBatchedPut sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("put-failing");
-    const double = BatchedStub.newFailing(seat, want);
-    const outcome = await settle(() => batchedStubPut(double));
-    const message = "put fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("BatchedStub.read", () => {
-  const checks = behaviour("Batched.read", (seat) => {
-    const double = new BatchedStub(seat);
-    return {
-      stub: double.onRead,
-      call: () => batchedStubRead(double),
-      override: (mark) => {
-        double.onRead.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    const want = batchedStubReadPin();
-    double.onRead.returns(want);
-    check.equal(seat, await batchedStubRead(double), want, "read returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    await batchedStubRead(double);
-    const got = double.onRead.assertCalledOnce(seat, "read records the call");
-    const args = batchedStubReadArgs();
-    check.equal(seat, got?.key, args[0], "the call records key");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    let seen = 0;
-    double.onRead.onRecord(() => {
-      seen += 1;
-    });
-    await batchedStubRead(double);
-    await batchedStubRead(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of read");
-  });
-
-  test("sets the function of withBatchedRead at construction", async ({ seat }) => {
-    let called = false;
-    const option = BatchedStub.withBatchedRead(() => {
-      called = true;
-      return undefined as never;
-    });
-    await batchedStubRead(new BatchedStub(seat, option));
-    check.isTrue(seat, called, "withBatchedRead sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("read-failing");
-    const double = BatchedStub.newFailing(seat, want);
-    const outcome = await settle(() => batchedStubRead(double));
-    const message = "read fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    const want = batchedStubReadPin();
-    double.onRead.returns(want);
-    await batchedStubRead(double);
-    double.resetCalls();
-    check.equal(seat, await batchedStubRead(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("BatchedStub.list", () => {
-  const checks = behaviour("Batched.list", (seat) => {
-    const double = new BatchedStub(seat);
-    return {
-      stub: double.onList,
-      call: () => batchedStubList(double),
-      override: (mark) => {
-        double.onList.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    const want = batchedStubListPin();
-    double.onList.returns(want);
-    check.equal(seat, await batchedStubList(double), want, "list returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    await batchedStubList(double);
-    double.onList.assertCalledOnce(seat, "list records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    let seen = 0;
-    double.onList.onRecord(() => {
-      seen += 1;
-    });
-    await batchedStubList(double);
-    await batchedStubList(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of list");
-  });
-
-  test("sets the function of withBatchedList at construction", async ({ seat }) => {
-    let called = false;
-    const option = BatchedStub.withBatchedList(() => {
-      called = true;
-      return undefined as never;
-    });
-    await batchedStubList(new BatchedStub(seat, option));
-    check.isTrue(seat, called, "withBatchedList sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("list-failing");
-    const double = BatchedStub.newFailing(seat, want);
-    const outcome = await settle(() => batchedStubList(double));
-    const message = "list fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new BatchedStub(seat);
-    const want = batchedStubListPin();
-    double.onList.returns(want);
-    await batchedStubList(double);
-    double.resetCalls();
-    check.equal(seat, await batchedStubList(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("BatchedStub", () => {
-  const instance = (double: BatchedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * put alone.
+ */
+function batchedStubInstance(double: BatchedStub) {
+  return {
     stub: double.onPut,
     call: () => batchedStubPut(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new BatchedStub(seat)),
-    withClock: (seat, clock) => instance(new BatchedStub(seat, BatchedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(BatchedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new BatchedStub(seat, BatchedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new BatchedStub(seat, BatchedStub.benchMode())),
-    strict: (seat) => instance(new BatchedStub(seat, BatchedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes put to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new BatchedStub(seat);
-    await settle(() => batchedStubPut(new BatchedStub(seat, BatchedStub.delegateTo(inner))));
-    inner.onPut.assertCalledOnce(seat, "put reaches the implementation");
-  });
+describe("BatchedStub", () => {
+  describe("put", () => {
+    const checks = behaviour("Batched.put", (seat) => {
+      const double = new BatchedStub(seat);
+      return {
+        stub: double.onPut,
+        call: () => batchedStubPut(double),
+        override: (mark) => {
+          double.onPut.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
 
-  test("fails put with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("put-delegate");
-    const inner = new BatchedStub(seat);
-    inner.onPut.faults(want, 1);
-    const double = new BatchedStub(seat, BatchedStub.delegateTo(inner));
-    const outcome = await settle(() => batchedStubPut(double));
-    const message = "put fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
+    it("records the arguments of the call", async () => {
+      const double = new BatchedStub(undefined);
+      await batchedStubPut(double);
+      expect(double.onPut.callCount).isEqualTo(1, "put records the call");
+      const got = double.onPut.calls[0];
+      const args = batchedStubPutArgs();
+      expect.soft(got?.key).isEqualTo(args[0], "the call records key");
+      expect.soft(got?.value).isEqualTo(args[1], "the call records value");
+    });
 
-  test("passes read to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new BatchedStub(seat);
-    await settle(() => batchedStubRead(new BatchedStub(seat, BatchedStub.delegateTo(inner))));
-    inner.onRead.assertCalledOnce(seat, "read reaches the implementation");
-  });
-
-  test("fails read with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("read-delegate");
-    const inner = new BatchedStub(seat);
-    inner.onRead.faults(want, 1);
-    const double = new BatchedStub(seat, BatchedStub.delegateTo(inner));
-    const outcome = await settle(() => batchedStubRead(double));
-    const message = "read fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new BatchedStub(undefined);
+      let seen = 0;
+      double.onPut.onRecord(() => {
+        seen += 1;
+      });
+      await batchedStubPut(double);
+      await batchedStubPut(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of put");
+    });
   });
 
-  test("passes list to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new BatchedStub(seat);
-    await settle(() => batchedStubList(new BatchedStub(seat, BatchedStub.delegateTo(inner))));
-    inner.onList.assertCalledOnce(seat, "list reaches the implementation");
+  describe("read", () => {
+    const checks = behaviour("Batched.read", (seat) => {
+      const double = new BatchedStub(seat);
+      return {
+        stub: double.onRead,
+        call: () => batchedStubRead(double),
+        override: (mark) => {
+          double.onRead.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new BatchedStub(undefined);
+      await batchedStubRead(double);
+      expect(double.onRead.callCount).isEqualTo(1, "read records the call");
+      const got = double.onRead.calls[0];
+      const args = batchedStubReadArgs();
+      expect(got?.key).isEqualTo(args[0], "the call records key");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new BatchedStub(undefined);
+      let seen = 0;
+      double.onRead.onRecord(() => {
+        seen += 1;
+      });
+      await batchedStubRead(double);
+      await batchedStubRead(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of read");
+    });
   });
 
-  test("fails list with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("list-delegate");
-    const inner = new BatchedStub(seat);
-    inner.onList.faults(want, 1);
-    const double = new BatchedStub(seat, BatchedStub.delegateTo(inner));
-    const outcome = await settle(() => batchedStubList(double));
-    const message = "list fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("list", () => {
+    const checks = behaviour("Batched.list", (seat) => {
+      const double = new BatchedStub(seat);
+      return {
+        stub: double.onList,
+        call: () => batchedStubList(double),
+        override: (mark) => {
+          double.onList.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new BatchedStub(undefined);
+      let seen = 0;
+      double.onList.onRecord(() => {
+        seen += 1;
+      });
+      await batchedStubList(double);
+      await batchedStubList(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of list");
+    });
+  });
+
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => batchedStubInstance(new BatchedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of put", async () => {
+      const double = new BatchedStub(undefined);
+      await batchedStubPut(double);
+      double.resetCalls();
+      expect(double.onPut.callCount).isEqualTo(0, "resetCalls clears the calls of put");
+    });
+
+    it("clears the recorded calls of read", async () => {
+      const double = new BatchedStub(undefined);
+      await batchedStubRead(double);
+      double.resetCalls();
+      expect(double.onRead.callCount).isEqualTo(0, "resetCalls clears the calls of read");
+    });
+
+    it("keeps the result of returns of read", async () => {
+      const double = new BatchedStub(undefined);
+      const want = batchedStubReadPin();
+      double.onRead.returns(want);
+      double.resetCalls();
+      expect(await batchedStubRead(double)).isEqualTo(want, "resetCalls keeps the result of read");
+    });
+
+    it("clears the recorded calls of list", async () => {
+      const double = new BatchedStub(undefined);
+      await batchedStubList(double);
+      double.resetCalls();
+      expect(double.onList.callCount).isEqualTo(0, "resetCalls clears the calls of list");
+    });
+
+    it("keeps the result of returns of list", async () => {
+      const double = new BatchedStub(undefined);
+      const want = batchedStubListPin();
+      double.onList.returns(want);
+      double.resetCalls();
+      expect(await batchedStubList(double)).isEqualTo(want, "resetCalls keeps the result of list");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => batchedStubInstance(BatchedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = BatchedStub.newFailing(undefined, want);
+      const outcome = await settle(() => batchedStubPut(double));
+      const message = "put fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails read with its error", async () => {
+      const want = new Error("read-failing");
+      const double = BatchedStub.newFailing(undefined, want);
+      const outcome = await settle(() => batchedStubRead(double));
+      const message = "read fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails list with its error", async () => {
+      const want = new Error("list-failing");
+      const double = BatchedStub.newFailing(undefined, want);
+      const outcome = await settle(() => batchedStubList(double));
+      const message = "list fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => batchedStubInstance(new BatchedStub(seat, BatchedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes put to the implementation", async () => {
+      const inner = new BatchedStub(undefined);
+      await settle(() => batchedStubPut(new BatchedStub(undefined, BatchedStub.delegateTo(inner))));
+      expect(inner.onPut.callCount).isEqualTo(1, "put calls the implementation");
+    });
+
+    it("fails put with the error of the implementation", async () => {
+      const want = new Error("put-delegate");
+      const inner = new BatchedStub(undefined);
+      inner.onPut.faults(want, 1);
+      const double = new BatchedStub(undefined, BatchedStub.delegateTo(inner));
+      const outcome = await settle(() => batchedStubPut(double));
+      const message = "put fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes read to the implementation", async () => {
+      const inner = new BatchedStub(undefined);
+      await settle(() => batchedStubRead(new BatchedStub(undefined, BatchedStub.delegateTo(inner))));
+      expect(inner.onRead.callCount).isEqualTo(1, "read calls the implementation");
+    });
+
+    it("fails read with the error of the implementation", async () => {
+      const want = new Error("read-delegate");
+      const inner = new BatchedStub(undefined);
+      inner.onRead.faults(want, 1);
+      const double = new BatchedStub(undefined, BatchedStub.delegateTo(inner));
+      const outcome = await settle(() => batchedStubRead(double));
+      const message = "read fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes list to the implementation", async () => {
+      const inner = new BatchedStub(undefined);
+      await settle(() => batchedStubList(new BatchedStub(undefined, BatchedStub.delegateTo(inner))));
+      expect(inner.onList.callCount).isEqualTo(1, "list calls the implementation");
+    });
+
+    it("fails list with the error of the implementation", async () => {
+      const want = new Error("list-delegate");
+      const inner = new BatchedStub(undefined);
+      inner.onList.faults(want, 1);
+      const double = new BatchedStub(undefined, BatchedStub.delegateTo(inner));
+      const outcome = await settle(() => batchedStubList(double));
+      const message = "list fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => batchedStubInstance(new BatchedStub(seat, BatchedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      batchedStubInstance(new BatchedStub(seat, BatchedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => batchedStubInstance(new BatchedStub(seat, BatchedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        batchedStubInstance(new BatchedStub(seat, BatchedStub.withClock(clock), BatchedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails put with its error", async () => {
+      const want = new Error("put-failing");
+      const double = new BatchedStub(undefined, BatchedStub.failing(want));
+      const outcome = await settle(() => batchedStubPut(double));
+      const message = "put fails with the error of BatchedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails read with its error", async () => {
+      const want = new Error("read-failing");
+      const double = new BatchedStub(undefined, BatchedStub.failing(want));
+      const outcome = await settle(() => batchedStubRead(double));
+      const message = "read fails with the error of BatchedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails list with its error", async () => {
+      const want = new Error("list-failing");
+      const double = new BatchedStub(undefined, BatchedStub.failing(want));
+      const outcome = await settle(() => batchedStubList(double));
+      const message = "list fails with the error of BatchedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withBatchedPut", () => {
+    it("sets the function of put", async () => {
+      let called = false;
+      const option = BatchedStub.withBatchedPut(() => {
+        called = true;
+        return undefined as never;
+      });
+      await batchedStubPut(new BatchedStub(undefined, option));
+      expect(called).isTrue("withBatchedPut sets the function of put");
+    });
+  });
+
+  describe("withBatchedRead", () => {
+    it("sets the function of read", async () => {
+      let called = false;
+      const option = BatchedStub.withBatchedRead(() => {
+        called = true;
+        return undefined as never;
+      });
+      await batchedStubRead(new BatchedStub(undefined, option));
+      expect(called).isTrue("withBatchedRead sets the function of read");
+    });
+  });
+
+  describe("withBatchedList", () => {
+    it("sets the function of list", async () => {
+      let called = false;
+      const option = BatchedStub.withBatchedList(() => {
+        called = true;
+        return undefined as never;
+      });
+      await batchedStubList(new BatchedStub(undefined, option));
+      expect(called).isTrue("withBatchedList sets the function of list");
+    });
   });
 });
 
-// dokimi:provenance sha256:ddb0add22a50e8dc7759b1c439bae43917fcab4bc7af313e43c1e61c494869a7
+describe("BatchedPutStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of put to the function", async () => {
+      const double = new BatchedStub(undefined);
+      let got: unknown[] = [];
+      double.onPut.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await batchedStubPut(double);
+      const args = batchedStubPutArgs();
+      expect(got).isEqualTo([args[0], args[1]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("BatchedReadStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of read", async () => {
+      const double = new BatchedStub(undefined);
+      const want = batchedStubReadPin();
+      double.onRead.returns(want);
+      expect(await batchedStubRead(double)).isEqualTo(want, "read returns the result that returns sets");
+    });
+
+    it("configures read for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new BatchedStub(failures);
+      double.onRead.strict();
+      double.onRead.returns(undefined as never);
+      await settle(() => batchedStubRead(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of read");
+    });
+  });
+
+  describe("func", () => {
+    it("passes the arguments of each call of read to the function", async () => {
+      const double = new BatchedStub(undefined);
+      let got: unknown[] = [];
+      double.onRead.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await batchedStubRead(double);
+      const args = batchedStubReadArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("BatchedListStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of list", async () => {
+      const double = new BatchedStub(undefined);
+      const want = batchedStubListPin();
+      double.onList.returns(want);
+      expect(await batchedStubList(double)).isEqualTo(want, "list returns the result that returns sets");
+    });
+
+    it("configures list for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new BatchedStub(failures);
+      double.onList.strict();
+      double.onList.returns(undefined as never);
+      await settle(() => batchedStubList(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of list");
+    });
+  });
+});
+
+// dokimi:provenance sha256:34fc6afe58eb08ddc780067d7232cfe5a112d1788ebdf99ad0444b0a37d6cc0c

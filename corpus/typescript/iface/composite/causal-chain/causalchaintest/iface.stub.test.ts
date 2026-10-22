@@ -2,15 +2,14 @@
 // dokimi:plugin stub
 // dokimi:source iface/composite/causal-chain/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { type Entry, rootEntry } from '../iface';
-import { LogStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { type Entry, rootEntry } from "../iface";
+import { LogStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of append, or undefined. */
+/** Returns the samples of the arguments of append. An argument without a sample is undefined. */
 function logStubAppendArgs(): [Entry] {
   let a0 = undefined as unknown as Entry;
   a0 = rootEntry();
@@ -35,183 +34,301 @@ function logStubReplayPin(): Entry[] {
   return want0;
 }
 
-describe("LogStub.append", () => {
-  const checks = behaviour("Log.append", (seat) => {
-    const double = new LogStub(seat);
-    return {
-      stub: double.onAppend,
-      call: () => logStubAppend(double),
-      override: (mark) => {
-        double.onAppend.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LogStub(seat);
-    await logStubAppend(double);
-    const got = double.onAppend.assertCalledOnce(seat, "append records the call");
-    const args = logStubAppendArgs();
-    check.equal(seat, got?.e, args[0], "the call records e");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LogStub(seat);
-    let seen = 0;
-    double.onAppend.onRecord(() => {
-      seen += 1;
-    });
-    await logStubAppend(double);
-    await logStubAppend(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of append");
-  });
-
-  test("sets the function of withLogAppend at construction", async ({ seat }) => {
-    let called = false;
-    const option = LogStub.withLogAppend(() => {
-      called = true;
-      return undefined as never;
-    });
-    await logStubAppend(new LogStub(seat, option));
-    check.isTrue(seat, called, "withLogAppend sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("append-failing");
-    const double = LogStub.newFailing(seat, want);
-    const outcome = await settle(() => logStubAppend(double));
-    const message = "append fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("LogStub.replay", () => {
-  const checks = behaviour("Log.replay", (seat) => {
-    const double = new LogStub(seat);
-    return {
-      stub: double.onReplay,
-      call: () => logStubReplay(double),
-      override: (mark) => {
-        double.onReplay.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new LogStub(seat);
-    const want = logStubReplayPin();
-    double.onReplay.returns(want);
-    check.equal(seat, await logStubReplay(double), want, "replay returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new LogStub(seat);
-    await logStubReplay(double);
-    double.onReplay.assertCalledOnce(seat, "replay records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new LogStub(seat);
-    let seen = 0;
-    double.onReplay.onRecord(() => {
-      seen += 1;
-    });
-    await logStubReplay(double);
-    await logStubReplay(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of replay");
-  });
-
-  test("sets the function of withLogReplay at construction", async ({ seat }) => {
-    let called = false;
-    const option = LogStub.withLogReplay(() => {
-      called = true;
-      return undefined as never;
-    });
-    await logStubReplay(new LogStub(seat, option));
-    check.isTrue(seat, called, "withLogReplay sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("replay-failing");
-    const double = LogStub.newFailing(seat, want);
-    const outcome = await settle(() => logStubReplay(double));
-    const message = "replay fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new LogStub(seat);
-    const want = logStubReplayPin();
-    double.onReplay.returns(want);
-    await logStubReplay(double);
-    double.resetCalls();
-    check.equal(seat, await logStubReplay(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("LogStub", () => {
-  const instance = (double: LogStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * append alone.
+ */
+function logStubInstance(double: LogStub) {
+  return {
     stub: double.onAppend,
     call: () => logStubAppend(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new LogStub(seat)),
-    withClock: (seat, clock) => instance(new LogStub(seat, LogStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(LogStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new LogStub(seat, LogStub.withRandSource(random))),
-    benchMode: (seat) => instance(new LogStub(seat, LogStub.benchMode())),
-    strict: (seat) => instance(new LogStub(seat, LogStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes append to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LogStub(seat);
-    await settle(() => logStubAppend(new LogStub(seat, LogStub.delegateTo(inner))));
-    inner.onAppend.assertCalledOnce(seat, "append reaches the implementation");
+describe("LogStub", () => {
+  describe("append", () => {
+    const checks = behaviour("Log.append", (seat) => {
+      const double = new LogStub(seat);
+      return {
+        stub: double.onAppend,
+        call: () => logStubAppend(double),
+        override: (mark) => {
+          double.onAppend.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new LogStub(undefined);
+      await logStubAppend(double);
+      expect(double.onAppend.callCount).isEqualTo(1, "append records the call");
+      const got = double.onAppend.calls[0];
+      const args = logStubAppendArgs();
+      expect(got?.e).isEqualTo(args[0], "the call records e");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LogStub(undefined);
+      let seen = 0;
+      double.onAppend.onRecord(() => {
+        seen += 1;
+      });
+      await logStubAppend(double);
+      await logStubAppend(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of append");
+    });
   });
 
-  test("fails append with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("append-delegate");
-    const inner = new LogStub(seat);
-    inner.onAppend.faults(want, 1);
-    const double = new LogStub(seat, LogStub.delegateTo(inner));
-    const outcome = await settle(() => logStubAppend(double));
-    const message = "append fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("replay", () => {
+    const checks = behaviour("Log.replay", (seat) => {
+      const double = new LogStub(seat);
+      return {
+        stub: double.onReplay,
+        call: () => logStubReplay(double),
+        override: (mark) => {
+          double.onReplay.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new LogStub(undefined);
+      let seen = 0;
+      double.onReplay.onRecord(() => {
+        seen += 1;
+      });
+      await logStubReplay(double);
+      await logStubReplay(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of replay");
+    });
   });
 
-  test("passes replay to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new LogStub(seat);
-    await settle(() => logStubReplay(new LogStub(seat, LogStub.delegateTo(inner))));
-    inner.onReplay.assertCalledOnce(seat, "replay reaches the implementation");
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => logStubInstance(new LogStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of append", async () => {
+      const double = new LogStub(undefined);
+      await logStubAppend(double);
+      double.resetCalls();
+      expect(double.onAppend.callCount).isEqualTo(0, "resetCalls clears the calls of append");
+    });
+
+    it("clears the recorded calls of replay", async () => {
+      const double = new LogStub(undefined);
+      await logStubReplay(double);
+      double.resetCalls();
+      expect(double.onReplay.callCount).isEqualTo(0, "resetCalls clears the calls of replay");
+    });
+
+    it("keeps the result of returns of replay", async () => {
+      const double = new LogStub(undefined);
+      const want = logStubReplayPin();
+      double.onReplay.returns(want);
+      double.resetCalls();
+      expect(await logStubReplay(double)).isEqualTo(want, "resetCalls keeps the result of replay");
+    });
   });
 
-  test("fails replay with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("replay-delegate");
-    const inner = new LogStub(seat);
-    inner.onReplay.faults(want, 1);
-    const double = new LogStub(seat, LogStub.delegateTo(inner));
-    const outcome = await settle(() => logStubReplay(double));
-    const message = "replay fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => logStubInstance(LogStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails append with its error", async () => {
+      const want = new Error("append-failing");
+      const double = LogStub.newFailing(undefined, want);
+      const outcome = await settle(() => logStubAppend(double));
+      const message = "append fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails replay with its error", async () => {
+      const want = new Error("replay-failing");
+      const double = LogStub.newFailing(undefined, want);
+      const outcome = await settle(() => logStubReplay(double));
+      const message = "replay fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => logStubInstance(new LogStub(seat, LogStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes append to the implementation", async () => {
+      const inner = new LogStub(undefined);
+      await settle(() => logStubAppend(new LogStub(undefined, LogStub.delegateTo(inner))));
+      expect(inner.onAppend.callCount).isEqualTo(1, "append calls the implementation");
+    });
+
+    it("fails append with the error of the implementation", async () => {
+      const want = new Error("append-delegate");
+      const inner = new LogStub(undefined);
+      inner.onAppend.faults(want, 1);
+      const double = new LogStub(undefined, LogStub.delegateTo(inner));
+      const outcome = await settle(() => logStubAppend(double));
+      const message = "append fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("passes replay to the implementation", async () => {
+      const inner = new LogStub(undefined);
+      await settle(() => logStubReplay(new LogStub(undefined, LogStub.delegateTo(inner))));
+      expect(inner.onReplay.callCount).isEqualTo(1, "replay calls the implementation");
+    });
+
+    it("fails replay with the error of the implementation", async () => {
+      const want = new Error("replay-delegate");
+      const inner = new LogStub(undefined);
+      inner.onReplay.faults(want, 1);
+      const double = new LogStub(undefined, LogStub.delegateTo(inner));
+      const outcome = await settle(() => logStubReplay(double));
+      const message = "replay fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => logStubInstance(new LogStub(seat, LogStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      logStubInstance(new LogStub(seat, LogStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => logStubInstance(new LogStub(seat, LogStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        logStubInstance(new LogStub(seat, LogStub.withClock(clock), LogStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails append with its error", async () => {
+      const want = new Error("append-failing");
+      const double = new LogStub(undefined, LogStub.failing(want));
+      const outcome = await settle(() => logStubAppend(double));
+      const message = "append fails with the error of LogStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+
+    it("fails replay with its error", async () => {
+      const want = new Error("replay-failing");
+      const double = new LogStub(undefined, LogStub.failing(want));
+      const outcome = await settle(() => logStubReplay(double));
+      const message = "replay fails with the error of LogStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withLogAppend", () => {
+    it("sets the function of append", async () => {
+      let called = false;
+      const option = LogStub.withLogAppend(() => {
+        called = true;
+        return undefined as never;
+      });
+      await logStubAppend(new LogStub(undefined, option));
+      expect(called).isTrue("withLogAppend sets the function of append");
+    });
+  });
+
+  describe("withLogReplay", () => {
+    it("sets the function of replay", async () => {
+      let called = false;
+      const option = LogStub.withLogReplay(() => {
+        called = true;
+        return undefined as never;
+      });
+      await logStubReplay(new LogStub(undefined, option));
+      expect(called).isTrue("withLogReplay sets the function of replay");
+    });
   });
 });
 
-// dokimi:provenance sha256:810b5dd93752a74f2c2864c404c6e50c49ff46954250407cdac47bac6c863bee
+describe("LogAppendStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of append to the function", async () => {
+      const double = new LogStub(undefined);
+      let got: unknown[] = [];
+      double.onAppend.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await logStubAppend(double);
+      const args = logStubAppendArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+describe("LogReplayStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of replay", async () => {
+      const double = new LogStub(undefined);
+      const want = logStubReplayPin();
+      double.onReplay.returns(want);
+      expect(await logStubReplay(double)).isEqualTo(want, "replay returns the result that returns sets");
+    });
+
+    it("configures replay for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new LogStub(failures);
+      double.onReplay.strict();
+      double.onReplay.returns(undefined as never);
+      await settle(() => logStubReplay(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of replay");
+    });
+  });
+});
+
+// dokimi:provenance sha256:4518b528ba84595e5524d9cfb73b4b23818aa3604847668ea1561c964bbe6dc1

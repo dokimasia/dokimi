@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/serializable/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Entry, Mixed } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Entry, Mixed } from "../iface";
 
 /** MixedRecordCall records one call of Mixed.record. */
 export interface MixedRecordCall {
@@ -37,14 +37,14 @@ export interface MixedGetCall {
 }
 
 /**
- * MixedRecordStub configures record, and records its calls. A fault armed
+ * MixedRecordStub configures record and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedRecordStub extends MethodStub<MixedRecordCall> {
   #fn: ((e: Entry) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of record, for a result that depends on the
+   * Sets the function that computes the result of record from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -70,7 +70,7 @@ export class MixedRecordStub extends MethodStub<MixedRecordCall> {
 }
 
 /**
- * MixedHistoryStub configures history, and records its calls. A fault armed
+ * MixedHistoryStub configures history and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedHistoryStub extends MethodStub<MixedHistoryCall> {
@@ -90,7 +90,7 @@ export class MixedHistoryStub extends MethodStub<MixedHistoryCall> {
   }
 
   /**
-   * Sets the function of history, for a result that depends on the
+   * Sets the function that computes the result of history from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -120,7 +120,7 @@ export class MixedHistoryStub extends MethodStub<MixedHistoryCall> {
 }
 
 /**
- * MixedGetStub configures get, and records its calls. A fault armed
+ * MixedGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedGetStub extends MethodStub<MixedGetCall> {
@@ -140,7 +140,7 @@ export class MixedGetStub extends MethodStub<MixedGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -169,13 +169,13 @@ export class MixedGetStub extends MethodStub<MixedGetCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures record. */
@@ -188,9 +188,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -221,7 +221,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -235,8 +236,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -248,8 +250,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -286,7 +288,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -336,8 +339,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -360,8 +363,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -385,7 +388,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of record, and returns its result.
+   * Records the call of record and returns its result.
    */
   record(e: Entry): Promise<void> {
     const call: MixedRecordCall = { e };
@@ -393,7 +396,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of history, and returns its result.
+   * Records the call of history and returns its result.
    */
   history(): Promise<Entry[]> {
     const call: MixedHistoryCall = {};
@@ -401,7 +404,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(key: string): Promise<Entry> {
     const call: MixedGetCall = { key };
@@ -411,13 +414,13 @@ export class MixedStub implements Mixed {
 
 // Entry is a handle that a method of Mixed returns.
 
-/** An option of a EntryStub, which its constructor applies. */
+/** Configures a EntryStub at its construction. */
 export type EntryStubOption = (double: EntryStub) => void;
 
 /**
  * EntryStub is a recording test double of Entry. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class EntryStub implements Entry {
   /** The property txn, which a test assigns. */
@@ -432,9 +435,9 @@ export class EntryStub implements Entry {
   #strict = false;
 
   /**
-   * Returns a double of Entry that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Entry that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -462,8 +465,9 @@ export class EntryStub implements Entry {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -475,8 +479,8 @@ export class EntryStub implements Entry {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -513,8 +517,8 @@ export class EntryStub implements Entry {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -547,4 +551,4 @@ export class EntryStub implements Entry {
 
 void compatV1;
 
-// dokimi:provenance sha256:166b30d81b00dc7f8f20cf280814532e40e584f224f1c695aeaa3f28f5c74a8e
+// dokimi:provenance sha256:49eeb1db1cbd534279eee5d3f5367926e7e7f7f3f55ebb8e46f06f22bb8bcc09

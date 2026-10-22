@@ -2,37 +2,37 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/nilsafe/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Mixed, Payload } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Mixed, Payload } from "../iface";
 
 /** MixedStoreCall records one call of Mixed.store. */
 export interface MixedStoreCall {
   /** The argument v. */
-  v: Payload|undefined;
+  v: Payload | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * MixedStoreStub configures store, and records its calls. A fault armed
+ * MixedStoreStub configures store and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedStoreStub extends MethodStub<MixedStoreCall> {
-  #fn: ((v: Payload|undefined) => void | PromiseLike<void>) | undefined;
+  #fn: ((v: Payload | undefined) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of store, for a result that depends on the
+   * Sets the function that computes the result of store from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (v: Payload|undefined) => void | PromiseLike<void>): this {
+  func(fn: (v: Payload | undefined) => void | PromiseLike<void>): this {
     this.#fn = fn;
     return this;
   }
@@ -40,7 +40,7 @@ export class MixedStoreStub extends MethodStub<MixedStoreCall> {
   /**
    * Returns the arms of a call of store with its arguments.
    */
-  arms(v: Payload|undefined): Arms<MixedStoreCall, void, void | PromiseLike<void>> {
+  arms(v: Payload | undefined): Arms<MixedStoreCall, void, void | PromiseLike<void>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(v)),
@@ -51,13 +51,13 @@ export class MixedStoreStub extends MethodStub<MixedStoreCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures store. */
@@ -66,9 +66,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -97,7 +97,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -109,8 +110,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -122,8 +124,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -160,7 +162,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -177,15 +180,15 @@ export class MixedStub implements Mixed {
    * @param fn - The function.
    * @returns The option.
    */
-  static withMixedStore(fn: (v: Payload|undefined) => void | PromiseLike<void>): MixedStubOption {
+  static withMixedStore(fn: (v: Payload | undefined) => void | PromiseLike<void>): MixedStubOption {
     return (double) => {
       double.onStore.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -208,8 +211,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -233,9 +236,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of store, and returns its result.
+   * Records the call of store and returns its result.
    */
-  store(v: Payload|undefined): Promise<void> {
+  store(v: Payload | undefined): Promise<void> {
     const call: MixedStoreCall = { v };
     return answerAsync(this.onStore, call, this.onStore.arms(v));
   }
@@ -243,4 +246,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:2894d2a44de90608ee345e9d7358469a8bd6f4d6b679b7e712757de9e4c25e47
+// dokimi:provenance sha256:197fea832a12a34c09c74a28f0b50355e38f5d594c3058373b13bb959e50b2b8

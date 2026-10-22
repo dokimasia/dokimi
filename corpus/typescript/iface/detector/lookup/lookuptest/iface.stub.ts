@@ -2,31 +2,31 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/lookup/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Lookup, Meta, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Lookup, Meta, Value } from "../iface";
 
 /** LookupInspectCall records one call of Lookup.inspect. */
 export interface LookupInspectCall {
   /** The argument key. */
   key: string;
   /** The result of the call, where it returned one. */
-  result?: [Value,Meta]|undefined | undefined;
+  result?: [Value, Meta] | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * LookupInspectStub configures inspect, and records its calls. A fault armed
+ * LookupInspectStub configures inspect and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class LookupInspectStub extends MethodStub<LookupInspectCall> {
-  #fn: ((key: string) => [Value,Meta]|undefined) | undefined;
-  #fallback: { readonly value: [Value,Meta]|undefined } | undefined;
+  #fn: ((key: string) => [Value, Meta] | undefined) | undefined;
+  #fallback: { readonly value: [Value, Meta] | undefined } | undefined;
 
   /**
    * Sets the result of every call of inspect. A function and an injected
@@ -35,19 +35,19 @@ export class LookupInspectStub extends MethodStub<LookupInspectCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: [Value,Meta]|undefined): this {
+  returns(result: [Value, Meta] | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of inspect, for a result that depends on the
+   * Sets the function that computes the result of inspect from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: (key: string) => [Value,Meta]|undefined): this {
+  func(fn: (key: string) => [Value, Meta] | undefined): this {
     this.#fn = fn;
     return this;
   }
@@ -55,7 +55,7 @@ export class LookupInspectStub extends MethodStub<LookupInspectCall> {
   /**
    * Returns the arms of a call of inspect with its arguments.
    */
-  arms(key: string): Arms<LookupInspectCall, [Value,Meta]|undefined, [Value,Meta]|undefined> {
+  arms(key: string): Arms<LookupInspectCall, [Value, Meta] | undefined, [Value, Meta] | undefined> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn(key)),
@@ -70,13 +70,13 @@ export class LookupInspectStub extends MethodStub<LookupInspectCall> {
   }
 }
 
-/** An option of a LookupStub, which its constructor applies. */
+/** Configures a LookupStub at its construction. */
 export type LookupStubOption = (double: LookupStub) => void;
 
 /**
  * LookupStub is a recording test double of Lookup. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class LookupStub implements Lookup {
   /** Configures inspect. */
@@ -85,9 +85,9 @@ export class LookupStub implements Lookup {
   #strict = false;
 
   /**
-   * Returns a double of Lookup that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Lookup that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -116,7 +116,8 @@ export class LookupStub implements Lookup {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -128,8 +129,9 @@ export class LookupStub implements Lookup {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -141,8 +143,8 @@ export class LookupStub implements Lookup {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -179,7 +181,8 @@ export class LookupStub implements Lookup {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -196,15 +199,15 @@ export class LookupStub implements Lookup {
    * @param fn - The function.
    * @returns The option.
    */
-  static withLookupInspect(fn: (key: string) => [Value,Meta]|undefined): LookupStubOption {
+  static withLookupInspect(fn: (key: string) => [Value, Meta] | undefined): LookupStubOption {
     return (double) => {
       double.onInspect.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -227,8 +230,8 @@ export class LookupStub implements Lookup {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -252,9 +255,9 @@ export class LookupStub implements Lookup {
   }
 
   /**
-   * Records the call of inspect, and returns its result.
+   * Records the call of inspect and returns its result.
    */
-  inspect(key: string): [Value,Meta]|undefined {
+  inspect(key: string): [Value, Meta] | undefined {
     const call: LookupInspectCall = { key };
     return answer(this.onInspect, call, this.onInspect.arms(key));
   }
@@ -262,4 +265,4 @@ export class LookupStub implements Lookup {
 
 void compatV1;
 
-// dokimi:provenance sha256:620c6a102b69567dbbce1b3589dea4a2c7b2a0d12a7132aec4347937b0a13d0a
+// dokimi:provenance sha256:cb6b93db3e3332d900988308b01592852ea79a26121b49a81753ac0020008ee2

@@ -2,18 +2,17 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/nilsafe/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import type { Payload } from '../iface';
-import { MixedStub } from './iface.stub';
+import { Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import type { Payload } from "../iface";
+import { MixedStub } from "./iface.stub";
 
-/** Returns the samples of the arguments of store, or undefined. */
-function mixedStubStoreArgs(): [Payload|undefined] {
-  let a0 = undefined as unknown as Payload|undefined;
-  a0 = {key: 'key-a'} as Payload;
+/** Returns the samples of the arguments of store. An argument without a sample is undefined. */
+function mixedStubStoreArgs(): [Payload | undefined] {
+  let a0 = undefined as unknown as Payload | undefined;
+  a0 = { key: "key-a", body: "body-a" };
   return [a0];
 }
 
@@ -23,97 +22,192 @@ function mixedStubStore(double: MixedStub): Promise<void> {
   return double.store(args[0]);
 }
 
-describe("MixedStub.store", () => {
-  const checks = behaviour("Mixed.store", (seat) => {
-    const double = new MixedStub(seat);
-    return {
-      stub: double.onStore,
-      call: () => mixedStubStore(double),
-      override: (mark) => {
-        double.onStore.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    await mixedStubStore(double);
-    const got = double.onStore.assertCalledOnce(seat, "store records the call");
-    const args = mixedStubStoreArgs();
-    check.equal(seat, got?.v, args[0], "the call records v");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new MixedStub(seat);
-    let seen = 0;
-    double.onStore.onRecord(() => {
-      seen += 1;
-    });
-    await mixedStubStore(double);
-    await mixedStubStore(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of store");
-  });
-
-  test("sets the function of withMixedStore at construction", async ({ seat }) => {
-    let called = false;
-    const option = MixedStub.withMixedStore(() => {
-      called = true;
-      return undefined as never;
-    });
-    await mixedStubStore(new MixedStub(seat, option));
-    check.isTrue(seat, called, "withMixedStore sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("store-failing");
-    const double = MixedStub.newFailing(seat, want);
-    const outcome = await settle(() => mixedStubStore(double));
-    const message = "store fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-});
-
-describe("MixedStub", () => {
-  const instance = (double: MixedStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * store alone.
+ */
+function mixedStubInstance(double: MixedStub) {
+  return {
     stub: double.onStore,
     call: () => mixedStubStore(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new MixedStub(seat)),
-    withClock: (seat, clock) => instance(new MixedStub(seat, MixedStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(MixedStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new MixedStub(seat, MixedStub.withRandSource(random))),
-    benchMode: (seat) => instance(new MixedStub(seat, MixedStub.benchMode())),
-    strict: (seat) => instance(new MixedStub(seat, MixedStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes store to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new MixedStub(seat);
-    await settle(() => mixedStubStore(new MixedStub(seat, MixedStub.delegateTo(inner))));
-    inner.onStore.assertCalledOnce(seat, "store reaches the implementation");
+describe("MixedStub", () => {
+  describe("store", () => {
+    const checks = behaviour("Mixed.store", (seat) => {
+      const double = new MixedStub(seat);
+      return {
+        stub: double.onStore,
+        call: () => mixedStubStore(double),
+        override: (mark) => {
+          double.onStore.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("records the arguments of the call", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubStore(double);
+      expect(double.onStore.callCount).isEqualTo(1, "store records the call");
+      const got = double.onStore.calls[0];
+      const args = mixedStubStoreArgs();
+      expect(got?.v).isEqualTo(args[0], "the call records v");
+    });
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new MixedStub(undefined);
+      let seen = 0;
+      double.onStore.onRecord(() => {
+        seen += 1;
+      });
+      await mixedStubStore(double);
+      await mixedStubStore(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of store");
+    });
   });
 
-  test("fails store with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("store-delegate");
-    const inner = new MixedStub(seat);
-    inner.onStore.faults(want, 1);
-    const double = new MixedStub(seat, MixedStub.delegateTo(inner));
-    const outcome = await settle(() => mixedStubStore(double));
-    const message = "store fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => mixedStubInstance(new MixedStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of store", async () => {
+      const double = new MixedStub(undefined);
+      await mixedStubStore(double);
+      double.resetCalls();
+      expect(double.onStore.callCount).isEqualTo(0, "resetCalls clears the calls of store");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => mixedStubInstance(MixedStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails store with its error", async () => {
+      const want = new Error("store-failing");
+      const double = MixedStub.newFailing(undefined, want);
+      const outcome = await settle(() => mixedStubStore(double));
+      const message = "store fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes store to the implementation", async () => {
+      const inner = new MixedStub(undefined);
+      await settle(() => mixedStubStore(new MixedStub(undefined, MixedStub.delegateTo(inner))));
+      expect(inner.onStore.callCount).isEqualTo(1, "store calls the implementation");
+    });
+
+    it("fails store with the error of the implementation", async () => {
+      const want = new Error("store-delegate");
+      const inner = new MixedStub(undefined);
+      inner.onStore.faults(want, 1);
+      const double = new MixedStub(undefined, MixedStub.delegateTo(inner));
+      const outcome = await settle(() => mixedStubStore(double));
+      const message = "store fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      mixedStubInstance(new MixedStub(seat, MixedStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => mixedStubInstance(new MixedStub(seat, MixedStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        mixedStubInstance(new MixedStub(seat, MixedStub.withClock(clock), MixedStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails store with its error", async () => {
+      const want = new Error("store-failing");
+      const double = new MixedStub(undefined, MixedStub.failing(want));
+      const outcome = await settle(() => mixedStubStore(double));
+      const message = "store fails with the error of MixedStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withMixedStore", () => {
+    it("sets the function of store", async () => {
+      let called = false;
+      const option = MixedStub.withMixedStore(() => {
+        called = true;
+        return undefined as never;
+      });
+      await mixedStubStore(new MixedStub(undefined, option));
+      expect(called).isTrue("withMixedStore sets the function of store");
+    });
   });
 });
 
-// dokimi:provenance sha256:338d87d651e7e2cdc52444c2b6aa3a83ab39d9393ef618afbacbaa08fd1e6769
+describe("MixedStoreStub", () => {
+  describe("func", () => {
+    it("passes the arguments of each call of store to the function", async () => {
+      const double = new MixedStub(undefined);
+      let got: unknown[] = [];
+      double.onStore.func((...received: unknown[]) => {
+        got = received;
+        return undefined as never;
+      });
+      await mixedStubStore(double);
+      const args = mixedStubStoreArgs();
+      expect(got).isEqualTo([args[0]], "the function receives the arguments of the call");
+    });
+  });
+});
+
+// dokimi:provenance sha256:d240d57a1cc7300606b7e0930ea22d0a711cf7d428895e521c319839c1178d66

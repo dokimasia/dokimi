@@ -2,12 +2,11 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/aggregator/iface.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { behaviour, settle } from '@dokimi/runtime/stub/behaviour';
-import { doubleBehaviour } from '@dokimi/runtime/stub/double-behaviour';
-import { describe } from 'vitest';
-import { AggregatorStub } from './iface.stub';
+import { Recorder, Standard, byIdentity } from "@dokimi/assert";
+import { behaviour, settle } from "@dokimi/runtime/stub/behaviour";
+import { benchModeBehaviour, clockBehaviour, latencyBehaviour, randSourceBehaviour, resetBehaviour, strictBehaviour } from "@dokimi/runtime/stub/double-behaviour";
+import { describe, expect, it } from "vitest";
+import { AggregatorStub } from "./iface.stub";
 
 /** Calls count of double with the samples of its arguments. */
 function aggregatorStubCount(double: AggregatorStub): Promise<number> {
@@ -21,111 +20,195 @@ function aggregatorStubCountPin(): number {
   return want0;
 }
 
-describe("AggregatorStub.count", () => {
-  const checks = behaviour("Aggregator.count", (seat) => {
-    const double = new AggregatorStub(seat);
-    return {
-      stub: double.onCount,
-      call: () => aggregatorStubCount(double),
-      override: (mark) => {
-        double.onCount.func(() => {
-          mark();
-          return undefined as never;
-        });
-      },
-    };
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
-
-  test("returns the result of returns", async ({ seat }) => {
-    const double = new AggregatorStub(seat);
-    const want = aggregatorStubCountPin();
-    double.onCount.returns(want);
-    check.equal(seat, await aggregatorStubCount(double), want, "count returns the result of returns");
-  });
-
-  test("records the arguments of the call", async ({ seat }) => {
-    const double = new AggregatorStub(seat);
-    await aggregatorStubCount(double);
-    double.onCount.assertCalledOnce(seat, "count records the call");
-  });
-
-  test("runs the onRecord hook for each call", async ({ seat }) => {
-    const double = new AggregatorStub(seat);
-    let seen = 0;
-    double.onCount.onRecord(() => {
-      seen += 1;
-    });
-    await aggregatorStubCount(double);
-    await aggregatorStubCount(double);
-    check.equal(seat, seen, 2, "onRecord runs once for each call of count");
-  });
-
-  test("sets the function of withAggregatorCount at construction", async ({ seat }) => {
-    let called = false;
-    const option = AggregatorStub.withAggregatorCount(() => {
-      called = true;
-      return undefined as never;
-    });
-    await aggregatorStubCount(new AggregatorStub(seat, option));
-    check.isTrue(seat, called, "withAggregatorCount sets the function");
-  });
-
-  test("fails with the error of the failing option", async ({ seat }) => {
-    const want = new Error("count-failing");
-    const double = AggregatorStub.newFailing(seat, want);
-    const outcome = await settle(() => aggregatorStubCount(double));
-    const message = "count fails with the error of the option";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
-  });
-
-  test("keeps the result of returns across a reset", async ({ seat }) => {
-    const double = new AggregatorStub(seat);
-    const want = aggregatorStubCountPin();
-    double.onCount.returns(want);
-    await aggregatorStubCount(double);
-    double.resetCalls();
-    check.equal(seat, await aggregatorStubCount(double), want, "a reset keeps the result of returns");
-  });
-});
-
-describe("AggregatorStub", () => {
-  const instance = (double: AggregatorStub) => ({
+/**
+ * Returns the instance of double that the checks of the constructors and the
+ * options drive. The options apply to the whole double, so the checks call
+ * count alone.
+ */
+function aggregatorStubInstance(double: AggregatorStub) {
+  return {
     stub: double.onCount,
     call: () => aggregatorStubCount(double),
     reset: () => double.resetCalls(),
-  });
-  const checks = doubleBehaviour({
-    create: (seat) => instance(new AggregatorStub(seat)),
-    withClock: (seat, clock) => instance(new AggregatorStub(seat, AggregatorStub.withClock(clock))),
-    withLatency: (seat, duration, clock) => instance(AggregatorStub.newDelayed(seat, duration, clock)),
-    withRandSource: (seat, random) =>
-      instance(new AggregatorStub(seat, AggregatorStub.withRandSource(random))),
-    benchMode: (seat) => instance(new AggregatorStub(seat, AggregatorStub.benchMode())),
-    strict: (seat) => instance(new AggregatorStub(seat, AggregatorStub.strict())),
-    async: true,
-  });
-  for (const c of checks) {
-    test(c.name, ({ seat }) => c.run(seat));
-  }
+  };
+}
 
-  test("passes count to the implementation of delegateTo", async ({ seat }) => {
-    const inner = new AggregatorStub(seat);
-    await settle(() => aggregatorStubCount(new AggregatorStub(seat, AggregatorStub.delegateTo(inner))));
-    inner.onCount.assertCalledOnce(seat, "count reaches the implementation");
+describe("AggregatorStub", () => {
+  describe("count", () => {
+    const checks = behaviour("Aggregator.count", (seat) => {
+      const double = new AggregatorStub(seat);
+      return {
+        stub: double.onCount,
+        call: () => aggregatorStubCount(double),
+        override: (mark) => {
+          double.onCount.func(() => {
+            mark();
+            return undefined as never;
+          });
+        },
+      };
+    });
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("runs the onRecord hook once for each call", async () => {
+      const double = new AggregatorStub(undefined);
+      let seen = 0;
+      double.onCount.onRecord(() => {
+        seen += 1;
+      });
+      await aggregatorStubCount(double);
+      await aggregatorStubCount(double);
+      expect(seen).isEqualTo(2, "onRecord runs once for each call of count");
+    });
   });
 
-  test("fails count with the error of the implementation of delegateTo", async ({ seat }) => {
-    const want = new Error("count-delegate");
-    const inner = new AggregatorStub(seat);
-    inner.onCount.faults(want, 1);
-    const double = new AggregatorStub(seat, AggregatorStub.delegateTo(inner));
-    const outcome = await settle(() => aggregatorStubCount(double));
-    const message = "count fails with the error of the implementation";
-    check.equal(seat, outcome.threw && outcome.error, want, message, byIdentity());
+  describe("resetCalls", () => {
+    const checks = resetBehaviour((seat) => aggregatorStubInstance(new AggregatorStub(seat)));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+
+    it("clears the recorded calls of count", async () => {
+      const double = new AggregatorStub(undefined);
+      await aggregatorStubCount(double);
+      double.resetCalls();
+      expect(double.onCount.callCount).isEqualTo(0, "resetCalls clears the calls of count");
+    });
+
+    it("keeps the result of returns of count", async () => {
+      const double = new AggregatorStub(undefined);
+      const want = aggregatorStubCountPin();
+      double.onCount.returns(want);
+      double.resetCalls();
+      expect(await aggregatorStubCount(double)).isEqualTo(want, "resetCalls keeps the result of count");
+    });
+  });
+
+  describe("newDelayed", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) => aggregatorStubInstance(AggregatorStub.newDelayed(seat, duration, clock)),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("newFailing", () => {
+    it("fails count with its error", async () => {
+      const want = new Error("count-failing");
+      const double = AggregatorStub.newFailing(undefined, want);
+      const outcome = await settle(() => aggregatorStubCount(double));
+      const message = "count fails with the error of newFailing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("strict", () => {
+    const checks = strictBehaviour((seat) => aggregatorStubInstance(new AggregatorStub(seat, AggregatorStub.strict())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("delegateTo", () => {
+    it("passes count to the implementation", async () => {
+      const inner = new AggregatorStub(undefined);
+      await settle(() => aggregatorStubCount(new AggregatorStub(undefined, AggregatorStub.delegateTo(inner))));
+      expect(inner.onCount.callCount).isEqualTo(1, "count calls the implementation");
+    });
+
+    it("fails count with the error of the implementation", async () => {
+      const want = new Error("count-delegate");
+      const inner = new AggregatorStub(undefined);
+      inner.onCount.faults(want, 1);
+      const double = new AggregatorStub(undefined, AggregatorStub.delegateTo(inner));
+      const outcome = await settle(() => aggregatorStubCount(double));
+      const message = "count fails with the error of the implementation";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withClock", () => {
+    const checks = clockBehaviour(
+      (seat, clock) => aggregatorStubInstance(new AggregatorStub(seat, AggregatorStub.withClock(clock))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withRandSource", () => {
+    const checks = randSourceBehaviour((seat, random) =>
+      aggregatorStubInstance(new AggregatorStub(seat, AggregatorStub.withRandSource(random))),
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("benchMode", () => {
+    const checks = benchModeBehaviour((seat) => aggregatorStubInstance(new AggregatorStub(seat, AggregatorStub.benchMode())));
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("withLatency", () => {
+    const checks = latencyBehaviour(
+      (seat, duration, clock) =>
+        aggregatorStubInstance(new AggregatorStub(seat, AggregatorStub.withClock(clock), AggregatorStub.withLatency(duration))),
+      true,
+    );
+    for (const c of checks) {
+      it(c.name, () => c.run(new Standard()));
+    }
+  });
+
+  describe("failing", () => {
+    it("fails count with its error", async () => {
+      const want = new Error("count-failing");
+      const double = new AggregatorStub(undefined, AggregatorStub.failing(want));
+      const outcome = await settle(() => aggregatorStubCount(double));
+      const message = "count fails with the error of AggregatorStub.failing";
+      expect(outcome.threw && outcome.error).isEqualTo(want, message, byIdentity());
+    });
+  });
+
+  describe("withAggregatorCount", () => {
+    it("sets the function of count", async () => {
+      let called = false;
+      const option = AggregatorStub.withAggregatorCount(() => {
+        called = true;
+        return undefined as never;
+      });
+      await aggregatorStubCount(new AggregatorStub(undefined, option));
+      expect(called).isTrue("withAggregatorCount sets the function of count");
+    });
   });
 });
 
-// dokimi:provenance sha256:7065abc5fdd3e9488759a576ade04b43776111ec0a6f4b574e5771e09d40d799
+describe("AggregatorCountStub", () => {
+  describe("returns", () => {
+    it("sets the result of each call of count", async () => {
+      const double = new AggregatorStub(undefined);
+      const want = aggregatorStubCountPin();
+      double.onCount.returns(want);
+      expect(await aggregatorStubCount(double)).isEqualTo(want, "count returns the result that returns sets");
+    });
+
+    it("configures count for strict mode", async () => {
+      const failures = new Recorder();
+      const double = new AggregatorStub(failures);
+      double.onCount.strict();
+      double.onCount.returns(undefined as never);
+      await settle(() => aggregatorStubCount(double));
+      expect(failures.failed).isFalse("strict mode accepts the call of count");
+    });
+  });
+});
+
+// dokimi:provenance sha256:e5119fd7aeac9c057c4b917dc8554ef70fed807d6cd3ff8e4a662d3cab53fb0c

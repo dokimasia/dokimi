@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source iface/mixin/crdtmerge/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Mixed, Replica } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Mixed, Replica } from "../iface";
 
 /** ReplicaItemsCall records one call of Replica.items. */
 export interface ReplicaItemsCall {
@@ -19,7 +19,7 @@ export interface ReplicaItemsCall {
 }
 
 /**
- * ReplicaItemsStub configures items, and records its calls. A fault armed
+ * ReplicaItemsStub configures items and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class ReplicaItemsStub extends MethodStub<ReplicaItemsCall> {
@@ -39,7 +39,7 @@ export class ReplicaItemsStub extends MethodStub<ReplicaItemsCall> {
   }
 
   /**
-   * Sets the function of items, for a result that depends on the
+   * Sets the function that computes the result of items from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -68,13 +68,13 @@ export class ReplicaItemsStub extends MethodStub<ReplicaItemsCall> {
   }
 }
 
-/** An option of a ReplicaStub, which its constructor applies. */
+/** Configures a ReplicaStub at its construction. */
 export type ReplicaStubOption = (double: ReplicaStub) => void;
 
 /**
  * ReplicaStub is a recording test double of Replica. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ReplicaStub implements Replica {
   /** Configures items. */
@@ -83,9 +83,9 @@ export class ReplicaStub implements Replica {
   #strict = false;
 
   /**
-   * Returns a double of Replica that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Replica that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -114,7 +114,8 @@ export class ReplicaStub implements Replica {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -126,8 +127,9 @@ export class ReplicaStub implements Replica {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -139,8 +141,8 @@ export class ReplicaStub implements Replica {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -177,7 +179,8 @@ export class ReplicaStub implements Replica {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -201,8 +204,8 @@ export class ReplicaStub implements Replica {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -225,8 +228,8 @@ export class ReplicaStub implements Replica {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -250,7 +253,7 @@ export class ReplicaStub implements Replica {
   }
 
   /**
-   * Records the call of items, and returns its result.
+   * Records the call of items and returns its result.
    */
   items(): Promise<string[]> {
     const call: ReplicaItemsCall = {};
@@ -283,14 +286,14 @@ export interface MixedItemsCall {
 }
 
 /**
- * MixedMergeStub configures merge, and records its calls. A fault armed
+ * MixedMergeStub configures merge and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedMergeStub extends MethodStub<MixedMergeCall> {
   #fn: ((peer: Replica) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of merge, for a result that depends on the
+   * Sets the function that computes the result of merge from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -316,14 +319,14 @@ export class MixedMergeStub extends MethodStub<MixedMergeCall> {
 }
 
 /**
- * MixedAddStub configures add, and records its calls. A fault armed
+ * MixedAddStub configures add and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedAddStub extends MethodStub<MixedAddCall> {
   #fn: ((item: string) => void | PromiseLike<void>) | undefined;
 
   /**
-   * Sets the function of add, for a result that depends on the
+   * Sets the function that computes the result of add from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -349,7 +352,7 @@ export class MixedAddStub extends MethodStub<MixedAddCall> {
 }
 
 /**
- * MixedItemsStub configures items, and records its calls. A fault armed
+ * MixedItemsStub configures items and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class MixedItemsStub extends MethodStub<MixedItemsCall> {
@@ -369,7 +372,7 @@ export class MixedItemsStub extends MethodStub<MixedItemsCall> {
   }
 
   /**
-   * Sets the function of items, for a result that depends on the
+   * Sets the function that computes the result of items from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -398,13 +401,13 @@ export class MixedItemsStub extends MethodStub<MixedItemsCall> {
   }
 }
 
-/** An option of a MixedStub, which its constructor applies. */
+/** Configures a MixedStub at its construction. */
 export type MixedStubOption = (double: MixedStub) => void;
 
 /**
  * MixedStub is a recording test double of Mixed. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class MixedStub implements Mixed {
   /** Configures merge. */
@@ -417,9 +420,9 @@ export class MixedStub implements Mixed {
   #strict = false;
 
   /**
-   * Returns a double of Mixed that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Mixed that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -450,7 +453,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -464,8 +468,9 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -477,8 +482,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -515,7 +520,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -565,8 +571,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -589,8 +595,8 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -614,7 +620,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of merge, and returns its result.
+   * Records the call of merge and returns its result.
    */
   merge(peer: Replica): Promise<void> {
     const call: MixedMergeCall = { peer };
@@ -622,7 +628,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of add, and returns its result.
+   * Records the call of add and returns its result.
    */
   add(item: string): Promise<void> {
     const call: MixedAddCall = { item };
@@ -630,7 +636,7 @@ export class MixedStub implements Mixed {
   }
 
   /**
-   * Records the call of items, and returns its result.
+   * Records the call of items and returns its result.
    */
   items(): Promise<string[]> {
     const call: MixedItemsCall = {};
@@ -640,4 +646,4 @@ export class MixedStub implements Mixed {
 
 void compatV1;
 
-// dokimi:provenance sha256:f4c34eaaf837a2f5c68a7bd64fc2bc9d1ade03dcf36a0aaa52ee099d4534bf00
+// dokimi:provenance sha256:4092a6bee19b1882c10e4f1200d97f0bb2b2647d8a9ac2cddacf100575cf703f

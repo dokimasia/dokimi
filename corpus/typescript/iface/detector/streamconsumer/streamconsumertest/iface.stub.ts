@@ -2,29 +2,29 @@
 // dokimi:plugin stub
 // dokimi:source iface/detector/streamconsumer/iface.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Source, StreamConsumer, Value } from '../iface';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Source, StreamConsumer, Value } from "../iface";
 
 /** SourceNextCall records one call of Source.next. */
 export interface SourceNextCall {
   /** The result of the call, where it returned one. */
-  result?: Value|undefined | undefined;
+  result?: Value | undefined | undefined;
   /** The error that failed the call, where one did. */
   error?: unknown;
 }
 
 /**
- * SourceNextStub configures next, and records its calls. A fault armed
+ * SourceNextStub configures next and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class SourceNextStub extends MethodStub<SourceNextCall> {
-  #fn: (() => Value|undefined | PromiseLike<Value|undefined>) | undefined;
-  #fallback: { readonly value: Value|undefined } | undefined;
+  #fn: (() => Value | undefined | PromiseLike<Value | undefined>) | undefined;
+  #fallback: { readonly value: Value | undefined } | undefined;
 
   /**
    * Sets the result of every call of next. A function and an injected
@@ -33,19 +33,19 @@ export class SourceNextStub extends MethodStub<SourceNextCall> {
    * @param result - The result.
    * @returns The stub.
    */
-  returns(result: Value|undefined): this {
+  returns(result: Value | undefined): this {
     this.#fallback = { value: result };
     return this;
   }
 
   /**
-   * Sets the function of next, for a result that depends on the
+   * Sets the function that computes the result of next from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
    * @returns The stub.
    */
-  func(fn: () => Value|undefined | PromiseLike<Value|undefined>): this {
+  func(fn: () => Value | undefined | PromiseLike<Value | undefined>): this {
     this.#fn = fn;
     return this;
   }
@@ -53,7 +53,7 @@ export class SourceNextStub extends MethodStub<SourceNextCall> {
   /**
    * Returns the arms of a call of next with its arguments.
    */
-  arms(): Arms<SourceNextCall, Value|undefined, Value|undefined | PromiseLike<Value|undefined>> {
+  arms(): Arms<SourceNextCall, Value | undefined, Value | undefined | PromiseLike<Value | undefined>> {
     const fn = this.#fn;
     return {
       invoke: fn && (() => fn()),
@@ -68,13 +68,13 @@ export class SourceNextStub extends MethodStub<SourceNextCall> {
   }
 }
 
-/** An option of a SourceStub, which its constructor applies. */
+/** Configures a SourceStub at its construction. */
 export type SourceStubOption = (double: SourceStub) => void;
 
 /**
  * SourceStub is a recording test double of Source. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class SourceStub implements Source {
   /** Configures next. */
@@ -83,9 +83,9 @@ export class SourceStub implements Source {
   #strict = false;
 
   /**
-   * Returns a double of Source that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Source that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -114,7 +114,8 @@ export class SourceStub implements Source {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -126,8 +127,9 @@ export class SourceStub implements Source {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -139,8 +141,8 @@ export class SourceStub implements Source {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -177,7 +179,8 @@ export class SourceStub implements Source {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -194,15 +197,15 @@ export class SourceStub implements Source {
    * @param fn - The function.
    * @returns The option.
    */
-  static withSourceNext(fn: () => Value|undefined | PromiseLike<Value|undefined>): SourceStubOption {
+  static withSourceNext(fn: () => Value | undefined | PromiseLike<Value | undefined>): SourceStubOption {
     return (double) => {
       double.onNext.func(fn);
     };
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -225,8 +228,8 @@ export class SourceStub implements Source {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -250,9 +253,9 @@ export class SourceStub implements Source {
   }
 
   /**
-   * Records the call of next, and returns its result.
+   * Records the call of next and returns its result.
    */
-  next(): Promise<Value|undefined> {
+  next(): Promise<Value | undefined> {
     const call: SourceNextCall = {};
     return answerAsync(this.onNext, call, this.onNext.arms());
   }
@@ -269,7 +272,7 @@ export interface StreamConsumerIngestCall {
 }
 
 /**
- * StreamConsumerIngestStub configures ingest, and records its calls. A fault armed
+ * StreamConsumerIngestStub configures ingest and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StreamConsumerIngestStub extends MethodStub<StreamConsumerIngestCall> {
@@ -289,7 +292,7 @@ export class StreamConsumerIngestStub extends MethodStub<StreamConsumerIngestCal
   }
 
   /**
-   * Sets the function of ingest, for a result that depends on the
+   * Sets the function that computes the result of ingest from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -318,13 +321,13 @@ export class StreamConsumerIngestStub extends MethodStub<StreamConsumerIngestCal
   }
 }
 
-/** An option of a StreamConsumerStub, which its constructor applies. */
+/** Configures a StreamConsumerStub at its construction. */
 export type StreamConsumerStubOption = (double: StreamConsumerStub) => void;
 
 /**
  * StreamConsumerStub is a recording test double of StreamConsumer. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class StreamConsumerStub implements StreamConsumer {
   /** Configures ingest. */
@@ -333,9 +336,9 @@ export class StreamConsumerStub implements StreamConsumer {
   #strict = false;
 
   /**
-   * Returns a double of StreamConsumer that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of StreamConsumer that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -364,7 +367,8 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -376,8 +380,9 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -389,8 +394,8 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -427,7 +432,8 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -451,8 +457,8 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -475,8 +481,8 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -500,7 +506,7 @@ export class StreamConsumerStub implements StreamConsumer {
   }
 
   /**
-   * Records the call of ingest, and returns its result.
+   * Records the call of ingest and returns its result.
    */
   ingest(src: Source): Promise<number> {
     const call: StreamConsumerIngestCall = { src };
@@ -510,4 +516,4 @@ export class StreamConsumerStub implements StreamConsumer {
 
 void compatV1;
 
-// dokimi:provenance sha256:eaf8423fc41b317ef5a3c075722f7704f850c24c4472168ffe96f588ce5a8127
+// dokimi:provenance sha256:c9cd2a0efacdca4ba23f2e8f92aca6a229f451b25845bd2dc57b75d5fa8610d9

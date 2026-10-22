@@ -1,9 +1,11 @@
-# Managed by ergon init. Add repository settings to .ergon/local/.markdownlintignore and run ergon init sync.
+# Managed by ergon init, with .ergon/local/.markdownlintignore merged in. Change the repository's settings there and run ergon init sync.
 #
 # lint-common does not lint the files below or the files that .gitignore ignores. The Markdown
 # files of test data are inputs and outputs of tests.
 **/testdata/**
 
+# The settings of dokimi, which ergon init merges into .markdownlintignore.
+#
 # docs/build contains working documents that the repository does not track. Their links follow
 # the layout of another repository.
 docs/build/**

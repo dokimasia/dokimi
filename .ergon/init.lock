@@ -1,5 +1,5 @@
 {
-  "ergon": "0.13.0",
+  "ergon": "0.14.0",
   "files": [
     {
       "path": ".commitlint.yaml",
@@ -100,8 +100,8 @@
     {
       "path": ".golangci.yml",
       "producer": "go",
-      "local": "8b77fc2bb04e625146200bbe3379d7a37abc4d5a3cdb07c4cf6ad39429015ff1",
-      "sha256": "ce66833898af4672d0cf48466ca327949b43f5867f7138a4991cd0060e3b71f7"
+      "local": "a1620aed27a236bdd37545c820dc17238e069c14268e7b092514f58f938ad8da",
+      "sha256": "5538fcabf4adbb53009c1f00dd3d2159e829a2419c368c9dfd550802a677c7a9"
     },
     {
       "path": ".markdownlint.yml",
@@ -111,7 +111,8 @@
     {
       "path": ".markdownlintignore",
       "producer": "common",
-      "sha256": "cd1c6710f77a903d1a44995a27c3f52c3327b5dfb493fddf87f130ae6b0f7f1f"
+      "local": "61267e3bdeceec57f4eba6ba88b9a6ea43c77a201db84b9f340b9178a226274e",
+      "sha256": "5ec57551fb81c56396b6e706206dbe16984294792f3f91f4b29b9016b1f79544"
     },
     {
       "path": ".pre-commit-config.yaml",

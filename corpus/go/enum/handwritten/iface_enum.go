@@ -4,6 +4,16 @@
 
 package handwritten
 
+// WeekdayValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
+func WeekdayValues() []Weekday {
+	return []Weekday{
+		Monday,
+		Tuesday,
+		Wednesday,
+	}
+}
+
 // IsValid reports whether v is a declared variant. A conversion from the
 // underlying type can make any other value.
 func (v Weekday) IsValid() bool {
@@ -32,4 +42,4 @@ func (v *Weekday) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:609226c9f899d7d6aeaa927b45cf4bab894c04c1792ab62755a92aa0c8d0aaca
+// dokimi:provenance sha256:d99c508b5eecdb69f009fe91fe9f45b3b86a81210338a69f06e25de0cbfc03c1

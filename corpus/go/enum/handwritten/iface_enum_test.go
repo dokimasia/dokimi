@@ -29,6 +29,26 @@ func TestWeekday(t *testing.T) {
 		}
 	})
 
+	t.Run("WeekdayValues", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the declared variants in the order of their declaration", func(t *testing.T) {
+			t.Parallel()
+			want := []handwritten.Weekday{
+				handwritten.Monday,
+				handwritten.Tuesday,
+				handwritten.Wednesday,
+			}
+			assert.Equal(t, handwritten.WeekdayValues(), want, "WeekdayValues returns the declared variants")
+		})
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := handwritten.WeekdayValues(), handwritten.WeekdayValues()
+			assert.NotEqual(t, &first[0], &second[0], "the two calls return two slices", assert.ByIdentity())
+		})
+	})
+
 	t.Run("String", func(t *testing.T) {
 		t.Parallel()
 
@@ -73,6 +93,38 @@ func TestWeekday(t *testing.T) {
 			t.Parallel()
 			var zero handwritten.Weekday
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
+		})
+	})
+
+	t.Run("ParseWeekday", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give handwritten.Weekday
+		}{
+			{name: "returns Monday for its text", give: handwritten.Monday},
+			{name: "returns Tuesday for its text", give: handwritten.Tuesday},
+			{name: "returns Wednesday for its text", give: handwritten.Wednesday},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := handwritten.ParseWeekday(tt.give.String())
+				assert.NoError(t, err, "ParseWeekday accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseWeekday returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := handwritten.ParseWeekday("??????????")
+			assert.ErrorIs(
+				t,
+				err,
+				handwritten.ErrUnknownWeekday,
+				"ParseWeekday refuses the text with ErrUnknownWeekday",
+			)
 		})
 	})
 
@@ -127,4 +179,4 @@ func TestWeekday(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:75be9e2f1ddf5c7fb33d95c758821937862fd515231d11e80a5ce6b6c3c4c063
+// dokimi:provenance sha256:0981b2d37f1f9d228528b1af7c9649888c16f22fea7143a6eaa81b9341d1a320

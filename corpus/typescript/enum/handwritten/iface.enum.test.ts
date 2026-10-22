@@ -2,14 +2,26 @@
 // dokimi:plugin enum
 // dokimi:source enum/handwritten/iface.ts
 
+import { byIdentity } from "@dokimi/assert";
 import { describe, expect, it } from "vitest";
-import { Weekday, weekdayToString } from "./iface";
-import { isWeekday } from "./iface.enum";
+import { Weekday, parseWeekday, weekdayToString } from "./iface";
+import { isWeekday, weekdayValues } from "./iface.enum";
 
 describe("Weekday", () => {
   it("gives each variant a value of its own", () => {
     const values = [Weekday.Monday, Weekday.Tuesday, Weekday.Wednesday];
     expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
+  });
+
+  describe("weekdayValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Weekday.Monday, Weekday.Tuesday, Weekday.Wednesday];
+      expect(weekdayValues()).isEqualTo(want, "weekdayValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(weekdayValues()).isNotEqualTo(weekdayValues(), "the two calls return two arrays", byIdentity());
+    });
   });
 
   describe("weekdayToString", () => {
@@ -35,6 +47,29 @@ describe("Weekday", () => {
       expect(isWeekday(4)).isFalse("isWeekday refuses an undeclared value");
     });
   });
+
+  describe("parseWeekday", () => {
+    const tests = [
+      { name: "returns Monday for its text", give: Weekday.Monday },
+      { name: "returns Tuesday for its text", give: Weekday.Tuesday },
+      { name: "returns Wednesday for its text", give: Weekday.Wednesday },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(parseWeekday(weekdayToString(tt.give))).isEqualTo(tt.give, "parseWeekday returns the variant of the text");
+      });
+    }
+
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        parseWeekday("??????????");
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).hasError("parseWeekday refuses the text");
+    });
+  });
 });
 
-// dokimi:provenance sha256:1f09d9287fb02c9fd80d4a2723c0d087452b42ae5c3494db3da9f239cf49edd4
+// dokimi:provenance sha256:0dd82ea9d63870ff304f76f839cb55d86750c5eb236ec67f47ceb83f5939e49a

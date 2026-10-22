@@ -5,6 +5,18 @@
 import { Weekday } from "./iface";
 
 /**
+ * weekdayValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
+ */
+export function weekdayValues(): Weekday[] {
+  return [
+    Weekday.Monday,
+    Weekday.Tuesday,
+    Weekday.Wednesday,
+  ];
+}
+
+/**
  * isWeekday reports whether value is a declared variant of Weekday.
  * A cast can make any other value.
  */
@@ -18,4 +30,4 @@ export function isWeekday(value: unknown): value is Weekday {
   return false;
 }
 
-// dokimi:provenance sha256:9f9d5471dc6732ad4cd1e136aedc12ec7d4569e595db70425ff114f8bd708527
+// dokimi:provenance sha256:26791ee371ca1596061e58bac6603d3c4da4dde0bfe6ed50406ebfcd9d4e460f

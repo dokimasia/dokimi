@@ -1,0 +1,8 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The settings of dokimi, which ergon init merges into .markdownlintignore.
+#
+# docs/build contains working documents that the repository does not track. Their links follow
+# the layout of another repository.
+docs/build/**

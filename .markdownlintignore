@@ -3,3 +3,7 @@
 # lint-common does not lint the files below or the files that .gitignore ignores. The Markdown
 # files of test data are inputs and outputs of tests.
 **/testdata/**
+
+# docs/build contains working documents that the repository does not track. Their links follow
+# the layout of another repository.
+docs/build/**

@@ -20,6 +20,7 @@ import (
 	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
+	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // The trees and the packages that this spec alone reads, and the registrant
@@ -96,6 +97,44 @@ func TestSuite(t *testing.T) {
 			expect.Equal(t, ordered.Requires(), []plugin.Capability{stub.Capability},
 				"suite requires the capability of stub")
 		})
+
+		t.Run("provides its capability in the annotator role alone", func(t *testing.T) {
+			t.Parallel()
+
+			ordered, orders := suite.New().(plugin.CapabilityProvider)
+			assert.True(t, orders, "suite declares its capabilities")
+			expect.Equal(t, ordered.Provides(plugin.RoleAnnotator), []plugin.Capability{weave.Suite},
+				"the annotate half provides the capability after which stub runs")
+			expect.Empty(t, ordered.Provides(plugin.RoleGenerator),
+				"the generate half provides no capability, so it runs after stub")
+		})
+
+		doubles := []struct {
+			name     string
+			giveKind symbol.Kind
+			give     string
+			want     bool
+		}{
+			{
+				name: "stamps the fact of a double on an interface", giveKind: symbol.KindInterface, give: "Store",
+				want: true,
+			},
+			{name: "stamps the fact of a double on a struct", giveKind: symbol.KindStruct, give: "Catalog", want: true},
+			{name: "stamps no fact of a double on a function", giveKind: symbol.KindFunction, give: "Slug"},
+		}
+		for _, tt := range doubles {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				p := suite.New()
+				f := fixture(t, goTree, p, storePackage, catalogPackage, slugPackage)
+				phases(t, f, p)
+				k, registered := meta.Lookup[bool](f.Keys, weave.KeyDouble)
+				assert.True(t, registered, "suite registers the key of the double")
+				got, _ := meta.Get(f.Facts, f.Find(t, tt.giveKind, "", tt.give).Identity(), k)
+				expect.Equal(t, got, tt.want, "the fact asks stub for the double of the declaration")
+			})
+		}
 
 		t.Run("declares that the directive excuse requires the directive subject", func(t *testing.T) {
 			t.Parallel()

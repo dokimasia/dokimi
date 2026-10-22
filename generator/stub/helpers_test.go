@@ -68,23 +68,27 @@ type generated struct {
 
 // fixture returns a fixture over the packages pkgs of the tree dir, loaded
 // under the context of tb, with the target of the plan and the plugin stub
-// p. The annotators of the composition stamp the fixture: the authored
-// samples and witnesses, the facts of Go, the declared defaults, the names
-// of the builders, the faults of the methods and the classifications of the
-// shape catalog.
+// p. The annotators of the composition stamp the fixture.
 func fixture(tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pkgs ...string) *gentest.Fixture {
 	tb.Helper()
 
-	annotators := append([]plugin.Annotator{
-		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), builder.New(), fault.New(),
-	}, catalog.Annotators()...)
 	return gentest.New(tb, &gentest.Spec{
 		Dir:        dir,
 		Packages:   pkgs,
 		Target:     target,
 		Plugins:    []plugin.Plugin{p},
-		Annotators: annotators,
+		Annotators: annotators(),
 	})
+}
+
+// annotators returns the annotators of the composition: the authored samples
+// and witnesses, the facts of Go, the declared defaults, the names of the
+// builders, the faults of the methods and the classifications of the shape
+// catalog.
+func annotators() []plugin.Annotator {
+	return append([]plugin.Annotator{
+		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), builder.New(), fault.New(),
+	}, catalog.Annotators()...)
 }
 
 // generate runs a new stub over the packages pkgs of the tree dir with the

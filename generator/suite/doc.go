@@ -155,7 +155,8 @@
 //
 // # Dependency position
 //
-// The package imports the packages internal/lang and generator/stub of the
+// The package imports the packages annotator/defaults, annotator/fault,
+// generator/builder, generator/stub, internal/lang and internal/weave of the
 // module, the root package of the Go satellite in golang.go and call.go, the
 // package naming of eidos-lang, the package shape of the shape plugin of
 // eidos, the root, diag, directive, emit, meta, node, plugin, rules, store and

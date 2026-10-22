@@ -22,6 +22,7 @@ import (
 
 	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/internal/lang"
+	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // ID is the name of the plugin.
@@ -419,6 +420,7 @@ type generator struct {
 	latency     meta.Key[int64]
 	mean        meta.Key[int64]
 	warmup      meta.Key[int64]
+	double      meta.Key[bool]
 }
 
 // New returns suite, a plugin with an annotate half and a generate half. The
@@ -444,7 +446,9 @@ type generator struct {
 // struct of the subject to the application.
 //
 // suite runs after stub, whose doubles the planted defects of a suite build
-// on. It serves Go, the language of its part, and leaves a declaration of
+// on. The annotate half stamps [weave.KeyDouble] on each interface and struct
+// under [SuiteDirective], so stub writes its double without the directive
+// stub. The annotate half provides [weave.Suite], after which stub runs. It serves Go, the language of its part, and leaves a declaration of
 // another language alone. It reports [Uninstantiable] at a declaration whose
 // type parameters its suite cannot instantiate, [NoSuite] at a subject whose
 // declaration has no directive suite, and [BadFactory] at a subject whose
@@ -457,6 +461,7 @@ func New() sdk.Dual {
 	g := &generator{}
 	b := sdk.NewPlugin(ID).
 		Version(Version).
+		ProvidesIn(plugin.RoleAnnotator, weave.Suite).
 		Requires(stub.Capability).
 		Keys(g.register).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: suiteTemplate}).
@@ -464,6 +469,12 @@ func New() sdk.Dual {
 	lang.Register(b, parts)
 	return b.Handle(
 		sdk.Directive(suiteSchema,
+			sdk.OnInterface(lang.Served(parts, func(_ *sdk.InterfaceMatch, _ lang.Part, st *sdk.Stamper) error {
+				return g.askDouble(st)
+			})),
+			sdk.OnStruct(lang.Served(parts, func(_ *sdk.StructMatch, _ lang.Part, st *sdk.Stamper) error {
+				return g.askDouble(st)
+			})),
 			sdk.OnInterface(lang.Served(parts, g.suiteOfInterface)),
 			sdk.OnStruct(lang.Served(parts, g.suiteOfStruct)),
 			sdk.OnFunction(lang.Served(parts, g.suiteOfFunction))),
@@ -492,7 +503,7 @@ func (g *generator) register(r *meta.Registry) error {
 	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
 	}
-	var errs [12]error
+	var errs [13]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
@@ -516,7 +527,18 @@ func (g *generator) register(r *meta.Registry) error {
 		"contains the highest mean latency of one call of the callable, in nanoseconds"))
 	g.warmup, errs[11] = meta.Register[int64](r, budgetKey(KeyWarmup,
 		"contains the number of iterations that each benchmark of the callable runs before it measures"))
+	g.double, errs[12] = meta.Register[bool](r, meta.KeySpec{
+		Name: weave.KeyDouble, Kinds: []symbol.Kind{symbol.KindInterface, symbol.KindStruct},
+		Doc: "asks the stub generator for the double of a declaration under the directive suite",
+	})
 	return errors.Join(errs[:]...)
+}
+
+// askDouble stamps the fact [weave.KeyDouble] on the interface or the struct
+// of st, so the stub generator writes its double.
+func (g *generator) askDouble(st *sdk.Stamper) error {
+	sdk.Stamp(st, g.double, true)
+	return nil
 }
 
 // concludeCheck stamps the facts of a check on a function under the directive

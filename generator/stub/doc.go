@@ -68,7 +68,7 @@
 // # Dependency position
 //
 // The package imports the annotator fault, the generator builder and the
-// package internal/lang of the module, the root packages of the Go and the
+// packages internal/lang and internal/weave of the module, the root packages of the Go and the
 // TypeScript satellites in golang.go and typescript.go, the package naming of
 // eidos-lang, the shape catalog of eidos, the root, diag, directive, emit,
 // meta, node, plugin, rules and symbol packages of the SDK facade of eidos,

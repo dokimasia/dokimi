@@ -23,6 +23,7 @@ import (
 	"go.dokimi.dev/dokimi/annotator/fault"
 	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/internal/lang"
+	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // ID is the name of the plugin.
@@ -500,7 +501,11 @@ type invocation struct {
 }
 
 // New returns stub. stub records a [Model] into the family [Word] for each
-// interface, struct or class under [StubDirective]. The template of the
+// interface, struct or class under [StubDirective], and for each interface and
+// struct on which the suite generator stamps the fact [weave.KeyDouble]. A
+// declaration under both directives gets one double. stub runs after the
+// capability [weave.Suite], so in a composition without the suite generator
+// the gate on the fact does not select a declaration. The template of the
 // family writes the double in the conventions of the language of the plan.
 // stub records the [Checks] of each double into the family [Word] under the
 // tag [TestTag]. The template of that family writes a test of a double with a
@@ -543,13 +548,23 @@ func New() plugin.Generator {
 		Version(Version).
 		Provides(Capability).
 		Requires(fault.Capability).
+		After(weave.Suite).
 		Options(g.options).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: stubTemplate}).
 		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, Word: Word, Template: testTemplate, External: true})
 	lang.Register(b, parts)
-	return b.Handle(sdk.Directive(schema,
+	asked := sdk.HasKey(meta.Named[bool](weave.KeyDouble))
+	return b.Handle(
+		sdk.Directive(schema, sdk.Where(sdk.Not(asked), g.rules()...)),
+		sdk.Where(asked, g.rules()...),
+	).Generator()
+}
+
+// rules returns the rules of the doubles of an interface and of a struct.
+func (g *generator) rules() []sdk.Rule {
+	return []sdk.Rule{
 		sdk.OnInterface(lang.Served(parts, g.generateInterface)), sdk.OnStruct(lang.Served(parts, g.generateStruct)),
-	)).Generator()
+	}
 }
 
 // generateInterface records the double of an interface under the directive,

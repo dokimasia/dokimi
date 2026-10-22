@@ -4,6 +4,7 @@
 package stub_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -18,7 +19,9 @@ import (
 	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/generator/stub"
+	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
+	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // The trees, packages and modules that this spec alone reads, and the
@@ -34,6 +37,7 @@ const (
 	unfinishedPackage = "example.com/shop/unfinished"
 	partitionPackage  = "example.com/shop/partition"
 	helpersPackage    = "example.com/shop/helpers"
+	suitedPackage     = "example.com/shop/suited"
 	shopPackage       = "shop"
 	bagName           = "Bag"
 	pairsName         = "Pairs"
@@ -69,6 +73,38 @@ func TestStub(t *testing.T) {
 				p := stub.New()
 				return p, fixture(tb, typescript.Target, tsTree, p, storeModule).Fixture
 			})
+		})
+
+		t.Run("runs after the annotate half of suite", func(t *testing.T) {
+			t.Parallel()
+
+			ordered, orders := stub.New().(plugin.CapabilityProvider)
+			assert.True(t, orders, "stub declares its capabilities")
+			expect.Equal(t, ordered.After(), []plugin.Capability{weave.Suite},
+				"stub runs after the capability of suite where the composition contains suite")
+		})
+
+		t.Run("records one double of each interface and struct under the directive suite", func(t *testing.T) {
+			t.Parallel()
+
+			p := stub.New()
+			f := gentest.New(t, &gentest.Spec{
+				Dir: goTree, Packages: []string{suitedPackage}, Target: golang.Target, Plugins: []plugin.Plugin{p},
+				Annotators: append(annotators(), suite.New()),
+			})
+			res := f.Generate(t, p)
+			assert.NoError(t, res.Err, "the generator runs whole")
+			var subjects []string
+			for u := range res.Emit.Units() {
+				for _, data := range u.Data {
+					if m, modelled := data.(stub.Model); modelled {
+						subjects = append(subjects, m.Subject)
+					}
+				}
+			}
+			slices.Sort(subjects)
+			expect.Equal(t, subjects, []string{"Cashbox", "Journal", "Ledger"},
+				"a declaration under suite, stub or both has one double, and a function has none")
 		})
 
 		t.Run("checks each double from outside its package", func(t *testing.T) {

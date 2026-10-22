@@ -71,7 +71,7 @@ func TestStub(t *testing.T) {
 			})
 		})
 
-		t.Run("tests each double from outside its package", func(t *testing.T) {
+		t.Run("checks each double from outside its package", func(t *testing.T) {
 			t.Parallel()
 
 			gentest.External(t, stub.New(), stub.TestTag)
@@ -80,8 +80,14 @@ func TestStub(t *testing.T) {
 		{
 			builtPkgs := []string{builtPackage, billingPackage}
 			builtModules := []string{builtModule, billingModule}
-			account := &stub.Default{Ref: "NewAccountBuilder"}
-			accountClass := &stub.Default{Ref: "AccountBuilder", Seed: "create"}
+			goAccount := symbol.Identity{
+				Lang: golang.Lang, Package: builtPackage, Name: "Account", Kind: symbol.KindStruct,
+			}
+			tsAccount := symbol.Identity{
+				Lang: typescript.Lang, Package: builtModule, Name: "Account", Kind: symbol.KindStruct,
+			}
+			account := &stub.Default{Ref: "NewAccountBuilder", Target: goAccount}
+			accountClass := &stub.Default{Ref: "AccountBuilder", Seed: "create", Target: tsAccount}
 			tests := []struct {
 				name          string
 				giveTarget    plugin.Target
@@ -99,7 +105,8 @@ func TestStub(t *testing.T) {
 				{
 					name:       "records the default result of a pointer to a struct with a builder",
 					giveTarget: golang.Target, giveTree: goTree, givePkgs: builtPkgs, give: "Find",
-					want: []*stub.Default{{Ref: "NewAccountBuilder", Optional: true}, nil}, wantDefaulted: true,
+					want:          []*stub.Default{{Ref: "NewAccountBuilder", Target: goAccount, Optional: true}, nil},
+					wantDefaulted: true,
 				},
 				{
 					name:       "records no default result of a flag beside a struct with a builder",
@@ -122,9 +129,11 @@ func TestStub(t *testing.T) {
 					want: []*stub.Default{accountClass}, wantDefaulted: true,
 				},
 				{
-					name:       "records the default result of a class with a builder or undefined",
+					name:       "records the default result of an optional class with a builder",
 					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: builtModules, give: "find",
-					want:          []*stub.Default{{Ref: "AccountBuilder", Seed: "create", Optional: true}},
+					want: []*stub.Default{
+						{Ref: "AccountBuilder", Seed: "create", Target: tsAccount, Optional: true},
+					},
 					wantDefaulted: true,
 				},
 				{
@@ -174,12 +183,12 @@ func TestStub(t *testing.T) {
 				want       []string
 			}{
 				{
-					name:       "refers to each constructor of a default result from the double and from its test",
+					name:       "refers to each constructor of a default result from each generated file",
 					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{builtPackage, billingPackage},
 					want: []string{"NewAccountBuilder", "NewPageBuilder"},
 				},
 				{
-					name:       "refers to each builder class of a default result from the double and from its test",
+					name:       "refers to each builder class of a default result from each generated file",
 					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{builtModule, billingModule},
 					want: []string{"AccountBuilder"},
 				},
@@ -842,7 +851,7 @@ func TestStub(t *testing.T) {
 			expect.Equal(t, spellings(got.Guard.Args), "int", "the check asserts Repo at the witness")
 		})
 
-		t.Run("records the tests of a generic double without witnesses", func(t *testing.T) {
+		t.Run("records the spec of a generic double without witnesses", func(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, genericPackage)
@@ -856,7 +865,7 @@ func TestStub(t *testing.T) {
 				want        string
 			}{
 				{
-					name:        "records the tests of a double without methods that assign the sample of each property",
+					name:        "records the samples of the properties of a double without methods",
 					giveSubject: pointName,
 					want:        "double.x double.y",
 				},
@@ -887,7 +896,7 @@ func TestStub(t *testing.T) {
 				wantWitnesses  string
 			}{
 				{
-					name:       "records the type parameters that the parameters and the results of a method mention",
+					name:       "records the type parameters that the signature of a method mentions",
 					giveTarget: typescript.Target, giveTree: tsTree, givePkg: storeModule, giveSubject: tableName,
 					give: "get", wantTypeParams: "K V", wantArgs: "K", wantWitnesses: "unknown",
 				},

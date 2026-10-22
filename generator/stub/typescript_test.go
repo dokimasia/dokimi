@@ -131,7 +131,7 @@ func TestTypeScript(t *testing.T) {
 			wantIs string
 		}{
 			{
-				name: "returns the union of a type and undefined", give: "stubOptional",
+				name: "returns the union of a type with undefined", give: "stubOptional",
 				want: emit.TypeRef{
 					Form: symbol.FormUnion, Elems: []*emit.TypeRef{item, {Spelling: "undefined"}},
 				},
@@ -142,7 +142,7 @@ func TestTypeScript(t *testing.T) {
 				want: emit.TypeRef{Form: symbol.FormList, Elems: []*emit.TypeRef{item}}, wantIs: "a list of Item",
 			},
 			{
-				name: "returns the union of a type and a promise of the type", give: "stubAwaitable",
+				name: "returns the union of a type with a promise of the type", give: "stubAwaitable",
 				want: emit.TypeRef{
 					Form:  symbol.FormUnion,
 					Elems: []*emit.TypeRef{item, {Spelling: "PromiseLike", Args: []*emit.TypeRef{item}}},
@@ -175,7 +175,7 @@ func TestTypeScript(t *testing.T) {
 		golden.MatchTree(t, "typescript", renderedTypeScript(t), golden.ShouldUpdate())
 	})
 
-	t.Run("returns the module of the doubles of a test file in its directory", func(t *testing.T) {
+	t.Run("returns the module of the doubles of a spec in its directory", func(t *testing.T) {
 		t.Parallel()
 
 		module, declared := templates.TemplateFuncs(typescript.Target)["stubModule"].(func(string) string)
@@ -199,7 +199,10 @@ func TestTypeScript(t *testing.T) {
 		got, err := ref(generate(t, typescript.Target, tsTree, builtModule, billingModule).doubles[storeName],
 			"AccountBuilder")
 		assert.NoError(t, err, "the record of the double of Store refers to AccountBuilder")
-		expect.Equal(t, got.Spelling, "AccountBuilder", "the reference names the builder class")
+		account := fixture(t, typescript.Target, tsTree, stub.New(), builtModule).
+			Find(t, symbol.KindStruct, "", "Account").Identity()
+		expect.Equal(t, *got, emit.TypeRef{Spelling: "AccountBuilder", Target: account, Emitted: true},
+			"the reference names the builder class that the record of the builder of Account declares")
 	})
 }
 

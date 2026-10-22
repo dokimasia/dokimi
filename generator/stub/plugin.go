@@ -281,13 +281,15 @@ type Result struct {
 // value from the builder. Ref is the name of the declaration that the record
 // of the double and the record of its tests refer to. In Go it is the
 // constructor from the seed, such as NewAccountBuilder, and in TypeScript the
-// builder class, such as AccountBuilder. Seed is the name of the static method
-// of the builder class that constructs a builder from the seed, such as
-// create, and empty in Go. Args are the type arguments of the type that the
-// builder builds. Optional reports that the result is an optional of that
-// type, such as a Go pointer or Account | undefined in TypeScript. A Go
-// double returns the address of the value.
+// builder class, such as AccountBuilder. Target is the type that the builder
+// builds, whose record declares Ref. Seed is the name of the static method of
+// the builder class that constructs a builder from the seed, such as create,
+// and empty in Go. Args are the type arguments of the type that the builder
+// builds. Optional reports that the result is an optional of that type, such
+// as a Go pointer or Account | undefined in TypeScript. A Go double returns
+// the address of the value.
 type Default struct {
+	Target   symbol.Identity
 	Ref      string
 	Seed     string
 	Args     []*emit.TypeRef
@@ -364,10 +366,12 @@ func referentOf(r *emit.Struct, name string) (*emit.TypeRef, error) {
 }
 
 // referent returns a field of a record whose type refers to the declaration
-// named name. The layout of eidos qualifies the reference where the file of
-// the record is in another package than the declaration.
-func referent(name string) *emit.Field {
-	return &emit.Field{Name: name, Type: &emit.TypeRef{Spelling: name}}
+// named name of the record of origin: a declaration of the double, or the
+// constructor of a builder. The reference is an emitted reference, so the
+// layout of eidos qualifies it where the file of the record is in another
+// package than the declaration.
+func referent(origin *symbol.Identity, name string) *emit.Field {
+	return &emit.Field{Name: name, Type: &emit.TypeRef{Spelling: name, Target: *origin, Emitted: true}}
 }
 
 // part is the part of stub for one language. It declares the target with its
@@ -444,8 +448,8 @@ var parts = []part{golangPart{}, typescriptPart{}}
 // schema is the directive of stub.
 var schema = directive.Schema{
 	Name: StubDirective,
-	Doc: "generates a recording double of the declaration, which records each call, answers each call as the " +
-		"test configures it and injects faults, and the test of the double",
+	Doc: "generates a recording double of the declaration, which records each call, returns the results that the " +
+		"test configures and injects faults, and the test of the double",
 }
 
 // generator is the state of one instance of stub: its options.
@@ -502,7 +506,7 @@ type invocation struct {
 // tag [TestTag]. The template of that family writes a test of a double with a
 // method, and a test of the stub of each method. Each test has a level for
 // each function that it checks. The levels run the behaviour suites of the
-// runtime, and check the answers that need a value of the signature of a
+// runtime, and check the results that need a value of the signature of a
 // method. The test of a double without a method builds the double under each
 // option, and checks that a reset keeps the sample of each property. The test
 // uses the double through the exported API of its package, so a Go file of
@@ -643,31 +647,32 @@ func (in *invocation) write() members {
 	record := append(make([]symbol.Symbol, 0, 1+len(declared)), double)
 	record = append(record, declared...)
 	calls := constructions(model.Methods)
-	for _, name := range calls {
-		double.Fields.Append(referent(name))
+	for _, c := range calls {
+		double.Fields.Append(referent(&c.Target, c.Ref))
 	}
 	in.e.File().Record(model, record...)
 	if declared != nil {
 		for _, d := range record {
-			test.Fields.Append(referent(emit.DeclaredName(d)))
+			test.Fields.Append(referent(&sub.origin, emit.DeclaredName(d)))
 		}
 	}
-	for _, name := range calls {
-		test.Fields.Append(referent(name))
+	for _, c := range calls {
+		test.Fields.Append(referent(&c.Target, c.Ref))
 	}
 	in.e.File(TestTag).Record(Checks(model), test)
 	return walked
 }
 
-// constructions returns the declarations that the default results of the
-// methods refer to, each once, in the order of the methods and of their
-// results.
-func constructions(methods []Method) []string {
-	var out []string
+// constructions returns the default results of the methods with each builder
+// once, in the order of the methods and of their results. The name of the
+// constructor identifies the builder, because a double takes the builders of
+// the package of its subject alone.
+func constructions(methods []Method) []*Default {
+	var out []*Default
 	for i := range methods {
 		for _, r := range methods[i].Returns {
-			if r.Default != nil && !slices.Contains(out, r.Default.Ref) {
-				out = append(out, r.Default.Ref)
+			if r.Default != nil && !slices.ContainsFunc(out, func(d *Default) bool { return d.Ref == r.Default.Ref }) {
+				out = append(out, r.Default)
 			}
 		}
 	}
@@ -883,9 +888,9 @@ func (in *invocation) methodOf(method *node.Method, mirrored *emit.Method, from 
 // defaultOf returns the default result of a result of the type t, and nil
 // where the type that a builder builds for t has no builder. A builder builds
 // t itself, or the type of an optional t. The facts of the builder name the
-// builder of a type. The records refer to the builder through a bare
-// reference, which the layout of eidos resolves in the package of the subject
-// alone. So a type of another package has no default result either.
+// builder of a type. The templates find a builder by the name of its
+// constructor, which is unique in one package. So a type of another package
+// than the subject has no default result.
 func (in *invocation) defaultOf(t *emit.TypeRef) *Default {
 	built, optional := t, t.Form == symbol.FormOptional
 	if optional {
@@ -900,7 +905,7 @@ func (in *invocation) defaultOf(t *emit.TypeRef) *Default {
 	}
 	seed, _ := sdk.FactOf(in.m, built.Target, meta.Named[string](builder.KeySeed))
 	ref, method := in.p.construction(name, seed)
-	return &Default{Ref: ref, Seed: method, Args: built.Args, Optional: optional}
+	return &Default{Ref: ref, Seed: method, Args: built.Args, Target: built.Target, Optional: optional}
 }
 
 // partition returns the position of the parameter of the method c whose

@@ -105,7 +105,7 @@ func (golangPart) constraint(m sdk.Matcher, id *symbol.Identity) bool {
 // configures the method is On followed by the exported name of the method,
 // such as OnGet for Get. A field of the call has the exported name of its
 // parameter, such as ID for id, so a test in another package reads the field.
-// The fields of the results follow [golangResults], and a method answers its
+// The fields of the results follow [golangResults], and a method returns its
 // results as a value of a type of its own. A parameter of the setter Returns
 // is the field of its result in camel case, such as item for Item. The methods
 // of the double declare the names of the results where [golangNamed] reports

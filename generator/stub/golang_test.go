@@ -14,6 +14,7 @@ import (
 	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/plugin"
+	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/internal/gentest"
@@ -199,15 +200,41 @@ func TestGolang(t *testing.T) {
 		}
 	}
 
-	t.Run("returns the reference of the record of the checks to a declaration of the double", func(t *testing.T) {
-		t.Parallel()
+	{
+		tests := []struct {
+			name         string
+			givePkgs     []string
+			give         string
+			wantKind     symbol.Kind
+			wantDeclarer string
+		}{
+			{
+				name:     "returns the reference of the record of the checks to a declaration of the double",
+				givePkgs: []string{catalogPackage}, give: "NewStoreStub", wantKind: symbol.KindInterface,
+				wantDeclarer: storeName,
+			},
+			{
+				name:     "returns the reference of the record of the checks to the builder of a default result",
+				givePkgs: []string{builtPackage, billingPackage}, give: "NewAccountBuilder",
+				wantKind: symbol.KindStruct, wantDeclarer: "Account",
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 
-		ref, declared := templates.TemplateFuncs(golang.Target)["stubRef"].(func(*emit.Struct, string) (*emit.TypeRef, error))
-		assert.True(t, declared, "the target golang declares the helper stubRef")
-		got, err := ref(generate(t, golang.Target, goTree, catalogPackage).tests[storeName], "NewStoreStub")
-		assert.NoError(t, err, "the record of the checks of Store refers to NewStoreStub")
-		expect.Equal(t, got.Spelling, "NewStoreStub", "the reference names the constructor")
-	})
+				ref, declared := templates.TemplateFuncs(golang.Target)["stubRef"].(func(*emit.Struct, string) (
+					*emit.TypeRef, error))
+				assert.True(t, declared, "the target golang declares the helper stubRef")
+				got, err := ref(generate(t, golang.Target, goTree, tt.givePkgs...).tests[storeName], tt.give)
+				assert.NoError(t, err, "the record of the checks of Store refers to "+tt.give)
+				declarer := fixture(t, golang.Target, goTree, stub.New(), tt.givePkgs...).
+					Find(t, tt.wantKind, "", tt.wantDeclarer).Identity()
+				expect.Equal(t, *got, emit.TypeRef{Spelling: tt.give, Target: declarer, Emitted: true},
+					"the reference names the declaration that the record of "+tt.wantDeclarer+" declares")
+			})
+		}
+	}
 
 	t.Run("refuses a declaration that the record of the checks does not refer to", func(t *testing.T) {
 		t.Parallel()

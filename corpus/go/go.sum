@@ -1,8 +1,8 @@
 go.dokimi.dev/assert v0.5.0 h1:2z6cfvkDU8PwTl/0PGFAkc9cX4mZJhxg+DUGgmFKeE8=
 go.dokimi.dev/assert v0.5.0/go.mod h1:NeZvtoRhjUZSooEp8kN1mMakVUowb+EDKFR/YOUey2w=
-go.dokimi.dev/conform v0.0.0-20261021123828-15f33fa082a9 h1:Syt6JQIRD5JAYEwzJ42RzKXIwKo73s4fkzbs8YXzha4=
-go.dokimi.dev/conform v0.0.0-20261021123828-15f33fa082a9/go.mod h1:Pb/a86N62JUkb89cvMjVZInrltuulVxlg7WlzbglflI=
-go.dokimi.dev/fault v0.0.0-20261021123828-15f33fa082a9 h1:t99eSEQqPb1Ac5bh63u5iy9aHrkqqq2NgdQv0NKOizo=
-go.dokimi.dev/fault v0.0.0-20261021123828-15f33fa082a9/go.mod h1:SdYxq+OSYZUgVY/JR7ypu23Bx41cYd3mTPXe15ual0c=
-go.dokimi.dev/stub v0.0.0-20261021123828-15f33fa082a9 h1:4IIRCYj/pms7LZz8vCwxVZCYqZ46UN3+eIHBchHzPDM=
-go.dokimi.dev/stub v0.0.0-20261021123828-15f33fa082a9/go.mod h1:RZb9qPX39Dijmy0DuWTc3jWS6U+DJT1Bd9aQERwp9f4=
+go.dokimi.dev/conform v0.0.0-20261022021456-cab8ad7b77fd h1:wOC/YiIpCjSnoFD2/5YnRPfQRlokZzbfZN+R0B8sja4=
+go.dokimi.dev/conform v0.0.0-20261022021456-cab8ad7b77fd/go.mod h1:YuPnTlKLFTEYP7ajoERDE8i9KmwLbs37AJzNc4kmNIY=
+go.dokimi.dev/fault v0.0.0-20261022021456-cab8ad7b77fd h1:kRugTNAfF6FJmmg1PN7ca1gLEnVxSJw/Gjkwf78Xf+E=
+go.dokimi.dev/fault v0.0.0-20261022021456-cab8ad7b77fd/go.mod h1:tIWBkL+JtJa3m15l1meIpF7nUc7EUpRILoFrbfQLNac=
+go.dokimi.dev/stub v0.0.0-20261022021456-cab8ad7b77fd h1:LVivdbf8vk3/DcnSQNajY8nkVuXBjXbm/meGhwivkrw=
+go.dokimi.dev/stub v0.0.0-20261022021456-cab8ad7b77fd/go.mod h1:zUdjQyzskc851KBRW14vHRBtXtASyxvSRLzm0hdYFI8=

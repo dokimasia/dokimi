@@ -6,7 +6,7 @@ module go.dokimi.dev/dokimi
 go 1.27.2
 
 require (
-	go.dokimi.dev/assert v0.5.0
+	go.dokimi.dev/assert v0.6.0
 	go.dokimi.dev/eidos/cli v0.2.5-0.20261021230345-736ff393c1b5
 	go.dokimi.dev/eidos/core v0.6.1-0.20261021230345-736ff393c1b5
 	go.dokimi.dev/eidos/lang v0.2.4-0.20261021230345-736ff393c1b5

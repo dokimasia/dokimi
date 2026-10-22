@@ -355,7 +355,7 @@ const (
 )
 ```
 
-`Running` renders as `in-progress`, and `Done` as `Done`. The directive takes precedence over a trailing comment under `text=comment`. The annotator `text` of dokimi stamps the text of each instance on its variant, through the rule `OnEnumVariant` of eidos, and the enum generator reads it. A TypeScript member takes the directive in the same way. The generator writes the text surface of the enumeration and the checks of the surface:
+`Running` renders as `in-progress`, and `Done` as `Done`. The directive takes precedence over a trailing comment under `text=comment`. The annotator `text` of dokimi stamps the text of each instance on its variant, through the rule `OnEnumVariant` of eidos, and the enum generator reads it. A TypeScript member takes the directive in the same way. The generator writes the text surface of the enumeration and the checks of the surface. The table shows the names under the default options:
 
 | Member | Go | TypeScript |
 |---|---|---|
@@ -377,15 +377,58 @@ The Go render of an enumeration of integers takes the form that the tool stringe
 
 The frontend of Go stamps the exact value of each variant, and a variant whose value reads a constant of another package has none. The render of such an enumeration, of an enumeration of floats and of an enumeration of truth values switches over the variants. The render of an enumeration of text whose texts are its values is the conversion `string(v)`.
 
-The surface leaves out each member that the enumeration or its package already declares under its name. A parse function and a list of the variants go with the render, because an enumeration that renders itself parses itself. A decode needs a parse function, so without one the surface leaves out the encode too. The directive `enum methods=off` leaves out the whole surface and keeps the checks.
+The surface writes each member that the package does not declare. A member is declared where the package has a declaration of its name. In Go that is a function, a variable, a constant or a type of the package, or a method of the enumeration. In TypeScript it is a function, a class or a variable of the module of the enum. The parse function, its error and the encoding pair depend on other members:
 
-The enum generator has three options:
+- The parse function reads the texts that the render writes. So the surface writes a parse function only beside a render that it writes, because a declared render can write other texts.
+- The parse function returns its error. A parse function of the surface wraps the error that the package declares, and the surface writes the error only where the package declares none.
+- The decode reads with the parse function, and the encode writes with the render. The surface writes a decode where a parse function exists, and an encode only where a decode exists, so the two stay a pair.
 
-| Option | Default | Meaning |
+The list of the variants and the validity method depend on no other member. The directive `enum methods=off` leaves out the whole surface and keeps the checks.
+
+A member of the surface and a check call each declared member, so a declared member has the form of its row:
+
+| Member | Go | TypeScript |
 |---|---|---|
-| `parse-word` | `parse` | The word that the name of each parse function joins to the name of its enumeration |
-| `sentinel-word` | `unknown` | The word that the name of the error of a parse function joins to the name of its enumeration |
-| `no-tests` | false | Leaves out the checks of every enumeration |
+| The render | A method of the enumeration without a parameter that returns a text | A function of a value of the enum that returns a text |
+| The parse function | A function of a text that returns a variant and an error | A function of a text that returns a variant |
+| The error of the parse function | A variable | A class |
+| The list of the variants | A function without a parameter that returns a list of the enumeration | A function without a parameter that returns a list of the enum |
+| The validity method | A method of the enumeration without a parameter that returns a truth value | A function of one value |
+| The encode | A method of the enumeration without a parameter that returns bytes and an error | — |
+| The decode | A method of the enumeration of bytes that returns an error | — |
+
+A declaration of another form under the name of a member conflicts with the surface. The generator reports `Conflict` at the declaration and writes nothing for the enumeration.
+
+The enum generator has five options. Four of them are name templates of the members whose names the language does not fix. The table shows the default of each and the names that it renders for `Status`:
+
+| Option | Default | Member | Go | TypeScript |
+|---|---|---|---|---|
+| `parse-function` | `Parse{{.Enum}}` | The parse function | `ParseStatus` | `parseStatus` |
+| `values-function` | `{{.Enum}}Values` | The function that lists the variants | `StatusValues` | `statusValues` |
+| `parse-error` | `Unknown{{.Enum}}` | The error of the parse function | `ErrUnknownStatus` | `UnknownStatusError` |
+| `valid-method` | `IsValid` | The validity method | `IsValid` | None. TypeScript names its type guard `isStatus` |
+
+The option `no-tests` leaves out the checks of every enumeration.
+
+A name template has the syntax of `text/template` of Go, as the name options of mockery and GoReleaser have. Its only action is `{{.Enum}}`, the name of the enumeration. The text around the actions contains letters, digits, spaces, hyphens and underscores, and the text before the first action starts with a letter. The templates of `parse-function`, `values-function` and `parse-error` use `{{.Enum}}`, because two enumerations of a package would otherwise declare one name twice. The validity method is a method of its enumeration, so the template of `valid-method` can leave the action out.
+
+Each language writes a rendered name in its own case convention:
+
+- Go writes a function and a method in PascalCase. It writes the error as a variable with the prefix `Err`. staticcheck requires that prefix of an error variable in its check ST1012.
+- TypeScript writes a function in camelCase. It writes the error as a class in PascalCase with the suffix `Error`. The built-in error classes of JavaScript, such as `TypeError`, have that suffix.
+
+So `parse {{.Enum}} text` renders `ParseStatusText` in Go and `parseStatusText` in TypeScript. A codebase that declares the validity method as `Valid` and names its parse functions as enumer does, such as `StatusString`, sets these options in the config file:
+
+```yaml
+options:
+  enum:
+    parse-function: "{{.Enum}}String"
+    valid-method: Valid
+```
+
+YAML needs quotes around a value that starts with `{`. The declared method `Valid` then is the validity method that the checks call, and the surface does not write a second one.
+
+A template that breaks a rule stops the build of the composition. The error contains the option and the rule. A template of `parse-function`, `values-function` or `parse-error` without `{{.Enum}}` stops the build too.
 
 The checks call each member of the surface, and each member that the author declares on the enumeration or in its package. They assert through the assert library of the language, in the test of the enumeration, such as `TestStatus`. Its first case checks that no two variants share a value, and the test has a level for each member that it calls:
 
@@ -394,7 +437,7 @@ The checks call each member of the surface, and each member that the author decl
 | `StatusValues` | The list contains the variants in the order of their declaration, and each call returns a new slice |
 | `String` | A variant renders the text that its value, its trailing comment or its directive `text` states. No two variants share a text. A value outside the variants renders another text than each variant, where the surface writes the render |
 | `IsValid` | Each variant is valid, and a value outside the variants is not. The zero value is the variant that declares it, or no variant |
-| `ParseStatus` | Each variant parses back from its text. A text of no variant returns the error of the parse function, and in Go that error contains the text |
+| `ParseStatus` | Each variant parses back from its text. A text of no variant returns an error that matches the error of the parse function, where the surface or the package has one. In Go the error of a parse function of the surface contains the text |
 | `MarshalText` | Each variant writes its text |
 | `UnmarshalText` | A variant that the surface writes and reads makes the round trip, and the read refuses a text of no variant |
 
@@ -493,7 +536,11 @@ The file of the checks is beside the source file of the first error value, as te
 | A TypeScript property has no type annotation | The setter takes the type of the property, as `Counter["count"]`. The test checks only that the setter returns its builder. A default of the property reports `BadDefault` | Annotate the type of the property |
 | An enumeration under `enum` has no variant | The enum generator reports `Empty` at the enumeration and writes nothing for it | Add the variants, or remove the directive |
 | Two variants of an enumeration have one value, or one text such as `StatusDraft` and `Draft`, two trailing comments of one text under `text=comment` or two directives `text` of one text | The enum generator reports `Duplicate` at the enumeration and writes nothing for it | Give each variant a value, a name, a comment and a directive `text` of its own |
-| An enumeration renders itself and its package has no parse function | The surface leaves out the parse function, the list of the variants and the encoding pair, and the checks call the render of the author | Add the parse function, or accept the shorter surface |
+| An enumeration renders itself and its package has no parse function | The surface leaves out the parse function and the encoding pair, and the checks call the render of the author | Add the parse function, or accept the shorter surface |
+| A declaration of the package has the name of a member of the surface and another form, such as a function `ParseStatus` of bytes | The enum generator reports `Conflict` at the declaration and writes nothing for the enumeration | Give the declaration the form of the member, rename the declaration, or set the option that names the member |
+| A name template does not parse, has an action other than `{{.Enum}}`, has another character than a letter, a digit or a separator, or starts with another character than a letter | The build of the composition fails and names the option and the rule | Correct the template |
+| The template of a function or of the error of the parse function does not use `{{.Enum}}` | The build of the composition fails and names the option | Add `{{.Enum}}` to the template |
+| A Go variable has the name of the error of the parse function and another type than `error` | The generated Go code does not compile | Rename the variable, or set `parse-error` |
 | A package under `sentinel` has no error value and no error type | The sentinel generator reports `NoErrors` at the package and writes nothing for it | Remove the directive |
 | The directive `sentinel` is above a declaration instead of a package clause | eidos reports `EID-0072` at the directive | Move the directive above the package clause |
 | A package lists itself under `no-overlap-with` | The sentinel generator reports `OwnNeighbour` at the package and leaves the path out | Remove the path |
@@ -507,7 +554,7 @@ The file of the checks is beside the source file of the first error value, as te
 
 The composition adds the generators `builder`, `enum` and `sentinel` of the reference plugins of eidos.
 
-**Why not:** they write Go alone, and their generated tests assert through the package `testing` of Go and not through assert-go. Their words and options are fixed. They exist to exercise eidos, so they change with the needs of eidos and not with the needs of dokimi.
+**Why not:** they write Go alone, and their generated tests assert through the package `testing` of Go and not through assert-go. Their names and options are fixed. They exist to exercise eidos, so they change with the needs of eidos and not with the needs of dokimi.
 
 ### Enumeration checks without a surface
 
@@ -526,6 +573,36 @@ The directive `enum` takes the text of each pinned variant in a param of its own
 The trailing comment of a variant is its text without a param, as in `Poor Grade = iota // poor` under `//dokimi:enum`.
 
 **Why not:** authors write trailing comments that explain a variant, such as `Calm Mood = iota // the reader reads on`. As the text, such a comment would change the render and the parse function of an enumeration that adds the directive, and every value that it encodes. The source would state that change nowhere. The flag `-linecomment` of stringer is off by default for the same reason. The param `text=comment` states the choice in the directive that the author writes anyway.
+
+### Words joined to the name of the enumeration
+
+Each option is a word, and the part of each language joins the word to the name of the enumeration, as `parse-word: parse` gives `ParseStatus`.
+
+**Why not:** the key of a word option does not state where the word goes. The parse function puts its word before the name of the enumeration, and the function that lists the variants puts its word after it. A word also cannot give a name whose word is on the other side, such as the parse function `StatusString` of enumer.
+
+### A prefix and a suffix of each name
+
+Each member has an option for the prefix and an option for the suffix of its name, as OpenAPI Generator has `--model-name-prefix` and `--model-name-suffix`.
+
+**Why not:** the name of a method does not contain the name of the enumeration, so the validity method needs an option of another kind. The error of the parse function also has the prefix `Err` in Go and the suffix `Error` in TypeScript. A prefix option of the error is the prefix of neither name. A template states each whole name with one kind of option.
+
+### Every action of text/template
+
+A name template takes every action of `text/template`, such as a pipeline, a function or a condition, as the templates of mockery do.
+
+**Why not:** a pipeline can fail for one enumeration and pass for another. It can also give a character outside a name for one enumeration alone. The build of the composition then could not check a template before the run. The part of each language writes the case of a name, so a template does not need a function of case.
+
+### A name for one enumeration of a package
+
+The template of the parse function leaves out `{{.Enum}}`, so a package with one enumeration declares `Parse`, as in `color.Parse`.
+
+**Why not:** an option applies to every package of the composition, so a package with two enumerations would declare `Parse` twice. A param of the directive `enum` that sets the name of a member of one enumeration would allow such a name. A codebase that needs the name reverses this verdict.
+
+### The validity method found by its signature
+
+The generator takes a declared method without a parameter that returns a truth value as the validity method, whatever its name.
+
+**Why not:** an enumeration can have other such methods, such as `IsZero` and `IsTerminal`. A wrong match would make the checks call a method of another meaning.
 
 ### Slots of the builder
 
@@ -635,3 +712,9 @@ None.
 | The error tests of testkit | <https://github.com/thesm-os/testkit/tree/main/conformance/corpus/errors> |
 | The tool stringer, whose forms the Go render of an enumeration of integers takes | <https://pkg.go.dev/golang.org/x/tools/cmd/stringer> |
 | `errors.Is` | <https://pkg.go.dev/errors#Is> |
+| The syntax of a name template | <https://pkg.go.dev/text/template> |
+| The templated names `structname`, `filename` and `pkgname` of mockery | <https://vektra.github.io/mockery/latest/configuration/> |
+| The option `name_template` of GoReleaser | <https://goreleaser.com/customization/templates/> |
+| The names that enumer generates, such as `StatusString` and `IsAStatus` | <https://github.com/dmarkham/enumer> |
+| The check ST1012 of staticcheck on the names of error variables | <https://staticcheck.dev/docs/checks/#ST1012> |
+| The options `--model-name-prefix` and `--model-name-suffix` of OpenAPI Generator | <https://openapi-generator.tech/docs/usage/> |

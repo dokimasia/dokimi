@@ -100,7 +100,7 @@ func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]
 	f := Func{Signature: &emit.Method{}}
 	for _, p := range ref.Elems[:ref.Split] {
 		param := &emit.Param{Type: rules.EmitRef(p)}
-		if p.Form == symbol.FormList && strings.HasPrefix(p.Spelling, variadicSpelling) {
+		if strings.HasPrefix(p.Spelling, variadicSpelling) {
 			param.Type, param.Variadic = rules.EmitRef(p.Elems[0]), symbol.VariadicPositional
 		}
 		f.Signature.Params.Append(param)
@@ -116,7 +116,7 @@ func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]
 }
 
 // variadicSpelling opens the spelling of the last parameter of a variadic
-// function type.
+// function type, and the spelling of no other parameter.
 const variadicSpelling = "..."
 
 // result returns the list of the result at the position i of n results of

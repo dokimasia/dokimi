@@ -184,7 +184,7 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 			k.roots = append(k.roots, ref)
 		case under.Form == symbol.FormFunc:
 			param.Funcs = []Func{k.funcOf(under, name, label, taken)}
-		case under.Form == symbol.FormStream && strings.HasPrefix(under.Spelling, receiveSpelling):
+		case strings.HasPrefix(under.Spelling, receiveSpelling):
 			param.Type, param.Receive = rules.EmitRef(under.Elems[0]), true
 			param.Name = naming.Unique(taken, base+valuesWord)
 			taken[param.Name] = true
@@ -203,7 +203,7 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 }
 
 // receiveSpelling opens the spelling of a channel that the callable receives
-// from.
+// from, and the spelling of no other type.
 const receiveSpelling = "<-chan"
 
 // packages adds to taken the name of the package of each named type of ref:
@@ -211,6 +211,7 @@ const receiveSpelling = "<-chan"
 // the name that its package declares. A local variable with such a name
 // would hide the package from a later spelling of the type.
 func (k *caller) packages(ref *node.TypeRef, taken map[string]bool) {
+	//dokimi:mutate-skip ror-true: the spelling of a structural form opens with a token that is no identifier, such as []time, so its qualifier is no name of a parameter
 	if ref.Form == symbol.FormNamed {
 		if qualifier, _, qualified := strings.Cut(ref.Spelling, "."); qualified {
 			taken[qualifier] = true
@@ -278,11 +279,8 @@ func (k *caller) typeOf(ref *node.TypeRef) *emit.TypeRef {
 }
 
 // instance returns ref with the witnesses in place of the type parameters of
-// the declaration.
+// the declaration, and ref itself for a declaration without type parameters.
 func (k *caller) instance(ref *node.TypeRef) *node.TypeRef {
-	if len(k.typeParams) == 0 {
-		return ref
-	}
 	return rules.Substitute(ref, k.typeParams, k.witnesses)
 }
 
@@ -292,12 +290,10 @@ const aliasDepth = 8
 
 // underlying returns the type that ref refers to through its aliases and its
 // defined types, such as the function type of a defined function type, at the
-// type arguments of ref.
+// type arguments of ref. A structural form has no target, so the lookup
+// finds no declaration of it.
 func (k *caller) underlying(ref *node.TypeRef) *node.TypeRef {
 	for range aliasDepth {
-		if ref.Form != symbol.FormNamed || ref.Target.IsZero() {
-			return ref
-		}
 		decl, _ := k.m.Reader().Lookup(ref.Target)
 		alias, is := decl.(*node.Alias)
 		if !is {
@@ -312,9 +308,11 @@ func (k *caller) underlying(ref *node.TypeRef) *node.TypeRef {
 // interface is outside the standard library. A call generator takes an
 // implementation of such an interface whose methods return generated
 // results. An interface of the standard library, such as io.Reader, takes
-// the generator of its registration.
+// the generator of its registration. A structural form and a builtin have no
+// target, and [golang.Standard] reports the empty package of such a target as
+// a package of the standard library.
 func (k *caller) implemented(ref *node.TypeRef) (*node.Interface, bool) {
-	if ref.Form != symbol.FormNamed || ref.Target.IsZero() || golang.Standard(ref.Target.Package) {
+	if golang.Standard(ref.Target.Package) {
 		return nil, false
 	}
 	decl, _ := k.m.Reader().Lookup(ref.Target)

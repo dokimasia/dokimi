@@ -339,12 +339,30 @@ func TestSuite(t *testing.T) {
 						"BenchSlugSuiteParallel", "SlugHandle", "SlugCheck", "SlugOption",
 					},
 				},
+				{
+					name: "declares each generator and each implementation that the calls take", givePkg: pathsPackage,
+					give: "Route",
+					wantDecl: []string{
+						"RouteFunc", "RouteCallable", "RouteCalls", "RouteItemValues", "RouteDepotInput",
+						"NewRouteOver", "RouteSuite", "RunRouteSuite", "RunRouteSuiteFromHandle", "FuzzRouteSuite",
+						"RunRouteBudgets", "BenchRouteSuite", "BenchRouteSuiteParallel", "RouteHandle", "RouteCheck",
+						"RouteOption",
+					},
+				},
+				{
+					name: "declares no planted defect of an interface without callables", givePkg: pathsPackage,
+					give: "Idle",
+					wantDecl: []string{
+						"IdleSuite", "RunIdleSuite", "RunIdleSuiteFromHandle", "FuzzIdleSuite", "RunIdleBudgets",
+						"BenchIdleSuite", "BenchIdleSuiteParallel", "IdleHandle", "IdleCheck", "IdleOption",
+					},
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
 
-					expect.Equal(t, generate(t, goTree, tt.givePkg).beside[tt.give], tt.wantDecl,
+					expect.Equal(t, generate(t, goTree, tt.givePkg, inputsPackage).beside[tt.give], tt.wantDecl,
 						"the record declares each name that the template writes beside the names of the callables")
 				})
 			}
@@ -703,6 +721,11 @@ func TestSuite(t *testing.T) {
 					name:     "names no test of the allocation ceilings of a subject without one",
 					givePkgs: []string{storePackage, memoryPackage}, give: "TestStoreConformsToStore",
 					wantBenchmark: "BenchmarkStore",
+				},
+				{
+					name:     "names no test of the allocation ceilings of a subject with a p99 of its own alone",
+					givePkgs: []string{pathsPackage, inputsPackage}, give: "TestMemoryConformsToRouter",
+					wantBenchmark: "BenchmarkMemory", wantParallel: "BenchmarkMemoryParallel",
 				},
 			}
 			for _, tt := range tests {

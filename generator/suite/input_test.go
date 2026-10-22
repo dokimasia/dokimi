@@ -78,6 +78,61 @@ func TestInput(t *testing.T) {
 			expect.Equal(t, spelled(got.Params[0].Type), "io.Reader", "the call draws a value of the reader")
 		})
 
+		inputs := []struct {
+			name     string
+			giveDecl string
+			want     [][2]string
+		}{
+			{
+				name: "declares an implementation of each of two interfaces", giveDecl: "Router",
+				want: [][2]string{
+					{"RouterDepotInput", "Depot"}, {"RouterLedgerInput", "Ledger"}, {"RouterRowsInput", "Rows"},
+				},
+			},
+			{
+				name: "declares the implementation of an interface that a function takes", giveDecl: "Route",
+				want: [][2]string{{"RouteDepotInput", "Depot"}},
+			},
+		}
+		for _, tt := range inputs {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, goTree, pathsPackage, inputsPackage).suites[tt.giveDecl]
+				names := make([][2]string, 0, len(got.Inputs))
+				for _, in := range got.Inputs {
+					names = append(names, [2]string{in.Name, spelled(in.Type)})
+				}
+				expect.Equal(t, names, tt.want, "the suite declares one implementation of each interface")
+			})
+		}
+
+		t.Run("takes the declared errors of each method of an interface", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, pathsPackage, inputsPackage).suites["Router"], "Serve")
+			assert.Length(t, got.Params, 2, "Serve takes a depot and a ledger")
+			errs := make([][]string, 0, len(got.Params[0].Funcs))
+			for _, f := range fnsOf(got.Params[0].Funcs) {
+				errs = append(errs, f.results[len(f.results)-1].errors)
+			}
+			expect.Equal(t, errs, [][]string{{"ErrLost"}, {"ErrGone"}},
+				"the errors that the directive fault lists replace the sentinels of the mixins, and a mixin "+
+					"adds its sentinel alone")
+		})
+
+		t.Run("takes no declared error from the sentinel of a contract", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, pathsPackage, inputsPackage).suites["Router"], "Read")
+			assert.Length(t, got.Params, 1, "Read takes the rows")
+			errs := make([][]string, 0, len(got.Params[0].Funcs))
+			for _, f := range fnsOf(got.Params[0].Funcs) {
+				errs = append(errs, f.results[len(f.results)-1].errors)
+			}
+			expect.Equal(t, errs, [][]string{nil, nil}, "the errors of a method come from its faults and its mixins")
+		})
+
 		t.Run("declares no implementation for calls without an interface", func(t *testing.T) {
 			t.Parallel()
 

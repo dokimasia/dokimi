@@ -41,6 +41,7 @@ const (
 	meteredPackage   = "example.com/shop/metered"
 	callsPackage     = "example.com/shop/calls"
 	inputsPackage    = "example.com/shop/inputs"
+	pathsPackage     = "example.com/shop/paths"
 	badBudgetPackage = "example.com/shop/badbudget"
 	suiteTemplate    = "suite.tmpl"
 	conformTemplate  = "conform.test.tmpl"

@@ -2,6 +2,7 @@ package calls
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -23,31 +24,41 @@ type (
 // BoardChecks contains the name of each callable of Board, with the
 // identities of its checks.
 var BoardChecks = struct {
-	Place  boardPlace
-	Clash  boardClash
-	Blank  boardBlank
-	Index  boardIndex
-	Label  boardLabel
-	Wait   boardWait
-	Hold   boardHold
-	Swap   boardSwap
-	Mark   boardMark
-	Paint  boardPaint
-	Repeat boardRepeat
-	Keep   boardKeep
+	Place   boardPlace
+	Clash   boardClash
+	Blank   boardBlank
+	Index   boardIndex
+	Label   boardLabel
+	Wait    boardWait
+	Hold    boardHold
+	Swap    boardSwap
+	Mark    boardMark
+	Paint   boardPaint
+	Repeat  boardRepeat
+	Keep    boardKeep
+	Stock   boardStock
+	Discard boardDiscard
+	Twice   boardTwice
+	Drain   boardDrain
+	Gather  boardGather
 }{
-	Place:  boardPlace{"Board.Place"},
-	Clash:  boardClash{"Board.Clash"},
-	Blank:  boardBlank{"Board.Blank"},
-	Index:  boardIndex{"Board.Index"},
-	Label:  boardLabel{"Board.Label"},
-	Wait:   boardWait{"Board.Wait"},
-	Hold:   boardHold{"Board.Hold"},
-	Swap:   boardSwap{"Board.Swap"},
-	Mark:   boardMark{"Board.Mark"},
-	Paint:  boardPaint{"Board.Paint"},
-	Repeat: boardRepeat{"Board.Repeat"},
-	Keep:   boardKeep{"Board.Keep"},
+	Place:   boardPlace{"Board.Place"},
+	Clash:   boardClash{"Board.Clash"},
+	Blank:   boardBlank{"Board.Blank"},
+	Index:   boardIndex{"Board.Index"},
+	Label:   boardLabel{"Board.Label"},
+	Wait:    boardWait{"Board.Wait"},
+	Hold:    boardHold{"Board.Hold"},
+	Swap:    boardSwap{"Board.Swap"},
+	Mark:    boardMark{"Board.Mark"},
+	Paint:   boardPaint{"Board.Paint"},
+	Repeat:  boardRepeat{"Board.Repeat"},
+	Keep:    boardKeep{"Board.Keep"},
+	Stock:   boardStock{"Board.Stock"},
+	Discard: boardDiscard{"Board.Discard"},
+	Twice:   boardTwice{"Board.Twice"},
+	Drain:   boardDrain{"Board.Drain"},
+	Gather:  boardGather{"Board.Gather"},
 }
 
 // boardPlace is the name of Board.Place, with the identities of its
@@ -117,6 +128,36 @@ type boardKeep struct {
 	conform.Callable[Board]
 }
 
+// boardStock is the name of Board.Stock, with the identities of its
+// checks.
+type boardStock struct {
+	conform.Callable[Board]
+}
+
+// boardDiscard is the name of Board.Discard, with the identities of its
+// checks.
+type boardDiscard struct {
+	conform.Callable[Board]
+}
+
+// boardTwice is the name of Board.Twice, with the identities of its
+// checks.
+type boardTwice struct {
+	conform.Callable[Board]
+}
+
+// boardDrain is the name of Board.Drain, with the identities of its
+// checks.
+type boardDrain struct {
+	conform.Callable[Board]
+}
+
+// boardGather is the name of Board.Gather, with the identities of its
+// checks.
+type boardGather struct {
+	conform.Callable[Board]
+}
+
 // BoardSuite returns the checks of Board, and the calls and the budgets of
 // its callables.
 func BoardSuite() conform.Suite[Board] {
@@ -182,6 +223,31 @@ func BoardSuite() conform.Suite[Board] {
 				Calls:    boardKeepCalls,
 				Over:     newBoardOver,
 				Callable: BoardChecks.Keep.Callable,
+			},
+			{
+				Calls:    boardStockCalls,
+				Over:     newBoardOver,
+				Callable: BoardChecks.Stock.Callable,
+			},
+			{
+				Calls:    boardDiscardCalls,
+				Over:     newBoardOver,
+				Callable: BoardChecks.Discard.Callable,
+			},
+			{
+				Calls:    boardTwiceCalls,
+				Over:     newBoardOver,
+				Callable: BoardChecks.Twice.Callable,
+			},
+			{
+				Calls:    boardDrainCalls,
+				Over:     newBoardOver,
+				Callable: BoardChecks.Drain.Callable,
+			},
+			{
+				Calls:    boardGatherCalls,
+				Over:     newBoardOver,
+				Callable: BoardChecks.Gather.Callable,
 			},
 		},
 		Using: []prop.Option{
@@ -402,6 +468,76 @@ var boardKeepCalls = prop.Composite(func(c *prop.Case) func(context.Context, Boa
 	}
 })
 
+// boardStockCalls generates the calls of Board.Stock with the inputs that
+// each case draws.
+var boardStockCalls = prop.Composite(func(c *prop.Case) func(context.Context, Board) error {
+	shop0 := c.Draw(prop.Of[int](), "shop")
+	item := c.Draw(prop.Of[store.Item](), "item")
+	return func(_ context.Context, subject Board) error {
+		subject.Stock(shop0, item)
+		return nil
+	}
+})
+
+// boardDiscardCalls generates the calls of Board.Discard with the inputs
+// that each case draws.
+var boardDiscardCalls = prop.Composite(func(c *prop.Case) func(context.Context, Board) error {
+	a0 := c.Draw(prop.Of[string](), "a0")
+	return func(_ context.Context, subject Board) error {
+		subject.Discard(a0)
+		return nil
+	}
+})
+
+// boardTwiceCalls generates the calls of Board.Twice with the inputs that
+// each case draws.
+var boardTwiceCalls = prop.Composite(func(c *prop.Case) func(context.Context, Board) error {
+	c0 := c.Draw(prop.Of[string](), "c")
+	c00 := c.Draw(prop.Of[string](), "c0")
+	return func(_ context.Context, subject Board) error {
+		subject.Twice(c0, c00)
+		return nil
+	}
+})
+
+// boardDrainCalls generates the calls of Board.Drain with the inputs that
+// each case draws.
+var boardDrainCalls = prop.Composite(func(c *prop.Case) func(context.Context, Board) error {
+	intsValues := c.Draw(prop.List(prop.Of[int]()), "ints")
+	intsValues0 := c.Draw(prop.Of[int](), "ints-values")
+	return func(_ context.Context, subject Board) error {
+		subject.Drain(func() <-chan int {
+			ch := make(chan int, len(intsValues))
+			for _, v := range intsValues {
+				ch <- v
+			}
+			close(ch)
+			return ch
+		}(), intsValues0)
+		return nil
+	}
+})
+
+// boardGatherCalls generates the calls of Board.Gather with the inputs
+// that each case draws.
+var boardGatherCalls = prop.Composite(func(c *prop.Case) func(context.Context, Board) error {
+	fnResults := c.Draw(prop.List(prop.Of[int]()), "fn")
+	var fnAt atomic.Int64
+	fn := func() (r0 int) {
+		i := int(fnAt.Add(1) - 1)
+		if i >= len(fnResults) {
+			return r0
+		}
+		return fnResults[i]
+	}
+	fnResults0 := c.Draw(prop.Of[int](), "fn-results")
+	fnAt0 := c.Draw(prop.Of[int](), "fn-at")
+	return func(_ context.Context, subject Board) error {
+		subject.Gather(fn, fnResults0, fnAt0)
+		return nil
+	}
+})
+
 // boardOver is a subject of Board whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
@@ -472,6 +608,31 @@ func (o boardOver) Repeat(int) {
 
 // Keep calls spend and returns its zero results.
 func (o boardOver) Keep(int, store.Item) {
+	o.spend()
+}
+
+// Stock calls spend and returns its zero results.
+func (o boardOver) Stock(int, store.Item) {
+	o.spend()
+}
+
+// Discard calls spend and returns its zero results.
+func (o boardOver) Discard(string) {
+	o.spend()
+}
+
+// Twice calls spend and returns its zero results.
+func (o boardOver) Twice(string, string) {
+	o.spend()
+}
+
+// Drain calls spend and returns its zero results.
+func (o boardOver) Drain(<-chan int, int) {
+	o.spend()
+}
+
+// Gather calls spend and returns its zero results.
+func (o boardOver) Gather(func() int, int, int) {
 	o.spend()
 }
 

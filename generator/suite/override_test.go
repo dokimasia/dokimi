@@ -62,6 +62,40 @@ func TestOverride(t *testing.T) {
 			})
 		}
 
+		t.Run("records the members of each enumeration on each kind of path", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, pathsPackage, inputsPackage).suites["Router"]
+			members := make([][]string, 0, len(got.Using))
+			for _, e := range got.Using {
+				names := make([]string, 0, len(e.Members))
+				for _, v := range e.Members {
+					names = append(names, v.Callee.Name)
+				}
+				members = append(members, names)
+			}
+			expect.Equal(t, members, [][]string{
+				{"Light", "Heavy"}, {"Slow", "Fast"}, {"North", "South"}, {"Small", "Large"}, {"Raw", "Cooked"},
+			}, "a variadic list, a received channel, a pointer, a generated result and a field each lead to an "+
+				"enumeration, and a field that is not exported leads to none")
+		})
+
+		t.Run("records the starting value of each struct on a path of the inputs", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, pathsPackage, inputsPackage).suites["Router"]
+			expect.Equal(t, startsOf(got.Starts), []start{
+				{
+					name: "RouterItemValues", spelling: "Item", value: "composite Count", label: "item",
+					fields: []string{"Count item.count", "Name item.name"},
+				},
+				{
+					name: "RouterItemValues0", spelling: "inputs.Item", seed: "NewItemBuilder", label: "item",
+					fields: []string{"ID item.id", "Count item.count", "Kind item.kind", "Base item.base"},
+				},
+			}, "two structs of one name take two generators, and a generic type or an alias takes none")
+		})
+
 		t.Run("records the starting value of each struct with one", func(t *testing.T) {
 			t.Parallel()
 

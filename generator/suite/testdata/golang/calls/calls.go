@@ -100,4 +100,17 @@ type Board interface {
 	// Keep takes a parameter with the name of the package of an item, which
 	// the file imports under another name.
 	Keep(store int, item shop.Item)
+	// Stock takes a parameter with the name under which the file imports the
+	// package of an item.
+	Stock(shop int, item shop.Item)
+	// Discard takes a parameter with the blank name.
+	Discard(_ string)
+	// Twice takes a parameter with the name that another parameter takes in
+	// its place.
+	Twice(c, c0 string)
+	// Drain takes a parameter with the name of the list of a channel.
+	Drain(ints <-chan int, intsValues int)
+	// Gather takes parameters with the names of the list and of the counter of
+	// a generated function.
+	Gather(fn func() int, fnResults, fnAt int)
 }

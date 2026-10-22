@@ -9,6 +9,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/expect"
+	"go.dokimi.dev/eidos/sdk/symbol"
 
 	"go.dokimi.dev/dokimi/generator/suite"
 )
@@ -134,6 +135,47 @@ func TestCall(t *testing.T) {
 				wantReturns: "nil",
 			},
 			{
+				name: "renames an input with the name under which the file imports a package", givePkg: callsPackage,
+				giveDecl: "Board", give: "Stock",
+				wantParams: []param{
+					{name: "shop0", label: "shop", spelling: "int"},
+					{name: "item", label: "item", spelling: "shop.Item"},
+				},
+				wantReturns: "nil",
+			},
+			{
+				name: "names an input with the blank name by its position", givePkg: callsPackage, giveDecl: "Board",
+				give: "Discard", wantParams: []param{{name: "a0", label: "a0", spelling: "string"}},
+				wantReturns: "nil",
+			},
+			{
+				name: "renames an input with the name that an input before it takes", givePkg: callsPackage,
+				giveDecl: "Board", give: "Twice",
+				wantParams: []param{
+					{name: "c0", label: "c", spelling: "string"}, {name: "c00", label: "c0", spelling: "string"},
+				},
+				wantReturns: "nil",
+			},
+			{
+				name: "renames an input with the name of the list of a channel before it", givePkg: callsPackage,
+				giveDecl: "Board", give: "Drain",
+				wantParams: []param{
+					{name: "intsValues", label: "ints", spelling: "int"},
+					{name: "intsValues0", label: "ints-values", spelling: "int"},
+				},
+				wantReturns: "nil",
+			},
+			{
+				name: "renames an input with the name of a part of a generated function", givePkg: callsPackage,
+				giveDecl: "Board", give: "Gather",
+				wantParams: []param{
+					{name: "fn", label: "fn", spelling: "func() int"},
+					{name: "fnResults0", label: "fn-results", spelling: "int"},
+					{name: "fnAt0", label: "fn-at", spelling: "int"},
+				},
+				wantReturns: "nil",
+			},
+			{
 				name: "draws the inputs of a generic interface at its witnesses", givePkg: genericPackage,
 				giveDecl: "Cache", give: "Get",
 				wantParams: []param{{name: "key", label: "key", spelling: "int"}}, wantAssign: "_, _ =",
@@ -236,6 +278,13 @@ func TestCall(t *testing.T) {
 				expect.Equal(t, got.Concurrent, tt.want, "a parallel benchmark measures a concurrent callable")
 			})
 		}
+
+		t.Run("reports the mixin concurrent-readers of a method", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, pathsPackage, inputsPackage).suites["Router"], "Scan")
+			expect.True(t, got.Concurrent, "a parallel benchmark measures a callable with concurrent readers")
+		})
 
 		defects := []struct {
 			name     string
@@ -396,6 +445,28 @@ func TestCall(t *testing.T) {
 			expect.Equal(t, paramOf(p), param{name: "itemsValues", label: "items", spelling: "Item"},
 				"the call draws a list of the elements of the channel")
 			expect.True(t, p.Receive, "each call passes a new channel of the list")
+		})
+
+		t.Run("draws the channel itself for a channel that the callable sends to", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, pathsPackage, inputsPackage).suites["Router"], "Ship")
+			assert.Length(t, got.Params, 1, "Ship takes a channel")
+			expect.Equal(t, paramOf(got.Params[0]), param{name: "out", label: "out", spelling: "chan<- string"},
+				"the call draws a value of the channel")
+			expect.False(t, got.Params[0].Receive, "a channel that the callable sends to takes no list")
+		})
+
+		t.Run("passes the elements of a variadic function type as its list", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, inputsPackage).suites["Pipeline"], "Apply")
+			assert.Length(t, got.Params, 1, "Apply takes a function")
+			assert.Length(t, got.Params[0].Funcs, 1, "the function type has one generated function")
+			params := got.Params[0].Funcs[0].Signature.Params.Items()
+			assert.Length(t, params, 1, "the function type takes one list")
+			expect.Equal(t, params[0].Variadic, symbol.VariadicPositional, "the list is variadic")
+			expect.Equal(t, spelled(params[0].Type), "int", "the list takes the type of its elements")
 		})
 	})
 }

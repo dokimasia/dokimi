@@ -227,7 +227,7 @@ func budgetOf(m sdk.SubjectMatch, d *directive.Directive, name string) (Budget, 
 	switch {
 	case mean && !latency:
 		r.refuse("states a mean and no p99, and a mean alone passes a tail that grows")
-	case !allocs && !bytes && !latency && !mean && !warmup:
+	case !allocs && !bytes && !latency && !warmup:
 		r.refuse("states no ceiling and no warm-up. State allocs, bytes, p99, mean or warmup")
 	}
 	return b, r.valid

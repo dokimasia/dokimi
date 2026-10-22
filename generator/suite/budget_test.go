@@ -56,7 +56,7 @@ func TestBudget(t *testing.T) {
 				giveKind: symbol.KindMethod, giveOwn: "Meter", give: "Count",
 				want: ceilings{
 					allocs: 1, allocsSet: true, bytes: 96, bytesSet: true, latency: 2 * time.Microsecond,
-					mean: time.Microsecond,
+					latencySet: true, mean: time.Microsecond, meanSet: true,
 				},
 			},
 			{
@@ -66,12 +66,12 @@ func TestBudget(t *testing.T) {
 			{
 				name: "stamps the ceilings of a budget on a function", givePkg: meterPackage,
 				giveKind: symbol.KindFunction, give: "Weigh",
-				want: ceilings{allocsSet: true, latency: 100 * time.Nanosecond},
+				want: ceilings{allocsSet: true, latency: 100 * time.Nanosecond, latencySet: true},
 			},
 			{
 				name: "stamps no ceiling that a budget leaves out", givePkg: meterPackage, giveKind: symbol.KindMethod,
 				giveOwn: "Meter", give: "Record",
-				want: ceilings{latency: time.Millisecond, warmup: 500, warmupSet: true},
+				want: ceilings{latency: time.Millisecond, latencySet: true, warmup: 500, warmupSet: true},
 			},
 			{
 				name: "stamps the warm-up of a budget without a ceiling", givePkg: badBudgetPackage,
@@ -280,12 +280,12 @@ func TestBudget(t *testing.T) {
 }
 
 // ceilings are the ceilings and the warm-up that the facts of suite contain for
-// a callable. allocsSet, bytesSet and warmupSet report that a fact of the count
-// exists.
+// a callable. allocsSet, bytesSet, warmupSet, latencySet and meanSet report
+// that a fact of the value exists.
 type ceilings struct {
-	allocs, bytes, warmup          int64
-	latency, mean                  time.Duration
-	allocsSet, bytesSet, warmupSet bool
+	allocs, bytes, warmup                               int64
+	latency, mean                                       time.Duration
+	allocsSet, bytesSet, warmupSet, latencySet, meanSet bool
 }
 
 // stamped returns the ceilings that the facts of the fixture f contain for the
@@ -302,9 +302,10 @@ func stamped(t *testing.T, f *gentest.Fixture, id symbol.Identity) ceilings {
 	c.allocs, c.allocsSet = fact(suite.KeyAllocs)
 	c.bytes, c.bytesSet = fact(suite.KeyBytes)
 	c.warmup, c.warmupSet = fact(suite.KeyWarmup)
-	latency, _ := fact(suite.KeyLatency)
-	mean, _ := fact(suite.KeyMean)
+	latency, latencySet := fact(suite.KeyLatency)
+	mean, meanSet := fact(suite.KeyMean)
 	c.latency, c.mean = time.Duration(latency), time.Duration(mean)
+	c.latencySet, c.meanSet = latencySet, meanSet
 	return c
 }
 

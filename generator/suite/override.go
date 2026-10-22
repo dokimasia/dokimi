@@ -102,7 +102,10 @@ type walk struct {
 	starts []Start
 }
 
-// visit visits the type ref and each type that it contains.
+// visit visits the type ref and each type that it contains. A structural form
+// has no target, and [golang.Standard] reports the empty package of such a
+// target as a package of the standard library, so the walk declares nothing
+// for it.
 func (w *walk) visit(ref *node.TypeRef) {
 	for _, elem := range ref.Elems {
 		w.visit(elem)
@@ -110,7 +113,7 @@ func (w *walk) visit(ref *node.TypeRef) {
 	for _, arg := range ref.Args {
 		w.visit(arg)
 	}
-	if ref.Target.IsZero() || w.seen[ref.Target] || golang.Standard(ref.Target.Package) {
+	if w.seen[ref.Target] || golang.Standard(ref.Target.Package) {
 		return
 	}
 	w.seen[ref.Target] = true
@@ -164,7 +167,7 @@ func (k *caller) startOf(st *node.Struct, ref *node.TypeRef, taken map[string]bo
 	}
 	k.name(&s, st.Name, taken)
 	for _, f := range st.Fields {
-		if tag, tagged := k.b.Tag(f, propTag); f.Visibility != symbol.VisibilityPublic || tagged && tag == propSkip {
+		if tag, _ := k.b.Tag(f, propTag); f.Visibility != symbol.VisibilityPublic || tag == propSkip {
 			continue
 		}
 		s.Fields = append(s.Fields, StartField{Name: f.Name, Label: s.Label + "." + naming.Kebab(f.Name)})

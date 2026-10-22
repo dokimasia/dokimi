@@ -1,0 +1,12 @@
+// Copyright Dokimasia B.V. 2026
+// SPDX-License-Identifier: Apache-2.0
+
+go 1.27.3
+
+// The workspace contains the module at the root and the Go corpus, and every
+// ergon per-module command runs in both. The trees of the specs are modules of
+// their own outside the workspace, which the specs load with GOWORK=off.
+use (
+	.
+	./corpus/go
+)

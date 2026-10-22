@@ -12,6 +12,16 @@ func TestCacheConformsToCache(t *testing.T) {
 	RunCacheSuite(t, New)
 }
 
+// BenchmarkCache measures each callable of the suite of Cache on Cache.
+func BenchmarkCache(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		BenchCacheSuite(b, CacheChecks.Get.Callable, func(*CacheHandle) *Cache { return New() })
+	})
+	b.Run("Set", func(b *testing.B) {
+		BenchCacheSuite(b, CacheChecks.Set.Callable, func(*CacheHandle) *Cache { return New() })
+	})
+}
+
 // FuzzCacheGet fuzzes the property checks of Cache.Get on Cache.
 func FuzzCacheGet(f *testing.F) {
 	FuzzCacheSuite(f, CacheChecks.Get.Callable, func(*CacheHandle) *Cache { return New() })

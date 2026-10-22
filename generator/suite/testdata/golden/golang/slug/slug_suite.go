@@ -1,8 +1,10 @@
 package slug
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 )
 
@@ -41,22 +43,33 @@ func (c slugCallable) KeepsTheWords() conform.ID[SlugFunc] {
 	return c.Check("keeps-the-words")
 }
 
-// SlugSuite returns the checks of Slug.
+// SlugSuite returns the checks of Slug, and the calls and the budgets of
+// its callables.
 func SlugSuite() conform.Suite[SlugFunc] {
-	return conform.Suite[SlugFunc]{Declaration: "Slug", Checks: []conform.Check[SlugFunc]{
-		{
-			ID:        SlugChecks.KeepsTheOrder(),
-			Statement: "Slug keeps the words of the title in their order",
-			Apply:     KeepsTheOrder,
-			Defect:    dropsWords,
+	return conform.Suite[SlugFunc]{
+		Declaration: "Slug",
+		Checks: []conform.Check[SlugFunc]{
+			{
+				ID:        SlugChecks.KeepsTheOrder(),
+				Statement: "Slug keeps the words of the title in their order",
+				Apply:     KeepsTheOrder,
+				Defect:    dropsWords,
+			},
+			{
+				ID:        SlugChecks.KeepsTheWords(),
+				Statement: "Slug keeps each word of the title",
+				Apply:     KeepsTheWords,
+				Defect:    dropsWords,
+			},
 		},
-		{
-			ID:        SlugChecks.KeepsTheWords(),
-			Statement: "Slug keeps each word of the title",
-			Apply:     KeepsTheWords,
-			Defect:    dropsWords,
+		Calls: []conform.Call[SlugFunc]{
+			{
+				Calls:    slugCalls,
+				Over:     newSlugOver,
+				Callable: SlugChecks.Callable,
+			},
 		},
-	}}
+	}
 }
 
 // RunSlugSuite applies the checks of Slug, and the checks that opts add,
@@ -87,4 +100,55 @@ func FuzzSlugSuite(f *testing.F, subject SlugFunc, opts ...SlugOption) {
 		SlugChecks.Callable,
 		func(*SlugHandle) SlugFunc { return subject },
 		opts...)
+}
+
+// RunSlugBudgets applies the allocation ceiling of Slug, and the ceilings
+// that opts add, to subject.
+func RunSlugBudgets(t *testing.T, subject SlugFunc, opts ...SlugOption) {
+	t.Helper()
+	conform.RunBudgets(t, SlugSuite(), func(*SlugHandle) SlugFunc { return subject }, opts...)
+}
+
+// BenchSlugSuite measures subject under the ceilings of the budget of
+// Slug.
+func BenchSlugSuite(b conform.B, subject SlugFunc, opts ...SlugOption) {
+	b.Helper()
+	conform.Bench(
+		b,
+		SlugSuite(),
+		SlugChecks.Callable,
+		func(*SlugHandle) SlugFunc { return subject },
+		opts...)
+}
+
+// BenchSlugSuiteParallel measures subject on GOMAXPROCS goroutines at
+// once, under the ceilings of the budget of Slug.
+func BenchSlugSuiteParallel(b *testing.B, subject SlugFunc, opts ...SlugOption) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		SlugSuite(),
+		SlugChecks.Callable,
+		func(*SlugHandle) SlugFunc { return subject },
+		opts...)
+}
+
+// slugCalls generates the calls of Slug with the inputs that each case
+// draws.
+var slugCalls = prop.Composite(func(c *prop.Case) func(context.Context, SlugFunc) error {
+	title := c.Draw(prop.Of[string](), "title")
+	keep := c.Draw(prop.List(prop.Of[string]()), "keep")
+	return func(_ context.Context, subject SlugFunc) error {
+		_ = subject(title, keep...)
+		return nil
+	}
+})
+
+// newSlugOver returns the planted defect of a ceiling of Slug, which calls
+// spend and returns its zero results.
+func newSlugOver(_ *SlugHandle, spend func()) SlugFunc {
+	return func(string, ...string) (r0 string) {
+		spend()
+		return r0
+	}
 }

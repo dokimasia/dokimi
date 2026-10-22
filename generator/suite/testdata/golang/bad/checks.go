@@ -117,6 +117,11 @@ func BuildsTheSubject(h any) {}
 //dokimi:check Normalize defect=broken
 func ReceivesTheFunction(h any) {}
 
+// LatencyBudget checks that Get returns within its budget.
+//
+//dokimi:check store.Store.Get defect=broken
+func LatencyBudget(h any) {}
+
 // broken returns a store that breaks every check.
 func broken(any) store.Store { return nil }
 

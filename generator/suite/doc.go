@@ -77,6 +77,54 @@
 //	//dokimi:excuse Store.Get/keeps-the-item reason="the store drops each item"
 //	type Store struct{ … }
 //
+// # Budgets
+//
+// The directive budget states the ceilings of a callable: the most heap
+// allocations and bytes of one call, and the highest p99 and mean latency of
+// one call. On a method or a function under the directive suite, the budget
+// applies to every subject of the declaration:
+//
+//	// Get returns the item with the identity id.
+//	//
+//	//dokimi:budget allocs=1 bytes=96 p99=2us mean=1us
+//	Get(ctx context.Context, id string) (Item, error)
+//
+// On a subject, the budget names its callable and applies to that subject
+// alone:
+//
+//	//dokimi:subject store.Store new=New
+//	//dokimi:budget Store.Get p99=3ms mean=1ms
+//	type Store struct{ … }
+//
+// The runtime derives a check with a planted defect from each ceiling, such
+// as Store.Get/allocation-budget. The names of the callables return the
+// identity of each ceiling of the budget of a declaration, such as
+// StoreChecks.Get.AllocationBudget(), and a subject excuses a ceiling of its
+// declaration with the directive excuse. The param warmup of a budget states
+// the number of iterations that each benchmark of the callable runs before it
+// measures, as in //dokimi:budget allocs=0 warmup=20000. A budget may state a
+// warm-up without a ceiling.
+//
+// # Calls and benchmarks
+//
+// The suite declares the call generator of each callable, which draws the
+// inputs of each call through the property engine of the assert library. A
+// context takes the context of the call, and a variadic parameter takes a
+// list. A pointer takes the address of a value, or a pointer that can be nil
+// under the mixin nil-safe. The members of each enumeration that the inputs
+// take at some depth replace the generator of the enumeration. The suite also
+// declares the planted defect of the ceilings: a subject whose callables spend
+// the cost that exceeds a ceiling.
+//
+// The test of a subject declares a benchmark of each callable, such as the
+// level Get of BenchmarkStore. It declares a parallel benchmark, such as
+// BenchmarkStoreParallel, of each callable with the mixin concurrent or
+// concurrent-readers, and a test of the allocation ceilings, such as
+// TestStoreAllocs, where a budget states one. The test of a suite with an
+// allocation ceiling declares TestStoreSuiteAllocs, which falsifies the
+// ceilings. The test of the suite of a function declares the same parts for
+// the function, such as BenchmarkSlug and TestSlugAllocs.
+//
 // # Kinds of declaration
 //
 // The subjects of the suite of an interface have the type of the interface,
@@ -99,15 +147,17 @@
 // directive suite, and [BadFactory] at a subject whose factory an application
 // cannot call. It reports [UnknownCallable] at the directive of a check whose
 // callable it cannot find. It reports [BadCheck] at the directive of a check
-// without a statement or with the wrong signature, and of a check of a
-// function with the segment of a check that the spec of the suite adds. It
-// reports [UnknownExcusal] at an excusal whose identity does not match a check
-// of the suite.
+// without a statement or with the wrong signature, of a check of a function
+// with the segment of a check that the spec of the suite adds, and of a check
+// with the segment of a ceiling. It reports [UnknownExcusal] at an excusal
+// whose identity does not match a check of the suite, and [BadBudget] at a
+// budget that no check of a suite applies.
 //
 // # Dependency position
 //
 // The package imports the packages internal/lang and generator/stub of the
-// module, the root package of the Go satellite in golang.go, the package
-// naming of eidos-lang, the root, diag, directive, emit, meta, node, plugin,
-// rules and symbol packages of the SDK facade of eidos, and the Go stdlib.
+// module, the root package of the Go satellite in golang.go and call.go, the
+// package naming of eidos-lang, the package shape of the shape plugin of
+// eidos, the root, diag, directive, emit, meta, node, plugin, rules, store and
+// symbol packages of the SDK facade of eidos, and the Go stdlib.
 package suite

@@ -51,12 +51,13 @@ var UnknownCallable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // property check also a *prop.Case after it. Its defect takes the handle and
 // returns the planted defect alone.
 // BadCheck also reports a check of a function with the identity of a check
-// that the test of the suite adds to the forms of its application. The
-// finding is an Error at the function, and no suite binds the check.
+// that the test of the suite adds to the forms of its application, and a
+// check with the segment of a ceiling of a budget, such as allocation-budget.
+// The finding is an Error at the function, and no suite binds the check.
 var BadCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 5,
 	Meaning: "a function under the directive check has no statement, it or its defect has another signature " +
-		"than a check, or it has the identity of a check that the test of its suite adds",
+		"than a check, or it has the identity of a check that the test of its suite or a budget adds",
 })
 
 // UnknownExcusal reports an excusal under the directive excuse whose identity
@@ -66,4 +67,22 @@ var BadCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
 var UnknownExcusal = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  6,
 	Meaning: "the directive excuse names a check that the suite of the declaration of its subject does not have",
+})
+
+// BadBudget reports a directive budget that states a ceiling that no check
+// can apply: a count of allocations or bytes below 0, a p99 or a mean that is
+// no duration above 0, and a mean without a p99. It reports a warm-up below 0,
+// and a budget without a ceiling and without a warm-up, which no benchmark can
+// apply. It also reports a budget that no suite applies: a second budget of one
+// callable, a budget of a callable that no suite has, a budget of a method
+// that names a callable, a budget of a subject that names no callable of its
+// declaration or a callable whose declaration states a budget, and a budget of
+// a struct without the directive subject. eidos refuses a count that is no
+// integer, and a param that the directive states twice. The finding is an
+// Error at the directive. suite stamps nothing for the budget, and records no
+// conformance test of a subject with such a budget.
+var BadBudget = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 7,
+	Meaning: "the directive budget states a ceiling that no check can apply, a warm-up that no benchmark can apply, " +
+		"or a budget that no suite applies",
 })

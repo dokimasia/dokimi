@@ -1,8 +1,10 @@
 package store
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 )
 
@@ -48,22 +50,38 @@ func (c storePut) RefusesACancelledPut() conform.ID[Store] {
 	return c.Check("refuses-a-cancelled-put")
 }
 
-// StoreSuite returns the checks of Store.
+// StoreSuite returns the checks of Store, and the calls and the budgets of
+// its callables.
 func StoreSuite() conform.Suite[Store] {
-	return conform.Suite[Store]{Declaration: "Store", Checks: []conform.Check[Store]{
-		{
-			ID:        StoreChecks.Get.KeepsTheItem(),
-			Statement: "Get returns the item that Put stored",
-			Apply:     KeepsTheItem,
-			Defect:    forgetful,
+	return conform.Suite[Store]{
+		Declaration: "Store",
+		Checks: []conform.Check[Store]{
+			{
+				ID:        StoreChecks.Get.KeepsTheItem(),
+				Statement: "Get returns the item that Put stored",
+				Apply:     KeepsTheItem,
+				Defect:    forgetful,
+			},
+			{
+				ID:        StoreChecks.Put.RefusesACancelledPut(),
+				Statement: "Put reports a cancelled context",
+				Apply:     RefusesACancelledPut,
+				Defect:    careless,
+			},
 		},
-		{
-			ID:        StoreChecks.Put.RefusesACancelledPut(),
-			Statement: "Put reports a cancelled context",
-			Apply:     RefusesACancelledPut,
-			Defect:    careless,
+		Calls: []conform.Call[Store]{
+			{
+				Calls:    storeGetCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Get.Callable,
+			},
+			{
+				Calls:    storePutCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Put.Callable,
+			},
 		},
-	}}
+	}
 }
 
 // RunStoreSuite applies the checks of Store, and the checks that opts add,
@@ -100,4 +118,98 @@ func FuzzStoreSuite[T Store](
 		callable,
 		func(h *StoreHandle) Store { return newSubject(h) },
 		opts...)
+}
+
+// RunStoreBudgets applies the allocation ceilings of Store, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunStoreBudgets[T Store](
+	t *testing.T,
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		StoreSuite(),
+		func(h *StoreHandle) Store { return newSubject(h) },
+		opts...)
+}
+
+// BenchStoreSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchStoreSuite[T Store](
+	b conform.B,
+	callable conform.Callable[Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		StoreSuite(),
+		callable,
+		func(h *StoreHandle) Store { return newSubject(h) },
+		opts...)
+}
+
+// BenchStoreSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchStoreSuiteParallel[T Store](
+	b *testing.B,
+	callable conform.Callable[Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		StoreSuite(),
+		callable,
+		func(h *StoreHandle) Store { return newSubject(h) },
+		opts...)
+}
+
+// storeGetCalls generates the calls of Store.Get with the inputs that each
+// case draws.
+var storeGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Store) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject Store) error {
+		_, err := subject.Get(ctx, id)
+		return err
+	}
+})
+
+// storePutCalls generates the calls of Store.Put with the inputs that each
+// case draws.
+var storePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, Store) error {
+	item := c.Draw(prop.Of[Item](), "item")
+	return func(ctx context.Context, subject Store) error {
+		return subject.Put(ctx, item)
+	}
+})
+
+// storeOver is a subject of Store whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type storeOver struct {
+	Store
+	spend func()
+}
+
+// Get calls spend and returns its zero results.
+func (o storeOver) Get(context.Context, string) (r0 Item, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Put calls spend and returns its zero results.
+func (o storeOver) Put(context.Context, Item) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newStoreOver returns the planted defect of a ceiling of Store, whose
+// callables call spend.
+func newStoreOver(_ *StoreHandle, spend func()) Store {
+	return storeOver{spend: spend}
 }

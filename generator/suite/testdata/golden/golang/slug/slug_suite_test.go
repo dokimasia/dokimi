@@ -73,6 +73,11 @@ func TestSlugSuite(t *testing.T) {
 	})
 }
 
+// BenchmarkSlug measures Slug.
+func BenchmarkSlug(b *testing.B) {
+	BenchSlugSuite(b, Slug)
+}
+
 // FuzzSlug fuzzes the property checks of Slug.
 func FuzzSlug(f *testing.F) {
 	FuzzSlugSuite(f, Slug)

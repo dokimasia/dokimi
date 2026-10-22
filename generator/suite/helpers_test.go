@@ -5,16 +5,23 @@ package suite_test
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"go.dokimi.dev/assert"
 	golang "go.dokimi.dev/eidos/lang/go"
+	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
+	"go.dokimi.dev/eidos/plugin/shape/catalog"
+	"go.dokimi.dev/eidos/sdk/authored"
 	"go.dokimi.dev/eidos/sdk/diag"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/plugintest"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
+	"go.dokimi.dev/dokimi/annotator/defaults"
+	"go.dokimi.dev/dokimi/annotator/fault"
+	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
 )
@@ -22,16 +29,21 @@ import (
 // The trees of the specs, the packages that two specs or more read, and the
 // templates of the two families.
 const (
-	goTree          = "testdata/golang"
-	storePackage    = "example.com/shop/store"
-	genericPackage  = "example.com/shop/generic"
-	catalogPackage  = "example.com/shop/catalog"
-	slugPackage     = "example.com/shop/slug"
-	memoryPackage   = "example.com/shop/memory"
-	cachedPackage   = "example.com/shop/cached"
-	sessionPackage  = "example.com/shop/session"
-	suiteTemplate   = "suite.tmpl"
-	conformTemplate = "conform.test.tmpl"
+	goTree           = "testdata/golang"
+	storePackage     = "example.com/shop/store"
+	genericPackage   = "example.com/shop/generic"
+	catalogPackage   = "example.com/shop/catalog"
+	slugPackage      = "example.com/shop/slug"
+	memoryPackage    = "example.com/shop/memory"
+	cachedPackage    = "example.com/shop/cached"
+	sessionPackage   = "example.com/shop/session"
+	meterPackage     = "example.com/shop/meter"
+	meteredPackage   = "example.com/shop/metered"
+	callsPackage     = "example.com/shop/calls"
+	inputsPackage    = "example.com/shop/inputs"
+	badBudgetPackage = "example.com/shop/badbudget"
+	suiteTemplate    = "suite.tmpl"
+	conformTemplate  = "conform.test.tmpl"
 )
 
 // generated is what suite records over one fixture: the suite of each
@@ -47,11 +59,23 @@ type generated struct {
 }
 
 // fixture returns a fixture over the packages pkgs of the tree dir with the
-// plugin suite p and the target golang.
+// plugin suite p and the target golang. The annotators of the composition
+// stamp the fixture: the authored samples and witnesses, the facts of Go, the
+// declared defaults, the names of the builders, the faults of the methods and
+// the classifications of the shape catalog.
 func fixture(tb assert.TB, dir string, p plugin.Plugin, pkgs ...string) *gentest.Fixture {
 	tb.Helper()
 
-	return gentest.New(tb, &gentest.Spec{Dir: dir, Packages: pkgs, Target: golang.Target, Plugins: []plugin.Plugin{p}})
+	annotators := append([]plugin.Annotator{
+		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), builder.New(), fault.New(),
+	}, catalog.Annotators()...)
+	return gentest.New(tb, &gentest.Spec{
+		Dir:        dir,
+		Packages:   pkgs,
+		Target:     golang.Target,
+		Plugins:    []plugin.Plugin{p},
+		Annotators: annotators,
+	})
 }
 
 // generate runs a new suite over the packages pkgs of the tree dir, and
@@ -82,6 +106,83 @@ func phases(t *testing.T, f *gentest.Fixture, p plugin.Plugin) (stamps, records 
 	records = f.Generate(t, p)
 	assert.NoError(t, records.Err, "the generate half runs whole")
 	return stamps, records
+}
+
+// called returns the call of the callable whose field is field in the suite
+// s, and the call of a function for an empty field. It stops the test where
+// the suite has no such call.
+func called(t *testing.T, s suite.Suite, field string) suite.Call {
+	t.Helper()
+
+	at := slices.IndexFunc(s.Calls, func(c suite.Call) bool { return c.Field == field })
+	assert.True(t, at >= 0, "the suite of "+s.Declaration+" has a call of "+field)
+	return s.Calls[at]
+}
+
+// signature returns the signature of the method m: its name, then the name
+// and the spelling of the type of each parameter, and the name and the
+// spelling of the type of each result. A parameter or a result without a
+// name has the spelling alone.
+func signature(m *emit.Method) string {
+	params := make([]string, 0, m.Params.Len())
+	for _, p := range m.Params.Items() {
+		spelling := spelled(p.Type)
+		if p.Variadic != symbol.VariadicNone {
+			spelling = "..." + spelling
+		}
+		params = append(params, strings.TrimSpace(p.Name+" "+spelling))
+	}
+	results := make([]string, 0, m.Returns.Len())
+	for _, r := range m.Returns.Items() {
+		results = append(results, strings.TrimSpace(r.Name+" "+spelled(r.Type)))
+	}
+	return m.Name + "(" + strings.Join(params, ", ") + ") (" + strings.Join(results, ", ") + ")"
+}
+
+// spelled returns the spelling of the type ref and of its type arguments, as
+// Pair[time.Month].
+func spelled(ref *emit.TypeRef) string {
+	if len(ref.Args) == 0 {
+		return ref.Spelling
+	}
+	args := make([]string, 0, len(ref.Args))
+	for _, a := range ref.Args {
+		args = append(args, spelled(a))
+	}
+	return ref.Spelling + "[" + strings.Join(args, ", ") + "]"
+}
+
+// fn is a generated function with the signature of its literal and the
+// spellings of its results.
+type fn struct {
+	field, signature, index string
+	results                 []result
+}
+
+// result is the list of one result of a generated function, with the
+// spelling of its type and the names of its declared errors.
+type result struct {
+	name, label, spelling string
+	errors                []string
+	isError               bool
+}
+
+// fnsOf returns each function of funcs with the signature of its literal and
+// the spellings of its results.
+func fnsOf(funcs []suite.Func) []fn {
+	out := make([]fn, 0, len(funcs))
+	for _, f := range funcs {
+		got := fn{field: f.Field, signature: signature(f.Signature), index: f.Index}
+		for _, r := range f.Results {
+			res := result{name: r.Name, label: r.Label, spelling: spelled(r.Type), isError: r.Error}
+			for _, e := range r.Errors {
+				res.errors = append(res.errors, e.Callee.Name)
+			}
+			got.results = append(got.results, res)
+		}
+		out = append(out, got)
+	}
+	return out
 }
 
 // recorded runs both halves of the suite p over the fixture f, and returns

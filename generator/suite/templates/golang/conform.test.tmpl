@@ -5,7 +5,8 @@
 {{- $refs := .Decl.Fields.Items}}
 {{- $test := suitePascal $c.Test}}
 {{- if $c.Subject}}
-{{- if $c.Excusals}}{{use "go.dokimi.dev/conform"}}{{end}}
+{{- $options := or $c.Ceilings $c.Excusals}}
+{{- if or $options $c.Cases}}{{use "go.dokimi.dev/conform"}}{{end}}
 {{- $checks := spell (index $refs 2).Type}}
 {{- $factory := spell (index $refs 1).Type}}
 {{- if not $c.FromHandle}}
@@ -15,11 +16,12 @@
 {{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $test $c.Declaration $c.Subject))}}
 {{- ""}}func {{$test}}(t *testing.T) {
 	t.Parallel()
-{{- if $c.Excusals}}
+{{- if or $c.Excusals $c.Cases}}
 
 	{{spell (index $refs 0).Type}}(
 		t,
 		{{spell (index $refs 1).Type}},
+{{- template "suite.cases" $r}}
 {{- template "suite.excusals" $r}}
 	)
 {{- else}}
@@ -27,6 +29,52 @@
 	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}})
 {{- end}}
 }
+{{- with $c.Allocs}}
+{{- $allocs := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s applies the allocation ceilings of the suite of %s to %s.` $allocs $c.Declaration $c.Subject))}}
+{{- ""}}func {{$allocs}}(t *testing.T) {
+{{- if or $options $c.Cases}}
+	{{spell (index $refs 6).Type}}(
+		t,
+		{{$factory}},
+{{- template "suite.cases" $r}}
+{{- template "suite.ceilings" $r}}
+{{- template "suite.excusals" $r}}
+	)
+{{- else}}
+	{{spell (index $refs 6).Type}}(t, {{$factory}})
+{{- end}}
+}
+{{- end}}
+{{- if $c.Levels}}
+{{- $benchmark := suitePascal $c.Benchmark}}
+
+{{docs (wrapdocs (printf `%s measures each callable of the suite of %s on %s.` $benchmark $c.Declaration $c.Subject))}}
+{{- ""}}func {{$benchmark}}(b *testing.B) {
+{{- template "suite.options" $r}}
+{{- range $c.Levels}}
+	b.Run("{{.Field}}", func(b *testing.B) {
+		{{spell (index $refs 7).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if $options}}, opts...{{end}})
+	})
+{{- end}}
+}
+{{- end}}
+{{- with $c.Parallel}}
+{{- $parallel := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s measures each callable of the suite of %s that admits concurrent calls on %s, on GOMAXPROCS goroutines at once.` $parallel $c.Declaration $c.Subject))}}
+{{- ""}}func {{$parallel}}(b *testing.B) {
+{{- template "suite.options" $r}}
+{{- range $c.Levels}}
+{{- if .Concurrent}}
+	b.Run("{{.Field}}", func(b *testing.B) {
+		{{spell (index $refs 8).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if $options}}, opts...{{end}})
+	})
+{{- end}}
+{{- end}}
+}
+{{- end}}
 {{- range $c.Targets}}
 {{- $target := suitePascal .Name}}
 
@@ -136,6 +184,43 @@
 {{- end}}
 	})
 }
+{{- with $c.SuiteAllocs}}
+{{- $allocs := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s falsifies the allocation ceilings of the suite of %s.` $allocs $c.Declaration))}}
+{{- ""}}func {{$allocs}}(t *testing.T) {
+	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *testing.T) {
+		conform.FalsifyAllocs(t, {{spell $suite.Type}}())
+	})
+}
+{{- end}}
+{{- if $c.Function}}
+{{- $fn := spell (index $refs 7).Type}}
+{{- with $c.Allocs}}
+{{- $allocs := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s applies the allocation ceiling of %s to %s.` $allocs $c.Declaration $c.Declaration))}}
+{{- ""}}func {{$allocs}}(t *testing.T) {
+	{{spell (index $refs 9).Type}}(t, {{$fn}})
+}
+{{- end}}
+{{- with $c.Benchmark}}
+{{- $benchmark := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s measures %s.` $benchmark $c.Declaration))}}
+{{- ""}}func {{$benchmark}}(b *testing.B) {
+	{{spell (index $refs 10).Type}}(b, {{$fn}})
+}
+{{- end}}
+{{- with $c.Parallel}}
+{{- $parallel := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s measures %s on GOMAXPROCS goroutines at once.` $parallel $c.Declaration))}}
+{{- ""}}func {{$parallel}}(b *testing.B) {
+	{{spell (index $refs 11).Type}}(b, {{$fn}})
+}
+{{- end}}
+{{- end}}
 {{- range $c.Targets}}
 {{- $target := suitePascal .Name}}
 
@@ -144,6 +229,32 @@
 	{{spell (index $refs 8).Type}}(f, {{spell (index $refs 7).Type}})
 }
 {{- end}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.cases writes the number of valid cases of each property run that a
+subject states as an option of a call, and nothing for a subject that states
+none.
+*/}}
+{{- define "suite.cases"}}
+{{- with .Data.Cases}}
+		conform.Cases[{{spell (index $.Decl.Fields.Items 10).Type}}]({{.}}),
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.options declares the options of the benchmarks of a subject as opts:
+each budget and each excusal of the subject, which every level of the
+benchmark passes to its call. It declares nothing for a subject without
+budgets and excusals.
+*/}}
+{{- define "suite.options"}}
+{{- if or .Data.Ceilings .Data.Excusals}}
+	opts := []{{spell (index .Decl.Fields.Items 9).Type}}{
+{{- template "suite.ceilings" .}}
+{{- template "suite.excusals" .}}
+	}
 {{- end}}
 {{- end}}
 
@@ -160,6 +271,45 @@ refers to.
 			{{printf "%q" .Reason}},
 		),
 {{- end}}
+{{- end}}
+
+{{- /*
+suite.ceilings writes each budget of the conformance test of a subject as an
+option of a call, with the names of the callables that the record of the test
+refers to.
+*/}}
+{{- define "suite.ceilings"}}
+{{- $checks := spell (index .Decl.Fields.Items 2).Type}}
+{{- range .Data.Ceilings}}
+		conform.Ceilings(
+			{{$checks}}.{{.Field}}.Callable,
+			{{template "suite.budget" .Budget}},
+		),
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.budget writes a budget as a literal of conform.Budget, with a field on
+a line of its own for each ceiling and for the warm-up that the budget
+states.
+*/}}
+{{- define "suite.budget"}}conform.Budget{
+{{- with .Allocs}}
+	Allocs: new(uint64({{.}})),
+{{- end}}
+{{- with .Bytes}}
+	Bytes: new(uint64({{.}})),
+{{- end}}
+{{- with .Latency}}{{use "time"}}
+	Latency: {{suiteDuration .}},
+{{- end}}
+{{- with .Mean}}{{use "time"}}
+	Mean: {{suiteDuration .}},
+{{- end}}
+{{- with .Warmup}}
+	Warmup: new({{.}}),
+{{- end}}
+}
 {{- end}}
 
 {{- /*

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"go.dokimi.dev/eidos/lang/naming"
+	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/emit"
@@ -34,12 +35,14 @@ const Version = "0.1.0"
 // SubjectDirective marks a struct of a consumer as a subject of the suite of a
 // declaration. Its positional param DeclarationParam contains the name of the
 // declaration, and its param NewParam contains the name of the factory of the
-// subjects. CheckDirective binds a function of a consumer to a callable of a
-// suite as a check. Its positional param CallableParam contains the callable,
-// and its param DefectParam contains the name of the function of the planted
-// defect. ExcuseDirective excuses a check of the suite from the conformance
-// test of a subject. Its positional param IdentityParam contains the identity
-// of the check, and its param ReasonParam contains the reason.
+// subjects. Its param CasesParam contains the number of valid cases of each
+// property run of the application. CheckDirective binds a function of a
+// consumer to a callable of a suite as a check. Its positional param
+// CallableParam contains the callable, and its param DefectParam contains the
+// name of the function of the planted defect. ExcuseDirective excuses a check
+// of the suite from the conformance test of a subject. Its positional param
+// IdentityParam contains the identity of the check, and its param ReasonParam
+// contains the reason.
 const (
 	SuiteDirective   directive.Name     = "suite"
 	SubjectDirective directive.Name     = "subject"
@@ -47,6 +50,7 @@ const (
 	ExcuseDirective  directive.Name     = "excuse"
 	DeclarationParam directive.ParamKey = "declaration"
 	NewParam         directive.ParamKey = "new"
+	CasesParam       directive.ParamKey = "cases"
 	CallableParam    directive.ParamKey = "callable"
 	DefectParam      directive.ParamKey = "defect"
 	IdentityParam    directive.ParamKey = "identity"
@@ -100,25 +104,35 @@ const (
 // join them to Store. The name of a conformance test joins testWord, the
 // subject, conformsWord and the declaration, as in TestMemoryConformsToStore.
 // The name of a falsification test joins testWord and the function of the
-// suite, as in TestStoreSuite.
+// suite, as in TestStoreSuite. The name of a test of allocation ceilings
+// joins allocsWord to the name of a test, as in TestMemoryAllocs, and the
+// name of a benchmark joins benchmarkWord to a subject, as in BenchmarkMemory.
 const (
-	checksWord     = "Checks"
-	suiteWord      = "Suite"
-	runWord        = "Run"
-	fuzzWord       = "Fuzz"
-	fromHandleWord = "FromHandle"
-	handleWord     = "Handle"
-	checkWord      = "Check"
-	optionWord     = "Option"
-	methodsWord    = "Methods"
-	funcWord       = "Func"
-	callableWord   = "Callable"
-	conformanceWd  = "Conformance"
-	proofsWord     = "Proofs"
-	testWord       = "Test"
-	conformsWord   = "ConformsTo"
-	newWord        = "New"
-	subjectWord    = "Subject"
+	checksWord      = "Checks"
+	suiteWord       = "Suite"
+	runWord         = "Run"
+	fuzzWord        = "Fuzz"
+	fromHandleWord  = "FromHandle"
+	handleWord      = "Handle"
+	checkWord       = "Check"
+	optionWord      = "Option"
+	methodsWord     = "Methods"
+	funcWord        = "Func"
+	callableWord    = "Callable"
+	conformanceWord = "Conformance"
+	proofsWord      = "Proofs"
+	testWord        = "Test"
+	conformsWord    = "ConformsTo"
+	newWord         = "New"
+	subjectWord     = "Subject"
+	budgetsWord     = "Budgets"
+	benchWord       = "Bench"
+	parallelWord    = "Parallel"
+	callsWord       = "Calls"
+	overWord        = "Over"
+	allocsWord      = "Allocs"
+	benchmarkWord   = "Benchmark"
+	declaredWord    = "Declared"
 )
 
 // Suite is the data of the record of the suite of one declaration, and the
@@ -133,6 +147,12 @@ const (
 // methods of an interface or a struct in the order of its member walk, and the
 // function itself for a function. Checks are the checks of the consumer that
 // the annotate half binds to the callables, in the order of the callables.
+// Calls are the call generators of the callables, in the order of the
+// callables. Using are the enumerations that the calls take at some depth,
+// whose members the property runs and the benchmarks of the suite draw, and
+// Starts are the generators of the structs with a starting value that the
+// calls take. Inputs are the implementations of the interfaces that the
+// callables take.
 type Suite struct {
 	Subject     *emit.TypeRef
 	Methods     *emit.Interface
@@ -141,27 +161,41 @@ type Suite struct {
 	Names       Names
 	Callables   []Callable
 	Checks      []Check
+	Calls       []Call
+	Using       []Enumeration
+	Starts      []Start
+	Inputs      []Input
 }
 
 // Names are the names of the declarations of the suite of a declaration such
 // as Store: the variable of the names of its callables StoreChecks, the
 // function of its checks StoreSuite, the two forms RunStoreSuite and
 // RunStoreSuiteFromHandle of its application, its fuzz form FuzzStoreSuite,
-// and the aliases StoreHandle, StoreCheck and StoreOption. Methods is the
-// interface of the methods of a struct, as CatalogMethods, and Func the
-// function type of a function, as SlugFunc. Each is empty for another
-// declaration.
+// the application of its allocation ceilings RunStoreBudgets, its benchmarks
+// BenchStoreSuite and BenchStoreSuiteParallel, and the aliases StoreHandle,
+// StoreCheck and StoreOption. Methods is the interface of the methods of a
+// struct, as CatalogMethods, and Func the function type of a function, as
+// SlugFunc. Each is empty for another declaration. Over is the type of the
+// planted defects of the ceilings of an interface or a struct, as StoreOver,
+// and NewOver the function that returns such a defect, as NewStoreOver. A
+// function has no type of its defects, and a declaration without callables
+// has neither name.
 type Names struct {
 	Checks        string
 	Suite         string
 	Run           string
 	RunFromHandle string
 	Fuzz          string
+	Budgets       string
+	Bench         string
+	BenchParallel string
 	Handle        string
 	Check         string
 	Option        string
 	Methods       string
 	Func          string
+	Over          string
+	NewOver       string
 }
 
 // Callable is one callable of a declaration. Name is the name of the callable
@@ -215,28 +249,65 @@ type Check struct {
 // FromHandle reports that the factory of a subject takes the handle of a
 // check.
 //
-// The record of a conformance test is a struct with six fields. Their types
-// refer, in this order, to the form of the application, as RunStoreSuite, to
-// the factory of the subjects, to the names of the callables of the suite, as
-// StoreChecks, to its fuzz form, as FuzzStoreSuite, to its alias of the
-// handle, and to the type of the subjects that the factory returns. The record
-// of the test of a suite is a struct whose fields refer, in this order, to the
-// function of the suite as StoreSuite, to the two forms of the application, to
-// the aliases of the handle and the check, to the type of the subjects and to
-// the names of the callables. The record of the suite of a function has two
-// last fields, which refer to the function and to its fuzz form. The layout of
-// eidos qualifies each reference to the suite by the package of the file of
-// the suite.
+// SuiteAllocs is the name of the test that falsifies the allocation ceilings
+// of the suite, as TestStoreSuiteAllocs, and empty for the test of a subject
+// and for a suite without one. Allocs is the name of the test that applies
+// the allocation ceilings to a subject or to a function, as TestMemoryAllocs,
+// and empty where no allocation ceiling applies. Benchmark is the name of the
+// benchmark of a subject or a function, as BenchmarkMemory, and Parallel the
+// name of its parallel benchmark, as BenchmarkMemoryParallel. Parallel is
+// empty where no callable admits concurrent calls, and both are empty for the
+// test of an interface or a struct. Levels are the levels of the benchmarks of
+// a subject, one for each callable. Ceilings are the budgets that the subject
+// states for its callables, in the order of their directives. Cases is the
+// number of valid cases of each property run that the subject states, and 0
+// for a subject without the param cases. The test passes it to the
+// applications whose property runs it sets: the checks and the allocation
+// ceilings.
+//
+// The record of a conformance test is a struct with eleven fields. Their
+// types refer, in this order, to the form of the application, as
+// RunStoreSuite, to the factory of the subjects, to the names of the callables
+// of the suite, as StoreChecks, to its fuzz form, as FuzzStoreSuite, to its
+// alias of the handle, to the type of the subjects that the factory returns,
+// to the application of its allocation ceilings, as RunStoreBudgets, to its
+// two benchmarks, as BenchStoreSuite and BenchStoreSuiteParallel, to its
+// alias of the option, and to the type of the subjects of the suite.
+//
+// The record of the test of a suite is a struct whose fields refer, in this
+// order, to the function of the suite as StoreSuite, to the two forms of the
+// application, to the aliases of the handle and the check, to the type of the
+// subjects and to the names of the callables. The record of the suite of a
+// function has five last fields, which refer to the function, to its fuzz
+// form, to the application of its allocation ceilings and to its two
+// benchmarks. The layout of eidos qualifies each reference to the suite by
+// the package of the file of the suite.
 type Conformance struct {
 	Test        string
 	Subject     string
 	Declaration string
 	Builds      string
 	Receives    string
+	SuiteAllocs string
+	Allocs      string
+	Benchmark   string
+	Parallel    string
 	Excusals    []Excusal
+	Ceilings    []Ceiling
 	Targets     []Target
+	Levels      []Level
+	Cases       int64
 	Function    bool
 	FromHandle  bool
+}
+
+// Level is one level of the benchmarks of a subject. Field is the field of its
+// callable in the names of the callables, as Get. Concurrent reports that the
+// callable admits concurrent calls, so the parallel benchmark has the level as
+// well.
+type Level struct {
+	Field      string
+	Concurrent bool
 }
 
 // Target is one fuzz target of a test. Name is the name of the fuzz function,
@@ -251,8 +322,8 @@ type Target struct {
 // Excusal is one excusal of a check in the conformance test of a subject.
 // Field is the field of the callable of the check in the names of the
 // callables, as Get, and Method the method that returns the identity of the
-// check, as KeepsTheItem. Reason is the reason why the subject does not pass
-// the check.
+// check, as KeepsTheItem or LatencyBudget. Reason is the reason why the
+// subject does not pass the check.
 type Excusal struct {
 	Field  string
 	Method string
@@ -278,10 +349,17 @@ var subjectSchema = directive.Schema{
 		Key: DeclarationParam, Type: directive.TypeReference, Resolution: directive.ResolveTypeInScope,
 		Required: true, Doc: "the declaration under the directive suite whose checks the subject passes",
 	}},
-	Params: []directive.ParamSpec{{
-		Key: NewParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope, Required: true,
-		Doc: "the function that returns a fresh subject, without a parameter or from the handle of a check",
-	}},
+	Params: []directive.ParamSpec{
+		{
+			Key: NewParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+			Required: true,
+			Doc:      "the function that returns a fresh subject, without a parameter or from the handle of a check",
+		},
+		{
+			Key: CasesParam, Type: directive.TypeInt,
+			Doc: "the number of valid cases of each property run of the application, 100 without the param",
+		},
+	},
 	Doc: "generates the test that applies the checks of the suite of the declaration to the subject",
 }
 
@@ -322,8 +400,8 @@ var excuseSchema = directive.Schema{
 }
 
 // generator is one instance of suite: the handles of the keys of the facts of
-// a check. The composition registers the keys before the first phase call,
-// and the handlers read them afterwards.
+// a check and of a budget. The composition registers the keys before the
+// first phase call, and the handlers read them afterwards.
 //
 // # Concurrency
 //
@@ -336,6 +414,11 @@ type generator struct {
 	segment     meta.Key[string]
 	statement   meta.Key[string]
 	property    meta.Key[bool]
+	allocs      meta.Key[int64]
+	bytes       meta.Key[int64]
+	latency     meta.Key[int64]
+	mean        meta.Key[int64]
+	warmup      meta.Key[int64]
 }
 
 // New returns suite, a plugin with an annotate half and a generate half. The
@@ -387,20 +470,29 @@ func New() sdk.Dual {
 		sdk.Directive(subjectSchema, sdk.OnStruct(lang.Served(parts, g.conformanceOf))),
 		sdk.Directive(checkSchema, sdk.OnFunction(lang.Served(parts, g.concludeCheck))),
 		sdk.Directive(excuseSchema),
+		sdk.Directive(budgetSchema,
+			sdk.OnMethod(lang.Served(parts, g.budgetOfMethod)),
+			sdk.OnFunction(lang.Served(parts, g.budgetOfFunction)),
+			sdk.OnStruct(lang.Served(parts, g.budgetOfStruct))),
 	).Dual()
 }
 
 // register claims the namespace of suite and registers the keys of the facts
-// of a check.
+// of a check and of a budget.
 //
-// Error modes: the error of the claim, such as a namespace that another
-// registrant claimed, and the errors of the registrations, such as a key that
-// the registrant registered with another type, joined.
+// # Errors
+//
+// register returns the error of the claim, such as a namespace that another
+// registrant claimed, joined with the errors of the registrations, such as a
+// key that the registrant registered with another type.
 func (g *generator) register(r *meta.Registry) error {
 	spec := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindFunction}, Doc: doc}
 	}
-	var errs [7]error
+	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
+		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
+	}
+	var errs [12]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
@@ -414,6 +506,16 @@ func (g *generator) register(r *meta.Registry) error {
 		"contains the identity of the function that returns the planted defect of the check"))
 	g.property, errs[6] = meta.Register[bool](r, spec(KeyProperty,
 		"reports that the check takes a case of the property engine after the handle of its check"))
+	g.allocs, errs[7] = meta.Register[int64](r, budgetKey(KeyAllocs,
+		"contains the most heap allocations of one call of the callable"))
+	g.bytes, errs[8] = meta.Register[int64](r, budgetKey(KeyBytes,
+		"contains the most heap bytes that one call of the callable allocates"))
+	g.latency, errs[9] = meta.Register[int64](r, budgetKey(KeyLatency,
+		"contains the highest p99 latency of one call of the callable, in nanoseconds"))
+	g.mean, errs[10] = meta.Register[int64](r, budgetKey(KeyMean,
+		"contains the highest mean latency of one call of the callable, in nanoseconds"))
+	g.warmup, errs[11] = meta.Register[int64](r, budgetKey(KeyWarmup,
+		"contains the number of iterations that each benchmark of the callable runs before it measures"))
 	return errors.Join(errs[:]...)
 }
 
@@ -445,6 +547,11 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ lang.Part, st *sdk.Sta
 	if !strings.Contains(callable, ".") && (segment == buildsSegment || segment == receivesSegment) {
 		m.ErrorfAt(BadCheck, d.Pos, "the test of the suite of %s adds the check %s/%s to the forms of its "+
 			"application, so %s is no check. Rename the function", callable, callable, segment, fn.Name)
+		return nil
+	}
+	if slices.Contains(ceilingSegments, segment) {
+		m.ErrorfAt(BadCheck, d.Pos, "a budget of %s adds the check %s/%s, so %s is no check. Rename the function",
+			callable, callable, segment, fn.Name)
 		return nil
 	}
 	sdk.Stamp(st, g.declaration, decl)
@@ -523,15 +630,23 @@ func resolveCallable(m *sdk.FunctionMatch, d *directive.Directive, check string)
 	if slices.Contains(callables, method) {
 		return id, id.Name + "." + method, true
 	}
-	reason := fmt.Sprintf("%s has no callable %s, so %s is no check", head, method, check)
+	m.ErrorfAt(UnknownCallable, d.Pos, "%s has no callable %s, so %s is no check%s", head, method, check,
+		callablesOf(head, callables))
+	return symbol.Identity{}, "", false
+}
+
+// callablesOf returns the sentence that lists the callables of the
+// declaration decl after a sentence that names a callable that decl lacks,
+// such as ". The callables of Store are Get and Put". It returns the empty
+// string for a declaration without callables.
+func callablesOf(decl string, callables []string) string {
 	switch {
 	case len(callables) > 1:
-		reason += fmt.Sprintf(". The callables of %s are %s", head, listed(callables, "and"))
+		return fmt.Sprintf(". The callables of %s are %s", decl, listed(callables, "and"))
 	case len(callables) == 1:
-		reason += fmt.Sprintf(". The callable of %s is %s", head, callables[0])
+		return fmt.Sprintf(". The callable of %s is %s", decl, callables[0])
 	}
-	m.ErrorfAt(UnknownCallable, d.Pos, "%s", reason)
-	return symbol.Identity{}, "", false
+	return ""
 }
 
 // statementOf returns the statement of the check fn, and false where the doc
@@ -644,31 +759,41 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 
 // excusalsOf returns the excusals of the subject of m in the order of their
 // directives. Each excusal excuses a check that the annotate half binds to the
-// declaration declared. excusalsOf reports [UnknownExcusal] at each excusal
-// whose identity does not match such a check, with the identities of the
-// checks of its callable in the order of their functions. It returns false
-// where it reports an excusal.
-func (g *generator) excusalsOf(m *sdk.StructMatch, declared *symbol.Identity) ([]Excusal, bool) {
-	methods := map[string]string{}
-	checks := g.boundTo(m, declared)
-	for i := range checks {
-		methods[checks[i].callable+"/"+checks[i].segment] = checks[i].fn.Name
+// declaration declared, or the check of a ceiling of the budget of one of its
+// callables. excusalsOf reports [UnknownExcusal] at each excusal whose
+// identity does not match such a check, with the identities of the checks of
+// its callable: the checks in the order of their functions, then the
+// ceilings. It returns false where it reports an excusal.
+func (g *generator) excusalsOf(
+	m *sdk.StructMatch, declared *symbol.Identity, callables []*node.Method,
+) ([]Excusal, bool) {
+	var checks []excusable
+	bindings := g.boundTo(m, declared)
+	for i := range bindings {
+		b := &bindings[i]
+		checks = append(checks, excusable{callable: b.callable, segment: b.segment, method: b.fn.Name})
+	}
+	for _, c := range callables {
+		for _, segment := range g.budgetFact(m, &c.ID).segments() {
+			checks = append(checks, excusable{
+				callable: declared.Name + "." + c.Name, segment: segment, method: naming.Pascal(segment),
+			})
+		}
 	}
 	var out []Excusal
 	excused := true
 	for x := range m.Directives(ExcuseDirective) {
 		identity := x.Args[0].Str
 		callable, _, _ := strings.Cut(identity, "/")
-		method, found := methods[identity]
-		if found {
+		if at := slices.IndexFunc(checks, func(c excusable) bool { return c.identity() == identity }); at >= 0 {
 			_, field, _ := strings.Cut(callable, ".")
-			out = append(out, Excusal{Field: field, Method: method, Reason: x.Params[ReasonParam].Str})
+			out = append(out, Excusal{Field: field, Method: checks[at].method, Reason: x.Params[ReasonParam].Str})
 			continue
 		}
 		var ids []string
-		for i := range checks {
-			if checks[i].callable == callable {
-				ids = append(ids, callable+"/"+checks[i].segment)
+		for _, c := range checks {
+			if c.callable == callable {
+				ids = append(ids, c.identity())
 			}
 		}
 		listing := fmt.Sprintf("The suite of %s has no check of %s", declared.Name, callable)
@@ -685,6 +810,19 @@ func (g *generator) excusalsOf(m *sdk.StructMatch, declared *symbol.Identity) ([
 	return out, excused
 }
 
+// excusable is a check that a subject can excuse: a check of a consumer, or
+// the check of a ceiling of a budget. callable is its callable, as Store.Get,
+// segment the last part of its identity, and method the method of the names
+// of the callables that returns its identity.
+type excusable struct {
+	callable, segment, method string
+}
+
+// identity returns the identity of the check, as Store.Get/keeps-the-item.
+func (c excusable) identity() string {
+	return c.callable + "/" + c.segment
+}
+
 // listed returns words, two or more, as an English list whose last two words
 // the conjunction joins, such as "Get and Put" or "a, b or c".
 func listed(words []string, conjunction string) string {
@@ -698,21 +836,19 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ lang.Part, e *sdk.
 	i := m.Interface
 	b := m.Rules()
 	subject := &emit.TypeRef{Spelling: i.Name, Target: i.ID}
+	k := caller{m: m, g: g, e: e, b: b, origin: i.ID, decl: i.Name, typeParams: i.TypeParams}
 	if len(i.TypeParams) > 0 {
-		witnesses := b.Witnesses(i.TypeParams)
-		if witnesses == nil {
+		k.witnesses = b.Witnesses(i.TypeParams)
+		if k.witnesses == nil {
 			m.Errorf(Uninstantiable, "the type parameters of %s have no witnesses, so %s has no suite", i.Name, i.Name)
 			return nil
 		}
-		for _, w := range witnesses {
+		for _, w := range k.witnesses {
 			subject.Args = append(subject.Args, rules.EmitRef(w))
 		}
 	}
 	s := Suite{Subject: subject, Declaration: i.Name, Names: namesOf(e, i.Name)}
-	for _, method := range methodsOf(&b, i) {
-		s.Callables = append(s.Callables, callableOf(e, i.Name, method.Name))
-	}
-	s.Checks = g.checksOf(m, &i.ID, s.Callables)
+	g.callsOf(&k, &s, methodsOf(&b, i))
 	write(e, &i.ID, &s)
 	return nil
 }
@@ -732,13 +868,33 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 	s := Suite{
 		Subject: &emit.TypeRef{Spelling: names.Methods}, Methods: methods, Declaration: st.Name, Names: names,
 	}
-	for _, method := range methodsOf(&b, st) {
+	callables := methodsOf(&b, st)
+	for _, method := range callables {
 		methods.Methods.Append(sdk.Mirror(names.Methods, method))
-		s.Callables = append(s.Callables, callableOf(e, st.Name, method.Name))
 	}
-	s.Checks = g.checksOf(m, &st.ID, s.Callables)
+	g.callsOf(&caller{m: m, g: g, e: e, b: b, origin: st.ID, decl: st.Name}, &s, callables)
 	write(e, &st.ID, &s)
 	return nil
+}
+
+// callsOf records into the suite s the callable and the call of each method
+// of methods, the checks that the annotate half binds to them, the overrides
+// that the calls take, and the implementations of the interfaces that they
+// take. k writes the calls. A suite with callables names the type of its
+// planted defects and the function that returns one.
+func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
+	for _, method := range methods {
+		c := callableOf(k.e, s.Declaration, method.Name)
+		s.Callables = append(s.Callables, c)
+		s.Calls = append(s.Calls, k.call(&c, method, &method.ID))
+	}
+	s.Using, s.Starts = k.overrides()
+	s.Inputs = k.inputs
+	s.Checks = g.checksOf(k.m, &k.origin, s.Callables)
+	if len(methods) > 0 {
+		s.Names.Over = k.e.JoinName(overWord, s.Declaration)
+		s.Names.NewOver = k.e.JoinName(s.Names.Over, newWord)
+	}
 }
 
 // suiteOfFunction records the suite of a function. The subject type is the
@@ -751,21 +907,29 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ lang.Part, e *sdk.Em
 	}
 	names := namesOf(e, f.Name)
 	names.Func = e.JoinName(funcWord, f.Name)
+	names.NewOver = e.JoinName(e.JoinName(overWord, f.Name), newWord)
 	signature := &node.Method{ID: f.ID, Name: f.Name, Visibility: f.Visibility, Params: f.Params, Returns: f.Returns}
 	callables := []Callable{{Name: f.Name, Type: e.JoinName(callableWord, f.Name)}}
-	write(e, &f.ID, &Suite{
+	k := caller{m: m, g: g, e: e, b: m.Rules(), origin: f.ID, decl: f.Name}
+	s := Suite{
 		Subject: &emit.TypeRef{Spelling: names.Func}, Func: sdk.Mirror(names.Func, signature), Declaration: f.Name,
 		Names: names, Callables: callables, Checks: g.checksOf(m, &f.ID, callables),
-	})
+		Calls: []Call{k.call(&callables[0], f, &f.ID)},
+	}
+	s.Using, s.Starts = k.overrides()
+	s.Inputs = k.inputs
+	write(e, &f.ID, &s)
 	return nil
 }
 
 // write records the suite s of the declaration origin into the family of the
 // suites. The record declares each name that the template writes: the variable
 // of the names of the callables first, then the interface of the methods or the
-// function type, the type of each callable, the functions and the aliases.
-// write also records the falsification test of the suite into the family of
-// the tests.
+// function type, the type of each callable, the variable of each call and of
+// each generator of a starting value, each implementation of an interface,
+// the type of the planted defects and the function that returns one, the
+// functions and the aliases. write also records the falsification test of the
+// suite into the family of the tests.
 func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	public := func(name string) symbol.Symbol {
 		return &emit.Function{Origin: *origin, Name: name, Visibility: symbol.VisibilityPublic}
@@ -784,8 +948,25 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	for _, c := range s.Callables {
 		decls = append(decls, &emit.Struct{Origin: *origin, Name: c.Type, Visibility: symbol.VisibilityPackage})
 	}
+	for i := range s.Calls {
+		c := &s.Calls[i]
+		decls = append(decls, &emit.Variable{Origin: *origin, Name: c.Var, Visibility: symbol.VisibilityPackage})
+	}
+	for i := range s.Starts {
+		st := &s.Starts[i]
+		decls = append(decls, &emit.Variable{Origin: *origin, Name: st.Name, Visibility: symbol.VisibilityPackage})
+	}
+	for _, in := range s.Inputs {
+		decls = append(decls, &emit.Struct{Origin: *origin, Name: in.Name, Visibility: symbol.VisibilityPackage})
+	}
+	if n.Over != "" {
+		decls = append(decls, &emit.Alias{Origin: *origin, Name: n.Over, Visibility: symbol.VisibilityPackage})
+	}
+	if n.NewOver != "" {
+		decls = append(decls, &emit.Function{Origin: *origin, Name: n.NewOver, Visibility: symbol.VisibilityPackage})
+	}
 	decls = append(decls, public(n.Suite), public(n.Run), public(n.RunFromHandle), public(n.Fuzz),
-		alias(n.Handle), alias(n.Check), alias(n.Option))
+		public(n.Budgets), public(n.Bench), public(n.BenchParallel), alias(n.Handle), alias(n.Check), alias(n.Option))
 	e.File().Record(*s, decls...)
 	record := &emit.Struct{
 		Origin: *origin, Name: e.JoinName(proofsWord, s.Declaration), Visibility: symbol.VisibilityPackage,
@@ -804,22 +985,46 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		&emit.Field{Name: subjectWord, Type: subject},
 		&emit.Field{Name: checksWord, Type: emitted(n.Checks)},
 	)
-	var targets []Target
-	if s.Func != nil {
-		record.Fields.Append(
-			&emit.Field{Name: funcWord, Type: &emit.TypeRef{Spelling: s.Declaration, Target: *origin}},
-			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
-		)
-		targets = []Target{{Name: e.JoinName(s.Declaration, fuzzWord)}}
-	}
 	excused := make([]Excusal, 0, len(s.Checks))
 	for _, c := range s.Checks {
 		excused = append(excused, Excusal{Field: c.Field, Method: c.Method, Reason: aloneReason})
 	}
-	e.File(TestTag).Record(Conformance{
+	test := Conformance{
 		Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration, Builds: buildsSegment,
-		Receives: receivesSegment, Excusals: excused, Targets: targets, Function: s.Func != nil,
-	}, record)
+		Receives: receivesSegment, Excusals: excused, Function: s.Func != nil,
+	}
+	allocated := slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Budget.Allocs != nil })
+	if allocated {
+		test.SuiteAllocs = e.JoinName(allocsWord, test.Test)
+	}
+	if s.Func != nil {
+		record.Fields.Append(
+			&emit.Field{Name: funcWord, Type: &emit.TypeRef{Spelling: s.Declaration, Target: *origin}},
+			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
+			&emit.Field{Name: budgetsWord, Type: emitted(n.Budgets)},
+			&emit.Field{Name: benchWord, Type: emitted(n.Bench)},
+			&emit.Field{Name: parallelWord, Type: emitted(n.BenchParallel)},
+		)
+		test.Targets = []Target{{Name: e.JoinName(s.Declaration, fuzzWord)}}
+		test.benchmarks(e, s.Declaration, allocated, s.Calls[0].Concurrent)
+	}
+	e.File(TestTag).Record(test, record)
+}
+
+// benchmarks names the test of the allocation ceilings and the benchmarks of
+// the test of the subject or the function name. allocated reports that a
+// ceiling of allocations applies to a callable, and concurrent that a
+// callable admits concurrent calls. The test has a test of the allocation
+// ceilings where one applies, and a parallel benchmark where a callable
+// admits concurrent calls.
+func (c *Conformance) benchmarks(e *sdk.Emitter, name string, allocated, concurrent bool) {
+	if allocated {
+		c.Allocs = e.JoinName(allocsWord, e.JoinName(name, testWord))
+	}
+	c.Benchmark = e.JoinName(name, benchmarkWord)
+	if concurrent {
+		c.Parallel = e.JoinName(parallelWord, c.Benchmark)
+	}
 }
 
 // aloneReason is the reason of each excusal of the test of a suite, which
@@ -835,12 +1040,14 @@ const (
 )
 
 // conformanceOf records the conformance test of a struct under the directive
-// subject, with the excusals of the struct. It reports [NoSuite] where the
-// declaration has no directive suite, and [BadFactory] where an application
-// cannot call the factory. A factory without a parameter goes to the form Run
-// of the application, and a factory of one parameter, the handle of a check,
-// to the form RunFromHandle. The test of a factory that is not exported tests
-// from inside the package.
+// subject, with the excusals and the budgets of the struct. It reports
+// [NoSuite] where the declaration has no directive suite, and [BadFactory]
+// where an application cannot call the factory. A factory without a parameter
+// goes to the form Run of the application, and a factory of one parameter,
+// the handle of a check, to the form RunFromHandle. The test of a factory
+// that is not exported tests from inside the package. The test applies the
+// allocation ceilings to the subject where the budget of a callable states
+// one, and has a level of its benchmarks for each callable.
 func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitter) error {
 	st := m.Struct
 	d := m.Directive()
@@ -868,13 +1075,30 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 			factory.Name, len(view.Returns), st.Name)
 		return nil
 	}
-	excusals, excused := g.excusalsOf(m, &declared)
-	if !excused {
+	decl, _ := m.Reader().Lookup(declared)
+	methods := methodsOf(&b, decl)
+	excusals, excused := g.excusalsOf(m, &declared, methods)
+	ceilings, stated := g.ceilingsOf(m, &declared, methods)
+	if !excused || !stated {
 		return nil
 	}
+	allocated := slices.ContainsFunc(ceilings, func(c Ceiling) bool { return c.Budget.Allocs != nil })
+	levels := make([]Level, 0, len(methods))
+	for _, method := range methods {
+		allocated = allocated || g.budgetFact(m, &method.ID).Allocs != nil
+		concurrent := mixed(m, &method.ID, shape.Concurrent) || mixed(m, &method.ID, shape.ConcurrentReaders)
+		levels = append(levels, Level{Field: method.Name, Concurrent: concurrent})
+	}
+	// The test of the suite of a struct has the origin of the struct, so the
+	// conformance test of a struct that is the subject of its own suite takes
+	// the origin of its factory.
+	origin := st.ID
+	if suited(m, &st.ID) {
+		origin = factory
+	}
 	record := &emit.Struct{
-		Origin:     st.ID,
-		Name:       e.JoinName(conformanceWd, st.Name),
+		Origin:     origin,
+		Name:       e.JoinName(conformanceWord, st.Name),
 		Visibility: symbol.VisibilityPackage,
 	}
 	emitted := func(name string) *emit.TypeRef { return &emit.TypeRef{Spelling: name, Target: declared, Emitted: true} }
@@ -885,11 +1109,15 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 		&emit.Field{Name: fuzzWord, Type: emitted(names.Fuzz)},
 		&emit.Field{Name: handleWord, Type: emitted(names.Handle)},
 		&emit.Field{Name: subjectWord, Type: rules.EmitRef(view.Returns[0].Ref)},
+		&emit.Field{Name: budgetsWord, Type: emitted(names.Budgets)},
+		&emit.Field{Name: benchWord, Type: emitted(names.Bench)},
+		&emit.Field{Name: parallelWord, Type: emitted(names.BenchParallel)},
+		&emit.Field{Name: optionWord, Type: emitted(names.Option)},
+		&emit.Field{Name: declaredWord, Type: g.subjectOf(e, &b, decl, emitted)},
 	)
-	decl, _ := m.Reader().Lookup(declared)
 	var targets []Target
 	fuzz := e.JoinName(st.Name, fuzzWord)
-	for _, method := range methodsOf(&b, decl) {
+	for _, method := range methods {
 		targets = append(targets, Target{Name: e.JoinName(method.Name, fuzz), Field: method.Name})
 	}
 	out := e.File(TestTag)
@@ -898,16 +1126,38 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 	if fn, _ := found.(*node.Function); fn.Visibility != symbol.VisibilityPublic {
 		out = out.Internal()
 	}
-	out.Record(Conformance{
+	test := Conformance{
 		Test:    e.JoinName(declared.Name, e.JoinName(conformsWord, e.JoinName(st.Name, testWord))),
-		Subject: st.Name, Declaration: declared.Name, Excusals: excusals, Targets: targets,
-		FromHandle: len(view.Params) == 1,
-	}, record)
+		Subject: st.Name, Declaration: declared.Name, Excusals: excusals, Ceilings: ceilings, Targets: targets,
+		Levels: levels, FromHandle: len(view.Params) == 1,
+	}
+	if cases, stated := d.Param(CasesParam); stated {
+		test.Cases = cases.Int
+	}
+	test.benchmarks(e, st.Name, allocated, slices.ContainsFunc(levels, func(l Level) bool { return l.Concurrent }))
+	out.Record(test, record)
 	return nil
 }
 
+// subjectOf returns the type of the subjects of the suite of the declaration
+// decl: the interface at its witnesses, or the interface of the methods of a
+// struct, which emitted refers to.
+func (*generator) subjectOf(
+	e *sdk.Emitter, b *rules.Bound, decl symbol.Symbol, emitted func(string) *emit.TypeRef,
+) *emit.TypeRef {
+	if st, isStruct := decl.(*node.Struct); isStruct {
+		return emitted(e.JoinName(methodsWord, st.Name))
+	}
+	i, _ := decl.(*node.Interface)
+	subject := &emit.TypeRef{Spelling: i.Name, Target: i.ID}
+	for _, w := range b.Witnesses(i.TypeParams) {
+		subject.Args = append(subject.Args, rules.EmitRef(w))
+	}
+	return subject
+}
+
 // suited reports whether the declaration id has the directive suite.
-func suited(m *sdk.StructMatch, id *symbol.Identity) bool {
+func suited(m sdk.SubjectMatch, id *symbol.Identity) bool {
 	return slices.ContainsFunc(suites(m), func(decl node.Declaration) bool { return decl.Identity() == *id })
 }
 
@@ -951,10 +1201,12 @@ func methodsOf(b *rules.Bound, decl symbol.Symbol) []*node.Method {
 func namesOf(e *sdk.Emitter, decl string) Names {
 	suite := e.JoinName(suiteWord, decl)
 	run := e.JoinName(suite, runWord)
+	bench := e.JoinName(suite, benchWord)
 	return Names{
 		Checks: e.JoinName(checksWord, decl), Suite: suite, Run: run, RunFromHandle: e.JoinName(fromHandleWord, run),
-		Fuzz: e.JoinName(suite, fuzzWord), Handle: e.JoinName(handleWord, decl), Check: e.JoinName(checkWord, decl),
-		Option: e.JoinName(optionWord, decl),
+		Fuzz: e.JoinName(suite, fuzzWord), Budgets: e.JoinName(budgetsWord, e.JoinName(decl, runWord)),
+		Bench: bench, BenchParallel: e.JoinName(parallelWord, bench), Handle: e.JoinName(handleWord, decl),
+		Check: e.JoinName(checkWord, decl), Option: e.JoinName(optionWord, decl),
 	}
 }
 

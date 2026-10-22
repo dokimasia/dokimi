@@ -12,9 +12,15 @@
 {{- $run := suitePascal $n.Run}}
 {{- $fromHandle := suitePascal $n.RunFromHandle}}
 {{- $fuzz := suitePascal $n.Fuzz}}
+{{- $budgets := suitePascal $n.Budgets}}
+{{- $bench := suitePascal $n.Bench}}
+{{- $benchParallel := suitePascal $n.BenchParallel}}
 {{- $handle := suitePascal $n.Handle}}
 {{- $check := suitePascal $n.Check}}
 {{- $option := suitePascal $n.Option}}
+{{- $over := suiteCamel $n.Over}}
+{{- $newOver := suiteCamel $n.NewOver}}
+{{- if $c.Calls}}{{use "context"}}{{use "go.dokimi.dev/assert/prop"}}{{end}}
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -74,25 +80,68 @@ var _ = conform.CompatV1
 }
 {{- end}}
 {{- end}}
+{{- range $c.Calls}}
+{{- if eq .Type $callable.Type}}
+{{- range suiteCeilings .Budget}}
+{{- $method := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s returns the identity of the check %s/%s.` $method $callable.Name .))}}
+{{- ""}}func (c {{$type}}) {{$method}}() conform.ID[{{$s}}] {
+	return c.Check({{printf "%q" .}})
+}
+{{- end}}
+{{- end}}
+{{- end}}
 {{- end}}
 
-{{docs (wrapdocs (printf `%s returns the checks of %s.` $suite $c.Declaration))}}
+{{docs (wrapdocs (printf `%s returns the checks of %s, and the calls and the budgets of its callables.` $suite $c.Declaration))}}
 {{- ""}}func {{$suite}}() conform.Suite[{{$s}}] {
-	return conform.Suite[{{$s}}]{Declaration: {{printf "%q" $c.Declaration}}
-{{- with $c.Checks}}, Checks: []conform.Check[{{$s}}]{
+	return conform.Suite[{{$s}}]{
+		Declaration: {{printf "%q" $c.Declaration}},
+{{- with $c.Checks}}
+		Checks: []conform.Check[{{$s}}]{
 {{- range .}}
-		{
-			ID:        {{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
-			Statement: {{printf "%q" .Statement}},
+			{
+				ID:        {{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+				Statement: {{printf "%q" .Statement}},
 {{- if .Property}}
-			Property:  {{spell .Apply}},
+				Property:  {{spell .Apply}},
 {{- else}}
-			Apply:     {{spell .Apply}},
+				Apply:     {{spell .Apply}},
 {{- end}}
-			Defect:    {{spell .Defect}},
+				Defect:    {{spell .Defect}},
+			},
+{{- end}}
 		},
 {{- end}}
-	}{{end}}}
+{{- with $c.Calls}}
+		Calls: []conform.Call[{{$s}}]{
+{{- range .}}
+			{
+				Calls:    {{suiteCamel .Var}},
+				Over:     {{$newOver}},
+				Callable: {{$checks}}{{with .Field}}.{{.}}{{end}}.Callable,
+{{- if or (suiteCeilings .Budget) .Budget.Warmup}}
+				Budget:   {{template "suite.budget" .Budget}},
+{{- end}}
+{{- if .Concurrent}}
+				Concurrent: true,
+{{- end}}
+			},
+{{- end}}
+		},
+{{- end}}
+{{- if or $c.Using $c.Starts}}
+		Using: []prop.Option{
+{{- range $c.Using}}
+			prop.Using(prop.SampledFrom({{range $i, $m := .Members}}{{if $i}}, {{end}}{{value $m}}{{end}})),
+{{- end}}
+{{- range $c.Starts}}
+			prop.Using({{suiteCamel .Name}}),
+{{- end}}
+		},
+{{- end}}
+	}
 }
 {{- if $c.Func}}
 
@@ -113,6 +162,24 @@ var _ = conform.CompatV1
 	f.Helper()
 	conform.Fuzz(f, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
 }
+
+{{docs (wrapdocs (printf `%s applies the allocation ceiling of %s, and the ceilings that opts add, to subject.` $budgets $c.Declaration))}}
+{{- ""}}func {{$budgets}}(t *testing.T, subject {{$s}}, opts ...{{$option}}) {
+	t.Helper()
+	conform.RunBudgets(t, {{$suite}}(), func(*{{$handle}}) {{$s}} { return subject }, opts...)
+}
+
+{{docs (wrapdocs (printf `%s measures subject under the ceilings of the budget of %s.` $bench $c.Declaration))}}
+{{- ""}}func {{$bench}}(b conform.B, subject {{$s}}, opts ...{{$option}}) {
+	b.Helper()
+	conform.Bench(b, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
+}
+
+{{docs (wrapdocs (printf `%s measures subject on GOMAXPROCS goroutines at once, under the ceilings of the budget of %s.` $benchParallel $c.Declaration))}}
+{{- ""}}func {{$benchParallel}}(b *testing.B, subject {{$s}}, opts ...{{$option}}) {
+	b.Helper()
+	conform.BenchParallel(b, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
+}
 {{- else}}
 
 {{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to a fresh subject of newSubject for each check.` $run $c.Declaration))}}
@@ -132,6 +199,254 @@ var _ = conform.CompatV1
 	f.Helper()
 	conform.Fuzz(f, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
 }
+
+{{docs (wrapdocs (printf `%s applies the allocation ceilings of %s, and the ceilings that opts add, to a fresh subject of newSubject for each case.` $budgets $c.Declaration))}}
+{{- ""}}func {{$budgets}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+	t.Helper()
+	conform.RunBudgets(t, {{$suite}}(), func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+}
+
+{{docs (wrapdocs (printf `%s measures callable on a subject of newSubject, under the ceilings of its budget.` $bench))}}
+{{- ""}}func {{$bench}}[T {{$s}}](b conform.B, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+	b.Helper()
+	conform.Bench(b, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+}
+
+{{docs (wrapdocs (printf `%s measures callable on a subject of newSubject on GOMAXPROCS goroutines at once, under the ceilings of its budget.` $benchParallel))}}
+{{- ""}}func {{$benchParallel}}[T {{$s}}](b *testing.B, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+	b.Helper()
+	conform.BenchParallel(b, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+}
 {{- end}}
+{{- range $c.Calls}}
+{{- $name := $c.Declaration}}
+{{- with .Field}}{{$name = printf "%s.%s" $c.Declaration .}}{{end}}
+{{- $drawn := false}}
+{{- $context := false}}
+{{- range .Params}}
+{{- if .Context}}{{$context = true}}
+{{- else if .Funcs}}{{range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}
+{{- else if not .Omitted}}{{$drawn = true}}
+{{- end}}
+{{- end}}
+
+{{docs (wrapdocs (printf `%s generates the calls of %s with the inputs that each case draws.` (suiteCamel .Var) $name))}}
+{{- ""}}var {{suiteCamel .Var}} = prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) func(context.Context, {{$s}}) error {
+{{- range .Params}}
+{{- if .Funcs}}
+{{- range .Funcs}}{{template "suite.results" .}}{{end}}
+{{- if .Input}}
+	{{.Name}} := {{suiteCamel .Input}}{
+{{- range .Funcs}}
+		{{suiteCamel .Field}}: {{template "suite.func" .}},
+{{- end}}
+	}
+{{- else}}
+	{{.Name}} := {{template "suite.func" (index .Funcs 0)}}
+{{- end}}
+{{- else if not (or .Context .Omitted)}}
+	{{.Name}} := c.Draw({{if or .Variadic .Receive}}prop.List(prop.Of[{{spell .Type}}]()){{else}}prop.Of[{{spell .Type}}](){{end}}, {{printf "%q" .Label}})
+{{- end}}
+{{- end}}
+	return func({{if $context}}ctx{{else}}_{{end}} context.Context, subject {{$s}}) error {
+{{- if .Returns}}
+		{{with .Assign}}{{.}} {{end}}{{template "suite.call" .}}
+		return {{.Returns}}
+{{- else}}
+		return {{template "suite.call" .}}
+{{- end}}
+	}
+})
+{{- end}}
+{{- range $c.Starts}}
+{{- $start := suiteCamel .Name}}
+{{- $doc := printf `%s generates the values of %s that keep or change each field of its starting value.` $start .Type.Spelling}}
+{{- if .Whole}}{{$doc = printf `%s generates the values of %s that keep or change its starting value.` $start .Type.Spelling}}{{end}}
+
+{{docs (wrapdocs $doc)}}
+{{- ""}}var {{$start}} = prop.Composite(func(c *prop.Case) {{spell .Type}} {
+{{- if .Whole}}
+	changed := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+	if c.Draw(prop.Boolean(), {{printf "%q" (printf "%s.changed" .Label)}}) {
+		return changed
+	}
+	return {{value .Value}}
+{{- else}}
+{{- if .Fields}}
+	changed := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+{{- end}}
+{{- if .Seed}}
+	value := {{spell .Seed}}().Build()
+{{- else}}
+	value := {{value .Value}}
+{{- end}}
+{{- range .Fields}}
+	if c.Draw(prop.Boolean(), {{printf "%q" .Label}}) {
+		value.{{.Name}} = changed.{{.Name}}
+	}
+{{- end}}
+	return value
+{{- end}}
+})
+{{- end}}
+{{- range $c.Inputs}}
+{{- $input := suiteCamel .Name}}
+
+{{docs (wrapdocs (printf `%s is a %s whose methods return the results that the call generators of %s draw for them, in turn.` $input .Type.Spelling $c.Declaration))}}
+{{- ""}}type {{$input}} struct {
+	{{spell .Type}}
+{{- range .Methods}}
+	{{suiteCamel .Field}} func({{params .Method.Params}}){{results .Method.Returns}}
+{{- end}}
+}
+{{- range .Methods}}
+{{- $m := .Method}}
+
+{{docs (wrapdocs (printf `%s calls the function of %s.` $m.Name $m.Name))}}
+{{- ""}}func (in {{$input}}) {{$m.Name}}({{params $m.Params}}){{results $m.Returns}} {
+	{{if $m.Returns.Len}}return {{end}}in.{{suiteCamel .Field}}({{range $i, $p := $m.Params.Items}}{{if $i}}, {{end}}{{$p.Name}}{{if $p.Variadic}}...{{end}}{{end}})
+}
+{{- end}}
+{{- end}}
+{{- with $n.Over}}
+
+{{docs (wrapdocs (printf `%s is a subject of %s whose callables call spend and return their zero results. The planted defect of a ceiling passes a spend that exceeds the ceiling.` $over $c.Declaration))}}
+{{- ""}}type {{$over}} struct {
+	{{$s}}
+	spend func()
+}
+{{- range $c.Calls}}
+{{- with .Over}}
+
+{{docs (wrapdocs (printf `%s calls spend and returns its zero results.` .Name))}}
+{{- ""}}func (o {{$over}}) {{.Name}}({{params .Params}}){{results .Returns}} {
+	o.spend()
+{{- if .Returns.Len}}
+	return
+{{- end}}
+}
+{{- end}}
+{{- end}}
+
+{{docs (wrapdocs (printf `%s returns the planted defect of a ceiling of %s, whose callables call spend.` $newOver $c.Declaration))}}
+{{- ""}}func {{$newOver}}(_ *{{$handle}}, spend func()) {{$s}} {
+	return {{$over}}{spend: spend}
+}
+{{- else}}
+{{- with $c.Func}}
+{{- with (index $c.Calls 0).Over}}
+
+{{docs (wrapdocs (printf `%s returns the planted defect of a ceiling of %s, which calls spend and returns its zero results.` $newOver $c.Declaration))}}
+{{- ""}}func {{$newOver}}(_ *{{$handle}}, spend func()) {{$s}} {
+	return func({{params .Params}}){{results .Returns}} {
+		spend()
+{{- if .Returns.Len}}
+		return
+{{- end}}
+	}
+}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.budget writes a budget as a literal of conform.Budget, with a field on
+a line of its own for each ceiling and for the warm-up that the budget
+states.
+*/}}
+{{- define "suite.budget"}}conform.Budget{
+{{- with .Allocs}}
+	Allocs: new(uint64({{.}})),
+{{- end}}
+{{- with .Bytes}}
+	Bytes: new(uint64({{.}})),
+{{- end}}
+{{- with .Latency}}{{use "time"}}
+	Latency: {{suiteDuration .}},
+{{- end}}
+{{- with .Mean}}{{use "time"}}
+	Mean: {{suiteDuration .}},
+{{- end}}
+{{- with .Warmup}}
+	Warmup: new({{.}}),
+{{- end}}
+}
+{{- end}}
+
+{{- /*
+suite.call writes the call of a callable on the subject of a call generator:
+the method of an interface or a struct, or the function itself, with the
+context of the call and the value that the generator draws for each other
+parameter.
+*/}}
+{{- define "suite.call"}}subject{{with .Field}}.{{.}}{{end}}({{range $i, $p := .Params}}{{if not .Omitted}}{{if $i}}, {{end}}{{if .Context}}ctx{{else if .Address}}&{{.Name}}{{else if .Receive}}{{template "suite.channel" .}}{{else}}{{.Name}}{{if .Variadic}}...{{end}}{{end}}{{end}}{{end}}){{end}}
+
+{{- /*
+suite.channel writes a new channel of the drawn list of a parameter that the
+callable receives from, with each value of the list in its buffer, closed.
+Each call takes a channel of its own, because a call drains its channel.
+*/}}
+{{- define "suite.channel"}}func() <-chan {{spell .Type}} {
+	ch := make(chan {{spell .Type}}, len({{.Name}}))
+	for _, v := range {{.Name}} {
+		ch <- v
+	}
+	close(ch)
+	return ch
+}(){{end}}
+
+{{- /*
+suite.results writes the draw of the list of each result of a generated
+function, and the counter of its calls. Each list after the first has the
+length of the first, so the lists hold the results of the same calls.
+*/}}
+{{- define "suite.results"}}
+{{- $first := ""}}
+{{- range $i, $r := .Results}}
+{{- if $i}}
+	{{.Name}} := c.Draw(prop.List({{template "suite.value" .}}, prop.MinSize(len({{$first}})), prop.MaxSize(len({{$first}}))), {{printf "%q" .Label}})
+{{- else}}
+{{- $first = .Name}}
+	{{.Name}} := c.Draw(prop.List({{template "suite.value" .}}), {{printf "%q" .Label}})
+{{- end}}
+{{- end}}
+{{- with .Index}}{{use "sync/atomic"}}
+	var {{.}} atomic.Int64
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.value writes the generator of one value of a result of a generated
+function. An error result takes nil and the declared errors of its method,
+or conform.ErrGenerated without them.
+*/}}
+{{- define "suite.value"}}
+{{- if .Error}}prop.SampledFrom[error](nil{{range .Errors}}, {{value .}}{{else}}, conform.ErrGenerated{{end}})
+{{- else}}prop.Of[{{spell .Type}}](){{end}}
+{{- end}}
+
+{{- /*
+suite.func writes a generated function, which returns the drawn results of
+its calls in turn. After the last of them it returns the zero results, with
+the end error of each error result: the first declared error of its method,
+or conform.ErrGenerated.
+*/}}
+{{- define "suite.func"}}func({{params .Signature.Params}}){{results .Signature.Returns}} {
+{{- with .Index}}
+		i := int({{.}}.Add(1) - 1)
+		if i >= len({{(index $.Results 0).Name}}) {
+{{- range $.Results}}
+{{- if .Error}}
+			{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}conform.ErrGenerated{{end}}
+{{- end}}
+{{- end}}
+			return
+		}
+		return {{range $i, $r := $.Results}}{{if $i}},
+			{{end}}{{$r.Name}}[i]{{end}}
+	}
+{{- else}}}
 {{- end}}
 {{- end}}

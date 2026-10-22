@@ -70,3 +70,54 @@ func TestCatalogSuite(t *testing.T) {
 		)
 	})
 }
+
+// TestCatalogSuiteAllocs falsifies the allocation ceilings of the suite of
+// Catalog.
+func TestCatalogSuiteAllocs(t *testing.T) {
+	t.Run("CatalogSuite", func(t *testing.T) {
+		conform.FalsifyAllocs(t, CatalogSuite())
+	})
+}
+
+// TestCatalogConformsToCatalog applies the checks of the suite of Catalog
+// to Catalog.
+func TestCatalogConformsToCatalog(t *testing.T) {
+	t.Parallel()
+
+	RunCatalogSuite(t, New)
+}
+
+// TestCatalogAllocs applies the allocation ceilings of the suite of
+// Catalog to Catalog.
+func TestCatalogAllocs(t *testing.T) {
+	RunCatalogBudgets(t, func(*CatalogHandle) *Catalog { return New() })
+}
+
+// BenchmarkCatalog measures each callable of the suite of Catalog on
+// Catalog.
+func BenchmarkCatalog(b *testing.B) {
+	b.Run("Find", func(b *testing.B) {
+		BenchCatalogSuite(
+			b,
+			CatalogChecks.Find.Callable,
+			func(*CatalogHandle) *Catalog { return New() },
+		)
+	})
+	b.Run("Add", func(b *testing.B) {
+		BenchCatalogSuite(
+			b,
+			CatalogChecks.Add.Callable,
+			func(*CatalogHandle) *Catalog { return New() },
+		)
+	})
+}
+
+// FuzzCatalogFind fuzzes the property checks of Catalog.Find on Catalog.
+func FuzzCatalogFind(f *testing.F) {
+	FuzzCatalogSuite(f, CatalogChecks.Find.Callable, func(*CatalogHandle) *Catalog { return New() })
+}
+
+// FuzzCatalogAdd fuzzes the property checks of Catalog.Add on Catalog.
+func FuzzCatalogAdd(f *testing.F) {
+	FuzzCatalogSuite(f, CatalogChecks.Add.Callable, func(*CatalogHandle) *Catalog { return New() })
+}

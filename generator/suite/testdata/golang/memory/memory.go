@@ -39,9 +39,11 @@ func (s *Store) Put(_ context.Context, item store.Item) error {
 }
 
 // Clocked is the store of items in memory that a factory builds on the
-// handle of a check.
+// handle of a check, under a budget of its own for Get, with 20 cases for
+// each property run.
 //
-//dokimi:subject store.Store new=NewClocked
+//dokimi:subject store.Store new=NewClocked cases=20
+//dokimi:budget Store.Get allocs=2 p99=1ms
 type Clocked struct {
 	*Store
 }

@@ -1,8 +1,10 @@
 package generic
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 )
 
@@ -36,9 +38,24 @@ type cacheSet struct {
 	conform.Callable[Cache[int, int]]
 }
 
-// CacheSuite returns the checks of Cache.
+// CacheSuite returns the checks of Cache, and the calls and the budgets of
+// its callables.
 func CacheSuite() conform.Suite[Cache[int, int]] {
-	return conform.Suite[Cache[int, int]]{Declaration: "Cache"}
+	return conform.Suite[Cache[int, int]]{
+		Declaration: "Cache",
+		Calls: []conform.Call[Cache[int, int]]{
+			{
+				Calls:    cacheGetCalls,
+				Over:     newCacheOver,
+				Callable: CacheChecks.Get.Callable,
+			},
+			{
+				Calls:    cacheSetCalls,
+				Over:     newCacheOver,
+				Callable: CacheChecks.Set.Callable,
+			},
+		},
+	}
 }
 
 // RunCacheSuite applies the checks of Cache, and the checks that opts add,
@@ -79,4 +96,99 @@ func FuzzCacheSuite[T Cache[int, int]](
 		callable,
 		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
 		opts...)
+}
+
+// RunCacheBudgets applies the allocation ceilings of Cache, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunCacheBudgets[T Cache[int, int]](
+	t *testing.T,
+	newSubject func(h *CacheHandle) T,
+	opts ...CacheOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		CacheSuite(),
+		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
+		opts...)
+}
+
+// BenchCacheSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchCacheSuite[T Cache[int, int]](
+	b conform.B,
+	callable conform.Callable[Cache[int, int]],
+	newSubject func(h *CacheHandle) T,
+	opts ...CacheOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		CacheSuite(),
+		callable,
+		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
+		opts...)
+}
+
+// BenchCacheSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchCacheSuiteParallel[T Cache[int, int]](
+	b *testing.B,
+	callable conform.Callable[Cache[int, int]],
+	newSubject func(h *CacheHandle) T,
+	opts ...CacheOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		CacheSuite(),
+		callable,
+		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
+		opts...)
+}
+
+// cacheGetCalls generates the calls of Cache.Get with the inputs that each
+// case draws.
+var cacheGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Cache[int, int]) error {
+	key := c.Draw(prop.Of[int](), "key")
+	return func(_ context.Context, subject Cache[int, int]) error {
+		_, _ = subject.Get(key)
+		return nil
+	}
+})
+
+// cacheSetCalls generates the calls of Cache.Set with the inputs that each
+// case draws.
+var cacheSetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Cache[int, int]) error {
+	key := c.Draw(prop.Of[int](), "key")
+	value := c.Draw(prop.Of[int](), "value")
+	return func(_ context.Context, subject Cache[int, int]) error {
+		subject.Set(key, value)
+		return nil
+	}
+})
+
+// cacheOver is a subject of Cache whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type cacheOver struct {
+	Cache[int, int]
+	spend func()
+}
+
+// Get calls spend and returns its zero results.
+func (o cacheOver) Get(int) (r0 int, r1 bool) {
+	o.spend()
+	return r0, r1
+}
+
+// Set calls spend and returns its zero results.
+func (o cacheOver) Set(int, int) {
+	o.spend()
+}
+
+// newCacheOver returns the planted defect of a ceiling of Cache, whose
+// callables call spend.
+func newCacheOver(_ *CacheHandle, spend func()) Cache[int, int] {
+	return cacheOver{spend: spend}
 }

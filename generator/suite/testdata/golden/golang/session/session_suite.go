@@ -1,8 +1,10 @@
 package session
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 )
 
@@ -44,16 +46,32 @@ func (c sessionsGet) KeepsTheLastPut() conform.ID[Sessions] {
 	return c.Check("keeps-the-last-put")
 }
 
-// SessionsSuite returns the checks of Sessions.
+// SessionsSuite returns the checks of Sessions, and the calls and the
+// budgets of its callables.
 func SessionsSuite() conform.Suite[Sessions] {
-	return conform.Suite[Sessions]{Declaration: "Sessions", Checks: []conform.Check[Sessions]{
-		{
-			ID:        SessionsChecks.Get.KeepsTheLastPut(),
-			Statement: "Get returns the session of the last Put of its ID",
-			Property:  KeepsTheLastPut,
-			Defect:    keepsTheFirstPut,
+	return conform.Suite[Sessions]{
+		Declaration: "Sessions",
+		Checks: []conform.Check[Sessions]{
+			{
+				ID:        SessionsChecks.Get.KeepsTheLastPut(),
+				Statement: "Get returns the session of the last Put of its ID",
+				Property:  KeepsTheLastPut,
+				Defect:    keepsTheFirstPut,
+			},
 		},
-	}}
+		Calls: []conform.Call[Sessions]{
+			{
+				Calls:    sessionsPutCalls,
+				Over:     newSessionsOver,
+				Callable: SessionsChecks.Put.Callable,
+			},
+			{
+				Calls:    sessionsGetCalls,
+				Over:     newSessionsOver,
+				Callable: SessionsChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunSessionsSuite applies the checks of Sessions, and the checks that
@@ -94,4 +112,98 @@ func FuzzSessionsSuite[T Sessions](
 		callable,
 		func(h *SessionsHandle) Sessions { return newSubject(h) },
 		opts...)
+}
+
+// RunSessionsBudgets applies the allocation ceilings of Sessions, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunSessionsBudgets[T Sessions](
+	t *testing.T,
+	newSubject func(h *SessionsHandle) T,
+	opts ...SessionsOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		SessionsSuite(),
+		func(h *SessionsHandle) Sessions { return newSubject(h) },
+		opts...)
+}
+
+// BenchSessionsSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchSessionsSuite[T Sessions](
+	b conform.B,
+	callable conform.Callable[Sessions],
+	newSubject func(h *SessionsHandle) T,
+	opts ...SessionsOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		SessionsSuite(),
+		callable,
+		func(h *SessionsHandle) Sessions { return newSubject(h) },
+		opts...)
+}
+
+// BenchSessionsSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchSessionsSuiteParallel[T Sessions](
+	b *testing.B,
+	callable conform.Callable[Sessions],
+	newSubject func(h *SessionsHandle) T,
+	opts ...SessionsOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		SessionsSuite(),
+		callable,
+		func(h *SessionsHandle) Sessions { return newSubject(h) },
+		opts...)
+}
+
+// sessionsPutCalls generates the calls of Sessions.Put with the inputs
+// that each case draws.
+var sessionsPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, Sessions) error {
+	s := c.Draw(prop.Of[Session](), "s")
+	return func(ctx context.Context, subject Sessions) error {
+		return subject.Put(ctx, s)
+	}
+})
+
+// sessionsGetCalls generates the calls of Sessions.Get with the inputs
+// that each case draws.
+var sessionsGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Sessions) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject Sessions) error {
+		_, err := subject.Get(ctx, id)
+		return err
+	}
+})
+
+// sessionsOver is a subject of Sessions whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type sessionsOver struct {
+	Sessions
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o sessionsOver) Put(context.Context, Session) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o sessionsOver) Get(context.Context, string) (r0 Session, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newSessionsOver returns the planted defect of a ceiling of Sessions,
+// whose callables call spend.
+func newSessionsOver(_ *SessionsHandle, spend func()) Sessions {
+	return sessionsOver{spend: spend}
 }

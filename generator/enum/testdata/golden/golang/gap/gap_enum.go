@@ -2,6 +2,7 @@ package gap
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -27,10 +28,8 @@ var (
 	_Gap_index_1 = [...]uint8{0, 4, 7}
 )
 
-// String returns Gap's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Gap) String() string {
 	switch {
 	case 2 <= v && v <= 3:
@@ -46,14 +45,13 @@ func (v Gap) String() string {
 	}
 }
 
-// ErrUnknownGap reports text that names no declared variant.
+// ErrUnknownGap is the error of text that names no declared variant. The
+// error of [ParseGap] wraps it with the text.
 var ErrUnknownGap = errors.New("gap: unknown Gap value")
 
-// ParseGap maps text back to a Gap.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseGap returns the variant of Gap whose text is s. It is the inverse
+// of [Gap.String] on the declared variants. It returns an error that wraps
+// [ErrUnknownGap] for text that names no declared variant.
 func ParseGap(s string) (Gap, error) {
 	switch s {
 	case "Two":
@@ -68,13 +66,11 @@ func ParseGap(s string) (Gap, error) {
 		return Eleven, nil
 	}
 	var zero Gap
-	return zero, ErrUnknownGap
+	return zero, fmt.Errorf("%w %q", ErrUnknownGap, s)
 }
 
-// GapValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// GapValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func GapValues() []Gap {
 	return []Gap{
 		Two,
@@ -85,38 +81,25 @@ func GapValues() []Gap {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Gap) IsValid() bool {
 	switch v {
-	case Two:
+	case Two, Three, Five, Six, Eleven:
 		return true
-	case Three:
-		return true
-	case Five:
-		return true
-	case Six:
-		return true
-	case Eleven:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Gap legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Gap) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseGap] for text that names no declared variant.
 func (v *Gap) UnmarshalText(text []byte) error {
 	parsed, err := ParseGap(string(text))
 	if err != nil {
@@ -140,14 +123,10 @@ const (
 	_Unum_name_1 = "Far"
 )
 
-var (
-	_Unum_index_0 = [...]uint8{0, 6, 9}
-)
+var _Unum_index_0 = [...]uint8{0, 6, 9}
 
-// String returns Unum's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Unum) String() string {
 	switch {
 	case v <= 1:
@@ -159,14 +138,13 @@ func (v Unum) String() string {
 	}
 }
 
-// ErrUnknownUnum reports text that names no declared variant.
+// ErrUnknownUnum is the error of text that names no declared variant. The
+// error of [ParseUnum] wraps it with the text.
 var ErrUnknownUnum = errors.New("gap: unknown Unum value")
 
-// ParseUnum maps text back to a Unum.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseUnum returns the variant of Unum whose text is s. It is the inverse
+// of [Unum.String] on the declared variants. It returns an error that
+// wraps [ErrUnknownUnum] for text that names no declared variant.
 func ParseUnum(s string) (Unum, error) {
 	switch s {
 	case "Naught":
@@ -177,13 +155,11 @@ func ParseUnum(s string) (Unum, error) {
 		return Far, nil
 	}
 	var zero Unum
-	return zero, ErrUnknownUnum
+	return zero, fmt.Errorf("%w %q", ErrUnknownUnum, s)
 }
 
-// UnumValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// UnumValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func UnumValues() []Unum {
 	return []Unum{
 		Naught,
@@ -192,34 +168,25 @@ func UnumValues() []Unum {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Unum) IsValid() bool {
 	switch v {
-	case Naught:
+	case Naught, One, Far:
 		return true
-	case One:
-		return true
-	case Far:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Unum legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Unum) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseUnum] for text that names no declared variant.
 func (v *Unum) UnmarshalText(text []byte) error {
 	parsed, err := ParseUnum(string(text))
 	if err != nil {
@@ -264,10 +231,8 @@ var _Prime_map = map[Prime]string{
 	37: _Prime_name[29:32],
 }
 
-// String returns Prime's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Prime) String() string {
 	if str, ok := _Prime_map[v]; ok {
 		return str
@@ -275,14 +240,13 @@ func (v Prime) String() string {
 	return "Prime(" + strconv.FormatInt(int64(v), 10) + ")"
 }
 
-// ErrUnknownPrime reports text that names no declared variant.
+// ErrUnknownPrime is the error of text that names no declared variant. The
+// error of [ParsePrime] wraps it with the text.
 var ErrUnknownPrime = errors.New("gap: unknown Prime value")
 
-// ParsePrime maps text back to a Prime.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParsePrime returns the variant of Prime whose text is s. It is the
+// inverse of [Prime.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownPrime] for text that names no declared variant.
 func ParsePrime(s string) (Prime, error) {
 	switch s {
 	case "P2":
@@ -311,13 +275,11 @@ func ParsePrime(s string) (Prime, error) {
 		return P37, nil
 	}
 	var zero Prime
-	return zero, ErrUnknownPrime
+	return zero, fmt.Errorf("%w %q", ErrUnknownPrime, s)
 }
 
-// PrimeValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// PrimeValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func PrimeValues() []Prime {
 	return []Prime{
 		P2,
@@ -335,52 +297,25 @@ func PrimeValues() []Prime {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Prime) IsValid() bool {
 	switch v {
-	case P2:
+	case P2, P3, P5, P7, P11, P13, P17, P19, P23, P29, P31, P37:
 		return true
-	case P3:
-		return true
-	case P5:
-		return true
-	case P7:
-		return true
-	case P11:
-		return true
-	case P13:
-		return true
-	case P17:
-		return true
-	case P19:
-		return true
-	case P23:
-		return true
-	case P29:
-		return true
-	case P31:
-		return true
-	case P37:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Prime legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Prime) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParsePrime] for text that names no declared variant.
 func (v *Prime) UnmarshalText(text []byte) error {
 	parsed, err := ParsePrime(string(text))
 	if err != nil {
@@ -403,10 +338,8 @@ const _Rank_name = "BronzeSilverGold"
 
 var _Rank_index = [...]uint8{0, 6, 12, 16}
 
-// String returns Rank's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Rank) String() string {
 	idx := int(v) - 1
 	if v < 1 || idx >= len(_Rank_index)-1 {
@@ -415,14 +348,13 @@ func (v Rank) String() string {
 	return _Rank_name[_Rank_index[idx]:_Rank_index[idx+1]]
 }
 
-// ErrUnknownRank reports text that names no declared variant.
+// ErrUnknownRank is the error of text that names no declared variant. The
+// error of [ParseRank] wraps it with the text.
 var ErrUnknownRank = errors.New("gap: unknown Rank value")
 
-// ParseRank maps text back to a Rank.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseRank returns the variant of Rank whose text is s. It is the inverse
+// of [Rank.String] on the declared variants. It returns an error that
+// wraps [ErrUnknownRank] for text that names no declared variant.
 func ParseRank(s string) (Rank, error) {
 	switch s {
 	case "Gold":
@@ -433,13 +365,11 @@ func ParseRank(s string) (Rank, error) {
 		return Bronze, nil
 	}
 	var zero Rank
-	return zero, ErrUnknownRank
+	return zero, fmt.Errorf("%w %q", ErrUnknownRank, s)
 }
 
-// RankValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// RankValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func RankValues() []Rank {
 	return []Rank{
 		Gold,
@@ -448,34 +378,25 @@ func RankValues() []Rank {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Rank) IsValid() bool {
 	switch v {
-	case Gold:
+	case Gold, Silver, Bronze:
 		return true
-	case Silver:
-		return true
-	case Bronze:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Rank legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Rank) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseRank] for text that names no declared variant.
 func (v *Rank) UnmarshalText(text []byte) error {
 	parsed, err := ParseRank(string(text))
 	if err != nil {
@@ -514,10 +435,8 @@ const (
 	_Odd_name_9 = "O19"
 )
 
-// String returns Odd's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Odd) String() string {
 	switch {
 	case v == 1:
@@ -545,14 +464,13 @@ func (v Odd) String() string {
 	}
 }
 
-// ErrUnknownOdd reports text that names no declared variant.
+// ErrUnknownOdd is the error of text that names no declared variant. The
+// error of [ParseOdd] wraps it with the text.
 var ErrUnknownOdd = errors.New("gap: unknown Odd value")
 
-// ParseOdd maps text back to a Odd.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseOdd returns the variant of Odd whose text is s. It is the inverse
+// of [Odd.String] on the declared variants. It returns an error that wraps
+// [ErrUnknownOdd] for text that names no declared variant.
 func ParseOdd(s string) (Odd, error) {
 	switch s {
 	case "O1":
@@ -577,13 +495,11 @@ func ParseOdd(s string) (Odd, error) {
 		return O19, nil
 	}
 	var zero Odd
-	return zero, ErrUnknownOdd
+	return zero, fmt.Errorf("%w %q", ErrUnknownOdd, s)
 }
 
-// OddValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// OddValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func OddValues() []Odd {
 	return []Odd{
 		O1,
@@ -599,48 +515,25 @@ func OddValues() []Odd {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Odd) IsValid() bool {
 	switch v {
-	case O1:
+	case O1, O3, O5, O7, O9, O11, O13, O15, O17, O19:
 		return true
-	case O3:
-		return true
-	case O5:
-		return true
-	case O7:
-		return true
-	case O9:
-		return true
-	case O11:
-		return true
-	case O13:
-		return true
-	case O15:
-		return true
-	case O17:
-		return true
-	case O19:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Odd legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Odd) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseOdd] for text that names no declared variant.
 func (v *Odd) UnmarshalText(text []byte) error {
 	parsed, err := ParseOdd(string(text))
 	if err != nil {
@@ -663,10 +556,8 @@ const _Num_name = "MinusZeroPlus"
 
 var _Num_index = [...]uint8{0, 5, 9, 13}
 
-// String returns Num's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Num) String() string {
 	idx := int(v) - -1
 	if v < -1 || idx >= len(_Num_index)-1 {
@@ -675,14 +566,13 @@ func (v Num) String() string {
 	return _Num_name[_Num_index[idx]:_Num_index[idx+1]]
 }
 
-// ErrUnknownNum reports text that names no declared variant.
+// ErrUnknownNum is the error of text that names no declared variant. The
+// error of [ParseNum] wraps it with the text.
 var ErrUnknownNum = errors.New("gap: unknown Num value")
 
-// ParseNum maps text back to a Num.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseNum returns the variant of Num whose text is s. It is the inverse
+// of [Num.String] on the declared variants. It returns an error that wraps
+// [ErrUnknownNum] for text that names no declared variant.
 func ParseNum(s string) (Num, error) {
 	switch s {
 	case "Minus":
@@ -693,13 +583,11 @@ func ParseNum(s string) (Num, error) {
 		return Plus, nil
 	}
 	var zero Num
-	return zero, ErrUnknownNum
+	return zero, fmt.Errorf("%w %q", ErrUnknownNum, s)
 }
 
-// NumValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// NumValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func NumValues() []Num {
 	return []Num{
 		Minus,
@@ -708,34 +596,25 @@ func NumValues() []Num {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Num) IsValid() bool {
 	switch v {
-	case Minus:
+	case Minus, Zero, Plus:
 		return true
-	case Zero:
-		return true
-	case Plus:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Num legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Num) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseNum] for text that names no declared variant.
 func (v *Num) UnmarshalText(text []byte) error {
 	parsed, err := ParseNum(string(text))
 	if err != nil {

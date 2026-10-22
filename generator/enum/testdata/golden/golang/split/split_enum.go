@@ -2,6 +2,7 @@ package split
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -18,10 +19,8 @@ const _Signal_name = "GreenAmberRed"
 
 var _Signal_index = [...]uint8{0, 5, 10, 13}
 
-// String returns Signal's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Signal) String() string {
 	idx := int(v) - 1
 	if v < 1 || idx >= len(_Signal_index)-1 {
@@ -30,14 +29,13 @@ func (v Signal) String() string {
 	return _Signal_name[_Signal_index[idx]:_Signal_index[idx+1]]
 }
 
-// ErrUnknownSignal reports text that names no declared variant.
+// ErrUnknownSignal is the error of text that names no declared variant.
+// The error of [ParseSignal] wraps it with the text.
 var ErrUnknownSignal = errors.New("split: unknown Signal value")
 
-// ParseSignal maps text back to a Signal.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseSignal returns the variant of Signal whose text is s. It is the
+// inverse of [Signal.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownSignal] for text that names no declared variant.
 func ParseSignal(s string) (Signal, error) {
 	switch s {
 	case "Green":
@@ -48,13 +46,11 @@ func ParseSignal(s string) (Signal, error) {
 		return Red, nil
 	}
 	var zero Signal
-	return zero, ErrUnknownSignal
+	return zero, fmt.Errorf("%w %q", ErrUnknownSignal, s)
 }
 
-// SignalValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// SignalValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func SignalValues() []Signal {
 	return []Signal{
 		Green,
@@ -63,34 +59,25 @@ func SignalValues() []Signal {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Signal) IsValid() bool {
 	switch v {
-	case Green:
+	case Green, Amber, Red:
 		return true
-	case Amber:
-		return true
-	case Red:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Signal legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Signal) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseSignal] for text that names no declared variant.
 func (v *Signal) UnmarshalText(text []byte) error {
 	parsed, err := ParseSignal(string(text))
 	if err != nil {

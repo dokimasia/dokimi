@@ -6,116 +6,209 @@ import (
 	"go.dokimi.dev/assert"
 )
 
-// TestStatusVariants pins the declared set itself, which every other check
-// here takes as given.
-func TestStatusVariants(t *testing.T) {
+// TestStatus checks the functions and the methods of the enumeration
+// Status.
+func TestStatus(t *testing.T) {
 	t.Parallel()
 
-	all := StatusValues()
-
-	t.Run("declares exactly 3 variants", func(t *testing.T) {
-		t.Parallel()
-		assert.Length(t, all, 3, "the declared set must not change unnoticed")
-	})
-
-	t.Run("no two variants share a value", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
 		seen := map[Status]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v], "each variant must hold a distinct value")
+		for _, v := range []Status{
+			Draft,
+			Published,
+			Archived,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 
-	t.Run("no two variants share a textual form", func(t *testing.T) {
+	t.Run("StatusValues", func(t *testing.T) {
 		t.Parallel()
-		seen := map[string]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v.String()], "each variant must render distinctly")
-			seen[v.String()] = true
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []Status{
+					Draft,
+					Published,
+					Archived,
+				}
+				assert.Equal(t, StatusValues(), want, "StatusValues returns the declared variants")
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := StatusValues(), StatusValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("String", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []Status{
+				Draft,
+				Published,
+				Archived,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+
+		t.Run(
+			"renders a value outside the declared set with a text of its own",
+			func(t *testing.T) {
+				t.Parallel()
+				out := Status(4)
+				for _, v := range []Status{
+					Draft,
+					Published,
+					Archived,
+				} {
+					assert.NotEqual(
+						t,
+						out.String(),
+						v.String(),
+						"an undeclared value has a text of its own",
+					)
+				}
+			},
+		)
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Status
+		}{
+			{name: "accepts Draft", give: Draft},
+			{name: "accepts Published", give: Published},
+			{name: "accepts Archived", give: Archived},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			assert.False(t, Status(4).IsValid(), "IsValid refuses an undeclared value")
+		})
+
+		t.Run("refuses the zero value", func(t *testing.T) {
+			t.Parallel()
+			var zero Status
+			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
+		})
+	})
+
+	t.Run("ParseStatus", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Status
+		}{
+			{name: "returns Draft for its text", give: Draft},
+			{name: "returns Published for its text", give: Published},
+			{name: "returns Archived for its text", give: Archived},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := ParseStatus(tt.give.String())
+				assert.NoError(t, err, "ParseStatus accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseStatus returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseStatus("??????????")
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownStatus,
+				"ParseStatus refuses the text with ErrUnknownStatus",
+			)
+			assert.Contains(t, err.Error(), "??????????", "the error contains the refused text")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Status
+		}{
+			{name: "encodes Draft as its text", give: Draft},
+			{name: "encodes Published as its text", give: Published},
+			{name: "encodes Archived as its text", give: Archived},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(
+					t,
+					string(text),
+					tt.give.String(),
+					"the encoding of the variant is its text",
+				)
+			})
 		}
 	})
 
-	t.Run("a value outside the set is not valid", func(t *testing.T) {
+	t.Run("UnmarshalText", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, Status(4).IsValid(), "an undeclared value must not be valid")
-	})
 
-	t.Run("every declared variant is valid", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			assert.True(t, v.IsValid(), "a declared variant must be valid")
+		tests := []struct {
+			name string
+			give Status
+		}{
+			{name: "decodes Draft from its encoding", give: Draft},
+			{name: "decodes Published from its encoding", give: Published},
+			{name: "decodes Archived from its encoding", give: Archived},
 		}
-	})
-
-	t.Run("the zero value is not a declared variant", func(t *testing.T) {
-		t.Parallel()
-		var zero Status
-		assert.False(t, zero.IsValid(), "the zero value must not be a variant")
-	})
-}
-
-// TestStatusText pins the round trip a value makes through anything that
-// carries it as text — a log line, a JSON field, a database column.
-func TestStatusText(t *testing.T) {
-	t.Parallel()
-
-	all := StatusValues()
-
-	t.Run("every variant survives a text round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			got, err := ParseStatus(v.String())
-			assert.NoError(t, err, "a declared variant must parse back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got Status
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
 		}
-	})
 
-	t.Run("text naming no variant is refused", func(t *testing.T) {
-		t.Parallel()
-		_, err := ParseStatus("??????????")
-		assert.ErrorIs(t, err, ErrUnknownStatus, "unknown text must be refused with the declared refusal")
-	})
-
-	t.Run("a value outside the set does not render as one inside it", func(t *testing.T) {
-		t.Parallel()
-		out := Status(4)
-		for _, v := range all {
-			assert.NotEqual(t, out.String(), v.String(), "an undeclared value must render distinctly")
-		}
-	})
-}
-
-// TestStatusEncoding pins the boundary where a value most often crosses
-// out of the program's control.
-func TestStatusEncoding(t *testing.T) {
-	t.Parallel()
-
-	all := StatusValues()
-
-	t.Run("every variant encodes to its textual form", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
-			assert.Equal(t, string(text), v.String(), "the encoding must match the textual form")
-		}
-	})
-
-	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
 			var got Status
-			assert.NoError(t, got.UnmarshalText(text), "and decode back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
-		}
-	})
-
-	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
-		t.Parallel()
-		var got Status
-		assert.HasError(t, got.UnmarshalText([]byte("??????????")), "unknown text must not decode")
+			assert.HasError(
+				t,
+				got.UnmarshalText([]byte("??????????")),
+				"UnmarshalText refuses the text",
+			)
+		})
 	})
 }

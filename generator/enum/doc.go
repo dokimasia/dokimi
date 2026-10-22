@@ -29,7 +29,8 @@
 // of the variants, each text that a value or a comment states, the round trip
 // of each variant through its text, the refusal of a text that no variant
 // has, the validity of a value outside the variants and of the zero value. In
-// Go they also pin the round trip through MarshalText and UnmarshalText.
+// Go they also pin the refused text in the error of the parse function, and
+// the round trip through MarshalText and UnmarshalText.
 //
 // # Options
 //

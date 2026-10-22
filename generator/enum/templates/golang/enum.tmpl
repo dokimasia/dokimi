@@ -114,16 +114,15 @@ var (
 }
 {{- end}}
 {{- end}}
-{{- if $m.Generate.Parse}}{{use "errors"}}
+{{- if $m.Generate.Parse}}{{use "errors"}}{{use "fmt"}}
 
-{{docs (wrapdocs (printf `%s reports text that names no declared variant.` $n.Sentinel))}}
+{{docs (wrapdocs (printf `%s is the error of text that names no declared variant. The error of
+[%s] wraps it with the text.` $n.Sentinel $n.Parse))}}
 {{- ""}}var {{$n.Sentinel}} = errors.New("{{$m.Package}}: unknown {{$m.Subject}} value")
 
-{{docs (wrapdocs (printf `%s maps text back to a %s.
-
-The inverse of %s for every declared variant, which is what lets a
-value survive a round trip through anything that carries it as text —
-a log line, a JSON field, a database column.` $n.Parse $m.Subject $n.Render))}}
+{{docs (wrapdocs (printf `%s returns the variant of %s whose text is s. It is the inverse of
+[%s.%s] on the declared variants. It returns an error that wraps [%s] for
+text that names no declared variant.` $n.Parse $m.Subject $m.Subject $n.Render $n.Sentinel))}}
 {{- ""}}func {{$n.Parse}}(s string) ({{$t}}, error) {
 	switch s {
 {{- range $m.Variants}}
@@ -132,15 +131,13 @@ a log line, a JSON field, a database column.` $n.Parse $m.Subject $n.Render))}}
 {{- end}}
 	}
 	var zero {{$t}}
-	return zero, {{$n.Sentinel}}
+	return zero, fmt.Errorf("%w %q", {{$n.Sentinel}}, s)
 }
 {{- end}}
 {{- if $m.Generate.Values}}
 
-{{docs (wrapdocs (printf `%s returns every declared variant in declaration order.
-
-A fresh slice per call: a package-level one would let any caller reorder
-or overwrite the set every other caller reads.` $n.Values))}}
+{{docs (wrapdocs (printf `%s returns the declared variants in the order of their declaration.
+Each call returns a new slice.` $n.Values))}}
 {{- ""}}func {{$n.Values}}() []{{$t}} {
 	return []{{$t}}{
 {{- range $m.Variants}}
@@ -151,36 +148,29 @@ or overwrite the set every other caller reads.` $n.Values))}}
 {{- end}}
 {{- if $m.Generate.Valid}}
 
-{{docs (wrapdocs (printf `%s reports whether v is a declared variant.
-
-A conversion admits any value of the underlying type, so this is the
-only thing standing between an out-of-range value and the rest of the
-program.` $n.Valid))}}
+{{docs (wrapdocs (printf `%s reports whether v is a declared variant. A conversion from the
+underlying type can make any other value.` $n.Valid))}}
 {{- ""}}func (v {{$t}}) {{$n.Valid}}() bool {
 	switch v {
-{{- range $m.Variants}}
-	case {{.Member}}:
+	case {{range $i, $v := $m.Variants}}{{if $i}}, {{end}}{{$v.Member}}{{end}}:
 		return true
-{{- end}}
+	default:
+		return false
 	}
-	return false
 }
 {{- end}}
 {{- if $m.Generate.Encode}}
 
-{{docs (wrapdocs (printf `%s implements [encoding.TextMarshaler].
-
-Text rather than JSON: encoding/json reaches for TextMarshaler on its
-own and so does YAML, and it is what makes %s legal as a map key —
-which a JSON marshaller alone does not.` $n.Encode $m.Subject))}}
+{{docs (wrapdocs (printf `%s implements [encoding.TextMarshaler] with the text of v. encoding/json
+uses it for a value and for a map key.` $n.Encode))}}
 {{- ""}}func (v {{$t}}) {{$n.Encode}}() ([]byte, error) {
 	return []byte(v.{{$n.Render}}()), nil
 }
 {{- end}}
 {{- if $m.Generate.Decode}}
 
-{{docs (wrapdocs (printf `%s implements [encoding.TextUnmarshaler], refusing text that
-names no declared variant rather than admitting it as an unnamed value.` $n.Decode))}}
+{{docs (wrapdocs (printf `%s implements [encoding.TextUnmarshaler]. It returns the error of
+[%s] for text that names no declared variant.` $n.Decode $n.Parse))}}
 {{- ""}}func (v *{{$t}}) {{$n.Decode}}(text []byte) error {
 	parsed, err := {{$n.Parse}}(string(text))
 	if err != nil {
@@ -194,8 +184,6 @@ names no declared variant rather than admitting it as an unnamed value.` $n.Deco
 {{- end}}
 
 {{- define "enum.render.doc"}}
-{{- docs (wrapdocs (printf `%s returns %s's textual form.
-
-A value outside the declared set renders as itself, so a corrupt value
-is visible rather than indistinguishable from a declared one.` .Names.Render .Subject))}}
+{{- docs (wrapdocs (printf `%s returns the text of v. A value outside the declared set renders as
+its underlying value.` .Names.Render))}}
 {{- end}}

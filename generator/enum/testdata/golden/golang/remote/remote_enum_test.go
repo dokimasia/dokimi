@@ -6,103 +6,177 @@ import (
 	"go.dokimi.dev/assert"
 )
 
-// TestSeasonVariants pins the declared set itself, which every other check
-// here takes as given.
-func TestSeasonVariants(t *testing.T) {
+// TestSeason checks the functions and the methods of the enumeration
+// Season.
+func TestSeason(t *testing.T) {
 	t.Parallel()
 
-	all := SeasonValues()
-
-	t.Run("declares exactly 2 variants", func(t *testing.T) {
-		t.Parallel()
-		assert.Length(t, all, 2, "the declared set must not change unnoticed")
-	})
-
-	t.Run("no two variants share a value", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
 		seen := map[Season]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v], "each variant must hold a distinct value")
+		for _, v := range []Season{
+			Spring,
+			Autumn,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 
-	t.Run("no two variants share a textual form", func(t *testing.T) {
+	t.Run("SeasonValues", func(t *testing.T) {
 		t.Parallel()
-		seen := map[string]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v.String()], "each variant must render distinctly")
-			seen[v.String()] = true
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []Season{
+					Spring,
+					Autumn,
+				}
+				assert.Equal(t, SeasonValues(), want, "SeasonValues returns the declared variants")
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := SeasonValues(), SeasonValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("String", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []Season{
+				Spring,
+				Autumn,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Season
+		}{
+			{name: "accepts Spring", give: Spring},
+			{name: "accepts Autumn", give: Autumn},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses the zero value", func(t *testing.T) {
+			t.Parallel()
+			var zero Season
+			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
+		})
+	})
+
+	t.Run("ParseSeason", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Season
+		}{
+			{name: "returns Spring for its text", give: Spring},
+			{name: "returns Autumn for its text", give: Autumn},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := ParseSeason(tt.give.String())
+				assert.NoError(t, err, "ParseSeason accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseSeason returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseSeason("???????")
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownSeason,
+				"ParseSeason refuses the text with ErrUnknownSeason",
+			)
+			assert.Contains(t, err.Error(), "???????", "the error contains the refused text")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Season
+		}{
+			{name: "encodes Spring as its text", give: Spring},
+			{name: "encodes Autumn as its text", give: Autumn},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(
+					t,
+					string(text),
+					tt.give.String(),
+					"the encoding of the variant is its text",
+				)
+			})
 		}
 	})
 
-	t.Run("every declared variant is valid", func(t *testing.T) {
+	t.Run("UnmarshalText", func(t *testing.T) {
 		t.Parallel()
-		for _, v := range all {
-			assert.True(t, v.IsValid(), "a declared variant must be valid")
+
+		tests := []struct {
+			name string
+			give Season
+		}{
+			{name: "decodes Spring from its encoding", give: Spring},
+			{name: "decodes Autumn from its encoding", give: Autumn},
 		}
-	})
-
-	t.Run("the zero value is not a declared variant", func(t *testing.T) {
-		t.Parallel()
-		var zero Season
-		assert.False(t, zero.IsValid(), "the zero value must not be a variant")
-	})
-}
-
-// TestSeasonText pins the round trip a value makes through anything that
-// carries it as text — a log line, a JSON field, a database column.
-func TestSeasonText(t *testing.T) {
-	t.Parallel()
-
-	all := SeasonValues()
-
-	t.Run("every variant survives a text round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			got, err := ParseSeason(v.String())
-			assert.NoError(t, err, "a declared variant must parse back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got Season
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
 		}
-	})
 
-	t.Run("text naming no variant is refused", func(t *testing.T) {
-		t.Parallel()
-		_, err := ParseSeason("???????")
-		assert.ErrorIs(t, err, ErrUnknownSeason, "unknown text must be refused with the declared refusal")
-	})
-}
-
-// TestSeasonEncoding pins the boundary where a value most often crosses
-// out of the program's control.
-func TestSeasonEncoding(t *testing.T) {
-	t.Parallel()
-
-	all := SeasonValues()
-
-	t.Run("every variant encodes to its textual form", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
-			assert.Equal(t, string(text), v.String(), "the encoding must match the textual form")
-		}
-	})
-
-	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
 			var got Season
-			assert.NoError(t, got.UnmarshalText(text), "and decode back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
-		}
-	})
-
-	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
-		t.Parallel()
-		var got Season
-		assert.HasError(t, got.UnmarshalText([]byte("???????")), "unknown text must not decode")
+			assert.HasError(
+				t,
+				got.UnmarshalText([]byte("???????")),
+				"UnmarshalText refuses the text",
+			)
+		})
 	})
 }

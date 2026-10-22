@@ -2,24 +2,22 @@ package region
 
 import (
 	"errors"
+	"fmt"
 )
 
-// String returns Region's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Region) String() string {
 	return string(v)
 }
 
-// ErrUnknownRegion reports text that names no declared variant.
+// ErrUnknownRegion is the error of text that names no declared variant.
+// The error of [ParseRegion] wraps it with the text.
 var ErrUnknownRegion = errors.New("region: unknown Region value")
 
-// ParseRegion maps text back to a Region.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseRegion returns the variant of Region whose text is s. It is the
+// inverse of [Region.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownRegion] for text that names no declared variant.
 func ParseRegion(s string) (Region, error) {
 	switch s {
 	case "us-east":
@@ -30,13 +28,11 @@ func ParseRegion(s string) (Region, error) {
 		return AP, nil
 	}
 	var zero Region
-	return zero, ErrUnknownRegion
+	return zero, fmt.Errorf("%w %q", ErrUnknownRegion, s)
 }
 
-// RegionValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// RegionValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func RegionValues() []Region {
 	return []Region{
 		US,
@@ -45,34 +41,25 @@ func RegionValues() []Region {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Region) IsValid() bool {
 	switch v {
-	case US:
+	case US, EU, AP:
 		return true
-	case EU:
-		return true
-	case AP:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Region legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Region) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseRegion] for text that names no declared variant.
 func (v *Region) UnmarshalText(text []byte) error {
 	parsed, err := ParseRegion(string(text))
 	if err != nil {
@@ -82,22 +69,19 @@ func (v *Region) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// String returns Zone's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Zone) String() string {
 	return string(v)
 }
 
-// ErrUnknownZone reports text that names no declared variant.
+// ErrUnknownZone is the error of text that names no declared variant. The
+// error of [ParseZone] wraps it with the text.
 var ErrUnknownZone = errors.New("region: unknown Zone value")
 
-// ParseZone maps text back to a Zone.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseZone returns the variant of Zone whose text is s. It is the inverse
+// of [Zone.String] on the declared variants. It returns an error that
+// wraps [ErrUnknownZone] for text that names no declared variant.
 func ParseZone(s string) (Zone, error) {
 	switch s {
 	case "north":
@@ -108,13 +92,11 @@ func ParseZone(s string) (Zone, error) {
 		return Unset, nil
 	}
 	var zero Zone
-	return zero, ErrUnknownZone
+	return zero, fmt.Errorf("%w %q", ErrUnknownZone, s)
 }
 
-// ZoneValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// ZoneValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func ZoneValues() []Zone {
 	return []Zone{
 		North,
@@ -123,34 +105,25 @@ func ZoneValues() []Zone {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Zone) IsValid() bool {
 	switch v {
-	case North:
+	case North, South, Unset:
 		return true
-	case South:
-		return true
-	case Unset:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Zone legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Zone) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseZone] for text that names no declared variant.
 func (v *Zone) UnmarshalText(text []byte) error {
 	parsed, err := ParseZone(string(text))
 	if err != nil {
@@ -160,10 +133,8 @@ func (v *Zone) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// String returns Lane's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Lane) String() string {
 	switch v {
 	case Left:
@@ -174,14 +145,13 @@ func (v Lane) String() string {
 	return string(v)
 }
 
-// ErrUnknownLane reports text that names no declared variant.
+// ErrUnknownLane is the error of text that names no declared variant. The
+// error of [ParseLane] wraps it with the text.
 var ErrUnknownLane = errors.New("region: unknown Lane value")
 
-// ParseLane maps text back to a Lane.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseLane returns the variant of Lane whose text is s. It is the inverse
+// of [Lane.String] on the declared variants. It returns an error that
+// wraps [ErrUnknownLane] for text that names no declared variant.
 func ParseLane(s string) (Lane, error) {
 	switch s {
 	case "left":
@@ -190,13 +160,11 @@ func ParseLane(s string) (Lane, error) {
 		return Right, nil
 	}
 	var zero Lane
-	return zero, ErrUnknownLane
+	return zero, fmt.Errorf("%w %q", ErrUnknownLane, s)
 }
 
-// LaneValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// LaneValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func LaneValues() []Lane {
 	return []Lane{
 		Left,
@@ -204,32 +172,25 @@ func LaneValues() []Lane {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Lane) IsValid() bool {
 	switch v {
-	case Left:
+	case Left, Right:
 		return true
-	case Right:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Lane legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Lane) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseLane] for text that names no declared variant.
 func (v *Lane) UnmarshalText(text []byte) error {
 	parsed, err := ParseLane(string(text))
 	if err != nil {

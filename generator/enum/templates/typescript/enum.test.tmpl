@@ -1,101 +1,116 @@
-{{- use "vitest" "describe"}}{{use "@dokimi/assert/vitest" "test"}}{{use "@dokimi/assert" "check"}}
+{{- use "vitest" "describe"}}{{use "vitest" "expect"}}{{use "vitest" "it"}}
 {{- $surface := surfaceModule $.Name}}
 {{- $source := sourceModule $.Name}}
-{{- define "set"}}
-{{- if .Calls.Values}}
-  const all = {{.Names.Values}}();
-{{- else}}
-  const all = [
-{{- $e := spellvalue .Type}}
-{{- range .Variants}}
-    {{$e}}{{.Member}},
-{{- end}}
-  ];
-{{- end}}
+{{- define "enum.ts.variants"}}
+{{- $e := spellvalue .Type}}[{{range $i, $v := .Variants}}{{if $i}}, {{end}}{{$e}}{{$v.Member}}{{end}}]
 {{- end}}
 {{- range .Records}}
 {{- $c := .Data}}
 {{- $t := spell $c.Type}}
 {{- $e := spellvalue $c.Type}}
 {{- $n := $c.Names}}
-{{- if $c.Calls.Values}}{{use $surface $n.Values}}{{end}}
+{{- if $c.Calls.Values}}{{use $surface $n.Values}}{{use "@dokimi/assert" "byIdentity"}}{{end}}
 {{- if $c.Calls.Render}}{{use (or (and $c.Generate.Render $surface) $source) $n.Render}}{{end}}
 {{- if $c.Calls.Valid}}{{use (or (and $c.Generate.Valid $surface) $source) $n.Valid}}{{end}}
 {{- if $c.Calls.Parse}}{{use $surface $n.Parse}}{{use $surface $n.Sentinel}}{{end}}
 
-describe("{{$c.Subject}} variants", () => {
-{{- template "set" $c}}
-
-  test("declares exactly {{len $c.Variants}} variants", ({ seat }) => {
-    check.length(seat, all, {{len $c.Variants}}, "the declared set must not change unnoticed");
+describe("{{$c.Subject}}", () => {
+  it("gives each variant a value of its own", () => {
+    const values = {{template "enum.ts.variants" $c}};
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
   });
+{{- if $c.Calls.Values}}
 
-  test("no two variants share a value", ({ seat }) => {
-    const seen = new Set<{{$t}}>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(value), "each variant must hold a distinct value");
-      seen.add(value);
-    }
+  describe("{{$n.Values}}", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = {{template "enum.ts.variants" $c}};
+      expect({{$n.Values}}()).isEqualTo(want, "{{$n.Values}} returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect({{$n.Values}}()).isNotEqualTo({{$n.Values}}(), "the two calls return two arrays", byIdentity());
+    });
   });
+{{- end}}
 {{- if $c.Calls.Render}}
-{{- if $c.Stated}}
 
-  test("every variant renders the value it declares", ({ seat }) => {
+  describe("{{$n.Render}}", () => {
+{{- if $c.Stated}}
+    const tests = [
 {{- range $c.Variants}}
 {{- if .Stated}}
-    check.equal(seat, {{$n.Render}}({{$e}}{{.Member}}), {{.Text}}, "the declared value is the textual form");
+      { name: "returns the declared text of {{.Name}}", give: {{$e}}{{.Member}}, want: {{.Text}} },
 {{- end}}
 {{- end}}
-  });
-{{- end}}
-
-  test("no two variants share a textual form", ({ seat }) => {
-    const seen = new Set<string>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has({{$n.Render}}(value)), "each variant must render distinctly");
-      seen.add({{$n.Render}}(value));
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect({{$n.Render}}(tt.give)).isEqualTo(tt.want, "{{$n.Render}} returns the declared text of the variant");
+      });
     }
+
+{{- end}}
+{{- if $c.Stated}}
+{{end}}
+    it("returns a text of its own for each variant", () => {
+      const texts = {{template "enum.ts.variants" $c}}.map((value) => {{$n.Render}}(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+{{- if and $c.OutOfRange $c.Generate.Render}}
+
+    it("renders a value outside the declared set with a text of its own", () => {
+      const out = {{$c.OutOfRange}} as unknown as {{$t}};
+      const texts = {{template "enum.ts.variants" $c}}.map((value) => {{$n.Render}}(value));
+      expect(texts).doesNotContain({{$n.Render}}(out), "an undeclared value has a text of its own");
+    });
+{{- end}}
   });
 {{- end}}
 {{- if $c.Calls.Valid}}
+
+  describe("{{$n.Valid}}", () => {
+    const tests = [
+{{- range $c.Variants}}
+      { name: "accepts {{.Name}}", give: {{$e}}{{.Member}} },
+{{- end}}
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect({{$n.Valid}}(tt.give)).isTrue("{{$n.Valid}} accepts each declared variant");
+      });
+    }
 {{- if $c.OutOfRange}}
 
-  test("a value outside the set is not valid", ({ seat }) => {
-    check.isFalse(seat, {{$n.Valid}}({{$c.OutOfRange}}), "an undeclared value must not be valid");
+    it("refuses a value outside the declared set", () => {
+      expect({{$n.Valid}}({{$c.OutOfRange}})).isFalse("{{$n.Valid}} refuses an undeclared value");
+    });
+{{- end}}
   });
 {{- end}}
-
-  test("every declared variant is valid", ({ seat }) => {
-    for (const value of all) {
-      check.isTrue(seat, {{$n.Valid}}(value), "a declared variant must be valid");
-    }
-  });
-{{- end}}
-});
 {{- if $c.Calls.Parse}}
 
-describe("{{$c.Subject}} text", () => {
-{{- template "set" $c}}
-
-  test("every variant survives a text round trip", ({ seat }) => {
-    for (const value of all) {
-      check.equal(seat, {{$n.Parse}}({{$n.Render}}(value)), value, "the round trip must be lossless");
+  describe("{{$n.Parse}}", () => {
+    const tests = [
+{{- range $c.Variants}}
+      { name: "returns {{.Name}} for its text", give: {{$e}}{{.Member}} },
+{{- end}}
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect({{$n.Parse}}({{$n.Render}}(tt.give))).isEqualTo(tt.give, "{{$n.Parse}} returns the variant of the text");
+      });
     }
-  });
 
-  test("text naming no variant is refused", ({ seat }) => {
-    const err = check.throws(seat, () => {{$n.Parse}}({{$c.Unknown}}), "unknown text must be refused");
-    check.errorAs(seat, err, {{$n.Sentinel}}, "unknown text must be refused with the declared refusal");
-  });
-{{- if $c.OutOfRange}}
-
-  test("a value outside the set does not render as one inside it", ({ seat }) => {
-    const out = {{$c.OutOfRange}} as unknown as {{$t}};
-    for (const value of all) {
-      check.notEqual(seat, {{$n.Render}}(out), {{$n.Render}}(value), "an undeclared value must render distinctly");
-    }
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        {{$n.Parse}}({{$c.Unknown}});
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).errorAs({{$n.Sentinel}}, "{{$n.Parse}} refuses the text with {{$n.Sentinel}}");
+    });
   });
 {{- end}}
 });
-{{- end}}
 {{- end}}

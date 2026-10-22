@@ -2,6 +2,7 @@ package commented
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -18,10 +19,8 @@ const _Grade_name = "poorfair enoughGood"
 
 var _Grade_index = [...]uint8{0, 4, 15, 19}
 
-// String returns Grade's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Grade) String() string {
 	idx := int(v) - 0
 	if v < 0 || idx >= len(_Grade_index)-1 {
@@ -30,14 +29,13 @@ func (v Grade) String() string {
 	return _Grade_name[_Grade_index[idx]:_Grade_index[idx+1]]
 }
 
-// ErrUnknownGrade reports text that names no declared variant.
+// ErrUnknownGrade is the error of text that names no declared variant. The
+// error of [ParseGrade] wraps it with the text.
 var ErrUnknownGrade = errors.New("commented: unknown Grade value")
 
-// ParseGrade maps text back to a Grade.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseGrade returns the variant of Grade whose text is s. It is the
+// inverse of [Grade.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownGrade] for text that names no declared variant.
 func ParseGrade(s string) (Grade, error) {
 	switch s {
 	case "poor":
@@ -48,13 +46,11 @@ func ParseGrade(s string) (Grade, error) {
 		return Good, nil
 	}
 	var zero Grade
-	return zero, ErrUnknownGrade
+	return zero, fmt.Errorf("%w %q", ErrUnknownGrade, s)
 }
 
-// GradeValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// GradeValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func GradeValues() []Grade {
 	return []Grade{
 		Poor,
@@ -63,34 +59,25 @@ func GradeValues() []Grade {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Grade) IsValid() bool {
 	switch v {
-	case Poor:
+	case Poor, Fair, Good:
 		return true
-	case Fair:
-		return true
-	case Good:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Grade legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Grade) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseGrade] for text that names no declared variant.
 func (v *Grade) UnmarshalText(text []byte) error {
 	parsed, err := ParseGrade(string(text))
 	if err != nil {
@@ -112,10 +99,8 @@ const _Mood_name = "CalmAngry"
 
 var _Mood_index = [...]uint8{0, 4, 9}
 
-// String returns Mood's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Mood) String() string {
 	idx := int(v) - 0
 	if v < 0 || idx >= len(_Mood_index)-1 {
@@ -124,14 +109,13 @@ func (v Mood) String() string {
 	return _Mood_name[_Mood_index[idx]:_Mood_index[idx+1]]
 }
 
-// ErrUnknownMood reports text that names no declared variant.
+// ErrUnknownMood is the error of text that names no declared variant. The
+// error of [ParseMood] wraps it with the text.
 var ErrUnknownMood = errors.New("commented: unknown Mood value")
 
-// ParseMood maps text back to a Mood.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseMood returns the variant of Mood whose text is s. It is the inverse
+// of [Mood.String] on the declared variants. It returns an error that
+// wraps [ErrUnknownMood] for text that names no declared variant.
 func ParseMood(s string) (Mood, error) {
 	switch s {
 	case "Calm":
@@ -140,13 +124,11 @@ func ParseMood(s string) (Mood, error) {
 		return Angry, nil
 	}
 	var zero Mood
-	return zero, ErrUnknownMood
+	return zero, fmt.Errorf("%w %q", ErrUnknownMood, s)
 }
 
-// MoodValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// MoodValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func MoodValues() []Mood {
 	return []Mood{
 		Calm,
@@ -154,32 +136,25 @@ func MoodValues() []Mood {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Mood) IsValid() bool {
 	switch v {
-	case Calm:
+	case Calm, Angry:
 		return true
-	case Angry:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Mood legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Mood) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseMood] for text that names no declared variant.
 func (v *Mood) UnmarshalText(text []byte) error {
 	parsed, err := ParseMood(string(text))
 	if err != nil {

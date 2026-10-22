@@ -1,10 +1,8 @@
-import { Grade, Header, Mode, Region, Status } from './status';
+import { Grade, Header, Mode, Region, Status } from "./status";
 
 /**
- * statusToString returns the textual form of a Status.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * statusToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function statusToString(value: Status): string {
   switch (value) {
@@ -18,7 +16,7 @@ export function statusToString(value: Status): string {
   return `Status(${String(value)})`;
 }
 
-/** UnknownStatusError reports text that names no declared variant of Status. */
+/** UnknownStatusError is the error of text that names no declared variant of Status. */
 export class UnknownStatusError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -32,11 +30,8 @@ export class UnknownStatusError extends Error {
 }
 
 /**
- * parseStatus maps text back to a Status.
- *
- * The inverse of statusToString for every declared variant, which is what
- * lets a value survive a round trip through anything that carries it as
- * text — a log line, a JSON field, a database column.
+ * parseStatus returns the variant of Status whose text is text. It is the
+ * inverse of statusToString on the declared variants.
  *
  * @throws UnknownStatusError for text that names no declared variant.
  */
@@ -53,10 +48,8 @@ export function parseStatus(text: string): Status {
 }
 
 /**
- * statusValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * statusValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function statusValues(): Status[] {
   return [
@@ -68,9 +61,7 @@ export function statusValues(): Status[] {
 
 /**
  * isStatus reports whether value is a declared variant of Status.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isStatus(value: unknown): value is Status {
   switch (value) {
@@ -83,10 +74,8 @@ export function isStatus(value: unknown): value is Status {
 }
 
 /**
- * regionToString returns the textual form of a Region.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * regionToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function regionToString(value: Region): string {
   switch (value) {
@@ -100,7 +89,7 @@ export function regionToString(value: Region): string {
   return String(value);
 }
 
-/** UnknownRegionError reports text that names no declared variant of Region. */
+/** UnknownRegionError is the error of text that names no declared variant of Region. */
 export class UnknownRegionError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -114,11 +103,8 @@ export class UnknownRegionError extends Error {
 }
 
 /**
- * parseRegion maps text back to a Region.
- *
- * The inverse of regionToString for every declared variant, which is what
- * lets a value survive a round trip through anything that carries it as
- * text — a log line, a JSON field, a database column.
+ * parseRegion returns the variant of Region whose text is text. It is the
+ * inverse of regionToString on the declared variants.
  *
  * @throws UnknownRegionError for text that names no declared variant.
  */
@@ -135,10 +121,8 @@ export function parseRegion(text: string): Region {
 }
 
 /**
- * regionValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * regionValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function regionValues(): Region[] {
   return [
@@ -150,9 +134,7 @@ export function regionValues(): Region[] {
 
 /**
  * isRegion reports whether value is a declared variant of Region.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isRegion(value: unknown): value is Region {
   switch (value) {
@@ -165,10 +147,8 @@ export function isRegion(value: unknown): value is Region {
 }
 
 /**
- * headerToString returns the textual form of a Header.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * headerToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function headerToString(value: Header): string {
   switch (value) {
@@ -184,7 +164,7 @@ export function headerToString(value: Header): string {
   return String(value);
 }
 
-/** UnknownHeaderError reports text that names no declared variant of Header. */
+/** UnknownHeaderError is the error of text that names no declared variant of Header. */
 export class UnknownHeaderError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -198,11 +178,8 @@ export class UnknownHeaderError extends Error {
 }
 
 /**
- * parseHeader maps text back to a Header.
- *
- * The inverse of headerToString for every declared variant, which is what
- * lets a value survive a round trip through anything that carries it as
- * text — a log line, a JSON field, a database column.
+ * parseHeader returns the variant of Header whose text is text. It is the
+ * inverse of headerToString on the declared variants.
  *
  * @throws UnknownHeaderError for text that names no declared variant.
  */
@@ -221,10 +198,8 @@ export function parseHeader(text: string): Header {
 }
 
 /**
- * headerValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * headerValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function headerValues(): Header[] {
   return [
@@ -237,9 +212,7 @@ export function headerValues(): Header[] {
 
 /**
  * isHeader reports whether value is a declared variant of Header.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isHeader(value: unknown): value is Header {
   switch (value) {
@@ -253,10 +226,8 @@ export function isHeader(value: unknown): value is Header {
 }
 
 /**
- * gradeToString returns the textual form of a Grade.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * gradeToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function gradeToString(value: Grade): string {
   switch (value) {
@@ -270,7 +241,7 @@ export function gradeToString(value: Grade): string {
   return `Grade(${String(value)})`;
 }
 
-/** UnknownGradeError reports text that names no declared variant of Grade. */
+/** UnknownGradeError is the error of text that names no declared variant of Grade. */
 export class UnknownGradeError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -284,11 +255,8 @@ export class UnknownGradeError extends Error {
 }
 
 /**
- * parseGrade maps text back to a Grade.
- *
- * The inverse of gradeToString for every declared variant, which is what
- * lets a value survive a round trip through anything that carries it as
- * text — a log line, a JSON field, a database column.
+ * parseGrade returns the variant of Grade whose text is text. It is the
+ * inverse of gradeToString on the declared variants.
  *
  * @throws UnknownGradeError for text that names no declared variant.
  */
@@ -305,10 +273,8 @@ export function parseGrade(text: string): Grade {
 }
 
 /**
- * gradeValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * gradeValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function gradeValues(): Grade[] {
   return [
@@ -320,9 +286,7 @@ export function gradeValues(): Grade[] {
 
 /**
  * isGrade reports whether value is a declared variant of Grade.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isGrade(value: unknown): value is Grade {
   switch (value) {
@@ -336,9 +300,7 @@ export function isGrade(value: unknown): value is Grade {
 
 /**
  * isMode reports whether value is a declared variant of Mode.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isMode(value: unknown): value is Mode {
   switch (value) {

@@ -6,238 +6,423 @@ import (
 	"go.dokimi.dev/assert"
 )
 
-// TestGradeVariants pins the declared set itself, which every other check
-// here takes as given.
-func TestGradeVariants(t *testing.T) {
+// TestGrade checks the functions and the methods of the enumeration Grade.
+func TestGrade(t *testing.T) {
 	t.Parallel()
 
-	all := GradeValues()
-
-	t.Run("declares exactly 3 variants", func(t *testing.T) {
-		t.Parallel()
-		assert.Length(t, all, 3, "the declared set must not change unnoticed")
-	})
-
-	t.Run("no two variants share a value", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
 		seen := map[Grade]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v], "each variant must hold a distinct value")
+		for _, v := range []Grade{
+			Poor,
+			Fair,
+			Good,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 
-	t.Run("every variant renders the value it declares", func(t *testing.T) {
+	t.Run("GradeValues", func(t *testing.T) {
 		t.Parallel()
-		assert.Equal(t, Poor.String(), "poor", "the declared value is the textual form")
-		assert.Equal(t, Fair.String(), "fair enough", "the declared value is the textual form")
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []Grade{
+					Poor,
+					Fair,
+					Good,
+				}
+				assert.Equal(t, GradeValues(), want, "GradeValues returns the declared variants")
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := GradeValues(), GradeValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
 	})
 
-	t.Run("no two variants share a textual form", func(t *testing.T) {
+	t.Run("String", func(t *testing.T) {
 		t.Parallel()
-		seen := map[string]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v.String()], "each variant must render distinctly")
-			seen[v.String()] = true
+
+		tests := []struct {
+			name string
+			give Grade
+			want string
+		}{
+			{name: "returns the declared text of Poor", give: Poor, want: "poor"},
+			{name: "returns the declared text of Fair", give: Fair, want: "fair enough"},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.Equal(
+					t,
+					tt.give.String(),
+					tt.want,
+					"String returns the declared text of the variant",
+				)
+			})
+		}
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []Grade{
+				Poor,
+				Fair,
+				Good,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+
+		t.Run(
+			"renders a value outside the declared set with a text of its own",
+			func(t *testing.T) {
+				t.Parallel()
+				out := Grade(3)
+				for _, v := range []Grade{
+					Poor,
+					Fair,
+					Good,
+				} {
+					assert.NotEqual(
+						t,
+						out.String(),
+						v.String(),
+						"an undeclared value has a text of its own",
+					)
+				}
+			},
+		)
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Grade
+		}{
+			{name: "accepts Poor", give: Poor},
+			{name: "accepts Fair", give: Fair},
+			{name: "accepts Good", give: Good},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			assert.False(t, Grade(3).IsValid(), "IsValid refuses an undeclared value")
+		})
+
+		t.Run("accepts the zero value Poor", func(t *testing.T) {
+			t.Parallel()
+			var zero Grade
+			assert.Equal(t, zero, Poor, "the zero value is Poor")
+			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
+		})
+	})
+
+	t.Run("ParseGrade", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Grade
+		}{
+			{name: "returns Poor for its text", give: Poor},
+			{name: "returns Fair for its text", give: Fair},
+			{name: "returns Good for its text", give: Good},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := ParseGrade(tt.give.String())
+				assert.NoError(t, err, "ParseGrade accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseGrade returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseGrade("????????????")
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownGrade,
+				"ParseGrade refuses the text with ErrUnknownGrade",
+			)
+			assert.Contains(t, err.Error(), "????????????", "the error contains the refused text")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Grade
+		}{
+			{name: "encodes Poor as its text", give: Poor},
+			{name: "encodes Fair as its text", give: Fair},
+			{name: "encodes Good as its text", give: Good},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(
+					t,
+					string(text),
+					tt.give.String(),
+					"the encoding of the variant is its text",
+				)
+			})
 		}
 	})
 
-	t.Run("a value outside the set is not valid", func(t *testing.T) {
+	t.Run("UnmarshalText", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, Grade(3).IsValid(), "an undeclared value must not be valid")
-	})
 
-	t.Run("every declared variant is valid", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			assert.True(t, v.IsValid(), "a declared variant must be valid")
+		tests := []struct {
+			name string
+			give Grade
+		}{
+			{name: "decodes Poor from its encoding", give: Poor},
+			{name: "decodes Fair from its encoding", give: Fair},
+			{name: "decodes Good from its encoding", give: Good},
 		}
-	})
-
-	t.Run("the zero value is Poor", func(t *testing.T) {
-		t.Parallel()
-		var zero Grade
-		assert.True(t, zero.IsValid(), "the zero value is a declared variant")
-		assert.Equal(t, zero, Poor, "the zero value is Poor")
-	})
-}
-
-// TestGradeText pins the round trip a value makes through anything that
-// carries it as text — a log line, a JSON field, a database column.
-func TestGradeText(t *testing.T) {
-	t.Parallel()
-
-	all := GradeValues()
-
-	t.Run("every variant survives a text round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			got, err := ParseGrade(v.String())
-			assert.NoError(t, err, "a declared variant must parse back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got Grade
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
 		}
-	})
 
-	t.Run("text naming no variant is refused", func(t *testing.T) {
-		t.Parallel()
-		_, err := ParseGrade("????????????")
-		assert.ErrorIs(t, err, ErrUnknownGrade, "unknown text must be refused with the declared refusal")
-	})
-
-	t.Run("a value outside the set does not render as one inside it", func(t *testing.T) {
-		t.Parallel()
-		out := Grade(3)
-		for _, v := range all {
-			assert.NotEqual(t, out.String(), v.String(), "an undeclared value must render distinctly")
-		}
-	})
-}
-
-// TestGradeEncoding pins the boundary where a value most often crosses out
-// of the program's control.
-func TestGradeEncoding(t *testing.T) {
-	t.Parallel()
-
-	all := GradeValues()
-
-	t.Run("every variant encodes to its textual form", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
-			assert.Equal(t, string(text), v.String(), "the encoding must match the textual form")
-		}
-	})
-
-	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
 			var got Grade
-			assert.NoError(t, got.UnmarshalText(text), "and decode back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
-		}
-	})
-
-	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
-		t.Parallel()
-		var got Grade
-		assert.HasError(t, got.UnmarshalText([]byte("????????????")), "unknown text must not decode")
+			assert.HasError(
+				t,
+				got.UnmarshalText([]byte("????????????")),
+				"UnmarshalText refuses the text",
+			)
+		})
 	})
 }
 
-// TestMoodVariants pins the declared set itself, which every other check
-// here takes as given.
-func TestMoodVariants(t *testing.T) {
+// TestMood checks the functions and the methods of the enumeration Mood.
+func TestMood(t *testing.T) {
 	t.Parallel()
 
-	all := MoodValues()
-
-	t.Run("declares exactly 2 variants", func(t *testing.T) {
-		t.Parallel()
-		assert.Length(t, all, 2, "the declared set must not change unnoticed")
-	})
-
-	t.Run("no two variants share a value", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
 		seen := map[Mood]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v], "each variant must hold a distinct value")
+		for _, v := range []Mood{
+			Calm,
+			Angry,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 
-	t.Run("no two variants share a textual form", func(t *testing.T) {
+	t.Run("MoodValues", func(t *testing.T) {
 		t.Parallel()
-		seen := map[string]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v.String()], "each variant must render distinctly")
-			seen[v.String()] = true
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []Mood{
+					Calm,
+					Angry,
+				}
+				assert.Equal(t, MoodValues(), want, "MoodValues returns the declared variants")
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := MoodValues(), MoodValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("String", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []Mood{
+				Calm,
+				Angry,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+
+		t.Run(
+			"renders a value outside the declared set with a text of its own",
+			func(t *testing.T) {
+				t.Parallel()
+				out := Mood(2)
+				for _, v := range []Mood{
+					Calm,
+					Angry,
+				} {
+					assert.NotEqual(
+						t,
+						out.String(),
+						v.String(),
+						"an undeclared value has a text of its own",
+					)
+				}
+			},
+		)
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Mood
+		}{
+			{name: "accepts Calm", give: Calm},
+			{name: "accepts Angry", give: Angry},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			assert.False(t, Mood(2).IsValid(), "IsValid refuses an undeclared value")
+		})
+
+		t.Run("accepts the zero value Calm", func(t *testing.T) {
+			t.Parallel()
+			var zero Mood
+			assert.Equal(t, zero, Calm, "the zero value is Calm")
+			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
+		})
+	})
+
+	t.Run("ParseMood", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Mood
+		}{
+			{name: "returns Calm for its text", give: Calm},
+			{name: "returns Angry for its text", give: Angry},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := ParseMood(tt.give.String())
+				assert.NoError(t, err, "ParseMood accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseMood returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseMood("??????")
+			assert.ErrorIs(t, err, ErrUnknownMood, "ParseMood refuses the text with ErrUnknownMood")
+			assert.Contains(t, err.Error(), "??????", "the error contains the refused text")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Mood
+		}{
+			{name: "encodes Calm as its text", give: Calm},
+			{name: "encodes Angry as its text", give: Angry},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(
+					t,
+					string(text),
+					tt.give.String(),
+					"the encoding of the variant is its text",
+				)
+			})
 		}
 	})
 
-	t.Run("a value outside the set is not valid", func(t *testing.T) {
+	t.Run("UnmarshalText", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, Mood(2).IsValid(), "an undeclared value must not be valid")
-	})
 
-	t.Run("every declared variant is valid", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			assert.True(t, v.IsValid(), "a declared variant must be valid")
+		tests := []struct {
+			name string
+			give Mood
+		}{
+			{name: "decodes Calm from its encoding", give: Calm},
+			{name: "decodes Angry from its encoding", give: Angry},
 		}
-	})
-
-	t.Run("the zero value is Calm", func(t *testing.T) {
-		t.Parallel()
-		var zero Mood
-		assert.True(t, zero.IsValid(), "the zero value is a declared variant")
-		assert.Equal(t, zero, Calm, "the zero value is Calm")
-	})
-}
-
-// TestMoodText pins the round trip a value makes through anything that
-// carries it as text — a log line, a JSON field, a database column.
-func TestMoodText(t *testing.T) {
-	t.Parallel()
-
-	all := MoodValues()
-
-	t.Run("every variant survives a text round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			got, err := ParseMood(v.String())
-			assert.NoError(t, err, "a declared variant must parse back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got Mood
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
 		}
-	})
 
-	t.Run("text naming no variant is refused", func(t *testing.T) {
-		t.Parallel()
-		_, err := ParseMood("??????")
-		assert.ErrorIs(t, err, ErrUnknownMood, "unknown text must be refused with the declared refusal")
-	})
-
-	t.Run("a value outside the set does not render as one inside it", func(t *testing.T) {
-		t.Parallel()
-		out := Mood(2)
-		for _, v := range all {
-			assert.NotEqual(t, out.String(), v.String(), "an undeclared value must render distinctly")
-		}
-	})
-}
-
-// TestMoodEncoding pins the boundary where a value most often crosses out
-// of the program's control.
-func TestMoodEncoding(t *testing.T) {
-	t.Parallel()
-
-	all := MoodValues()
-
-	t.Run("every variant encodes to its textual form", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
-			assert.Equal(t, string(text), v.String(), "the encoding must match the textual form")
-		}
-	})
-
-	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
 			var got Mood
-			assert.NoError(t, got.UnmarshalText(text), "and decode back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
-		}
-	})
-
-	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
-		t.Parallel()
-		var got Mood
-		assert.HasError(t, got.UnmarshalText([]byte("??????")), "unknown text must not decode")
+			assert.HasError(
+				t,
+				got.UnmarshalText([]byte("??????")),
+				"UnmarshalText refuses the text",
+			)
+		})
 	})
 }

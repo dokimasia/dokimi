@@ -5,10 +5,8 @@ import (
 	"fmt"
 )
 
-// String returns Season's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Season) String() string {
 	switch v {
 	case Spring:
@@ -19,14 +17,13 @@ func (v Season) String() string {
 	return fmt.Sprintf("Season(%d)", int(v))
 }
 
-// ErrUnknownSeason reports text that names no declared variant.
+// ErrUnknownSeason is the error of text that names no declared variant.
+// The error of [ParseSeason] wraps it with the text.
 var ErrUnknownSeason = errors.New("remote: unknown Season value")
 
-// ParseSeason maps text back to a Season.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseSeason returns the variant of Season whose text is s. It is the
+// inverse of [Season.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownSeason] for text that names no declared variant.
 func ParseSeason(s string) (Season, error) {
 	switch s {
 	case "Spring":
@@ -35,13 +32,11 @@ func ParseSeason(s string) (Season, error) {
 		return Autumn, nil
 	}
 	var zero Season
-	return zero, ErrUnknownSeason
+	return zero, fmt.Errorf("%w %q", ErrUnknownSeason, s)
 }
 
-// SeasonValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// SeasonValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func SeasonValues() []Season {
 	return []Season{
 		Spring,
@@ -49,32 +44,25 @@ func SeasonValues() []Season {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Season) IsValid() bool {
 	switch v {
-	case Spring:
+	case Spring, Autumn:
 		return true
-	case Autumn:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Season legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Season) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseSeason] for text that names no declared variant.
 func (v *Season) UnmarshalText(text []byte) error {
 	parsed, err := ParseSeason(string(text))
 	if err != nil {

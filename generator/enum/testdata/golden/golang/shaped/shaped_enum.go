@@ -5,10 +5,8 @@ import (
 	"fmt"
 )
 
-// String returns Ratio's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Ratio) String() string {
 	switch v {
 	case Single:
@@ -19,14 +17,13 @@ func (v Ratio) String() string {
 	return fmt.Sprintf("Ratio(%g)", float64(v))
 }
 
-// ErrUnknownRatio reports text that names no declared variant.
+// ErrUnknownRatio is the error of text that names no declared variant. The
+// error of [ParseRatio] wraps it with the text.
 var ErrUnknownRatio = errors.New("shaped: unknown Ratio value")
 
-// ParseRatio maps text back to a Ratio.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseRatio returns the variant of Ratio whose text is s. It is the
+// inverse of [Ratio.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownRatio] for text that names no declared variant.
 func ParseRatio(s string) (Ratio, error) {
 	switch s {
 	case "Single":
@@ -35,13 +32,11 @@ func ParseRatio(s string) (Ratio, error) {
 		return Double, nil
 	}
 	var zero Ratio
-	return zero, ErrUnknownRatio
+	return zero, fmt.Errorf("%w %q", ErrUnknownRatio, s)
 }
 
-// RatioValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// RatioValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func RatioValues() []Ratio {
 	return []Ratio{
 		Single,
@@ -49,32 +44,25 @@ func RatioValues() []Ratio {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Ratio) IsValid() bool {
 	switch v {
-	case Single:
+	case Single, Double:
 		return true
-	case Double:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Ratio legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Ratio) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseRatio] for text that names no declared variant.
 func (v *Ratio) UnmarshalText(text []byte) error {
 	parsed, err := ParseRatio(string(text))
 	if err != nil {
@@ -84,10 +72,8 @@ func (v *Ratio) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// String returns Tier's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Tier) String() string {
 	switch v {
 	case Bronze:
@@ -98,14 +84,13 @@ func (v Tier) String() string {
 	return fmt.Sprintf("Tier(%d)", Base(v))
 }
 
-// ErrUnknownTier reports text that names no declared variant.
+// ErrUnknownTier is the error of text that names no declared variant. The
+// error of [ParseTier] wraps it with the text.
 var ErrUnknownTier = errors.New("shaped: unknown Tier value")
 
-// ParseTier maps text back to a Tier.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseTier returns the variant of Tier whose text is s. It is the inverse
+// of [Tier.String] on the declared variants. It returns an error that
+// wraps [ErrUnknownTier] for text that names no declared variant.
 func ParseTier(s string) (Tier, error) {
 	switch s {
 	case "Bronze":
@@ -114,13 +99,11 @@ func ParseTier(s string) (Tier, error) {
 		return Silver, nil
 	}
 	var zero Tier
-	return zero, ErrUnknownTier
+	return zero, fmt.Errorf("%w %q", ErrUnknownTier, s)
 }
 
-// TierValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// TierValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func TierValues() []Tier {
 	return []Tier{
 		Bronze,
@@ -128,32 +111,25 @@ func TierValues() []Tier {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Tier) IsValid() bool {
 	switch v {
-	case Bronze:
+	case Bronze, Silver:
 		return true
-	case Silver:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Tier legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Tier) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseTier] for text that names no declared variant.
 func (v *Tier) UnmarshalText(text []byte) error {
 	parsed, err := ParseTier(string(text))
 	if err != nil {

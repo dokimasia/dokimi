@@ -1,4 +1,0 @@
----
----
-
-Regenerate both corpora.

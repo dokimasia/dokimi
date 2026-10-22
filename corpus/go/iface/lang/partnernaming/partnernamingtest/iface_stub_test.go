@@ -12,35 +12,173 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming/partnernamingtest"
+	"go.dokimi.dev/stub"
 )
 
-// storeStubTouchSubject binds Touch into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func storeStubTouchSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreTouchCall, partnernamingtest.StoreTouchReturn] {
+// storeStubTouchArgs returns the samples of the arguments of Touch.
+func storeStubTouchArgs(tb assert.TB) (context.Context, string, int) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 int
+	a1 = "Touch-a"
+	a2 = 42
+	return a0, a1, a2
+}
+
+// storeStubTouch calls Touch of s with the samples of its arguments.
+func storeStubTouch(tb assert.TB, s *partnernamingtest.StoreStub) error {
+	tb.Helper()
+	a0, a1, a2 := storeStubTouchArgs(tb)
+	return s.Touch(a0, a1, a2)
+}
+
+// storeStubTouchPins returns the samples of the results of Touch, with a
+// new error as its error result.
+func storeStubTouchPins() error {
+	want0 := errors.New("Touch-returns")
+	return want0
+}
+
+// storeStubSeenArgs returns the samples of the arguments of Seen.
+func storeStubSeenArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Seen-a"
+	return a0, a1
+}
+
+// storeStubSeen calls Seen of s with the samples of its arguments.
+func storeStubSeen(tb assert.TB, s *partnernamingtest.StoreStub) (int, error) {
+	tb.Helper()
+	a0, a1 := storeStubSeenArgs(tb)
+	return s.Seen(a0, a1)
+}
+
+// storeStubSeenPins returns the samples of the results of Seen, with a new
+// error as its error result.
+func storeStubSeenPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Seen-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// storeStubMoveArgs returns the samples of the arguments of Move.
+func storeStubMoveArgs(tb assert.TB) (context.Context, string, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 string
+	a1 = "Move-a"
+	a2 = "Move-a"
+	return a0, a1, a2
+}
+
+// storeStubMove calls Move of s with the samples of its arguments.
+func storeStubMove(tb assert.TB, s *partnernamingtest.StoreStub) error {
+	tb.Helper()
+	a0, a1, a2 := storeStubMoveArgs(tb)
+	return s.Move(a0, a1, a2)
+}
+
+// storeStubMovePins returns the samples of the results of Move, with a new
+// error as its error result.
+func storeStubMovePins() error {
+	want0 := errors.New("Move-returns")
+	return want0
+}
+
+// storeStubAtArgs returns the samples of the arguments of At.
+func storeStubAtArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "At-a"
+	return a0, a1
+}
+
+// storeStubAt calls At of s with the samples of its arguments.
+func storeStubAt(tb assert.TB, s *partnernamingtest.StoreStub) (int, error) {
+	tb.Helper()
+	a0, a1 := storeStubAtArgs(tb)
+	return s.At(a0, a1)
+}
+
+// storeStubAtPins returns the samples of the results of At, with a new
+// error as its error result.
+func storeStubAtPins() (int, error) {
+	var want0 int
+	want1 := errors.New("At-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// storeStubEmitArgs returns the samples of the arguments of Emit.
+func storeStubEmitArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Emit-a"
+	return a0, a1
+}
+
+// storeStubEmit calls Emit of s with the samples of its arguments.
+func storeStubEmit(tb assert.TB, s *partnernamingtest.StoreStub) error {
+	tb.Helper()
+	a0, a1 := storeStubEmitArgs(tb)
+	return s.Emit(a0, a1)
+}
+
+// storeStubEmitPins returns the samples of the results of Emit, with a new
+// error as its error result.
+func storeStubEmitPins() error {
+	want0 := errors.New("Emit-returns")
+	return want0
+}
+
+// storeStubCountArgs returns the samples of the arguments of Count.
+func storeStubCountArgs(tb assert.TB) (context.Context, int) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 int
+	a1 = 42
+	return a0, a1
+}
+
+// storeStubCount calls Count of s with the samples of its arguments.
+func storeStubCount(tb assert.TB, s *partnernamingtest.StoreStub) (int, error) {
+	tb.Helper()
+	a0, a1 := storeStubCountArgs(tb)
+	return s.Count(a0, a1)
+}
+
+// storeStubCountPins returns the samples of the results of Count, with a
+// new error as its error result.
+func storeStubCountPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Count-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// storeStubTouchSubject returns the subject of [stub.Behaviour] for Touch.
+// The subject calls a new double that reports to tb.
+func storeStubTouchSubject(
+	tb assert.TB,
+) stub.Subject[partnernamingtest.StoreTouchCall, partnernamingtest.StoreTouchReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreTouchCall, partnernamingtest.StoreTouchReturn]{
 		Stub: s.OnTouch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 int
-			a1 = "Touch-a"
-			a2 = 42
-			_ = s.Touch(a0, a1, a2)
+			_ = storeStubTouch(tb, s)
 		},
 		Result: func() partnernamingtest.StoreTouchReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 int
-			a1 = "Touch-a"
-			a2 = 42
-			got0 := s.Touch(a0, a1, a2)
+			got0 := storeStubTouch(tb, s)
 			return partnernamingtest.StoreTouchReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -51,127 +189,26 @@ func storeStubTouchSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreTou
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 int
-			a1 = "Touch-a"
-			a2 = 42
-			r0 := s.Touch(a0, a1, a2)
+			r0 := storeStubTouch(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStoreStubTouch pins how Touch answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubTouch(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Touch", storeStubTouchSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 int
-		a1 = "Touch-a"
-		a2 = 42
-		_ = s.Touch(a0, a1, a2)
-		got := s.OnTouch.AssertCalledOnce(t, "Touch must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.Weight, a2, "the recorded call carries Weight")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var seen []partnernamingtest.StoreTouchCall
-		s.OnTouch.OnRecord(func(c partnernamingtest.StoreTouchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 int
-		a1 = "Touch-a"
-		a2 = 42
-		_ = s.Touch(a0, a1, a2)
-		_ = s.Touch(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Touch call")
-	})
-
-	t.Run("wires WithStoreTouch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := partnernamingtest.NewStoreStub(t, partnernamingtest.WithStoreTouch(func(_ context.Context, _ string, _ int) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 int
-		a1 = "Touch-a"
-		a2 = 42
-		_ = s.Touch(a0, a1, a2)
-		assert.True(t, called, "WithStoreTouch must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Touch-failing")
-		s := partnernamingtest.NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 int
-		a1 = "Touch-a"
-		a2 = 42
-		r0 := s.Touch(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Touch must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 error
-		s.OnTouch.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 int
-		a1 = "Touch-a"
-		a2 = 42
-		_ = s.Touch(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Touch(a0, a1, a2)
-		s.OnTouch.AssertCalledOnce(t, "Touch must record the call that followed the reset")
-	})
-}
-
-// storeStubSeenSubject binds Seen into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func storeStubSeenSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreSeenCall, partnernamingtest.StoreSeenReturn] {
+// storeStubSeenSubject returns the subject of [stub.Behaviour] for Seen.
+// The subject calls a new double that reports to tb.
+func storeStubSeenSubject(
+	tb assert.TB,
+) stub.Subject[partnernamingtest.StoreSeenCall, partnernamingtest.StoreSeenReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreSeenCall, partnernamingtest.StoreSeenReturn]{
 		Stub: s.OnSeen.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Seen-a"
-			_, _ = s.Seen(a0, a1)
+			_, _ = storeStubSeen(tb, s)
 		},
 		Result: func() partnernamingtest.StoreSeenReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Seen-a"
-			got0, got1 := s.Seen(a0, a1)
+			got0, got1 := storeStubSeen(tb, s)
 			return partnernamingtest.StoreSeenReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -183,266 +220,54 @@ func storeStubSeenSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreSeen
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Seen-a"
-			_, r1 := s.Seen(a0, a1)
+			_, r1 := storeStubSeen(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestStoreStubSeen pins how Seen answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubSeen(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Seen", storeStubSeenSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnSeen.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		got0, _ := s.Seen(a0, a1)
-		assert.Equal(t, got0, want0, "Seen must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		_, _ = s.Seen(a0, a1)
-		got := s.OnSeen.AssertCalledOnce(t, "Seen must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.K, a1, "the recorded call carries K")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var seen []partnernamingtest.StoreSeenCall
-		s.OnSeen.OnRecord(func(c partnernamingtest.StoreSeenCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		_, _ = s.Seen(a0, a1)
-		_, _ = s.Seen(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Seen call")
-	})
-
-	t.Run("wires WithStoreSeen at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := partnernamingtest.NewStoreStub(t, partnernamingtest.WithStoreSeen(func(_ context.Context, _ string) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		_, _ = s.Seen(a0, a1)
-		assert.True(t, called, "WithStoreSeen must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Seen-failing")
-		s := partnernamingtest.NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		_, r1 := s.Seen(a0, a1)
-		assert.ErrorIs(t, r1, want, "Seen must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnSeen.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		_, _ = s.Seen(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Seen(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// storeStubMoveSubject binds Move into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func storeStubMoveSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreMoveCall, partnernamingtest.StoreMoveReturn] {
+// storeStubMoveSubject returns the subject of [stub.Behaviour] for Move.
+// The subject calls a new double that reports to tb.
+func storeStubMoveSubject(
+	tb assert.TB,
+) stub.Subject[partnernamingtest.StoreMoveCall, partnernamingtest.StoreMoveReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreMoveCall, partnernamingtest.StoreMoveReturn]{
 		Stub: s.OnMove.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Move-a"
-			a2 = "Move-a"
-			_ = s.Move(a0, a1, a2)
+			_ = storeStubMove(tb, s)
 		},
 		Result: func() partnernamingtest.StoreMoveReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Move-a"
-			a2 = "Move-a"
-			got0 := s.Move(a0, a1, a2)
+			got0 := storeStubMove(tb, s)
 			return partnernamingtest.StoreMoveReturn{Err: got0}
 		},
 		Override: func(mark func()) {
-			s.OnMove.Func(func(_ context.Context, _ string, _ string) error {
+			s.OnMove.Func(func(_ context.Context, _, _ string) error {
 				mark()
 				var z0 error
 				return z0
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Move-a"
-			a2 = "Move-a"
-			r0 := s.Move(a0, a1, a2)
+			r0 := storeStubMove(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStoreStubMove pins how Move answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubMove(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Move", storeStubMoveSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Move-a"
-		a2 = "Move-a"
-		_ = s.Move(a0, a1, a2)
-		got := s.OnMove.AssertCalledOnce(t, "Move must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.From, a1, "the recorded call carries From")
-		assert.Equal(t, got.To, a2, "the recorded call carries To")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var seen []partnernamingtest.StoreMoveCall
-		s.OnMove.OnRecord(func(c partnernamingtest.StoreMoveCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Move-a"
-		a2 = "Move-a"
-		_ = s.Move(a0, a1, a2)
-		_ = s.Move(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Move call")
-	})
-
-	t.Run("wires WithStoreMove at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := partnernamingtest.NewStoreStub(t, partnernamingtest.WithStoreMove(func(_ context.Context, _ string, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Move-a"
-		a2 = "Move-a"
-		_ = s.Move(a0, a1, a2)
-		assert.True(t, called, "WithStoreMove must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Move-failing")
-		s := partnernamingtest.NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Move-a"
-		a2 = "Move-a"
-		r0 := s.Move(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Move must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 error
-		s.OnMove.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Move-a"
-		a2 = "Move-a"
-		_ = s.Move(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Move(a0, a1, a2)
-		s.OnMove.AssertCalledOnce(t, "Move must record the call that followed the reset")
-	})
-}
-
-// storeStubAtSubject binds At into the shape [stub.Behaviour] drives: how
-// to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// storeStubAtSubject returns the subject of [stub.Behaviour] for At. The
+// subject calls a new double that reports to tb.
 func storeStubAtSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreAtCall, partnernamingtest.StoreAtReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreAtCall, partnernamingtest.StoreAtReturn]{
 		Stub: s.OnAt.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "At-a"
-			_, _ = s.At(a0, a1)
+			_, _ = storeStubAt(tb, s)
 		},
 		Result: func() partnernamingtest.StoreAtReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "At-a"
-			got0, got1 := s.At(a0, a1)
+			got0, got1 := storeStubAt(tb, s)
 			return partnernamingtest.StoreAtReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -454,131 +279,26 @@ func storeStubAtSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreAtCall
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "At-a"
-			_, r1 := s.At(a0, a1)
+			_, r1 := storeStubAt(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestStoreStubAt pins how At answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubAt(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "At", storeStubAtSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnAt.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		got0, _ := s.At(a0, a1)
-		assert.Equal(t, got0, want0, "At must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		_, _ = s.At(a0, a1)
-		got := s.OnAt.AssertCalledOnce(t, "At must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Where, a1, "the recorded call carries Where")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var seen []partnernamingtest.StoreAtCall
-		s.OnAt.OnRecord(func(c partnernamingtest.StoreAtCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		_, _ = s.At(a0, a1)
-		_, _ = s.At(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per At call")
-	})
-
-	t.Run("wires WithStoreAt at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := partnernamingtest.NewStoreStub(t, partnernamingtest.WithStoreAt(func(_ context.Context, _ string) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		_, _ = s.At(a0, a1)
-		assert.True(t, called, "WithStoreAt must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("At-failing")
-		s := partnernamingtest.NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		_, r1 := s.At(a0, a1)
-		assert.ErrorIs(t, r1, want, "At must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnAt.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		_, _ = s.At(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.At(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// storeStubEmitSubject binds Emit into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func storeStubEmitSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreEmitCall, partnernamingtest.StoreEmitReturn] {
+// storeStubEmitSubject returns the subject of [stub.Behaviour] for Emit.
+// The subject calls a new double that reports to tb.
+func storeStubEmitSubject(
+	tb assert.TB,
+) stub.Subject[partnernamingtest.StoreEmitCall, partnernamingtest.StoreEmitReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreEmitCall, partnernamingtest.StoreEmitReturn]{
 		Stub: s.OnEmit.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Emit-a"
-			_ = s.Emit(a0, a1)
+			_ = storeStubEmit(tb, s)
 		},
 		Result: func() partnernamingtest.StoreEmitReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Emit-a"
-			got0 := s.Emit(a0, a1)
+			got0 := storeStubEmit(tb, s)
 			return partnernamingtest.StoreEmitReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -589,114 +309,26 @@ func storeStubEmitSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreEmit
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Emit-a"
-			r0 := s.Emit(a0, a1)
+			r0 := storeStubEmit(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStoreStubEmit pins how Emit answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubEmit(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Emit", storeStubEmitSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Emit-a"
-		_ = s.Emit(a0, a1)
-		got := s.OnEmit.AssertCalledOnce(t, "Emit must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.ID, a1, "the recorded call carries ID")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var seen []partnernamingtest.StoreEmitCall
-		s.OnEmit.OnRecord(func(c partnernamingtest.StoreEmitCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Emit-a"
-		_ = s.Emit(a0, a1)
-		_ = s.Emit(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Emit call")
-	})
-
-	t.Run("wires WithStoreEmit at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := partnernamingtest.NewStoreStub(t, partnernamingtest.WithStoreEmit(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Emit-a"
-		_ = s.Emit(a0, a1)
-		assert.True(t, called, "WithStoreEmit must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Emit-failing")
-		s := partnernamingtest.NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Emit-a"
-		r0 := s.Emit(a0, a1)
-		assert.ErrorIs(t, r0, want, "Emit must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 error
-		s.OnEmit.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Emit-a"
-		_ = s.Emit(a0, a1)
-		s.ResetCalls()
-		_ = s.Emit(a0, a1)
-		s.OnEmit.AssertCalledOnce(t, "Emit must record the call that followed the reset")
-	})
-}
-
-// storeStubCountSubject binds Count into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func storeStubCountSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreCountCall, partnernamingtest.StoreCountReturn] {
+// storeStubCountSubject returns the subject of [stub.Behaviour] for Count.
+// The subject calls a new double that reports to tb.
+func storeStubCountSubject(
+	tb assert.TB,
+) stub.Subject[partnernamingtest.StoreCountCall, partnernamingtest.StoreCountReturn] {
 	tb.Helper()
 	s := partnernamingtest.NewStoreStub(tb)
 	return stub.Subject[partnernamingtest.StoreCountCall, partnernamingtest.StoreCountReturn]{
 		Stub: s.OnCount.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			_, _ = s.Count(a0, a1)
+			_, _ = storeStubCount(tb, s)
 		},
 		Result: func() partnernamingtest.StoreCountReturn {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			got0, got1 := s.Count(a0, a1)
+			got0, got1 := storeStubCount(tb, s)
 			return partnernamingtest.StoreCountReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -708,284 +340,1003 @@ func storeStubCountSubject(tb assert.TB) stub.Subject[partnernamingtest.StoreCou
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			_, r1 := s.Count(a0, a1)
+			_, r1 := storeStubCount(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestStoreStubCount pins how Count answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStoreStubCount(t *testing.T) {
-	t.Parallel()
+// storeStubInstance is the instance of a partnernamingtest.StoreStub that
+// the checks of the constructors and the options drive.
+type storeStubInstance = stub.Instance[partnernamingtest.StoreTouchCall]
 
-	stub.Behaviour(t, "Count", storeStubCountSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnCount.Returns(want0, want1)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		got0, _ := s.Count(a0, a1)
-		assert.Equal(t, got0, want0, "Count must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Count(a0, a1)
-		got := s.OnCount.AssertCalledOnce(t, "Count must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Bucket, a1, "the recorded call carries Bucket")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var seen []partnernamingtest.StoreCountCall
-		s.OnCount.OnRecord(func(c partnernamingtest.StoreCountCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Count(a0, a1)
-		_, _ = s.Count(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Count call")
-	})
-
-	t.Run("wires WithStoreCount at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := partnernamingtest.NewStoreStub(t, partnernamingtest.WithStoreCount(func(_ context.Context, _ int) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Count(a0, a1)
-		assert.True(t, called, "WithStoreCount must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Count-failing")
-		s := partnernamingtest.NewStoreStubFailing(t, want)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, r1 := s.Count(a0, a1)
-		assert.ErrorIs(t, r1, want, "Count must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := partnernamingtest.NewStoreStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnCount.Returns(want0, want1)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Count(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Count(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// storeStubDouble describes how to build a StoreStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Touch stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func storeStubDouble() stub.Double[partnernamingtest.StoreTouchCall] {
-	instance := func(s *partnernamingtest.StoreStub) stub.Instance[partnernamingtest.StoreTouchCall] {
-		return stub.Instance[partnernamingtest.StoreTouchCall]{
-			Stub: s.OnTouch.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				var a2 int
-				a1 = "Touch-a"
-				a2 = 42
-				_ = s.Touch(a0, a1, a2)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[partnernamingtest.StoreTouchCall]{
-		New: func(tb assert.TB) stub.Instance[partnernamingtest.StoreTouchCall] {
-			return instance(partnernamingtest.NewStoreStub(tb))
+// storeStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Touch alone.
+func storeStubInstanceOf(tb assert.TB, s *partnernamingtest.StoreStub) storeStubInstance {
+	tb.Helper()
+	return storeStubInstance{
+		Stub: s.OnTouch.MethodStub,
+		Call: func() {
+			_ = storeStubTouch(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[partnernamingtest.StoreTouchCall] {
-			return instance(partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[partnernamingtest.StoreTouchCall] {
-			return instance(partnernamingtest.NewStoreStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[partnernamingtest.StoreTouchCall] {
-			return instance(partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[partnernamingtest.StoreTouchCall] {
-			return instance(partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[partnernamingtest.StoreTouchCall] {
-			return instance(partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestStoreStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestStoreStubOptions(t *testing.T) {
+// TestStoreStub checks the methods, the constructors and the options of
+// the double StoreStub.
+func TestStoreStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, storeStubDouble())
+	t.Run("Touch", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Touch", storeStubTouchSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubTouch(t, s)
+			got := s.OnTouch.AssertCalledOnce(t, "Touch records the call")
+			a0, a1, a2 := storeStubTouchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.Weight, a2, "the call records Weight")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreTouchCall
+			s.OnTouch.OnRecord(func(c partnernamingtest.StoreTouchCall) { seen = append(seen, c) })
+			_ = storeStubTouch(t, s)
+			_ = storeStubTouch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Touch")
+		})
+	})
+
+	t.Run("Seen", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Seen", storeStubSeenSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubSeen(t, s)
+			got := s.OnSeen.AssertCalledOnce(t, "Seen records the call")
+			a0, a1 := storeStubSeenArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.K, a1, "the call records K")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreSeenCall
+			s.OnSeen.OnRecord(func(c partnernamingtest.StoreSeenCall) { seen = append(seen, c) })
+			_, _ = storeStubSeen(t, s)
+			_, _ = storeStubSeen(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Seen")
+		})
+	})
+
+	t.Run("Move", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Move", storeStubMoveSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubMove(t, s)
+			got := s.OnMove.AssertCalledOnce(t, "Move records the call")
+			a0, a1, a2 := storeStubMoveArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.From, a1, "the call records From")
+			expect.Equal(t, got.To, a2, "the call records To")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreMoveCall
+			s.OnMove.OnRecord(func(c partnernamingtest.StoreMoveCall) { seen = append(seen, c) })
+			_ = storeStubMove(t, s)
+			_ = storeStubMove(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Move")
+		})
+	})
+
+	t.Run("At", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "At", storeStubAtSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubAt(t, s)
+			got := s.OnAt.AssertCalledOnce(t, "At records the call")
+			a0, a1 := storeStubAtArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Where, a1, "the call records Where")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreAtCall
+			s.OnAt.OnRecord(func(c partnernamingtest.StoreAtCall) { seen = append(seen, c) })
+			_, _ = storeStubAt(t, s)
+			_, _ = storeStubAt(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of At")
+		})
+	})
+
+	t.Run("Emit", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Emit", storeStubEmitSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubEmit(t, s)
+			got := s.OnEmit.AssertCalledOnce(t, "Emit records the call")
+			a0, a1 := storeStubEmitArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.ID, a1, "the call records ID")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreEmitCall
+			s.OnEmit.OnRecord(func(c partnernamingtest.StoreEmitCall) { seen = append(seen, c) })
+			_ = storeStubEmit(t, s)
+			_ = storeStubEmit(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Emit")
+		})
+	})
+
+	t.Run("Count", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Count", storeStubCountSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubCount(t, s)
+			got := s.OnCount.AssertCalledOnce(t, "Count records the call")
+			a0, a1 := storeStubCountArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Bucket, a1, "the call records Bucket")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var seen []partnernamingtest.StoreCountCall
+			s.OnCount.OnRecord(func(c partnernamingtest.StoreCountCall) { seen = append(seen, c) })
+			_, _ = storeStubCount(t, s)
+			_, _ = storeStubCount(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Count")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance {
+			return storeStubInstanceOf(tb, partnernamingtest.NewStoreStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Touch", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubTouch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnTouch.CallCount(), 0, "ResetCalls clears the calls of Touch")
+		})
+
+		t.Run("keeps the results of Returns of Touch", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubTouchPins()
+			s.OnTouch.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubTouch(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Touch")
+		})
+
+		t.Run("clears the recorded calls of Seen", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubSeen(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSeen.CallCount(), 0, "ResetCalls clears the calls of Seen")
+		})
+
+		t.Run("keeps the results of Returns of Seen", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubSeenPins()
+			s.OnSeen.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := storeStubSeen(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Seen")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Seen")
+		})
+
+		t.Run("clears the recorded calls of Move", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubMove(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnMove.CallCount(), 0, "ResetCalls clears the calls of Move")
+		})
+
+		t.Run("keeps the results of Returns of Move", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubMovePins()
+			s.OnMove.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubMove(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Move")
+		})
+
+		t.Run("clears the recorded calls of At", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubAt(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAt.CallCount(), 0, "ResetCalls clears the calls of At")
+		})
+
+		t.Run("keeps the results of Returns of At", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubAtPins()
+			s.OnAt.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := storeStubAt(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of At")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of At")
+		})
+
+		t.Run("clears the recorded calls of Emit", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_ = storeStubEmit(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnEmit.CallCount(), 0, "ResetCalls clears the calls of Emit")
+		})
+
+		t.Run("keeps the results of Returns of Emit", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubEmitPins()
+			s.OnEmit.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubEmit(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Emit")
+		})
+
+		t.Run("clears the recorded calls of Count", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			_, _ = storeStubCount(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCount.CallCount(), 0, "ResetCalls clears the calls of Count")
+		})
+
+		t.Run("keeps the results of Returns of Count", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := storeStubCount(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Count")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Count")
+		})
+	})
+
+	t.Run("NewStoreStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
+			return storeStubInstanceOf(tb, partnernamingtest.NewStoreStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewStoreStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Touch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Touch-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			r0 := storeStubTouch(t, s)
+			assert.ErrorIs(t, r0, want, "Touch fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Seen with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Seen-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			_, r1 := storeStubSeen(t, s)
+			assert.ErrorIs(t, r1, want, "Seen fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Move with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Move-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			r0 := storeStubMove(t, s)
+			assert.ErrorIs(t, r0, want, "Move fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails At with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			_, r1 := storeStubAt(t, s)
+			assert.ErrorIs(t, r1, want, "At fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Emit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Emit-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			r0 := storeStubEmit(t, s)
+			assert.ErrorIs(t, r0, want, "Emit fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Count with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-failing")
+			s := partnernamingtest.NewStoreStubFailing(t, want)
+			_, r1 := storeStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of NewStoreStubFailing")
+		})
+	})
+
+	t.Run("StoreStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) storeStubInstance {
+			return storeStubInstanceOf(tb, partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubStrict()))
+		})
+	})
+
+	t.Run("StoreStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Touch to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_ = storeStubTouch(t, s)
+			inner.OnTouch.AssertCalledOnce(t, "Touch calls the implementation")
+		})
+
+		t.Run("fails Touch with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Touch-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnTouch.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			r0 := storeStubTouch(t, s)
+			assert.ErrorIs(t, r0, want, "Touch fails with the error of the implementation")
+		})
+
+		t.Run("passes Seen to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, _ = storeStubSeen(t, s)
+			inner.OnSeen.AssertCalledOnce(t, "Seen calls the implementation")
+		})
+
+		t.Run("fails Seen with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Seen-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnSeen.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, r1 := storeStubSeen(t, s)
+			assert.ErrorIs(t, r1, want, "Seen fails with the error of the implementation")
+		})
+
+		t.Run("passes Move to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_ = storeStubMove(t, s)
+			inner.OnMove.AssertCalledOnce(t, "Move calls the implementation")
+		})
+
+		t.Run("fails Move with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Move-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnMove.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			r0 := storeStubMove(t, s)
+			assert.ErrorIs(t, r0, want, "Move fails with the error of the implementation")
+		})
+
+		t.Run("passes At to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, _ = storeStubAt(t, s)
+			inner.OnAt.AssertCalledOnce(t, "At calls the implementation")
+		})
+
+		t.Run("fails At with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnAt.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, r1 := storeStubAt(t, s)
+			assert.ErrorIs(t, r1, want, "At fails with the error of the implementation")
+		})
+
+		t.Run("passes Emit to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_ = storeStubEmit(t, s)
+			inner.OnEmit.AssertCalledOnce(t, "Emit calls the implementation")
+		})
+
+		t.Run("fails Emit with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Emit-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnEmit.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			r0 := storeStubEmit(t, s)
+			assert.ErrorIs(t, r0, want, "Emit fails with the error of the implementation")
+		})
+
+		t.Run("passes Count to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := partnernamingtest.NewStoreStub(t)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, _ = storeStubCount(t, s)
+			inner.OnCount.AssertCalledOnce(t, "Count calls the implementation")
+		})
+
+		t.Run("fails Count with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-delegate")
+			inner := partnernamingtest.NewStoreStub(t)
+			inner.OnCount.Faults(want, 1)
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+			_, r1 := storeStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of the implementation")
+		})
+	})
+
+	t.Run("StoreStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) storeStubInstance {
+			return storeStubInstanceOf(
+				tb,
+				partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("StoreStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) storeStubInstance {
+			return storeStubInstanceOf(
+				tb,
+				partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("StoreStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) storeStubInstance {
+			return storeStubInstanceOf(tb, partnernamingtest.NewStoreStub(tb, partnernamingtest.StoreStubBenchMode()))
+		})
+	})
+
+	t.Run("StoreStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance {
+			return storeStubInstanceOf(
+				tb,
+				partnernamingtest.NewStoreStub(
+					tb,
+					partnernamingtest.StoreStubWithClock(clk),
+					partnernamingtest.StoreStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("StoreStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Touch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Touch-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			r0 := storeStubTouch(t, s)
+			assert.ErrorIs(t, r0, want, "Touch fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Seen with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Seen-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			_, r1 := storeStubSeen(t, s)
+			assert.ErrorIs(t, r1, want, "Seen fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Move with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Move-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			r0 := storeStubMove(t, s)
+			assert.ErrorIs(t, r0, want, "Move fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails At with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			_, r1 := storeStubAt(t, s)
+			assert.ErrorIs(t, r1, want, "At fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Emit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Emit-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			r0 := storeStubEmit(t, s)
+			assert.ErrorIs(t, r0, want, "Emit fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Count with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-failing")
+			s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubFailing(want))
+			_, r1 := storeStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of StoreStubFailing")
+		})
+	})
+
+	t.Run("WithStoreTouch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Touch", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreTouch(func(_ context.Context, _ string, _ int) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = storeStubTouch(t, s)
+			assert.True(t, called, "WithStoreTouch sets the function of Touch")
+		})
+	})
+
+	t.Run("WithStoreSeen", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Seen", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreSeen(func(_ context.Context, _ string) (int, error) {
+					called = true
+					var z0 int
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = storeStubSeen(t, s)
+			assert.True(t, called, "WithStoreSeen sets the function of Seen")
+		})
+	})
+
+	t.Run("WithStoreMove", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Move", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreMove(func(_ context.Context, _, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = storeStubMove(t, s)
+			assert.True(t, called, "WithStoreMove sets the function of Move")
+		})
+	})
+
+	t.Run("WithStoreAt", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of At", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreAt(func(_ context.Context, _ string) (int, error) {
+					called = true
+					var z0 int
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = storeStubAt(t, s)
+			assert.True(t, called, "WithStoreAt sets the function of At")
+		})
+	})
+
+	t.Run("WithStoreEmit", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Emit", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreEmit(func(_ context.Context, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = storeStubEmit(t, s)
+			assert.True(t, called, "WithStoreEmit sets the function of Emit")
+		})
+	})
+
+	t.Run("WithStoreCount", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Count", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := partnernamingtest.NewStoreStub(
+				t,
+				partnernamingtest.WithStoreCount(func(_ context.Context, _ int) (int, error) {
+					called = true
+					var z0 int
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = storeStubCount(t, s)
+			assert.True(t, called, "WithStoreCount sets the function of Count")
+		})
+	})
 }
 
-// TestStoreStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestStoreStubDelegateTo(t *testing.T) {
+// TestStoreTouchStub checks the methods of StoreTouchStub, which
+// configures Touch.
+func TestStoreTouchStub(t *testing.T) {
 	t.Parallel()
 
-	inner := partnernamingtest.NewStoreStub(t)
-	s := partnernamingtest.NewStoreStub(t, partnernamingtest.StoreStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Touch to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 int
-		a1 = "Touch-a"
-		a2 = 42
-		_ = s.Touch(a0, a1, a2)
-		inner.OnTouch.AssertCalledOnce(t, "Touch must reach the wrapped implementation")
+		t.Run("sets the results of each call of Touch", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubTouchPins()
+			s.OnTouch.Returns(want0)
+			got0 := storeStubTouch(t, s)
+			assert.ErrorIs(t, got0, want0, "Touch returns the error that Returns sets")
+		})
+
+		t.Run("configures Touch for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnTouch.Strict()
+			var want0 error
+			s.OnTouch.Returns(want0)
+			_ = storeStubTouch(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Touch")
+		})
 	})
 
-	t.Run("surfaces what Touch answered", func(t *testing.T) {
-		want := errors.New("Touch-delegate")
-		inner.OnTouch.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 int
-		a1 = "Touch-a"
-		a2 = 42
-		r0 := s.Touch(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Touch must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Seen to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		_, _ = s.Seen(a0, a1)
-		inner.OnSeen.AssertCalledOnce(t, "Seen must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Seen answered", func(t *testing.T) {
-		want := errors.New("Seen-delegate")
-		inner.OnSeen.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Seen-a"
-		_, r1 := s.Seen(a0, a1)
-		assert.ErrorIs(t, r1, want, "Seen must surface the wrapped answer")
-	})
-
-	t.Run("forwards Move to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Move-a"
-		a2 = "Move-a"
-		_ = s.Move(a0, a1, a2)
-		inner.OnMove.AssertCalledOnce(t, "Move must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Move answered", func(t *testing.T) {
-		want := errors.New("Move-delegate")
-		inner.OnMove.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Move-a"
-		a2 = "Move-a"
-		r0 := s.Move(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Move must surface the wrapped answer")
-	})
-
-	t.Run("forwards At to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		_, _ = s.At(a0, a1)
-		inner.OnAt.AssertCalledOnce(t, "At must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what At answered", func(t *testing.T) {
-		want := errors.New("At-delegate")
-		inner.OnAt.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "At-a"
-		_, r1 := s.At(a0, a1)
-		assert.ErrorIs(t, r1, want, "At must surface the wrapped answer")
-	})
-
-	t.Run("forwards Emit to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Emit-a"
-		_ = s.Emit(a0, a1)
-		inner.OnEmit.AssertCalledOnce(t, "Emit must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Emit answered", func(t *testing.T) {
-		want := errors.New("Emit-delegate")
-		inner.OnEmit.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Emit-a"
-		r0 := s.Emit(a0, a1)
-		assert.ErrorIs(t, r0, want, "Emit must surface the wrapped answer")
-	})
-
-	t.Run("forwards Count to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Count(a0, a1)
-		inner.OnCount.AssertCalledOnce(t, "Count must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Count answered", func(t *testing.T) {
-		want := errors.New("Count-delegate")
-		inner.OnCount.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, r1 := s.Count(a0, a1)
-		assert.ErrorIs(t, r1, want, "Count must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Touch to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 int
+			s.OnTouch.Func(func(p0 context.Context, p1 string, p2 int) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = storeStubTouch(t, s)
+			a0, a1, a2 := storeStubTouchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives Weight")
+		})
 	})
 }
 
-// dokimi:provenance sha256:dd3586afe48055557f30c199265451b77a74c9d48964462e8fa0fb7f1803fa5f
+// TestStoreSeenStub checks the methods of StoreSeenStub, which configures
+// Seen.
+func TestStoreSeenStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Seen", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubSeenPins()
+			s.OnSeen.Returns(want0, want1)
+			got0, got1 := storeStubSeen(t, s)
+			expect.Equal(t, got0, want0, "Seen returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Seen returns the error that Returns sets")
+		})
+
+		t.Run("configures Seen for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnSeen.Strict()
+			var want0 int
+			var want1 error
+			s.OnSeen.Returns(want0, want1)
+			_, _ = storeStubSeen(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Seen")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Seen to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnSeen.Func(func(p0 context.Context, p1 string) (int, error) {
+				got0, got1 = p0, p1
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = storeStubSeen(t, s)
+			a0, a1 := storeStubSeenArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives K")
+		})
+	})
+}
+
+// TestStoreMoveStub checks the methods of StoreMoveStub, which configures
+// Move.
+func TestStoreMoveStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Move", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubMovePins()
+			s.OnMove.Returns(want0)
+			got0 := storeStubMove(t, s)
+			assert.ErrorIs(t, got0, want0, "Move returns the error that Returns sets")
+		})
+
+		t.Run("configures Move for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnMove.Strict()
+			var want0 error
+			s.OnMove.Returns(want0)
+			_ = storeStubMove(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Move")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Move to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 string
+			s.OnMove.Func(func(p0 context.Context, p1, p2 string) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = storeStubMove(t, s)
+			a0, a1, a2 := storeStubMoveArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives From")
+			expect.Equal(t, got2, a2, "the function receives To")
+		})
+	})
+}
+
+// TestStoreAtStub checks the methods of StoreAtStub, which configures At.
+func TestStoreAtStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of At", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubAtPins()
+			s.OnAt.Returns(want0, want1)
+			got0, got1 := storeStubAt(t, s)
+			expect.Equal(t, got0, want0, "At returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "At returns the error that Returns sets")
+		})
+
+		t.Run("configures At for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnAt.Strict()
+			var want0 int
+			var want1 error
+			s.OnAt.Returns(want0, want1)
+			_, _ = storeStubAt(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of At")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of At to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnAt.Func(func(p0 context.Context, p1 string) (int, error) {
+				got0, got1 = p0, p1
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = storeStubAt(t, s)
+			a0, a1 := storeStubAtArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Where")
+		})
+	})
+}
+
+// TestStoreEmitStub checks the methods of StoreEmitStub, which configures
+// Emit.
+func TestStoreEmitStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Emit", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0 := storeStubEmitPins()
+			s.OnEmit.Returns(want0)
+			got0 := storeStubEmit(t, s)
+			assert.ErrorIs(t, got0, want0, "Emit returns the error that Returns sets")
+		})
+
+		t.Run("configures Emit for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnEmit.Strict()
+			var want0 error
+			s.OnEmit.Returns(want0)
+			_ = storeStubEmit(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Emit")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Emit to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnEmit.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = storeStubEmit(t, s)
+			a0, a1 := storeStubEmitArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives ID")
+		})
+	})
+}
+
+// TestStoreCountStub checks the methods of StoreCountStub, which
+// configures Count.
+func TestStoreCountStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Count", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			want0, want1 := storeStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			got0, got1 := storeStubCount(t, s)
+			expect.Equal(t, got0, want0, "Count returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Count returns the error that Returns sets")
+		})
+
+		t.Run("configures Count for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := partnernamingtest.NewStoreStub(r)
+			s.OnCount.Strict()
+			var want0 int
+			var want1 error
+			s.OnCount.Returns(want0, want1)
+			_, _ = storeStubCount(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Count")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Count to the function", func(t *testing.T) {
+			t.Parallel()
+			s := partnernamingtest.NewStoreStub(t)
+			var got0 context.Context
+			var got1 int
+			s.OnCount.Func(func(p0 context.Context, p1 int) (int, error) {
+				got0, got1 = p0, p1
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = storeStubCount(t, s)
+			a0, a1 := storeStubCountArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Bucket")
+		})
+	})
+}
+
+// dokimi:provenance sha256:349c1e3f331ca04d5caba05789aff03b894922447a551aa99eaa186da71d76ad

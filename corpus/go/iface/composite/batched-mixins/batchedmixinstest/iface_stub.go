@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	batchedmixins "go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins"
+	"go.dokimi.dev/stub"
 )
 
-// BatchedPutCall records one invocation of Batched.Put.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// BatchedPutCall records one call of Batched.Put.
 type BatchedPutCall struct {
 	Ctx   context.Context
 	Key   string
@@ -25,10 +22,7 @@ type BatchedPutCall struct {
 	Err   error
 }
 
-// BatchedReadCall records one invocation of Batched.Read.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// BatchedReadCall records one call of Batched.Read.
 type BatchedReadCall struct {
 	Ctx    context.Context
 	Key    string
@@ -36,24 +30,15 @@ type BatchedReadCall struct {
 	Err    error
 }
 
-// BatchedListCall records one invocation of Batched.List.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// BatchedListCall records one call of Batched.List.
 type BatchedListCall struct {
 	Ctx    context.Context
 	Result []string
 	Err    error
 }
 
-// --- Per-method configuration ---
-
-// BatchedPutStub controls how the double answers Put and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// BatchedPutStub configures Put and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type BatchedPutStub struct {
 	*stub.MethodStub[BatchedPutCall]
 
@@ -61,31 +46,27 @@ type BatchedPutStub struct {
 	fallback *BatchedPutReturn
 }
 
-// BatchedPutReturn holds the fixed answer configured through Returns.
+// BatchedPutReturn contains the fixed results of Put.
 type BatchedPutReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Put. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Put. A function and an
+// injected fault take precedence over them.
 func (s *BatchedPutStub) Returns(err error) *BatchedPutStub {
 	s.fallback = &BatchedPutReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Put, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Put from its
+// arguments. An injected fault takes precedence over it.
 func (s *BatchedPutStub) Func(fn func(context.Context, string, string) error) *BatchedPutStub {
 	s.fn = fn
 	return s
 }
 
-// BatchedReadStub controls how the double answers Read and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// BatchedReadStub configures Read and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type BatchedReadStub struct {
 	*stub.MethodStub[BatchedReadCall]
 
@@ -93,32 +74,28 @@ type BatchedReadStub struct {
 	fallback *BatchedReadReturn
 }
 
-// BatchedReadReturn holds the fixed answer configured through Returns.
+// BatchedReadReturn contains the fixed results of Read.
 type BatchedReadReturn struct {
 	Result string
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Read. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Read. A function and an
+// injected fault take precedence over them.
 func (s *BatchedReadStub) Returns(result string, err error) *BatchedReadStub {
 	s.fallback = &BatchedReadReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Read, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Read from its
+// arguments. An injected fault takes precedence over it.
 func (s *BatchedReadStub) Func(fn func(context.Context, string) (string, error)) *BatchedReadStub {
 	s.fn = fn
 	return s
 }
 
-// BatchedListStub controls how the double answers List and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// BatchedListStub configures List and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type BatchedListStub struct {
 	*stub.MethodStub[BatchedListCall]
 
@@ -126,42 +103,41 @@ type BatchedListStub struct {
 	fallback *BatchedListReturn
 }
 
-// BatchedListReturn holds the fixed answer configured through Returns.
+// BatchedListReturn contains the fixed results of List.
 type BatchedListReturn struct {
 	Result []string
 	Err    error
 }
 
-// Returns pins a fixed result for every call to List. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of List. A function and an
+// injected fault take precedence over them.
 func (s *BatchedListStub) Returns(result []string, err error) *BatchedListStub {
 	s.fallback = &BatchedListReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for List, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of List from its
+// arguments. An injected fault takes precedence over it.
 func (s *BatchedListStub) Func(fn func(context.Context) ([]string, error)) *BatchedListStub {
 	s.fn = fn
 	return s
 }
 
-// --- BatchedStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// BatchedStubOption configures a [BatchedStub] at construction time.
+// BatchedStubOption configures a [BatchedStub] at its construction.
 type BatchedStubOption func(*BatchedStub)
 
-// BatchedStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// BatchedStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func BatchedStubStrict() BatchedStubOption {
 	return func(s *BatchedStub) { s.strict = true }
 }
 
-// BatchedStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// BatchedStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func BatchedStubDelegateTo(impl batchedmixins.Batched) BatchedStubOption {
 	return func(s *BatchedStub) {
 		s.OnPut.Func(impl.Put)
@@ -170,35 +146,36 @@ func BatchedStubDelegateTo(impl batchedmixins.Batched) BatchedStubOption {
 	}
 }
 
-// BatchedStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// BatchedStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func BatchedStubWithClock(clk assert.Clock) BatchedStubOption {
 	return func(s *BatchedStub) { s.group.SetClock(clk) }
 }
 
-// BatchedStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// BatchedStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func BatchedStubWithRandSource(src rand.Source) BatchedStubOption {
 	return func(s *BatchedStub) { s.group.SetRandSource(src) }
 }
 
-// BatchedStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// BatchedStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func BatchedStubBenchMode() BatchedStubOption {
 	return func(s *BatchedStub) { s.group.BenchMode() }
 }
 
-// BatchedStubWithLatency makes every method sleep d before answering, for
-// a test standing in for a slow dependency rather than one slow method.
-// Pair it with BatchedStubWithClock, or d elapses in wall time.
+// BatchedStubWithLatency returns the option that makes every method sleep
+// d before it returns. Without BatchedStubWithClock, d passes in real
+// time.
 func BatchedStubWithLatency(d time.Duration) BatchedStubOption {
 	return func(s *BatchedStub) { s.group.SetLatency(d) }
 }
 
-// BatchedStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// BatchedStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func BatchedStubFailing(err error) BatchedStubOption {
 	return func(s *BatchedStub) {
 		s.OnPut.Faults(err, 1)
@@ -207,48 +184,40 @@ func BatchedStubFailing(err error) BatchedStubOption {
 	}
 }
 
-// WithBatchedPut sets Put's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithBatchedPut returns the option that sets the function of Put.
 func WithBatchedPut(fn func(context.Context, string, string) error) BatchedStubOption {
 	return func(s *BatchedStub) { s.OnPut.Func(fn) }
 }
 
-// WithBatchedRead sets Read's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithBatchedRead returns the option that sets the function of Read.
 func WithBatchedRead(fn func(context.Context, string) (string, error)) BatchedStubOption {
 	return func(s *BatchedStub) { s.OnRead.Func(fn) }
 }
 
-// WithBatchedList sets List's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithBatchedList returns the option that sets the function of List.
 func WithBatchedList(fn func(context.Context) ([]string, error)) BatchedStubOption {
 	return func(s *BatchedStub) { s.OnList.Func(fn) }
 }
 
-// BatchedStub is a recording test double for Batched.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// BatchedStub is a recording test double of Batched. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type BatchedStub struct {
 	OnPut  *BatchedPutStub
 	OnRead *BatchedReadStub
 	OnList *BatchedListStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that BatchedStub satisfies Batched.
+// The compiler checks that BatchedStub implements Batched.
 var _ batchedmixins.Batched = (*BatchedStub)(nil)
 
-// NewBatchedStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewBatchedStub returns a double of Batched that reports its failures to
+// tb and applies opts. The double checks the expected counts of calls at
+// the end of the test. With a nil tb, the double reports nothing.
 func NewBatchedStub(tb assert.TB, opts ...BatchedStubOption) *BatchedStub {
 	s := &BatchedStub{
 		OnPut:  &BatchedPutStub{MethodStub: stub.NewMethodStub[BatchedPutCall](tb, "Batched.Put")},
@@ -270,11 +239,8 @@ func NewBatchedStub(tb assert.TB, opts ...BatchedStubOption) *BatchedStub {
 	return s
 }
 
-// NewBatchedStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewBatchedStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewBatchedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...BatchedStubOption) *BatchedStub {
 	return NewBatchedStub(tb, append([]BatchedStubOption{
 		BatchedStubWithClock(clk),
@@ -282,27 +248,21 @@ func NewBatchedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts
 	}, opts...)...)
 }
 
-// NewBatchedStubFailing returns a double whose every fallible method
-// answers err — [BatchedStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewBatchedStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewBatchedStubFailing(tb assert.TB, err error, opts ...BatchedStubOption) *BatchedStub {
 	return NewBatchedStub(tb, append([]BatchedStubOption{BatchedStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *BatchedStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
-func (s *BatchedPutStub) invoke(ctx context.Context, key string, value string) func() BatchedPutReturn {
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *BatchedPutStub) invoke(ctx context.Context, key, value string) func() BatchedPutReturn {
 	if s.fn == nil {
 		return nil
 	}
@@ -312,13 +272,9 @@ func (s *BatchedPutStub) invoke(ctx context.Context, key string, value string) f
 	}
 }
 
-// Put records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
-func (s *BatchedStub) Put(ctx context.Context, key string, value string) error {
+// Put records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *BatchedStub) Put(ctx context.Context, key, value string) error {
 	call := BatchedPutCall{Ctx: ctx, Key: key, Value: value}
 	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[BatchedPutCall, BatchedPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, key, value),
@@ -331,9 +287,8 @@ func (s *BatchedStub) Put(ctx context.Context, key string, value string) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *BatchedReadStub) invoke(ctx context.Context, key string) func() BatchedReadReturn {
 	if s.fn == nil {
 		return nil
@@ -344,12 +299,8 @@ func (s *BatchedReadStub) invoke(ctx context.Context, key string) func() Batched
 	}
 }
 
-// Read records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Read records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *BatchedStub) Read(ctx context.Context, key string) (string, error) {
 	call := BatchedReadCall{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[BatchedReadCall, BatchedReadReturn]{
@@ -364,9 +315,8 @@ func (s *BatchedStub) Read(ctx context.Context, key string) (string, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *BatchedListStub) invoke(ctx context.Context) func() BatchedListReturn {
 	if s.fn == nil {
 		return nil
@@ -377,12 +327,8 @@ func (s *BatchedListStub) invoke(ctx context.Context) func() BatchedListReturn {
 	}
 }
 
-// List records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// List records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *BatchedStub) List(ctx context.Context) ([]string, error) {
 	call := BatchedListCall{Ctx: ctx}
 	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[BatchedListCall, BatchedListReturn]{
@@ -397,4 +343,4 @@ func (s *BatchedStub) List(ctx context.Context) ([]string, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:1f7510c1840dccc28456513082f6f906f2bcdd55eaee05e717856b69e7d2e4c9
+// dokimi:provenance sha256:473b782c318a4c3bebe3497ed4873b0178135ab7170b64652025f643e9d7f192

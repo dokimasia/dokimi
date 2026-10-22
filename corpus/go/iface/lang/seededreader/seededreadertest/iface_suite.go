@@ -7,7 +7,7 @@ package seededreadertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/seededreader"
 )
 
@@ -48,33 +48,22 @@ func CatalogSuite() conform.Suite[seededreader.Catalog] {
 	return conform.Suite[seededreader.Catalog]{Declaration: "Catalog"}
 }
 
-// RunCatalog applies the checks of Catalog, and the checks that opts add,
-// to a fresh subject of newSubject for each check.
-func RunCatalog[T seededreader.Catalog](t *testing.T, newSubject func() T, opts ...CatalogOption) {
+// RunCatalogSuite applies the checks of Catalog, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunCatalogSuite[T seededreader.Catalog](t *testing.T, newSubject func() T, opts ...CatalogOption) {
 	t.Helper()
-	conform.Verify(t, CatalogSuite(), func(*CatalogHandle) seededreader.Catalog { return newSubject() }, opts...)
+	RunCatalogSuiteFromHandle(t, func(*CatalogHandle) T { return newSubject() }, opts...)
 }
 
-// RunCatalogOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunCatalogOn[T seededreader.Catalog](t *testing.T, newSubject func(h *CatalogHandle) T, opts ...CatalogOption) {
+// RunCatalogSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunCatalogSuiteFromHandle[T seededreader.Catalog](
+	t *testing.T,
+	newSubject func(h *CatalogHandle) T,
+	opts ...CatalogOption,
+) {
 	t.Helper()
-	conform.Verify(t, CatalogSuite(), func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) }, opts...)
+	conform.Run(t, CatalogSuite(), func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) }, opts...)
 }
 
-// ControlCatalog applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlCatalog[T seededreader.Catalog](t *testing.T, newControl func() T, opts ...CatalogOption) {
-	t.Helper()
-	conform.Control(t, CatalogSuite(), func(*CatalogHandle) seededreader.Catalog { return newControl() }, opts...)
-}
-
-// ControlCatalogOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlCatalogOn[T seededreader.Catalog](t *testing.T, newControl func(h *CatalogHandle) T, opts ...CatalogOption) {
-	t.Helper()
-	conform.Control(t, CatalogSuite(), func(h *CatalogHandle) seededreader.Catalog { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:91dd61b316a44ac01958415eb8c338fe9d995e853a59b5f233e789651979946c
+// dokimi:provenance sha256:1d78a7df07422cd06fc4dd974799c450bbaa736d62e99629d5bd993dd3447bc8

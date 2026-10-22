@@ -12,32 +12,72 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/associative"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/associative/associativetest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubApplySubject binds Apply into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubApplySubject(tb assert.TB) stub.Subject[associativetest.MixedApplyCall, associativetest.MixedApplyReturn] {
+// mixedStubApplyArgs returns the samples of the arguments of Apply.
+func mixedStubApplyArgs(tb assert.TB) (context.Context, []associative.Delta) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 []associative.Delta
+	a1 = []associative.Delta{{Key: "Key-a"}}
+	return a0, a1
+}
+
+// mixedStubApply calls Apply of s with the samples of its arguments.
+func mixedStubApply(tb assert.TB, s *associativetest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubApplyArgs(tb)
+	return s.Apply(a0, a1)
+}
+
+// mixedStubApplyPins returns the samples of the results of Apply, with a
+// new error as its error result.
+func mixedStubApplyPins() error {
+	want0 := errors.New("Apply-returns")
+	return want0
+}
+
+// mixedStubTotalArgs returns the samples of the arguments of Total.
+func mixedStubTotalArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubTotal calls Total of s with the samples of its arguments.
+func mixedStubTotal(tb assert.TB, s *associativetest.MixedStub) (int, error) {
+	tb.Helper()
+	a0 := mixedStubTotalArgs(tb)
+	return s.Total(a0)
+}
+
+// mixedStubTotalPins returns the samples of the results of Total, with a
+// new error as its error result.
+func mixedStubTotalPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Total-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// mixedStubApplySubject returns the subject of [stub.Behaviour] for Apply.
+// The subject calls a new double that reports to tb.
+func mixedStubApplySubject(
+	tb assert.TB,
+) stub.Subject[associativetest.MixedApplyCall, associativetest.MixedApplyReturn] {
 	tb.Helper()
 	s := associativetest.NewMixedStub(tb)
 	return stub.Subject[associativetest.MixedApplyCall, associativetest.MixedApplyReturn]{
 		Stub: s.OnApply.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 []associative.Delta
-			a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-			_ = s.Apply(a0, a1)
+			_ = mixedStubApply(tb, s)
 		},
 		Result: func() associativetest.MixedApplyReturn {
-			var a0 context.Context
-			var a1 []associative.Delta
-			a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-			got0 := s.Apply(a0, a1)
+			got0 := mixedStubApply(tb, s)
 			return associativetest.MixedApplyReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,110 +88,26 @@ func mixedStubApplySubject(tb assert.TB) stub.Subject[associativetest.MixedApply
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 []associative.Delta
-			a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-			r0 := s.Apply(a0, a1)
+			r0 := mixedStubApply(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubApply pins how Apply answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubApply(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Apply", mixedStubApplySubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := associativetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 []associative.Delta
-		a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-		_ = s.Apply(a0, a1)
-		got := s.OnApply.AssertCalledOnce(t, "Apply must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Ds, a1, "the recorded call carries Ds")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := associativetest.NewMixedStub(t)
-		var seen []associativetest.MixedApplyCall
-		s.OnApply.OnRecord(func(c associativetest.MixedApplyCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 []associative.Delta
-		a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-		_ = s.Apply(a0, a1)
-		_ = s.Apply(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Apply call")
-	})
-
-	t.Run("wires WithMixedApply at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := associativetest.NewMixedStub(t, associativetest.WithMixedApply(func(_ context.Context, _ []associative.Delta) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 []associative.Delta
-		a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-		_ = s.Apply(a0, a1)
-		assert.True(t, called, "WithMixedApply must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Apply-failing")
-		s := associativetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 []associative.Delta
-		a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-		r0 := s.Apply(a0, a1)
-		assert.ErrorIs(t, r0, want, "Apply must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := associativetest.NewMixedStub(t)
-		var want0 error
-		s.OnApply.Returns(want0)
-		var a0 context.Context
-		var a1 []associative.Delta
-		a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-		_ = s.Apply(a0, a1)
-		s.ResetCalls()
-		_ = s.Apply(a0, a1)
-		s.OnApply.AssertCalledOnce(t, "Apply must record the call that followed the reset")
-	})
-}
-
-// mixedStubTotalSubject binds Total into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubTotalSubject(tb assert.TB) stub.Subject[associativetest.MixedTotalCall, associativetest.MixedTotalReturn] {
+// mixedStubTotalSubject returns the subject of [stub.Behaviour] for Total.
+// The subject calls a new double that reports to tb.
+func mixedStubTotalSubject(
+	tb assert.TB,
+) stub.Subject[associativetest.MixedTotalCall, associativetest.MixedTotalReturn] {
 	tb.Helper()
 	s := associativetest.NewMixedStub(tb)
 	return stub.Subject[associativetest.MixedTotalCall, associativetest.MixedTotalReturn]{
 		Stub: s.OnTotal.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Total(a0)
+			_, _ = mixedStubTotal(tb, s)
 		},
 		Result: func() associativetest.MixedTotalReturn {
-			var a0 context.Context
-			got0, got1 := s.Total(a0)
+			got0, got1 := mixedStubTotal(tb, s)
 			return associativetest.MixedTotalReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -163,183 +119,395 @@ func mixedStubTotalSubject(tb assert.TB) stub.Subject[associativetest.MixedTotal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Total(a0)
+			_, r1 := mixedStubTotal(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubTotal pins how Total answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubTotal(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a associativetest.MixedStub that
+// the checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[associativetest.MixedApplyCall]
 
-	stub.Behaviour(t, "Total", mixedStubTotalSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := associativetest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnTotal.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Total(a0)
-		assert.Equal(t, got0, want0, "Total must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := associativetest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Total(a0)
-		got := s.OnTotal.AssertCalledOnce(t, "Total must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := associativetest.NewMixedStub(t)
-		var seen []associativetest.MixedTotalCall
-		s.OnTotal.OnRecord(func(c associativetest.MixedTotalCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Total(a0)
-		_, _ = s.Total(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Total call")
-	})
-
-	t.Run("wires WithMixedTotal at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := associativetest.NewMixedStub(t, associativetest.WithMixedTotal(func(_ context.Context) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Total(a0)
-		assert.True(t, called, "WithMixedTotal must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Total-failing")
-		s := associativetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Total(a0)
-		assert.ErrorIs(t, r1, want, "Total must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := associativetest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnTotal.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Total(a0)
-		s.ResetCalls()
-		got0, _ := s.Total(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Apply stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[associativetest.MixedApplyCall] {
-	instance := func(s *associativetest.MixedStub) stub.Instance[associativetest.MixedApplyCall] {
-		return stub.Instance[associativetest.MixedApplyCall]{
-			Stub: s.OnApply.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 []associative.Delta
-				a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-				_ = s.Apply(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[associativetest.MixedApplyCall]{
-		New: func(tb assert.TB) stub.Instance[associativetest.MixedApplyCall] {
-			return instance(associativetest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Apply alone.
+func mixedStubInstanceOf(tb assert.TB, s *associativetest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnApply.MethodStub,
+		Call: func() {
+			_ = mixedStubApply(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[associativetest.MixedApplyCall] {
-			return instance(associativetest.NewMixedStub(tb, associativetest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[associativetest.MixedApplyCall] {
-			return instance(associativetest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[associativetest.MixedApplyCall] {
-			return instance(associativetest.NewMixedStub(tb, associativetest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[associativetest.MixedApplyCall] {
-			return instance(associativetest.NewMixedStub(tb, associativetest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[associativetest.MixedApplyCall] {
-			return instance(associativetest.NewMixedStub(tb, associativetest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Apply", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Apply", mixedStubApplySubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			_ = mixedStubApply(t, s)
+			got := s.OnApply.AssertCalledOnce(t, "Apply records the call")
+			a0, a1 := mixedStubApplyArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Ds, a1, "the call records Ds")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			var seen []associativetest.MixedApplyCall
+			s.OnApply.OnRecord(func(c associativetest.MixedApplyCall) { seen = append(seen, c) })
+			_ = mixedStubApply(t, s)
+			_ = mixedStubApply(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Apply")
+		})
+	})
+
+	t.Run("Total", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Total", mixedStubTotalSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			_, _ = mixedStubTotal(t, s)
+			got := s.OnTotal.AssertCalledOnce(t, "Total records the call")
+			a0 := mixedStubTotalArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			var seen []associativetest.MixedTotalCall
+			s.OnTotal.OnRecord(func(c associativetest.MixedTotalCall) { seen = append(seen, c) })
+			_, _ = mixedStubTotal(t, s)
+			_, _ = mixedStubTotal(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Total")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, associativetest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Apply", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			_ = mixedStubApply(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnApply.CallCount(), 0, "ResetCalls clears the calls of Apply")
+		})
+
+		t.Run("keeps the results of Returns of Apply", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			want0 := mixedStubApplyPins()
+			s.OnApply.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubApply(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Apply")
+		})
+
+		t.Run("clears the recorded calls of Total", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			_, _ = mixedStubTotal(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnTotal.CallCount(), 0, "ResetCalls clears the calls of Total")
+		})
+
+		t.Run("keeps the results of Returns of Total", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			want0, want1 := mixedStubTotalPins()
+			s.OnTotal.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubTotal(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Total")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Total")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, associativetest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Apply with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Apply-failing")
+			s := associativetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubApply(t, s)
+			assert.ErrorIs(t, r0, want, "Apply fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Total with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Total-failing")
+			s := associativetest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubTotal(t, s)
+			assert.ErrorIs(t, r1, want, "Total fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, associativetest.NewMixedStub(tb, associativetest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Apply to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := associativetest.NewMixedStub(t)
+			s := associativetest.NewMixedStub(t, associativetest.MixedStubDelegateTo(inner))
+			_ = mixedStubApply(t, s)
+			inner.OnApply.AssertCalledOnce(t, "Apply calls the implementation")
+		})
+
+		t.Run("fails Apply with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Apply-delegate")
+			inner := associativetest.NewMixedStub(t)
+			inner.OnApply.Faults(want, 1)
+			s := associativetest.NewMixedStub(t, associativetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubApply(t, s)
+			assert.ErrorIs(t, r0, want, "Apply fails with the error of the implementation")
+		})
+
+		t.Run("passes Total to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := associativetest.NewMixedStub(t)
+			s := associativetest.NewMixedStub(t, associativetest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubTotal(t, s)
+			inner.OnTotal.AssertCalledOnce(t, "Total calls the implementation")
+		})
+
+		t.Run("fails Total with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Total-delegate")
+			inner := associativetest.NewMixedStub(t)
+			inner.OnTotal.Faults(want, 1)
+			s := associativetest.NewMixedStub(t, associativetest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubTotal(t, s)
+			assert.ErrorIs(t, r1, want, "Total fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, associativetest.NewMixedStub(tb, associativetest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				associativetest.NewMixedStub(tb, associativetest.MixedStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, associativetest.NewMixedStub(tb, associativetest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				associativetest.NewMixedStub(
+					tb,
+					associativetest.MixedStubWithClock(clk),
+					associativetest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Apply with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Apply-failing")
+			s := associativetest.NewMixedStub(t, associativetest.MixedStubFailing(want))
+			r0 := mixedStubApply(t, s)
+			assert.ErrorIs(t, r0, want, "Apply fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Total with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Total-failing")
+			s := associativetest.NewMixedStub(t, associativetest.MixedStubFailing(want))
+			_, r1 := mixedStubTotal(t, s)
+			assert.ErrorIs(t, r1, want, "Total fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedApply", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Apply", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := associativetest.NewMixedStub(
+				t,
+				associativetest.WithMixedApply(func(_ context.Context, _ []associative.Delta) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubApply(t, s)
+			assert.True(t, called, "WithMixedApply sets the function of Apply")
+		})
+	})
+
+	t.Run("WithMixedTotal", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Total", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := associativetest.NewMixedStub(t, associativetest.WithMixedTotal(func(_ context.Context) (int, error) {
+				called = true
+				var z0 int
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = mixedStubTotal(t, s)
+			assert.True(t, called, "WithMixedTotal sets the function of Total")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedApplyStub checks the methods of MixedApplyStub, which
+// configures Apply.
+func TestMixedApplyStub(t *testing.T) {
 	t.Parallel()
 
-	inner := associativetest.NewMixedStub(t)
-	s := associativetest.NewMixedStub(t, associativetest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Apply to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 []associative.Delta
-		a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-		_ = s.Apply(a0, a1)
-		inner.OnApply.AssertCalledOnce(t, "Apply must reach the wrapped implementation")
+		t.Run("sets the results of each call of Apply", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			want0 := mixedStubApplyPins()
+			s.OnApply.Returns(want0)
+			got0 := mixedStubApply(t, s)
+			assert.ErrorIs(t, got0, want0, "Apply returns the error that Returns sets")
+		})
+
+		t.Run("configures Apply for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := associativetest.NewMixedStub(r)
+			s.OnApply.Strict()
+			var want0 error
+			s.OnApply.Returns(want0)
+			_ = mixedStubApply(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Apply")
+		})
 	})
 
-	t.Run("surfaces what Apply answered", func(t *testing.T) {
-		want := errors.New("Apply-delegate")
-		inner.OnApply.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 []associative.Delta
-		a1 = []associative.Delta{associative.Delta{Key: "Key-a"}}
-		r0 := s.Apply(a0, a1)
-		assert.ErrorIs(t, r0, want, "Apply must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Total to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Total(a0)
-		inner.OnTotal.AssertCalledOnce(t, "Total must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Total answered", func(t *testing.T) {
-		want := errors.New("Total-delegate")
-		inner.OnTotal.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Total(a0)
-		assert.ErrorIs(t, r1, want, "Total must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Apply to the function", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 []associative.Delta
+			s.OnApply.Func(func(p0 context.Context, p1 []associative.Delta) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubApply(t, s)
+			a0, a1 := mixedStubApplyArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Ds")
+		})
 	})
 }
 
-// dokimi:provenance sha256:625510308f850d3da3ac1d1ef8f513a27d87ae1fcd68fb8546eff4ced88bc7c2
+// TestMixedTotalStub checks the methods of MixedTotalStub, which
+// configures Total.
+func TestMixedTotalStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Total", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			want0, want1 := mixedStubTotalPins()
+			s.OnTotal.Returns(want0, want1)
+			got0, got1 := mixedStubTotal(t, s)
+			expect.Equal(t, got0, want0, "Total returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Total returns the error that Returns sets")
+		})
+
+		t.Run("configures Total for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := associativetest.NewMixedStub(r)
+			s.OnTotal.Strict()
+			var want0 int
+			var want1 error
+			s.OnTotal.Returns(want0, want1)
+			_, _ = mixedStubTotal(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Total")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Total to the function", func(t *testing.T) {
+			t.Parallel()
+			s := associativetest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnTotal.Func(func(p0 context.Context) (int, error) {
+				got0 = p0
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubTotal(t, s)
+			a0 := mixedStubTotalArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:73163a86880b4fa078564a14726973cfd782d4f740674024c9fe841eec56fcaa

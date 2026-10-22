@@ -12,32 +12,93 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain/chaintest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubAppendSubject binds Append into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubAppendSubject(tb assert.TB) stub.Subject[chaintest.ContractAppendCall, chaintest.ContractAppendReturn] {
+// contractStubAppendArgs returns the samples of the arguments of Append.
+func contractStubAppendArgs(tb assert.TB) (context.Context, chain.Entry) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 chain.Entry
+	a1 = chain.Entry{Key: "Key-a"}
+	return a0, a1
+}
+
+// contractStubAppend calls Append of s with the samples of its arguments.
+func contractStubAppend(tb assert.TB, s *chaintest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubAppendArgs(tb)
+	return s.Append(a0, a1)
+}
+
+// contractStubAppendPins returns the samples of the results of Append,
+// with a new error as its error result.
+func contractStubAppendPins() error {
+	want0 := errors.New("Append-returns")
+	return want0
+}
+
+// contractStubReplayArgs returns the samples of the arguments of Replay.
+func contractStubReplayArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubReplay calls Replay of s with the samples of its arguments.
+func contractStubReplay(tb assert.TB, s *chaintest.ContractStub) ([]chain.Entry, error) {
+	tb.Helper()
+	a0 := contractStubReplayArgs(tb)
+	return s.Replay(a0)
+}
+
+// contractStubReplayPins returns the samples of the results of Replay,
+// with a new error as its error result.
+func contractStubReplayPins() ([]chain.Entry, error) {
+	var want0 []chain.Entry
+	want1 := errors.New("Replay-returns")
+	want0 = []chain.Entry{{Key: "Key-a"}}
+	return want0, want1
+}
+
+// contractStubVerifyArgs returns the samples of the arguments of Verify.
+func contractStubVerifyArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubVerify calls Verify of s with the samples of its arguments.
+func contractStubVerify(tb assert.TB, s *chaintest.ContractStub) error {
+	tb.Helper()
+	a0 := contractStubVerifyArgs(tb)
+	return s.Verify(a0)
+}
+
+// contractStubVerifyPins returns the samples of the results of Verify,
+// with a new error as its error result.
+func contractStubVerifyPins() error {
+	want0 := errors.New("Verify-returns")
+	return want0
+}
+
+// contractStubAppendSubject returns the subject of [stub.Behaviour] for
+// Append. The subject calls a new double that reports to tb.
+func contractStubAppendSubject(
+	tb assert.TB,
+) stub.Subject[chaintest.ContractAppendCall, chaintest.ContractAppendReturn] {
 	tb.Helper()
 	s := chaintest.NewContractStub(tb)
 	return stub.Subject[chaintest.ContractAppendCall, chaintest.ContractAppendReturn]{
 		Stub: s.OnAppend.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 chain.Entry
-			a1 = chain.Entry{Key: "Key-a"}
-			_ = s.Append(a0, a1)
+			_ = contractStubAppend(tb, s)
 		},
 		Result: func() chaintest.ContractAppendReturn {
-			var a0 context.Context
-			var a1 chain.Entry
-			a1 = chain.Entry{Key: "Key-a"}
-			got0 := s.Append(a0, a1)
+			got0 := contractStubAppend(tb, s)
 			return chaintest.ContractAppendReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,110 +109,26 @@ func contractStubAppendSubject(tb assert.TB) stub.Subject[chaintest.ContractAppe
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 chain.Entry
-			a1 = chain.Entry{Key: "Key-a"}
-			r0 := s.Append(a0, a1)
+			r0 := contractStubAppend(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubAppend pins how Append answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubAppend(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Append", contractStubAppendSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var a0 context.Context
-		var a1 chain.Entry
-		a1 = chain.Entry{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		got := s.OnAppend.AssertCalledOnce(t, "Append must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.E, a1, "the recorded call carries E")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var seen []chaintest.ContractAppendCall
-		s.OnAppend.OnRecord(func(c chaintest.ContractAppendCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 chain.Entry
-		a1 = chain.Entry{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		_ = s.Append(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Append call")
-	})
-
-	t.Run("wires WithContractAppend at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := chaintest.NewContractStub(t, chaintest.WithContractAppend(func(_ context.Context, _ chain.Entry) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 chain.Entry
-		a1 = chain.Entry{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		assert.True(t, called, "WithContractAppend must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Append-failing")
-		s := chaintest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 chain.Entry
-		a1 = chain.Entry{Key: "Key-a"}
-		r0 := s.Append(a0, a1)
-		assert.ErrorIs(t, r0, want, "Append must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var want0 error
-		s.OnAppend.Returns(want0)
-		var a0 context.Context
-		var a1 chain.Entry
-		a1 = chain.Entry{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		s.ResetCalls()
-		_ = s.Append(a0, a1)
-		s.OnAppend.AssertCalledOnce(t, "Append must record the call that followed the reset")
-	})
-}
-
-// contractStubReplaySubject binds Replay into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubReplaySubject(tb assert.TB) stub.Subject[chaintest.ContractReplayCall, chaintest.ContractReplayReturn] {
+// contractStubReplaySubject returns the subject of [stub.Behaviour] for
+// Replay. The subject calls a new double that reports to tb.
+func contractStubReplaySubject(
+	tb assert.TB,
+) stub.Subject[chaintest.ContractReplayCall, chaintest.ContractReplayReturn] {
 	tb.Helper()
 	s := chaintest.NewContractStub(tb)
 	return stub.Subject[chaintest.ContractReplayCall, chaintest.ContractReplayReturn]{
 		Stub: s.OnReplay.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Replay(a0)
+			_, _ = contractStubReplay(tb, s)
 		},
 		Result: func() chaintest.ContractReplayReturn {
-			var a0 context.Context
-			got0, got1 := s.Replay(a0)
+			got0, got1 := contractStubReplay(tb, s)
 			return chaintest.ContractReplayReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -163,112 +140,26 @@ func contractStubReplaySubject(tb assert.TB) stub.Subject[chaintest.ContractRepl
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Replay(a0)
+			_, r1 := contractStubReplay(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubReplay pins how Replay answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubReplay(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Replay", contractStubReplaySubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var want0 []chain.Entry
-		var want1 error
-		want0 = []chain.Entry{chain.Entry{Key: "Key-a"}}
-		s.OnReplay.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Replay(a0)
-		assert.Equal(t, got0, want0, "Replay must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		got := s.OnReplay.AssertCalledOnce(t, "Replay must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var seen []chaintest.ContractReplayCall
-		s.OnReplay.OnRecord(func(c chaintest.ContractReplayCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		_, _ = s.Replay(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Replay call")
-	})
-
-	t.Run("wires WithContractReplay at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := chaintest.NewContractStub(t, chaintest.WithContractReplay(func(_ context.Context) ([]chain.Entry, error) {
-			called = true
-			var z0 []chain.Entry
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		assert.True(t, called, "WithContractReplay must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Replay-failing")
-		s := chaintest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Replay(a0)
-		assert.ErrorIs(t, r1, want, "Replay must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var want0 []chain.Entry
-		var want1 error
-		want0 = []chain.Entry{chain.Entry{Key: "Key-a"}}
-		s.OnReplay.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		s.ResetCalls()
-		got0, _ := s.Replay(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubVerifySubject binds Verify into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubVerifySubject(tb assert.TB) stub.Subject[chaintest.ContractVerifyCall, chaintest.ContractVerifyReturn] {
+// contractStubVerifySubject returns the subject of [stub.Behaviour] for
+// Verify. The subject calls a new double that reports to tb.
+func contractStubVerifySubject(
+	tb assert.TB,
+) stub.Subject[chaintest.ContractVerifyCall, chaintest.ContractVerifyReturn] {
 	tb.Helper()
 	s := chaintest.NewContractStub(tb)
 	return stub.Subject[chaintest.ContractVerifyCall, chaintest.ContractVerifyReturn]{
 		Stub: s.OnVerify.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Verify(a0)
+			_ = contractStubVerify(tb, s)
 		},
 		Result: func() chaintest.ContractVerifyReturn {
-			var a0 context.Context
-			got0 := s.Verify(a0)
+			got0 := contractStubVerify(tb, s)
 			return chaintest.ContractVerifyReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -279,182 +170,535 @@ func contractStubVerifySubject(tb assert.TB) stub.Subject[chaintest.ContractVeri
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Verify(a0)
+			r0 := contractStubVerify(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubVerify pins how Verify answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubVerify(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a chaintest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[chaintest.ContractAppendCall]
 
-	stub.Behaviour(t, "Verify", contractStubVerifySubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var a0 context.Context
-		_ = s.Verify(a0)
-		got := s.OnVerify.AssertCalledOnce(t, "Verify must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var seen []chaintest.ContractVerifyCall
-		s.OnVerify.OnRecord(func(c chaintest.ContractVerifyCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Verify(a0)
-		_ = s.Verify(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Verify call")
-	})
-
-	t.Run("wires WithContractVerify at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := chaintest.NewContractStub(t, chaintest.WithContractVerify(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Verify(a0)
-		assert.True(t, called, "WithContractVerify must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Verify-failing")
-		s := chaintest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Verify(a0)
-		assert.ErrorIs(t, r0, want, "Verify must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := chaintest.NewContractStub(t)
-		var want0 error
-		s.OnVerify.Returns(want0)
-		var a0 context.Context
-		_ = s.Verify(a0)
-		s.ResetCalls()
-		_ = s.Verify(a0)
-		s.OnVerify.AssertCalledOnce(t, "Verify must record the call that followed the reset")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Append stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func contractStubDouble() stub.Double[chaintest.ContractAppendCall] {
-	instance := func(s *chaintest.ContractStub) stub.Instance[chaintest.ContractAppendCall] {
-		return stub.Instance[chaintest.ContractAppendCall]{
-			Stub: s.OnAppend.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 chain.Entry
-				a1 = chain.Entry{Key: "Key-a"}
-				_ = s.Append(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[chaintest.ContractAppendCall]{
-		New: func(tb assert.TB) stub.Instance[chaintest.ContractAppendCall] {
-			return instance(chaintest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Append alone.
+func contractStubInstanceOf(tb assert.TB, s *chaintest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnAppend.MethodStub,
+		Call: func() {
+			_ = contractStubAppend(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[chaintest.ContractAppendCall] {
-			return instance(chaintest.NewContractStub(tb, chaintest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[chaintest.ContractAppendCall] {
-			return instance(chaintest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[chaintest.ContractAppendCall] {
-			return instance(chaintest.NewContractStub(tb, chaintest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[chaintest.ContractAppendCall] {
-			return instance(chaintest.NewContractStub(tb, chaintest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[chaintest.ContractAppendCall] {
-			return instance(chaintest.NewContractStub(tb, chaintest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Append", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Append", contractStubAppendSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			_ = contractStubAppend(t, s)
+			got := s.OnAppend.AssertCalledOnce(t, "Append records the call")
+			a0, a1 := contractStubAppendArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.E, a1, "the call records E")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			var seen []chaintest.ContractAppendCall
+			s.OnAppend.OnRecord(func(c chaintest.ContractAppendCall) { seen = append(seen, c) })
+			_ = contractStubAppend(t, s)
+			_ = contractStubAppend(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Append")
+		})
+	})
+
+	t.Run("Replay", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Replay", contractStubReplaySubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			_, _ = contractStubReplay(t, s)
+			got := s.OnReplay.AssertCalledOnce(t, "Replay records the call")
+			a0 := contractStubReplayArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			var seen []chaintest.ContractReplayCall
+			s.OnReplay.OnRecord(func(c chaintest.ContractReplayCall) { seen = append(seen, c) })
+			_, _ = contractStubReplay(t, s)
+			_, _ = contractStubReplay(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Replay")
+		})
+	})
+
+	t.Run("Verify", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Verify", contractStubVerifySubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			_ = contractStubVerify(t, s)
+			got := s.OnVerify.AssertCalledOnce(t, "Verify records the call")
+			a0 := contractStubVerifyArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			var seen []chaintest.ContractVerifyCall
+			s.OnVerify.OnRecord(func(c chaintest.ContractVerifyCall) { seen = append(seen, c) })
+			_ = contractStubVerify(t, s)
+			_ = contractStubVerify(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Verify")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, chaintest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Append", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			_ = contractStubAppend(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAppend.CallCount(), 0, "ResetCalls clears the calls of Append")
+		})
+
+		t.Run("keeps the results of Returns of Append", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			want0 := contractStubAppendPins()
+			s.OnAppend.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Append")
+		})
+
+		t.Run("clears the recorded calls of Replay", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			_, _ = contractStubReplay(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnReplay.CallCount(), 0, "ResetCalls clears the calls of Replay")
+		})
+
+		t.Run("keeps the results of Returns of Replay", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			want0, want1 := contractStubReplayPins()
+			s.OnReplay.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubReplay(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Replay")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Replay")
+		})
+
+		t.Run("clears the recorded calls of Verify", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			_ = contractStubVerify(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnVerify.CallCount(), 0, "ResetCalls clears the calls of Verify")
+		})
+
+		t.Run("keeps the results of Returns of Verify", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			want0 := contractStubVerifyPins()
+			s.OnVerify.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubVerify(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Verify")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, chaintest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := chaintest.NewContractStubFailing(t, want)
+			r0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Replay with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replay-failing")
+			s := chaintest.NewContractStubFailing(t, want)
+			_, r1 := contractStubReplay(t, s)
+			assert.ErrorIs(t, r1, want, "Replay fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Verify with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Verify-failing")
+			s := chaintest.NewContractStubFailing(t, want)
+			r0 := contractStubVerify(t, s)
+			assert.ErrorIs(t, r0, want, "Verify fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, chaintest.NewContractStub(tb, chaintest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Append to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := chaintest.NewContractStub(t)
+			s := chaintest.NewContractStub(t, chaintest.ContractStubDelegateTo(inner))
+			_ = contractStubAppend(t, s)
+			inner.OnAppend.AssertCalledOnce(t, "Append calls the implementation")
+		})
+
+		t.Run("fails Append with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-delegate")
+			inner := chaintest.NewContractStub(t)
+			inner.OnAppend.Faults(want, 1)
+			s := chaintest.NewContractStub(t, chaintest.ContractStubDelegateTo(inner))
+			r0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of the implementation")
+		})
+
+		t.Run("passes Replay to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := chaintest.NewContractStub(t)
+			s := chaintest.NewContractStub(t, chaintest.ContractStubDelegateTo(inner))
+			_, _ = contractStubReplay(t, s)
+			inner.OnReplay.AssertCalledOnce(t, "Replay calls the implementation")
+		})
+
+		t.Run("fails Replay with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replay-delegate")
+			inner := chaintest.NewContractStub(t)
+			inner.OnReplay.Faults(want, 1)
+			s := chaintest.NewContractStub(t, chaintest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubReplay(t, s)
+			assert.ErrorIs(t, r1, want, "Replay fails with the error of the implementation")
+		})
+
+		t.Run("passes Verify to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := chaintest.NewContractStub(t)
+			s := chaintest.NewContractStub(t, chaintest.ContractStubDelegateTo(inner))
+			_ = contractStubVerify(t, s)
+			inner.OnVerify.AssertCalledOnce(t, "Verify calls the implementation")
+		})
+
+		t.Run("fails Verify with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Verify-delegate")
+			inner := chaintest.NewContractStub(t)
+			inner.OnVerify.Faults(want, 1)
+			s := chaintest.NewContractStub(t, chaintest.ContractStubDelegateTo(inner))
+			r0 := contractStubVerify(t, s)
+			assert.ErrorIs(t, r0, want, "Verify fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, chaintest.NewContractStub(tb, chaintest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(tb, chaintest.NewContractStub(tb, chaintest.ContractStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, chaintest.NewContractStub(tb, chaintest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				chaintest.NewContractStub(
+					tb,
+					chaintest.ContractStubWithClock(clk),
+					chaintest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := chaintest.NewContractStub(t, chaintest.ContractStubFailing(want))
+			r0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Replay with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replay-failing")
+			s := chaintest.NewContractStub(t, chaintest.ContractStubFailing(want))
+			_, r1 := contractStubReplay(t, s)
+			assert.ErrorIs(t, r1, want, "Replay fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Verify with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Verify-failing")
+			s := chaintest.NewContractStub(t, chaintest.ContractStubFailing(want))
+			r0 := contractStubVerify(t, s)
+			assert.ErrorIs(t, r0, want, "Verify fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractAppend", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Append", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := chaintest.NewContractStub(
+				t,
+				chaintest.WithContractAppend(func(_ context.Context, _ chain.Entry) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubAppend(t, s)
+			assert.True(t, called, "WithContractAppend sets the function of Append")
+		})
+	})
+
+	t.Run("WithContractReplay", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Replay", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := chaintest.NewContractStub(
+				t,
+				chaintest.WithContractReplay(func(_ context.Context) ([]chain.Entry, error) {
+					called = true
+					var z0 []chain.Entry
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubReplay(t, s)
+			assert.True(t, called, "WithContractReplay sets the function of Replay")
+		})
+	})
+
+	t.Run("WithContractVerify", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Verify", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := chaintest.NewContractStub(t, chaintest.WithContractVerify(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = contractStubVerify(t, s)
+			assert.True(t, called, "WithContractVerify sets the function of Verify")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractAppendStub checks the methods of ContractAppendStub, which
+// configures Append.
+func TestContractAppendStub(t *testing.T) {
 	t.Parallel()
 
-	inner := chaintest.NewContractStub(t)
-	s := chaintest.NewContractStub(t, chaintest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Append to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 chain.Entry
-		a1 = chain.Entry{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		inner.OnAppend.AssertCalledOnce(t, "Append must reach the wrapped implementation")
+		t.Run("sets the results of each call of Append", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			want0 := contractStubAppendPins()
+			s.OnAppend.Returns(want0)
+			got0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "Append returns the error that Returns sets")
+		})
+
+		t.Run("configures Append for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := chaintest.NewContractStub(r)
+			s.OnAppend.Strict()
+			var want0 error
+			s.OnAppend.Returns(want0)
+			_ = contractStubAppend(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Append")
+		})
 	})
 
-	t.Run("surfaces what Append answered", func(t *testing.T) {
-		want := errors.New("Append-delegate")
-		inner.OnAppend.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 chain.Entry
-		a1 = chain.Entry{Key: "Key-a"}
-		r0 := s.Append(a0, a1)
-		assert.ErrorIs(t, r0, want, "Append must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Replay to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		inner.OnReplay.AssertCalledOnce(t, "Replay must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Replay answered", func(t *testing.T) {
-		want := errors.New("Replay-delegate")
-		inner.OnReplay.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Replay(a0)
-		assert.ErrorIs(t, r1, want, "Replay must surface the wrapped answer")
-	})
-
-	t.Run("forwards Verify to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Verify(a0)
-		inner.OnVerify.AssertCalledOnce(t, "Verify must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Verify answered", func(t *testing.T) {
-		want := errors.New("Verify-delegate")
-		inner.OnVerify.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Verify(a0)
-		assert.ErrorIs(t, r0, want, "Verify must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Append to the function", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			var got0 context.Context
+			var got1 chain.Entry
+			s.OnAppend.Func(func(p0 context.Context, p1 chain.Entry) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubAppend(t, s)
+			a0, a1 := contractStubAppendArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives E")
+		})
 	})
 }
 
-// dokimi:provenance sha256:835f7ce3131c1c0580e740202af0456a7718651509826572191ae311e17de5b8
+// TestContractReplayStub checks the methods of ContractReplayStub, which
+// configures Replay.
+func TestContractReplayStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Replay", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			want0, want1 := contractStubReplayPins()
+			s.OnReplay.Returns(want0, want1)
+			got0, got1 := contractStubReplay(t, s)
+			expect.Equal(t, got0, want0, "Replay returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Replay returns the error that Returns sets")
+		})
+
+		t.Run("configures Replay for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := chaintest.NewContractStub(r)
+			s.OnReplay.Strict()
+			var want0 []chain.Entry
+			var want1 error
+			s.OnReplay.Returns(want0, want1)
+			_, _ = contractStubReplay(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Replay")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Replay to the function", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			var got0 context.Context
+			s.OnReplay.Func(func(p0 context.Context) ([]chain.Entry, error) {
+				got0 = p0
+				var z0 []chain.Entry
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubReplay(t, s)
+			a0 := contractStubReplayArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// TestContractVerifyStub checks the methods of ContractVerifyStub, which
+// configures Verify.
+func TestContractVerifyStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Verify", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			want0 := contractStubVerifyPins()
+			s.OnVerify.Returns(want0)
+			got0 := contractStubVerify(t, s)
+			assert.ErrorIs(t, got0, want0, "Verify returns the error that Returns sets")
+		})
+
+		t.Run("configures Verify for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := chaintest.NewContractStub(r)
+			s.OnVerify.Strict()
+			var want0 error
+			s.OnVerify.Returns(want0)
+			_ = contractStubVerify(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Verify")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Verify to the function", func(t *testing.T) {
+			t.Parallel()
+			s := chaintest.NewContractStub(t)
+			var got0 context.Context
+			s.OnVerify.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = contractStubVerify(t, s)
+			a0 := contractStubVerifyArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:1c4e0d65e281e2d60b5211b3f7c18a74dbe6e9a37bfffc2c7bc446b44d0bcf59

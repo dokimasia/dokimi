@@ -7,7 +7,7 @@ package defaultonerrortest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/defaultonerror"
 )
 
@@ -47,33 +47,22 @@ func MixedSuite() conform.Suite[defaultonerror.Mixed] {
 	return conform.Suite[defaultonerror.Mixed]{Declaration: "Mixed"}
 }
 
-// RunMixed applies the checks of Mixed, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunMixed[T defaultonerror.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
+// RunMixedSuite applies the checks of Mixed, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunMixedSuite[T defaultonerror.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(*MixedHandle) defaultonerror.Mixed { return newSubject() }, opts...)
+	RunMixedSuiteFromHandle(t, func(*MixedHandle) T { return newSubject() }, opts...)
 }
 
-// RunMixedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunMixedOn[T defaultonerror.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+// RunMixedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunMixedSuiteFromHandle[T defaultonerror.Mixed](
+	t *testing.T,
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(h *MixedHandle) defaultonerror.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), func(h *MixedHandle) defaultonerror.Mixed { return newSubject(h) }, opts...)
 }
 
-// ControlMixed applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlMixed[T defaultonerror.Mixed](t *testing.T, newControl func() T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(*MixedHandle) defaultonerror.Mixed { return newControl() }, opts...)
-}
-
-// ControlMixedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlMixedOn[T defaultonerror.Mixed](t *testing.T, newControl func(h *MixedHandle) T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(h *MixedHandle) defaultonerror.Mixed { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:2f8d1114c802568b436ce91cfd8414a48065031077da586a28c02838008a738b
+// dokimi:provenance sha256:e3ce7b44aa1274a08c59bb800e3b61987fbe1a0fd22a26accb87097b98a68e9b

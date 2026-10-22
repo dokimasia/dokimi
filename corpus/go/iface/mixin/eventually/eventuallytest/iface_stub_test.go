@@ -12,32 +12,115 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually/eventuallytest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubPublishSubject binds Publish into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubPublishSubject(tb assert.TB) stub.Subject[eventuallytest.MixedPublishCall, eventuallytest.MixedPublishReturn] {
+// mixedStubPublishArgs returns the samples of the arguments of Publish.
+func mixedStubPublishArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Publish-a"
+	return a0, a1
+}
+
+// mixedStubPublish calls Publish of s with the samples of its arguments.
+func mixedStubPublish(tb assert.TB, s *eventuallytest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubPublishArgs(tb)
+	return s.Publish(a0, a1)
+}
+
+// mixedStubPublishPins returns the samples of the results of Publish, with
+// a new error as its error result.
+func mixedStubPublishPins() error {
+	want0 := errors.New("Publish-returns")
+	return want0
+}
+
+// mixedStubSettleArgs returns the samples of the arguments of Settle.
+func mixedStubSettleArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubSettle calls Settle of s with the samples of its arguments.
+func mixedStubSettle(tb assert.TB, s *eventuallytest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubSettleArgs(tb)
+	return s.Settle(a0)
+}
+
+// mixedStubSettlePins returns the samples of the results of Settle, with a
+// new error as its error result.
+func mixedStubSettlePins() error {
+	want0 := errors.New("Settle-returns")
+	return want0
+}
+
+// mixedStubSyncArgs returns the samples of the arguments of Sync.
+func mixedStubSyncArgs(tb assert.TB) (context.Context, eventually.Mixed) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 eventually.Mixed
+	return a0, a1
+}
+
+// mixedStubSync calls Sync of s with the samples of its arguments.
+func mixedStubSync(tb assert.TB, s *eventuallytest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubSyncArgs(tb)
+	return s.Sync(a0, a1)
+}
+
+// mixedStubSyncPins returns the samples of the results of Sync, with a new
+// error as its error result.
+func mixedStubSyncPins() error {
+	want0 := errors.New("Sync-returns")
+	return want0
+}
+
+// mixedStubItemsArgs returns the samples of the arguments of Items.
+func mixedStubItemsArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubItems calls Items of s with the samples of its arguments.
+func mixedStubItems(tb assert.TB, s *eventuallytest.MixedStub) ([]string, error) {
+	tb.Helper()
+	a0 := mixedStubItemsArgs(tb)
+	return s.Items(a0)
+}
+
+// mixedStubItemsPins returns the samples of the results of Items, with a
+// new error as its error result.
+func mixedStubItemsPins() ([]string, error) {
+	var want0 []string
+	want1 := errors.New("Items-returns")
+	want0 = []string{"Items-a"}
+	return want0, want1
+}
+
+// mixedStubPublishSubject returns the subject of [stub.Behaviour] for
+// Publish. The subject calls a new double that reports to tb.
+func mixedStubPublishSubject(
+	tb assert.TB,
+) stub.Subject[eventuallytest.MixedPublishCall, eventuallytest.MixedPublishReturn] {
 	tb.Helper()
 	s := eventuallytest.NewMixedStub(tb)
 	return stub.Subject[eventuallytest.MixedPublishCall, eventuallytest.MixedPublishReturn]{
 		Stub: s.OnPublish.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Publish-a"
-			_ = s.Publish(a0, a1)
+			_ = mixedStubPublish(tb, s)
 		},
 		Result: func() eventuallytest.MixedPublishReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Publish-a"
-			got0 := s.Publish(a0, a1)
+			got0 := mixedStubPublish(tb, s)
 			return eventuallytest.MixedPublishReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,110 +131,26 @@ func mixedStubPublishSubject(tb assert.TB) stub.Subject[eventuallytest.MixedPubl
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Publish-a"
-			r0 := s.Publish(a0, a1)
+			r0 := mixedStubPublish(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubPublish pins how Publish answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubPublish(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Publish", mixedStubPublishSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Publish-a"
-		_ = s.Publish(a0, a1)
-		got := s.OnPublish.AssertCalledOnce(t, "Publish must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Item, a1, "the recorded call carries Item")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var seen []eventuallytest.MixedPublishCall
-		s.OnPublish.OnRecord(func(c eventuallytest.MixedPublishCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Publish-a"
-		_ = s.Publish(a0, a1)
-		_ = s.Publish(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Publish call")
-	})
-
-	t.Run("wires WithMixedPublish at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := eventuallytest.NewMixedStub(t, eventuallytest.WithMixedPublish(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Publish-a"
-		_ = s.Publish(a0, a1)
-		assert.True(t, called, "WithMixedPublish must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Publish-failing")
-		s := eventuallytest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Publish-a"
-		r0 := s.Publish(a0, a1)
-		assert.ErrorIs(t, r0, want, "Publish must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var want0 error
-		s.OnPublish.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Publish-a"
-		_ = s.Publish(a0, a1)
-		s.ResetCalls()
-		_ = s.Publish(a0, a1)
-		s.OnPublish.AssertCalledOnce(t, "Publish must record the call that followed the reset")
-	})
-}
-
-// mixedStubSettleSubject binds Settle into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubSettleSubject(tb assert.TB) stub.Subject[eventuallytest.MixedSettleCall, eventuallytest.MixedSettleReturn] {
+// mixedStubSettleSubject returns the subject of [stub.Behaviour] for
+// Settle. The subject calls a new double that reports to tb.
+func mixedStubSettleSubject(
+	tb assert.TB,
+) stub.Subject[eventuallytest.MixedSettleCall, eventuallytest.MixedSettleReturn] {
 	tb.Helper()
 	s := eventuallytest.NewMixedStub(tb)
 	return stub.Subject[eventuallytest.MixedSettleCall, eventuallytest.MixedSettleReturn]{
 		Stub: s.OnSettle.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Settle(a0)
+			_ = mixedStubSettle(tb, s)
 		},
 		Result: func() eventuallytest.MixedSettleReturn {
-			var a0 context.Context
-			got0 := s.Settle(a0)
+			got0 := mixedStubSettle(tb, s)
 			return eventuallytest.MixedSettleReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -162,99 +161,24 @@ func mixedStubSettleSubject(tb assert.TB) stub.Subject[eventuallytest.MixedSettl
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Settle(a0)
+			r0 := mixedStubSettle(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubSettle pins how Settle answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubSettle(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Settle", mixedStubSettleSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Settle(a0)
-		got := s.OnSettle.AssertCalledOnce(t, "Settle must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var seen []eventuallytest.MixedSettleCall
-		s.OnSettle.OnRecord(func(c eventuallytest.MixedSettleCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Settle(a0)
-		_ = s.Settle(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Settle call")
-	})
-
-	t.Run("wires WithMixedSettle at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := eventuallytest.NewMixedStub(t, eventuallytest.WithMixedSettle(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Settle(a0)
-		assert.True(t, called, "WithMixedSettle must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Settle-failing")
-		s := eventuallytest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Settle(a0)
-		assert.ErrorIs(t, r0, want, "Settle must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var want0 error
-		s.OnSettle.Returns(want0)
-		var a0 context.Context
-		_ = s.Settle(a0)
-		s.ResetCalls()
-		_ = s.Settle(a0)
-		s.OnSettle.AssertCalledOnce(t, "Settle must record the call that followed the reset")
-	})
-}
-
-// mixedStubSyncSubject binds Sync into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubSyncSubject returns the subject of [stub.Behaviour] for Sync.
+// The subject calls a new double that reports to tb.
 func mixedStubSyncSubject(tb assert.TB) stub.Subject[eventuallytest.MixedSyncCall, eventuallytest.MixedSyncReturn] {
 	tb.Helper()
 	s := eventuallytest.NewMixedStub(tb)
 	return stub.Subject[eventuallytest.MixedSyncCall, eventuallytest.MixedSyncReturn]{
 		Stub: s.OnSync.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 eventually.Mixed
-			_ = s.Sync(a0, a1)
+			_ = mixedStubSync(tb, s)
 		},
 		Result: func() eventuallytest.MixedSyncReturn {
-			var a0 context.Context
-			var a1 eventually.Mixed
-			got0 := s.Sync(a0, a1)
+			got0 := mixedStubSync(tb, s)
 			return eventuallytest.MixedSyncReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -265,104 +189,24 @@ func mixedStubSyncSubject(tb assert.TB) stub.Subject[eventuallytest.MixedSyncCal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 eventually.Mixed
-			r0 := s.Sync(a0, a1)
+			r0 := mixedStubSync(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubSync pins how Sync answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubSync(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Sync", mixedStubSyncSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 eventually.Mixed
-		_ = s.Sync(a0, a1)
-		got := s.OnSync.AssertCalledOnce(t, "Sync must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Peer, a1, "the recorded call carries Peer")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var seen []eventuallytest.MixedSyncCall
-		s.OnSync.OnRecord(func(c eventuallytest.MixedSyncCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 eventually.Mixed
-		_ = s.Sync(a0, a1)
-		_ = s.Sync(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Sync call")
-	})
-
-	t.Run("wires WithMixedSync at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := eventuallytest.NewMixedStub(t, eventuallytest.WithMixedSync(func(_ context.Context, _ eventually.Mixed) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 eventually.Mixed
-		_ = s.Sync(a0, a1)
-		assert.True(t, called, "WithMixedSync must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Sync-failing")
-		s := eventuallytest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 eventually.Mixed
-		r0 := s.Sync(a0, a1)
-		assert.ErrorIs(t, r0, want, "Sync must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var want0 error
-		s.OnSync.Returns(want0)
-		var a0 context.Context
-		var a1 eventually.Mixed
-		_ = s.Sync(a0, a1)
-		s.ResetCalls()
-		_ = s.Sync(a0, a1)
-		s.OnSync.AssertCalledOnce(t, "Sync must record the call that followed the reset")
-	})
-}
-
-// mixedStubItemsSubject binds Items into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubItemsSubject returns the subject of [stub.Behaviour] for Items.
+// The subject calls a new double that reports to tb.
 func mixedStubItemsSubject(tb assert.TB) stub.Subject[eventuallytest.MixedItemsCall, eventuallytest.MixedItemsReturn] {
 	tb.Helper()
 	s := eventuallytest.NewMixedStub(tb)
 	return stub.Subject[eventuallytest.MixedItemsCall, eventuallytest.MixedItemsReturn]{
 		Stub: s.OnItems.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Items(a0)
+			_, _ = mixedStubItems(tb, s)
 		},
 		Result: func() eventuallytest.MixedItemsReturn {
-			var a0 context.Context
-			got0, got1 := s.Items(a0)
+			got0, got1 := mixedStubItems(tb, s)
 			return eventuallytest.MixedItemsReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -374,213 +218,681 @@ func mixedStubItemsSubject(tb assert.TB) stub.Subject[eventuallytest.MixedItemsC
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Items(a0)
+			_, r1 := mixedStubItems(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubItems pins how Items answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubItems(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a eventuallytest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[eventuallytest.MixedPublishCall]
 
-	stub.Behaviour(t, "Items", mixedStubItemsSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var want0 []string
-		var want1 error
-		want0 = []string{"Items-a"}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "Items must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		got := s.OnItems.AssertCalledOnce(t, "Items must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var seen []eventuallytest.MixedItemsCall
-		s.OnItems.OnRecord(func(c eventuallytest.MixedItemsCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		_, _ = s.Items(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Items call")
-	})
-
-	t.Run("wires WithMixedItems at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := eventuallytest.NewMixedStub(t, eventuallytest.WithMixedItems(func(_ context.Context) ([]string, error) {
-			called = true
-			var z0 []string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		assert.True(t, called, "WithMixedItems must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Items-failing")
-		s := eventuallytest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := eventuallytest.NewMixedStub(t)
-		var want0 []string
-		var want1 error
-		want0 = []string{"Items-a"}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		s.ResetCalls()
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Publish stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func mixedStubDouble() stub.Double[eventuallytest.MixedPublishCall] {
-	instance := func(s *eventuallytest.MixedStub) stub.Instance[eventuallytest.MixedPublishCall] {
-		return stub.Instance[eventuallytest.MixedPublishCall]{
-			Stub: s.OnPublish.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Publish-a"
-				_ = s.Publish(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[eventuallytest.MixedPublishCall]{
-		New: func(tb assert.TB) stub.Instance[eventuallytest.MixedPublishCall] {
-			return instance(eventuallytest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Publish alone.
+func mixedStubInstanceOf(tb assert.TB, s *eventuallytest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnPublish.MethodStub,
+		Call: func() {
+			_ = mixedStubPublish(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[eventuallytest.MixedPublishCall] {
-			return instance(eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[eventuallytest.MixedPublishCall] {
-			return instance(eventuallytest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[eventuallytest.MixedPublishCall] {
-			return instance(eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[eventuallytest.MixedPublishCall] {
-			return instance(eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[eventuallytest.MixedPublishCall] {
-			return instance(eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Publish", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Publish", mixedStubPublishSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_ = mixedStubPublish(t, s)
+			got := s.OnPublish.AssertCalledOnce(t, "Publish records the call")
+			a0, a1 := mixedStubPublishArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Item, a1, "the call records Item")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var seen []eventuallytest.MixedPublishCall
+			s.OnPublish.OnRecord(func(c eventuallytest.MixedPublishCall) { seen = append(seen, c) })
+			_ = mixedStubPublish(t, s)
+			_ = mixedStubPublish(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Publish")
+		})
+	})
+
+	t.Run("Settle", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Settle", mixedStubSettleSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_ = mixedStubSettle(t, s)
+			got := s.OnSettle.AssertCalledOnce(t, "Settle records the call")
+			a0 := mixedStubSettleArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var seen []eventuallytest.MixedSettleCall
+			s.OnSettle.OnRecord(func(c eventuallytest.MixedSettleCall) { seen = append(seen, c) })
+			_ = mixedStubSettle(t, s)
+			_ = mixedStubSettle(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Settle")
+		})
+	})
+
+	t.Run("Sync", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Sync", mixedStubSyncSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_ = mixedStubSync(t, s)
+			got := s.OnSync.AssertCalledOnce(t, "Sync records the call")
+			a0, a1 := mixedStubSyncArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Peer, a1, "the call records Peer")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var seen []eventuallytest.MixedSyncCall
+			s.OnSync.OnRecord(func(c eventuallytest.MixedSyncCall) { seen = append(seen, c) })
+			_ = mixedStubSync(t, s)
+			_ = mixedStubSync(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Sync")
+		})
+	})
+
+	t.Run("Items", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Items", mixedStubItemsSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_, _ = mixedStubItems(t, s)
+			got := s.OnItems.AssertCalledOnce(t, "Items records the call")
+			a0 := mixedStubItemsArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var seen []eventuallytest.MixedItemsCall
+			s.OnItems.OnRecord(func(c eventuallytest.MixedItemsCall) { seen = append(seen, c) })
+			_, _ = mixedStubItems(t, s)
+			_, _ = mixedStubItems(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Items")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, eventuallytest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Publish", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_ = mixedStubPublish(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPublish.CallCount(), 0, "ResetCalls clears the calls of Publish")
+		})
+
+		t.Run("keeps the results of Returns of Publish", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0 := mixedStubPublishPins()
+			s.OnPublish.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubPublish(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Publish")
+		})
+
+		t.Run("clears the recorded calls of Settle", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_ = mixedStubSettle(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSettle.CallCount(), 0, "ResetCalls clears the calls of Settle")
+		})
+
+		t.Run("keeps the results of Returns of Settle", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0 := mixedStubSettlePins()
+			s.OnSettle.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubSettle(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Settle")
+		})
+
+		t.Run("clears the recorded calls of Sync", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_ = mixedStubSync(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSync.CallCount(), 0, "ResetCalls clears the calls of Sync")
+		})
+
+		t.Run("keeps the results of Returns of Sync", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0 := mixedStubSyncPins()
+			s.OnSync.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubSync(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Sync")
+		})
+
+		t.Run("clears the recorded calls of Items", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			_, _ = mixedStubItems(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnItems.CallCount(), 0, "ResetCalls clears the calls of Items")
+		})
+
+		t.Run("keeps the results of Returns of Items", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0, want1 := mixedStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubItems(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Items")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Items")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, eventuallytest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Publish with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Publish-failing")
+			s := eventuallytest.NewMixedStubFailing(t, want)
+			r0 := mixedStubPublish(t, s)
+			assert.ErrorIs(t, r0, want, "Publish fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Settle with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Settle-failing")
+			s := eventuallytest.NewMixedStubFailing(t, want)
+			r0 := mixedStubSettle(t, s)
+			assert.ErrorIs(t, r0, want, "Settle fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Sync with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Sync-failing")
+			s := eventuallytest.NewMixedStubFailing(t, want)
+			r0 := mixedStubSync(t, s)
+			assert.ErrorIs(t, r0, want, "Sync fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := eventuallytest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Publish to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := eventuallytest.NewMixedStub(t)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			_ = mixedStubPublish(t, s)
+			inner.OnPublish.AssertCalledOnce(t, "Publish calls the implementation")
+		})
+
+		t.Run("fails Publish with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Publish-delegate")
+			inner := eventuallytest.NewMixedStub(t)
+			inner.OnPublish.Faults(want, 1)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			r0 := mixedStubPublish(t, s)
+			assert.ErrorIs(t, r0, want, "Publish fails with the error of the implementation")
+		})
+
+		t.Run("passes Settle to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := eventuallytest.NewMixedStub(t)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			_ = mixedStubSettle(t, s)
+			inner.OnSettle.AssertCalledOnce(t, "Settle calls the implementation")
+		})
+
+		t.Run("fails Settle with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Settle-delegate")
+			inner := eventuallytest.NewMixedStub(t)
+			inner.OnSettle.Faults(want, 1)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			r0 := mixedStubSettle(t, s)
+			assert.ErrorIs(t, r0, want, "Settle fails with the error of the implementation")
+		})
+
+		t.Run("passes Sync to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := eventuallytest.NewMixedStub(t)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			_ = mixedStubSync(t, s)
+			inner.OnSync.AssertCalledOnce(t, "Sync calls the implementation")
+		})
+
+		t.Run("fails Sync with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Sync-delegate")
+			inner := eventuallytest.NewMixedStub(t)
+			inner.OnSync.Faults(want, 1)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			r0 := mixedStubSync(t, s)
+			assert.ErrorIs(t, r0, want, "Sync fails with the error of the implementation")
+		})
+
+		t.Run("passes Items to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := eventuallytest.NewMixedStub(t)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubItems(t, s)
+			inner.OnItems.AssertCalledOnce(t, "Items calls the implementation")
+		})
+
+		t.Run("fails Items with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-delegate")
+			inner := eventuallytest.NewMixedStub(t)
+			inner.OnItems.Faults(want, 1)
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, eventuallytest.NewMixedStub(tb, eventuallytest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				eventuallytest.NewMixedStub(
+					tb,
+					eventuallytest.MixedStubWithClock(clk),
+					eventuallytest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Publish with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Publish-failing")
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubFailing(want))
+			r0 := mixedStubPublish(t, s)
+			assert.ErrorIs(t, r0, want, "Publish fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Settle with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Settle-failing")
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubFailing(want))
+			r0 := mixedStubSettle(t, s)
+			assert.ErrorIs(t, r0, want, "Settle fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Sync with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Sync-failing")
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubFailing(want))
+			r0 := mixedStubSync(t, s)
+			assert.ErrorIs(t, r0, want, "Sync fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubFailing(want))
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedPublish", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Publish", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := eventuallytest.NewMixedStub(
+				t,
+				eventuallytest.WithMixedPublish(func(_ context.Context, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubPublish(t, s)
+			assert.True(t, called, "WithMixedPublish sets the function of Publish")
+		})
+	})
+
+	t.Run("WithMixedSettle", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Settle", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := eventuallytest.NewMixedStub(t, eventuallytest.WithMixedSettle(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubSettle(t, s)
+			assert.True(t, called, "WithMixedSettle sets the function of Settle")
+		})
+	})
+
+	t.Run("WithMixedSync", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Sync", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := eventuallytest.NewMixedStub(
+				t,
+				eventuallytest.WithMixedSync(func(_ context.Context, _ eventually.Mixed) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubSync(t, s)
+			assert.True(t, called, "WithMixedSync sets the function of Sync")
+		})
+	})
+
+	t.Run("WithMixedItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Items", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := eventuallytest.NewMixedStub(
+				t,
+				eventuallytest.WithMixedItems(func(_ context.Context) ([]string, error) {
+					called = true
+					var z0 []string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubItems(t, s)
+			assert.True(t, called, "WithMixedItems sets the function of Items")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedPublishStub checks the methods of MixedPublishStub, which
+// configures Publish.
+func TestMixedPublishStub(t *testing.T) {
 	t.Parallel()
 
-	inner := eventuallytest.NewMixedStub(t)
-	s := eventuallytest.NewMixedStub(t, eventuallytest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Publish to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Publish-a"
-		_ = s.Publish(a0, a1)
-		inner.OnPublish.AssertCalledOnce(t, "Publish must reach the wrapped implementation")
+		t.Run("sets the results of each call of Publish", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0 := mixedStubPublishPins()
+			s.OnPublish.Returns(want0)
+			got0 := mixedStubPublish(t, s)
+			assert.ErrorIs(t, got0, want0, "Publish returns the error that Returns sets")
+		})
+
+		t.Run("configures Publish for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := eventuallytest.NewMixedStub(r)
+			s.OnPublish.Strict()
+			var want0 error
+			s.OnPublish.Returns(want0)
+			_ = mixedStubPublish(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Publish")
+		})
 	})
 
-	t.Run("surfaces what Publish answered", func(t *testing.T) {
-		want := errors.New("Publish-delegate")
-		inner.OnPublish.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Publish-a"
-		r0 := s.Publish(a0, a1)
-		assert.ErrorIs(t, r0, want, "Publish must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Settle to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Settle(a0)
-		inner.OnSettle.AssertCalledOnce(t, "Settle must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Settle answered", func(t *testing.T) {
-		want := errors.New("Settle-delegate")
-		inner.OnSettle.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Settle(a0)
-		assert.ErrorIs(t, r0, want, "Settle must surface the wrapped answer")
-	})
-
-	t.Run("forwards Sync to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 eventually.Mixed
-		_ = s.Sync(a0, a1)
-		inner.OnSync.AssertCalledOnce(t, "Sync must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Sync answered", func(t *testing.T) {
-		want := errors.New("Sync-delegate")
-		inner.OnSync.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 eventually.Mixed
-		r0 := s.Sync(a0, a1)
-		assert.ErrorIs(t, r0, want, "Sync must surface the wrapped answer")
-	})
-
-	t.Run("forwards Items to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		inner.OnItems.AssertCalledOnce(t, "Items must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Items answered", func(t *testing.T) {
-		want := errors.New("Items-delegate")
-		inner.OnItems.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Publish to the function", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnPublish.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubPublish(t, s)
+			a0, a1 := mixedStubPublishArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Item")
+		})
 	})
 }
 
-// dokimi:provenance sha256:3f5f3b2fb769010299c40b455ee16e84fe51e16f79ceb0b5e949de0c8346b62e
+// TestMixedSettleStub checks the methods of MixedSettleStub, which
+// configures Settle.
+func TestMixedSettleStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Settle", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0 := mixedStubSettlePins()
+			s.OnSettle.Returns(want0)
+			got0 := mixedStubSettle(t, s)
+			assert.ErrorIs(t, got0, want0, "Settle returns the error that Returns sets")
+		})
+
+		t.Run("configures Settle for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := eventuallytest.NewMixedStub(r)
+			s.OnSettle.Strict()
+			var want0 error
+			s.OnSettle.Returns(want0)
+			_ = mixedStubSettle(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Settle")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Settle to the function", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnSettle.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubSettle(t, s)
+			a0 := mixedStubSettleArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// TestMixedSyncStub checks the methods of MixedSyncStub, which configures
+// Sync.
+func TestMixedSyncStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Sync", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0 := mixedStubSyncPins()
+			s.OnSync.Returns(want0)
+			got0 := mixedStubSync(t, s)
+			assert.ErrorIs(t, got0, want0, "Sync returns the error that Returns sets")
+		})
+
+		t.Run("configures Sync for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := eventuallytest.NewMixedStub(r)
+			s.OnSync.Strict()
+			var want0 error
+			s.OnSync.Returns(want0)
+			_ = mixedStubSync(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Sync")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Sync to the function", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 eventually.Mixed
+			s.OnSync.Func(func(p0 context.Context, p1 eventually.Mixed) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubSync(t, s)
+			a0, a1 := mixedStubSyncArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Peer")
+		})
+	})
+}
+
+// TestMixedItemsStub checks the methods of MixedItemsStub, which
+// configures Items.
+func TestMixedItemsStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Items", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			want0, want1 := mixedStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			got0, got1 := mixedStubItems(t, s)
+			expect.Equal(t, got0, want0, "Items returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Items returns the error that Returns sets")
+		})
+
+		t.Run("configures Items for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := eventuallytest.NewMixedStub(r)
+			s.OnItems.Strict()
+			var want0 []string
+			var want1 error
+			s.OnItems.Returns(want0, want1)
+			_, _ = mixedStubItems(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Items")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Items to the function", func(t *testing.T) {
+			t.Parallel()
+			s := eventuallytest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnItems.Func(func(p0 context.Context) ([]string, error) {
+				got0 = p0
+				var z0 []string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubItems(t, s)
+			a0 := mixedStubItemsArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:68695991a9502ec6adce76905b374287bb192bcf3ae6e84ba36fd7097c6f64c2

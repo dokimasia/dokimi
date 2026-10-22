@@ -12,32 +12,74 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/outbox"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/outbox/outboxtest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubAppendSubject binds Append into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubAppendSubject(tb assert.TB) stub.Subject[outboxtest.ContractAppendCall, outboxtest.ContractAppendReturn] {
+// contractStubAppendArgs returns the samples of the arguments of Append.
+func contractStubAppendArgs(tb assert.TB) (context.Context, outbox.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 outbox.Value
+	a1 = outbox.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// contractStubAppend calls Append of s with the samples of its arguments.
+func contractStubAppend(tb assert.TB, s *outboxtest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubAppendArgs(tb)
+	return s.Append(a0, a1)
+}
+
+// contractStubAppendPins returns the samples of the results of Append,
+// with a new error as its error result.
+func contractStubAppendPins() error {
+	want0 := errors.New("Append-returns")
+	return want0
+}
+
+// contractStubSubscribeArgs returns the samples of the arguments of
+// Subscribe.
+func contractStubSubscribeArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubSubscribe calls Subscribe of s with the samples of its
+// arguments.
+func contractStubSubscribe(tb assert.TB, s *outboxtest.ContractStub) (<-chan outbox.Value, error) {
+	tb.Helper()
+	a0 := contractStubSubscribeArgs(tb)
+	return s.Subscribe(a0)
+}
+
+// contractStubSubscribePins returns the samples of the results of
+// Subscribe, with a new error as its error result.
+func contractStubSubscribePins() (<-chan outbox.Value, error) {
+	var want0 <-chan outbox.Value
+	want1 := errors.New("Subscribe-returns")
+	want0 = make(<-chan outbox.Value)
+	return want0, want1
+}
+
+// contractStubAppendSubject returns the subject of [stub.Behaviour] for
+// Append. The subject calls a new double that reports to tb.
+func contractStubAppendSubject(
+	tb assert.TB,
+) stub.Subject[outboxtest.ContractAppendCall, outboxtest.ContractAppendReturn] {
 	tb.Helper()
 	s := outboxtest.NewContractStub(tb)
 	return stub.Subject[outboxtest.ContractAppendCall, outboxtest.ContractAppendReturn]{
 		Stub: s.OnAppend.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 outbox.Value
-			a1 = outbox.Value{Key: "Key-a"}
-			_ = s.Append(a0, a1)
+			_ = contractStubAppend(tb, s)
 		},
 		Result: func() outboxtest.ContractAppendReturn {
-			var a0 context.Context
-			var a1 outbox.Value
-			a1 = outbox.Value{Key: "Key-a"}
-			got0 := s.Append(a0, a1)
+			got0 := contractStubAppend(tb, s)
 			return outboxtest.ContractAppendReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,111 +90,26 @@ func contractStubAppendSubject(tb assert.TB) stub.Subject[outboxtest.ContractApp
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 outbox.Value
-			a1 = outbox.Value{Key: "Key-a"}
-			r0 := s.Append(a0, a1)
+			r0 := contractStubAppend(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubAppend pins how Append answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubAppend(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Append", contractStubAppendSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := outboxtest.NewContractStub(t)
-		var a0 context.Context
-		var a1 outbox.Value
-		a1 = outbox.Value{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		got := s.OnAppend.AssertCalledOnce(t, "Append must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := outboxtest.NewContractStub(t)
-		var seen []outboxtest.ContractAppendCall
-		s.OnAppend.OnRecord(func(c outboxtest.ContractAppendCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 outbox.Value
-		a1 = outbox.Value{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		_ = s.Append(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Append call")
-	})
-
-	t.Run("wires WithContractAppend at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := outboxtest.NewContractStub(t, outboxtest.WithContractAppend(func(_ context.Context, _ outbox.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 outbox.Value
-		a1 = outbox.Value{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		assert.True(t, called, "WithContractAppend must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Append-failing")
-		s := outboxtest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 outbox.Value
-		a1 = outbox.Value{Key: "Key-a"}
-		r0 := s.Append(a0, a1)
-		assert.ErrorIs(t, r0, want, "Append must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := outboxtest.NewContractStub(t)
-		var want0 error
-		s.OnAppend.Returns(want0)
-		var a0 context.Context
-		var a1 outbox.Value
-		a1 = outbox.Value{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		s.ResetCalls()
-		_ = s.Append(a0, a1)
-		s.OnAppend.AssertCalledOnce(t, "Append must record the call that followed the reset")
-	})
-}
-
-// contractStubSubscribeSubject binds Subscribe into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubSubscribeSubject(tb assert.TB) stub.Subject[outboxtest.ContractSubscribeCall, outboxtest.ContractSubscribeReturn] {
+// contractStubSubscribeSubject returns the subject of [stub.Behaviour] for
+// Subscribe. The subject calls a new double that reports to tb.
+func contractStubSubscribeSubject(
+	tb assert.TB,
+) stub.Subject[outboxtest.ContractSubscribeCall, outboxtest.ContractSubscribeReturn] {
 	tb.Helper()
 	s := outboxtest.NewContractStub(tb)
 	return stub.Subject[outboxtest.ContractSubscribeCall, outboxtest.ContractSubscribeReturn]{
 		Stub: s.OnSubscribe.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Subscribe(a0)
+			_, _ = contractStubSubscribe(tb, s)
 		},
 		Result: func() outboxtest.ContractSubscribeReturn {
-			var a0 context.Context
-			got0, got1 := s.Subscribe(a0)
+			got0, got1 := contractStubSubscribe(tb, s)
 			return outboxtest.ContractSubscribeReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -164,183 +121,398 @@ func contractStubSubscribeSubject(tb assert.TB) stub.Subject[outboxtest.Contract
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Subscribe(a0)
+			_, r1 := contractStubSubscribe(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubSubscribe pins how Subscribe answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubSubscribe(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a outboxtest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[outboxtest.ContractAppendCall]
 
-	stub.Behaviour(t, "Subscribe", contractStubSubscribeSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := outboxtest.NewContractStub(t)
-		var want0 <-chan outbox.Value
-		var want1 error
-		want0 = make(<-chan outbox.Value)
-		s.OnSubscribe.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Subscribe(a0)
-		assert.Equal(t, got0, want0, "Subscribe must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := outboxtest.NewContractStub(t)
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		got := s.OnSubscribe.AssertCalledOnce(t, "Subscribe must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := outboxtest.NewContractStub(t)
-		var seen []outboxtest.ContractSubscribeCall
-		s.OnSubscribe.OnRecord(func(c outboxtest.ContractSubscribeCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		_, _ = s.Subscribe(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Subscribe call")
-	})
-
-	t.Run("wires WithContractSubscribe at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := outboxtest.NewContractStub(t, outboxtest.WithContractSubscribe(func(_ context.Context) (<-chan outbox.Value, error) {
-			called = true
-			var z0 <-chan outbox.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		assert.True(t, called, "WithContractSubscribe must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Subscribe-failing")
-		s := outboxtest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Subscribe(a0)
-		assert.ErrorIs(t, r1, want, "Subscribe must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := outboxtest.NewContractStub(t)
-		var want0 <-chan outbox.Value
-		var want1 error
-		want0 = make(<-chan outbox.Value)
-		s.OnSubscribe.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		s.ResetCalls()
-		got0, _ := s.Subscribe(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Append stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func contractStubDouble() stub.Double[outboxtest.ContractAppendCall] {
-	instance := func(s *outboxtest.ContractStub) stub.Instance[outboxtest.ContractAppendCall] {
-		return stub.Instance[outboxtest.ContractAppendCall]{
-			Stub: s.OnAppend.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 outbox.Value
-				a1 = outbox.Value{Key: "Key-a"}
-				_ = s.Append(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[outboxtest.ContractAppendCall]{
-		New: func(tb assert.TB) stub.Instance[outboxtest.ContractAppendCall] {
-			return instance(outboxtest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Append alone.
+func contractStubInstanceOf(tb assert.TB, s *outboxtest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnAppend.MethodStub,
+		Call: func() {
+			_ = contractStubAppend(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[outboxtest.ContractAppendCall] {
-			return instance(outboxtest.NewContractStub(tb, outboxtest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[outboxtest.ContractAppendCall] {
-			return instance(outboxtest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[outboxtest.ContractAppendCall] {
-			return instance(outboxtest.NewContractStub(tb, outboxtest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[outboxtest.ContractAppendCall] {
-			return instance(outboxtest.NewContractStub(tb, outboxtest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[outboxtest.ContractAppendCall] {
-			return instance(outboxtest.NewContractStub(tb, outboxtest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Append", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Append", contractStubAppendSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			_ = contractStubAppend(t, s)
+			got := s.OnAppend.AssertCalledOnce(t, "Append records the call")
+			a0, a1 := contractStubAppendArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			var seen []outboxtest.ContractAppendCall
+			s.OnAppend.OnRecord(func(c outboxtest.ContractAppendCall) { seen = append(seen, c) })
+			_ = contractStubAppend(t, s)
+			_ = contractStubAppend(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Append")
+		})
+	})
+
+	t.Run("Subscribe", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Subscribe", contractStubSubscribeSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			_, _ = contractStubSubscribe(t, s)
+			got := s.OnSubscribe.AssertCalledOnce(t, "Subscribe records the call")
+			a0 := contractStubSubscribeArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			var seen []outboxtest.ContractSubscribeCall
+			s.OnSubscribe.OnRecord(func(c outboxtest.ContractSubscribeCall) { seen = append(seen, c) })
+			_, _ = contractStubSubscribe(t, s)
+			_, _ = contractStubSubscribe(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Subscribe")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, outboxtest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Append", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			_ = contractStubAppend(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAppend.CallCount(), 0, "ResetCalls clears the calls of Append")
+		})
+
+		t.Run("keeps the results of Returns of Append", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			want0 := contractStubAppendPins()
+			s.OnAppend.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Append")
+		})
+
+		t.Run("clears the recorded calls of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			_, _ = contractStubSubscribe(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSubscribe.CallCount(), 0, "ResetCalls clears the calls of Subscribe")
+		})
+
+		t.Run("keeps the results of Returns of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			want0, want1 := contractStubSubscribePins()
+			s.OnSubscribe.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubSubscribe(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Subscribe")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Subscribe")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, outboxtest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := outboxtest.NewContractStubFailing(t, want)
+			r0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Subscribe with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Subscribe-failing")
+			s := outboxtest.NewContractStubFailing(t, want)
+			_, r1 := contractStubSubscribe(t, s)
+			assert.ErrorIs(t, r1, want, "Subscribe fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, outboxtest.NewContractStub(tb, outboxtest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Append to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := outboxtest.NewContractStub(t)
+			s := outboxtest.NewContractStub(t, outboxtest.ContractStubDelegateTo(inner))
+			_ = contractStubAppend(t, s)
+			inner.OnAppend.AssertCalledOnce(t, "Append calls the implementation")
+		})
+
+		t.Run("fails Append with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-delegate")
+			inner := outboxtest.NewContractStub(t)
+			inner.OnAppend.Faults(want, 1)
+			s := outboxtest.NewContractStub(t, outboxtest.ContractStubDelegateTo(inner))
+			r0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of the implementation")
+		})
+
+		t.Run("passes Subscribe to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := outboxtest.NewContractStub(t)
+			s := outboxtest.NewContractStub(t, outboxtest.ContractStubDelegateTo(inner))
+			_, _ = contractStubSubscribe(t, s)
+			inner.OnSubscribe.AssertCalledOnce(t, "Subscribe calls the implementation")
+		})
+
+		t.Run("fails Subscribe with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Subscribe-delegate")
+			inner := outboxtest.NewContractStub(t)
+			inner.OnSubscribe.Faults(want, 1)
+			s := outboxtest.NewContractStub(t, outboxtest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubSubscribe(t, s)
+			assert.ErrorIs(t, r1, want, "Subscribe fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, outboxtest.NewContractStub(tb, outboxtest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				outboxtest.NewContractStub(tb, outboxtest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, outboxtest.NewContractStub(tb, outboxtest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				outboxtest.NewContractStub(
+					tb,
+					outboxtest.ContractStubWithClock(clk),
+					outboxtest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := outboxtest.NewContractStub(t, outboxtest.ContractStubFailing(want))
+			r0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Subscribe with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Subscribe-failing")
+			s := outboxtest.NewContractStub(t, outboxtest.ContractStubFailing(want))
+			_, r1 := contractStubSubscribe(t, s)
+			assert.ErrorIs(t, r1, want, "Subscribe fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractAppend", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Append", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := outboxtest.NewContractStub(
+				t,
+				outboxtest.WithContractAppend(func(_ context.Context, _ outbox.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubAppend(t, s)
+			assert.True(t, called, "WithContractAppend sets the function of Append")
+		})
+	})
+
+	t.Run("WithContractSubscribe", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := outboxtest.NewContractStub(
+				t,
+				outboxtest.WithContractSubscribe(func(_ context.Context) (<-chan outbox.Value, error) {
+					called = true
+					var z0 <-chan outbox.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubSubscribe(t, s)
+			assert.True(t, called, "WithContractSubscribe sets the function of Subscribe")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractAppendStub checks the methods of ContractAppendStub, which
+// configures Append.
+func TestContractAppendStub(t *testing.T) {
 	t.Parallel()
 
-	inner := outboxtest.NewContractStub(t)
-	s := outboxtest.NewContractStub(t, outboxtest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Append to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 outbox.Value
-		a1 = outbox.Value{Key: "Key-a"}
-		_ = s.Append(a0, a1)
-		inner.OnAppend.AssertCalledOnce(t, "Append must reach the wrapped implementation")
+		t.Run("sets the results of each call of Append", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			want0 := contractStubAppendPins()
+			s.OnAppend.Returns(want0)
+			got0 := contractStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "Append returns the error that Returns sets")
+		})
+
+		t.Run("configures Append for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := outboxtest.NewContractStub(r)
+			s.OnAppend.Strict()
+			var want0 error
+			s.OnAppend.Returns(want0)
+			_ = contractStubAppend(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Append")
+		})
 	})
 
-	t.Run("surfaces what Append answered", func(t *testing.T) {
-		want := errors.New("Append-delegate")
-		inner.OnAppend.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 outbox.Value
-		a1 = outbox.Value{Key: "Key-a"}
-		r0 := s.Append(a0, a1)
-		assert.ErrorIs(t, r0, want, "Append must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Subscribe to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		inner.OnSubscribe.AssertCalledOnce(t, "Subscribe must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Subscribe answered", func(t *testing.T) {
-		want := errors.New("Subscribe-delegate")
-		inner.OnSubscribe.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Subscribe(a0)
-		assert.ErrorIs(t, r1, want, "Subscribe must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Append to the function", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			var got0 context.Context
+			var got1 outbox.Value
+			s.OnAppend.Func(func(p0 context.Context, p1 outbox.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubAppend(t, s)
+			a0, a1 := contractStubAppendArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:b94cb1ae04ec10cb6fb834b0bdc456a26b0d289c7105220c9ac11e431c128132
+// TestContractSubscribeStub checks the methods of ContractSubscribeStub,
+// which configures Subscribe.
+func TestContractSubscribeStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			want0, want1 := contractStubSubscribePins()
+			s.OnSubscribe.Returns(want0, want1)
+			got0, got1 := contractStubSubscribe(t, s)
+			expect.Equal(t, got0, want0, "Subscribe returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Subscribe returns the error that Returns sets")
+		})
+
+		t.Run("configures Subscribe for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := outboxtest.NewContractStub(r)
+			s.OnSubscribe.Strict()
+			var want0 <-chan outbox.Value
+			var want1 error
+			s.OnSubscribe.Returns(want0, want1)
+			_, _ = contractStubSubscribe(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Subscribe")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Subscribe to the function", func(t *testing.T) {
+			t.Parallel()
+			s := outboxtest.NewContractStub(t)
+			var got0 context.Context
+			s.OnSubscribe.Func(func(p0 context.Context) (<-chan outbox.Value, error) {
+				got0 = p0
+				var z0 <-chan outbox.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubSubscribe(t, s)
+			a0 := contractStubSubscribeArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:7236ed002b7d3c33020686917b8daf30ef716005a0494b0e64d54c89e3772a0a

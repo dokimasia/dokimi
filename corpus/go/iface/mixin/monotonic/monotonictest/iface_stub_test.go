@@ -12,27 +12,69 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonic/monotonictest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubVersionSubject binds Version into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubVersionSubject(tb assert.TB) stub.Subject[monotonictest.MixedVersionCall, monotonictest.MixedVersionReturn] {
+// mixedStubVersionArgs returns the samples of the arguments of Version.
+func mixedStubVersionArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubVersion calls Version of s with the samples of its arguments.
+func mixedStubVersion(tb assert.TB, s *monotonictest.MixedStub) (int64, error) {
+	tb.Helper()
+	a0 := mixedStubVersionArgs(tb)
+	return s.Version(a0)
+}
+
+// mixedStubVersionPins returns the samples of the results of Version, with
+// a new error as its error result.
+func mixedStubVersionPins() (int64, error) {
+	var want0 int64
+	want1 := errors.New("Version-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// mixedStubAdvanceArgs returns the samples of the arguments of Advance.
+func mixedStubAdvanceArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubAdvance calls Advance of s with the samples of its arguments.
+func mixedStubAdvance(tb assert.TB, s *monotonictest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubAdvanceArgs(tb)
+	return s.Advance(a0)
+}
+
+// mixedStubAdvancePins returns the samples of the results of Advance, with
+// a new error as its error result.
+func mixedStubAdvancePins() error {
+	want0 := errors.New("Advance-returns")
+	return want0
+}
+
+// mixedStubVersionSubject returns the subject of [stub.Behaviour] for
+// Version. The subject calls a new double that reports to tb.
+func mixedStubVersionSubject(
+	tb assert.TB,
+) stub.Subject[monotonictest.MixedVersionCall, monotonictest.MixedVersionReturn] {
 	tb.Helper()
 	s := monotonictest.NewMixedStub(tb)
 	return stub.Subject[monotonictest.MixedVersionCall, monotonictest.MixedVersionReturn]{
 		Stub: s.OnVersion.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Version(a0)
+			_, _ = mixedStubVersion(tb, s)
 		},
 		Result: func() monotonictest.MixedVersionReturn {
-			var a0 context.Context
-			got0, got1 := s.Version(a0)
+			got0, got1 := mixedStubVersion(tb, s)
 			return monotonictest.MixedVersionReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -44,112 +86,26 @@ func mixedStubVersionSubject(tb assert.TB) stub.Subject[monotonictest.MixedVersi
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Version(a0)
+			_, r1 := mixedStubVersion(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubVersion pins how Version answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubVersion(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Version", mixedStubVersionSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := monotonictest.NewMixedStub(t)
-		var want0 int64
-		var want1 error
-		want0 = 42
-		s.OnVersion.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Version(a0)
-		assert.Equal(t, got0, want0, "Version must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := monotonictest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Version(a0)
-		got := s.OnVersion.AssertCalledOnce(t, "Version must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := monotonictest.NewMixedStub(t)
-		var seen []monotonictest.MixedVersionCall
-		s.OnVersion.OnRecord(func(c monotonictest.MixedVersionCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Version(a0)
-		_, _ = s.Version(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Version call")
-	})
-
-	t.Run("wires WithMixedVersion at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := monotonictest.NewMixedStub(t, monotonictest.WithMixedVersion(func(_ context.Context) (int64, error) {
-			called = true
-			var z0 int64
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Version(a0)
-		assert.True(t, called, "WithMixedVersion must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Version-failing")
-		s := monotonictest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Version(a0)
-		assert.ErrorIs(t, r1, want, "Version must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := monotonictest.NewMixedStub(t)
-		var want0 int64
-		var want1 error
-		want0 = 42
-		s.OnVersion.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Version(a0)
-		s.ResetCalls()
-		got0, _ := s.Version(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubAdvanceSubject binds Advance into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubAdvanceSubject(tb assert.TB) stub.Subject[monotonictest.MixedAdvanceCall, monotonictest.MixedAdvanceReturn] {
+// mixedStubAdvanceSubject returns the subject of [stub.Behaviour] for
+// Advance. The subject calls a new double that reports to tb.
+func mixedStubAdvanceSubject(
+	tb assert.TB,
+) stub.Subject[monotonictest.MixedAdvanceCall, monotonictest.MixedAdvanceReturn] {
 	tb.Helper()
 	s := monotonictest.NewMixedStub(tb)
 	return stub.Subject[monotonictest.MixedAdvanceCall, monotonictest.MixedAdvanceReturn]{
 		Stub: s.OnAdvance.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Advance(a0)
+			_ = mixedStubAdvance(tb, s)
 		},
 		Result: func() monotonictest.MixedAdvanceReturn {
-			var a0 context.Context
-			got0 := s.Advance(a0)
+			got0 := mixedStubAdvance(tb, s)
 			return monotonictest.MixedAdvanceReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -160,162 +116,386 @@ func mixedStubAdvanceSubject(tb assert.TB) stub.Subject[monotonictest.MixedAdvan
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Advance(a0)
+			r0 := mixedStubAdvance(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubAdvance pins how Advance answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubAdvance(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a monotonictest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[monotonictest.MixedVersionCall]
 
-	stub.Behaviour(t, "Advance", mixedStubAdvanceSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := monotonictest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Advance(a0)
-		got := s.OnAdvance.AssertCalledOnce(t, "Advance must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := monotonictest.NewMixedStub(t)
-		var seen []monotonictest.MixedAdvanceCall
-		s.OnAdvance.OnRecord(func(c monotonictest.MixedAdvanceCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Advance(a0)
-		_ = s.Advance(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Advance call")
-	})
-
-	t.Run("wires WithMixedAdvance at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := monotonictest.NewMixedStub(t, monotonictest.WithMixedAdvance(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Advance(a0)
-		assert.True(t, called, "WithMixedAdvance must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Advance-failing")
-		s := monotonictest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Advance(a0)
-		assert.ErrorIs(t, r0, want, "Advance must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := monotonictest.NewMixedStub(t)
-		var want0 error
-		s.OnAdvance.Returns(want0)
-		var a0 context.Context
-		_ = s.Advance(a0)
-		s.ResetCalls()
-		_ = s.Advance(a0)
-		s.OnAdvance.AssertCalledOnce(t, "Advance must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Version stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func mixedStubDouble() stub.Double[monotonictest.MixedVersionCall] {
-	instance := func(s *monotonictest.MixedStub) stub.Instance[monotonictest.MixedVersionCall] {
-		return stub.Instance[monotonictest.MixedVersionCall]{
-			Stub: s.OnVersion.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_, _ = s.Version(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[monotonictest.MixedVersionCall]{
-		New: func(tb assert.TB) stub.Instance[monotonictest.MixedVersionCall] {
-			return instance(monotonictest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Version alone.
+func mixedStubInstanceOf(tb assert.TB, s *monotonictest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnVersion.MethodStub,
+		Call: func() {
+			_, _ = mixedStubVersion(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[monotonictest.MixedVersionCall] {
-			return instance(monotonictest.NewMixedStub(tb, monotonictest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[monotonictest.MixedVersionCall] {
-			return instance(monotonictest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[monotonictest.MixedVersionCall] {
-			return instance(monotonictest.NewMixedStub(tb, monotonictest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[monotonictest.MixedVersionCall] {
-			return instance(monotonictest.NewMixedStub(tb, monotonictest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[monotonictest.MixedVersionCall] {
-			return instance(monotonictest.NewMixedStub(tb, monotonictest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Version", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Version", mixedStubVersionSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			_, _ = mixedStubVersion(t, s)
+			got := s.OnVersion.AssertCalledOnce(t, "Version records the call")
+			a0 := mixedStubVersionArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			var seen []monotonictest.MixedVersionCall
+			s.OnVersion.OnRecord(func(c monotonictest.MixedVersionCall) { seen = append(seen, c) })
+			_, _ = mixedStubVersion(t, s)
+			_, _ = mixedStubVersion(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Version")
+		})
+	})
+
+	t.Run("Advance", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Advance", mixedStubAdvanceSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			_ = mixedStubAdvance(t, s)
+			got := s.OnAdvance.AssertCalledOnce(t, "Advance records the call")
+			a0 := mixedStubAdvanceArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			var seen []monotonictest.MixedAdvanceCall
+			s.OnAdvance.OnRecord(func(c monotonictest.MixedAdvanceCall) { seen = append(seen, c) })
+			_ = mixedStubAdvance(t, s)
+			_ = mixedStubAdvance(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Advance")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, monotonictest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Version", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			_, _ = mixedStubVersion(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnVersion.CallCount(), 0, "ResetCalls clears the calls of Version")
+		})
+
+		t.Run("keeps the results of Returns of Version", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			want0, want1 := mixedStubVersionPins()
+			s.OnVersion.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubVersion(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Version")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Version")
+		})
+
+		t.Run("clears the recorded calls of Advance", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			_ = mixedStubAdvance(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAdvance.CallCount(), 0, "ResetCalls clears the calls of Advance")
+		})
+
+		t.Run("keeps the results of Returns of Advance", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			want0 := mixedStubAdvancePins()
+			s.OnAdvance.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubAdvance(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Advance")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, monotonictest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Version with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Version-failing")
+			s := monotonictest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubVersion(t, s)
+			assert.ErrorIs(t, r1, want, "Version fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Advance with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Advance-failing")
+			s := monotonictest.NewMixedStubFailing(t, want)
+			r0 := mixedStubAdvance(t, s)
+			assert.ErrorIs(t, r0, want, "Advance fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, monotonictest.NewMixedStub(tb, monotonictest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Version to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := monotonictest.NewMixedStub(t)
+			s := monotonictest.NewMixedStub(t, monotonictest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubVersion(t, s)
+			inner.OnVersion.AssertCalledOnce(t, "Version calls the implementation")
+		})
+
+		t.Run("fails Version with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Version-delegate")
+			inner := monotonictest.NewMixedStub(t)
+			inner.OnVersion.Faults(want, 1)
+			s := monotonictest.NewMixedStub(t, monotonictest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubVersion(t, s)
+			assert.ErrorIs(t, r1, want, "Version fails with the error of the implementation")
+		})
+
+		t.Run("passes Advance to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := monotonictest.NewMixedStub(t)
+			s := monotonictest.NewMixedStub(t, monotonictest.MixedStubDelegateTo(inner))
+			_ = mixedStubAdvance(t, s)
+			inner.OnAdvance.AssertCalledOnce(t, "Advance calls the implementation")
+		})
+
+		t.Run("fails Advance with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Advance-delegate")
+			inner := monotonictest.NewMixedStub(t)
+			inner.OnAdvance.Faults(want, 1)
+			s := monotonictest.NewMixedStub(t, monotonictest.MixedStubDelegateTo(inner))
+			r0 := mixedStubAdvance(t, s)
+			assert.ErrorIs(t, r0, want, "Advance fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, monotonictest.NewMixedStub(tb, monotonictest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, monotonictest.NewMixedStub(tb, monotonictest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, monotonictest.NewMixedStub(tb, monotonictest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				monotonictest.NewMixedStub(
+					tb,
+					monotonictest.MixedStubWithClock(clk),
+					monotonictest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Version with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Version-failing")
+			s := monotonictest.NewMixedStub(t, monotonictest.MixedStubFailing(want))
+			_, r1 := mixedStubVersion(t, s)
+			assert.ErrorIs(t, r1, want, "Version fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Advance with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Advance-failing")
+			s := monotonictest.NewMixedStub(t, monotonictest.MixedStubFailing(want))
+			r0 := mixedStubAdvance(t, s)
+			assert.ErrorIs(t, r0, want, "Advance fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedVersion", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Version", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := monotonictest.NewMixedStub(t, monotonictest.WithMixedVersion(func(_ context.Context) (int64, error) {
+				called = true
+				var z0 int64
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = mixedStubVersion(t, s)
+			assert.True(t, called, "WithMixedVersion sets the function of Version")
+		})
+	})
+
+	t.Run("WithMixedAdvance", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Advance", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := monotonictest.NewMixedStub(t, monotonictest.WithMixedAdvance(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubAdvance(t, s)
+			assert.True(t, called, "WithMixedAdvance sets the function of Advance")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedVersionStub checks the methods of MixedVersionStub, which
+// configures Version.
+func TestMixedVersionStub(t *testing.T) {
 	t.Parallel()
 
-	inner := monotonictest.NewMixedStub(t)
-	s := monotonictest.NewMixedStub(t, monotonictest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Version to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Version(a0)
-		inner.OnVersion.AssertCalledOnce(t, "Version must reach the wrapped implementation")
+		t.Run("sets the results of each call of Version", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			want0, want1 := mixedStubVersionPins()
+			s.OnVersion.Returns(want0, want1)
+			got0, got1 := mixedStubVersion(t, s)
+			expect.Equal(t, got0, want0, "Version returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Version returns the error that Returns sets")
+		})
+
+		t.Run("configures Version for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := monotonictest.NewMixedStub(r)
+			s.OnVersion.Strict()
+			var want0 int64
+			var want1 error
+			s.OnVersion.Returns(want0, want1)
+			_, _ = mixedStubVersion(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Version")
+		})
 	})
 
-	t.Run("surfaces what Version answered", func(t *testing.T) {
-		want := errors.New("Version-delegate")
-		inner.OnVersion.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Version(a0)
-		assert.ErrorIs(t, r1, want, "Version must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Advance to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Advance(a0)
-		inner.OnAdvance.AssertCalledOnce(t, "Advance must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Advance answered", func(t *testing.T) {
-		want := errors.New("Advance-delegate")
-		inner.OnAdvance.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Advance(a0)
-		assert.ErrorIs(t, r0, want, "Advance must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Version to the function", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnVersion.Func(func(p0 context.Context) (int64, error) {
+				got0 = p0
+				var z0 int64
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubVersion(t, s)
+			a0 := mixedStubVersionArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:4b75e323fc7dcf1dbcc8fd1dc325045436ec91ed6d06741279be2f2e1ebce368
+// TestMixedAdvanceStub checks the methods of MixedAdvanceStub, which
+// configures Advance.
+func TestMixedAdvanceStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Advance", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			want0 := mixedStubAdvancePins()
+			s.OnAdvance.Returns(want0)
+			got0 := mixedStubAdvance(t, s)
+			assert.ErrorIs(t, got0, want0, "Advance returns the error that Returns sets")
+		})
+
+		t.Run("configures Advance for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := monotonictest.NewMixedStub(r)
+			s.OnAdvance.Strict()
+			var want0 error
+			s.OnAdvance.Returns(want0)
+			_ = mixedStubAdvance(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Advance")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Advance to the function", func(t *testing.T) {
+			t.Parallel()
+			s := monotonictest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnAdvance.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubAdvance(t, s)
+			a0 := mixedStubAdvanceArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:c25ec91e40198f8646dc4a74e45e912d0ca2b444ab55ed983d908069c74d0d9b

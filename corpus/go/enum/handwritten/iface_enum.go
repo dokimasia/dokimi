@@ -4,34 +4,25 @@
 
 package handwritten
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Weekday) IsValid() bool {
 	switch v {
-	case Monday:
+	case Monday, Tuesday, Wednesday:
 		return true
-	case Tuesday:
-		return true
-	case Wednesday:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Weekday legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Weekday) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseWeekday] for text that names no declared variant.
 func (v *Weekday) UnmarshalText(text []byte) error {
 	parsed, err := ParseWeekday(string(text))
 	if err != nil {
@@ -41,4 +32,4 @@ func (v *Weekday) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:daca3a36efcc7d6a0889b0fd222ac6d285377d49af950d3b4f705bd0a825dbca
+// dokimi:provenance sha256:609226c9f899d7d6aeaa927b45cf4bab894c04c1792ab62755a92aa0c8d0aaca

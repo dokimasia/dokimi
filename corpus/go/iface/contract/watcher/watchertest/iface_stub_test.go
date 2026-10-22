@@ -12,32 +12,76 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher/watchertest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubWatchSubject binds Watch into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubWatchSubject(tb assert.TB) stub.Subject[watchertest.ContractWatchCall, watchertest.ContractWatchReturn] {
+// contractStubWatchArgs returns the samples of the arguments of Watch.
+func contractStubWatchArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Watch-a"
+	return a0, a1
+}
+
+// contractStubWatch calls Watch of s with the samples of its arguments.
+func contractStubWatch(tb assert.TB, s *watchertest.ContractStub) (watcher.Subscription, error) {
+	tb.Helper()
+	a0, a1 := contractStubWatchArgs(tb)
+	return s.Watch(a0, a1)
+}
+
+// contractStubWatchPins returns the samples of the results of Watch, with
+// a new error as its error result.
+func contractStubWatchPins() (watcher.Subscription, error) {
+	var want0 watcher.Subscription
+	want1 := errors.New("Watch-returns")
+	return want0, want1
+}
+
+// contractStubTriggerArgs returns the samples of the arguments of Trigger.
+func contractStubTriggerArgs(tb assert.TB) (context.Context, string, watcher.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 watcher.Value
+	a1 = "Trigger-a"
+	a2 = watcher.Value{Key: "Key-a"}
+	return a0, a1, a2
+}
+
+// contractStubTrigger calls Trigger of s with the samples of its
+// arguments.
+func contractStubTrigger(tb assert.TB, s *watchertest.ContractStub) error {
+	tb.Helper()
+	a0, a1, a2 := contractStubTriggerArgs(tb)
+	return s.Trigger(a0, a1, a2)
+}
+
+// contractStubTriggerPins returns the samples of the results of Trigger,
+// with a new error as its error result.
+func contractStubTriggerPins() error {
+	want0 := errors.New("Trigger-returns")
+	return want0
+}
+
+// contractStubWatchSubject returns the subject of [stub.Behaviour] for
+// Watch. The subject calls a new double that reports to tb.
+func contractStubWatchSubject(
+	tb assert.TB,
+) stub.Subject[watchertest.ContractWatchCall, watchertest.ContractWatchReturn] {
 	tb.Helper()
 	s := watchertest.NewContractStub(tb)
 	return stub.Subject[watchertest.ContractWatchCall, watchertest.ContractWatchReturn]{
 		Stub: s.OnWatch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Watch-a"
-			_, _ = s.Watch(a0, a1)
+			_, _ = contractStubWatch(tb, s)
 		},
 		Result: func() watchertest.ContractWatchReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Watch-a"
-			got0, got1 := s.Watch(a0, a1)
+			got0, got1 := contractStubWatch(tb, s)
 			return watchertest.ContractWatchReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -49,120 +93,26 @@ func contractStubWatchSubject(tb assert.TB) stub.Subject[watchertest.ContractWat
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Watch-a"
-			_, r1 := s.Watch(a0, a1)
+			_, r1 := contractStubWatch(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubWatch pins how Watch answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubWatch(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Watch", contractStubWatchSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Watch-a"
-		_, _ = s.Watch(a0, a1)
-		got := s.OnWatch.AssertCalledOnce(t, "Watch must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewContractStub(t)
-		var seen []watchertest.ContractWatchCall
-		s.OnWatch.OnRecord(func(c watchertest.ContractWatchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Watch-a"
-		_, _ = s.Watch(a0, a1)
-		_, _ = s.Watch(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Watch call")
-	})
-
-	t.Run("wires WithContractWatch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := watchertest.NewContractStub(t, watchertest.WithContractWatch(func(_ context.Context, _ string) (watcher.Subscription, error) {
-			called = true
-			var z0 watcher.Subscription
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Watch-a"
-		_, _ = s.Watch(a0, a1)
-		assert.True(t, called, "WithContractWatch must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Watch-failing")
-		s := watchertest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Watch-a"
-		_, r1 := s.Watch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Watch must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewContractStub(t)
-		var want0 watcher.Subscription
-		var want1 error
-		s.OnWatch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Watch-a"
-		_, _ = s.Watch(a0, a1)
-		s.ResetCalls()
-		_, _ = s.Watch(a0, a1)
-		s.OnWatch.AssertCalledOnce(t, "Watch must record the call that followed the reset")
-	})
-}
-
-// contractStubTriggerSubject binds Trigger into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubTriggerSubject(tb assert.TB) stub.Subject[watchertest.ContractTriggerCall, watchertest.ContractTriggerReturn] {
+// contractStubTriggerSubject returns the subject of [stub.Behaviour] for
+// Trigger. The subject calls a new double that reports to tb.
+func contractStubTriggerSubject(
+	tb assert.TB,
+) stub.Subject[watchertest.ContractTriggerCall, watchertest.ContractTriggerReturn] {
 	tb.Helper()
 	s := watchertest.NewContractStub(tb)
 	return stub.Subject[watchertest.ContractTriggerCall, watchertest.ContractTriggerReturn]{
 		Stub: s.OnTrigger.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 watcher.Value
-			a1 = "Trigger-a"
-			a2 = watcher.Value{Key: "Key-a"}
-			_ = s.Trigger(a0, a1, a2)
+			_ = contractStubTrigger(tb, s)
 		},
 		Result: func() watchertest.ContractTriggerReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 watcher.Value
-			a1 = "Trigger-a"
-			a2 = watcher.Value{Key: "Key-a"}
-			got0 := s.Trigger(a0, a1, a2)
+			got0 := contractStubTrigger(tb, s)
 			return watchertest.ContractTriggerReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -173,223 +123,448 @@ func contractStubTriggerSubject(tb assert.TB) stub.Subject[watchertest.ContractT
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 watcher.Value
-			a1 = "Trigger-a"
-			a2 = watcher.Value{Key: "Key-a"}
-			r0 := s.Trigger(a0, a1, a2)
+			r0 := contractStubTrigger(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubTrigger pins how Trigger answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubTrigger(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a watchertest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[watchertest.ContractWatchCall]
 
-	stub.Behaviour(t, "Trigger", contractStubTriggerSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 watcher.Value
-		a1 = "Trigger-a"
-		a2 = watcher.Value{Key: "Key-a"}
-		_ = s.Trigger(a0, a1, a2)
-		got := s.OnTrigger.AssertCalledOnce(t, "Trigger must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.V, a2, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewContractStub(t)
-		var seen []watchertest.ContractTriggerCall
-		s.OnTrigger.OnRecord(func(c watchertest.ContractTriggerCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 watcher.Value
-		a1 = "Trigger-a"
-		a2 = watcher.Value{Key: "Key-a"}
-		_ = s.Trigger(a0, a1, a2)
-		_ = s.Trigger(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Trigger call")
-	})
-
-	t.Run("wires WithContractTrigger at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := watchertest.NewContractStub(t, watchertest.WithContractTrigger(func(_ context.Context, _ string, _ watcher.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 watcher.Value
-		a1 = "Trigger-a"
-		a2 = watcher.Value{Key: "Key-a"}
-		_ = s.Trigger(a0, a1, a2)
-		assert.True(t, called, "WithContractTrigger must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Trigger-failing")
-		s := watchertest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 watcher.Value
-		a1 = "Trigger-a"
-		a2 = watcher.Value{Key: "Key-a"}
-		r0 := s.Trigger(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Trigger must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewContractStub(t)
-		var want0 error
-		s.OnTrigger.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 watcher.Value
-		a1 = "Trigger-a"
-		a2 = watcher.Value{Key: "Key-a"}
-		_ = s.Trigger(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Trigger(a0, a1, a2)
-		s.OnTrigger.AssertCalledOnce(t, "Trigger must record the call that followed the reset")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Watch stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func contractStubDouble() stub.Double[watchertest.ContractWatchCall] {
-	instance := func(s *watchertest.ContractStub) stub.Instance[watchertest.ContractWatchCall] {
-		return stub.Instance[watchertest.ContractWatchCall]{
-			Stub: s.OnWatch.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Watch-a"
-				_, _ = s.Watch(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[watchertest.ContractWatchCall]{
-		New: func(tb assert.TB) stub.Instance[watchertest.ContractWatchCall] {
-			return instance(watchertest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Watch alone.
+func contractStubInstanceOf(tb assert.TB, s *watchertest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnWatch.MethodStub,
+		Call: func() {
+			_, _ = contractStubWatch(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[watchertest.ContractWatchCall] {
-			return instance(watchertest.NewContractStub(tb, watchertest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[watchertest.ContractWatchCall] {
-			return instance(watchertest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[watchertest.ContractWatchCall] {
-			return instance(watchertest.NewContractStub(tb, watchertest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[watchertest.ContractWatchCall] {
-			return instance(watchertest.NewContractStub(tb, watchertest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[watchertest.ContractWatchCall] {
-			return instance(watchertest.NewContractStub(tb, watchertest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Watch", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Watch", contractStubWatchSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			_, _ = contractStubWatch(t, s)
+			got := s.OnWatch.AssertCalledOnce(t, "Watch records the call")
+			a0, a1 := contractStubWatchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			var seen []watchertest.ContractWatchCall
+			s.OnWatch.OnRecord(func(c watchertest.ContractWatchCall) { seen = append(seen, c) })
+			_, _ = contractStubWatch(t, s)
+			_, _ = contractStubWatch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Watch")
+		})
+	})
+
+	t.Run("Trigger", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Trigger", contractStubTriggerSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			_ = contractStubTrigger(t, s)
+			got := s.OnTrigger.AssertCalledOnce(t, "Trigger records the call")
+			a0, a1, a2 := contractStubTriggerArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.V, a2, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			var seen []watchertest.ContractTriggerCall
+			s.OnTrigger.OnRecord(func(c watchertest.ContractTriggerCall) { seen = append(seen, c) })
+			_ = contractStubTrigger(t, s)
+			_ = contractStubTrigger(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Trigger")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, watchertest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Watch", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			_, _ = contractStubWatch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnWatch.CallCount(), 0, "ResetCalls clears the calls of Watch")
+		})
+
+		t.Run("keeps the results of Returns of Watch", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			want0, want1 := contractStubWatchPins()
+			s.OnWatch.Returns(want0, want1)
+			s.ResetCalls()
+			_, got1 := contractStubWatch(t, s)
+			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Watch")
+		})
+
+		t.Run("clears the recorded calls of Trigger", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			_ = contractStubTrigger(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnTrigger.CallCount(), 0, "ResetCalls clears the calls of Trigger")
+		})
+
+		t.Run("keeps the results of Returns of Trigger", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			want0 := contractStubTriggerPins()
+			s.OnTrigger.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubTrigger(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Trigger")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, watchertest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Watch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Watch-failing")
+			s := watchertest.NewContractStubFailing(t, want)
+			_, r1 := contractStubWatch(t, s)
+			assert.ErrorIs(t, r1, want, "Watch fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Trigger with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Trigger-failing")
+			s := watchertest.NewContractStubFailing(t, want)
+			r0 := contractStubTrigger(t, s)
+			assert.ErrorIs(t, r0, want, "Trigger fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, watchertest.NewContractStub(tb, watchertest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Watch to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := watchertest.NewContractStub(t)
+			s := watchertest.NewContractStub(t, watchertest.ContractStubDelegateTo(inner))
+			_, _ = contractStubWatch(t, s)
+			inner.OnWatch.AssertCalledOnce(t, "Watch calls the implementation")
+		})
+
+		t.Run("fails Watch with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Watch-delegate")
+			inner := watchertest.NewContractStub(t)
+			inner.OnWatch.Faults(want, 1)
+			s := watchertest.NewContractStub(t, watchertest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubWatch(t, s)
+			assert.ErrorIs(t, r1, want, "Watch fails with the error of the implementation")
+		})
+
+		t.Run("passes Trigger to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := watchertest.NewContractStub(t)
+			s := watchertest.NewContractStub(t, watchertest.ContractStubDelegateTo(inner))
+			_ = contractStubTrigger(t, s)
+			inner.OnTrigger.AssertCalledOnce(t, "Trigger calls the implementation")
+		})
+
+		t.Run("fails Trigger with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Trigger-delegate")
+			inner := watchertest.NewContractStub(t)
+			inner.OnTrigger.Faults(want, 1)
+			s := watchertest.NewContractStub(t, watchertest.ContractStubDelegateTo(inner))
+			r0 := contractStubTrigger(t, s)
+			assert.ErrorIs(t, r0, want, "Trigger fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, watchertest.NewContractStub(tb, watchertest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				watchertest.NewContractStub(tb, watchertest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, watchertest.NewContractStub(tb, watchertest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				watchertest.NewContractStub(
+					tb,
+					watchertest.ContractStubWithClock(clk),
+					watchertest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Watch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Watch-failing")
+			s := watchertest.NewContractStub(t, watchertest.ContractStubFailing(want))
+			_, r1 := contractStubWatch(t, s)
+			assert.ErrorIs(t, r1, want, "Watch fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Trigger with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Trigger-failing")
+			s := watchertest.NewContractStub(t, watchertest.ContractStubFailing(want))
+			r0 := contractStubTrigger(t, s)
+			assert.ErrorIs(t, r0, want, "Trigger fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractWatch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Watch", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := watchertest.NewContractStub(
+				t,
+				watchertest.WithContractWatch(func(_ context.Context, _ string) (watcher.Subscription, error) {
+					called = true
+					var z0 watcher.Subscription
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubWatch(t, s)
+			assert.True(t, called, "WithContractWatch sets the function of Watch")
+		})
+	})
+
+	t.Run("WithContractTrigger", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Trigger", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := watchertest.NewContractStub(
+				t,
+				watchertest.WithContractTrigger(func(_ context.Context, _ string, _ watcher.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubTrigger(t, s)
+			assert.True(t, called, "WithContractTrigger sets the function of Trigger")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractWatchStub checks the methods of ContractWatchStub, which
+// configures Watch.
+func TestContractWatchStub(t *testing.T) {
 	t.Parallel()
 
-	inner := watchertest.NewContractStub(t)
-	s := watchertest.NewContractStub(t, watchertest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Watch to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Watch-a"
-		_, _ = s.Watch(a0, a1)
-		inner.OnWatch.AssertCalledOnce(t, "Watch must reach the wrapped implementation")
+		t.Run("sets the results of each call of Watch", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			want0, want1 := contractStubWatchPins()
+			s.OnWatch.Returns(want0, want1)
+			_, got1 := contractStubWatch(t, s)
+			assert.ErrorIs(t, got1, want1, "Watch returns the error that Returns sets")
+		})
+
+		t.Run("configures Watch for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := watchertest.NewContractStub(r)
+			s.OnWatch.Strict()
+			var want0 watcher.Subscription
+			var want1 error
+			s.OnWatch.Returns(want0, want1)
+			_, _ = contractStubWatch(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Watch")
+		})
 	})
 
-	t.Run("surfaces what Watch answered", func(t *testing.T) {
-		want := errors.New("Watch-delegate")
-		inner.OnWatch.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Watch-a"
-		_, r1 := s.Watch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Watch must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Trigger to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 watcher.Value
-		a1 = "Trigger-a"
-		a2 = watcher.Value{Key: "Key-a"}
-		_ = s.Trigger(a0, a1, a2)
-		inner.OnTrigger.AssertCalledOnce(t, "Trigger must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Trigger answered", func(t *testing.T) {
-		want := errors.New("Trigger-delegate")
-		inner.OnTrigger.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 watcher.Value
-		a1 = "Trigger-a"
-		a2 = watcher.Value{Key: "Key-a"}
-		r0 := s.Trigger(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Trigger must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Watch to the function", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnWatch.Func(func(p0 context.Context, p1 string) (watcher.Subscription, error) {
+				got0, got1 = p0, p1
+				var z0 watcher.Subscription
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubWatch(t, s)
+			a0, a1 := contractStubWatchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// subscriptionStubNextSubject binds Next into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func subscriptionStubNextSubject(tb assert.TB) stub.Subject[watchertest.SubscriptionNextCall, watchertest.SubscriptionNextReturn] {
+// TestContractTriggerStub checks the methods of ContractTriggerStub, which
+// configures Trigger.
+func TestContractTriggerStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Trigger", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			want0 := contractStubTriggerPins()
+			s.OnTrigger.Returns(want0)
+			got0 := contractStubTrigger(t, s)
+			assert.ErrorIs(t, got0, want0, "Trigger returns the error that Returns sets")
+		})
+
+		t.Run("configures Trigger for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := watchertest.NewContractStub(r)
+			s.OnTrigger.Strict()
+			var want0 error
+			s.OnTrigger.Returns(want0)
+			_ = contractStubTrigger(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Trigger")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Trigger to the function", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 watcher.Value
+			s.OnTrigger.Func(func(p0 context.Context, p1 string, p2 watcher.Value) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = contractStubTrigger(t, s)
+			a0, a1, a2 := contractStubTriggerArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives V")
+		})
+	})
+}
+
+// subscriptionStubNextArgs returns the samples of the arguments of Next.
+func subscriptionStubNextArgs(tb assert.TB) time.Duration {
+	tb.Helper()
+	var a0 time.Duration
+	a0 = time.Duration(1)
+	return a0
+}
+
+// subscriptionStubNext calls Next of s with the samples of its arguments.
+func subscriptionStubNext(tb assert.TB, s *watchertest.SubscriptionStub) (watcher.Value, bool) {
+	tb.Helper()
+	a0 := subscriptionStubNextArgs(tb)
+	return s.Next(a0)
+}
+
+// subscriptionStubNextPins returns the samples of the results of Next.
+func subscriptionStubNextPins() (watcher.Value, bool) {
+	var want0 watcher.Value
+	var want1 bool
+	want0 = watcher.Value{Key: "Key-a"}
+	want1 = true
+	return want0, want1
+}
+
+// subscriptionStubStop calls Stop of s with the samples of its arguments.
+func subscriptionStubStop(tb assert.TB, s *watchertest.SubscriptionStub) {
+	tb.Helper()
+	s.Stop()
+}
+
+// subscriptionStubNextSubject returns the subject of [stub.Behaviour] for
+// Next. The subject calls a new double that reports to tb.
+func subscriptionStubNextSubject(
+	tb assert.TB,
+) stub.Subject[watchertest.SubscriptionNextCall, watchertest.SubscriptionNextReturn] {
 	tb.Helper()
 	s := watchertest.NewSubscriptionStub(tb)
 	return stub.Subject[watchertest.SubscriptionNextCall, watchertest.SubscriptionNextReturn]{
 		Stub: s.OnNext.MethodStub,
 		Call: func() {
-			var a0 time.Duration
-			a0 = time.Duration(1)
-			_, _ = s.Next(a0)
+			_, _ = subscriptionStubNext(tb, s)
 		},
 		Result: func() watchertest.SubscriptionNextReturn {
-			var a0 time.Duration
-			a0 = time.Duration(1)
-			got0, got1 := s.Next(a0)
+			got0, got1 := subscriptionStubNext(tb, s)
 			return watchertest.SubscriptionNextReturn{Result0: got0, Result1: got1}
 		},
 		Override: func(mark func()) {
@@ -403,100 +578,15 @@ func subscriptionStubNextSubject(tb assert.TB) stub.Subject[watchertest.Subscrip
 	}
 }
 
-// TestSubscriptionStubNext pins how Next answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestSubscriptionStubNext(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Next", subscriptionStubNextSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewSubscriptionStub(t)
-		var want0 watcher.Value
-		var want1 bool
-		want0 = watcher.Value{Key: "Key-a"}
-		want1 = true
-		s.OnNext.Returns(want0, want1)
-		var a0 time.Duration
-		a0 = time.Duration(1)
-		got0, got1 := s.Next(a0)
-		assert.Equal(t, got0, want0, "Next must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Next must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewSubscriptionStub(t)
-		var a0 time.Duration
-		a0 = time.Duration(1)
-		_, _ = s.Next(a0)
-		got := s.OnNext.AssertCalledOnce(t, "Next must record the call")
-		assert.Equal(t, got.Timeout, a0, "the recorded call carries Timeout")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewSubscriptionStub(t)
-		var seen []watchertest.SubscriptionNextCall
-		s.OnNext.OnRecord(func(c watchertest.SubscriptionNextCall) { seen = append(seen, c) })
-		var a0 time.Duration
-		a0 = time.Duration(1)
-		_, _ = s.Next(a0)
-		_, _ = s.Next(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Next call")
-	})
-
-	t.Run("wires WithSubscriptionNext at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := watchertest.NewSubscriptionStub(t, watchertest.WithSubscriptionNext(func(_ time.Duration) (watcher.Value, bool) {
-			called = true
-			var z0 watcher.Value
-			var z1 bool
-			return z0, z1
-		}))
-		var a0 time.Duration
-		a0 = time.Duration(1)
-		_, _ = s.Next(a0)
-		assert.True(t, called, "WithSubscriptionNext must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewSubscriptionStub(t)
-		var want0 watcher.Value
-		var want1 bool
-		want0 = watcher.Value{Key: "Key-a"}
-		want1 = true
-		s.OnNext.Returns(want0, want1)
-		var a0 time.Duration
-		a0 = time.Duration(1)
-		_, _ = s.Next(a0)
-		s.ResetCalls()
-		got0, got1 := s.Next(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-	})
-}
-
-// subscriptionStubStopSubject binds Stop into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// subscriptionStubStopSubject returns the subject of [stub.Behaviour] for
+// Stop. The subject calls a new double that reports to tb.
 func subscriptionStubStopSubject(tb assert.TB) stub.Subject[watchertest.SubscriptionStopCall, struct{}] {
 	tb.Helper()
 	s := watchertest.NewSubscriptionStub(tb)
 	return stub.Subject[watchertest.SubscriptionStopCall, struct{}]{
 		Stub: s.OnStop.MethodStub,
 		Call: func() {
-			s.Stop()
+			subscriptionStubStop(tb, s)
 		},
 		Override: func(mark func()) {
 			s.OnStop.Func(func() {
@@ -506,113 +596,267 @@ func subscriptionStubStopSubject(tb assert.TB) stub.Subject[watchertest.Subscrip
 	}
 }
 
-// TestSubscriptionStubStop pins how Stop answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestSubscriptionStubStop(t *testing.T) {
-	t.Parallel()
+// subscriptionStubInstance is the instance of a
+// watchertest.SubscriptionStub that the checks of the constructors and the
+// options drive.
+type subscriptionStubInstance = stub.Instance[watchertest.SubscriptionNextCall]
 
-	stub.Behaviour(t, "Stop", subscriptionStubStopSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewSubscriptionStub(t)
-		s.Stop()
-		s.OnStop.AssertCalledOnce(t, "Stop must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := watchertest.NewSubscriptionStub(t)
-		var seen []watchertest.SubscriptionStopCall
-		s.OnStop.OnRecord(func(c watchertest.SubscriptionStopCall) { seen = append(seen, c) })
-		s.Stop()
-		s.Stop()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Stop call")
-	})
-
-	t.Run("wires WithSubscriptionStop at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := watchertest.NewSubscriptionStub(t, watchertest.WithSubscriptionStop(func() {
-			called = true
-		}))
-		s.Stop()
-		assert.True(t, called, "WithSubscriptionStop must install the override")
-	})
-}
-
-// subscriptionStubDouble describes how to build a SubscriptionStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// Next stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func subscriptionStubDouble() stub.Double[watchertest.SubscriptionNextCall] {
-	instance := func(s *watchertest.SubscriptionStub) stub.Instance[watchertest.SubscriptionNextCall] {
-		return stub.Instance[watchertest.SubscriptionNextCall]{
-			Stub: s.OnNext.MethodStub,
-			Call: func() {
-				var a0 time.Duration
-				a0 = time.Duration(1)
-				_, _ = s.Next(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[watchertest.SubscriptionNextCall]{
-		New: func(tb assert.TB) stub.Instance[watchertest.SubscriptionNextCall] {
-			return instance(watchertest.NewSubscriptionStub(tb))
+// subscriptionStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call Next alone.
+func subscriptionStubInstanceOf(tb assert.TB, s *watchertest.SubscriptionStub) subscriptionStubInstance {
+	tb.Helper()
+	return subscriptionStubInstance{
+		Stub: s.OnNext.MethodStub,
+		Call: func() {
+			_, _ = subscriptionStubNext(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[watchertest.SubscriptionNextCall] {
-			return instance(watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[watchertest.SubscriptionNextCall] {
-			return instance(watchertest.NewSubscriptionStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[watchertest.SubscriptionNextCall] {
-			return instance(watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[watchertest.SubscriptionNextCall] {
-			return instance(watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[watchertest.SubscriptionNextCall] {
-			return instance(watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestSubscriptionStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestSubscriptionStubOptions(t *testing.T) {
+// TestSubscriptionStub checks the methods, the constructors and the
+// options of the double SubscriptionStub.
+func TestSubscriptionStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, subscriptionStubDouble())
+	t.Run("Next", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Next", subscriptionStubNextSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			_, _ = subscriptionStubNext(t, s)
+			got := s.OnNext.AssertCalledOnce(t, "Next records the call")
+			a0 := subscriptionStubNextArgs(t)
+			assert.Equal(t, got.Timeout, a0, "the call records Timeout")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			var seen []watchertest.SubscriptionNextCall
+			s.OnNext.OnRecord(func(c watchertest.SubscriptionNextCall) { seen = append(seen, c) })
+			_, _ = subscriptionStubNext(t, s)
+			_, _ = subscriptionStubNext(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Next")
+		})
+	})
+
+	t.Run("Stop", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Stop", subscriptionStubStopSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			var seen []watchertest.SubscriptionStopCall
+			s.OnStop.OnRecord(func(c watchertest.SubscriptionStopCall) { seen = append(seen, c) })
+			subscriptionStubStop(t, s)
+			subscriptionStubStop(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Stop")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) subscriptionStubInstance {
+			return subscriptionStubInstanceOf(tb, watchertest.NewSubscriptionStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Next", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			_, _ = subscriptionStubNext(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnNext.CallCount(), 0, "ResetCalls clears the calls of Next")
+		})
+
+		t.Run("keeps the results of Returns of Next", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			want0, want1 := subscriptionStubNextPins()
+			s.OnNext.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := subscriptionStubNext(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Next")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Next")
+		})
+
+		t.Run("clears the recorded calls of Stop", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			subscriptionStubStop(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnStop.CallCount(), 0, "ResetCalls clears the calls of Stop")
+		})
+	})
+
+	t.Run("NewSubscriptionStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) subscriptionStubInstance {
+			return subscriptionStubInstanceOf(tb, watchertest.NewSubscriptionStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("SubscriptionStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) subscriptionStubInstance {
+			return subscriptionStubInstanceOf(
+				tb,
+				watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubStrict()),
+			)
+		})
+	})
+
+	t.Run("SubscriptionStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Next to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := watchertest.NewSubscriptionStub(t)
+			s := watchertest.NewSubscriptionStub(t, watchertest.SubscriptionStubDelegateTo(inner))
+			_, _ = subscriptionStubNext(t, s)
+			inner.OnNext.AssertCalledOnce(t, "Next calls the implementation")
+		})
+
+		t.Run("passes Stop to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := watchertest.NewSubscriptionStub(t)
+			s := watchertest.NewSubscriptionStub(t, watchertest.SubscriptionStubDelegateTo(inner))
+			subscriptionStubStop(t, s)
+			inner.OnStop.AssertCalledOnce(t, "Stop calls the implementation")
+		})
+	})
+
+	t.Run("SubscriptionStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) subscriptionStubInstance {
+			return subscriptionStubInstanceOf(
+				tb,
+				watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("SubscriptionStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) subscriptionStubInstance {
+			return subscriptionStubInstanceOf(
+				tb,
+				watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("SubscriptionStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) subscriptionStubInstance {
+			return subscriptionStubInstanceOf(
+				tb,
+				watchertest.NewSubscriptionStub(tb, watchertest.SubscriptionStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("SubscriptionStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) subscriptionStubInstance {
+			return subscriptionStubInstanceOf(
+				tb,
+				watchertest.NewSubscriptionStub(
+					tb,
+					watchertest.SubscriptionStubWithClock(clk),
+					watchertest.SubscriptionStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("WithSubscriptionNext", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Next", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := watchertest.NewSubscriptionStub(
+				t,
+				watchertest.WithSubscriptionNext(func(_ time.Duration) (watcher.Value, bool) {
+					called = true
+					var z0 watcher.Value
+					var z1 bool
+					return z0, z1
+				}),
+			)
+			_, _ = subscriptionStubNext(t, s)
+			assert.True(t, called, "WithSubscriptionNext sets the function of Next")
+		})
+	})
+
+	t.Run("WithSubscriptionStop", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Stop", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := watchertest.NewSubscriptionStub(t, watchertest.WithSubscriptionStop(func() {
+				called = true
+			}))
+			subscriptionStubStop(t, s)
+			assert.True(t, called, "WithSubscriptionStop sets the function of Stop")
+		})
+	})
 }
 
-// TestSubscriptionStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestSubscriptionStubDelegateTo(t *testing.T) {
+// TestSubscriptionNextStub checks the methods of SubscriptionNextStub,
+// which configures Next.
+func TestSubscriptionNextStub(t *testing.T) {
 	t.Parallel()
 
-	inner := watchertest.NewSubscriptionStub(t)
-	s := watchertest.NewSubscriptionStub(t, watchertest.SubscriptionStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Next to the wrapped implementation", func(t *testing.T) {
-		var a0 time.Duration
-		a0 = time.Duration(1)
-		_, _ = s.Next(a0)
-		inner.OnNext.AssertCalledOnce(t, "Next must reach the wrapped implementation")
+		t.Run("sets the results of each call of Next", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			want0, want1 := subscriptionStubNextPins()
+			s.OnNext.Returns(want0, want1)
+			got0, got1 := subscriptionStubNext(t, s)
+			expect.Equal(t, got0, want0, "Next returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "Next returns the Result1 that Returns sets")
+		})
+
+		t.Run("configures Next for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := watchertest.NewSubscriptionStub(r)
+			s.OnNext.Strict()
+			var want0 watcher.Value
+			var want1 bool
+			s.OnNext.Returns(want0, want1)
+			_, _ = subscriptionStubNext(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Next")
+		})
 	})
 
-	t.Run("forwards Stop to the wrapped implementation", func(t *testing.T) {
-		s.Stop()
-		inner.OnStop.AssertCalledOnce(t, "Stop must reach the wrapped implementation")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Next to the function", func(t *testing.T) {
+			t.Parallel()
+			s := watchertest.NewSubscriptionStub(t)
+			var got0 time.Duration
+			s.OnNext.Func(func(p0 time.Duration) (watcher.Value, bool) {
+				got0 = p0
+				var z0 watcher.Value
+				var z1 bool
+				return z0, z1
+			})
+			_, _ = subscriptionStubNext(t, s)
+			a0 := subscriptionStubNextArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Timeout")
+		})
 	})
 }
 
-// dokimi:provenance sha256:55c2f6cb317604a1a88752ac55ebace5d099d31fcf8e3d18bb8504ae15492eb2
+// dokimi:provenance sha256:15ea9523cad6386a6a9369f954273158f7d51b8eff5cac57a241b632fa563128

@@ -12,31 +12,75 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/codec/codectest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubEncodeSubject binds Encode into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubEncodeSubject(tb assert.TB) stub.Subject[codectest.ContractEncodeCall, codectest.ContractEncodeReturn] {
+// contractStubEncodeArgs returns the samples of the arguments of Encode.
+func contractStubEncodeArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Encode-a"
+	return a0, a1
+}
+
+// contractStubEncode calls Encode of s with the samples of its arguments.
+func contractStubEncode(tb assert.TB, s *codectest.ContractStub) (string, error) {
+	tb.Helper()
+	a0, a1 := contractStubEncodeArgs(tb)
+	return s.Encode(a0, a1)
+}
+
+// contractStubEncodePins returns the samples of the results of Encode,
+// with a new error as its error result.
+func contractStubEncodePins() (string, error) {
+	var want0 string
+	want1 := errors.New("Encode-returns")
+	want0 = "Encode-a"
+	return want0, want1
+}
+
+// contractStubDecodeArgs returns the samples of the arguments of Decode.
+func contractStubDecodeArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Decode-a"
+	return a0, a1
+}
+
+// contractStubDecode calls Decode of s with the samples of its arguments.
+func contractStubDecode(tb assert.TB, s *codectest.ContractStub) (string, error) {
+	tb.Helper()
+	a0, a1 := contractStubDecodeArgs(tb)
+	return s.Decode(a0, a1)
+}
+
+// contractStubDecodePins returns the samples of the results of Decode,
+// with a new error as its error result.
+func contractStubDecodePins() (string, error) {
+	var want0 string
+	want1 := errors.New("Decode-returns")
+	want0 = "Decode-a"
+	return want0, want1
+}
+
+// contractStubEncodeSubject returns the subject of [stub.Behaviour] for
+// Encode. The subject calls a new double that reports to tb.
+func contractStubEncodeSubject(
+	tb assert.TB,
+) stub.Subject[codectest.ContractEncodeCall, codectest.ContractEncodeReturn] {
 	tb.Helper()
 	s := codectest.NewContractStub(tb)
 	return stub.Subject[codectest.ContractEncodeCall, codectest.ContractEncodeReturn]{
 		Stub: s.OnEncode.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Encode-a"
-			_, _ = s.Encode(a0, a1)
+			_, _ = contractStubEncode(tb, s)
 		},
 		Result: func() codectest.ContractEncodeReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Encode-a"
-			got0, got1 := s.Encode(a0, a1)
+			got0, got1 := contractStubEncode(tb, s)
 			return codectest.ContractEncodeReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -48,131 +92,26 @@ func contractStubEncodeSubject(tb assert.TB) stub.Subject[codectest.ContractEnco
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Encode-a"
-			_, r1 := s.Encode(a0, a1)
+			_, r1 := contractStubEncode(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubEncode pins how Encode answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubEncode(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Encode", contractStubEncodeSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Encode-a"
-		s.OnEncode.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		got0, _ := s.Encode(a0, a1)
-		assert.Equal(t, got0, want0, "Encode must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		_, _ = s.Encode(a0, a1)
-		got := s.OnEncode.AssertCalledOnce(t, "Encode must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.In, a1, "the recorded call carries In")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var seen []codectest.ContractEncodeCall
-		s.OnEncode.OnRecord(func(c codectest.ContractEncodeCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		_, _ = s.Encode(a0, a1)
-		_, _ = s.Encode(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Encode call")
-	})
-
-	t.Run("wires WithContractEncode at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := codectest.NewContractStub(t, codectest.WithContractEncode(func(_ context.Context, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		_, _ = s.Encode(a0, a1)
-		assert.True(t, called, "WithContractEncode must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Encode-failing")
-		s := codectest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		_, r1 := s.Encode(a0, a1)
-		assert.ErrorIs(t, r1, want, "Encode must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Encode-a"
-		s.OnEncode.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		_, _ = s.Encode(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Encode(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubDecodeSubject binds Decode into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubDecodeSubject(tb assert.TB) stub.Subject[codectest.ContractDecodeCall, codectest.ContractDecodeReturn] {
+// contractStubDecodeSubject returns the subject of [stub.Behaviour] for
+// Decode. The subject calls a new double that reports to tb.
+func contractStubDecodeSubject(
+	tb assert.TB,
+) stub.Subject[codectest.ContractDecodeCall, codectest.ContractDecodeReturn] {
 	tb.Helper()
 	s := codectest.NewContractStub(tb)
 	return stub.Subject[codectest.ContractDecodeCall, codectest.ContractDecodeReturn]{
 		Stub: s.OnDecode.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Decode-a"
-			_, _ = s.Decode(a0, a1)
+			_, _ = contractStubDecode(tb, s)
 		},
 		Result: func() codectest.ContractDecodeReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Decode-a"
-			got0, got1 := s.Decode(a0, a1)
+			got0, got1 := contractStubDecode(tb, s)
 			return codectest.ContractDecodeReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -184,202 +123,403 @@ func contractStubDecodeSubject(tb assert.TB) stub.Subject[codectest.ContractDeco
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Decode-a"
-			_, r1 := s.Decode(a0, a1)
+			_, r1 := contractStubDecode(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubDecode pins how Decode answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubDecode(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a codectest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[codectest.ContractEncodeCall]
 
-	stub.Behaviour(t, "Decode", contractStubDecodeSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Decode-a"
-		s.OnDecode.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		got0, _ := s.Decode(a0, a1)
-		assert.Equal(t, got0, want0, "Decode must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		_, _ = s.Decode(a0, a1)
-		got := s.OnDecode.AssertCalledOnce(t, "Decode must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.In, a1, "the recorded call carries In")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var seen []codectest.ContractDecodeCall
-		s.OnDecode.OnRecord(func(c codectest.ContractDecodeCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		_, _ = s.Decode(a0, a1)
-		_, _ = s.Decode(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Decode call")
-	})
-
-	t.Run("wires WithContractDecode at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := codectest.NewContractStub(t, codectest.WithContractDecode(func(_ context.Context, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		_, _ = s.Decode(a0, a1)
-		assert.True(t, called, "WithContractDecode must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Decode-failing")
-		s := codectest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		_, r1 := s.Decode(a0, a1)
-		assert.ErrorIs(t, r1, want, "Decode must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := codectest.NewContractStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Decode-a"
-		s.OnDecode.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		_, _ = s.Decode(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Decode(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Encode stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func contractStubDouble() stub.Double[codectest.ContractEncodeCall] {
-	instance := func(s *codectest.ContractStub) stub.Instance[codectest.ContractEncodeCall] {
-		return stub.Instance[codectest.ContractEncodeCall]{
-			Stub: s.OnEncode.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Encode-a"
-				_, _ = s.Encode(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[codectest.ContractEncodeCall]{
-		New: func(tb assert.TB) stub.Instance[codectest.ContractEncodeCall] {
-			return instance(codectest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Encode alone.
+func contractStubInstanceOf(tb assert.TB, s *codectest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnEncode.MethodStub,
+		Call: func() {
+			_, _ = contractStubEncode(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[codectest.ContractEncodeCall] {
-			return instance(codectest.NewContractStub(tb, codectest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[codectest.ContractEncodeCall] {
-			return instance(codectest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[codectest.ContractEncodeCall] {
-			return instance(codectest.NewContractStub(tb, codectest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[codectest.ContractEncodeCall] {
-			return instance(codectest.NewContractStub(tb, codectest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[codectest.ContractEncodeCall] {
-			return instance(codectest.NewContractStub(tb, codectest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Encode", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Encode", contractStubEncodeSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			_, _ = contractStubEncode(t, s)
+			got := s.OnEncode.AssertCalledOnce(t, "Encode records the call")
+			a0, a1 := contractStubEncodeArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.In, a1, "the call records In")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			var seen []codectest.ContractEncodeCall
+			s.OnEncode.OnRecord(func(c codectest.ContractEncodeCall) { seen = append(seen, c) })
+			_, _ = contractStubEncode(t, s)
+			_, _ = contractStubEncode(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Encode")
+		})
+	})
+
+	t.Run("Decode", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Decode", contractStubDecodeSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			_, _ = contractStubDecode(t, s)
+			got := s.OnDecode.AssertCalledOnce(t, "Decode records the call")
+			a0, a1 := contractStubDecodeArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.In, a1, "the call records In")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			var seen []codectest.ContractDecodeCall
+			s.OnDecode.OnRecord(func(c codectest.ContractDecodeCall) { seen = append(seen, c) })
+			_, _ = contractStubDecode(t, s)
+			_, _ = contractStubDecode(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Decode")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, codectest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Encode", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			_, _ = contractStubEncode(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnEncode.CallCount(), 0, "ResetCalls clears the calls of Encode")
+		})
+
+		t.Run("keeps the results of Returns of Encode", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			want0, want1 := contractStubEncodePins()
+			s.OnEncode.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubEncode(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Encode")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Encode")
+		})
+
+		t.Run("clears the recorded calls of Decode", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			_, _ = contractStubDecode(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnDecode.CallCount(), 0, "ResetCalls clears the calls of Decode")
+		})
+
+		t.Run("keeps the results of Returns of Decode", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			want0, want1 := contractStubDecodePins()
+			s.OnDecode.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubDecode(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Decode")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Decode")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, codectest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Encode with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Encode-failing")
+			s := codectest.NewContractStubFailing(t, want)
+			_, r1 := contractStubEncode(t, s)
+			assert.ErrorIs(t, r1, want, "Encode fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Decode with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Decode-failing")
+			s := codectest.NewContractStubFailing(t, want)
+			_, r1 := contractStubDecode(t, s)
+			assert.ErrorIs(t, r1, want, "Decode fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, codectest.NewContractStub(tb, codectest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Encode to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := codectest.NewContractStub(t)
+			s := codectest.NewContractStub(t, codectest.ContractStubDelegateTo(inner))
+			_, _ = contractStubEncode(t, s)
+			inner.OnEncode.AssertCalledOnce(t, "Encode calls the implementation")
+		})
+
+		t.Run("fails Encode with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Encode-delegate")
+			inner := codectest.NewContractStub(t)
+			inner.OnEncode.Faults(want, 1)
+			s := codectest.NewContractStub(t, codectest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubEncode(t, s)
+			assert.ErrorIs(t, r1, want, "Encode fails with the error of the implementation")
+		})
+
+		t.Run("passes Decode to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := codectest.NewContractStub(t)
+			s := codectest.NewContractStub(t, codectest.ContractStubDelegateTo(inner))
+			_, _ = contractStubDecode(t, s)
+			inner.OnDecode.AssertCalledOnce(t, "Decode calls the implementation")
+		})
+
+		t.Run("fails Decode with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Decode-delegate")
+			inner := codectest.NewContractStub(t)
+			inner.OnDecode.Faults(want, 1)
+			s := codectest.NewContractStub(t, codectest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubDecode(t, s)
+			assert.ErrorIs(t, r1, want, "Decode fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, codectest.NewContractStub(tb, codectest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(tb, codectest.NewContractStub(tb, codectest.ContractStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, codectest.NewContractStub(tb, codectest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				codectest.NewContractStub(
+					tb,
+					codectest.ContractStubWithClock(clk),
+					codectest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Encode with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Encode-failing")
+			s := codectest.NewContractStub(t, codectest.ContractStubFailing(want))
+			_, r1 := contractStubEncode(t, s)
+			assert.ErrorIs(t, r1, want, "Encode fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Decode with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Decode-failing")
+			s := codectest.NewContractStub(t, codectest.ContractStubFailing(want))
+			_, r1 := contractStubDecode(t, s)
+			assert.ErrorIs(t, r1, want, "Decode fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractEncode", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Encode", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := codectest.NewContractStub(
+				t,
+				codectest.WithContractEncode(func(_ context.Context, _ string) (string, error) {
+					called = true
+					var z0 string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubEncode(t, s)
+			assert.True(t, called, "WithContractEncode sets the function of Encode")
+		})
+	})
+
+	t.Run("WithContractDecode", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Decode", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := codectest.NewContractStub(
+				t,
+				codectest.WithContractDecode(func(_ context.Context, _ string) (string, error) {
+					called = true
+					var z0 string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubDecode(t, s)
+			assert.True(t, called, "WithContractDecode sets the function of Decode")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractEncodeStub checks the methods of ContractEncodeStub, which
+// configures Encode.
+func TestContractEncodeStub(t *testing.T) {
 	t.Parallel()
 
-	inner := codectest.NewContractStub(t)
-	s := codectest.NewContractStub(t, codectest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Encode to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		_, _ = s.Encode(a0, a1)
-		inner.OnEncode.AssertCalledOnce(t, "Encode must reach the wrapped implementation")
+		t.Run("sets the results of each call of Encode", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			want0, want1 := contractStubEncodePins()
+			s.OnEncode.Returns(want0, want1)
+			got0, got1 := contractStubEncode(t, s)
+			expect.Equal(t, got0, want0, "Encode returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Encode returns the error that Returns sets")
+		})
+
+		t.Run("configures Encode for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := codectest.NewContractStub(r)
+			s.OnEncode.Strict()
+			var want0 string
+			var want1 error
+			s.OnEncode.Returns(want0, want1)
+			_, _ = contractStubEncode(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Encode")
+		})
 	})
 
-	t.Run("surfaces what Encode answered", func(t *testing.T) {
-		want := errors.New("Encode-delegate")
-		inner.OnEncode.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Encode-a"
-		_, r1 := s.Encode(a0, a1)
-		assert.ErrorIs(t, r1, want, "Encode must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Decode to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		_, _ = s.Decode(a0, a1)
-		inner.OnDecode.AssertCalledOnce(t, "Decode must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Decode answered", func(t *testing.T) {
-		want := errors.New("Decode-delegate")
-		inner.OnDecode.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Decode-a"
-		_, r1 := s.Decode(a0, a1)
-		assert.ErrorIs(t, r1, want, "Decode must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Encode to the function", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnEncode.Func(func(p0 context.Context, p1 string) (string, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubEncode(t, s)
+			a0, a1 := contractStubEncodeArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives In")
+		})
 	})
 }
 
-// dokimi:provenance sha256:0afb50fb1ec4d2df7a402c9f395e7d37a352140b9f8ee7ad48ac517cd40a7208
+// TestContractDecodeStub checks the methods of ContractDecodeStub, which
+// configures Decode.
+func TestContractDecodeStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Decode", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			want0, want1 := contractStubDecodePins()
+			s.OnDecode.Returns(want0, want1)
+			got0, got1 := contractStubDecode(t, s)
+			expect.Equal(t, got0, want0, "Decode returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Decode returns the error that Returns sets")
+		})
+
+		t.Run("configures Decode for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := codectest.NewContractStub(r)
+			s.OnDecode.Strict()
+			var want0 string
+			var want1 error
+			s.OnDecode.Returns(want0, want1)
+			_, _ = contractStubDecode(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Decode")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Decode to the function", func(t *testing.T) {
+			t.Parallel()
+			s := codectest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnDecode.Func(func(p0 context.Context, p1 string) (string, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubDecode(t, s)
+			a0, a1 := contractStubDecodeArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives In")
+		})
+	})
+}
+
+// dokimi:provenance sha256:d963f0fed00f3d0fbb18117b80fcdca2ad41585ff5ef4f4d52f4e1d66da789a8

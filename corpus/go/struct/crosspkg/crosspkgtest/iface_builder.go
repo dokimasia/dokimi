@@ -11,29 +11,17 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/struct/seed"
 )
 
-// SettingsBuilder constructs [Settings] values.
-//
-// Start with [NewSettingsBuilder] or [NewSettingsBuilderFrom], set what
-// you care about, and call [SettingsBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Settings breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [SettingsBuilder.Clone] is how one becomes two.
+// SettingsBuilder constructs [Settings] values. [NewSettingsBuilder] and
+// [NewSettingsBuilderFrom] return a new builder. Each setter sets one
+// member and returns the builder, so the calls chain.
+// [SettingsBuilder.Build] returns the value. A builder is not safe for
+// concurrent use.
 type SettingsBuilder struct {
 	v crosspkg.Settings
 }
 
-// NewSettingsBuilder returns a builder seeded with the declared defaults.
-//
-// Only the members that declare one. Everything else holds its zero value,
-// so a caller that sets nothing gets a mixture rather than either extreme
-// — which is what makes a check against a built value worth writing.
+// NewSettingsBuilder returns a builder of the declared defaults. A member
+// without a declared default has its zero value.
 func NewSettingsBuilder() *SettingsBuilder {
 	var v crosspkg.Settings
 	v.Timeout = time.Second
@@ -43,330 +31,191 @@ func NewSettingsBuilder() *SettingsBuilder {
 	return &SettingsBuilder{v: v}
 }
 
-// NewSettingsBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewSettingsBuilderFrom returns a builder of v.
 func NewSettingsBuilderFrom(v crosspkg.Settings) *SettingsBuilder {
 	return &SettingsBuilder{v: v}
 }
 
-// WithTimeout replaces Timeout.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithTimeout replaces Timeout with v.
 func (b *SettingsBuilder) WithTimeout(v time.Duration) *SettingsBuilder {
 	b.v.Timeout = v
 	return b
 }
 
-// WithRetries replaces Retries.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRetries replaces Retries with v.
 func (b *SettingsBuilder) WithRetries(v int) *SettingsBuilder {
 	b.v.Retries = v
 	return b
 }
 
-// WithRegion replaces Region.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRegion replaces Region with v.
 func (b *SettingsBuilder) WithRegion(v string) *SettingsBuilder {
 	b.v.Region = v
 	return b
 }
 
-// WithZone replaces Zone.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithZone replaces Zone with v.
 func (b *SettingsBuilder) WithZone(v string) *SettingsBuilder {
 	b.v.Zone = v
 	return b
 }
 
-// WithDeadline replaces Deadline.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithDeadline replaces Deadline with v.
 func (b *SettingsBuilder) WithDeadline(v time.Time) *SettingsBuilder {
 	b.v.Deadline = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *SettingsBuilder) Mutate(fn func(*crosspkg.Settings)) *SettingsBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [SettingsBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *SettingsBuilder) Clone() *SettingsBuilder {
 	out := &SettingsBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Settings].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [SettingsBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [SettingsBuilder.Clone] returns a builder that shares none of them.
 func (b *SettingsBuilder) Build() crosspkg.Settings {
 	return b.v
 }
 
-// MirroredBuilder constructs [Mirrored] values.
-//
-// Start with [NewMirroredBuilder] or [NewMirroredBuilderFrom], set what
-// you care about, and call [MirroredBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Mirrored breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [MirroredBuilder.Clone] is how one becomes two.
+// MirroredBuilder constructs [Mirrored] values. [NewMirroredBuilder] and
+// [NewMirroredBuilderFrom] return a new builder. Each setter sets one
+// member and returns the builder, so the calls chain.
+// [MirroredBuilder.Build] returns the value. A builder is not safe for
+// concurrent use.
 type MirroredBuilder struct {
 	v crosspkg.Mirrored
 }
 
-// NewMirroredBuilder returns a builder seeded from the package's
-// companion, with any declared per-member default applied over it.
-//
-// Two layers, in that order: whatever the companion supplies, then each
-// member that declares its own default. A member the companion sets and
-// the declaration does not keeps the companion's value, so the two sources
-// compose rather than one replacing the other.
+// NewMirroredBuilder returns a builder of the value that the companion
+// function returns. The declared default of each member applies over that
+// value.
 func NewMirroredBuilder() *MirroredBuilder {
 	v := seed.ConfigDefaults()
 	return &MirroredBuilder{v: v}
 }
 
-// NewMirroredBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewMirroredBuilderFrom returns a builder of v.
 func NewMirroredBuilderFrom(v crosspkg.Mirrored) *MirroredBuilder {
 	return &MirroredBuilder{v: v}
 }
 
-// WithRegion replaces Region.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRegion replaces Region with v.
 func (b *MirroredBuilder) WithRegion(v string) *MirroredBuilder {
 	b.v.Region = v
 	return b
 }
 
-// WithRetries replaces Retries.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRetries replaces Retries with v.
 func (b *MirroredBuilder) WithRetries(v int) *MirroredBuilder {
 	b.v.Retries = v
 	return b
 }
 
-// WithLabel replaces Label.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithLabel replaces Label with v.
 func (b *MirroredBuilder) WithLabel(v string) *MirroredBuilder {
 	b.v.Label = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *MirroredBuilder) Mutate(fn func(*crosspkg.Mirrored)) *MirroredBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [MirroredBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *MirroredBuilder) Clone() *MirroredBuilder {
 	out := &MirroredBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Mirrored].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [MirroredBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [MirroredBuilder.Clone] returns a builder that shares none of them.
 func (b *MirroredBuilder) Build() crosspkg.Mirrored {
 	return b.v
 }
 
-// ShorthandBuilder constructs [Shorthand] values.
-//
-// Start with [NewShorthandBuilder] or [NewShorthandBuilderFrom], set what
-// you care about, and call [ShorthandBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Shorthand breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [ShorthandBuilder.Clone] is how one becomes two.
+// ShorthandBuilder constructs [Shorthand] values. [NewShorthandBuilder]
+// and [NewShorthandBuilderFrom] return a new builder. Each setter sets one
+// member and returns the builder, so the calls chain.
+// [ShorthandBuilder.Build] returns the value. A builder is not safe for
+// concurrent use.
 type ShorthandBuilder struct {
 	v crosspkg.Shorthand
 }
 
-// NewShorthandBuilder returns a builder seeded from the package's
-// companion, with any declared per-member default applied over it.
-//
-// Two layers, in that order: whatever the companion supplies, then each
-// member that declares its own default. A member the companion sets and
-// the declaration does not keeps the companion's value, so the two sources
-// compose rather than one replacing the other.
+// NewShorthandBuilder returns a builder of the value that the companion
+// function returns. The declared default of each member applies over that
+// value.
 func NewShorthandBuilder() *ShorthandBuilder {
 	v := seed.ConfigDefaults()
 	return &ShorthandBuilder{v: v}
 }
 
-// NewShorthandBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewShorthandBuilderFrom returns a builder of v.
 func NewShorthandBuilderFrom(v crosspkg.Shorthand) *ShorthandBuilder {
 	return &ShorthandBuilder{v: v}
 }
 
-// WithRegion replaces Region.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRegion replaces Region with v.
 func (b *ShorthandBuilder) WithRegion(v string) *ShorthandBuilder {
 	b.v.Region = v
 	return b
 }
 
-// WithRetries replaces Retries.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRetries replaces Retries with v.
 func (b *ShorthandBuilder) WithRetries(v int) *ShorthandBuilder {
 	b.v.Retries = v
 	return b
 }
 
-// WithLabel replaces Label.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithLabel replaces Label with v.
 func (b *ShorthandBuilder) WithLabel(v string) *ShorthandBuilder {
 	b.v.Label = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *ShorthandBuilder) Mutate(fn func(*crosspkg.Shorthand)) *ShorthandBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [ShorthandBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *ShorthandBuilder) Clone() *ShorthandBuilder {
 	out := &ShorthandBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Shorthand].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [ShorthandBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [ShorthandBuilder.Clone] returns a builder that shares none of them.
 func (b *ShorthandBuilder) Build() crosspkg.Shorthand {
 	return b.v
 }
 
-// dokimi:provenance sha256:e91b412321dfdc0a73c95d6c41422e4ee27a44831a4e6374a559995e1e57ad8c
+// dokimi:provenance sha256:baf63174accc4912979a183ee3efa544eddfac631e63745dc722c373447bd5a4

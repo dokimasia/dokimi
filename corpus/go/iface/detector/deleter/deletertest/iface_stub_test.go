@@ -12,31 +12,48 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter/deletertest"
+	"go.dokimi.dev/stub"
 )
 
-// deleterStubDeleteSubject binds Delete into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func deleterStubDeleteSubject(tb assert.TB) stub.Subject[deletertest.DeleterDeleteCall, deletertest.DeleterDeleteReturn] {
+// deleterStubDeleteArgs returns the samples of the arguments of Delete.
+func deleterStubDeleteArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Delete-a"
+	return a0, a1
+}
+
+// deleterStubDelete calls Delete of s with the samples of its arguments.
+func deleterStubDelete(tb assert.TB, s *deletertest.DeleterStub) error {
+	tb.Helper()
+	a0, a1 := deleterStubDeleteArgs(tb)
+	return s.Delete(a0, a1)
+}
+
+// deleterStubDeletePins returns the samples of the results of Delete, with
+// a new error as its error result.
+func deleterStubDeletePins() error {
+	want0 := errors.New("Delete-returns")
+	return want0
+}
+
+// deleterStubDeleteSubject returns the subject of [stub.Behaviour] for
+// Delete. The subject calls a new double that reports to tb.
+func deleterStubDeleteSubject(
+	tb assert.TB,
+) stub.Subject[deletertest.DeleterDeleteCall, deletertest.DeleterDeleteReturn] {
 	tb.Helper()
 	s := deletertest.NewDeleterStub(tb)
 	return stub.Subject[deletertest.DeleterDeleteCall, deletertest.DeleterDeleteReturn]{
 		Stub: s.OnDelete.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Delete-a"
-			_ = s.Delete(a0, a1)
+			_ = deleterStubDelete(tb, s)
 		},
 		Result: func() deletertest.DeleterDeleteReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Delete-a"
-			got0 := s.Delete(a0, a1)
+			got0 := deleterStubDelete(tb, s)
 			return deletertest.DeleterDeleteReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,167 +64,244 @@ func deleterStubDeleteSubject(tb assert.TB) stub.Subject[deletertest.DeleterDele
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Delete-a"
-			r0 := s.Delete(a0, a1)
+			r0 := deleterStubDelete(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestDeleterStubDelete pins how Delete answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestDeleterStubDelete(t *testing.T) {
-	t.Parallel()
+// deleterStubInstance is the instance of a deletertest.DeleterStub that
+// the checks of the constructors and the options drive.
+type deleterStubInstance = stub.Instance[deletertest.DeleterDeleteCall]
 
-	stub.Behaviour(t, "Delete", deleterStubDeleteSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := deletertest.NewDeleterStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Delete-a"
-		_ = s.Delete(a0, a1)
-		got := s.OnDelete.AssertCalledOnce(t, "Delete must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := deletertest.NewDeleterStub(t)
-		var seen []deletertest.DeleterDeleteCall
-		s.OnDelete.OnRecord(func(c deletertest.DeleterDeleteCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Delete-a"
-		_ = s.Delete(a0, a1)
-		_ = s.Delete(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Delete call")
-	})
-
-	t.Run("wires WithDeleterDelete at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := deletertest.NewDeleterStub(t, deletertest.WithDeleterDelete(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Delete-a"
-		_ = s.Delete(a0, a1)
-		assert.True(t, called, "WithDeleterDelete must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Delete-failing")
-		s := deletertest.NewDeleterStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Delete-a"
-		r0 := s.Delete(a0, a1)
-		assert.ErrorIs(t, r0, want, "Delete must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := deletertest.NewDeleterStub(t)
-		var want0 error
-		s.OnDelete.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Delete-a"
-		_ = s.Delete(a0, a1)
-		s.ResetCalls()
-		_ = s.Delete(a0, a1)
-		s.OnDelete.AssertCalledOnce(t, "Delete must record the call that followed the reset")
-	})
-}
-
-// deleterStubDouble describes how to build a DeleterStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Delete stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func deleterStubDouble() stub.Double[deletertest.DeleterDeleteCall] {
-	instance := func(s *deletertest.DeleterStub) stub.Instance[deletertest.DeleterDeleteCall] {
-		return stub.Instance[deletertest.DeleterDeleteCall]{
-			Stub: s.OnDelete.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Delete-a"
-				_ = s.Delete(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[deletertest.DeleterDeleteCall]{
-		New: func(tb assert.TB) stub.Instance[deletertest.DeleterDeleteCall] {
-			return instance(deletertest.NewDeleterStub(tb))
+// deleterStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Delete alone.
+func deleterStubInstanceOf(tb assert.TB, s *deletertest.DeleterStub) deleterStubInstance {
+	tb.Helper()
+	return deleterStubInstance{
+		Stub: s.OnDelete.MethodStub,
+		Call: func() {
+			_ = deleterStubDelete(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[deletertest.DeleterDeleteCall] {
-			return instance(deletertest.NewDeleterStub(tb, deletertest.DeleterStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[deletertest.DeleterDeleteCall] {
-			return instance(deletertest.NewDeleterStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[deletertest.DeleterDeleteCall] {
-			return instance(deletertest.NewDeleterStub(tb, deletertest.DeleterStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[deletertest.DeleterDeleteCall] {
-			return instance(deletertest.NewDeleterStub(tb, deletertest.DeleterStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[deletertest.DeleterDeleteCall] {
-			return instance(deletertest.NewDeleterStub(tb, deletertest.DeleterStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestDeleterStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestDeleterStubOptions(t *testing.T) {
+// TestDeleterStub checks the methods, the constructors and the options of
+// the double DeleterStub.
+func TestDeleterStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, deleterStubDouble())
+	t.Run("Delete", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Delete", deleterStubDeleteSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := deletertest.NewDeleterStub(t)
+			_ = deleterStubDelete(t, s)
+			got := s.OnDelete.AssertCalledOnce(t, "Delete records the call")
+			a0, a1 := deleterStubDeleteArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := deletertest.NewDeleterStub(t)
+			var seen []deletertest.DeleterDeleteCall
+			s.OnDelete.OnRecord(func(c deletertest.DeleterDeleteCall) { seen = append(seen, c) })
+			_ = deleterStubDelete(t, s)
+			_ = deleterStubDelete(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Delete")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) deleterStubInstance {
+			return deleterStubInstanceOf(tb, deletertest.NewDeleterStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Delete", func(t *testing.T) {
+			t.Parallel()
+			s := deletertest.NewDeleterStub(t)
+			_ = deleterStubDelete(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnDelete.CallCount(), 0, "ResetCalls clears the calls of Delete")
+		})
+
+		t.Run("keeps the results of Returns of Delete", func(t *testing.T) {
+			t.Parallel()
+			s := deletertest.NewDeleterStub(t)
+			want0 := deleterStubDeletePins()
+			s.OnDelete.Returns(want0)
+			s.ResetCalls()
+			got0 := deleterStubDelete(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Delete")
+		})
+	})
+
+	t.Run("NewDeleterStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) deleterStubInstance {
+			return deleterStubInstanceOf(tb, deletertest.NewDeleterStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewDeleterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Delete with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Delete-failing")
+			s := deletertest.NewDeleterStubFailing(t, want)
+			r0 := deleterStubDelete(t, s)
+			assert.ErrorIs(t, r0, want, "Delete fails with the error of NewDeleterStubFailing")
+		})
+	})
+
+	t.Run("DeleterStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) deleterStubInstance {
+			return deleterStubInstanceOf(tb, deletertest.NewDeleterStub(tb, deletertest.DeleterStubStrict()))
+		})
+	})
+
+	t.Run("DeleterStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Delete to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := deletertest.NewDeleterStub(t)
+			s := deletertest.NewDeleterStub(t, deletertest.DeleterStubDelegateTo(inner))
+			_ = deleterStubDelete(t, s)
+			inner.OnDelete.AssertCalledOnce(t, "Delete calls the implementation")
+		})
+
+		t.Run("fails Delete with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Delete-delegate")
+			inner := deletertest.NewDeleterStub(t)
+			inner.OnDelete.Faults(want, 1)
+			s := deletertest.NewDeleterStub(t, deletertest.DeleterStubDelegateTo(inner))
+			r0 := deleterStubDelete(t, s)
+			assert.ErrorIs(t, r0, want, "Delete fails with the error of the implementation")
+		})
+	})
+
+	t.Run("DeleterStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) deleterStubInstance {
+			return deleterStubInstanceOf(tb, deletertest.NewDeleterStub(tb, deletertest.DeleterStubWithClock(clk)))
+		})
+	})
+
+	t.Run("DeleterStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) deleterStubInstance {
+			return deleterStubInstanceOf(tb, deletertest.NewDeleterStub(tb, deletertest.DeleterStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("DeleterStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) deleterStubInstance {
+			return deleterStubInstanceOf(tb, deletertest.NewDeleterStub(tb, deletertest.DeleterStubBenchMode()))
+		})
+	})
+
+	t.Run("DeleterStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) deleterStubInstance {
+			return deleterStubInstanceOf(
+				tb,
+				deletertest.NewDeleterStub(
+					tb,
+					deletertest.DeleterStubWithClock(clk),
+					deletertest.DeleterStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("DeleterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Delete with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Delete-failing")
+			s := deletertest.NewDeleterStub(t, deletertest.DeleterStubFailing(want))
+			r0 := deleterStubDelete(t, s)
+			assert.ErrorIs(t, r0, want, "Delete fails with the error of DeleterStubFailing")
+		})
+	})
+
+	t.Run("WithDeleterDelete", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Delete", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := deletertest.NewDeleterStub(t, deletertest.WithDeleterDelete(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = deleterStubDelete(t, s)
+			assert.True(t, called, "WithDeleterDelete sets the function of Delete")
+		})
+	})
 }
 
-// TestDeleterStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestDeleterStubDelegateTo(t *testing.T) {
+// TestDeleterDeleteStub checks the methods of DeleterDeleteStub, which
+// configures Delete.
+func TestDeleterDeleteStub(t *testing.T) {
 	t.Parallel()
 
-	inner := deletertest.NewDeleterStub(t)
-	s := deletertest.NewDeleterStub(t, deletertest.DeleterStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Delete to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Delete-a"
-		_ = s.Delete(a0, a1)
-		inner.OnDelete.AssertCalledOnce(t, "Delete must reach the wrapped implementation")
+		t.Run("sets the results of each call of Delete", func(t *testing.T) {
+			t.Parallel()
+			s := deletertest.NewDeleterStub(t)
+			want0 := deleterStubDeletePins()
+			s.OnDelete.Returns(want0)
+			got0 := deleterStubDelete(t, s)
+			assert.ErrorIs(t, got0, want0, "Delete returns the error that Returns sets")
+		})
+
+		t.Run("configures Delete for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := deletertest.NewDeleterStub(r)
+			s.OnDelete.Strict()
+			var want0 error
+			s.OnDelete.Returns(want0)
+			_ = deleterStubDelete(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Delete")
+		})
 	})
 
-	t.Run("surfaces what Delete answered", func(t *testing.T) {
-		want := errors.New("Delete-delegate")
-		inner.OnDelete.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Delete-a"
-		r0 := s.Delete(a0, a1)
-		assert.ErrorIs(t, r0, want, "Delete must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Delete to the function", func(t *testing.T) {
+			t.Parallel()
+			s := deletertest.NewDeleterStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnDelete.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = deleterStubDelete(t, s)
+			a0, a1 := deleterStubDeleteArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:207e08ad9427961bc36d5674500b56983ca0733e0e97581163b1e4f55f9f4460
+// dokimi:provenance sha256:bd5381073dd83ac9c11bec2bfc59867a2fb97a7912972d76b4f95dab3ee89e2b

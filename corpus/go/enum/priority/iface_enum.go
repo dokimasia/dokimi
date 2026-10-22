@@ -6,6 +6,7 @@ package priority
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -23,10 +24,8 @@ const _Priority_name = "LowMediumHighCritical"
 
 var _Priority_index = [...]uint8{0, 3, 9, 13, 21}
 
-// String returns Priority's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Priority) String() string {
 	idx := int(v) - 0
 	if v < 0 || idx >= len(_Priority_index)-1 {
@@ -35,14 +34,14 @@ func (v Priority) String() string {
 	return _Priority_name[_Priority_index[idx]:_Priority_index[idx+1]]
 }
 
-// ErrUnknownPriority reports text that names no declared variant.
+// ErrUnknownPriority is the error of text that names no declared variant.
+// The error of [ParsePriority] wraps it with the text.
 var ErrUnknownPriority = errors.New("priority: unknown Priority value")
 
-// ParsePriority maps text back to a Priority.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParsePriority returns the variant of Priority whose text is s. It is the
+// inverse of [Priority.String] on the declared variants. It returns an
+// error that wraps [ErrUnknownPriority] for text that names no declared
+// variant.
 func ParsePriority(s string) (Priority, error) {
 	switch s {
 	case "Low":
@@ -55,13 +54,11 @@ func ParsePriority(s string) (Priority, error) {
 		return Critical, nil
 	}
 	var zero Priority
-	return zero, ErrUnknownPriority
+	return zero, fmt.Errorf("%w %q", ErrUnknownPriority, s)
 }
 
-// PriorityValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// PriorityValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func PriorityValues() []Priority {
 	return []Priority{
 		Low,
@@ -71,36 +68,25 @@ func PriorityValues() []Priority {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Priority) IsValid() bool {
 	switch v {
-	case Low:
+	case Low, Medium, High, Critical:
 		return true
-	case Medium:
-		return true
-	case High:
-		return true
-	case Critical:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Priority legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Priority) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParsePriority] for text that names no declared variant.
 func (v *Priority) UnmarshalText(text []byte) error {
 	parsed, err := ParsePriority(string(text))
 	if err != nil {
@@ -110,4 +96,4 @@ func (v *Priority) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:6f9ffeb8f79f06c184d36a3e0f4cca8f06286dcba1adc75fcaeac70686491ac9
+// dokimi:provenance sha256:9ac9cfa719013af9069c7ae8e97fef93374405fb56dd9ddc130a71e327fed4f4

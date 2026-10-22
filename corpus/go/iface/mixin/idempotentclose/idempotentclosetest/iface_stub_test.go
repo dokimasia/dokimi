@@ -12,27 +12,69 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose/idempotentclosetest"
+	"go.dokimi.dev/stub"
 )
 
-// closerStubCloseSubject binds Close into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func closerStubCloseSubject(tb assert.TB) stub.Subject[idempotentclosetest.CloserCloseCall, idempotentclosetest.CloserCloseReturn] {
+// closerStubCloseArgs returns the samples of the arguments of Close.
+func closerStubCloseArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// closerStubClose calls Close of s with the samples of its arguments.
+func closerStubClose(tb assert.TB, s *idempotentclosetest.CloserStub) error {
+	tb.Helper()
+	a0 := closerStubCloseArgs(tb)
+	return s.Close(a0)
+}
+
+// closerStubClosePins returns the samples of the results of Close, with a
+// new error as its error result.
+func closerStubClosePins() error {
+	want0 := errors.New("Close-returns")
+	return want0
+}
+
+// closerStubStatsArgs returns the samples of the arguments of Stats.
+func closerStubStatsArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// closerStubStats calls Stats of s with the samples of its arguments.
+func closerStubStats(tb assert.TB, s *idempotentclosetest.CloserStub) (int, error) {
+	tb.Helper()
+	a0 := closerStubStatsArgs(tb)
+	return s.Stats(a0)
+}
+
+// closerStubStatsPins returns the samples of the results of Stats, with a
+// new error as its error result.
+func closerStubStatsPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Stats-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// closerStubCloseSubject returns the subject of [stub.Behaviour] for
+// Close. The subject calls a new double that reports to tb.
+func closerStubCloseSubject(
+	tb assert.TB,
+) stub.Subject[idempotentclosetest.CloserCloseCall, idempotentclosetest.CloserCloseReturn] {
 	tb.Helper()
 	s := idempotentclosetest.NewCloserStub(tb)
 	return stub.Subject[idempotentclosetest.CloserCloseCall, idempotentclosetest.CloserCloseReturn]{
 		Stub: s.OnClose.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Close(a0)
+			_ = closerStubClose(tb, s)
 		},
 		Result: func() idempotentclosetest.CloserCloseReturn {
-			var a0 context.Context
-			got0 := s.Close(a0)
+			got0 := closerStubClose(tb, s)
 			return idempotentclosetest.CloserCloseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -43,97 +85,26 @@ func closerStubCloseSubject(tb assert.TB) stub.Subject[idempotentclosetest.Close
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Close(a0)
+			r0 := closerStubClose(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestCloserStubClose pins how Close answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestCloserStubClose(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Close", closerStubCloseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := idempotentclosetest.NewCloserStub(t)
-		var a0 context.Context
-		_ = s.Close(a0)
-		got := s.OnClose.AssertCalledOnce(t, "Close must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := idempotentclosetest.NewCloserStub(t)
-		var seen []idempotentclosetest.CloserCloseCall
-		s.OnClose.OnRecord(func(c idempotentclosetest.CloserCloseCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Close(a0)
-		_ = s.Close(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Close call")
-	})
-
-	t.Run("wires WithCloserClose at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.WithCloserClose(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Close(a0)
-		assert.True(t, called, "WithCloserClose must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Close-failing")
-		s := idempotentclosetest.NewCloserStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Close(a0)
-		assert.ErrorIs(t, r0, want, "Close must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := idempotentclosetest.NewCloserStub(t)
-		var want0 error
-		s.OnClose.Returns(want0)
-		var a0 context.Context
-		_ = s.Close(a0)
-		s.ResetCalls()
-		_ = s.Close(a0)
-		s.OnClose.AssertCalledOnce(t, "Close must record the call that followed the reset")
-	})
-}
-
-// closerStubStatsSubject binds Stats into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func closerStubStatsSubject(tb assert.TB) stub.Subject[idempotentclosetest.CloserStatsCall, idempotentclosetest.CloserStatsReturn] {
+// closerStubStatsSubject returns the subject of [stub.Behaviour] for
+// Stats. The subject calls a new double that reports to tb.
+func closerStubStatsSubject(
+	tb assert.TB,
+) stub.Subject[idempotentclosetest.CloserStatsCall, idempotentclosetest.CloserStatsReturn] {
 	tb.Helper()
 	s := idempotentclosetest.NewCloserStub(tb)
 	return stub.Subject[idempotentclosetest.CloserStatsCall, idempotentclosetest.CloserStatsReturn]{
 		Stub: s.OnStats.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Stats(a0)
+			_, _ = closerStubStats(tb, s)
 		},
 		Result: func() idempotentclosetest.CloserStatsReturn {
-			var a0 context.Context
-			got0, got1 := s.Stats(a0)
+			got0, got1 := closerStubStats(tb, s)
 			return idempotentclosetest.CloserStatsReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -145,177 +116,404 @@ func closerStubStatsSubject(tb assert.TB) stub.Subject[idempotentclosetest.Close
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Stats(a0)
+			_, r1 := closerStubStats(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestCloserStubStats pins how Stats answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestCloserStubStats(t *testing.T) {
-	t.Parallel()
+// closerStubInstance is the instance of a idempotentclosetest.CloserStub
+// that the checks of the constructors and the options drive.
+type closerStubInstance = stub.Instance[idempotentclosetest.CloserCloseCall]
 
-	stub.Behaviour(t, "Stats", closerStubStatsSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := idempotentclosetest.NewCloserStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnStats.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Stats(a0)
-		assert.Equal(t, got0, want0, "Stats must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := idempotentclosetest.NewCloserStub(t)
-		var a0 context.Context
-		_, _ = s.Stats(a0)
-		got := s.OnStats.AssertCalledOnce(t, "Stats must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := idempotentclosetest.NewCloserStub(t)
-		var seen []idempotentclosetest.CloserStatsCall
-		s.OnStats.OnRecord(func(c idempotentclosetest.CloserStatsCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Stats(a0)
-		_, _ = s.Stats(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Stats call")
-	})
-
-	t.Run("wires WithCloserStats at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.WithCloserStats(func(_ context.Context) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Stats(a0)
-		assert.True(t, called, "WithCloserStats must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Stats-failing")
-		s := idempotentclosetest.NewCloserStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Stats(a0)
-		assert.ErrorIs(t, r1, want, "Stats must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := idempotentclosetest.NewCloserStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnStats.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Stats(a0)
-		s.ResetCalls()
-		got0, _ := s.Stats(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// closerStubDouble describes how to build a CloserStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Close stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func closerStubDouble() stub.Double[idempotentclosetest.CloserCloseCall] {
-	instance := func(s *idempotentclosetest.CloserStub) stub.Instance[idempotentclosetest.CloserCloseCall] {
-		return stub.Instance[idempotentclosetest.CloserCloseCall]{
-			Stub: s.OnClose.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_ = s.Close(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[idempotentclosetest.CloserCloseCall]{
-		New: func(tb assert.TB) stub.Instance[idempotentclosetest.CloserCloseCall] {
-			return instance(idempotentclosetest.NewCloserStub(tb))
+// closerStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Close alone.
+func closerStubInstanceOf(tb assert.TB, s *idempotentclosetest.CloserStub) closerStubInstance {
+	tb.Helper()
+	return closerStubInstance{
+		Stub: s.OnClose.MethodStub,
+		Call: func() {
+			_ = closerStubClose(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[idempotentclosetest.CloserCloseCall] {
-			return instance(idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[idempotentclosetest.CloserCloseCall] {
-			return instance(idempotentclosetest.NewCloserStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[idempotentclosetest.CloserCloseCall] {
-			return instance(idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[idempotentclosetest.CloserCloseCall] {
-			return instance(idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[idempotentclosetest.CloserCloseCall] {
-			return instance(idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestCloserStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestCloserStubOptions(t *testing.T) {
+// TestCloserStub checks the methods, the constructors and the options of
+// the double CloserStub.
+func TestCloserStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, closerStubDouble())
+	t.Run("Close", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Close", closerStubCloseSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			_ = closerStubClose(t, s)
+			got := s.OnClose.AssertCalledOnce(t, "Close records the call")
+			a0 := closerStubCloseArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			var seen []idempotentclosetest.CloserCloseCall
+			s.OnClose.OnRecord(func(c idempotentclosetest.CloserCloseCall) { seen = append(seen, c) })
+			_ = closerStubClose(t, s)
+			_ = closerStubClose(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
+		})
+	})
+
+	t.Run("Stats", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Stats", closerStubStatsSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			_, _ = closerStubStats(t, s)
+			got := s.OnStats.AssertCalledOnce(t, "Stats records the call")
+			a0 := closerStubStatsArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			var seen []idempotentclosetest.CloserStatsCall
+			s.OnStats.OnRecord(func(c idempotentclosetest.CloserStatsCall) { seen = append(seen, c) })
+			_, _ = closerStubStats(t, s)
+			_, _ = closerStubStats(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Stats")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) closerStubInstance {
+			return closerStubInstanceOf(tb, idempotentclosetest.NewCloserStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			_ = closerStubClose(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
+		})
+
+		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			want0 := closerStubClosePins()
+			s.OnClose.Returns(want0)
+			s.ResetCalls()
+			got0 := closerStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
+		})
+
+		t.Run("clears the recorded calls of Stats", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			_, _ = closerStubStats(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnStats.CallCount(), 0, "ResetCalls clears the calls of Stats")
+		})
+
+		t.Run("keeps the results of Returns of Stats", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			want0, want1 := closerStubStatsPins()
+			s.OnStats.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := closerStubStats(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Stats")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Stats")
+		})
+	})
+
+	t.Run("NewCloserStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) closerStubInstance {
+			return closerStubInstanceOf(tb, idempotentclosetest.NewCloserStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewCloserStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := idempotentclosetest.NewCloserStubFailing(t, want)
+			r0 := closerStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of NewCloserStubFailing")
+		})
+
+		t.Run("fails Stats with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Stats-failing")
+			s := idempotentclosetest.NewCloserStubFailing(t, want)
+			_, r1 := closerStubStats(t, s)
+			assert.ErrorIs(t, r1, want, "Stats fails with the error of NewCloserStubFailing")
+		})
+	})
+
+	t.Run("CloserStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) closerStubInstance {
+			return closerStubInstanceOf(
+				tb,
+				idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubStrict()),
+			)
+		})
+	})
+
+	t.Run("CloserStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Close to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := idempotentclosetest.NewCloserStub(t)
+			s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.CloserStubDelegateTo(inner))
+			_ = closerStubClose(t, s)
+			inner.OnClose.AssertCalledOnce(t, "Close calls the implementation")
+		})
+
+		t.Run("fails Close with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-delegate")
+			inner := idempotentclosetest.NewCloserStub(t)
+			inner.OnClose.Faults(want, 1)
+			s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.CloserStubDelegateTo(inner))
+			r0 := closerStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of the implementation")
+		})
+
+		t.Run("passes Stats to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := idempotentclosetest.NewCloserStub(t)
+			s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.CloserStubDelegateTo(inner))
+			_, _ = closerStubStats(t, s)
+			inner.OnStats.AssertCalledOnce(t, "Stats calls the implementation")
+		})
+
+		t.Run("fails Stats with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Stats-delegate")
+			inner := idempotentclosetest.NewCloserStub(t)
+			inner.OnStats.Faults(want, 1)
+			s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.CloserStubDelegateTo(inner))
+			_, r1 := closerStubStats(t, s)
+			assert.ErrorIs(t, r1, want, "Stats fails with the error of the implementation")
+		})
+	})
+
+	t.Run("CloserStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) closerStubInstance {
+			return closerStubInstanceOf(
+				tb,
+				idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("CloserStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) closerStubInstance {
+			return closerStubInstanceOf(
+				tb,
+				idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("CloserStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) closerStubInstance {
+			return closerStubInstanceOf(
+				tb,
+				idempotentclosetest.NewCloserStub(tb, idempotentclosetest.CloserStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("CloserStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) closerStubInstance {
+			return closerStubInstanceOf(
+				tb,
+				idempotentclosetest.NewCloserStub(
+					tb,
+					idempotentclosetest.CloserStubWithClock(clk),
+					idempotentclosetest.CloserStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("CloserStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.CloserStubFailing(want))
+			r0 := closerStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of CloserStubFailing")
+		})
+
+		t.Run("fails Stats with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Stats-failing")
+			s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.CloserStubFailing(want))
+			_, r1 := closerStubStats(t, s)
+			assert.ErrorIs(t, r1, want, "Stats fails with the error of CloserStubFailing")
+		})
+	})
+
+	t.Run("WithCloserClose", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Close", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := idempotentclosetest.NewCloserStub(
+				t,
+				idempotentclosetest.WithCloserClose(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = closerStubClose(t, s)
+			assert.True(t, called, "WithCloserClose sets the function of Close")
+		})
+	})
+
+	t.Run("WithCloserStats", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Stats", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := idempotentclosetest.NewCloserStub(
+				t,
+				idempotentclosetest.WithCloserStats(func(_ context.Context) (int, error) {
+					called = true
+					var z0 int
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = closerStubStats(t, s)
+			assert.True(t, called, "WithCloserStats sets the function of Stats")
+		})
+	})
 }
 
-// TestCloserStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestCloserStubDelegateTo(t *testing.T) {
+// TestCloserCloseStub checks the methods of CloserCloseStub, which
+// configures Close.
+func TestCloserCloseStub(t *testing.T) {
 	t.Parallel()
 
-	inner := idempotentclosetest.NewCloserStub(t)
-	s := idempotentclosetest.NewCloserStub(t, idempotentclosetest.CloserStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Close to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Close(a0)
-		inner.OnClose.AssertCalledOnce(t, "Close must reach the wrapped implementation")
+		t.Run("sets the results of each call of Close", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			want0 := closerStubClosePins()
+			s.OnClose.Returns(want0)
+			got0 := closerStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
+		})
+
+		t.Run("configures Close for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := idempotentclosetest.NewCloserStub(r)
+			s.OnClose.Strict()
+			var want0 error
+			s.OnClose.Returns(want0)
+			_ = closerStubClose(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
+		})
 	})
 
-	t.Run("surfaces what Close answered", func(t *testing.T) {
-		want := errors.New("Close-delegate")
-		inner.OnClose.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Close(a0)
-		assert.ErrorIs(t, r0, want, "Close must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Stats to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Stats(a0)
-		inner.OnStats.AssertCalledOnce(t, "Stats must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Stats answered", func(t *testing.T) {
-		want := errors.New("Stats-delegate")
-		inner.OnStats.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Stats(a0)
-		assert.ErrorIs(t, r1, want, "Stats must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Close to the function", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			var got0 context.Context
+			s.OnClose.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = closerStubClose(t, s)
+			a0 := closerStubCloseArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:e0b94ff85f65d7583c8760501ecf45d7fda75fc23eef5be15f3ec85852e54696
+// TestCloserStatsStub checks the methods of CloserStatsStub, which
+// configures Stats.
+func TestCloserStatsStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Stats", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			want0, want1 := closerStubStatsPins()
+			s.OnStats.Returns(want0, want1)
+			got0, got1 := closerStubStats(t, s)
+			expect.Equal(t, got0, want0, "Stats returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Stats returns the error that Returns sets")
+		})
+
+		t.Run("configures Stats for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := idempotentclosetest.NewCloserStub(r)
+			s.OnStats.Strict()
+			var want0 int
+			var want1 error
+			s.OnStats.Returns(want0, want1)
+			_, _ = closerStubStats(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Stats")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Stats to the function", func(t *testing.T) {
+			t.Parallel()
+			s := idempotentclosetest.NewCloserStub(t)
+			var got0 context.Context
+			s.OnStats.Func(func(p0 context.Context) (int, error) {
+				got0 = p0
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = closerStubStats(t, s)
+			a0 := closerStubStatsArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:c691b7a2fdfc4c7780c570b39e24dc6feb6dcd4f0ae3fb14bbe60c585c2cf218

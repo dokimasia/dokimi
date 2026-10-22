@@ -12,32 +12,74 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination/paginationtest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubFetchSubject binds Fetch into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubFetchSubject(tb assert.TB) stub.Subject[paginationtest.ContractFetchCall, paginationtest.ContractFetchReturn] {
+// contractStubFetchArgs returns the samples of the arguments of Fetch.
+func contractStubFetchArgs(tb assert.TB) (context.Context, pagination.Cursor) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 pagination.Cursor
+	a1 = pagination.Cursor("Fetch-a")
+	return a0, a1
+}
+
+// contractStubFetch calls Fetch of s with the samples of its arguments.
+func contractStubFetch(tb assert.TB, s *paginationtest.ContractStub) (pagination.Page, error) {
+	tb.Helper()
+	a0, a1 := contractStubFetchArgs(tb)
+	return s.Fetch(a0, a1)
+}
+
+// contractStubFetchPins returns the samples of the results of Fetch, with
+// a new error as its error result.
+func contractStubFetchPins() (pagination.Page, error) {
+	var want0 pagination.Page
+	want1 := errors.New("Fetch-returns")
+	want0 = pagination.Page{Items: []pagination.Value{{Key: "Key-a"}}}
+	return want0, want1
+}
+
+// contractStubPutArgs returns the samples of the arguments of Put.
+func contractStubPutArgs(tb assert.TB) (context.Context, pagination.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 pagination.Value
+	a1 = pagination.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// contractStubPut calls Put of s with the samples of its arguments.
+func contractStubPut(tb assert.TB, s *paginationtest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubPutArgs(tb)
+	return s.Put(a0, a1)
+}
+
+// contractStubPutPins returns the samples of the results of Put, with a
+// new error as its error result.
+func contractStubPutPins() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// contractStubFetchSubject returns the subject of [stub.Behaviour] for
+// Fetch. The subject calls a new double that reports to tb.
+func contractStubFetchSubject(
+	tb assert.TB,
+) stub.Subject[paginationtest.ContractFetchCall, paginationtest.ContractFetchReturn] {
 	tb.Helper()
 	s := paginationtest.NewContractStub(tb)
 	return stub.Subject[paginationtest.ContractFetchCall, paginationtest.ContractFetchReturn]{
 		Stub: s.OnFetch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 pagination.Cursor
-			a1 = pagination.Cursor("Fetch-a")
-			_, _ = s.Fetch(a0, a1)
+			_, _ = contractStubFetch(tb, s)
 		},
 		Result: func() paginationtest.ContractFetchReturn {
-			var a0 context.Context
-			var a1 pagination.Cursor
-			a1 = pagination.Cursor("Fetch-a")
-			got0, got1 := s.Fetch(a0, a1)
+			got0, got1 := contractStubFetch(tb, s)
 			return paginationtest.ContractFetchReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -49,131 +91,26 @@ func contractStubFetchSubject(tb assert.TB) stub.Subject[paginationtest.Contract
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 pagination.Cursor
-			a1 = pagination.Cursor("Fetch-a")
-			_, r1 := s.Fetch(a0, a1)
+			_, r1 := contractStubFetch(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubFetch pins how Fetch answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubFetch(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Fetch", contractStubFetchSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := paginationtest.NewContractStub(t)
-		var want0 pagination.Page
-		var want1 error
-		want0 = pagination.Page{Items: []pagination.Value{pagination.Value{Key: "Key-a"}}}
-		s.OnFetch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		got0, _ := s.Fetch(a0, a1)
-		assert.Equal(t, got0, want0, "Fetch must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := paginationtest.NewContractStub(t)
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		_, _ = s.Fetch(a0, a1)
-		got := s.OnFetch.AssertCalledOnce(t, "Fetch must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Cur, a1, "the recorded call carries Cur")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := paginationtest.NewContractStub(t)
-		var seen []paginationtest.ContractFetchCall
-		s.OnFetch.OnRecord(func(c paginationtest.ContractFetchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		_, _ = s.Fetch(a0, a1)
-		_, _ = s.Fetch(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Fetch call")
-	})
-
-	t.Run("wires WithContractFetch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := paginationtest.NewContractStub(t, paginationtest.WithContractFetch(func(_ context.Context, _ pagination.Cursor) (pagination.Page, error) {
-			called = true
-			var z0 pagination.Page
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		_, _ = s.Fetch(a0, a1)
-		assert.True(t, called, "WithContractFetch must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Fetch-failing")
-		s := paginationtest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		_, r1 := s.Fetch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Fetch must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := paginationtest.NewContractStub(t)
-		var want0 pagination.Page
-		var want1 error
-		want0 = pagination.Page{Items: []pagination.Value{pagination.Value{Key: "Key-a"}}}
-		s.OnFetch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		_, _ = s.Fetch(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Fetch(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubPutSubject binds Put into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubPutSubject(tb assert.TB) stub.Subject[paginationtest.ContractPutCall, paginationtest.ContractPutReturn] {
+// contractStubPutSubject returns the subject of [stub.Behaviour] for Put.
+// The subject calls a new double that reports to tb.
+func contractStubPutSubject(
+	tb assert.TB,
+) stub.Subject[paginationtest.ContractPutCall, paginationtest.ContractPutReturn] {
 	tb.Helper()
 	s := paginationtest.NewContractStub(tb)
 	return stub.Subject[paginationtest.ContractPutCall, paginationtest.ContractPutReturn]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 pagination.Value
-			a1 = pagination.Value{Key: "Key-a"}
-			_ = s.Put(a0, a1)
+			_ = contractStubPut(tb, s)
 		},
 		Result: func() paginationtest.ContractPutReturn {
-			var a0 context.Context
-			var a1 pagination.Value
-			a1 = pagination.Value{Key: "Key-a"}
-			got0 := s.Put(a0, a1)
+			got0 := contractStubPut(tb, s)
 			return paginationtest.ContractPutReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -184,185 +121,407 @@ func contractStubPutSubject(tb assert.TB) stub.Subject[paginationtest.ContractPu
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 pagination.Value
-			a1 = pagination.Value{Key: "Key-a"}
-			r0 := s.Put(a0, a1)
+			r0 := contractStubPut(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubPut(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a paginationtest.ContractStub
+// that the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[paginationtest.ContractFetchCall]
 
-	stub.Behaviour(t, "Put", contractStubPutSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := paginationtest.NewContractStub(t)
-		var a0 context.Context
-		var a1 pagination.Value
-		a1 = pagination.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := paginationtest.NewContractStub(t)
-		var seen []paginationtest.ContractPutCall
-		s.OnPut.OnRecord(func(c paginationtest.ContractPutCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 pagination.Value
-		a1 = pagination.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		_ = s.Put(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithContractPut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := paginationtest.NewContractStub(t, paginationtest.WithContractPut(func(_ context.Context, _ pagination.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 pagination.Value
-		a1 = pagination.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		assert.True(t, called, "WithContractPut must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Put-failing")
-		s := paginationtest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 pagination.Value
-		a1 = pagination.Value{Key: "Key-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := paginationtest.NewContractStub(t)
-		var want0 error
-		s.OnPut.Returns(want0)
-		var a0 context.Context
-		var a1 pagination.Value
-		a1 = pagination.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		s.ResetCalls()
-		_ = s.Put(a0, a1)
-		s.OnPut.AssertCalledOnce(t, "Put must record the call that followed the reset")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Fetch stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func contractStubDouble() stub.Double[paginationtest.ContractFetchCall] {
-	instance := func(s *paginationtest.ContractStub) stub.Instance[paginationtest.ContractFetchCall] {
-		return stub.Instance[paginationtest.ContractFetchCall]{
-			Stub: s.OnFetch.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 pagination.Cursor
-				a1 = pagination.Cursor("Fetch-a")
-				_, _ = s.Fetch(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[paginationtest.ContractFetchCall]{
-		New: func(tb assert.TB) stub.Instance[paginationtest.ContractFetchCall] {
-			return instance(paginationtest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Fetch alone.
+func contractStubInstanceOf(tb assert.TB, s *paginationtest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnFetch.MethodStub,
+		Call: func() {
+			_, _ = contractStubFetch(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[paginationtest.ContractFetchCall] {
-			return instance(paginationtest.NewContractStub(tb, paginationtest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[paginationtest.ContractFetchCall] {
-			return instance(paginationtest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[paginationtest.ContractFetchCall] {
-			return instance(paginationtest.NewContractStub(tb, paginationtest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[paginationtest.ContractFetchCall] {
-			return instance(paginationtest.NewContractStub(tb, paginationtest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[paginationtest.ContractFetchCall] {
-			return instance(paginationtest.NewContractStub(tb, paginationtest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Fetch", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Fetch", contractStubFetchSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			_, _ = contractStubFetch(t, s)
+			got := s.OnFetch.AssertCalledOnce(t, "Fetch records the call")
+			a0, a1 := contractStubFetchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Cur, a1, "the call records Cur")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			var seen []paginationtest.ContractFetchCall
+			s.OnFetch.OnRecord(func(c paginationtest.ContractFetchCall) { seen = append(seen, c) })
+			_, _ = contractStubFetch(t, s)
+			_, _ = contractStubFetch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fetch")
+		})
+	})
+
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", contractStubPutSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			_ = contractStubPut(t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1 := contractStubPutArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			var seen []paginationtest.ContractPutCall
+			s.OnPut.OnRecord(func(c paginationtest.ContractPutCall) { seen = append(seen, c) })
+			_ = contractStubPut(t, s)
+			_ = contractStubPut(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, paginationtest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			_, _ = contractStubFetch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnFetch.CallCount(), 0, "ResetCalls clears the calls of Fetch")
+		})
+
+		t.Run("keeps the results of Returns of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			want0, want1 := contractStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubFetch(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Fetch")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Fetch")
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			_ = contractStubPut(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			want0 := contractStubPutPins()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, paginationtest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Fetch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-failing")
+			s := paginationtest.NewContractStubFailing(t, want)
+			_, r1 := contractStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := paginationtest.NewContractStubFailing(t, want)
+			r0 := contractStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, paginationtest.NewContractStub(tb, paginationtest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Fetch to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := paginationtest.NewContractStub(t)
+			s := paginationtest.NewContractStub(t, paginationtest.ContractStubDelegateTo(inner))
+			_, _ = contractStubFetch(t, s)
+			inner.OnFetch.AssertCalledOnce(t, "Fetch calls the implementation")
+		})
+
+		t.Run("fails Fetch with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-delegate")
+			inner := paginationtest.NewContractStub(t)
+			inner.OnFetch.Faults(want, 1)
+			s := paginationtest.NewContractStub(t, paginationtest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of the implementation")
+		})
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := paginationtest.NewContractStub(t)
+			s := paginationtest.NewContractStub(t, paginationtest.ContractStubDelegateTo(inner))
+			_ = contractStubPut(t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := paginationtest.NewContractStub(t)
+			inner.OnPut.Faults(want, 1)
+			s := paginationtest.NewContractStub(t, paginationtest.ContractStubDelegateTo(inner))
+			r0 := contractStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				paginationtest.NewContractStub(tb, paginationtest.ContractStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				paginationtest.NewContractStub(tb, paginationtest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				paginationtest.NewContractStub(tb, paginationtest.ContractStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				paginationtest.NewContractStub(
+					tb,
+					paginationtest.ContractStubWithClock(clk),
+					paginationtest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Fetch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-failing")
+			s := paginationtest.NewContractStub(t, paginationtest.ContractStubFailing(want))
+			_, r1 := contractStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := paginationtest.NewContractStub(t, paginationtest.ContractStubFailing(want))
+			r0 := contractStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractFetch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Fetch", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := paginationtest.NewContractStub(
+				t,
+				paginationtest.WithContractFetch(func(_ context.Context, _ pagination.Cursor) (pagination.Page, error) {
+					called = true
+					var z0 pagination.Page
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubFetch(t, s)
+			assert.True(t, called, "WithContractFetch sets the function of Fetch")
+		})
+	})
+
+	t.Run("WithContractPut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := paginationtest.NewContractStub(
+				t,
+				paginationtest.WithContractPut(func(_ context.Context, _ pagination.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubPut(t, s)
+			assert.True(t, called, "WithContractPut sets the function of Put")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractFetchStub checks the methods of ContractFetchStub, which
+// configures Fetch.
+func TestContractFetchStub(t *testing.T) {
 	t.Parallel()
 
-	inner := paginationtest.NewContractStub(t)
-	s := paginationtest.NewContractStub(t, paginationtest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Fetch to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		_, _ = s.Fetch(a0, a1)
-		inner.OnFetch.AssertCalledOnce(t, "Fetch must reach the wrapped implementation")
+		t.Run("sets the results of each call of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			want0, want1 := contractStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			got0, got1 := contractStubFetch(t, s)
+			expect.Equal(t, got0, want0, "Fetch returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Fetch returns the error that Returns sets")
+		})
+
+		t.Run("configures Fetch for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := paginationtest.NewContractStub(r)
+			s.OnFetch.Strict()
+			var want0 pagination.Page
+			var want1 error
+			s.OnFetch.Returns(want0, want1)
+			_, _ = contractStubFetch(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Fetch")
+		})
 	})
 
-	t.Run("surfaces what Fetch answered", func(t *testing.T) {
-		want := errors.New("Fetch-delegate")
-		inner.OnFetch.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 pagination.Cursor
-		a1 = pagination.Cursor("Fetch-a")
-		_, r1 := s.Fetch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Fetch must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 pagination.Value
-		a1 = pagination.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Put answered", func(t *testing.T) {
-		want := errors.New("Put-delegate")
-		inner.OnPut.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 pagination.Value
-		a1 = pagination.Value{Key: "Key-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Fetch to the function", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			var got0 context.Context
+			var got1 pagination.Cursor
+			s.OnFetch.Func(func(p0 context.Context, p1 pagination.Cursor) (pagination.Page, error) {
+				got0, got1 = p0, p1
+				var z0 pagination.Page
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubFetch(t, s)
+			a0, a1 := contractStubFetchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Cur")
+		})
 	})
 }
 
-// dokimi:provenance sha256:8a91cc22a42c133eeca7ede5eb7265bc6c9dac0e44cc476d10245022067a2571
+// TestContractPutStub checks the methods of ContractPutStub, which
+// configures Put.
+func TestContractPutStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			want0 := contractStubPutPins()
+			s.OnPut.Returns(want0)
+			got0 := contractStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
+
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := paginationtest.NewContractStub(r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = contractStubPut(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := paginationtest.NewContractStub(t)
+			var got0 context.Context
+			var got1 pagination.Value
+			s.OnPut.Func(func(p0 context.Context, p1 pagination.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubPut(t, s)
+			a0, a1 := contractStubPutArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
+	})
+}
+
+// dokimi:provenance sha256:1d2fdedfb728fd31fab56d172598a643720f224b7ccaf38fd4b5845cf635b057

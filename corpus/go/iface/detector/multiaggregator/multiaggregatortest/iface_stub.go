@@ -10,15 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator"
+	"go.dokimi.dev/stub"
 )
 
-// MultiAggregatorStatsCall records one invocation of
-// MultiAggregator.Stats.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MultiAggregatorStatsCall records one call of MultiAggregator.Stats.
 type MultiAggregatorStatsCall struct {
 	Ctx     context.Context
 	Result0 int
@@ -26,14 +22,9 @@ type MultiAggregatorStatsCall struct {
 	Err     error
 }
 
-// --- Per-method configuration ---
-
-// MultiAggregatorStatsStub controls how the double answers Stats and
-// records what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MultiAggregatorStatsStub configures Stats and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type MultiAggregatorStatsStub struct {
 	*stub.MethodStub[MultiAggregatorStatsCall]
 
@@ -41,119 +32,114 @@ type MultiAggregatorStatsStub struct {
 	fallback *MultiAggregatorStatsReturn
 }
 
-// MultiAggregatorStatsReturn holds the fixed answer configured through
-// Returns.
+// MultiAggregatorStatsReturn contains the fixed results of Stats.
 type MultiAggregatorStatsReturn struct {
 	Result0 int
 	Result1 int
 	Err     error
 }
 
-// Returns pins a fixed result for every call to Stats. A Func override
-// takes precedence over it, and so does an injected fault.
-func (s *MultiAggregatorStatsStub) Returns(result0 int, result1 int, err error) *MultiAggregatorStatsStub {
+// Returns sets the results of every call of Stats. A function and an
+// injected fault take precedence over them.
+func (s *MultiAggregatorStatsStub) Returns(result0, result1 int, err error) *MultiAggregatorStatsStub {
 	s.fallback = &MultiAggregatorStatsReturn{Result0: result0, Result1: result1, Err: err}
 	return s
 }
 
-// Func supplies a body for Stats, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Stats from its
+// arguments. An injected fault takes precedence over it.
 func (s *MultiAggregatorStatsStub) Func(fn func(context.Context) (int, int, error)) *MultiAggregatorStatsStub {
 	s.fn = fn
 	return s
 }
 
-// --- MultiAggregatorStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// MultiAggregatorStubOption configures a [MultiAggregatorStub] at
-// construction time.
+// MultiAggregatorStubOption configures a [MultiAggregatorStub] at its
+// construction.
 type MultiAggregatorStubOption func(*MultiAggregatorStub)
 
-// MultiAggregatorStubStrict makes an unconfigured method fail the test
-// rather than return its zero value.
+// MultiAggregatorStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func MultiAggregatorStubStrict() MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) { s.strict = true }
 }
 
-// MultiAggregatorStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// MultiAggregatorStubDelegateTo returns the option that passes each call
+// to impl. The double still records the call.
 func MultiAggregatorStubDelegateTo(impl multiaggregator.MultiAggregator) MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) {
 		s.OnStats.Func(impl.Stats)
 	}
 }
 
-// MultiAggregatorStubWithClock drives latency and time-windowed faults
-// from clk rather than from wall time, so a test asserting on a
-// five-second timeout does not take five seconds.
+// MultiAggregatorStubWithClock returns the option that sets the clock of
+// the double to clk. The double takes the latency, the windows of the
+// faults and the instants of the calls from clk. A latency on a controlled
+// clock costs no real time.
 func MultiAggregatorStubWithClock(clk assert.Clock) MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) { s.group.SetClock(clk) }
 }
 
-// MultiAggregatorStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// MultiAggregatorStubWithRandSource returns the option that sets the
+// random source of the probabilistic faults to src. A seeded source
+// repeats the faults of a run.
 func MultiAggregatorStubWithRandSource(src rand.Source) MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) { s.group.SetRandSource(src) }
 }
 
-// MultiAggregatorStubBenchMode disables call recording. Dispatch still
-// works; only the accumulating call log is dropped.
+// MultiAggregatorStubBenchMode returns the option that turns the recording
+// of calls off. The methods still return their results.
 func MultiAggregatorStubBenchMode() MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) { s.group.BenchMode() }
 }
 
-// MultiAggregatorStubWithLatency makes every method sleep d before
-// answering, for a test standing in for a slow dependency rather than one
-// slow method. Pair it with MultiAggregatorStubWithClock, or d elapses in
-// wall time.
+// MultiAggregatorStubWithLatency returns the option that makes every
+// method sleep d before it returns. Without MultiAggregatorStubWithClock,
+// d passes in real time.
 func MultiAggregatorStubWithLatency(d time.Duration) MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) { s.group.SetLatency(d) }
 }
 
-// MultiAggregatorStubFailing arms every method that can fail with err, so
-// a caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// MultiAggregatorStubFailing returns the option that arms err on each
+// method that can fail. Each call of such a method then fails with err.
 func MultiAggregatorStubFailing(err error) MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) {
 		s.OnStats.Faults(err, 1)
 	}
 }
 
-// WithMultiAggregatorStats sets Stats's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithMultiAggregatorStats returns the option that sets the function of
+// Stats.
 func WithMultiAggregatorStats(fn func(context.Context) (int, int, error)) MultiAggregatorStubOption {
 	return func(s *MultiAggregatorStub) { s.OnStats.Func(fn) }
 }
 
-// MultiAggregatorStub is a recording test double for MultiAggregator.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// MultiAggregatorStub is a recording test double of MultiAggregator. Each
+// field On<Method> configures its method. An unconfigured method records
+// the call and returns the zero values of its results.
 type MultiAggregatorStub struct {
 	OnStats *MultiAggregatorStatsStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that MultiAggregatorStub satisfies MultiAggregator.
+// The compiler checks that MultiAggregatorStub implements MultiAggregator.
 var _ multiaggregator.MultiAggregator = (*MultiAggregatorStub)(nil)
 
-// NewMultiAggregatorStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewMultiAggregatorStub returns a double of MultiAggregator that reports
+// its failures to tb and applies opts. The double checks the expected
+// counts of calls at the end of the test. With a nil tb, the double
+// reports nothing.
 func NewMultiAggregatorStub(tb assert.TB, opts ...MultiAggregatorStubOption) *MultiAggregatorStub {
 	s := &MultiAggregatorStub{
-		OnStats: &MultiAggregatorStatsStub{MethodStub: stub.NewMethodStub[MultiAggregatorStatsCall](tb, "MultiAggregator.Stats")},
+		OnStats: &MultiAggregatorStatsStub{
+			MethodStub: stub.NewMethodStub[MultiAggregatorStatsCall](tb, "MultiAggregator.Stats"),
+		},
 	}
 	s.group = stub.NewGroup(
 		s.OnStats.MethodStub,
@@ -168,38 +154,34 @@ func NewMultiAggregatorStub(tb assert.TB, opts ...MultiAggregatorStubOption) *Mu
 	return s
 }
 
-// NewMultiAggregatorStubDelayed returns a double whose every method sleeps
-// d against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewMultiAggregatorStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MultiAggregatorStubOption) *MultiAggregatorStub {
+// NewMultiAggregatorStubDelayed returns a double whose methods sleep d on
+// clk before they return. It applies opts after the clock and the latency.
+func NewMultiAggregatorStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...MultiAggregatorStubOption,
+) *MultiAggregatorStub {
 	return NewMultiAggregatorStub(tb, append([]MultiAggregatorStubOption{
 		MultiAggregatorStubWithClock(clk),
 		MultiAggregatorStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewMultiAggregatorStubFailing returns a double whose every fallible
-// method answers err — [MultiAggregatorStubFailing] applied at
-// construction, for the test whose whole subject is the caller's error
-// path. Further options apply after it.
+// NewMultiAggregatorStubFailing returns a double on which each call of a
+// method that can fail fails with err. It applies opts after the failure.
 func NewMultiAggregatorStubFailing(tb assert.TB, err error, opts ...MultiAggregatorStubOption) *MultiAggregatorStub {
 	return NewMultiAggregatorStub(tb, append([]MultiAggregatorStubOption{MultiAggregatorStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MultiAggregatorStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MultiAggregatorStatsStub) invoke(ctx context.Context) func() MultiAggregatorStatsReturn {
 	if s.fn == nil {
 		return nil
@@ -210,12 +192,8 @@ func (s *MultiAggregatorStatsStub) invoke(ctx context.Context) func() MultiAggre
 	}
 }
 
-// Stats records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Stats records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *MultiAggregatorStub) Stats(ctx context.Context) (int, int, error) {
 	call := MultiAggregatorStatsCall{Ctx: ctx}
 	r := stub.Answer(s.OnStats.MethodStub, &call, stub.Arms[MultiAggregatorStatsCall, MultiAggregatorStatsReturn]{
@@ -231,4 +209,4 @@ func (s *MultiAggregatorStub) Stats(ctx context.Context) (int, int, error) {
 	return r.Result0, r.Result1, r.Err
 }
 
-// dokimi:provenance sha256:d41d708651884f91c6dcd9263a5514c0a06139990182c1a344a4b86a1c8aef3c
+// dokimi:provenance sha256:adbde57eb224d47358e9b331bb1a24330c17e7ac649f412e0738be2f02cb09c3

@@ -12,191 +12,109 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scope/scopetest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubSetSubject binds Set into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubSetArgs returns the samples of the arguments of Set.
+func mixedStubSetArgs(tb assert.TB) (context.Context, string, string, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 string
+	var a3 string
+	a1 = "Set-a"
+	a2 = "Set-a"
+	a3 = "Set-a"
+	return a0, a1, a2, a3
+}
+
+// mixedStubSet calls Set of s with the samples of its arguments.
+func mixedStubSet(tb assert.TB, s *scopetest.MixedStub) error {
+	tb.Helper()
+	a0, a1, a2, a3 := mixedStubSetArgs(tb)
+	return s.Set(a0, a1, a2, a3)
+}
+
+// mixedStubSetPins returns the samples of the results of Set, with a new
+// error as its error result.
+func mixedStubSetPins() error {
+	want0 := errors.New("Set-returns")
+	return want0
+}
+
+// mixedStubGetArgs returns the samples of the arguments of Get.
+func mixedStubGetArgs(tb assert.TB) (context.Context, string, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 string
+	a1 = "Get-a"
+	a2 = "Get-a"
+	return a0, a1, a2
+}
+
+// mixedStubGet calls Get of s with the samples of its arguments.
+func mixedStubGet(tb assert.TB, s *scopetest.MixedStub) (string, error) {
+	tb.Helper()
+	a0, a1, a2 := mixedStubGetArgs(tb)
+	return s.Get(a0, a1, a2)
+}
+
+// mixedStubGetPins returns the samples of the results of Get, with a new
+// error as its error result.
+func mixedStubGetPins() (string, error) {
+	var want0 string
+	want1 := errors.New("Get-returns")
+	want0 = "Get-a"
+	return want0, want1
+}
+
+// mixedStubSetSubject returns the subject of [stub.Behaviour] for Set. The
+// subject calls a new double that reports to tb.
 func mixedStubSetSubject(tb assert.TB) stub.Subject[scopetest.MixedSetCall, scopetest.MixedSetReturn] {
 	tb.Helper()
 	s := scopetest.NewMixedStub(tb)
 	return stub.Subject[scopetest.MixedSetCall, scopetest.MixedSetReturn]{
 		Stub: s.OnSet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			var a3 string
-			a1 = "Set-a"
-			a2 = "Set-a"
-			a3 = "Set-a"
-			_ = s.Set(a0, a1, a2, a3)
+			_ = mixedStubSet(tb, s)
 		},
 		Result: func() scopetest.MixedSetReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			var a3 string
-			a1 = "Set-a"
-			a2 = "Set-a"
-			a3 = "Set-a"
-			got0 := s.Set(a0, a1, a2, a3)
+			got0 := mixedStubSet(tb, s)
 			return scopetest.MixedSetReturn{Err: got0}
 		},
 		Override: func(mark func()) {
-			s.OnSet.Func(func(_ context.Context, _ string, _ string, _ string) error {
+			s.OnSet.Func(func(_ context.Context, _, _, _ string) error {
 				mark()
 				var z0 error
 				return z0
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			var a3 string
-			a1 = "Set-a"
-			a2 = "Set-a"
-			a3 = "Set-a"
-			r0 := s.Set(a0, a1, a2, a3)
+			r0 := mixedStubSet(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubSet pins how Set answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubSet(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Set", mixedStubSetSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := scopetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		got := s.OnSet.AssertCalledOnce(t, "Set must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Scope, a1, "the recorded call carries Scope")
-		assert.Equal(t, got.Key, a2, "the recorded call carries Key")
-		assert.Equal(t, got.Value, a3, "the recorded call carries Value")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := scopetest.NewMixedStub(t)
-		var seen []scopetest.MixedSetCall
-		s.OnSet.OnRecord(func(c scopetest.MixedSetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		_ = s.Set(a0, a1, a2, a3)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Set call")
-	})
-
-	t.Run("wires WithMixedSet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := scopetest.NewMixedStub(t, scopetest.WithMixedSet(func(_ context.Context, _ string, _ string, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		assert.True(t, called, "WithMixedSet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Set-failing")
-		s := scopetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		r0 := s.Set(a0, a1, a2, a3)
-		assert.ErrorIs(t, r0, want, "Set must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := scopetest.NewMixedStub(t)
-		var want0 error
-		s.OnSet.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		s.ResetCalls()
-		_ = s.Set(a0, a1, a2, a3)
-		s.OnSet.AssertCalledOnce(t, "Set must record the call that followed the reset")
-	})
-}
-
-// mixedStubGetSubject binds Get into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubGetSubject returns the subject of [stub.Behaviour] for Get. The
+// subject calls a new double that reports to tb.
 func mixedStubGetSubject(tb assert.TB) stub.Subject[scopetest.MixedGetCall, scopetest.MixedGetReturn] {
 	tb.Helper()
 	s := scopetest.NewMixedStub(tb)
 	return stub.Subject[scopetest.MixedGetCall, scopetest.MixedGetReturn]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Get-a"
-			a2 = "Get-a"
-			_, _ = s.Get(a0, a1, a2)
+			_, _ = mixedStubGet(tb, s)
 		},
 		Result: func() scopetest.MixedGetReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Get-a"
-			a2 = "Get-a"
-			got0, got1 := s.Get(a0, a1, a2)
+			got0, got1 := mixedStubGet(tb, s)
 			return scopetest.MixedGetReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
-			s.OnGet.Func(func(_ context.Context, _ string, _ string) (string, error) {
+			s.OnGet.Func(func(_ context.Context, _, _ string) (string, error) {
 				mark()
 				var z0 string
 				var z1 error
@@ -204,233 +122,397 @@ func mixedStubGetSubject(tb assert.TB) stub.Subject[scopetest.MixedGetCall, scop
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Get-a"
-			a2 = "Get-a"
-			_, r1 := s.Get(a0, a1, a2)
+			_, r1 := mixedStubGet(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubGet pins how Get answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubGet(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a scopetest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[scopetest.MixedSetCall]
 
-	stub.Behaviour(t, "Get", mixedStubGetSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := scopetest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Get-a"
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		got0, _ := s.Get(a0, a1, a2)
-		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := scopetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		_, _ = s.Get(a0, a1, a2)
-		got := s.OnGet.AssertCalledOnce(t, "Get must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Scope, a1, "the recorded call carries Scope")
-		assert.Equal(t, got.Key, a2, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := scopetest.NewMixedStub(t)
-		var seen []scopetest.MixedGetCall
-		s.OnGet.OnRecord(func(c scopetest.MixedGetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		_, _ = s.Get(a0, a1, a2)
-		_, _ = s.Get(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Get call")
-	})
-
-	t.Run("wires WithMixedGet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := scopetest.NewMixedStub(t, scopetest.WithMixedGet(func(_ context.Context, _ string, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		_, _ = s.Get(a0, a1, a2)
-		assert.True(t, called, "WithMixedGet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Get-failing")
-		s := scopetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		_, r1 := s.Get(a0, a1, a2)
-		assert.ErrorIs(t, r1, want, "Get must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := scopetest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Get-a"
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		_, _ = s.Get(a0, a1, a2)
-		s.ResetCalls()
-		got0, _ := s.Get(a0, a1, a2)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Set stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[scopetest.MixedSetCall] {
-	instance := func(s *scopetest.MixedStub) stub.Instance[scopetest.MixedSetCall] {
-		return stub.Instance[scopetest.MixedSetCall]{
-			Stub: s.OnSet.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				var a2 string
-				var a3 string
-				a1 = "Set-a"
-				a2 = "Set-a"
-				a3 = "Set-a"
-				_ = s.Set(a0, a1, a2, a3)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[scopetest.MixedSetCall]{
-		New: func(tb assert.TB) stub.Instance[scopetest.MixedSetCall] {
-			return instance(scopetest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Set alone.
+func mixedStubInstanceOf(tb assert.TB, s *scopetest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnSet.MethodStub,
+		Call: func() {
+			_ = mixedStubSet(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[scopetest.MixedSetCall] {
-			return instance(scopetest.NewMixedStub(tb, scopetest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[scopetest.MixedSetCall] {
-			return instance(scopetest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[scopetest.MixedSetCall] {
-			return instance(scopetest.NewMixedStub(tb, scopetest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[scopetest.MixedSetCall] {
-			return instance(scopetest.NewMixedStub(tb, scopetest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[scopetest.MixedSetCall] {
-			return instance(scopetest.NewMixedStub(tb, scopetest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Set", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Set", mixedStubSetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			_ = mixedStubSet(t, s)
+			got := s.OnSet.AssertCalledOnce(t, "Set records the call")
+			a0, a1, a2, a3 := mixedStubSetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Scope, a1, "the call records Scope")
+			expect.Equal(t, got.Key, a2, "the call records Key")
+			expect.Equal(t, got.Value, a3, "the call records Value")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			var seen []scopetest.MixedSetCall
+			s.OnSet.OnRecord(func(c scopetest.MixedSetCall) { seen = append(seen, c) })
+			_ = mixedStubSet(t, s)
+			_ = mixedStubSet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Set")
+		})
+	})
+
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Get", mixedStubGetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			_, _ = mixedStubGet(t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0, a1, a2 := mixedStubGetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Scope, a1, "the call records Scope")
+			expect.Equal(t, got.Key, a2, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			var seen []scopetest.MixedGetCall
+			s.OnGet.OnRecord(func(c scopetest.MixedGetCall) { seen = append(seen, c) })
+			_, _ = mixedStubGet(t, s)
+			_, _ = mixedStubGet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scopetest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Set", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			_ = mixedStubSet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSet.CallCount(), 0, "ResetCalls clears the calls of Set")
+		})
+
+		t.Run("keeps the results of Returns of Set", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			want0 := mixedStubSetPins()
+			s.OnSet.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubSet(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Set")
+		})
+
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			_, _ = mixedStubGet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+		})
+
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubGet(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scopetest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Set with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-failing")
+			s := scopetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := scopetest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scopetest.NewMixedStub(tb, scopetest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Set to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := scopetest.NewMixedStub(t)
+			s := scopetest.NewMixedStub(t, scopetest.MixedStubDelegateTo(inner))
+			_ = mixedStubSet(t, s)
+			inner.OnSet.AssertCalledOnce(t, "Set calls the implementation")
+		})
+
+		t.Run("fails Set with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-delegate")
+			inner := scopetest.NewMixedStub(t)
+			inner.OnSet.Faults(want, 1)
+			s := scopetest.NewMixedStub(t, scopetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of the implementation")
+		})
+
+		t.Run("passes Get to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := scopetest.NewMixedStub(t)
+			s := scopetest.NewMixedStub(t, scopetest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubGet(t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
+		})
+
+		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-delegate")
+			inner := scopetest.NewMixedStub(t)
+			inner.OnGet.Faults(want, 1)
+			s := scopetest.NewMixedStub(t, scopetest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scopetest.NewMixedStub(tb, scopetest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scopetest.NewMixedStub(tb, scopetest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scopetest.NewMixedStub(tb, scopetest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				scopetest.NewMixedStub(tb, scopetest.MixedStubWithClock(clk), scopetest.MixedStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Set with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-failing")
+			s := scopetest.NewMixedStub(t, scopetest.MixedStubFailing(want))
+			r0 := mixedStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := scopetest.NewMixedStub(t, scopetest.MixedStubFailing(want))
+			_, r1 := mixedStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedSet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Set", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := scopetest.NewMixedStub(t, scopetest.WithMixedSet(func(_ context.Context, _, _, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubSet(t, s)
+			assert.True(t, called, "WithMixedSet sets the function of Set")
+		})
+	})
+
+	t.Run("WithMixedGet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Get", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := scopetest.NewMixedStub(t, scopetest.WithMixedGet(func(_ context.Context, _, _ string) (string, error) {
+				called = true
+				var z0 string
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = mixedStubGet(t, s)
+			assert.True(t, called, "WithMixedGet sets the function of Get")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedSetStub checks the methods of MixedSetStub, which configures
+// Set.
+func TestMixedSetStub(t *testing.T) {
 	t.Parallel()
 
-	inner := scopetest.NewMixedStub(t)
-	s := scopetest.NewMixedStub(t, scopetest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Set to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		inner.OnSet.AssertCalledOnce(t, "Set must reach the wrapped implementation")
+		t.Run("sets the results of each call of Set", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			want0 := mixedStubSetPins()
+			s.OnSet.Returns(want0)
+			got0 := mixedStubSet(t, s)
+			assert.ErrorIs(t, got0, want0, "Set returns the error that Returns sets")
+		})
+
+		t.Run("configures Set for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := scopetest.NewMixedStub(r)
+			s.OnSet.Strict()
+			var want0 error
+			s.OnSet.Returns(want0)
+			_ = mixedStubSet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Set")
+		})
 	})
 
-	t.Run("surfaces what Set answered", func(t *testing.T) {
-		want := errors.New("Set-delegate")
-		inner.OnSet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		r0 := s.Set(a0, a1, a2, a3)
-		assert.ErrorIs(t, r0, want, "Set must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Get to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		_, _ = s.Get(a0, a1, a2)
-		inner.OnGet.AssertCalledOnce(t, "Get must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Get answered", func(t *testing.T) {
-		want := errors.New("Get-delegate")
-		inner.OnGet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Get-a"
-		a2 = "Get-a"
-		_, r1 := s.Get(a0, a1, a2)
-		assert.ErrorIs(t, r1, want, "Get must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Set to the function", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 string
+			var got3 string
+			s.OnSet.Func(func(p0 context.Context, p1, p2, p3 string) error {
+				got0, got1, got2, got3 = p0, p1, p2, p3
+				var z0 error
+				return z0
+			})
+			_ = mixedStubSet(t, s)
+			a0, a1, a2, a3 := mixedStubSetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Scope")
+			expect.Equal(t, got2, a2, "the function receives Key")
+			expect.Equal(t, got3, a3, "the function receives Value")
+		})
 	})
 }
 
-// dokimi:provenance sha256:02daaba4cfce58365ee0d6289f3ae32e3cf25c1101025bfc180a3e643cf5e09b
+// TestMixedGetStub checks the methods of MixedGetStub, which configures
+// Get.
+func TestMixedGetStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			got0, got1 := mixedStubGet(t, s)
+			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
+		})
+
+		t.Run("configures Get for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := scopetest.NewMixedStub(r)
+			s.OnGet.Strict()
+			var want0 string
+			var want1 error
+			s.OnGet.Returns(want0, want1)
+			_, _ = mixedStubGet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
+			t.Parallel()
+			s := scopetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 string
+			s.OnGet.Func(func(p0 context.Context, p1, p2 string) (string, error) {
+				got0, got1, got2 = p0, p1, p2
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubGet(t, s)
+			a0, a1, a2 := mixedStubGetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Scope")
+			expect.Equal(t, got2, a2, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:2799dea0ab3c0564ae714feb6b3c6ed8d1a989ce4a946576dc08dac44efd70b5

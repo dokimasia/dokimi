@@ -7,7 +7,7 @@ package causalchaintest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	causalchain "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain"
 )
 
@@ -41,38 +41,36 @@ type logReplay struct {
 	conform.Callable[causalchain.Log]
 }
 
+// KeepsTheBody returns the identity of the check that Replay returns the
+// body that Append admitted.
+func (c logReplay) KeepsTheBody() conform.ID[causalchain.Log] {
+	return c.Check("keeps-the-body")
+}
+
 // LogSuite returns the checks of Log.
 func LogSuite() conform.Suite[causalchain.Log] {
-	return conform.Suite[causalchain.Log]{Declaration: "Log"}
+	return conform.Suite[causalchain.Log]{Declaration: "Log", Checks: []conform.Check[causalchain.Log]{
+		{
+			ID:        LogChecks.Replay.KeepsTheBody(),
+			Statement: "Replay returns the body that Append admitted",
+			Apply:     KeepsTheBody,
+			Defect:    losesBodies,
+		},
+	}}
 }
 
-// RunLog applies the checks of Log, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunLog[T causalchain.Log](t *testing.T, newSubject func() T, opts ...LogOption) {
+// RunLogSuite applies the checks of Log, and the checks that opts add, to
+// a fresh subject of newSubject for each check.
+func RunLogSuite[T causalchain.Log](t *testing.T, newSubject func() T, opts ...LogOption) {
 	t.Helper()
-	conform.Verify(t, LogSuite(), func(*LogHandle) causalchain.Log { return newSubject() }, opts...)
+	RunLogSuiteFromHandle(t, func(*LogHandle) T { return newSubject() }, opts...)
 }
 
-// RunLogOn applies the same checks to a subject that newSubject builds on
-// the handle of each check.
-func RunLogOn[T causalchain.Log](t *testing.T, newSubject func(h *LogHandle) T, opts ...LogOption) {
+// RunLogSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunLogSuiteFromHandle[T causalchain.Log](t *testing.T, newSubject func(h *LogHandle) T, opts ...LogOption) {
 	t.Helper()
-	conform.Verify(t, LogSuite(), func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+	conform.Run(t, LogSuite(), func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
 }
 
-// ControlLog applies the same checks to a fresh control of newControl for
-// each check. A control is a correct implementation that differs from the
-// subject.
-func ControlLog[T causalchain.Log](t *testing.T, newControl func() T, opts ...LogOption) {
-	t.Helper()
-	conform.Control(t, LogSuite(), func(*LogHandle) causalchain.Log { return newControl() }, opts...)
-}
-
-// ControlLogOn applies the same checks to a control that newControl builds
-// on the handle of each check.
-func ControlLogOn[T causalchain.Log](t *testing.T, newControl func(h *LogHandle) T, opts ...LogOption) {
-	t.Helper()
-	conform.Control(t, LogSuite(), func(h *LogHandle) causalchain.Log { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:e635a5956e55bc63dcee507dd96efd01d180c8dc5568664ae0be037694450bbd
+// dokimi:provenance sha256:35cebd5deac5456506872953a0a91d7d156e22670f4480c9d07ee5d591cd86f0

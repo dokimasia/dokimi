@@ -12,32 +12,47 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer/writertest"
+	"go.dokimi.dev/stub"
 )
 
-// writerStubPutSubject binds Put into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// writerStubPutArgs returns the samples of the arguments of Put.
+func writerStubPutArgs(tb assert.TB) (context.Context, writer.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 writer.Value
+	a1 = writer.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// writerStubPut calls Put of s with the samples of its arguments.
+func writerStubPut(tb assert.TB, s *writertest.WriterStub) error {
+	tb.Helper()
+	a0, a1 := writerStubPutArgs(tb)
+	return s.Put(a0, a1)
+}
+
+// writerStubPutPins returns the samples of the results of Put, with a new
+// error as its error result.
+func writerStubPutPins() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// writerStubPutSubject returns the subject of [stub.Behaviour] for Put.
+// The subject calls a new double that reports to tb.
 func writerStubPutSubject(tb assert.TB) stub.Subject[writertest.WriterPutCall, writertest.WriterPutReturn] {
 	tb.Helper()
 	s := writertest.NewWriterStub(tb)
 	return stub.Subject[writertest.WriterPutCall, writertest.WriterPutReturn]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 writer.Value
-			a1 = writer.Value{Key: "Key-a"}
-			_ = s.Put(a0, a1)
+			_ = writerStubPut(tb, s)
 		},
 		Result: func() writertest.WriterPutReturn {
-			var a0 context.Context
-			var a1 writer.Value
-			a1 = writer.Value{Key: "Key-a"}
-			got0 := s.Put(a0, a1)
+			got0 := writerStubPut(tb, s)
 			return writertest.WriterPutReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,167 +63,240 @@ func writerStubPutSubject(tb assert.TB) stub.Subject[writertest.WriterPutCall, w
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 writer.Value
-			a1 = writer.Value{Key: "Key-a"}
-			r0 := s.Put(a0, a1)
+			r0 := writerStubPut(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestWriterStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestWriterStubPut(t *testing.T) {
-	t.Parallel()
+// writerStubInstance is the instance of a writertest.WriterStub that the
+// checks of the constructors and the options drive.
+type writerStubInstance = stub.Instance[writertest.WriterPutCall]
 
-	stub.Behaviour(t, "Put", writerStubPutSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := writertest.NewWriterStub(t)
-		var a0 context.Context
-		var a1 writer.Value
-		a1 = writer.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := writertest.NewWriterStub(t)
-		var seen []writertest.WriterPutCall
-		s.OnPut.OnRecord(func(c writertest.WriterPutCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 writer.Value
-		a1 = writer.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		_ = s.Put(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithWriterPut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := writertest.NewWriterStub(t, writertest.WithWriterPut(func(_ context.Context, _ writer.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 writer.Value
-		a1 = writer.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		assert.True(t, called, "WithWriterPut must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Put-failing")
-		s := writertest.NewWriterStubFailing(t, want)
-		var a0 context.Context
-		var a1 writer.Value
-		a1 = writer.Value{Key: "Key-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := writertest.NewWriterStub(t)
-		var want0 error
-		s.OnPut.Returns(want0)
-		var a0 context.Context
-		var a1 writer.Value
-		a1 = writer.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		s.ResetCalls()
-		_ = s.Put(a0, a1)
-		s.OnPut.AssertCalledOnce(t, "Put must record the call that followed the reset")
-	})
-}
-
-// writerStubDouble describes how to build a WriterStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Put stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func writerStubDouble() stub.Double[writertest.WriterPutCall] {
-	instance := func(s *writertest.WriterStub) stub.Instance[writertest.WriterPutCall] {
-		return stub.Instance[writertest.WriterPutCall]{
-			Stub: s.OnPut.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 writer.Value
-				a1 = writer.Value{Key: "Key-a"}
-				_ = s.Put(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[writertest.WriterPutCall]{
-		New: func(tb assert.TB) stub.Instance[writertest.WriterPutCall] {
-			return instance(writertest.NewWriterStub(tb))
+// writerStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Put alone.
+func writerStubInstanceOf(tb assert.TB, s *writertest.WriterStub) writerStubInstance {
+	tb.Helper()
+	return writerStubInstance{
+		Stub: s.OnPut.MethodStub,
+		Call: func() {
+			_ = writerStubPut(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[writertest.WriterPutCall] {
-			return instance(writertest.NewWriterStub(tb, writertest.WriterStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[writertest.WriterPutCall] {
-			return instance(writertest.NewWriterStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[writertest.WriterPutCall] {
-			return instance(writertest.NewWriterStub(tb, writertest.WriterStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[writertest.WriterPutCall] {
-			return instance(writertest.NewWriterStub(tb, writertest.WriterStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[writertest.WriterPutCall] {
-			return instance(writertest.NewWriterStub(tb, writertest.WriterStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestWriterStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestWriterStubOptions(t *testing.T) {
+// TestWriterStub checks the methods, the constructors and the options of
+// the double WriterStub.
+func TestWriterStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, writerStubDouble())
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", writerStubPutSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := writertest.NewWriterStub(t)
+			_ = writerStubPut(t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1 := writerStubPutArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := writertest.NewWriterStub(t)
+			var seen []writertest.WriterPutCall
+			s.OnPut.OnRecord(func(c writertest.WriterPutCall) { seen = append(seen, c) })
+			_ = writerStubPut(t, s)
+			_ = writerStubPut(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) writerStubInstance {
+			return writerStubInstanceOf(tb, writertest.NewWriterStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := writertest.NewWriterStub(t)
+			_ = writerStubPut(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := writertest.NewWriterStub(t)
+			want0 := writerStubPutPins()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := writerStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+	})
+
+	t.Run("NewWriterStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) writerStubInstance {
+			return writerStubInstanceOf(tb, writertest.NewWriterStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewWriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := writertest.NewWriterStubFailing(t, want)
+			r0 := writerStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewWriterStubFailing")
+		})
+	})
+
+	t.Run("WriterStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) writerStubInstance {
+			return writerStubInstanceOf(tb, writertest.NewWriterStub(tb, writertest.WriterStubStrict()))
+		})
+	})
+
+	t.Run("WriterStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := writertest.NewWriterStub(t)
+			s := writertest.NewWriterStub(t, writertest.WriterStubDelegateTo(inner))
+			_ = writerStubPut(t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := writertest.NewWriterStub(t)
+			inner.OnPut.Faults(want, 1)
+			s := writertest.NewWriterStub(t, writertest.WriterStubDelegateTo(inner))
+			r0 := writerStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+	})
+
+	t.Run("WriterStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) writerStubInstance {
+			return writerStubInstanceOf(tb, writertest.NewWriterStub(tb, writertest.WriterStubWithClock(clk)))
+		})
+	})
+
+	t.Run("WriterStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) writerStubInstance {
+			return writerStubInstanceOf(tb, writertest.NewWriterStub(tb, writertest.WriterStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("WriterStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) writerStubInstance {
+			return writerStubInstanceOf(tb, writertest.NewWriterStub(tb, writertest.WriterStubBenchMode()))
+		})
+	})
+
+	t.Run("WriterStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) writerStubInstance {
+			return writerStubInstanceOf(
+				tb,
+				writertest.NewWriterStub(tb, writertest.WriterStubWithClock(clk), writertest.WriterStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("WriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := writertest.NewWriterStub(t, writertest.WriterStubFailing(want))
+			r0 := writerStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of WriterStubFailing")
+		})
+	})
+
+	t.Run("WithWriterPut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := writertest.NewWriterStub(t, writertest.WithWriterPut(func(_ context.Context, _ writer.Value) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = writerStubPut(t, s)
+			assert.True(t, called, "WithWriterPut sets the function of Put")
+		})
+	})
 }
 
-// TestWriterStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestWriterStubDelegateTo(t *testing.T) {
+// TestWriterPutStub checks the methods of WriterPutStub, which configures
+// Put.
+func TestWriterPutStub(t *testing.T) {
 	t.Parallel()
 
-	inner := writertest.NewWriterStub(t)
-	s := writertest.NewWriterStub(t, writertest.WriterStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 writer.Value
-		a1 = writer.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := writertest.NewWriterStub(t)
+			want0 := writerStubPutPins()
+			s.OnPut.Returns(want0)
+			got0 := writerStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
+
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := writertest.NewWriterStub(r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = writerStubPut(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
 	})
 
-	t.Run("surfaces what Put answered", func(t *testing.T) {
-		want := errors.New("Put-delegate")
-		inner.OnPut.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 writer.Value
-		a1 = writer.Value{Key: "Key-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := writertest.NewWriterStub(t)
+			var got0 context.Context
+			var got1 writer.Value
+			s.OnPut.Func(func(p0 context.Context, p1 writer.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = writerStubPut(t, s)
+			a0, a1 := writerStubPutArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:0b9a825b7545c4b4ad171ec68c67835aff03b524bd4e44420735f2b6ec4d6155
+// dokimi:provenance sha256:b0b20ae325b1a98239a4e514d83fb0b2b9d370e574192beeeb3aa4c71ac96132

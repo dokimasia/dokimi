@@ -7,7 +7,7 @@ package publisheratleastoncetest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	publisheratleastonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce"
 )
 
@@ -48,33 +48,26 @@ func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 	return conform.Suite[publisheratleastonce.Contract]{Declaration: "Contract"}
 }
 
-// RunContract applies the checks of Contract, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunContract[T publisheratleastonce.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
+// RunContractSuite applies the checks of Contract, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunContractSuite[T publisheratleastonce.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(*ContractHandle) publisheratleastonce.Contract { return newSubject() }, opts...)
+	RunContractSuiteFromHandle(t, func(*ContractHandle) T { return newSubject() }, opts...)
 }
 
-// RunContractOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunContractOn[T publisheratleastonce.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+// RunContractSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunContractSuiteFromHandle[T publisheratleastonce.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(h *ContractHandle) publisheratleastonce.Contract { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		ContractSuite(),
+		func(h *ContractHandle) publisheratleastonce.Contract { return newSubject(h) },
+		opts...)
 }
 
-// ControlContract applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlContract[T publisheratleastonce.Contract](t *testing.T, newControl func() T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(*ContractHandle) publisheratleastonce.Contract { return newControl() }, opts...)
-}
-
-// ControlContractOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlContractOn[T publisheratleastonce.Contract](t *testing.T, newControl func(h *ContractHandle) T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(h *ContractHandle) publisheratleastonce.Contract { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:9f8c4cfab6ca7607a8d00b869e3df1268f5fb54d627a85faa03ec25b42983ff8
+// dokimi:provenance sha256:50b3e584343d55445a53c0907240d282b974ceadc6520072028b1193d870dedc

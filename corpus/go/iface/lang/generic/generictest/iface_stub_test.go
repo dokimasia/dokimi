@@ -12,29 +12,71 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/generic/generictest"
+	"go.dokimi.dev/stub"
 )
 
-// storeStubGetSubject binds Get into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func storeStubGetSubject[K comparable, V any](tb assert.TB) stub.Subject[generictest.StoreGetCall[K, V], generictest.StoreGetReturn[K, V]] {
+// storeStubGetArgs returns the samples of the arguments of Get.
+func storeStubGetArgs[K comparable, V any](tb assert.TB) (context.Context, K) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 K
+	return a0, a1
+}
+
+// storeStubGet calls Get of s with the samples of its arguments.
+func storeStubGet[K comparable, V any](tb assert.TB, s *generictest.StoreStub[K, V]) (V, error) {
+	tb.Helper()
+	a0, a1 := storeStubGetArgs[K, V](tb)
+	return s.Get(a0, a1)
+}
+
+// storeStubGetPins returns the samples of the results of Get, with a new
+// error as its error result.
+func storeStubGetPins[K comparable, V any]() (V, error) {
+	var want0 V
+	want1 := errors.New("Get-returns")
+	return want0, want1
+}
+
+// storeStubPutArgs returns the samples of the arguments of Put.
+func storeStubPutArgs[K comparable, V any](tb assert.TB) (context.Context, K, V) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 K
+	var a2 V
+	return a0, a1, a2
+}
+
+// storeStubPut calls Put of s with the samples of its arguments.
+func storeStubPut[K comparable, V any](tb assert.TB, s *generictest.StoreStub[K, V]) error {
+	tb.Helper()
+	a0, a1, a2 := storeStubPutArgs[K, V](tb)
+	return s.Put(a0, a1, a2)
+}
+
+// storeStubPutPins returns the samples of the results of Put, with a new
+// error as its error result.
+func storeStubPutPins[K comparable, V any]() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// storeStubGetSubject returns the subject of [stub.Behaviour] for Get. The
+// subject calls a new double that reports to tb.
+func storeStubGetSubject[K comparable, V any](
+	tb assert.TB,
+) stub.Subject[generictest.StoreGetCall[K, V], generictest.StoreGetReturn[K, V]] {
 	tb.Helper()
 	s := generictest.NewStoreStub[K, V](tb)
 	return stub.Subject[generictest.StoreGetCall[K, V], generictest.StoreGetReturn[K, V]]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 K
-			_, _ = s.Get(a0, a1)
+			_, _ = storeStubGet[K, V](tb, s)
 		},
 		Result: func() generictest.StoreGetReturn[K, V] {
-			var a0 context.Context
-			var a1 K
-			got0, got1 := s.Get(a0, a1)
+			got0, got1 := storeStubGet[K, V](tb, s)
 			return generictest.StoreGetReturn[K, V]{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -46,110 +88,26 @@ func storeStubGetSubject[K comparable, V any](tb assert.TB) stub.Subject[generic
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 K
-			_, r1 := s.Get(a0, a1)
+			_, r1 := storeStubGet[K, V](tb, s)
 			return r1
 		},
 	}
 }
 
-// TestStoreStubGet pins how Get answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func storeStubGetChecks[K comparable, V any](t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Get", storeStubGetSubject[K, V])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := generictest.NewStoreStub[K, V](t)
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Get(a0, a1)
-		got := s.OnGet.AssertCalledOnce(t, "Get must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := generictest.NewStoreStub[K, V](t)
-		var seen []generictest.StoreGetCall[K, V]
-		s.OnGet.OnRecord(func(c generictest.StoreGetCall[K, V]) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Get(a0, a1)
-		_, _ = s.Get(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Get call")
-	})
-
-	t.Run("wires WithStoreGet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := generictest.NewStoreStub(t, generictest.WithStoreGet[K, V](func(_ context.Context, _ K) (V, error) {
-			called = true
-			var z0 V
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Get(a0, a1)
-		assert.True(t, called, "WithStoreGet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Get-failing")
-		s := generictest.NewStoreStubFailing[K, V](t, want)
-		var a0 context.Context
-		var a1 K
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := generictest.NewStoreStub[K, V](t)
-		var want0 V
-		var want1 error
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Get(a0, a1)
-		s.ResetCalls()
-		_, _ = s.Get(a0, a1)
-		s.OnGet.AssertCalledOnce(t, "Get must record the call that followed the reset")
-	})
-}
-
-// storeStubPutSubject binds Put into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func storeStubPutSubject[K comparable, V any](tb assert.TB) stub.Subject[generictest.StorePutCall[K, V], generictest.StorePutReturn[K, V]] {
+// storeStubPutSubject returns the subject of [stub.Behaviour] for Put. The
+// subject calls a new double that reports to tb.
+func storeStubPutSubject[K comparable, V any](
+	tb assert.TB,
+) stub.Subject[generictest.StorePutCall[K, V], generictest.StorePutReturn[K, V]] {
 	tb.Helper()
 	s := generictest.NewStoreStub[K, V](tb)
 	return stub.Subject[generictest.StorePutCall[K, V], generictest.StorePutReturn[K, V]]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 K
-			var a2 V
-			_ = s.Put(a0, a1, a2)
+			_ = storeStubPut[K, V](tb, s)
 		},
 		Result: func() generictest.StorePutReturn[K, V] {
-			var a0 context.Context
-			var a1 K
-			var a2 V
-			got0 := s.Put(a0, a1, a2)
+			got0 := storeStubPut[K, V](tb, s)
 			return generictest.StorePutReturn[K, V]{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -160,204 +118,427 @@ func storeStubPutSubject[K comparable, V any](tb assert.TB) stub.Subject[generic
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 K
-			var a2 V
-			r0 := s.Put(a0, a1, a2)
+			r0 := storeStubPut[K, V](tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStoreStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func storeStubPutChecks[K comparable, V any](t *testing.T) {
-	t.Parallel()
+// storeStubInstance is the instance of a generictest.StoreStub that the
+// checks of the constructors and the options drive.
+type storeStubInstance[K comparable, V any] = stub.Instance[generictest.StoreGetCall[K, V]]
 
-	stub.Behaviour(t, "Put", storeStubPutSubject[K, V])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := generictest.NewStoreStub[K, V](t)
-		var a0 context.Context
-		var a1 K
-		var a2 V
-		_ = s.Put(a0, a1, a2)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.Value, a2, "the recorded call carries Value")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := generictest.NewStoreStub[K, V](t)
-		var seen []generictest.StorePutCall[K, V]
-		s.OnPut.OnRecord(func(c generictest.StorePutCall[K, V]) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 K
-		var a2 V
-		_ = s.Put(a0, a1, a2)
-		_ = s.Put(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithStorePut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := generictest.NewStoreStub(t, generictest.WithStorePut[K, V](func(_ context.Context, _ K, _ V) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 K
-		var a2 V
-		_ = s.Put(a0, a1, a2)
-		assert.True(t, called, "WithStorePut must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Put-failing")
-		s := generictest.NewStoreStubFailing[K, V](t, want)
-		var a0 context.Context
-		var a1 K
-		var a2 V
-		r0 := s.Put(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Put must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := generictest.NewStoreStub[K, V](t)
-		var want0 error
-		s.OnPut.Returns(want0)
-		var a0 context.Context
-		var a1 K
-		var a2 V
-		_ = s.Put(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Put(a0, a1, a2)
-		s.OnPut.AssertCalledOnce(t, "Put must record the call that followed the reset")
-	})
-}
-
-// storeStubDouble describes how to build a StoreStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Get stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func storeStubDouble[K comparable, V any]() stub.Double[generictest.StoreGetCall[K, V]] {
-	instance := func(s *generictest.StoreStub[K, V]) stub.Instance[generictest.StoreGetCall[K, V]] {
-		return stub.Instance[generictest.StoreGetCall[K, V]]{
-			Stub: s.OnGet.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 K
-				_, _ = s.Get(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[generictest.StoreGetCall[K, V]]{
-		New: func(tb assert.TB) stub.Instance[generictest.StoreGetCall[K, V]] {
-			return instance(generictest.NewStoreStub[K, V](tb))
+// storeStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Get alone.
+func storeStubInstanceOf[K comparable, V any](tb assert.TB, s *generictest.StoreStub[K, V]) storeStubInstance[K, V] {
+	tb.Helper()
+	return storeStubInstance[K, V]{
+		Stub: s.OnGet.MethodStub,
+		Call: func() {
+			_, _ = storeStubGet[K, V](tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[generictest.StoreGetCall[K, V]] {
-			return instance(generictest.NewStoreStub[K, V](tb, generictest.StoreStubWithClock[K, V](clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[generictest.StoreGetCall[K, V]] {
-			return instance(generictest.NewStoreStubDelayed[K, V](tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[generictest.StoreGetCall[K, V]] {
-			return instance(generictest.NewStoreStub[K, V](tb, generictest.StoreStubWithRandSource[K, V](src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[generictest.StoreGetCall[K, V]] {
-			return instance(generictest.NewStoreStub[K, V](tb, generictest.StoreStubBenchMode[K, V]()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[generictest.StoreGetCall[K, V]] {
-			return instance(generictest.NewStoreStub[K, V](tb, generictest.StoreStubStrict[K, V]()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestStoreStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func storeStubOptionChecks[K comparable, V any](t *testing.T) {
-	t.Parallel()
+// checkStoreStub checks the methods, the constructors and the options of
+// the double StoreStub at its type parameters.
+func checkStoreStub[K comparable, V any](t *testing.T) {
+	t.Helper()
 
-	stub.DoubleBehaviour(t, storeStubDouble[K, V]())
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Get", storeStubGetSubject[K, V])
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			_, _ = storeStubGet[K, V](t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0, a1 := storeStubGetArgs[K, V](t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			var seen []generictest.StoreGetCall[K, V]
+			s.OnGet.OnRecord(func(c generictest.StoreGetCall[K, V]) { seen = append(seen, c) })
+			_, _ = storeStubGet[K, V](t, s)
+			_, _ = storeStubGet[K, V](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
+		})
+	})
+
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", storeStubPutSubject[K, V])
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			_ = storeStubPut[K, V](t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1, a2 := storeStubPutArgs[K, V](t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.Value, a2, "the call records Value")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			var seen []generictest.StorePutCall[K, V]
+			s.OnPut.OnRecord(func(c generictest.StorePutCall[K, V]) { seen = append(seen, c) })
+			_ = storeStubPut[K, V](t, s)
+			_ = storeStubPut[K, V](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) storeStubInstance[K, V] {
+			return storeStubInstanceOf[K, V](tb, generictest.NewStoreStub[K, V](tb))
+		})
+
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			_, _ = storeStubGet[K, V](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+		})
+
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			want0, want1 := storeStubGetPins[K, V]()
+			s.OnGet.Returns(want0, want1)
+			s.ResetCalls()
+			_, got1 := storeStubGet[K, V](t, s)
+			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			_ = storeStubPut[K, V](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			want0 := storeStubPutPins[K, V]()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := storeStubPut[K, V](t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+	})
+
+	t.Run("NewStoreStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance[K, V] {
+			return storeStubInstanceOf[K, V](tb, generictest.NewStoreStubDelayed[K, V](tb, d, clk))
+		})
+	})
+
+	t.Run("NewStoreStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := generictest.NewStoreStubFailing[K, V](t, want)
+			_, r1 := storeStubGet[K, V](t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of NewStoreStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := generictest.NewStoreStubFailing[K, V](t, want)
+			r0 := storeStubPut[K, V](t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewStoreStubFailing")
+		})
+	})
+
+	t.Run("StoreStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) storeStubInstance[K, V] {
+			return storeStubInstanceOf[K, V](
+				tb,
+				generictest.NewStoreStub[K, V](tb, generictest.StoreStubStrict[K, V]()),
+			)
+		})
+	})
+
+	t.Run("StoreStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Get to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := generictest.NewStoreStub[K, V](t)
+			s := generictest.NewStoreStub[K, V](t, generictest.StoreStubDelegateTo[K, V](inner))
+			_, _ = storeStubGet[K, V](t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
+		})
+
+		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-delegate")
+			inner := generictest.NewStoreStub[K, V](t)
+			inner.OnGet.Faults(want, 1)
+			s := generictest.NewStoreStub[K, V](t, generictest.StoreStubDelegateTo[K, V](inner))
+			_, r1 := storeStubGet[K, V](t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
+		})
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := generictest.NewStoreStub[K, V](t)
+			s := generictest.NewStoreStub[K, V](t, generictest.StoreStubDelegateTo[K, V](inner))
+			_ = storeStubPut[K, V](t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := generictest.NewStoreStub[K, V](t)
+			inner.OnPut.Faults(want, 1)
+			s := generictest.NewStoreStub[K, V](t, generictest.StoreStubDelegateTo[K, V](inner))
+			r0 := storeStubPut[K, V](t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+	})
+
+	t.Run("StoreStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) storeStubInstance[K, V] {
+			return storeStubInstanceOf[K, V](
+				tb,
+				generictest.NewStoreStub[K, V](tb, generictest.StoreStubWithClock[K, V](clk)),
+			)
+		})
+	})
+
+	t.Run("StoreStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) storeStubInstance[K, V] {
+			return storeStubInstanceOf[K, V](
+				tb,
+				generictest.NewStoreStub[K, V](tb, generictest.StoreStubWithRandSource[K, V](src)),
+			)
+		})
+	})
+
+	t.Run("StoreStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) storeStubInstance[K, V] {
+			return storeStubInstanceOf[K, V](
+				tb,
+				generictest.NewStoreStub[K, V](tb, generictest.StoreStubBenchMode[K, V]()),
+			)
+		})
+	})
+
+	t.Run("StoreStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) storeStubInstance[K, V] {
+			return storeStubInstanceOf[K, V](
+				tb,
+				generictest.NewStoreStub[K, V](
+					tb,
+					generictest.StoreStubWithClock[K, V](clk),
+					generictest.StoreStubWithLatency[K, V](d),
+				),
+			)
+		})
+	})
+
+	t.Run("StoreStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := generictest.NewStoreStub[K, V](t, generictest.StoreStubFailing[K, V](want))
+			_, r1 := storeStubGet[K, V](t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of StoreStubFailing")
+		})
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := generictest.NewStoreStub[K, V](t, generictest.StoreStubFailing[K, V](want))
+			r0 := storeStubPut[K, V](t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of StoreStubFailing")
+		})
+	})
+
+	t.Run("WithStoreGet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Get", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := generictest.NewStoreStub(t, generictest.WithStoreGet[K, V](func(_ context.Context, _ K) (V, error) {
+				called = true
+				var z0 V
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = storeStubGet[K, V](t, s)
+			assert.True(t, called, "WithStoreGet sets the function of Get")
+		})
+	})
+
+	t.Run("WithStorePut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := generictest.NewStoreStub(t, generictest.WithStorePut[K, V](func(_ context.Context, _ K, _ V) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = storeStubPut[K, V](t, s)
+			assert.True(t, called, "WithStorePut sets the function of Put")
+		})
+	})
 }
 
-// TestStoreStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func storeStubDelegationChecks[K comparable, V any](t *testing.T) {
-	t.Parallel()
+// checkStoreGetStub checks the methods of StoreGetStub, which configures
+// Get, at the type parameters of the double.
+func checkStoreGetStub[K comparable, V any](t *testing.T) {
+	t.Helper()
 
-	inner := generictest.NewStoreStub[K, V](t)
-	s := generictest.NewStoreStub[K, V](t, generictest.StoreStubDelegateTo[K, V](inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Get to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Get(a0, a1)
-		inner.OnGet.AssertCalledOnce(t, "Get must reach the wrapped implementation")
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			want0, want1 := storeStubGetPins[K, V]()
+			s.OnGet.Returns(want0, want1)
+			_, got1 := storeStubGet[K, V](t, s)
+			assert.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
+		})
+
+		t.Run("configures Get for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := generictest.NewStoreStub[K, V](r)
+			s.OnGet.Strict()
+			var want0 V
+			var want1 error
+			s.OnGet.Returns(want0, want1)
+			_, _ = storeStubGet[K, V](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
+		})
 	})
 
-	t.Run("surfaces what Get answered", func(t *testing.T) {
-		want := errors.New("Get-delegate")
-		inner.OnGet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 K
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 K
-		var a2 V
-		_ = s.Put(a0, a1, a2)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Put answered", func(t *testing.T) {
-		want := errors.New("Put-delegate")
-		inner.OnPut.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 K
-		var a2 V
-		r0 := s.Put(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Put must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			var got0 context.Context
+			var got1 K
+			s.OnGet.Func(func(p0 context.Context, p1 K) (V, error) {
+				got0, got1 = p0, p1
+				var z0 V
+				var z1 error
+				return z0, z1
+			})
+			_, _ = storeStubGet[K, V](t, s)
+			a0, a1 := storeStubGetArgs[K, V](t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// TestStoreStubGet runs Get's checks at the witness types its constraints
-// admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestStoreStubGet(t *testing.T) { storeStubGetChecks[int, int](t) }
+// checkStorePutStub checks the methods of StorePutStub, which configures
+// Put, at the type parameters of the double.
+func checkStorePutStub[K comparable, V any](t *testing.T) {
+	t.Helper()
 
-// TestStoreStubPut runs Put's checks at the witness types its constraints
-// admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestStoreStubPut(t *testing.T) { storeStubPutChecks[int, int](t) }
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-// TestStoreStubOptions runs the whole-double checks at the same witnesses.
-func TestStoreStubOptions(t *testing.T) { storeStubOptionChecks[int, int](t) }
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			want0 := storeStubPutPins[K, V]()
+			s.OnPut.Returns(want0)
+			got0 := storeStubPut[K, V](t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
 
-// TestStoreStubDelegateTo runs the delegation checks at the same
-// witnesses.
-func TestStoreStubDelegateTo(t *testing.T) { storeStubDelegationChecks[int, int](t) }
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := generictest.NewStoreStub[K, V](r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = storeStubPut[K, V](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
+	})
 
-// dokimi:provenance sha256:89ee5a528ae9194562d14941210f5d46b2b01c5008fb743575c370651a02835a
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := generictest.NewStoreStub[K, V](t)
+			var got0 context.Context
+			var got1 K
+			var got2 V
+			s.OnPut.Func(func(p0 context.Context, p1 K, p2 V) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = storeStubPut[K, V](t, s)
+			a0, a1, a2 := storeStubPutArgs[K, V](t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives Value")
+		})
+	})
+}
+
+// TestStoreStub runs the checks of StoreStub at the witnesses of its type
+// parameters.
+func TestStoreStub(t *testing.T) {
+	t.Parallel()
+
+	checkStoreStub[int, int](t)
+}
+
+// TestStoreGetStub runs the checks of StoreGetStub at the same witnesses.
+func TestStoreGetStub(t *testing.T) {
+	t.Parallel()
+
+	checkStoreGetStub[int, int](t)
+}
+
+// TestStorePutStub runs the checks of StorePutStub at the same witnesses.
+func TestStorePutStub(t *testing.T) {
+	t.Parallel()
+
+	checkStorePutStub[int, int](t)
+}
+
+// dokimi:provenance sha256:45eabab4c2cf168f1a7f7b5875f2adc1dadaf516cfe72bcb11b79aad71c440ac

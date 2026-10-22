@@ -12,36 +12,51 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter/compositewritertest"
+	"go.dokimi.dev/stub"
 )
 
-// compositeWriterStubSetSubject binds Set into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func compositeWriterStubSetSubject(tb assert.TB) stub.Subject[compositewritertest.CompositeWriterSetCall, compositewritertest.CompositeWriterSetReturn] {
+// compositeWriterStubSetArgs returns the samples of the arguments of Set.
+func compositeWriterStubSetArgs(tb assert.TB) (context.Context, string, compositewriter.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 compositewriter.Value
+	a1 = "Set-a"
+	a2 = compositewriter.Value{Key: "Key-a"}
+	return a0, a1, a2
+}
+
+// compositeWriterStubSet calls Set of s with the samples of its arguments.
+func compositeWriterStubSet(tb assert.TB, s *compositewritertest.CompositeWriterStub) error {
+	tb.Helper()
+	a0, a1, a2 := compositeWriterStubSetArgs(tb)
+	return s.Set(a0, a1, a2)
+}
+
+// compositeWriterStubSetPins returns the samples of the results of Set,
+// with a new error as its error result.
+func compositeWriterStubSetPins() error {
+	want0 := errors.New("Set-returns")
+	return want0
+}
+
+// compositeWriterStubSetSubject returns the subject of [stub.Behaviour]
+// for Set. The subject calls a new double that reports to tb.
+func compositeWriterStubSetSubject(
+	tb assert.TB,
+) stub.Subject[compositewritertest.CompositeWriterSetCall, compositewritertest.CompositeWriterSetReturn] {
 	tb.Helper()
 	s := compositewritertest.NewCompositeWriterStub(tb)
 	return stub.Subject[compositewritertest.CompositeWriterSetCall, compositewritertest.CompositeWriterSetReturn]{
 		Stub: s.OnSet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 compositewriter.Value
-			a1 = "Set-a"
-			a2 = compositewriter.Value{Key: "Key-a"}
-			_ = s.Set(a0, a1, a2)
+			_ = compositeWriterStubSet(tb, s)
 		},
 		Result: func() compositewritertest.CompositeWriterSetReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 compositewriter.Value
-			a1 = "Set-a"
-			a2 = compositewriter.Value{Key: "Key-a"}
-			got0 := s.Set(a0, a1, a2)
+			got0 := compositeWriterStubSet(tb, s)
 			return compositewritertest.CompositeWriterSetReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -52,187 +67,271 @@ func compositeWriterStubSetSubject(tb assert.TB) stub.Subject[compositewritertes
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 compositewriter.Value
-			a1 = "Set-a"
-			a2 = compositewriter.Value{Key: "Key-a"}
-			r0 := s.Set(a0, a1, a2)
+			r0 := compositeWriterStubSet(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestCompositeWriterStubSet pins how Set answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestCompositeWriterStubSet(t *testing.T) {
-	t.Parallel()
+// compositeWriterStubInstance is the instance of a
+// compositewritertest.CompositeWriterStub that the checks of the
+// constructors and the options drive.
+type compositeWriterStubInstance = stub.Instance[compositewritertest.CompositeWriterSetCall]
 
-	stub.Behaviour(t, "Set", compositeWriterStubSetSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := compositewritertest.NewCompositeWriterStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 compositewriter.Value
-		a1 = "Set-a"
-		a2 = compositewriter.Value{Key: "Key-a"}
-		_ = s.Set(a0, a1, a2)
-		got := s.OnSet.AssertCalledOnce(t, "Set must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.V, a2, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := compositewritertest.NewCompositeWriterStub(t)
-		var seen []compositewritertest.CompositeWriterSetCall
-		s.OnSet.OnRecord(func(c compositewritertest.CompositeWriterSetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 compositewriter.Value
-		a1 = "Set-a"
-		a2 = compositewriter.Value{Key: "Key-a"}
-		_ = s.Set(a0, a1, a2)
-		_ = s.Set(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Set call")
-	})
-
-	t.Run("wires WithCompositeWriterSet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := compositewritertest.NewCompositeWriterStub(t, compositewritertest.WithCompositeWriterSet(func(_ context.Context, _ string, _ compositewriter.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 compositewriter.Value
-		a1 = "Set-a"
-		a2 = compositewriter.Value{Key: "Key-a"}
-		_ = s.Set(a0, a1, a2)
-		assert.True(t, called, "WithCompositeWriterSet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Set-failing")
-		s := compositewritertest.NewCompositeWriterStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 compositewriter.Value
-		a1 = "Set-a"
-		a2 = compositewriter.Value{Key: "Key-a"}
-		r0 := s.Set(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Set must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := compositewritertest.NewCompositeWriterStub(t)
-		var want0 error
-		s.OnSet.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 compositewriter.Value
-		a1 = "Set-a"
-		a2 = compositewriter.Value{Key: "Key-a"}
-		_ = s.Set(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Set(a0, a1, a2)
-		s.OnSet.AssertCalledOnce(t, "Set must record the call that followed the reset")
-	})
-}
-
-// compositeWriterStubDouble describes how to build a CompositeWriterStub
-// under each option whose effect is the same whatever a method's
-// signature.
-//
-// Set stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func compositeWriterStubDouble() stub.Double[compositewritertest.CompositeWriterSetCall] {
-	instance := func(s *compositewritertest.CompositeWriterStub) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-		return stub.Instance[compositewritertest.CompositeWriterSetCall]{
-			Stub: s.OnSet.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				var a2 compositewriter.Value
-				a1 = "Set-a"
-				a2 = compositewriter.Value{Key: "Key-a"}
-				_ = s.Set(a0, a1, a2)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[compositewritertest.CompositeWriterSetCall]{
-		New: func(tb assert.TB) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-			return instance(compositewritertest.NewCompositeWriterStub(tb))
+// compositeWriterStubInstanceOf returns the instance of s. The options
+// apply to the whole double, so the checks call Set alone.
+func compositeWriterStubInstanceOf(
+	tb assert.TB,
+	s *compositewritertest.CompositeWriterStub,
+) compositeWriterStubInstance {
+	tb.Helper()
+	return compositeWriterStubInstance{
+		Stub: s.OnSet.MethodStub,
+		Call: func() {
+			_ = compositeWriterStubSet(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-			return instance(compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-			return instance(compositewritertest.NewCompositeWriterStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-			return instance(compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-			return instance(compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[compositewritertest.CompositeWriterSetCall] {
-			return instance(compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestCompositeWriterStubOptions pins the settings that apply to the
-// double rather than to one method: bench mode, the injected clock and
-// random source, and what a reset clears.
-func TestCompositeWriterStubOptions(t *testing.T) {
+// TestCompositeWriterStub checks the methods, the constructors and the
+// options of the double CompositeWriterStub.
+func TestCompositeWriterStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, compositeWriterStubDouble())
+	t.Run("Set", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Set", compositeWriterStubSetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := compositewritertest.NewCompositeWriterStub(t)
+			_ = compositeWriterStubSet(t, s)
+			got := s.OnSet.AssertCalledOnce(t, "Set records the call")
+			a0, a1, a2 := compositeWriterStubSetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.V, a2, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := compositewritertest.NewCompositeWriterStub(t)
+			var seen []compositewritertest.CompositeWriterSetCall
+			s.OnSet.OnRecord(func(c compositewritertest.CompositeWriterSetCall) { seen = append(seen, c) })
+			_ = compositeWriterStubSet(t, s)
+			_ = compositeWriterStubSet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Set")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) compositeWriterStubInstance {
+			return compositeWriterStubInstanceOf(tb, compositewritertest.NewCompositeWriterStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Set", func(t *testing.T) {
+			t.Parallel()
+			s := compositewritertest.NewCompositeWriterStub(t)
+			_ = compositeWriterStubSet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSet.CallCount(), 0, "ResetCalls clears the calls of Set")
+		})
+
+		t.Run("keeps the results of Returns of Set", func(t *testing.T) {
+			t.Parallel()
+			s := compositewritertest.NewCompositeWriterStub(t)
+			want0 := compositeWriterStubSetPins()
+			s.OnSet.Returns(want0)
+			s.ResetCalls()
+			got0 := compositeWriterStubSet(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Set")
+		})
+	})
+
+	t.Run("NewCompositeWriterStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) compositeWriterStubInstance {
+			return compositeWriterStubInstanceOf(tb, compositewritertest.NewCompositeWriterStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewCompositeWriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Set with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-failing")
+			s := compositewritertest.NewCompositeWriterStubFailing(t, want)
+			r0 := compositeWriterStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of NewCompositeWriterStubFailing")
+		})
+	})
+
+	t.Run("CompositeWriterStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) compositeWriterStubInstance {
+			return compositeWriterStubInstanceOf(
+				tb,
+				compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubStrict()),
+			)
+		})
+	})
+
+	t.Run("CompositeWriterStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Set to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := compositewritertest.NewCompositeWriterStub(t)
+			s := compositewritertest.NewCompositeWriterStub(t, compositewritertest.CompositeWriterStubDelegateTo(inner))
+			_ = compositeWriterStubSet(t, s)
+			inner.OnSet.AssertCalledOnce(t, "Set calls the implementation")
+		})
+
+		t.Run("fails Set with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-delegate")
+			inner := compositewritertest.NewCompositeWriterStub(t)
+			inner.OnSet.Faults(want, 1)
+			s := compositewritertest.NewCompositeWriterStub(t, compositewritertest.CompositeWriterStubDelegateTo(inner))
+			r0 := compositeWriterStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of the implementation")
+		})
+	})
+
+	t.Run("CompositeWriterStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) compositeWriterStubInstance {
+			return compositeWriterStubInstanceOf(
+				tb,
+				compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("CompositeWriterStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) compositeWriterStubInstance {
+			return compositeWriterStubInstanceOf(
+				tb,
+				compositewritertest.NewCompositeWriterStub(
+					tb,
+					compositewritertest.CompositeWriterStubWithRandSource(src),
+				),
+			)
+		})
+	})
+
+	t.Run("CompositeWriterStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) compositeWriterStubInstance {
+			return compositeWriterStubInstanceOf(
+				tb,
+				compositewritertest.NewCompositeWriterStub(tb, compositewritertest.CompositeWriterStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("CompositeWriterStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) compositeWriterStubInstance {
+			return compositeWriterStubInstanceOf(
+				tb,
+				compositewritertest.NewCompositeWriterStub(
+					tb,
+					compositewritertest.CompositeWriterStubWithClock(clk),
+					compositewritertest.CompositeWriterStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("CompositeWriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Set with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-failing")
+			s := compositewritertest.NewCompositeWriterStub(t, compositewritertest.CompositeWriterStubFailing(want))
+			r0 := compositeWriterStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of CompositeWriterStubFailing")
+		})
+	})
+
+	t.Run("WithCompositeWriterSet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Set", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := compositewritertest.NewCompositeWriterStub(
+				t,
+				compositewritertest.WithCompositeWriterSet(
+					func(_ context.Context, _ string, _ compositewriter.Value) error {
+						called = true
+						var z0 error
+						return z0
+					},
+				),
+			)
+			_ = compositeWriterStubSet(t, s)
+			assert.True(t, called, "WithCompositeWriterSet sets the function of Set")
+		})
+	})
 }
 
-// TestCompositeWriterStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestCompositeWriterStubDelegateTo(t *testing.T) {
+// TestCompositeWriterSetStub checks the methods of CompositeWriterSetStub,
+// which configures Set.
+func TestCompositeWriterSetStub(t *testing.T) {
 	t.Parallel()
 
-	inner := compositewritertest.NewCompositeWriterStub(t)
-	s := compositewritertest.NewCompositeWriterStub(t, compositewritertest.CompositeWriterStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Set to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 compositewriter.Value
-		a1 = "Set-a"
-		a2 = compositewriter.Value{Key: "Key-a"}
-		_ = s.Set(a0, a1, a2)
-		inner.OnSet.AssertCalledOnce(t, "Set must reach the wrapped implementation")
+		t.Run("sets the results of each call of Set", func(t *testing.T) {
+			t.Parallel()
+			s := compositewritertest.NewCompositeWriterStub(t)
+			want0 := compositeWriterStubSetPins()
+			s.OnSet.Returns(want0)
+			got0 := compositeWriterStubSet(t, s)
+			assert.ErrorIs(t, got0, want0, "Set returns the error that Returns sets")
+		})
+
+		t.Run("configures Set for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := compositewritertest.NewCompositeWriterStub(r)
+			s.OnSet.Strict()
+			var want0 error
+			s.OnSet.Returns(want0)
+			_ = compositeWriterStubSet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Set")
+		})
 	})
 
-	t.Run("surfaces what Set answered", func(t *testing.T) {
-		want := errors.New("Set-delegate")
-		inner.OnSet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 compositewriter.Value
-		a1 = "Set-a"
-		a2 = compositewriter.Value{Key: "Key-a"}
-		r0 := s.Set(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Set must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Set to the function", func(t *testing.T) {
+			t.Parallel()
+			s := compositewritertest.NewCompositeWriterStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 compositewriter.Value
+			s.OnSet.Func(func(p0 context.Context, p1 string, p2 compositewriter.Value) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = compositeWriterStubSet(t, s)
+			a0, a1, a2 := compositeWriterStubSetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:897f0cedcb1014a6c09985a084f4a572cd51664fa5141a1630c1d93f40e42ed5
+// dokimi:provenance sha256:5e03fd850868aaad203b133da13e9392307c085d7ade5722d89e7067b11e5367

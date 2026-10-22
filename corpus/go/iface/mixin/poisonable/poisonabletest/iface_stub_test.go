@@ -12,27 +12,56 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/poisonable/poisonabletest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubFailSubject binds Fail into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubFailArgs returns the samples of the arguments of Fail.
+func mixedStubFailArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubFail calls Fail of s with the samples of its arguments.
+func mixedStubFail(tb assert.TB, s *poisonabletest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubFailArgs(tb)
+	return s.Fail(a0)
+}
+
+// mixedStubFailPins returns the samples of the results of Fail, with a new
+// error as its error result.
+func mixedStubFailPins() error {
+	want0 := errors.New("Fail-returns")
+	return want0
+}
+
+// mixedStubProbe calls Probe of s with the samples of its arguments.
+func mixedStubProbe(tb assert.TB, s *poisonabletest.MixedStub) error {
+	tb.Helper()
+	return s.Probe()
+}
+
+// mixedStubProbePins returns the samples of the results of Probe, with a
+// new error as its error result.
+func mixedStubProbePins() error {
+	want0 := errors.New("Probe-returns")
+	return want0
+}
+
+// mixedStubFailSubject returns the subject of [stub.Behaviour] for Fail.
+// The subject calls a new double that reports to tb.
 func mixedStubFailSubject(tb assert.TB) stub.Subject[poisonabletest.MixedFailCall, poisonabletest.MixedFailReturn] {
 	tb.Helper()
 	s := poisonabletest.NewMixedStub(tb)
 	return stub.Subject[poisonabletest.MixedFailCall, poisonabletest.MixedFailReturn]{
 		Stub: s.OnFail.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Fail(a0)
+			_ = mixedStubFail(tb, s)
 		},
 		Result: func() poisonabletest.MixedFailReturn {
-			var a0 context.Context
-			got0 := s.Fail(a0)
+			got0 := mixedStubFail(tb, s)
 			return poisonabletest.MixedFailReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -43,95 +72,24 @@ func mixedStubFailSubject(tb assert.TB) stub.Subject[poisonabletest.MixedFailCal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Fail(a0)
+			r0 := mixedStubFail(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubFail pins how Fail answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubFail(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Fail", mixedStubFailSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := poisonabletest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Fail(a0)
-		got := s.OnFail.AssertCalledOnce(t, "Fail must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := poisonabletest.NewMixedStub(t)
-		var seen []poisonabletest.MixedFailCall
-		s.OnFail.OnRecord(func(c poisonabletest.MixedFailCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Fail(a0)
-		_ = s.Fail(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Fail call")
-	})
-
-	t.Run("wires WithMixedFail at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := poisonabletest.NewMixedStub(t, poisonabletest.WithMixedFail(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Fail(a0)
-		assert.True(t, called, "WithMixedFail must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Fail-failing")
-		s := poisonabletest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Fail(a0)
-		assert.ErrorIs(t, r0, want, "Fail must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := poisonabletest.NewMixedStub(t)
-		var want0 error
-		s.OnFail.Returns(want0)
-		var a0 context.Context
-		_ = s.Fail(a0)
-		s.ResetCalls()
-		_ = s.Fail(a0)
-		s.OnFail.AssertCalledOnce(t, "Fail must record the call that followed the reset")
-	})
-}
-
-// mixedStubProbeSubject binds Probe into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubProbeSubject returns the subject of [stub.Behaviour] for Probe.
+// The subject calls a new double that reports to tb.
 func mixedStubProbeSubject(tb assert.TB) stub.Subject[poisonabletest.MixedProbeCall, poisonabletest.MixedProbeReturn] {
 	tb.Helper()
 	s := poisonabletest.NewMixedStub(tb)
 	return stub.Subject[poisonabletest.MixedProbeCall, poisonabletest.MixedProbeReturn]{
 		Stub: s.OnProbe.MethodStub,
 		Call: func() {
-			_ = s.Probe()
+			_ = mixedStubProbe(tb, s)
 		},
 		Result: func() poisonabletest.MixedProbeReturn {
-			got0 := s.Probe()
+			got0 := mixedStubProbe(tb, s)
 			return poisonabletest.MixedProbeReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -142,153 +100,354 @@ func mixedStubProbeSubject(tb assert.TB) stub.Subject[poisonabletest.MixedProbeC
 			})
 		},
 		Fails: func() error {
-			r0 := s.Probe()
+			r0 := mixedStubProbe(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubProbe pins how Probe answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubProbe(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a poisonabletest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[poisonabletest.MixedFailCall]
 
-	stub.Behaviour(t, "Probe", mixedStubProbeSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := poisonabletest.NewMixedStub(t)
-		_ = s.Probe()
-		s.OnProbe.AssertCalledOnce(t, "Probe must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := poisonabletest.NewMixedStub(t)
-		var seen []poisonabletest.MixedProbeCall
-		s.OnProbe.OnRecord(func(c poisonabletest.MixedProbeCall) { seen = append(seen, c) })
-		_ = s.Probe()
-		_ = s.Probe()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Probe call")
-	})
-
-	t.Run("wires WithMixedProbe at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := poisonabletest.NewMixedStub(t, poisonabletest.WithMixedProbe(func() error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		_ = s.Probe()
-		assert.True(t, called, "WithMixedProbe must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Probe-failing")
-		s := poisonabletest.NewMixedStubFailing(t, want)
-		r0 := s.Probe()
-		assert.ErrorIs(t, r0, want, "Probe must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := poisonabletest.NewMixedStub(t)
-		var want0 error
-		s.OnProbe.Returns(want0)
-		_ = s.Probe()
-		s.ResetCalls()
-		_ = s.Probe()
-		s.OnProbe.AssertCalledOnce(t, "Probe must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Fail stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[poisonabletest.MixedFailCall] {
-	instance := func(s *poisonabletest.MixedStub) stub.Instance[poisonabletest.MixedFailCall] {
-		return stub.Instance[poisonabletest.MixedFailCall]{
-			Stub: s.OnFail.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_ = s.Fail(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[poisonabletest.MixedFailCall]{
-		New: func(tb assert.TB) stub.Instance[poisonabletest.MixedFailCall] {
-			return instance(poisonabletest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Fail alone.
+func mixedStubInstanceOf(tb assert.TB, s *poisonabletest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnFail.MethodStub,
+		Call: func() {
+			_ = mixedStubFail(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[poisonabletest.MixedFailCall] {
-			return instance(poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[poisonabletest.MixedFailCall] {
-			return instance(poisonabletest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[poisonabletest.MixedFailCall] {
-			return instance(poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[poisonabletest.MixedFailCall] {
-			return instance(poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[poisonabletest.MixedFailCall] {
-			return instance(poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Fail", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Fail", mixedStubFailSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			_ = mixedStubFail(t, s)
+			got := s.OnFail.AssertCalledOnce(t, "Fail records the call")
+			a0 := mixedStubFailArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			var seen []poisonabletest.MixedFailCall
+			s.OnFail.OnRecord(func(c poisonabletest.MixedFailCall) { seen = append(seen, c) })
+			_ = mixedStubFail(t, s)
+			_ = mixedStubFail(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fail")
+		})
+	})
+
+	t.Run("Probe", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Probe", mixedStubProbeSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			var seen []poisonabletest.MixedProbeCall
+			s.OnProbe.OnRecord(func(c poisonabletest.MixedProbeCall) { seen = append(seen, c) })
+			_ = mixedStubProbe(t, s)
+			_ = mixedStubProbe(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Probe")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, poisonabletest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Fail", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			_ = mixedStubFail(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnFail.CallCount(), 0, "ResetCalls clears the calls of Fail")
+		})
+
+		t.Run("keeps the results of Returns of Fail", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			want0 := mixedStubFailPins()
+			s.OnFail.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubFail(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Fail")
+		})
+
+		t.Run("clears the recorded calls of Probe", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			_ = mixedStubProbe(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnProbe.CallCount(), 0, "ResetCalls clears the calls of Probe")
+		})
+
+		t.Run("keeps the results of Returns of Probe", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			want0 := mixedStubProbePins()
+			s.OnProbe.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubProbe(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Probe")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, poisonabletest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Fail with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fail-failing")
+			s := poisonabletest.NewMixedStubFailing(t, want)
+			r0 := mixedStubFail(t, s)
+			assert.ErrorIs(t, r0, want, "Fail fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Probe with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Probe-failing")
+			s := poisonabletest.NewMixedStubFailing(t, want)
+			r0 := mixedStubProbe(t, s)
+			assert.ErrorIs(t, r0, want, "Probe fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Fail to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := poisonabletest.NewMixedStub(t)
+			s := poisonabletest.NewMixedStub(t, poisonabletest.MixedStubDelegateTo(inner))
+			_ = mixedStubFail(t, s)
+			inner.OnFail.AssertCalledOnce(t, "Fail calls the implementation")
+		})
+
+		t.Run("fails Fail with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fail-delegate")
+			inner := poisonabletest.NewMixedStub(t)
+			inner.OnFail.Faults(want, 1)
+			s := poisonabletest.NewMixedStub(t, poisonabletest.MixedStubDelegateTo(inner))
+			r0 := mixedStubFail(t, s)
+			assert.ErrorIs(t, r0, want, "Fail fails with the error of the implementation")
+		})
+
+		t.Run("passes Probe to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := poisonabletest.NewMixedStub(t)
+			s := poisonabletest.NewMixedStub(t, poisonabletest.MixedStubDelegateTo(inner))
+			_ = mixedStubProbe(t, s)
+			inner.OnProbe.AssertCalledOnce(t, "Probe calls the implementation")
+		})
+
+		t.Run("fails Probe with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Probe-delegate")
+			inner := poisonabletest.NewMixedStub(t)
+			inner.OnProbe.Faults(want, 1)
+			s := poisonabletest.NewMixedStub(t, poisonabletest.MixedStubDelegateTo(inner))
+			r0 := mixedStubProbe(t, s)
+			assert.ErrorIs(t, r0, want, "Probe fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, poisonabletest.NewMixedStub(tb, poisonabletest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				poisonabletest.NewMixedStub(
+					tb,
+					poisonabletest.MixedStubWithClock(clk),
+					poisonabletest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Fail with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fail-failing")
+			s := poisonabletest.NewMixedStub(t, poisonabletest.MixedStubFailing(want))
+			r0 := mixedStubFail(t, s)
+			assert.ErrorIs(t, r0, want, "Fail fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Probe with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Probe-failing")
+			s := poisonabletest.NewMixedStub(t, poisonabletest.MixedStubFailing(want))
+			r0 := mixedStubProbe(t, s)
+			assert.ErrorIs(t, r0, want, "Probe fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedFail", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Fail", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := poisonabletest.NewMixedStub(t, poisonabletest.WithMixedFail(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubFail(t, s)
+			assert.True(t, called, "WithMixedFail sets the function of Fail")
+		})
+	})
+
+	t.Run("WithMixedProbe", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Probe", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := poisonabletest.NewMixedStub(t, poisonabletest.WithMixedProbe(func() error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubProbe(t, s)
+			assert.True(t, called, "WithMixedProbe sets the function of Probe")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedFailStub checks the methods of MixedFailStub, which configures
+// Fail.
+func TestMixedFailStub(t *testing.T) {
 	t.Parallel()
 
-	inner := poisonabletest.NewMixedStub(t)
-	s := poisonabletest.NewMixedStub(t, poisonabletest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Fail to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Fail(a0)
-		inner.OnFail.AssertCalledOnce(t, "Fail must reach the wrapped implementation")
+		t.Run("sets the results of each call of Fail", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			want0 := mixedStubFailPins()
+			s.OnFail.Returns(want0)
+			got0 := mixedStubFail(t, s)
+			assert.ErrorIs(t, got0, want0, "Fail returns the error that Returns sets")
+		})
+
+		t.Run("configures Fail for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := poisonabletest.NewMixedStub(r)
+			s.OnFail.Strict()
+			var want0 error
+			s.OnFail.Returns(want0)
+			_ = mixedStubFail(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Fail")
+		})
 	})
 
-	t.Run("surfaces what Fail answered", func(t *testing.T) {
-		want := errors.New("Fail-delegate")
-		inner.OnFail.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Fail(a0)
-		assert.ErrorIs(t, r0, want, "Fail must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Probe to the wrapped implementation", func(t *testing.T) {
-		_ = s.Probe()
-		inner.OnProbe.AssertCalledOnce(t, "Probe must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Probe answered", func(t *testing.T) {
-		want := errors.New("Probe-delegate")
-		inner.OnProbe.FaultsFor(time.Hour, want)
-		r0 := s.Probe()
-		assert.ErrorIs(t, r0, want, "Probe must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Fail to the function", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnFail.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubFail(t, s)
+			a0 := mixedStubFailArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:d997771b999643d90d3afd3e60c521cbc19ebf358d3146e1170ce6f7bb2f5e69
+// TestMixedProbeStub checks the methods of MixedProbeStub, which
+// configures Probe.
+func TestMixedProbeStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Probe", func(t *testing.T) {
+			t.Parallel()
+			s := poisonabletest.NewMixedStub(t)
+			want0 := mixedStubProbePins()
+			s.OnProbe.Returns(want0)
+			got0 := mixedStubProbe(t, s)
+			assert.ErrorIs(t, got0, want0, "Probe returns the error that Returns sets")
+		})
+
+		t.Run("configures Probe for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := poisonabletest.NewMixedStub(r)
+			s.OnProbe.Strict()
+			var want0 error
+			s.OnProbe.Returns(want0)
+			_ = mixedStubProbe(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Probe")
+		})
+	})
+}
+
+// dokimi:provenance sha256:2387527601dfb30a02bdd4c635adca70cc6ec5099834654b4e739c27cf82afba

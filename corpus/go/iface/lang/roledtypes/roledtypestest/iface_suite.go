@@ -7,7 +7,7 @@ package roledtypestest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/roledtypes"
 )
 
@@ -46,33 +46,18 @@ func StoreSuite() conform.Suite[roledtypes.Store] {
 	return conform.Suite[roledtypes.Store]{Declaration: "Store"}
 }
 
-// RunStore applies the checks of Store, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunStore[T roledtypes.Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
+// RunStoreSuite applies the checks of Store, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunStoreSuite[T roledtypes.Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(*StoreHandle) roledtypes.Store { return newSubject() }, opts...)
+	RunStoreSuiteFromHandle(t, func(*StoreHandle) T { return newSubject() }, opts...)
 }
 
-// RunStoreOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunStoreOn[T roledtypes.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+// RunStoreSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStoreSuiteFromHandle[T roledtypes.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
 }
 
-// ControlStore applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlStore[T roledtypes.Store](t *testing.T, newControl func() T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(*StoreHandle) roledtypes.Store { return newControl() }, opts...)
-}
-
-// ControlStoreOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlStoreOn[T roledtypes.Store](t *testing.T, newControl func(h *StoreHandle) T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(h *StoreHandle) roledtypes.Store { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:abb92b12258671ec0c745093fe0d95b125bae2971595442bbf886cfaa235f706
+// dokimi:provenance sha256:c0330aeb0e81a5a6191e3f42426a3a88949e76cc42d875449f579ed1162d314f

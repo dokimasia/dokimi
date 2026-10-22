@@ -7,7 +7,7 @@ package variadictest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/variadic"
 )
 
@@ -48,33 +48,22 @@ func FinderSuite() conform.Suite[variadic.Finder] {
 	return conform.Suite[variadic.Finder]{Declaration: "Finder"}
 }
 
-// RunFinder applies the checks of Finder, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunFinder[T variadic.Finder](t *testing.T, newSubject func() T, opts ...FinderOption) {
+// RunFinderSuite applies the checks of Finder, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunFinderSuite[T variadic.Finder](t *testing.T, newSubject func() T, opts ...FinderOption) {
 	t.Helper()
-	conform.Verify(t, FinderSuite(), func(*FinderHandle) variadic.Finder { return newSubject() }, opts...)
+	RunFinderSuiteFromHandle(t, func(*FinderHandle) T { return newSubject() }, opts...)
 }
 
-// RunFinderOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunFinderOn[T variadic.Finder](t *testing.T, newSubject func(h *FinderHandle) T, opts ...FinderOption) {
+// RunFinderSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunFinderSuiteFromHandle[T variadic.Finder](
+	t *testing.T,
+	newSubject func(h *FinderHandle) T,
+	opts ...FinderOption,
+) {
 	t.Helper()
-	conform.Verify(t, FinderSuite(), func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+	conform.Run(t, FinderSuite(), func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
 }
 
-// ControlFinder applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlFinder[T variadic.Finder](t *testing.T, newControl func() T, opts ...FinderOption) {
-	t.Helper()
-	conform.Control(t, FinderSuite(), func(*FinderHandle) variadic.Finder { return newControl() }, opts...)
-}
-
-// ControlFinderOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlFinderOn[T variadic.Finder](t *testing.T, newControl func(h *FinderHandle) T, opts ...FinderOption) {
-	t.Helper()
-	conform.Control(t, FinderSuite(), func(h *FinderHandle) variadic.Finder { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:a52be85c2321a9657b02a701ef71177c98b1e1db5aa027d0b9e64e9cdd39ceb2
+// dokimi:provenance sha256:e68549785eeb14ffb6fa2891ab858cb59f18b755b98661f6e734a635e9e4c268

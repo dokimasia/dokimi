@@ -7,7 +7,7 @@ package namedreturnstest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns"
 )
 
@@ -56,33 +56,22 @@ func ServiceSuite() conform.Suite[namedreturns.Service] {
 	return conform.Suite[namedreturns.Service]{Declaration: "Service"}
 }
 
-// RunService applies the checks of Service, and the checks that opts add,
-// to a fresh subject of newSubject for each check.
-func RunService[T namedreturns.Service](t *testing.T, newSubject func() T, opts ...ServiceOption) {
+// RunServiceSuite applies the checks of Service, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunServiceSuite[T namedreturns.Service](t *testing.T, newSubject func() T, opts ...ServiceOption) {
 	t.Helper()
-	conform.Verify(t, ServiceSuite(), func(*ServiceHandle) namedreturns.Service { return newSubject() }, opts...)
+	RunServiceSuiteFromHandle(t, func(*ServiceHandle) T { return newSubject() }, opts...)
 }
 
-// RunServiceOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunServiceOn[T namedreturns.Service](t *testing.T, newSubject func(h *ServiceHandle) T, opts ...ServiceOption) {
+// RunServiceSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunServiceSuiteFromHandle[T namedreturns.Service](
+	t *testing.T,
+	newSubject func(h *ServiceHandle) T,
+	opts ...ServiceOption,
+) {
 	t.Helper()
-	conform.Verify(t, ServiceSuite(), func(h *ServiceHandle) namedreturns.Service { return newSubject(h) }, opts...)
+	conform.Run(t, ServiceSuite(), func(h *ServiceHandle) namedreturns.Service { return newSubject(h) }, opts...)
 }
 
-// ControlService applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlService[T namedreturns.Service](t *testing.T, newControl func() T, opts ...ServiceOption) {
-	t.Helper()
-	conform.Control(t, ServiceSuite(), func(*ServiceHandle) namedreturns.Service { return newControl() }, opts...)
-}
-
-// ControlServiceOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlServiceOn[T namedreturns.Service](t *testing.T, newControl func(h *ServiceHandle) T, opts ...ServiceOption) {
-	t.Helper()
-	conform.Control(t, ServiceSuite(), func(h *ServiceHandle) namedreturns.Service { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:2829aa2f8694fe7f4cf21d3e316e548e7c56ed74e0485adea568ff1b37ce102d
+// dokimi:provenance sha256:66c0b0404559b65cb53bec8703db82292a449bb20fdedd7146584f5b909870ae

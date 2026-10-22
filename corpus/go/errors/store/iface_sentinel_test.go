@@ -6,201 +6,366 @@ package store_test
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/errors/neighbour"
 	"go.dokimi.dev/dokimi/corpus/go/errors/store"
 )
 
-// TestStoreSentinels pins the contract every declared error in this
-// package carries.
-//
-// Callers match on these values, read them in logs and branch on them, so
-// their messages and identities are as much an API as any exported
-// signature — and nothing in the compiler holds them to it.
-func TestStoreSentinels(t *testing.T) {
+// TestErrNotFound checks the sentinel error ErrNotFound. A caller matches
+// it with errors.Is and reads its message, so it has a message and an
+// identity of its own.
+func TestErrNotFound(t *testing.T) {
 	t.Parallel()
 
-	all := []struct {
+	others := []struct {
 		name string
 		err  error
 	}{
-		{"ErrNotFound", store.ErrNotFound},
 		{"ErrConflict", store.ErrConflict},
 		{"ErrClosed", store.ErrClosed},
 	}
 
-	t.Run("every sentinel is assigned", func(t *testing.T) {
+	t.Run("Error", func(t *testing.T) {
 		t.Parallel()
-		for _, e := range all {
-			if e.err == nil {
-				t.Fatalf("every sentinel must be assigned: %s is nil", e.name)
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, store.ErrNotFound, "ErrNotFound is assigned")
+			assert.NotEqual(t, store.ErrNotFound.Error(), "", "ErrNotFound has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(
+				t,
+				store.ErrNotFound.Error(),
+				"kv: ",
+				"the message of ErrNotFound opens with the package prefix",
+			)
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(
+					t,
+					store.ErrNotFound.Error(),
+					other.err.Error(),
+					"ErrNotFound has the message of "+other.name,
+				)
 			}
-		}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(store.ErrNotFound.Error(), other.err.Error()),
+					"the message of ErrNotFound opens with the message of "+other.name)
+			}
+		})
 	})
 
-	t.Run("every sentinel carries a message", func(t *testing.T) {
+	t.Run("errors.Is", func(t *testing.T) {
 		t.Parallel()
-		for _, e := range all {
-			if e.err.Error() == "" {
-				t.Errorf("every sentinel must carry a message: %s has none", e.name)
-			}
-		}
-	})
 
-	t.Run("every sentinel carries the package prefix", func(t *testing.T) {
-		t.Parallel()
-		for _, e := range all {
-			if !strings.HasPrefix(e.err.Error(), "kv: ") {
-				t.Errorf("every sentinel must carry the package prefix %q: %s reads %q",
-					"kv: ", e.name, e.err.Error())
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, store.ErrNotFound, other.err, "ErrNotFound does not match "+other.name)
 			}
-		}
-	})
+		})
 
-	t.Run("no two sentinels share a message", func(t *testing.T) {
-		t.Parallel()
-		seen := map[string]string{}
-		for _, e := range all {
-			if first, dup := seen[e.err.Error()]; dup {
-				t.Errorf("no two sentinels may share a message: %s repeats %s", e.name, first)
-			}
-			seen[e.err.Error()] = e.name
-		}
-	})
-
-	t.Run("no sentinel's message begins with another's", func(t *testing.T) {
-		t.Parallel()
-		for _, a := range all {
-			for _, b := range all {
-				if a.name == b.name {
-					continue
-				}
-				if strings.HasPrefix(a.err.Error(), b.err.Error()) {
-					t.Errorf("no sentinel's message may begin with another's: %s begins with the whole of %s",
-						a.name, b.name)
-				}
-			}
-		}
-	})
-
-	t.Run("no sentinel matches another", func(t *testing.T) {
-		t.Parallel()
-		for _, a := range all {
-			for _, b := range all {
-				if a.name == b.name {
-					continue
-				}
-				if errors.Is(a.err, b.err) {
-					t.Errorf("no sentinel may match another: %s matches %s", a.name, b.name)
-				}
-			}
-		}
-	})
-
-	t.Run("no sentinel matches one in neighbour", func(t *testing.T) {
-		t.Parallel()
-		for _, a := range all {
-			for _, b := range []struct {
+		t.Run("matches no sentinel of neighbour", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range []struct {
 				name string
 				err  error
 			}{
 				{"ErrNotFound", neighbour.ErrNotFound},
 				{"ErrConflict", neighbour.ErrConflict},
 			} {
-				if errors.Is(a.err, b.err) {
-					t.Errorf("no sentinel may match one in neighbour: %s matches %s", a.name, b.name)
-				}
+				expect.ErrorIsNot(
+					t,
+					store.ErrNotFound,
+					other.err,
+					"ErrNotFound does not match "+other.name+" of neighbour",
+				)
 			}
-		}
+		})
 	})
 }
 
-// TestNotFoundErrorContract pins what NotFoundError owes a caller beyond
-// taking part in the error protocol.
-func TestNotFoundErrorContract(t *testing.T) {
+// TestErrConflict checks the sentinel error ErrConflict. A caller matches
+// it with errors.Is and reads its message, so it has a message and an
+// identity of its own.
+func TestErrConflict(t *testing.T) {
 	t.Parallel()
 
-	t.Run("reports a message for its zero value", func(t *testing.T) {
+	others := []struct {
+		name string
+		err  error
+	}{
+		{"ErrNotFound", store.ErrNotFound},
+		{"ErrClosed", store.ErrClosed},
+	}
+
+	t.Run("Error", func(t *testing.T) {
 		t.Parallel()
-		assert.NotEqual(t, (&store.NotFoundError{}).Error(), "", "an error must report a message without panicking")
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, store.ErrConflict, "ErrConflict is assigned")
+			assert.NotEqual(t, store.ErrConflict.Error(), "", "ErrConflict has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(
+				t,
+				store.ErrConflict.Error(),
+				"kv: ",
+				"the message of ErrConflict opens with the package prefix",
+			)
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(
+					t,
+					store.ErrConflict.Error(),
+					other.err.Error(),
+					"ErrConflict has the message of "+other.name,
+				)
+			}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(store.ErrConflict.Error(), other.err.Error()),
+					"the message of ErrConflict opens with the message of "+other.name)
+			}
+		})
 	})
 
-	t.Run("carries the package prefix like a sentinel does", func(t *testing.T) {
+	t.Run("errors.Is", func(t *testing.T) {
 		t.Parallel()
-		assert.True(t, strings.HasPrefix((&store.NotFoundError{}).Error(), "kv: "), "an error type must carry the package prefix")
-	})
 
-	t.Run("does not match the package's other error types", func(t *testing.T) {
-		t.Parallel()
-		subject := &store.NotFoundError{}
-		for _, other := range []error{
-			&store.WrappedError{},
-		} {
-			assert.False(t, errors.Is(subject, other), "an error type must not match another declared here")
-		}
-	})
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, store.ErrConflict, other.err, "ErrConflict does not match "+other.name)
+			}
+		})
 
-	t.Run("agrees with the standard comparison about what it matches", func(t *testing.T) {
-		t.Parallel()
-		subject := &store.NotFoundError{}
-		for _, e := range []error{
-			store.ErrNotFound,
-			store.ErrConflict,
-			store.ErrClosed,
-		} {
-			assert.Equal(t, errors.Is(subject, e), subject.Is(e), "the standard comparison must agree with the declared one")
-		}
-	})
-
-	t.Run("puts every member it carries into its message", func(t *testing.T) {
-		t.Parallel()
-		got := &store.NotFoundError{Key: "Key-a"}
-		assert.True(t, strings.Contains(got.Error(), string(got.Key)), "Key must reach the message")
+		t.Run("matches no sentinel of neighbour", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range []struct {
+				name string
+				err  error
+			}{
+				{"ErrNotFound", neighbour.ErrNotFound},
+				{"ErrConflict", neighbour.ErrConflict},
+			} {
+				expect.ErrorIsNot(
+					t,
+					store.ErrConflict,
+					other.err,
+					"ErrConflict does not match "+other.name+" of neighbour",
+				)
+			}
+		})
 	})
 }
 
-// TestWrappedErrorContract pins what WrappedError owes a caller beyond
-// taking part in the error protocol.
-func TestWrappedErrorContract(t *testing.T) {
+// TestErrClosed checks the sentinel error ErrClosed. A caller matches it
+// with errors.Is and reads its message, so it has a message and an
+// identity of its own.
+func TestErrClosed(t *testing.T) {
 	t.Parallel()
 
-	t.Run("reports a message for its zero value", func(t *testing.T) {
+	others := []struct {
+		name string
+		err  error
+	}{
+		{"ErrNotFound", store.ErrNotFound},
+		{"ErrConflict", store.ErrConflict},
+	}
+
+	t.Run("Error", func(t *testing.T) {
 		t.Parallel()
-		assert.NotEqual(t, (&store.WrappedError{}).Error(), "", "an error must report a message without panicking")
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, store.ErrClosed, "ErrClosed is assigned")
+			assert.NotEqual(t, store.ErrClosed.Error(), "", "ErrClosed has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(
+				t,
+				store.ErrClosed.Error(),
+				"kv: ",
+				"the message of ErrClosed opens with the package prefix",
+			)
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(
+					t,
+					store.ErrClosed.Error(),
+					other.err.Error(),
+					"ErrClosed has the message of "+other.name,
+				)
+			}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(store.ErrClosed.Error(), other.err.Error()),
+					"the message of ErrClosed opens with the message of "+other.name)
+			}
+		})
 	})
 
-	t.Run("carries the package prefix like a sentinel does", func(t *testing.T) {
+	t.Run("errors.Is", func(t *testing.T) {
 		t.Parallel()
-		assert.True(t, strings.HasPrefix((&store.WrappedError{}).Error(), "kv: "), "an error type must carry the package prefix")
-	})
 
-	t.Run("does not match the package's other error types", func(t *testing.T) {
-		t.Parallel()
-		subject := &store.WrappedError{}
-		for _, other := range []error{
-			&store.NotFoundError{},
-		} {
-			assert.False(t, errors.Is(subject, other), "an error type must not match another declared here")
-		}
-	})
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, store.ErrClosed, other.err, "ErrClosed does not match "+other.name)
+			}
+		})
 
-	t.Run("exposes the cause it was given", func(t *testing.T) {
-		t.Parallel()
-		cause := fmt.Errorf("cause")
-		got := &store.WrappedError{}
-		got.Cause = cause
-		assert.Equal(t, errors.Unwrap(got), cause, "an error naming a cause must expose it")
-	})
-
-	t.Run("puts every member it carries into its message", func(t *testing.T) {
-		t.Parallel()
-		got := &store.WrappedError{Op: "Op-a"}
-		assert.True(t, strings.Contains(got.Error(), string(got.Op)), "Op must reach the message")
+		t.Run("matches no sentinel of neighbour", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range []struct {
+				name string
+				err  error
+			}{
+				{"ErrNotFound", neighbour.ErrNotFound},
+				{"ErrConflict", neighbour.ErrConflict},
+			} {
+				expect.ErrorIsNot(t, store.ErrClosed, other.err, "ErrClosed does not match "+other.name+" of neighbour")
+			}
+		})
 	})
 }
 
-// dokimi:provenance sha256:8b6f33f718e23eb7acbeba6b847a0cda4d114ed7fc450fa131270e713013b321
+// TestNotFoundError checks the error type NotFoundError.
+func TestNotFoundError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Error", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a message for the zero value", func(t *testing.T) {
+			t.Parallel()
+			assert.NotEqual(t, (&store.NotFoundError{}).Error(), "", "the zero value has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(t, (&store.NotFoundError{}).Error(), "kv: ", "the message opens with the package prefix")
+		})
+
+		t.Run("contains each text member", func(t *testing.T) {
+			t.Parallel()
+			got := &store.NotFoundError{Key: "Key-a"}
+			assert.Contains(t, got.Error(), got.Key, "the message contains Key")
+		})
+	})
+
+	t.Run("Is", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("agrees with errors.Is on each sentinel", func(t *testing.T) {
+			t.Parallel()
+			subject := &store.NotFoundError{}
+			for _, e := range []error{
+				store.ErrNotFound,
+				store.ErrConflict,
+				store.ErrClosed,
+			} {
+				assert.Equal(t, subject.Is(e), errors.Is(subject, e), "Is agrees with errors.Is")
+			}
+		})
+	})
+
+	t.Run("errors.Is", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("matches no other error type of the package", func(t *testing.T) {
+			t.Parallel()
+			subject := &store.NotFoundError{}
+			for _, other := range []error{
+				&store.WrappedError{},
+			} {
+				assert.ErrorIsNot(t, subject, other, "NotFoundError does not match another error type of the package")
+			}
+		})
+	})
+}
+
+// TestWrappedError checks the error type WrappedError.
+func TestWrappedError(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Error", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a message for the zero value", func(t *testing.T) {
+			t.Parallel()
+			assert.NotEqual(t, (&store.WrappedError{}).Error(), "", "the zero value has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(t, (&store.WrappedError{}).Error(), "kv: ", "the message opens with the package prefix")
+		})
+
+		t.Run("contains each text member", func(t *testing.T) {
+			t.Parallel()
+			got := &store.WrappedError{Op: "Op-a"}
+			assert.Contains(t, got.Error(), got.Op, "the message contains Op")
+		})
+	})
+
+	t.Run("Unwrap", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the cause", func(t *testing.T) {
+			t.Parallel()
+			cause := errors.New("cause")
+			got := &store.WrappedError{}
+			got.Cause = cause
+			assert.Equal(t, errors.Unwrap(got), cause, "errors.Unwrap returns the cause")
+		})
+	})
+
+	t.Run("errors.Is", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("matches no other error type of the package", func(t *testing.T) {
+			t.Parallel()
+			subject := &store.WrappedError{}
+			for _, other := range []error{
+				&store.NotFoundError{},
+			} {
+				assert.ErrorIsNot(t, subject, other, "WrappedError does not match another error type of the package")
+			}
+		})
+	})
+}
+
+// dokimi:provenance sha256:016f158a803e51fea5f2ed25fad41f25b0addde1376bdf1cbfab2eb5a719bcf8

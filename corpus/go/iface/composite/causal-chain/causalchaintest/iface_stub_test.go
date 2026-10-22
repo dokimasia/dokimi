@@ -12,32 +12,70 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	causalchain "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain/causalchaintest"
+	"go.dokimi.dev/stub"
 )
 
-// logStubAppendSubject binds Append into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// logStubAppendArgs returns the samples of the arguments of Append.
+func logStubAppendArgs(tb assert.TB) (context.Context, causalchain.Entry) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 causalchain.Entry
+	a1 = causalchain.RootEntry()
+	return a0, a1
+}
+
+// logStubAppend calls Append of s with the samples of its arguments.
+func logStubAppend(tb assert.TB, s *causalchaintest.LogStub) error {
+	tb.Helper()
+	a0, a1 := logStubAppendArgs(tb)
+	return s.Append(a0, a1)
+}
+
+// logStubAppendPins returns the samples of the results of Append, with a
+// new error as its error result.
+func logStubAppendPins() error {
+	want0 := errors.New("Append-returns")
+	return want0
+}
+
+// logStubReplayArgs returns the samples of the arguments of Replay.
+func logStubReplayArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// logStubReplay calls Replay of s with the samples of its arguments.
+func logStubReplay(tb assert.TB, s *causalchaintest.LogStub) ([]causalchain.Entry, error) {
+	tb.Helper()
+	a0 := logStubReplayArgs(tb)
+	return s.Replay(a0)
+}
+
+// logStubReplayPins returns the samples of the results of Replay, with a
+// new error as its error result.
+func logStubReplayPins() ([]causalchain.Entry, error) {
+	var want0 []causalchain.Entry
+	want1 := errors.New("Replay-returns")
+	want0 = []causalchain.Entry{causalchain.RootEntry()}
+	return want0, want1
+}
+
+// logStubAppendSubject returns the subject of [stub.Behaviour] for Append.
+// The subject calls a new double that reports to tb.
 func logStubAppendSubject(tb assert.TB) stub.Subject[causalchaintest.LogAppendCall, causalchaintest.LogAppendReturn] {
 	tb.Helper()
 	s := causalchaintest.NewLogStub(tb)
 	return stub.Subject[causalchaintest.LogAppendCall, causalchaintest.LogAppendReturn]{
 		Stub: s.OnAppend.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 causalchain.Entry
-			a1 = causalchain.RootEntry()
-			_ = s.Append(a0, a1)
+			_ = logStubAppend(tb, s)
 		},
 		Result: func() causalchaintest.LogAppendReturn {
-			var a0 context.Context
-			var a1 causalchain.Entry
-			a1 = causalchain.RootEntry()
-			got0 := s.Append(a0, a1)
+			got0 := logStubAppend(tb, s)
 			return causalchaintest.LogAppendReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,110 +86,24 @@ func logStubAppendSubject(tb assert.TB) stub.Subject[causalchaintest.LogAppendCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 causalchain.Entry
-			a1 = causalchain.RootEntry()
-			r0 := s.Append(a0, a1)
+			r0 := logStubAppend(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestLogStubAppend pins how Append answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestLogStubAppend(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Append", logStubAppendSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := causalchaintest.NewLogStub(t)
-		var a0 context.Context
-		var a1 causalchain.Entry
-		a1 = causalchain.RootEntry()
-		_ = s.Append(a0, a1)
-		got := s.OnAppend.AssertCalledOnce(t, "Append must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.E, a1, "the recorded call carries E")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := causalchaintest.NewLogStub(t)
-		var seen []causalchaintest.LogAppendCall
-		s.OnAppend.OnRecord(func(c causalchaintest.LogAppendCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 causalchain.Entry
-		a1 = causalchain.RootEntry()
-		_ = s.Append(a0, a1)
-		_ = s.Append(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Append call")
-	})
-
-	t.Run("wires WithLogAppend at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := causalchaintest.NewLogStub(t, causalchaintest.WithLogAppend(func(_ context.Context, _ causalchain.Entry) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 causalchain.Entry
-		a1 = causalchain.RootEntry()
-		_ = s.Append(a0, a1)
-		assert.True(t, called, "WithLogAppend must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Append-failing")
-		s := causalchaintest.NewLogStubFailing(t, want)
-		var a0 context.Context
-		var a1 causalchain.Entry
-		a1 = causalchain.RootEntry()
-		r0 := s.Append(a0, a1)
-		assert.ErrorIs(t, r0, want, "Append must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := causalchaintest.NewLogStub(t)
-		var want0 error
-		s.OnAppend.Returns(want0)
-		var a0 context.Context
-		var a1 causalchain.Entry
-		a1 = causalchain.RootEntry()
-		_ = s.Append(a0, a1)
-		s.ResetCalls()
-		_ = s.Append(a0, a1)
-		s.OnAppend.AssertCalledOnce(t, "Append must record the call that followed the reset")
-	})
-}
-
-// logStubReplaySubject binds Replay into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// logStubReplaySubject returns the subject of [stub.Behaviour] for Replay.
+// The subject calls a new double that reports to tb.
 func logStubReplaySubject(tb assert.TB) stub.Subject[causalchaintest.LogReplayCall, causalchaintest.LogReplayReturn] {
 	tb.Helper()
 	s := causalchaintest.NewLogStub(tb)
 	return stub.Subject[causalchaintest.LogReplayCall, causalchaintest.LogReplayReturn]{
 		Stub: s.OnReplay.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Replay(a0)
+			_, _ = logStubReplay(tb, s)
 		},
 		Result: func() causalchaintest.LogReplayReturn {
-			var a0 context.Context
-			got0, got1 := s.Replay(a0)
+			got0, got1 := logStubReplay(tb, s)
 			return causalchaintest.LogReplayReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -163,183 +115,395 @@ func logStubReplaySubject(tb assert.TB) stub.Subject[causalchaintest.LogReplayCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Replay(a0)
+			_, r1 := logStubReplay(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestLogStubReplay pins how Replay answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestLogStubReplay(t *testing.T) {
-	t.Parallel()
+// logStubInstance is the instance of a causalchaintest.LogStub that the
+// checks of the constructors and the options drive.
+type logStubInstance = stub.Instance[causalchaintest.LogAppendCall]
 
-	stub.Behaviour(t, "Replay", logStubReplaySubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := causalchaintest.NewLogStub(t)
-		var want0 []causalchain.Entry
-		var want1 error
-		want0 = []causalchain.Entry{causalchain.RootEntry()}
-		s.OnReplay.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Replay(a0)
-		assert.Equal(t, got0, want0, "Replay must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := causalchaintest.NewLogStub(t)
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		got := s.OnReplay.AssertCalledOnce(t, "Replay must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := causalchaintest.NewLogStub(t)
-		var seen []causalchaintest.LogReplayCall
-		s.OnReplay.OnRecord(func(c causalchaintest.LogReplayCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		_, _ = s.Replay(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Replay call")
-	})
-
-	t.Run("wires WithLogReplay at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := causalchaintest.NewLogStub(t, causalchaintest.WithLogReplay(func(_ context.Context) ([]causalchain.Entry, error) {
-			called = true
-			var z0 []causalchain.Entry
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		assert.True(t, called, "WithLogReplay must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Replay-failing")
-		s := causalchaintest.NewLogStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Replay(a0)
-		assert.ErrorIs(t, r1, want, "Replay must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := causalchaintest.NewLogStub(t)
-		var want0 []causalchain.Entry
-		var want1 error
-		want0 = []causalchain.Entry{causalchain.RootEntry()}
-		s.OnReplay.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		s.ResetCalls()
-		got0, _ := s.Replay(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// logStubDouble describes how to build a LogStub under each option whose
-// effect is the same whatever a method's signature.
-//
-// Append stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func logStubDouble() stub.Double[causalchaintest.LogAppendCall] {
-	instance := func(s *causalchaintest.LogStub) stub.Instance[causalchaintest.LogAppendCall] {
-		return stub.Instance[causalchaintest.LogAppendCall]{
-			Stub: s.OnAppend.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 causalchain.Entry
-				a1 = causalchain.RootEntry()
-				_ = s.Append(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[causalchaintest.LogAppendCall]{
-		New: func(tb assert.TB) stub.Instance[causalchaintest.LogAppendCall] {
-			return instance(causalchaintest.NewLogStub(tb))
+// logStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Append alone.
+func logStubInstanceOf(tb assert.TB, s *causalchaintest.LogStub) logStubInstance {
+	tb.Helper()
+	return logStubInstance{
+		Stub: s.OnAppend.MethodStub,
+		Call: func() {
+			_ = logStubAppend(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[causalchaintest.LogAppendCall] {
-			return instance(causalchaintest.NewLogStub(tb, causalchaintest.LogStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[causalchaintest.LogAppendCall] {
-			return instance(causalchaintest.NewLogStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[causalchaintest.LogAppendCall] {
-			return instance(causalchaintest.NewLogStub(tb, causalchaintest.LogStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[causalchaintest.LogAppendCall] {
-			return instance(causalchaintest.NewLogStub(tb, causalchaintest.LogStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[causalchaintest.LogAppendCall] {
-			return instance(causalchaintest.NewLogStub(tb, causalchaintest.LogStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestLogStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestLogStubOptions(t *testing.T) {
+// TestLogStub checks the methods, the constructors and the options of the
+// double LogStub.
+func TestLogStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, logStubDouble())
+	t.Run("Append", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Append", logStubAppendSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			_ = logStubAppend(t, s)
+			got := s.OnAppend.AssertCalledOnce(t, "Append records the call")
+			a0, a1 := logStubAppendArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.E, a1, "the call records E")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			var seen []causalchaintest.LogAppendCall
+			s.OnAppend.OnRecord(func(c causalchaintest.LogAppendCall) { seen = append(seen, c) })
+			_ = logStubAppend(t, s)
+			_ = logStubAppend(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Append")
+		})
+	})
+
+	t.Run("Replay", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Replay", logStubReplaySubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			_, _ = logStubReplay(t, s)
+			got := s.OnReplay.AssertCalledOnce(t, "Replay records the call")
+			a0 := logStubReplayArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			var seen []causalchaintest.LogReplayCall
+			s.OnReplay.OnRecord(func(c causalchaintest.LogReplayCall) { seen = append(seen, c) })
+			_, _ = logStubReplay(t, s)
+			_, _ = logStubReplay(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Replay")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) logStubInstance {
+			return logStubInstanceOf(tb, causalchaintest.NewLogStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Append", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			_ = logStubAppend(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAppend.CallCount(), 0, "ResetCalls clears the calls of Append")
+		})
+
+		t.Run("keeps the results of Returns of Append", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			want0 := logStubAppendPins()
+			s.OnAppend.Returns(want0)
+			s.ResetCalls()
+			got0 := logStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Append")
+		})
+
+		t.Run("clears the recorded calls of Replay", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			_, _ = logStubReplay(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnReplay.CallCount(), 0, "ResetCalls clears the calls of Replay")
+		})
+
+		t.Run("keeps the results of Returns of Replay", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			want0, want1 := logStubReplayPins()
+			s.OnReplay.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := logStubReplay(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Replay")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Replay")
+		})
+	})
+
+	t.Run("NewLogStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) logStubInstance {
+			return logStubInstanceOf(tb, causalchaintest.NewLogStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewLogStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := causalchaintest.NewLogStubFailing(t, want)
+			r0 := logStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of NewLogStubFailing")
+		})
+
+		t.Run("fails Replay with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replay-failing")
+			s := causalchaintest.NewLogStubFailing(t, want)
+			_, r1 := logStubReplay(t, s)
+			assert.ErrorIs(t, r1, want, "Replay fails with the error of NewLogStubFailing")
+		})
+	})
+
+	t.Run("LogStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) logStubInstance {
+			return logStubInstanceOf(tb, causalchaintest.NewLogStub(tb, causalchaintest.LogStubStrict()))
+		})
+	})
+
+	t.Run("LogStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Append to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := causalchaintest.NewLogStub(t)
+			s := causalchaintest.NewLogStub(t, causalchaintest.LogStubDelegateTo(inner))
+			_ = logStubAppend(t, s)
+			inner.OnAppend.AssertCalledOnce(t, "Append calls the implementation")
+		})
+
+		t.Run("fails Append with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-delegate")
+			inner := causalchaintest.NewLogStub(t)
+			inner.OnAppend.Faults(want, 1)
+			s := causalchaintest.NewLogStub(t, causalchaintest.LogStubDelegateTo(inner))
+			r0 := logStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of the implementation")
+		})
+
+		t.Run("passes Replay to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := causalchaintest.NewLogStub(t)
+			s := causalchaintest.NewLogStub(t, causalchaintest.LogStubDelegateTo(inner))
+			_, _ = logStubReplay(t, s)
+			inner.OnReplay.AssertCalledOnce(t, "Replay calls the implementation")
+		})
+
+		t.Run("fails Replay with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replay-delegate")
+			inner := causalchaintest.NewLogStub(t)
+			inner.OnReplay.Faults(want, 1)
+			s := causalchaintest.NewLogStub(t, causalchaintest.LogStubDelegateTo(inner))
+			_, r1 := logStubReplay(t, s)
+			assert.ErrorIs(t, r1, want, "Replay fails with the error of the implementation")
+		})
+	})
+
+	t.Run("LogStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) logStubInstance {
+			return logStubInstanceOf(tb, causalchaintest.NewLogStub(tb, causalchaintest.LogStubWithClock(clk)))
+		})
+	})
+
+	t.Run("LogStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) logStubInstance {
+			return logStubInstanceOf(tb, causalchaintest.NewLogStub(tb, causalchaintest.LogStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("LogStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) logStubInstance {
+			return logStubInstanceOf(tb, causalchaintest.NewLogStub(tb, causalchaintest.LogStubBenchMode()))
+		})
+	})
+
+	t.Run("LogStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) logStubInstance {
+			return logStubInstanceOf(
+				tb,
+				causalchaintest.NewLogStub(
+					tb,
+					causalchaintest.LogStubWithClock(clk),
+					causalchaintest.LogStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("LogStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Append with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Append-failing")
+			s := causalchaintest.NewLogStub(t, causalchaintest.LogStubFailing(want))
+			r0 := logStubAppend(t, s)
+			assert.ErrorIs(t, r0, want, "Append fails with the error of LogStubFailing")
+		})
+
+		t.Run("fails Replay with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Replay-failing")
+			s := causalchaintest.NewLogStub(t, causalchaintest.LogStubFailing(want))
+			_, r1 := logStubReplay(t, s)
+			assert.ErrorIs(t, r1, want, "Replay fails with the error of LogStubFailing")
+		})
+	})
+
+	t.Run("WithLogAppend", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Append", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := causalchaintest.NewLogStub(
+				t,
+				causalchaintest.WithLogAppend(func(_ context.Context, _ causalchain.Entry) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = logStubAppend(t, s)
+			assert.True(t, called, "WithLogAppend sets the function of Append")
+		})
+	})
+
+	t.Run("WithLogReplay", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Replay", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := causalchaintest.NewLogStub(
+				t,
+				causalchaintest.WithLogReplay(func(_ context.Context) ([]causalchain.Entry, error) {
+					called = true
+					var z0 []causalchain.Entry
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = logStubReplay(t, s)
+			assert.True(t, called, "WithLogReplay sets the function of Replay")
+		})
+	})
 }
 
-// TestLogStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestLogStubDelegateTo(t *testing.T) {
+// TestLogAppendStub checks the methods of LogAppendStub, which configures
+// Append.
+func TestLogAppendStub(t *testing.T) {
 	t.Parallel()
 
-	inner := causalchaintest.NewLogStub(t)
-	s := causalchaintest.NewLogStub(t, causalchaintest.LogStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Append to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 causalchain.Entry
-		a1 = causalchain.RootEntry()
-		_ = s.Append(a0, a1)
-		inner.OnAppend.AssertCalledOnce(t, "Append must reach the wrapped implementation")
+		t.Run("sets the results of each call of Append", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			want0 := logStubAppendPins()
+			s.OnAppend.Returns(want0)
+			got0 := logStubAppend(t, s)
+			assert.ErrorIs(t, got0, want0, "Append returns the error that Returns sets")
+		})
+
+		t.Run("configures Append for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := causalchaintest.NewLogStub(r)
+			s.OnAppend.Strict()
+			var want0 error
+			s.OnAppend.Returns(want0)
+			_ = logStubAppend(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Append")
+		})
 	})
 
-	t.Run("surfaces what Append answered", func(t *testing.T) {
-		want := errors.New("Append-delegate")
-		inner.OnAppend.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 causalchain.Entry
-		a1 = causalchain.RootEntry()
-		r0 := s.Append(a0, a1)
-		assert.ErrorIs(t, r0, want, "Append must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Replay to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Replay(a0)
-		inner.OnReplay.AssertCalledOnce(t, "Replay must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Replay answered", func(t *testing.T) {
-		want := errors.New("Replay-delegate")
-		inner.OnReplay.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Replay(a0)
-		assert.ErrorIs(t, r1, want, "Replay must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Append to the function", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			var got0 context.Context
+			var got1 causalchain.Entry
+			s.OnAppend.Func(func(p0 context.Context, p1 causalchain.Entry) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = logStubAppend(t, s)
+			a0, a1 := logStubAppendArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives E")
+		})
 	})
 }
 
-// dokimi:provenance sha256:c4ddb6112318e4025a0959d28fc966214772dd6814a759c2575810e767a6b3f3
+// TestLogReplayStub checks the methods of LogReplayStub, which configures
+// Replay.
+func TestLogReplayStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Replay", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			want0, want1 := logStubReplayPins()
+			s.OnReplay.Returns(want0, want1)
+			got0, got1 := logStubReplay(t, s)
+			expect.Equal(t, got0, want0, "Replay returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Replay returns the error that Returns sets")
+		})
+
+		t.Run("configures Replay for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := causalchaintest.NewLogStub(r)
+			s.OnReplay.Strict()
+			var want0 []causalchain.Entry
+			var want1 error
+			s.OnReplay.Returns(want0, want1)
+			_, _ = logStubReplay(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Replay")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Replay to the function", func(t *testing.T) {
+			t.Parallel()
+			s := causalchaintest.NewLogStub(t)
+			var got0 context.Context
+			s.OnReplay.Func(func(p0 context.Context) ([]causalchain.Entry, error) {
+				got0 = p0
+				var z0 []causalchain.Entry
+				var z1 error
+				return z0, z1
+			})
+			_, _ = logStubReplay(t, s)
+			a0 := logStubReplayArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:64800ff36c09cd79f3961c0c4a507f922fbe7123d396b97fe29848ec099dca73

@@ -7,7 +7,7 @@ package leasetest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/lease"
 )
 
@@ -48,33 +48,22 @@ func ContractSuite() conform.Suite[lease.Contract] {
 	return conform.Suite[lease.Contract]{Declaration: "Contract"}
 }
 
-// RunContract applies the checks of Contract, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunContract[T lease.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
+// RunContractSuite applies the checks of Contract, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunContractSuite[T lease.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(*ContractHandle) lease.Contract { return newSubject() }, opts...)
+	RunContractSuiteFromHandle(t, func(*ContractHandle) T { return newSubject() }, opts...)
 }
 
-// RunContractOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunContractOn[T lease.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+// RunContractSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunContractSuiteFromHandle[T lease.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(h *ContractHandle) lease.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), func(h *ContractHandle) lease.Contract { return newSubject(h) }, opts...)
 }
 
-// ControlContract applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlContract[T lease.Contract](t *testing.T, newControl func() T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(*ContractHandle) lease.Contract { return newControl() }, opts...)
-}
-
-// ControlContractOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlContractOn[T lease.Contract](t *testing.T, newControl func(h *ContractHandle) T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(h *ContractHandle) lease.Contract { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:db3de5ed3530cc603ccc438831bc3a191fcc2f1f72d1b0aff6b648935476256f
+// dokimi:provenance sha256:47f9db41a2e85bf73d6a2aabced6840f8561b11bbe8fd8a33f4f1030ce9da0b6

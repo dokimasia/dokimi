@@ -7,7 +7,7 @@ package writertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer"
 )
 
@@ -39,33 +39,18 @@ func WriterSuite() conform.Suite[writer.Writer] {
 	return conform.Suite[writer.Writer]{Declaration: "Writer"}
 }
 
-// RunWriter applies the checks of Writer, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunWriter[T writer.Writer](t *testing.T, newSubject func() T, opts ...WriterOption) {
+// RunWriterSuite applies the checks of Writer, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunWriterSuite[T writer.Writer](t *testing.T, newSubject func() T, opts ...WriterOption) {
 	t.Helper()
-	conform.Verify(t, WriterSuite(), func(*WriterHandle) writer.Writer { return newSubject() }, opts...)
+	RunWriterSuiteFromHandle(t, func(*WriterHandle) T { return newSubject() }, opts...)
 }
 
-// RunWriterOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunWriterOn[T writer.Writer](t *testing.T, newSubject func(h *WriterHandle) T, opts ...WriterOption) {
+// RunWriterSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunWriterSuiteFromHandle[T writer.Writer](t *testing.T, newSubject func(h *WriterHandle) T, opts ...WriterOption) {
 	t.Helper()
-	conform.Verify(t, WriterSuite(), func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+	conform.Run(t, WriterSuite(), func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
 }
 
-// ControlWriter applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlWriter[T writer.Writer](t *testing.T, newControl func() T, opts ...WriterOption) {
-	t.Helper()
-	conform.Control(t, WriterSuite(), func(*WriterHandle) writer.Writer { return newControl() }, opts...)
-}
-
-// ControlWriterOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlWriterOn[T writer.Writer](t *testing.T, newControl func(h *WriterHandle) T, opts ...WriterOption) {
-	t.Helper()
-	conform.Control(t, WriterSuite(), func(h *WriterHandle) writer.Writer { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:7f45dd60b3aea156caa0e89566409d2768d7982d01129f5eacc5ddfde73723c0
+// dokimi:provenance sha256:3929eb351528c1d0a638cd38df55f38cdb721bd9e08c8e7cdf5eae910b2819ab

@@ -7,7 +7,7 @@ package streamreadertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader"
 )
 
@@ -48,33 +48,26 @@ func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 	return conform.Suite[streamreader.StreamReader]{Declaration: "StreamReader"}
 }
 
-// RunStreamReader applies the checks of StreamReader, and the checks that
-// opts add, to a fresh subject of newSubject for each check.
-func RunStreamReader[T streamreader.StreamReader](t *testing.T, newSubject func() T, opts ...StreamReaderOption) {
+// RunStreamReaderSuite applies the checks of StreamReader, and the checks
+// that opts add, to a fresh subject of newSubject for each check.
+func RunStreamReaderSuite[T streamreader.StreamReader](t *testing.T, newSubject func() T, opts ...StreamReaderOption) {
 	t.Helper()
-	conform.Verify(t, StreamReaderSuite(), func(*StreamReaderHandle) streamreader.StreamReader { return newSubject() }, opts...)
+	RunStreamReaderSuiteFromHandle(t, func(*StreamReaderHandle) T { return newSubject() }, opts...)
 }
 
-// RunStreamReaderOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunStreamReaderOn[T streamreader.StreamReader](t *testing.T, newSubject func(h *StreamReaderHandle) T, opts ...StreamReaderOption) {
+// RunStreamReaderSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStreamReaderSuiteFromHandle[T streamreader.StreamReader](
+	t *testing.T,
+	newSubject func(h *StreamReaderHandle) T,
+	opts ...StreamReaderOption,
+) {
 	t.Helper()
-	conform.Verify(t, StreamReaderSuite(), func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		StreamReaderSuite(),
+		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
+		opts...)
 }
 
-// ControlStreamReader applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlStreamReader[T streamreader.StreamReader](t *testing.T, newControl func() T, opts ...StreamReaderOption) {
-	t.Helper()
-	conform.Control(t, StreamReaderSuite(), func(*StreamReaderHandle) streamreader.StreamReader { return newControl() }, opts...)
-}
-
-// ControlStreamReaderOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlStreamReaderOn[T streamreader.StreamReader](t *testing.T, newControl func(h *StreamReaderHandle) T, opts ...StreamReaderOption) {
-	t.Helper()
-	conform.Control(t, StreamReaderSuite(), func(h *StreamReaderHandle) streamreader.StreamReader { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:316595a446c489ddeebd677c1f2b87e605bd6573c017c51c61635c4a839c8bef
+// dokimi:provenance sha256:4968b0de2ad55b1ccab3bec4af2a7457074d7c8fc09abe14a9a7d31cd58d94ec

@@ -10,15 +10,12 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/integration/built"
 	"go.dokimi.dev/dokimi/corpus/go/integration/built/billing"
+	"go.dokimi.dev/stub"
 )
 
-// LedgerGetCall records one invocation of Ledger.Get.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LedgerGetCall records one call of Ledger.Get.
 type LedgerGetCall struct {
 	Ctx    context.Context
 	ID     string
@@ -26,10 +23,7 @@ type LedgerGetCall struct {
 	Err    error
 }
 
-// LedgerFindCall records one invocation of Ledger.Find.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LedgerFindCall records one call of Ledger.Find.
 type LedgerFindCall struct {
 	Ctx    context.Context
 	ID     string
@@ -37,52 +31,34 @@ type LedgerFindCall struct {
 	Err    error
 }
 
-// LedgerLookupCall records one invocation of Ledger.Lookup.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LedgerLookupCall records one call of Ledger.Lookup.
 type LedgerLookupCall struct {
 	ID      string
 	Result0 built.Account
 	Result1 bool
 }
 
-// LedgerListCall records one invocation of Ledger.List.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LedgerListCall records one call of Ledger.List.
 type LedgerListCall struct {
 	Ctx    context.Context
 	Result built.Page[built.Account]
 	Err    error
 }
 
-// LedgerNoteCall records one invocation of Ledger.Note.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LedgerNoteCall records one call of Ledger.Note.
 type LedgerNoteCall struct {
 	ID     string
 	Result built.Note
 }
 
-// LedgerBillCall records one invocation of Ledger.Bill.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LedgerBillCall records one call of Ledger.Bill.
 type LedgerBillCall struct {
 	ID     string
 	Result billing.Invoice
 }
 
-// --- Per-method configuration ---
-
-// LedgerGetStub controls how the double answers Get and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LedgerGetStub configures Get and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type LedgerGetStub struct {
 	*stub.MethodStub[LedgerGetCall]
 
@@ -90,32 +66,28 @@ type LedgerGetStub struct {
 	fallback *LedgerGetReturn
 }
 
-// LedgerGetReturn holds the fixed answer configured through Returns.
+// LedgerGetReturn contains the fixed results of Get.
 type LedgerGetReturn struct {
 	Result built.Account
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Get. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Get. A function and an
+// injected fault take precedence over them.
 func (s *LedgerGetStub) Returns(result built.Account, err error) *LedgerGetStub {
 	s.fallback = &LedgerGetReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Get, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Get from its
+// arguments. An injected fault takes precedence over it.
 func (s *LedgerGetStub) Func(fn func(context.Context, string) (built.Account, error)) *LedgerGetStub {
 	s.fn = fn
 	return s
 }
 
-// LedgerFindStub controls how the double answers Find and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LedgerFindStub configures Find and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type LedgerFindStub struct {
 	*stub.MethodStub[LedgerFindCall]
 
@@ -123,32 +95,28 @@ type LedgerFindStub struct {
 	fallback *LedgerFindReturn
 }
 
-// LedgerFindReturn holds the fixed answer configured through Returns.
+// LedgerFindReturn contains the fixed results of Find.
 type LedgerFindReturn struct {
 	Result *built.Account
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Find. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Find. A function and an
+// injected fault take precedence over them.
 func (s *LedgerFindStub) Returns(result *built.Account, err error) *LedgerFindStub {
 	s.fallback = &LedgerFindReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Find, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Find from its
+// arguments. An injected fault takes precedence over it.
 func (s *LedgerFindStub) Func(fn func(context.Context, string) (*built.Account, error)) *LedgerFindStub {
 	s.fn = fn
 	return s
 }
 
-// LedgerLookupStub controls how the double answers Lookup and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LedgerLookupStub configures Lookup and records its calls. Lookup returns
+// no error, so a fault armed through it fails the test.
 type LedgerLookupStub struct {
 	*stub.MethodStub[LedgerLookupCall]
 
@@ -156,37 +124,28 @@ type LedgerLookupStub struct {
 	fallback *LedgerLookupReturn
 }
 
-// LedgerLookupReturn holds the fixed answer configured through Returns.
+// LedgerLookupReturn contains the fixed results of Lookup.
 type LedgerLookupReturn struct {
 	Result0 built.Account
 	Result1 bool
 }
 
-// Returns pins a fixed result for every call to Lookup. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Lookup answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Lookup. A function takes
+// precedence over them.
 func (s *LedgerLookupStub) Returns(result0 built.Account, result1 bool) *LedgerLookupStub {
 	s.fallback = &LedgerLookupReturn{Result0: result0, Result1: result1}
 	return s
 }
 
-// Func supplies a body for Lookup, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Lookup answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Lookup from its
+// arguments.
 func (s *LedgerLookupStub) Func(fn func(string) (built.Account, bool)) *LedgerLookupStub {
 	s.fn = fn
 	return s
 }
 
-// LedgerListStub controls how the double answers List and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LedgerListStub configures List and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type LedgerListStub struct {
 	*stub.MethodStub[LedgerListCall]
 
@@ -194,32 +153,28 @@ type LedgerListStub struct {
 	fallback *LedgerListReturn
 }
 
-// LedgerListReturn holds the fixed answer configured through Returns.
+// LedgerListReturn contains the fixed results of List.
 type LedgerListReturn struct {
 	Result built.Page[built.Account]
 	Err    error
 }
 
-// Returns pins a fixed result for every call to List. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of List. A function and an
+// injected fault take precedence over them.
 func (s *LedgerListStub) Returns(result built.Page[built.Account], err error) *LedgerListStub {
 	s.fallback = &LedgerListReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for List, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of List from its
+// arguments. An injected fault takes precedence over it.
 func (s *LedgerListStub) Func(fn func(context.Context) (built.Page[built.Account], error)) *LedgerListStub {
 	s.fn = fn
 	return s
 }
 
-// LedgerNoteStub controls how the double answers Note and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LedgerNoteStub configures Note and records its calls. Note returns no
+// error, so a fault armed through it fails the test.
 type LedgerNoteStub struct {
 	*stub.MethodStub[LedgerNoteCall]
 
@@ -227,36 +182,27 @@ type LedgerNoteStub struct {
 	fallback *LedgerNoteReturn
 }
 
-// LedgerNoteReturn holds the fixed answer configured through Returns.
+// LedgerNoteReturn contains the fixed results of Note.
 type LedgerNoteReturn struct {
 	Result built.Note
 }
 
-// Returns pins a fixed result for every call to Note. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Note answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Note. A function takes
+// precedence over them.
 func (s *LedgerNoteStub) Returns(result built.Note) *LedgerNoteStub {
 	s.fallback = &LedgerNoteReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Note, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Note answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Note from its
+// arguments.
 func (s *LedgerNoteStub) Func(fn func(string) built.Note) *LedgerNoteStub {
 	s.fn = fn
 	return s
 }
 
-// LedgerBillStub controls how the double answers Bill and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LedgerBillStub configures Bill and records its calls. Bill returns no
+// error, so a fault armed through it fails the test.
 type LedgerBillStub struct {
 	*stub.MethodStub[LedgerBillCall]
 
@@ -264,46 +210,40 @@ type LedgerBillStub struct {
 	fallback *LedgerBillReturn
 }
 
-// LedgerBillReturn holds the fixed answer configured through Returns.
+// LedgerBillReturn contains the fixed results of Bill.
 type LedgerBillReturn struct {
 	Result billing.Invoice
 }
 
-// Returns pins a fixed result for every call to Bill. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Bill answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Bill. A function takes
+// precedence over them.
 func (s *LedgerBillStub) Returns(result billing.Invoice) *LedgerBillStub {
 	s.fallback = &LedgerBillReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Bill, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Bill answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Bill from its
+// arguments.
 func (s *LedgerBillStub) Func(fn func(string) billing.Invoice) *LedgerBillStub {
 	s.fn = fn
 	return s
 }
 
-// --- LedgerStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// LedgerStubOption configures a [LedgerStub] at construction time.
+// LedgerStubOption configures a [LedgerStub] at its construction.
 type LedgerStubOption func(*LedgerStub)
 
-// LedgerStubStrict makes an unconfigured method fail the test rather than
-// return its default results.
+// LedgerStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its default results.
 func LedgerStubStrict() LedgerStubOption {
 	return func(s *LedgerStub) { s.strict = true }
 }
 
-// LedgerStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// LedgerStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func LedgerStubDelegateTo(impl built.Ledger) LedgerStubOption {
 	return func(s *LedgerStub) {
 		s.OnGet.Func(impl.Get)
@@ -315,35 +255,35 @@ func LedgerStubDelegateTo(impl built.Ledger) LedgerStubOption {
 	}
 }
 
-// LedgerStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// LedgerStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func LedgerStubWithClock(clk assert.Clock) LedgerStubOption {
 	return func(s *LedgerStub) { s.group.SetClock(clk) }
 }
 
-// LedgerStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// LedgerStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func LedgerStubWithRandSource(src rand.Source) LedgerStubOption {
 	return func(s *LedgerStub) { s.group.SetRandSource(src) }
 }
 
-// LedgerStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// LedgerStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func LedgerStubBenchMode() LedgerStubOption {
 	return func(s *LedgerStub) { s.group.BenchMode() }
 }
 
-// LedgerStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with LedgerStubWithClock, or d elapses in wall time.
+// LedgerStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without LedgerStubWithClock, d passes in real time.
 func LedgerStubWithLatency(d time.Duration) LedgerStubOption {
 	return func(s *LedgerStub) { s.group.SetLatency(d) }
 }
 
-// LedgerStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// LedgerStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func LedgerStubFailing(err error) LedgerStubOption {
 	return func(s *LedgerStub) {
 		s.OnGet.Faults(err, 1)
@@ -352,48 +292,41 @@ func LedgerStubFailing(err error) LedgerStubOption {
 	}
 }
 
-// WithLedgerGet sets Get's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithLedgerGet returns the option that sets the function of Get.
 func WithLedgerGet(fn func(context.Context, string) (built.Account, error)) LedgerStubOption {
 	return func(s *LedgerStub) { s.OnGet.Func(fn) }
 }
 
-// WithLedgerFind sets Find's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithLedgerFind returns the option that sets the function of Find.
 func WithLedgerFind(fn func(context.Context, string) (*built.Account, error)) LedgerStubOption {
 	return func(s *LedgerStub) { s.OnFind.Func(fn) }
 }
 
-// WithLedgerLookup sets Lookup's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithLedgerLookup returns the option that sets the function of Lookup.
 func WithLedgerLookup(fn func(string) (built.Account, bool)) LedgerStubOption {
 	return func(s *LedgerStub) { s.OnLookup.Func(fn) }
 }
 
-// WithLedgerList sets List's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithLedgerList returns the option that sets the function of List.
 func WithLedgerList(fn func(context.Context) (built.Page[built.Account], error)) LedgerStubOption {
 	return func(s *LedgerStub) { s.OnList.Func(fn) }
 }
 
-// WithLedgerNote sets Note's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithLedgerNote returns the option that sets the function of Note.
 func WithLedgerNote(fn func(string) built.Note) LedgerStubOption {
 	return func(s *LedgerStub) { s.OnNote.Func(fn) }
 }
 
-// WithLedgerBill sets Bill's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithLedgerBill returns the option that sets the function of Bill.
 func WithLedgerBill(fn func(string) billing.Invoice) LedgerStubOption {
 	return func(s *LedgerStub) { s.OnBill.Func(fn) }
 }
 
-// LedgerStub is a recording test double for Ledger.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method records the call and returns its default results: a new value
-// from the builder of each result type that has one, and the zero value of
-// each other result.
+// LedgerStub is a recording test double of Ledger. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns its default results. The default result of a type with a builder
+// is a new value from the builder, and every other result is its zero
+// value.
 type LedgerStub struct {
 	OnGet    *LedgerGetStub
 	OnFind   *LedgerFindStub
@@ -402,21 +335,17 @@ type LedgerStub struct {
 	OnNote   *LedgerNoteStub
 	OnBill   *LedgerBillStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that LedgerStub satisfies Ledger.
+// The compiler checks that LedgerStub implements Ledger.
 var _ built.Ledger = (*LedgerStub)(nil)
 
-// NewLedgerStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewLedgerStub returns a double of Ledger that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewLedgerStub(tb assert.TB, opts ...LedgerStubOption) *LedgerStub {
 	s := &LedgerStub{
 		OnGet:    &LedgerGetStub{MethodStub: stub.NewMethodStub[LedgerGetCall](tb, "Ledger.Get")},
@@ -444,11 +373,8 @@ func NewLedgerStub(tb assert.TB, opts ...LedgerStubOption) *LedgerStub {
 	return s
 }
 
-// NewLedgerStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewLedgerStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewLedgerStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...LedgerStubOption) *LedgerStub {
 	return NewLedgerStub(tb, append([]LedgerStubOption{
 		LedgerStubWithClock(clk),
@@ -456,26 +382,20 @@ func NewLedgerStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts 
 	}, opts...)...)
 }
 
-// NewLedgerStubFailing returns a double whose every fallible method
-// answers err — [LedgerStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewLedgerStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewLedgerStubFailing(tb assert.TB, err error, opts ...LedgerStubOption) *LedgerStub {
 	return NewLedgerStub(tb, append([]LedgerStubOption{LedgerStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LedgerStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *LedgerGetStub) invoke(ctx context.Context, id string) func() LedgerGetReturn {
 	if s.fn == nil {
 		return nil
@@ -486,12 +406,8 @@ func (s *LedgerGetStub) invoke(ctx context.Context, id string) func() LedgerGetR
 	}
 }
 
-// Get records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the default results — is [stub.Answer]'s to decide, so every generated
-// double resolves a call the same way and the ordering is tested once
-// rather than restated per method.
+// Get records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) Get(ctx context.Context, id string) (built.Account, error) {
 	call := LedgerGetCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[LedgerGetCall, LedgerGetReturn]{
@@ -510,9 +426,8 @@ func (s *LedgerStub) Get(ctx context.Context, id string) (built.Account, error) 
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *LedgerFindStub) invoke(ctx context.Context, id string) func() LedgerFindReturn {
 	if s.fn == nil {
 		return nil
@@ -523,12 +438,8 @@ func (s *LedgerFindStub) invoke(ctx context.Context, id string) func() LedgerFin
 	}
 }
 
-// Find records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the default results — is [stub.Answer]'s to decide, so every generated
-// double resolves a call the same way and the ordering is tested once
-// rather than restated per method.
+// Find records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) Find(ctx context.Context, id string) (*built.Account, error) {
 	call := LedgerFindCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnFind.MethodStub, &call, stub.Arms[LedgerFindCall, LedgerFindReturn]{
@@ -547,9 +458,8 @@ func (s *LedgerStub) Find(ctx context.Context, id string) (*built.Account, error
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *LedgerLookupStub) invoke(id string) func() LedgerLookupReturn {
 	if s.fn == nil {
 		return nil
@@ -560,12 +470,8 @@ func (s *LedgerLookupStub) invoke(id string) func() LedgerLookupReturn {
 	}
 }
 
-// Lookup records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the default results — is [stub.Answer]'s to decide, so every generated
-// double resolves a call the same way and the ordering is tested once
-// rather than restated per method.
+// Lookup records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) Lookup(id string) (built.Account, bool) {
 	call := LedgerLookupCall{ID: id}
 	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[LedgerLookupCall, LedgerLookupReturn]{
@@ -583,9 +489,8 @@ func (s *LedgerStub) Lookup(id string) (built.Account, bool) {
 	return r.Result0, r.Result1
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *LedgerListStub) invoke(ctx context.Context) func() LedgerListReturn {
 	if s.fn == nil {
 		return nil
@@ -596,12 +501,8 @@ func (s *LedgerListStub) invoke(ctx context.Context) func() LedgerListReturn {
 	}
 }
 
-// List records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the default results — is [stub.Answer]'s to decide, so every generated
-// double resolves a call the same way and the ordering is tested once
-// rather than restated per method.
+// List records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) List(ctx context.Context) (built.Page[built.Account], error) {
 	call := LedgerListCall{Ctx: ctx}
 	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[LedgerListCall, LedgerListReturn]{
@@ -620,9 +521,8 @@ func (s *LedgerStub) List(ctx context.Context) (built.Page[built.Account], error
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *LedgerNoteStub) invoke(id string) func() LedgerNoteReturn {
 	if s.fn == nil {
 		return nil
@@ -633,12 +533,8 @@ func (s *LedgerNoteStub) invoke(id string) func() LedgerNoteReturn {
 	}
 }
 
-// Note records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Note records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *LedgerStub) Note(id string) built.Note {
 	call := LedgerNoteCall{ID: id}
 	r := stub.Answer(s.OnNote.MethodStub, &call, stub.Arms[LedgerNoteCall, LedgerNoteReturn]{
@@ -651,9 +547,8 @@ func (s *LedgerStub) Note(id string) built.Note {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *LedgerBillStub) invoke(id string) func() LedgerBillReturn {
 	if s.fn == nil {
 		return nil
@@ -664,12 +559,8 @@ func (s *LedgerBillStub) invoke(id string) func() LedgerBillReturn {
 	}
 }
 
-// Bill records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Bill records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *LedgerStub) Bill(id string) billing.Invoice {
 	call := LedgerBillCall{ID: id}
 	r := stub.Answer(s.OnBill.MethodStub, &call, stub.Arms[LedgerBillCall, LedgerBillReturn]{
@@ -682,4 +573,4 @@ func (s *LedgerStub) Bill(id string) billing.Invoice {
 	return r.Result
 }
 
-// dokimi:provenance sha256:948d3416b0ce70dff83c6b1880c552ec44c006a7c26f22278d881c375d2e529a
+// dokimi:provenance sha256:4e439d0618df65324fc9f32ea4499b06d6d7fed2c821da5c902b9cbad15280cc

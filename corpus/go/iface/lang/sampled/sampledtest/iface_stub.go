@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled"
+	"go.dokimi.dev/stub"
 )
 
-// LabellerApplyCall records one invocation of Labeller.Apply.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LabellerApplyCall records one call of Labeller.Apply.
 type LabellerApplyCall struct {
 	Ctx   context.Context
 	Tag   sampled.Tag
@@ -25,14 +22,8 @@ type LabellerApplyCall struct {
 	Err   error
 }
 
-// --- Per-method configuration ---
-
-// LabellerApplyStub controls how the double answers Apply and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LabellerApplyStub configures Apply and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type LabellerApplyStub struct {
 	*stub.MethodStub[LabellerApplyCall]
 
@@ -40,110 +31,104 @@ type LabellerApplyStub struct {
 	fallback *LabellerApplyReturn
 }
 
-// LabellerApplyReturn holds the fixed answer configured through Returns.
+// LabellerApplyReturn contains the fixed results of Apply.
 type LabellerApplyReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Apply. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Apply. A function and an
+// injected fault take precedence over them.
 func (s *LabellerApplyStub) Returns(err error) *LabellerApplyStub {
 	s.fallback = &LabellerApplyReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Apply, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Apply from its
+// arguments. An injected fault takes precedence over it.
 func (s *LabellerApplyStub) Func(fn func(context.Context, sampled.Tag, sampled.Level) error) *LabellerApplyStub {
 	s.fn = fn
 	return s
 }
 
-// --- LabellerStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// LabellerStubOption configures a [LabellerStub] at construction time.
+// LabellerStubOption configures a [LabellerStub] at its construction.
 type LabellerStubOption func(*LabellerStub)
 
-// LabellerStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// LabellerStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func LabellerStubStrict() LabellerStubOption {
 	return func(s *LabellerStub) { s.strict = true }
 }
 
-// LabellerStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// LabellerStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func LabellerStubDelegateTo(impl sampled.Labeller) LabellerStubOption {
 	return func(s *LabellerStub) {
 		s.OnApply.Func(impl.Apply)
 	}
 }
 
-// LabellerStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// LabellerStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func LabellerStubWithClock(clk assert.Clock) LabellerStubOption {
 	return func(s *LabellerStub) { s.group.SetClock(clk) }
 }
 
-// LabellerStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// LabellerStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func LabellerStubWithRandSource(src rand.Source) LabellerStubOption {
 	return func(s *LabellerStub) { s.group.SetRandSource(src) }
 }
 
-// LabellerStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// LabellerStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func LabellerStubBenchMode() LabellerStubOption {
 	return func(s *LabellerStub) { s.group.BenchMode() }
 }
 
-// LabellerStubWithLatency makes every method sleep d before answering, for
-// a test standing in for a slow dependency rather than one slow method.
-// Pair it with LabellerStubWithClock, or d elapses in wall time.
+// LabellerStubWithLatency returns the option that makes every method sleep
+// d before it returns. Without LabellerStubWithClock, d passes in real
+// time.
 func LabellerStubWithLatency(d time.Duration) LabellerStubOption {
 	return func(s *LabellerStub) { s.group.SetLatency(d) }
 }
 
-// LabellerStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// LabellerStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func LabellerStubFailing(err error) LabellerStubOption {
 	return func(s *LabellerStub) {
 		s.OnApply.Faults(err, 1)
 	}
 }
 
-// WithLabellerApply sets Apply's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithLabellerApply returns the option that sets the function of Apply.
 func WithLabellerApply(fn func(context.Context, sampled.Tag, sampled.Level) error) LabellerStubOption {
 	return func(s *LabellerStub) { s.OnApply.Func(fn) }
 }
 
-// LabellerStub is a recording test double for Labeller.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// LabellerStub is a recording test double of Labeller. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type LabellerStub struct {
 	OnApply *LabellerApplyStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that LabellerStub satisfies Labeller.
+// The compiler checks that LabellerStub implements Labeller.
 var _ sampled.Labeller = (*LabellerStub)(nil)
 
-// NewLabellerStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewLabellerStub returns a double of Labeller that reports its failures
+// to tb and applies opts. The double checks the expected counts of calls
+// at the end of the test. With a nil tb, the double reports nothing.
 func NewLabellerStub(tb assert.TB, opts ...LabellerStubOption) *LabellerStub {
 	s := &LabellerStub{
 		OnApply: &LabellerApplyStub{MethodStub: stub.NewMethodStub[LabellerApplyCall](tb, "Labeller.Apply")},
@@ -161,11 +146,8 @@ func NewLabellerStub(tb assert.TB, opts ...LabellerStubOption) *LabellerStub {
 	return s
 }
 
-// NewLabellerStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewLabellerStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewLabellerStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...LabellerStubOption) *LabellerStub {
 	return NewLabellerStub(tb, append([]LabellerStubOption{
 		LabellerStubWithClock(clk),
@@ -173,27 +155,25 @@ func NewLabellerStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opt
 	}, opts...)...)
 }
 
-// NewLabellerStubFailing returns a double whose every fallible method
-// answers err — [LabellerStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewLabellerStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewLabellerStubFailing(tb assert.TB, err error, opts ...LabellerStubOption) *LabellerStub {
 	return NewLabellerStub(tb, append([]LabellerStubOption{LabellerStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LabellerStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
-func (s *LabellerApplyStub) invoke(ctx context.Context, tag sampled.Tag, level sampled.Level) func() LabellerApplyReturn {
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *LabellerApplyStub) invoke(
+	ctx context.Context,
+	tag sampled.Tag,
+	level sampled.Level,
+) func() LabellerApplyReturn {
 	if s.fn == nil {
 		return nil
 	}
@@ -203,12 +183,8 @@ func (s *LabellerApplyStub) invoke(ctx context.Context, tag sampled.Tag, level s
 	}
 }
 
-// Apply records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Apply records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *LabellerStub) Apply(ctx context.Context, tag sampled.Tag, level sampled.Level) error {
 	call := LabellerApplyCall{Ctx: ctx, Tag: tag, Level: level}
 	r := stub.Answer(s.OnApply.MethodStub, &call, stub.Arms[LabellerApplyCall, LabellerApplyReturn]{
@@ -222,4 +198,4 @@ func (s *LabellerStub) Apply(ctx context.Context, tag sampled.Tag, level sampled
 	return r.Err
 }
 
-// dokimi:provenance sha256:db02c14508232a319cf6ab745c516b87bdd5fe87e3d89dddcf315cbf9bf8bbca
+// dokimi:provenance sha256:19d792656d5dc1df6f8745727f201ab2a2a0976db273cc7b0aa5d4c126609c90

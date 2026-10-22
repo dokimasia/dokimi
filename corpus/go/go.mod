@@ -6,6 +6,8 @@ module go.dokimi.dev/dokimi/corpus/go
 go 1.27.2
 
 require (
-	go.dokimi.dev/assert v0.3.1
-	go.dokimi.dev/dokimi-go v0.0.0-20261021095647-81a0a90671f5
+	go.dokimi.dev/assert v0.5.0
+	go.dokimi.dev/conform v0.0.0-20261021123828-15f33fa082a9
+	go.dokimi.dev/fault v0.0.0-20261021123828-15f33fa082a9
+	go.dokimi.dev/stub v0.0.0-20261021123828-15f33fa082a9
 )

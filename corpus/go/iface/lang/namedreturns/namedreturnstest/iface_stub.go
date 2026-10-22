@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns"
+	"go.dokimi.dev/stub"
 )
 
-// ServiceNamedCall records one invocation of Service.Named.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ServiceNamedCall records one call of Service.Named.
 type ServiceNamedCall struct {
 	Ctx  context.Context
 	ID   string
@@ -25,10 +22,7 @@ type ServiceNamedCall struct {
 	Err  error
 }
 
-// ServiceUnnamedCall records one invocation of Service.Unnamed.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ServiceUnnamedCall records one call of Service.Unnamed.
 type ServiceUnnamedCall struct {
 	Ctx    context.Context
 	ID     string
@@ -36,11 +30,7 @@ type ServiceUnnamedCall struct {
 	Err    error
 }
 
-// ServicePartiallyNamedCall records one invocation of
-// Service.PartiallyNamed.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ServicePartiallyNamedCall records one call of Service.PartiallyNamed.
 type ServicePartiallyNamedCall struct {
 	Ctx  context.Context
 	ID   string
@@ -48,14 +38,8 @@ type ServicePartiallyNamedCall struct {
 	Err  error
 }
 
-// --- Per-method configuration ---
-
-// ServiceNamedStub controls how the double answers Named and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ServiceNamedStub configures Named and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type ServiceNamedStub struct {
 	*stub.MethodStub[ServiceNamedCall]
 
@@ -63,32 +47,29 @@ type ServiceNamedStub struct {
 	fallback *ServiceNamedReturn
 }
 
-// ServiceNamedReturn holds the fixed answer configured through Returns.
+// ServiceNamedReturn contains the fixed results of Named.
 type ServiceNamedReturn struct {
 	Item string
 	Err  error
 }
 
-// Returns pins a fixed result for every call to Named. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Named. A function and an
+// injected fault take precedence over them.
 func (s *ServiceNamedStub) Returns(item string, err error) *ServiceNamedStub {
 	s.fallback = &ServiceNamedReturn{Item: item, Err: err}
 	return s
 }
 
-// Func supplies a body for Named, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Named from its
+// arguments. An injected fault takes precedence over it.
 func (s *ServiceNamedStub) Func(fn func(context.Context, string) (string, error)) *ServiceNamedStub {
 	s.fn = fn
 	return s
 }
 
-// ServiceUnnamedStub controls how the double answers Unnamed and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ServiceUnnamedStub configures Unnamed and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type ServiceUnnamedStub struct {
 	*stub.MethodStub[ServiceUnnamedCall]
 
@@ -96,32 +77,29 @@ type ServiceUnnamedStub struct {
 	fallback *ServiceUnnamedReturn
 }
 
-// ServiceUnnamedReturn holds the fixed answer configured through Returns.
+// ServiceUnnamedReturn contains the fixed results of Unnamed.
 type ServiceUnnamedReturn struct {
 	Result string
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Unnamed. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Unnamed. A function and an
+// injected fault take precedence over them.
 func (s *ServiceUnnamedStub) Returns(result string, err error) *ServiceUnnamedStub {
 	s.fallback = &ServiceUnnamedReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Unnamed, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Unnamed from its
+// arguments. An injected fault takes precedence over it.
 func (s *ServiceUnnamedStub) Func(fn func(context.Context, string) (string, error)) *ServiceUnnamedStub {
 	s.fn = fn
 	return s
 }
 
-// ServicePartiallyNamedStub controls how the double answers PartiallyNamed
-// and records what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ServicePartiallyNamedStub configures PartiallyNamed and records its
+// calls. A fault armed through it takes precedence over the function and
+// the fixed results.
 type ServicePartiallyNamedStub struct {
 	*stub.MethodStub[ServicePartiallyNamedCall]
 
@@ -129,43 +107,42 @@ type ServicePartiallyNamedStub struct {
 	fallback *ServicePartiallyNamedReturn
 }
 
-// ServicePartiallyNamedReturn holds the fixed answer configured through
-// Returns.
+// ServicePartiallyNamedReturn contains the fixed results of
+// PartiallyNamed.
 type ServicePartiallyNamedReturn struct {
 	Item string
 	Err  error
 }
 
-// Returns pins a fixed result for every call to PartiallyNamed. A Func
-// override takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of PartiallyNamed. A function and
+// an injected fault take precedence over them.
 func (s *ServicePartiallyNamedStub) Returns(item string, err error) *ServicePartiallyNamedStub {
 	s.fallback = &ServicePartiallyNamedReturn{Item: item, Err: err}
 	return s
 }
 
-// Func supplies a body for PartiallyNamed, for when the answer depends on
-// the arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of PartiallyNamed from
+// its arguments. An injected fault takes precedence over it.
 func (s *ServicePartiallyNamedStub) Func(fn func(context.Context, string) (string, error)) *ServicePartiallyNamedStub {
 	s.fn = fn
 	return s
 }
 
-// --- ServiceStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ServiceStubOption configures a [ServiceStub] at construction time.
+// ServiceStubOption configures a [ServiceStub] at its construction.
 type ServiceStubOption func(*ServiceStub)
 
-// ServiceStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// ServiceStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func ServiceStubStrict() ServiceStubOption {
 	return func(s *ServiceStub) { s.strict = true }
 }
 
-// ServiceStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// ServiceStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func ServiceStubDelegateTo(impl namedreturns.Service) ServiceStubOption {
 	return func(s *ServiceStub) {
 		s.OnNamed.Func(impl.Named)
@@ -174,35 +151,36 @@ func ServiceStubDelegateTo(impl namedreturns.Service) ServiceStubOption {
 	}
 }
 
-// ServiceStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// ServiceStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func ServiceStubWithClock(clk assert.Clock) ServiceStubOption {
 	return func(s *ServiceStub) { s.group.SetClock(clk) }
 }
 
-// ServiceStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ServiceStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func ServiceStubWithRandSource(src rand.Source) ServiceStubOption {
 	return func(s *ServiceStub) { s.group.SetRandSource(src) }
 }
 
-// ServiceStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// ServiceStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func ServiceStubBenchMode() ServiceStubOption {
 	return func(s *ServiceStub) { s.group.BenchMode() }
 }
 
-// ServiceStubWithLatency makes every method sleep d before answering, for
-// a test standing in for a slow dependency rather than one slow method.
-// Pair it with ServiceStubWithClock, or d elapses in wall time.
+// ServiceStubWithLatency returns the option that makes every method sleep
+// d before it returns. Without ServiceStubWithClock, d passes in real
+// time.
 func ServiceStubWithLatency(d time.Duration) ServiceStubOption {
 	return func(s *ServiceStub) { s.group.SetLatency(d) }
 }
 
-// ServiceStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// ServiceStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func ServiceStubFailing(err error) ServiceStubOption {
 	return func(s *ServiceStub) {
 		s.OnNamed.Faults(err, 1)
@@ -211,55 +189,50 @@ func ServiceStubFailing(err error) ServiceStubOption {
 	}
 }
 
-// WithServiceNamed sets Named's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithServiceNamed returns the option that sets the function of Named.
 func WithServiceNamed(fn func(context.Context, string) (string, error)) ServiceStubOption {
 	return func(s *ServiceStub) { s.OnNamed.Func(fn) }
 }
 
-// WithServiceUnnamed sets Unnamed's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithServiceUnnamed returns the option that sets the function of Unnamed.
 func WithServiceUnnamed(fn func(context.Context, string) (string, error)) ServiceStubOption {
 	return func(s *ServiceStub) { s.OnUnnamed.Func(fn) }
 }
 
-// WithServicePartiallyNamed sets PartiallyNamed's body at construction
-// time, for the common case of configuring one method and taking the
-// defaults for the rest.
+// WithServicePartiallyNamed returns the option that sets the function of
+// PartiallyNamed.
 func WithServicePartiallyNamed(fn func(context.Context, string) (string, error)) ServiceStubOption {
 	return func(s *ServiceStub) { s.OnPartiallyNamed.Func(fn) }
 }
 
-// ServiceStub is a recording test double for Service.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ServiceStub is a recording test double of Service. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type ServiceStub struct {
 	OnNamed          *ServiceNamedStub
 	OnUnnamed        *ServiceUnnamedStub
 	OnPartiallyNamed *ServicePartiallyNamedStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that ServiceStub satisfies Service.
+// The compiler checks that ServiceStub implements Service.
 var _ namedreturns.Service = (*ServiceStub)(nil)
 
-// NewServiceStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewServiceStub returns a double of Service that reports its failures to
+// tb and applies opts. The double checks the expected counts of calls at
+// the end of the test. With a nil tb, the double reports nothing.
 func NewServiceStub(tb assert.TB, opts ...ServiceStubOption) *ServiceStub {
 	s := &ServiceStub{
-		OnNamed:          &ServiceNamedStub{MethodStub: stub.NewMethodStub[ServiceNamedCall](tb, "Service.Named")},
-		OnUnnamed:        &ServiceUnnamedStub{MethodStub: stub.NewMethodStub[ServiceUnnamedCall](tb, "Service.Unnamed")},
-		OnPartiallyNamed: &ServicePartiallyNamedStub{MethodStub: stub.NewMethodStub[ServicePartiallyNamedCall](tb, "Service.PartiallyNamed")},
+		OnNamed: &ServiceNamedStub{MethodStub: stub.NewMethodStub[ServiceNamedCall](tb, "Service.Named")},
+		OnUnnamed: &ServiceUnnamedStub{
+			MethodStub: stub.NewMethodStub[ServiceUnnamedCall](tb, "Service.Unnamed"),
+		},
+		OnPartiallyNamed: &ServicePartiallyNamedStub{
+			MethodStub: stub.NewMethodStub[ServicePartiallyNamedCall](tb, "Service.PartiallyNamed"),
+		},
 	}
 	s.group = stub.NewGroup(
 		s.OnNamed.MethodStub,
@@ -276,11 +249,8 @@ func NewServiceStub(tb assert.TB, opts ...ServiceStubOption) *ServiceStub {
 	return s
 }
 
-// NewServiceStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewServiceStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewServiceStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ServiceStubOption) *ServiceStub {
 	return NewServiceStub(tb, append([]ServiceStubOption{
 		ServiceStubWithClock(clk),
@@ -288,26 +258,20 @@ func NewServiceStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts
 	}, opts...)...)
 }
 
-// NewServiceStubFailing returns a double whose every fallible method
-// answers err — [ServiceStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewServiceStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewServiceStubFailing(tb assert.TB, err error, opts ...ServiceStubOption) *ServiceStub {
 	return NewServiceStub(tb, append([]ServiceStubOption{ServiceStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ServiceStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ServiceNamedStub) invoke(ctx context.Context, id string) func() ServiceNamedReturn {
 	if s.fn == nil {
 		return nil
@@ -318,12 +282,8 @@ func (s *ServiceNamedStub) invoke(ctx context.Context, id string) func() Service
 	}
 }
 
-// Named records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Named records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ServiceStub) Named(ctx context.Context, id string) (item string, err error) {
 	call := ServiceNamedCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnNamed.MethodStub, &call, stub.Arms[ServiceNamedCall, ServiceNamedReturn]{
@@ -338,9 +298,8 @@ func (s *ServiceStub) Named(ctx context.Context, id string) (item string, err er
 	return r.Item, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ServiceUnnamedStub) invoke(ctx context.Context, id string) func() ServiceUnnamedReturn {
 	if s.fn == nil {
 		return nil
@@ -351,12 +310,8 @@ func (s *ServiceUnnamedStub) invoke(ctx context.Context, id string) func() Servi
 	}
 }
 
-// Unnamed records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Unnamed records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *ServiceStub) Unnamed(ctx context.Context, id string) (string, error) {
 	call := ServiceUnnamedCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnUnnamed.MethodStub, &call, stub.Arms[ServiceUnnamedCall, ServiceUnnamedReturn]{
@@ -371,9 +326,8 @@ func (s *ServiceStub) Unnamed(ctx context.Context, id string) (string, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ServicePartiallyNamedStub) invoke(ctx context.Context, id string) func() ServicePartiallyNamedReturn {
 	if s.fn == nil {
 		return nil
@@ -384,24 +338,24 @@ func (s *ServicePartiallyNamedStub) invoke(ctx context.Context, id string) func(
 	}
 }
 
-// PartiallyNamed records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// PartiallyNamed records the call. An armed fault comes first, then the
+// function of Func, then the results of Returns, and then the zero values.
 func (s *ServiceStub) PartiallyNamed(ctx context.Context, id string) (string, error) {
 	call := ServicePartiallyNamedCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnPartiallyNamed.MethodStub, &call, stub.Arms[ServicePartiallyNamedCall, ServicePartiallyNamedReturn]{
-		Invoke:   s.OnPartiallyNamed.invoke(ctx, id),
-		Fallback: s.OnPartiallyNamed.fallback,
-		Fault:    func(err error) ServicePartiallyNamedReturn { return ServicePartiallyNamedReturn{Err: err} },
-		Stamp: func(c *ServicePartiallyNamedCall, r ServicePartiallyNamedReturn) {
-			c.Item = r.Item
-			c.Err = r.Err
+	r := stub.Answer(
+		s.OnPartiallyNamed.MethodStub,
+		&call,
+		stub.Arms[ServicePartiallyNamedCall, ServicePartiallyNamedReturn]{
+			Invoke:   s.OnPartiallyNamed.invoke(ctx, id),
+			Fallback: s.OnPartiallyNamed.fallback,
+			Fault:    func(err error) ServicePartiallyNamedReturn { return ServicePartiallyNamedReturn{Err: err} },
+			Stamp: func(c *ServicePartiallyNamedCall, r ServicePartiallyNamedReturn) {
+				c.Item = r.Item
+				c.Err = r.Err
+			},
 		},
-	})
+	)
 	return r.Item, r.Err
 }
 
-// dokimi:provenance sha256:89b701e82ccda8af1ba6a1678f5a1b0b6a7ba64d82c22e31e79d4086d3356c5e
+// dokimi:provenance sha256:2b84cd24a4df1d6ea4b61e21e71f1b94699840e81ca3c14d5d77c80d4391fbd2

@@ -7,7 +7,7 @@ package ifabsenttest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	ifabsent "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-absent"
 )
 
@@ -40,33 +40,22 @@ func ContractSuite() conform.Suite[ifabsent.Contract] {
 	return conform.Suite[ifabsent.Contract]{Declaration: "Contract"}
 }
 
-// RunContract applies the checks of Contract, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunContract[T ifabsent.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
+// RunContractSuite applies the checks of Contract, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunContractSuite[T ifabsent.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(*ContractHandle) ifabsent.Contract { return newSubject() }, opts...)
+	RunContractSuiteFromHandle(t, func(*ContractHandle) T { return newSubject() }, opts...)
 }
 
-// RunContractOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunContractOn[T ifabsent.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+// RunContractSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunContractSuiteFromHandle[T ifabsent.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(h *ContractHandle) ifabsent.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), func(h *ContractHandle) ifabsent.Contract { return newSubject(h) }, opts...)
 }
 
-// ControlContract applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlContract[T ifabsent.Contract](t *testing.T, newControl func() T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(*ContractHandle) ifabsent.Contract { return newControl() }, opts...)
-}
-
-// ControlContractOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlContractOn[T ifabsent.Contract](t *testing.T, newControl func(h *ContractHandle) T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(h *ContractHandle) ifabsent.Contract { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:322a311ba69f370febd1890f76cda02f94e24b2407b89f144dde5e1883f44d0b
+// dokimi:provenance sha256:c66b635382dad8fde42a9ed2913e65c9168090ec97953406979949e8f7d6f366

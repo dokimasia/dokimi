@@ -12,28 +12,49 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge/crdtmergetest"
+	"go.dokimi.dev/stub"
 )
 
-// replicaStubItemsSubject binds Items into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func replicaStubItemsSubject(tb assert.TB) stub.Subject[crdtmergetest.ReplicaItemsCall, crdtmergetest.ReplicaItemsReturn] {
+// replicaStubItemsArgs returns the samples of the arguments of Items.
+func replicaStubItemsArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// replicaStubItems calls Items of s with the samples of its arguments.
+func replicaStubItems(tb assert.TB, s *crdtmergetest.ReplicaStub) ([]string, error) {
+	tb.Helper()
+	a0 := replicaStubItemsArgs(tb)
+	return s.Items(a0)
+}
+
+// replicaStubItemsPins returns the samples of the results of Items, with a
+// new error as its error result.
+func replicaStubItemsPins() ([]string, error) {
+	var want0 []string
+	want1 := errors.New("Items-returns")
+	want0 = []string{"Items-a"}
+	return want0, want1
+}
+
+// replicaStubItemsSubject returns the subject of [stub.Behaviour] for
+// Items. The subject calls a new double that reports to tb.
+func replicaStubItemsSubject(
+	tb assert.TB,
+) stub.Subject[crdtmergetest.ReplicaItemsCall, crdtmergetest.ReplicaItemsReturn] {
 	tb.Helper()
 	s := crdtmergetest.NewReplicaStub(tb)
 	return stub.Subject[crdtmergetest.ReplicaItemsCall, crdtmergetest.ReplicaItemsReturn]{
 		Stub: s.OnItems.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Items(a0)
+			_, _ = replicaStubItems(tb, s)
 		},
 		Result: func() crdtmergetest.ReplicaItemsReturn {
-			var a0 context.Context
-			got0, got1 := s.Items(a0)
+			got0, got1 := replicaStubItems(tb, s)
 			return crdtmergetest.ReplicaItemsReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -45,184 +66,334 @@ func replicaStubItemsSubject(tb assert.TB) stub.Subject[crdtmergetest.ReplicaIte
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Items(a0)
+			_, r1 := replicaStubItems(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestReplicaStubItems pins how Items answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestReplicaStubItems(t *testing.T) {
-	t.Parallel()
+// replicaStubInstance is the instance of a crdtmergetest.ReplicaStub that
+// the checks of the constructors and the options drive.
+type replicaStubInstance = stub.Instance[crdtmergetest.ReplicaItemsCall]
 
-	stub.Behaviour(t, "Items", replicaStubItemsSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewReplicaStub(t)
-		var want0 []string
-		var want1 error
-		want0 = []string{"Items-a"}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "Items must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewReplicaStub(t)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		got := s.OnItems.AssertCalledOnce(t, "Items must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewReplicaStub(t)
-		var seen []crdtmergetest.ReplicaItemsCall
-		s.OnItems.OnRecord(func(c crdtmergetest.ReplicaItemsCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		_, _ = s.Items(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Items call")
-	})
-
-	t.Run("wires WithReplicaItems at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := crdtmergetest.NewReplicaStub(t, crdtmergetest.WithReplicaItems(func(_ context.Context) ([]string, error) {
-			called = true
-			var z0 []string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		assert.True(t, called, "WithReplicaItems must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Items-failing")
-		s := crdtmergetest.NewReplicaStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewReplicaStub(t)
-		var want0 []string
-		var want1 error
-		want0 = []string{"Items-a"}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		s.ResetCalls()
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// replicaStubDouble describes how to build a ReplicaStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Items stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func replicaStubDouble() stub.Double[crdtmergetest.ReplicaItemsCall] {
-	instance := func(s *crdtmergetest.ReplicaStub) stub.Instance[crdtmergetest.ReplicaItemsCall] {
-		return stub.Instance[crdtmergetest.ReplicaItemsCall]{
-			Stub: s.OnItems.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_, _ = s.Items(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[crdtmergetest.ReplicaItemsCall]{
-		New: func(tb assert.TB) stub.Instance[crdtmergetest.ReplicaItemsCall] {
-			return instance(crdtmergetest.NewReplicaStub(tb))
+// replicaStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Items alone.
+func replicaStubInstanceOf(tb assert.TB, s *crdtmergetest.ReplicaStub) replicaStubInstance {
+	tb.Helper()
+	return replicaStubInstance{
+		Stub: s.OnItems.MethodStub,
+		Call: func() {
+			_, _ = replicaStubItems(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[crdtmergetest.ReplicaItemsCall] {
-			return instance(crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[crdtmergetest.ReplicaItemsCall] {
-			return instance(crdtmergetest.NewReplicaStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[crdtmergetest.ReplicaItemsCall] {
-			return instance(crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[crdtmergetest.ReplicaItemsCall] {
-			return instance(crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[crdtmergetest.ReplicaItemsCall] {
-			return instance(crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestReplicaStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestReplicaStubOptions(t *testing.T) {
+// TestReplicaStub checks the methods, the constructors and the options of
+// the double ReplicaStub.
+func TestReplicaStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, replicaStubDouble())
+	t.Run("Items", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Items", replicaStubItemsSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewReplicaStub(t)
+			_, _ = replicaStubItems(t, s)
+			got := s.OnItems.AssertCalledOnce(t, "Items records the call")
+			a0 := replicaStubItemsArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewReplicaStub(t)
+			var seen []crdtmergetest.ReplicaItemsCall
+			s.OnItems.OnRecord(func(c crdtmergetest.ReplicaItemsCall) { seen = append(seen, c) })
+			_, _ = replicaStubItems(t, s)
+			_, _ = replicaStubItems(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Items")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) replicaStubInstance {
+			return replicaStubInstanceOf(tb, crdtmergetest.NewReplicaStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Items", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewReplicaStub(t)
+			_, _ = replicaStubItems(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnItems.CallCount(), 0, "ResetCalls clears the calls of Items")
+		})
+
+		t.Run("keeps the results of Returns of Items", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewReplicaStub(t)
+			want0, want1 := replicaStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := replicaStubItems(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Items")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Items")
+		})
+	})
+
+	t.Run("NewReplicaStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) replicaStubInstance {
+			return replicaStubInstanceOf(tb, crdtmergetest.NewReplicaStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewReplicaStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := crdtmergetest.NewReplicaStubFailing(t, want)
+			_, r1 := replicaStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of NewReplicaStubFailing")
+		})
+	})
+
+	t.Run("ReplicaStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) replicaStubInstance {
+			return replicaStubInstanceOf(tb, crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubStrict()))
+		})
+	})
+
+	t.Run("ReplicaStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Items to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := crdtmergetest.NewReplicaStub(t)
+			s := crdtmergetest.NewReplicaStub(t, crdtmergetest.ReplicaStubDelegateTo(inner))
+			_, _ = replicaStubItems(t, s)
+			inner.OnItems.AssertCalledOnce(t, "Items calls the implementation")
+		})
+
+		t.Run("fails Items with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-delegate")
+			inner := crdtmergetest.NewReplicaStub(t)
+			inner.OnItems.Faults(want, 1)
+			s := crdtmergetest.NewReplicaStub(t, crdtmergetest.ReplicaStubDelegateTo(inner))
+			_, r1 := replicaStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ReplicaStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) replicaStubInstance {
+			return replicaStubInstanceOf(tb, crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ReplicaStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) replicaStubInstance {
+			return replicaStubInstanceOf(
+				tb,
+				crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ReplicaStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) replicaStubInstance {
+			return replicaStubInstanceOf(tb, crdtmergetest.NewReplicaStub(tb, crdtmergetest.ReplicaStubBenchMode()))
+		})
+	})
+
+	t.Run("ReplicaStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) replicaStubInstance {
+			return replicaStubInstanceOf(
+				tb,
+				crdtmergetest.NewReplicaStub(
+					tb,
+					crdtmergetest.ReplicaStubWithClock(clk),
+					crdtmergetest.ReplicaStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ReplicaStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := crdtmergetest.NewReplicaStub(t, crdtmergetest.ReplicaStubFailing(want))
+			_, r1 := replicaStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of ReplicaStubFailing")
+		})
+	})
+
+	t.Run("WithReplicaItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Items", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := crdtmergetest.NewReplicaStub(
+				t,
+				crdtmergetest.WithReplicaItems(func(_ context.Context) ([]string, error) {
+					called = true
+					var z0 []string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = replicaStubItems(t, s)
+			assert.True(t, called, "WithReplicaItems sets the function of Items")
+		})
+	})
 }
 
-// TestReplicaStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestReplicaStubDelegateTo(t *testing.T) {
+// TestReplicaItemsStub checks the methods of ReplicaItemsStub, which
+// configures Items.
+func TestReplicaItemsStub(t *testing.T) {
 	t.Parallel()
 
-	inner := crdtmergetest.NewReplicaStub(t)
-	s := crdtmergetest.NewReplicaStub(t, crdtmergetest.ReplicaStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Items to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		inner.OnItems.AssertCalledOnce(t, "Items must reach the wrapped implementation")
+		t.Run("sets the results of each call of Items", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewReplicaStub(t)
+			want0, want1 := replicaStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			got0, got1 := replicaStubItems(t, s)
+			expect.Equal(t, got0, want0, "Items returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Items returns the error that Returns sets")
+		})
+
+		t.Run("configures Items for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := crdtmergetest.NewReplicaStub(r)
+			s.OnItems.Strict()
+			var want0 []string
+			var want1 error
+			s.OnItems.Returns(want0, want1)
+			_, _ = replicaStubItems(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Items")
+		})
 	})
 
-	t.Run("surfaces what Items answered", func(t *testing.T) {
-		want := errors.New("Items-delegate")
-		inner.OnItems.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Items to the function", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewReplicaStub(t)
+			var got0 context.Context
+			s.OnItems.Func(func(p0 context.Context) ([]string, error) {
+				got0 = p0
+				var z0 []string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = replicaStubItems(t, s)
+			a0 := replicaStubItemsArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// mixedStubMergeSubject binds Merge into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubMergeArgs returns the samples of the arguments of Merge.
+func mixedStubMergeArgs(tb assert.TB) (context.Context, crdtmerge.Replica) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 crdtmerge.Replica
+	return a0, a1
+}
+
+// mixedStubMerge calls Merge of s with the samples of its arguments.
+func mixedStubMerge(tb assert.TB, s *crdtmergetest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubMergeArgs(tb)
+	return s.Merge(a0, a1)
+}
+
+// mixedStubMergePins returns the samples of the results of Merge, with a
+// new error as its error result.
+func mixedStubMergePins() error {
+	want0 := errors.New("Merge-returns")
+	return want0
+}
+
+// mixedStubAddArgs returns the samples of the arguments of Add.
+func mixedStubAddArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Add-a"
+	return a0, a1
+}
+
+// mixedStubAdd calls Add of s with the samples of its arguments.
+func mixedStubAdd(tb assert.TB, s *crdtmergetest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubAddArgs(tb)
+	return s.Add(a0, a1)
+}
+
+// mixedStubAddPins returns the samples of the results of Add, with a new
+// error as its error result.
+func mixedStubAddPins() error {
+	want0 := errors.New("Add-returns")
+	return want0
+}
+
+// mixedStubItemsArgs returns the samples of the arguments of Items.
+func mixedStubItemsArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubItems calls Items of s with the samples of its arguments.
+func mixedStubItems(tb assert.TB, s *crdtmergetest.MixedStub) ([]string, error) {
+	tb.Helper()
+	a0 := mixedStubItemsArgs(tb)
+	return s.Items(a0)
+}
+
+// mixedStubItemsPins returns the samples of the results of Items, with a
+// new error as its error result.
+func mixedStubItemsPins() ([]string, error) {
+	var want0 []string
+	want1 := errors.New("Items-returns")
+	want0 = []string{"Items-a"}
+	return want0, want1
+}
+
+// mixedStubMergeSubject returns the subject of [stub.Behaviour] for Merge.
+// The subject calls a new double that reports to tb.
 func mixedStubMergeSubject(tb assert.TB) stub.Subject[crdtmergetest.MixedMergeCall, crdtmergetest.MixedMergeReturn] {
 	tb.Helper()
 	s := crdtmergetest.NewMixedStub(tb)
 	return stub.Subject[crdtmergetest.MixedMergeCall, crdtmergetest.MixedMergeReturn]{
 		Stub: s.OnMerge.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 crdtmerge.Replica
-			_ = s.Merge(a0, a1)
+			_ = mixedStubMerge(tb, s)
 		},
 		Result: func() crdtmergetest.MixedMergeReturn {
-			var a0 context.Context
-			var a1 crdtmerge.Replica
-			got0 := s.Merge(a0, a1)
+			got0 := mixedStubMerge(tb, s)
 			return crdtmergetest.MixedMergeReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -233,108 +404,24 @@ func mixedStubMergeSubject(tb assert.TB) stub.Subject[crdtmergetest.MixedMergeCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 crdtmerge.Replica
-			r0 := s.Merge(a0, a1)
+			r0 := mixedStubMerge(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubMerge pins how Merge answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubMerge(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Merge", mixedStubMergeSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 crdtmerge.Replica
-		_ = s.Merge(a0, a1)
-		got := s.OnMerge.AssertCalledOnce(t, "Merge must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Peer, a1, "the recorded call carries Peer")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var seen []crdtmergetest.MixedMergeCall
-		s.OnMerge.OnRecord(func(c crdtmergetest.MixedMergeCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 crdtmerge.Replica
-		_ = s.Merge(a0, a1)
-		_ = s.Merge(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Merge call")
-	})
-
-	t.Run("wires WithMixedMerge at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := crdtmergetest.NewMixedStub(t, crdtmergetest.WithMixedMerge(func(_ context.Context, _ crdtmerge.Replica) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 crdtmerge.Replica
-		_ = s.Merge(a0, a1)
-		assert.True(t, called, "WithMixedMerge must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Merge-failing")
-		s := crdtmergetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 crdtmerge.Replica
-		r0 := s.Merge(a0, a1)
-		assert.ErrorIs(t, r0, want, "Merge must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var want0 error
-		s.OnMerge.Returns(want0)
-		var a0 context.Context
-		var a1 crdtmerge.Replica
-		_ = s.Merge(a0, a1)
-		s.ResetCalls()
-		_ = s.Merge(a0, a1)
-		s.OnMerge.AssertCalledOnce(t, "Merge must record the call that followed the reset")
-	})
-}
-
-// mixedStubAddSubject binds Add into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubAddSubject returns the subject of [stub.Behaviour] for Add. The
+// subject calls a new double that reports to tb.
 func mixedStubAddSubject(tb assert.TB) stub.Subject[crdtmergetest.MixedAddCall, crdtmergetest.MixedAddReturn] {
 	tb.Helper()
 	s := crdtmergetest.NewMixedStub(tb)
 	return stub.Subject[crdtmergetest.MixedAddCall, crdtmergetest.MixedAddReturn]{
 		Stub: s.OnAdd.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Add-a"
-			_ = s.Add(a0, a1)
+			_ = mixedStubAdd(tb, s)
 		},
 		Result: func() crdtmergetest.MixedAddReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Add-a"
-			got0 := s.Add(a0, a1)
+			got0 := mixedStubAdd(tb, s)
 			return crdtmergetest.MixedAddReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -345,110 +432,24 @@ func mixedStubAddSubject(tb assert.TB) stub.Subject[crdtmergetest.MixedAddCall, 
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Add-a"
-			r0 := s.Add(a0, a1)
+			r0 := mixedStubAdd(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubAdd pins how Add answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubAdd(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Add", mixedStubAddSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Add-a"
-		_ = s.Add(a0, a1)
-		got := s.OnAdd.AssertCalledOnce(t, "Add must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Item, a1, "the recorded call carries Item")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var seen []crdtmergetest.MixedAddCall
-		s.OnAdd.OnRecord(func(c crdtmergetest.MixedAddCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Add-a"
-		_ = s.Add(a0, a1)
-		_ = s.Add(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Add call")
-	})
-
-	t.Run("wires WithMixedAdd at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := crdtmergetest.NewMixedStub(t, crdtmergetest.WithMixedAdd(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Add-a"
-		_ = s.Add(a0, a1)
-		assert.True(t, called, "WithMixedAdd must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Add-failing")
-		s := crdtmergetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Add-a"
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var want0 error
-		s.OnAdd.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Add-a"
-		_ = s.Add(a0, a1)
-		s.ResetCalls()
-		_ = s.Add(a0, a1)
-		s.OnAdd.AssertCalledOnce(t, "Add must record the call that followed the reset")
-	})
-}
-
-// mixedStubItemsSubject binds Items into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubItemsSubject returns the subject of [stub.Behaviour] for Items.
+// The subject calls a new double that reports to tb.
 func mixedStubItemsSubject(tb assert.TB) stub.Subject[crdtmergetest.MixedItemsCall, crdtmergetest.MixedItemsReturn] {
 	tb.Helper()
 	s := crdtmergetest.NewMixedStub(tb)
 	return stub.Subject[crdtmergetest.MixedItemsCall, crdtmergetest.MixedItemsReturn]{
 		Stub: s.OnItems.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Items(a0)
+			_, _ = mixedStubItems(tb, s)
 		},
 		Result: func() crdtmergetest.MixedItemsReturn {
-			var a0 context.Context
-			got0, got1 := s.Items(a0)
+			got0, got1 := mixedStubItems(tb, s)
 			return crdtmergetest.MixedItemsReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -460,198 +461,535 @@ func mixedStubItemsSubject(tb assert.TB) stub.Subject[crdtmergetest.MixedItemsCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Items(a0)
+			_, r1 := mixedStubItems(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubItems pins how Items answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubItems(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a crdtmergetest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[crdtmergetest.MixedMergeCall]
 
-	stub.Behaviour(t, "Items", mixedStubItemsSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var want0 []string
-		var want1 error
-		want0 = []string{"Items-a"}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "Items must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		got := s.OnItems.AssertCalledOnce(t, "Items must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var seen []crdtmergetest.MixedItemsCall
-		s.OnItems.OnRecord(func(c crdtmergetest.MixedItemsCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		_, _ = s.Items(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Items call")
-	})
-
-	t.Run("wires WithMixedItems at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := crdtmergetest.NewMixedStub(t, crdtmergetest.WithMixedItems(func(_ context.Context) ([]string, error) {
-			called = true
-			var z0 []string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		assert.True(t, called, "WithMixedItems must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Items-failing")
-		s := crdtmergetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := crdtmergetest.NewMixedStub(t)
-		var want0 []string
-		var want1 error
-		want0 = []string{"Items-a"}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		s.ResetCalls()
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Merge stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[crdtmergetest.MixedMergeCall] {
-	instance := func(s *crdtmergetest.MixedStub) stub.Instance[crdtmergetest.MixedMergeCall] {
-		return stub.Instance[crdtmergetest.MixedMergeCall]{
-			Stub: s.OnMerge.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 crdtmerge.Replica
-				_ = s.Merge(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[crdtmergetest.MixedMergeCall]{
-		New: func(tb assert.TB) stub.Instance[crdtmergetest.MixedMergeCall] {
-			return instance(crdtmergetest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Merge alone.
+func mixedStubInstanceOf(tb assert.TB, s *crdtmergetest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnMerge.MethodStub,
+		Call: func() {
+			_ = mixedStubMerge(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[crdtmergetest.MixedMergeCall] {
-			return instance(crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[crdtmergetest.MixedMergeCall] {
-			return instance(crdtmergetest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[crdtmergetest.MixedMergeCall] {
-			return instance(crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[crdtmergetest.MixedMergeCall] {
-			return instance(crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[crdtmergetest.MixedMergeCall] {
-			return instance(crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Merge", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Merge", mixedStubMergeSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			_ = mixedStubMerge(t, s)
+			got := s.OnMerge.AssertCalledOnce(t, "Merge records the call")
+			a0, a1 := mixedStubMergeArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Peer, a1, "the call records Peer")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			var seen []crdtmergetest.MixedMergeCall
+			s.OnMerge.OnRecord(func(c crdtmergetest.MixedMergeCall) { seen = append(seen, c) })
+			_ = mixedStubMerge(t, s)
+			_ = mixedStubMerge(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Merge")
+		})
+	})
+
+	t.Run("Add", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Add", mixedStubAddSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			_ = mixedStubAdd(t, s)
+			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
+			a0, a1 := mixedStubAddArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Item, a1, "the call records Item")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			var seen []crdtmergetest.MixedAddCall
+			s.OnAdd.OnRecord(func(c crdtmergetest.MixedAddCall) { seen = append(seen, c) })
+			_ = mixedStubAdd(t, s)
+			_ = mixedStubAdd(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
+		})
+	})
+
+	t.Run("Items", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Items", mixedStubItemsSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			_, _ = mixedStubItems(t, s)
+			got := s.OnItems.AssertCalledOnce(t, "Items records the call")
+			a0 := mixedStubItemsArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			var seen []crdtmergetest.MixedItemsCall
+			s.OnItems.OnRecord(func(c crdtmergetest.MixedItemsCall) { seen = append(seen, c) })
+			_, _ = mixedStubItems(t, s)
+			_, _ = mixedStubItems(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Items")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, crdtmergetest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Merge", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			_ = mixedStubMerge(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnMerge.CallCount(), 0, "ResetCalls clears the calls of Merge")
+		})
+
+		t.Run("keeps the results of Returns of Merge", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			want0 := mixedStubMergePins()
+			s.OnMerge.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubMerge(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Merge")
+		})
+
+		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			_ = mixedStubAdd(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
+		})
+
+		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			want0 := mixedStubAddPins()
+			s.OnAdd.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Add")
+		})
+
+		t.Run("clears the recorded calls of Items", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			_, _ = mixedStubItems(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnItems.CallCount(), 0, "ResetCalls clears the calls of Items")
+		})
+
+		t.Run("keeps the results of Returns of Items", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			want0, want1 := mixedStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubItems(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Items")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Items")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, crdtmergetest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Merge with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Merge-failing")
+			s := crdtmergetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubMerge(t, s)
+			assert.ErrorIs(t, r0, want, "Merge fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := crdtmergetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := crdtmergetest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Merge to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := crdtmergetest.NewMixedStub(t)
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubDelegateTo(inner))
+			_ = mixedStubMerge(t, s)
+			inner.OnMerge.AssertCalledOnce(t, "Merge calls the implementation")
+		})
+
+		t.Run("fails Merge with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Merge-delegate")
+			inner := crdtmergetest.NewMixedStub(t)
+			inner.OnMerge.Faults(want, 1)
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubMerge(t, s)
+			assert.ErrorIs(t, r0, want, "Merge fails with the error of the implementation")
+		})
+
+		t.Run("passes Add to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := crdtmergetest.NewMixedStub(t)
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubDelegateTo(inner))
+			_ = mixedStubAdd(t, s)
+			inner.OnAdd.AssertCalledOnce(t, "Add calls the implementation")
+		})
+
+		t.Run("fails Add with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-delegate")
+			inner := crdtmergetest.NewMixedStub(t)
+			inner.OnAdd.Faults(want, 1)
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of the implementation")
+		})
+
+		t.Run("passes Items to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := crdtmergetest.NewMixedStub(t)
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubItems(t, s)
+			inner.OnItems.AssertCalledOnce(t, "Items calls the implementation")
+		})
+
+		t.Run("fails Items with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-delegate")
+			inner := crdtmergetest.NewMixedStub(t)
+			inner.OnItems.Faults(want, 1)
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, crdtmergetest.NewMixedStub(tb, crdtmergetest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				crdtmergetest.NewMixedStub(
+					tb,
+					crdtmergetest.MixedStubWithClock(clk),
+					crdtmergetest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Merge with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Merge-failing")
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubFailing(want))
+			r0 := mixedStubMerge(t, s)
+			assert.ErrorIs(t, r0, want, "Merge fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubFailing(want))
+			r0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubFailing(want))
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedMerge", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Merge", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := crdtmergetest.NewMixedStub(
+				t,
+				crdtmergetest.WithMixedMerge(func(_ context.Context, _ crdtmerge.Replica) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubMerge(t, s)
+			assert.True(t, called, "WithMixedMerge sets the function of Merge")
+		})
+	})
+
+	t.Run("WithMixedAdd", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Add", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.WithMixedAdd(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubAdd(t, s)
+			assert.True(t, called, "WithMixedAdd sets the function of Add")
+		})
+	})
+
+	t.Run("WithMixedItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Items", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := crdtmergetest.NewMixedStub(t, crdtmergetest.WithMixedItems(func(_ context.Context) ([]string, error) {
+				called = true
+				var z0 []string
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = mixedStubItems(t, s)
+			assert.True(t, called, "WithMixedItems sets the function of Items")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedMergeStub checks the methods of MixedMergeStub, which
+// configures Merge.
+func TestMixedMergeStub(t *testing.T) {
 	t.Parallel()
 
-	inner := crdtmergetest.NewMixedStub(t)
-	s := crdtmergetest.NewMixedStub(t, crdtmergetest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Merge to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 crdtmerge.Replica
-		_ = s.Merge(a0, a1)
-		inner.OnMerge.AssertCalledOnce(t, "Merge must reach the wrapped implementation")
+		t.Run("sets the results of each call of Merge", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			want0 := mixedStubMergePins()
+			s.OnMerge.Returns(want0)
+			got0 := mixedStubMerge(t, s)
+			assert.ErrorIs(t, got0, want0, "Merge returns the error that Returns sets")
+		})
+
+		t.Run("configures Merge for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := crdtmergetest.NewMixedStub(r)
+			s.OnMerge.Strict()
+			var want0 error
+			s.OnMerge.Returns(want0)
+			_ = mixedStubMerge(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Merge")
+		})
 	})
 
-	t.Run("surfaces what Merge answered", func(t *testing.T) {
-		want := errors.New("Merge-delegate")
-		inner.OnMerge.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 crdtmerge.Replica
-		r0 := s.Merge(a0, a1)
-		assert.ErrorIs(t, r0, want, "Merge must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Add to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Add-a"
-		_ = s.Add(a0, a1)
-		inner.OnAdd.AssertCalledOnce(t, "Add must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Add answered", func(t *testing.T) {
-		want := errors.New("Add-delegate")
-		inner.OnAdd.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Add-a"
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must surface the wrapped answer")
-	})
-
-	t.Run("forwards Items to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		inner.OnItems.AssertCalledOnce(t, "Items must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Items answered", func(t *testing.T) {
-		want := errors.New("Items-delegate")
-		inner.OnItems.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Merge to the function", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 crdtmerge.Replica
+			s.OnMerge.Func(func(p0 context.Context, p1 crdtmerge.Replica) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubMerge(t, s)
+			a0, a1 := mixedStubMergeArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Peer")
+		})
 	})
 }
 
-// dokimi:provenance sha256:b5407b25489be788c17d63dd9c6c3888b5c70cca5871eb56982e804cce47d475
+// TestMixedAddStub checks the methods of MixedAddStub, which configures
+// Add.
+func TestMixedAddStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Add", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			want0 := mixedStubAddPins()
+			s.OnAdd.Returns(want0)
+			got0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "Add returns the error that Returns sets")
+		})
+
+		t.Run("configures Add for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := crdtmergetest.NewMixedStub(r)
+			s.OnAdd.Strict()
+			var want0 error
+			s.OnAdd.Returns(want0)
+			_ = mixedStubAdd(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnAdd.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubAdd(t, s)
+			a0, a1 := mixedStubAddArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Item")
+		})
+	})
+}
+
+// TestMixedItemsStub checks the methods of MixedItemsStub, which
+// configures Items.
+func TestMixedItemsStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Items", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			want0, want1 := mixedStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			got0, got1 := mixedStubItems(t, s)
+			expect.Equal(t, got0, want0, "Items returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Items returns the error that Returns sets")
+		})
+
+		t.Run("configures Items for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := crdtmergetest.NewMixedStub(r)
+			s.OnItems.Strict()
+			var want0 []string
+			var want1 error
+			s.OnItems.Returns(want0, want1)
+			_, _ = mixedStubItems(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Items")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Items to the function", func(t *testing.T) {
+			t.Parallel()
+			s := crdtmergetest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnItems.Func(func(p0 context.Context) ([]string, error) {
+				got0 = p0
+				var z0 []string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubItems(t, s)
+			a0 := mixedStubItemsArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:e162672c8ec19550cfd8c467fd61412cec6853f602e2eb6c68e6b88f4235b8f0

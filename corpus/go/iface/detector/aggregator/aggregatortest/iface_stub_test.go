@@ -12,27 +12,48 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator/aggregatortest"
+	"go.dokimi.dev/stub"
 )
 
-// aggregatorStubCountSubject binds Count into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func aggregatorStubCountSubject(tb assert.TB) stub.Subject[aggregatortest.AggregatorCountCall, aggregatortest.AggregatorCountReturn] {
+// aggregatorStubCountArgs returns the samples of the arguments of Count.
+func aggregatorStubCountArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// aggregatorStubCount calls Count of s with the samples of its arguments.
+func aggregatorStubCount(tb assert.TB, s *aggregatortest.AggregatorStub) (int, error) {
+	tb.Helper()
+	a0 := aggregatorStubCountArgs(tb)
+	return s.Count(a0)
+}
+
+// aggregatorStubCountPins returns the samples of the results of Count,
+// with a new error as its error result.
+func aggregatorStubCountPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Count-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// aggregatorStubCountSubject returns the subject of [stub.Behaviour] for
+// Count. The subject calls a new double that reports to tb.
+func aggregatorStubCountSubject(
+	tb assert.TB,
+) stub.Subject[aggregatortest.AggregatorCountCall, aggregatortest.AggregatorCountReturn] {
 	tb.Helper()
 	s := aggregatortest.NewAggregatorStub(tb)
 	return stub.Subject[aggregatortest.AggregatorCountCall, aggregatortest.AggregatorCountReturn]{
 		Stub: s.OnCount.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Count(a0)
+			_, _ = aggregatorStubCount(tb, s)
 		},
 		Result: func() aggregatortest.AggregatorCountReturn {
-			var a0 context.Context
-			got0, got1 := s.Count(a0)
+			got0, got1 := aggregatorStubCount(tb, s)
 			return aggregatortest.AggregatorCountReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -44,163 +65,262 @@ func aggregatorStubCountSubject(tb assert.TB) stub.Subject[aggregatortest.Aggreg
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Count(a0)
+			_, r1 := aggregatorStubCount(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestAggregatorStubCount pins how Count answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestAggregatorStubCount(t *testing.T) {
-	t.Parallel()
+// aggregatorStubInstance is the instance of a
+// aggregatortest.AggregatorStub that the checks of the constructors and
+// the options drive.
+type aggregatorStubInstance = stub.Instance[aggregatortest.AggregatorCountCall]
 
-	stub.Behaviour(t, "Count", aggregatorStubCountSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := aggregatortest.NewAggregatorStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnCount.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Count(a0)
-		assert.Equal(t, got0, want0, "Count must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := aggregatortest.NewAggregatorStub(t)
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		got := s.OnCount.AssertCalledOnce(t, "Count must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := aggregatortest.NewAggregatorStub(t)
-		var seen []aggregatortest.AggregatorCountCall
-		s.OnCount.OnRecord(func(c aggregatortest.AggregatorCountCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		_, _ = s.Count(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Count call")
-	})
-
-	t.Run("wires WithAggregatorCount at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := aggregatortest.NewAggregatorStub(t, aggregatortest.WithAggregatorCount(func(_ context.Context) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		assert.True(t, called, "WithAggregatorCount must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Count-failing")
-		s := aggregatortest.NewAggregatorStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Count(a0)
-		assert.ErrorIs(t, r1, want, "Count must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := aggregatortest.NewAggregatorStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnCount.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		s.ResetCalls()
-		got0, _ := s.Count(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// aggregatorStubDouble describes how to build a AggregatorStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Count stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func aggregatorStubDouble() stub.Double[aggregatortest.AggregatorCountCall] {
-	instance := func(s *aggregatortest.AggregatorStub) stub.Instance[aggregatortest.AggregatorCountCall] {
-		return stub.Instance[aggregatortest.AggregatorCountCall]{
-			Stub: s.OnCount.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_, _ = s.Count(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[aggregatortest.AggregatorCountCall]{
-		New: func(tb assert.TB) stub.Instance[aggregatortest.AggregatorCountCall] {
-			return instance(aggregatortest.NewAggregatorStub(tb))
+// aggregatorStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Count alone.
+func aggregatorStubInstanceOf(tb assert.TB, s *aggregatortest.AggregatorStub) aggregatorStubInstance {
+	tb.Helper()
+	return aggregatorStubInstance{
+		Stub: s.OnCount.MethodStub,
+		Call: func() {
+			_, _ = aggregatorStubCount(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[aggregatortest.AggregatorCountCall] {
-			return instance(aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[aggregatortest.AggregatorCountCall] {
-			return instance(aggregatortest.NewAggregatorStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[aggregatortest.AggregatorCountCall] {
-			return instance(aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[aggregatortest.AggregatorCountCall] {
-			return instance(aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[aggregatortest.AggregatorCountCall] {
-			return instance(aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestAggregatorStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestAggregatorStubOptions(t *testing.T) {
+// TestAggregatorStub checks the methods, the constructors and the options
+// of the double AggregatorStub.
+func TestAggregatorStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, aggregatorStubDouble())
+	t.Run("Count", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Count", aggregatorStubCountSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := aggregatortest.NewAggregatorStub(t)
+			_, _ = aggregatorStubCount(t, s)
+			got := s.OnCount.AssertCalledOnce(t, "Count records the call")
+			a0 := aggregatorStubCountArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := aggregatortest.NewAggregatorStub(t)
+			var seen []aggregatortest.AggregatorCountCall
+			s.OnCount.OnRecord(func(c aggregatortest.AggregatorCountCall) { seen = append(seen, c) })
+			_, _ = aggregatorStubCount(t, s)
+			_, _ = aggregatorStubCount(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Count")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) aggregatorStubInstance {
+			return aggregatorStubInstanceOf(tb, aggregatortest.NewAggregatorStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Count", func(t *testing.T) {
+			t.Parallel()
+			s := aggregatortest.NewAggregatorStub(t)
+			_, _ = aggregatorStubCount(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCount.CallCount(), 0, "ResetCalls clears the calls of Count")
+		})
+
+		t.Run("keeps the results of Returns of Count", func(t *testing.T) {
+			t.Parallel()
+			s := aggregatortest.NewAggregatorStub(t)
+			want0, want1 := aggregatorStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := aggregatorStubCount(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Count")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Count")
+		})
+	})
+
+	t.Run("NewAggregatorStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) aggregatorStubInstance {
+			return aggregatorStubInstanceOf(tb, aggregatortest.NewAggregatorStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewAggregatorStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Count with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-failing")
+			s := aggregatortest.NewAggregatorStubFailing(t, want)
+			_, r1 := aggregatorStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of NewAggregatorStubFailing")
+		})
+	})
+
+	t.Run("AggregatorStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) aggregatorStubInstance {
+			return aggregatorStubInstanceOf(
+				tb,
+				aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubStrict()),
+			)
+		})
+	})
+
+	t.Run("AggregatorStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Count to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := aggregatortest.NewAggregatorStub(t)
+			s := aggregatortest.NewAggregatorStub(t, aggregatortest.AggregatorStubDelegateTo(inner))
+			_, _ = aggregatorStubCount(t, s)
+			inner.OnCount.AssertCalledOnce(t, "Count calls the implementation")
+		})
+
+		t.Run("fails Count with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-delegate")
+			inner := aggregatortest.NewAggregatorStub(t)
+			inner.OnCount.Faults(want, 1)
+			s := aggregatortest.NewAggregatorStub(t, aggregatortest.AggregatorStubDelegateTo(inner))
+			_, r1 := aggregatorStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of the implementation")
+		})
+	})
+
+	t.Run("AggregatorStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) aggregatorStubInstance {
+			return aggregatorStubInstanceOf(
+				tb,
+				aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("AggregatorStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) aggregatorStubInstance {
+			return aggregatorStubInstanceOf(
+				tb,
+				aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("AggregatorStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) aggregatorStubInstance {
+			return aggregatorStubInstanceOf(
+				tb,
+				aggregatortest.NewAggregatorStub(tb, aggregatortest.AggregatorStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("AggregatorStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) aggregatorStubInstance {
+			return aggregatorStubInstanceOf(
+				tb,
+				aggregatortest.NewAggregatorStub(
+					tb,
+					aggregatortest.AggregatorStubWithClock(clk),
+					aggregatortest.AggregatorStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("AggregatorStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Count with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-failing")
+			s := aggregatortest.NewAggregatorStub(t, aggregatortest.AggregatorStubFailing(want))
+			_, r1 := aggregatorStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of AggregatorStubFailing")
+		})
+	})
+
+	t.Run("WithAggregatorCount", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Count", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := aggregatortest.NewAggregatorStub(
+				t,
+				aggregatortest.WithAggregatorCount(func(_ context.Context) (int, error) {
+					called = true
+					var z0 int
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = aggregatorStubCount(t, s)
+			assert.True(t, called, "WithAggregatorCount sets the function of Count")
+		})
+	})
 }
 
-// TestAggregatorStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestAggregatorStubDelegateTo(t *testing.T) {
+// TestAggregatorCountStub checks the methods of AggregatorCountStub, which
+// configures Count.
+func TestAggregatorCountStub(t *testing.T) {
 	t.Parallel()
 
-	inner := aggregatortest.NewAggregatorStub(t)
-	s := aggregatortest.NewAggregatorStub(t, aggregatortest.AggregatorStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Count to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		inner.OnCount.AssertCalledOnce(t, "Count must reach the wrapped implementation")
+		t.Run("sets the results of each call of Count", func(t *testing.T) {
+			t.Parallel()
+			s := aggregatortest.NewAggregatorStub(t)
+			want0, want1 := aggregatorStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			got0, got1 := aggregatorStubCount(t, s)
+			expect.Equal(t, got0, want0, "Count returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Count returns the error that Returns sets")
+		})
+
+		t.Run("configures Count for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := aggregatortest.NewAggregatorStub(r)
+			s.OnCount.Strict()
+			var want0 int
+			var want1 error
+			s.OnCount.Returns(want0, want1)
+			_, _ = aggregatorStubCount(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Count")
+		})
 	})
 
-	t.Run("surfaces what Count answered", func(t *testing.T) {
-		want := errors.New("Count-delegate")
-		inner.OnCount.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Count(a0)
-		assert.ErrorIs(t, r1, want, "Count must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Count to the function", func(t *testing.T) {
+			t.Parallel()
+			s := aggregatortest.NewAggregatorStub(t)
+			var got0 context.Context
+			s.OnCount.Func(func(p0 context.Context) (int, error) {
+				got0 = p0
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = aggregatorStubCount(t, s)
+			a0 := aggregatorStubCountArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:028a9aaa03ccc2a2565d4c7fe3aa4fe46cbfddf78fe697274af75638b7662d6a
+// dokimi:provenance sha256:3bf0471c11ff33c26e61d003816c51e37586bf208a4a099e7347bd88026560c1

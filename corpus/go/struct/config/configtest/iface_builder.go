@@ -8,29 +8,16 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/struct/config"
 )
 
-// ConfigBuilder constructs [Config] values.
-//
-// Start with [NewConfigBuilder] or [NewConfigBuilderFrom], set what you
-// care about, and call [ConfigBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Config breaks every literal
-// at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [ConfigBuilder.Clone] is how one becomes two.
+// ConfigBuilder constructs [Config] values. [NewConfigBuilder] and
+// [NewConfigBuilderFrom] return a new builder. Each setter sets one member
+// and returns the builder, so the calls chain. [ConfigBuilder.Build]
+// returns the value. A builder is not safe for concurrent use.
 type ConfigBuilder struct {
 	v config.Config
 }
 
-// NewConfigBuilder returns a builder seeded with the declared defaults.
-//
-// Only the members that declare one. Everything else holds its zero value,
-// so a caller that sets nothing gets a mixture rather than either extreme
-// — which is what makes a check against a built value worth writing.
+// NewConfigBuilder returns a builder of the declared defaults. A member
+// without a declared default has its zero value.
 func NewConfigBuilder() *ConfigBuilder {
 	var v config.Config
 	v.Host = "localhost"
@@ -42,151 +29,89 @@ func NewConfigBuilder() *ConfigBuilder {
 	return &ConfigBuilder{v: v}
 }
 
-// NewConfigBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewConfigBuilderFrom returns a builder of v.
 func NewConfigBuilderFrom(v config.Config) *ConfigBuilder {
 	return &ConfigBuilder{v: v}
 }
 
-// WithHost replaces Host.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithHost replaces Host with v.
 func (b *ConfigBuilder) WithHost(v string) *ConfigBuilder {
 	b.v.Host = v
 	return b
 }
 
-// WithPort replaces Port.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithPort replaces Port with v.
 func (b *ConfigBuilder) WithPort(v int) *ConfigBuilder {
 	b.v.Port = v
 	return b
 }
 
-// WithVerbose replaces Verbose.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithVerbose replaces Verbose with v.
 func (b *ConfigBuilder) WithVerbose(v bool) *ConfigBuilder {
 	b.v.Verbose = v
 	return b
 }
 
-// WithRatio replaces Ratio.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRatio replaces Ratio with v.
 func (b *ConfigBuilder) WithRatio(v float64) *ConfigBuilder {
 	b.v.Ratio = v
 	return b
 }
 
-// WithRetries replaces Retries.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRetries replaces Retries with v.
 func (b *ConfigBuilder) WithRetries(v int) *ConfigBuilder {
 	b.v.Retries = v
 	return b
 }
 
-// WithFallback replaces Fallback, taking the value and addressing it, so a
-// caller need not hold a variable to point at.
-//
-// Use [ConfigBuilder.Mutate] to clear the member, or to point it at an
-// address that already exists.
+// WithFallback points Fallback at a copy of v. [ConfigBuilder.Mutate] can
+// set Fallback to nil or to another address.
 func (b *ConfigBuilder) WithFallback(v string) *ConfigBuilder {
 	b.v.Fallback = &v
 	return b
 }
 
-// WithUndirected replaces Undirected.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithUndirected replaces Undirected with v.
 func (b *ConfigBuilder) WithUndirected(v string) *ConfigBuilder {
 	b.v.Undirected = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *ConfigBuilder) Mutate(fn func(*config.Config)) *ConfigBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [ConfigBuilder.Mutate] to replace such a member outright rather than
-// editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *ConfigBuilder) Clone() *ConfigBuilder {
 	out := &ConfigBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Config].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [ConfigBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [ConfigBuilder.Clone] returns a builder that shares none of them.
 func (b *ConfigBuilder) Build() config.Config {
 	return b.v
 }
 
-// TagConfigBuilder constructs [TagConfig] values.
-//
-// Start with [NewTagConfigBuilder] or [NewTagConfigBuilderFrom], set what
-// you care about, and call [TagConfigBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to TagConfig breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [TagConfigBuilder.Clone] is how one becomes two.
+// TagConfigBuilder constructs [TagConfig] values. [NewTagConfigBuilder]
+// and [NewTagConfigBuilderFrom] return a new builder. Each setter sets one
+// member and returns the builder, so the calls chain.
+// [TagConfigBuilder.Build] returns the value. A builder is not safe for
+// concurrent use.
 type TagConfigBuilder struct {
 	v config.TagConfig
 }
 
-// NewTagConfigBuilder returns a builder seeded with the declared defaults.
-//
-// Only the members that declare one. Everything else holds its zero value,
-// so a caller that sets nothing gets a mixture rather than either extreme
-// — which is what makes a check against a built value worth writing.
+// NewTagConfigBuilder returns a builder of the declared defaults. A member
+// without a declared default has its zero value.
 func NewTagConfigBuilder() *TagConfigBuilder {
 	var v config.TagConfig
 	v.Host = "localhost"
@@ -198,218 +123,128 @@ func NewTagConfigBuilder() *TagConfigBuilder {
 	return &TagConfigBuilder{v: v}
 }
 
-// NewTagConfigBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewTagConfigBuilderFrom returns a builder of v.
 func NewTagConfigBuilderFrom(v config.TagConfig) *TagConfigBuilder {
 	return &TagConfigBuilder{v: v}
 }
 
-// WithHost replaces Host.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithHost replaces Host with v.
 func (b *TagConfigBuilder) WithHost(v string) *TagConfigBuilder {
 	b.v.Host = v
 	return b
 }
 
-// WithPort replaces Port.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithPort replaces Port with v.
 func (b *TagConfigBuilder) WithPort(v int) *TagConfigBuilder {
 	b.v.Port = v
 	return b
 }
 
-// WithVerbose replaces Verbose.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithVerbose replaces Verbose with v.
 func (b *TagConfigBuilder) WithVerbose(v bool) *TagConfigBuilder {
 	b.v.Verbose = v
 	return b
 }
 
-// WithRatio replaces Ratio.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRatio replaces Ratio with v.
 func (b *TagConfigBuilder) WithRatio(v float64) *TagConfigBuilder {
 	b.v.Ratio = v
 	return b
 }
 
-// WithRetries replaces Retries.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithRetries replaces Retries with v.
 func (b *TagConfigBuilder) WithRetries(v int) *TagConfigBuilder {
 	b.v.Retries = v
 	return b
 }
 
-// WithFallback replaces Fallback, taking the value and addressing it, so a
-// caller need not hold a variable to point at.
-//
-// Use [TagConfigBuilder.Mutate] to clear the member, or to point it at an
-// address that already exists.
+// WithFallback points Fallback at a copy of v. [TagConfigBuilder.Mutate]
+// can set Fallback to nil or to another address.
 func (b *TagConfigBuilder) WithFallback(v string) *TagConfigBuilder {
 	b.v.Fallback = &v
 	return b
 }
 
-// WithUndirected replaces Undirected.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithUndirected replaces Undirected with v.
 func (b *TagConfigBuilder) WithUndirected(v string) *TagConfigBuilder {
 	b.v.Undirected = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *TagConfigBuilder) Mutate(fn func(*config.TagConfig)) *TagConfigBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [TagConfigBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *TagConfigBuilder) Clone() *TagConfigBuilder {
 	out := &TagConfigBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [TagConfig].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [TagConfigBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [TagConfigBuilder.Clone] returns a builder that shares none of them.
 func (b *TagConfigBuilder) Build() config.TagConfig {
 	return b.v
 }
 
 // MixedConfigBuilder constructs [MixedConfig] values.
-//
-// Start with [NewMixedConfigBuilder] or [NewMixedConfigBuilderFrom], set
-// what you care about, and call [MixedConfigBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to MixedConfig breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [MixedConfigBuilder.Clone] is how one becomes two.
+// [NewMixedConfigBuilder] and [NewMixedConfigBuilderFrom] return a new
+// builder. Each setter sets one member and returns the builder, so the
+// calls chain. [MixedConfigBuilder.Build] returns the value. A builder is
+// not safe for concurrent use.
 type MixedConfigBuilder struct {
 	v config.MixedConfig
 }
 
-// NewMixedConfigBuilder returns a builder seeded with the declared
-// defaults.
-//
-// Only the members that declare one. Everything else holds its zero value,
-// so a caller that sets nothing gets a mixture rather than either extreme
-// — which is what makes a check against a built value worth writing.
+// NewMixedConfigBuilder returns a builder of the declared defaults. A
+// member without a declared default has its zero value.
 func NewMixedConfigBuilder() *MixedConfigBuilder {
 	var v config.MixedConfig
 	v.Label = "directive-wins"
 	return &MixedConfigBuilder{v: v}
 }
 
-// NewMixedConfigBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewMixedConfigBuilderFrom returns a builder of v.
 func NewMixedConfigBuilderFrom(v config.MixedConfig) *MixedConfigBuilder {
 	return &MixedConfigBuilder{v: v}
 }
 
-// WithLabel replaces Label.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithLabel replaces Label with v.
 func (b *MixedConfigBuilder) WithLabel(v string) *MixedConfigBuilder {
 	b.v.Label = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *MixedConfigBuilder) Mutate(fn func(*config.MixedConfig)) *MixedConfigBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [MixedConfigBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *MixedConfigBuilder) Clone() *MixedConfigBuilder {
 	out := &MixedConfigBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [MixedConfig].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [MixedConfigBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [MixedConfigBuilder.Clone] returns a builder that shares none of them.
 func (b *MixedConfigBuilder) Build() config.MixedConfig {
 	return b.v
 }
 
-// dokimi:provenance sha256:00248c1cb2daef70c61789a092e7cca526d01833703d3460fd2f5c136b579f21
+// dokimi:provenance sha256:a2b3cfa0f9eba43a6a67769fba31346a37fde091b7161d866ef8bd7389ef0a6b

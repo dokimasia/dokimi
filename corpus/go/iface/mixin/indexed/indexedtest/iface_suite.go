@@ -7,7 +7,7 @@ package indexedtest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed"
 )
 
@@ -53,33 +53,22 @@ func RankedSuite() conform.Suite[indexed.Ranked] {
 	return conform.Suite[indexed.Ranked]{Declaration: "Ranked"}
 }
 
-// RunRanked applies the checks of Ranked, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunRanked[T indexed.Ranked](t *testing.T, newSubject func() T, opts ...RankedOption) {
+// RunRankedSuite applies the checks of Ranked, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunRankedSuite[T indexed.Ranked](t *testing.T, newSubject func() T, opts ...RankedOption) {
 	t.Helper()
-	conform.Verify(t, RankedSuite(), func(*RankedHandle) indexed.Ranked { return newSubject() }, opts...)
+	RunRankedSuiteFromHandle(t, func(*RankedHandle) T { return newSubject() }, opts...)
 }
 
-// RunRankedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunRankedOn[T indexed.Ranked](t *testing.T, newSubject func(h *RankedHandle) T, opts ...RankedOption) {
+// RunRankedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunRankedSuiteFromHandle[T indexed.Ranked](
+	t *testing.T,
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
 	t.Helper()
-	conform.Verify(t, RankedSuite(), func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
+	conform.Run(t, RankedSuite(), func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
 }
 
-// ControlRanked applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlRanked[T indexed.Ranked](t *testing.T, newControl func() T, opts ...RankedOption) {
-	t.Helper()
-	conform.Control(t, RankedSuite(), func(*RankedHandle) indexed.Ranked { return newControl() }, opts...)
-}
-
-// ControlRankedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlRankedOn[T indexed.Ranked](t *testing.T, newControl func(h *RankedHandle) T, opts ...RankedOption) {
-	t.Helper()
-	conform.Control(t, RankedSuite(), func(h *RankedHandle) indexed.Ranked { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:84db281caf88dda42ad485a444beb1af4c85c7a08e87635cbd358fa1f57f06a7
+// dokimi:provenance sha256:1feedc57d3dc45ce4084f11bef683ec6191fe2edcbf1e2a6798588f3bda8ed0c

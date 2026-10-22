@@ -7,7 +7,7 @@ package integrationonlytest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/integrationonly"
 )
 
@@ -40,33 +40,22 @@ func MixedSuite() conform.Suite[integrationonly.Mixed] {
 	return conform.Suite[integrationonly.Mixed]{Declaration: "Mixed"}
 }
 
-// RunMixed applies the checks of Mixed, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunMixed[T integrationonly.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
+// RunMixedSuite applies the checks of Mixed, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunMixedSuite[T integrationonly.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(*MixedHandle) integrationonly.Mixed { return newSubject() }, opts...)
+	RunMixedSuiteFromHandle(t, func(*MixedHandle) T { return newSubject() }, opts...)
 }
 
-// RunMixedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunMixedOn[T integrationonly.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+// RunMixedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunMixedSuiteFromHandle[T integrationonly.Mixed](
+	t *testing.T,
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(h *MixedHandle) integrationonly.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), func(h *MixedHandle) integrationonly.Mixed { return newSubject(h) }, opts...)
 }
 
-// ControlMixed applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlMixed[T integrationonly.Mixed](t *testing.T, newControl func() T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(*MixedHandle) integrationonly.Mixed { return newControl() }, opts...)
-}
-
-// ControlMixedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlMixedOn[T integrationonly.Mixed](t *testing.T, newControl func(h *MixedHandle) T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(h *MixedHandle) integrationonly.Mixed { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:37868420701067c8f3978cfcf7df7e1b6b8022d438ef376c74b93553ce566dcc
+// dokimi:provenance sha256:4d870ecc275b270d63ee51c6183958ba2994ccd92257b16ea233974ce1b066b0

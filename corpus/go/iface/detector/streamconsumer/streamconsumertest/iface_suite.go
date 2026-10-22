@@ -7,7 +7,7 @@ package streamconsumertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer"
 )
 
@@ -40,33 +40,30 @@ func StreamConsumerSuite() conform.Suite[streamconsumer.StreamConsumer] {
 	return conform.Suite[streamconsumer.StreamConsumer]{Declaration: "StreamConsumer"}
 }
 
-// RunStreamConsumer applies the checks of StreamConsumer, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunStreamConsumer[T streamconsumer.StreamConsumer](t *testing.T, newSubject func() T, opts ...StreamConsumerOption) {
+// RunStreamConsumerSuite applies the checks of StreamConsumer, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunStreamConsumerSuite[T streamconsumer.StreamConsumer](
+	t *testing.T,
+	newSubject func() T,
+	opts ...StreamConsumerOption,
+) {
 	t.Helper()
-	conform.Verify(t, StreamConsumerSuite(), func(*StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject() }, opts...)
+	RunStreamConsumerSuiteFromHandle(t, func(*StreamConsumerHandle) T { return newSubject() }, opts...)
 }
 
-// RunStreamConsumerOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunStreamConsumerOn[T streamconsumer.StreamConsumer](t *testing.T, newSubject func(h *StreamConsumerHandle) T, opts ...StreamConsumerOption) {
+// RunStreamConsumerSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunStreamConsumerSuiteFromHandle[T streamconsumer.StreamConsumer](
+	t *testing.T,
+	newSubject func(h *StreamConsumerHandle) T,
+	opts ...StreamConsumerOption,
+) {
 	t.Helper()
-	conform.Verify(t, StreamConsumerSuite(), func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		StreamConsumerSuite(),
+		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
+		opts...)
 }
 
-// ControlStreamConsumer applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlStreamConsumer[T streamconsumer.StreamConsumer](t *testing.T, newControl func() T, opts ...StreamConsumerOption) {
-	t.Helper()
-	conform.Control(t, StreamConsumerSuite(), func(*StreamConsumerHandle) streamconsumer.StreamConsumer { return newControl() }, opts...)
-}
-
-// ControlStreamConsumerOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlStreamConsumerOn[T streamconsumer.StreamConsumer](t *testing.T, newControl func(h *StreamConsumerHandle) T, opts ...StreamConsumerOption) {
-	t.Helper()
-	conform.Control(t, StreamConsumerSuite(), func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:7f044ebb391f5f4b4e33d42dd20a53db3195a438a8ae49d833c20d6201b0302a
+// dokimi:provenance sha256:65029c618af4c7cbd75964f9f49829cfd623371cb92dbf2cf5638100ebcedab7

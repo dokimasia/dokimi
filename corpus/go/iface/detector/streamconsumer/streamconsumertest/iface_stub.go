@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer"
+	"go.dokimi.dev/stub"
 )
 
-// SourceNextCall records one invocation of Source.Next.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// SourceNextCall records one call of Source.Next.
 type SourceNextCall struct {
 	Ctx     context.Context
 	Result0 streamconsumer.Value
@@ -25,14 +22,8 @@ type SourceNextCall struct {
 	Err     error
 }
 
-// --- Per-method configuration ---
-
-// SourceNextStub controls how the double answers Next and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// SourceNextStub configures Next and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type SourceNextStub struct {
 	*stub.MethodStub[SourceNextCall]
 
@@ -40,112 +31,105 @@ type SourceNextStub struct {
 	fallback *SourceNextReturn
 }
 
-// SourceNextReturn holds the fixed answer configured through Returns.
+// SourceNextReturn contains the fixed results of Next.
 type SourceNextReturn struct {
 	Result0 streamconsumer.Value
 	Result1 bool
 	Err     error
 }
 
-// Returns pins a fixed result for every call to Next. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Next. A function and an
+// injected fault take precedence over them.
 func (s *SourceNextStub) Returns(result0 streamconsumer.Value, result1 bool, err error) *SourceNextStub {
 	s.fallback = &SourceNextReturn{Result0: result0, Result1: result1, Err: err}
 	return s
 }
 
-// Func supplies a body for Next, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Next from its
+// arguments. An injected fault takes precedence over it.
 func (s *SourceNextStub) Func(fn func(context.Context) (streamconsumer.Value, bool, error)) *SourceNextStub {
 	s.fn = fn
 	return s
 }
 
-// --- SourceStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// SourceStubOption configures a [SourceStub] at construction time.
+// SourceStubOption configures a [SourceStub] at its construction.
 type SourceStubOption func(*SourceStub)
 
-// SourceStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// SourceStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func SourceStubStrict() SourceStubOption {
 	return func(s *SourceStub) { s.strict = true }
 }
 
-// SourceStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// SourceStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func SourceStubDelegateTo(impl streamconsumer.Source) SourceStubOption {
 	return func(s *SourceStub) {
 		s.OnNext.Func(impl.Next)
 	}
 }
 
-// SourceStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// SourceStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func SourceStubWithClock(clk assert.Clock) SourceStubOption {
 	return func(s *SourceStub) { s.group.SetClock(clk) }
 }
 
-// SourceStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// SourceStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func SourceStubWithRandSource(src rand.Source) SourceStubOption {
 	return func(s *SourceStub) { s.group.SetRandSource(src) }
 }
 
-// SourceStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// SourceStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func SourceStubBenchMode() SourceStubOption {
 	return func(s *SourceStub) { s.group.BenchMode() }
 }
 
-// SourceStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with SourceStubWithClock, or d elapses in wall time.
+// SourceStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without SourceStubWithClock, d passes in real time.
 func SourceStubWithLatency(d time.Duration) SourceStubOption {
 	return func(s *SourceStub) { s.group.SetLatency(d) }
 }
 
-// SourceStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// SourceStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func SourceStubFailing(err error) SourceStubOption {
 	return func(s *SourceStub) {
 		s.OnNext.Faults(err, 1)
 	}
 }
 
-// WithSourceNext sets Next's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithSourceNext returns the option that sets the function of Next.
 func WithSourceNext(fn func(context.Context) (streamconsumer.Value, bool, error)) SourceStubOption {
 	return func(s *SourceStub) { s.OnNext.Func(fn) }
 }
 
-// SourceStub is a recording test double for Source.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// SourceStub is a recording test double of Source. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type SourceStub struct {
 	OnNext *SourceNextStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that SourceStub satisfies Source.
+// The compiler checks that SourceStub implements Source.
 var _ streamconsumer.Source = (*SourceStub)(nil)
 
-// NewSourceStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewSourceStub returns a double of Source that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewSourceStub(tb assert.TB, opts ...SourceStubOption) *SourceStub {
 	s := &SourceStub{
 		OnNext: &SourceNextStub{MethodStub: stub.NewMethodStub[SourceNextCall](tb, "Source.Next")},
@@ -163,11 +147,8 @@ func NewSourceStub(tb assert.TB, opts ...SourceStubOption) *SourceStub {
 	return s
 }
 
-// NewSourceStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewSourceStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewSourceStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...SourceStubOption) *SourceStub {
 	return NewSourceStub(tb, append([]SourceStubOption{
 		SourceStubWithClock(clk),
@@ -175,26 +156,20 @@ func NewSourceStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts 
 	}, opts...)...)
 }
 
-// NewSourceStubFailing returns a double whose every fallible method
-// answers err — [SourceStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewSourceStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewSourceStubFailing(tb assert.TB, err error, opts ...SourceStubOption) *SourceStub {
 	return NewSourceStub(tb, append([]SourceStubOption{SourceStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *SourceStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *SourceNextStub) invoke(ctx context.Context) func() SourceNextReturn {
 	if s.fn == nil {
 		return nil
@@ -205,12 +180,8 @@ func (s *SourceNextStub) invoke(ctx context.Context) func() SourceNextReturn {
 	}
 }
 
-// Next records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Next records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *SourceStub) Next(ctx context.Context) (streamconsumer.Value, bool, error) {
 	call := SourceNextCall{Ctx: ctx}
 	r := stub.Answer(s.OnNext.MethodStub, &call, stub.Arms[SourceNextCall, SourceNextReturn]{
@@ -226,11 +197,7 @@ func (s *SourceStub) Next(ctx context.Context) (streamconsumer.Value, bool, erro
 	return r.Result0, r.Result1, r.Err
 }
 
-// StreamConsumerIngestCall records one invocation of
-// StreamConsumer.Ingest.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StreamConsumerIngestCall records one call of StreamConsumer.Ingest.
 type StreamConsumerIngestCall struct {
 	Ctx    context.Context
 	Src    streamconsumer.Source
@@ -238,14 +205,9 @@ type StreamConsumerIngestCall struct {
 	Err    error
 }
 
-// --- Per-method configuration ---
-
-// StreamConsumerIngestStub controls how the double answers Ingest and
-// records what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StreamConsumerIngestStub configures Ingest and records its calls. A
+// fault armed through it takes precedence over the function and the fixed
+// results.
 type StreamConsumerIngestStub struct {
 	*stub.MethodStub[StreamConsumerIngestCall]
 
@@ -253,118 +215,115 @@ type StreamConsumerIngestStub struct {
 	fallback *StreamConsumerIngestReturn
 }
 
-// StreamConsumerIngestReturn holds the fixed answer configured through
-// Returns.
+// StreamConsumerIngestReturn contains the fixed results of Ingest.
 type StreamConsumerIngestReturn struct {
 	Result int
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Ingest. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Ingest. A function and an
+// injected fault take precedence over them.
 func (s *StreamConsumerIngestStub) Returns(result int, err error) *StreamConsumerIngestStub {
 	s.fallback = &StreamConsumerIngestReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Ingest, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
-func (s *StreamConsumerIngestStub) Func(fn func(context.Context, streamconsumer.Source) (int, error)) *StreamConsumerIngestStub {
+// Func sets the function that computes the results of Ingest from its
+// arguments. An injected fault takes precedence over it.
+func (s *StreamConsumerIngestStub) Func(
+	fn func(context.Context, streamconsumer.Source) (int, error),
+) *StreamConsumerIngestStub {
 	s.fn = fn
 	return s
 }
 
-// --- StreamConsumerStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// StreamConsumerStubOption configures a [StreamConsumerStub] at
-// construction time.
+// StreamConsumerStubOption configures a [StreamConsumerStub] at its
+// construction.
 type StreamConsumerStubOption func(*StreamConsumerStub)
 
-// StreamConsumerStubStrict makes an unconfigured method fail the test
-// rather than return its zero value.
+// StreamConsumerStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func StreamConsumerStubStrict() StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) { s.strict = true }
 }
 
-// StreamConsumerStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// StreamConsumerStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func StreamConsumerStubDelegateTo(impl streamconsumer.StreamConsumer) StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) {
 		s.OnIngest.Func(impl.Ingest)
 	}
 }
 
-// StreamConsumerStubWithClock drives latency and time-windowed faults from
-// clk rather than from wall time, so a test asserting on a five-second
-// timeout does not take five seconds.
+// StreamConsumerStubWithClock returns the option that sets the clock of
+// the double to clk. The double takes the latency, the windows of the
+// faults and the instants of the calls from clk. A latency on a controlled
+// clock costs no real time.
 func StreamConsumerStubWithClock(clk assert.Clock) StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) { s.group.SetClock(clk) }
 }
 
-// StreamConsumerStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// StreamConsumerStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func StreamConsumerStubWithRandSource(src rand.Source) StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) { s.group.SetRandSource(src) }
 }
 
-// StreamConsumerStubBenchMode disables call recording. Dispatch still
-// works; only the accumulating call log is dropped.
+// StreamConsumerStubBenchMode returns the option that turns the recording
+// of calls off. The methods still return their results.
 func StreamConsumerStubBenchMode() StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) { s.group.BenchMode() }
 }
 
-// StreamConsumerStubWithLatency makes every method sleep d before
-// answering, for a test standing in for a slow dependency rather than one
-// slow method. Pair it with StreamConsumerStubWithClock, or d elapses in
-// wall time.
+// StreamConsumerStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without StreamConsumerStubWithClock, d passes
+// in real time.
 func StreamConsumerStubWithLatency(d time.Duration) StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) { s.group.SetLatency(d) }
 }
 
-// StreamConsumerStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// StreamConsumerStubFailing returns the option that arms err on each
+// method that can fail. Each call of such a method then fails with err.
 func StreamConsumerStubFailing(err error) StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) {
 		s.OnIngest.Faults(err, 1)
 	}
 }
 
-// WithStreamConsumerIngest sets Ingest's body at construction time, for
-// the common case of configuring one method and taking the defaults for
-// the rest.
+// WithStreamConsumerIngest returns the option that sets the function of
+// Ingest.
 func WithStreamConsumerIngest(fn func(context.Context, streamconsumer.Source) (int, error)) StreamConsumerStubOption {
 	return func(s *StreamConsumerStub) { s.OnIngest.Func(fn) }
 }
 
-// StreamConsumerStub is a recording test double for StreamConsumer.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// StreamConsumerStub is a recording test double of StreamConsumer. Each
+// field On<Method> configures its method. An unconfigured method records
+// the call and returns the zero values of its results.
 type StreamConsumerStub struct {
 	OnIngest *StreamConsumerIngestStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that StreamConsumerStub satisfies StreamConsumer.
+// The compiler checks that StreamConsumerStub implements StreamConsumer.
 var _ streamconsumer.StreamConsumer = (*StreamConsumerStub)(nil)
 
-// NewStreamConsumerStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewStreamConsumerStub returns a double of StreamConsumer that reports
+// its failures to tb and applies opts. The double checks the expected
+// counts of calls at the end of the test. With a nil tb, the double
+// reports nothing.
 func NewStreamConsumerStub(tb assert.TB, opts ...StreamConsumerStubOption) *StreamConsumerStub {
 	s := &StreamConsumerStub{
-		OnIngest: &StreamConsumerIngestStub{MethodStub: stub.NewMethodStub[StreamConsumerIngestCall](tb, "StreamConsumer.Ingest")},
+		OnIngest: &StreamConsumerIngestStub{
+			MethodStub: stub.NewMethodStub[StreamConsumerIngestCall](tb, "StreamConsumer.Ingest"),
+		},
 	}
 	s.group = stub.NewGroup(
 		s.OnIngest.MethodStub,
@@ -379,39 +338,38 @@ func NewStreamConsumerStub(tb assert.TB, opts ...StreamConsumerStubOption) *Stre
 	return s
 }
 
-// NewStreamConsumerStubDelayed returns a double whose every method sleeps
-// d against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewStreamConsumerStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...StreamConsumerStubOption) *StreamConsumerStub {
+// NewStreamConsumerStubDelayed returns a double whose methods sleep d on
+// clk before they return. It applies opts after the clock and the latency.
+func NewStreamConsumerStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...StreamConsumerStubOption,
+) *StreamConsumerStub {
 	return NewStreamConsumerStub(tb, append([]StreamConsumerStubOption{
 		StreamConsumerStubWithClock(clk),
 		StreamConsumerStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewStreamConsumerStubFailing returns a double whose every fallible
-// method answers err — [StreamConsumerStubFailing] applied at
-// construction, for the test whose whole subject is the caller's error
-// path. Further options apply after it.
+// NewStreamConsumerStubFailing returns a double on which each call of a
+// method that can fail fails with err. It applies opts after the failure.
 func NewStreamConsumerStubFailing(tb assert.TB, err error, opts ...StreamConsumerStubOption) *StreamConsumerStub {
 	return NewStreamConsumerStub(tb, append([]StreamConsumerStubOption{StreamConsumerStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StreamConsumerStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
-func (s *StreamConsumerIngestStub) invoke(ctx context.Context, src streamconsumer.Source) func() StreamConsumerIngestReturn {
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *StreamConsumerIngestStub) invoke(
+	ctx context.Context,
+	src streamconsumer.Source,
+) func() StreamConsumerIngestReturn {
 	if s.fn == nil {
 		return nil
 	}
@@ -421,12 +379,8 @@ func (s *StreamConsumerIngestStub) invoke(ctx context.Context, src streamconsume
 	}
 }
 
-// Ingest records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Ingest records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *StreamConsumerStub) Ingest(ctx context.Context, src streamconsumer.Source) (int, error) {
 	call := StreamConsumerIngestCall{Ctx: ctx, Src: src}
 	r := stub.Answer(s.OnIngest.MethodStub, &call, stub.Arms[StreamConsumerIngestCall, StreamConsumerIngestReturn]{
@@ -441,4 +395,4 @@ func (s *StreamConsumerStub) Ingest(ctx context.Context, src streamconsumer.Sour
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:25ed7dd63c7c0613a8173d91c87e1024e31405319c1fdda0b1bb3f28c4756e9d
+// dokimi:provenance sha256:a504d21ff7220f7d9000e6a095f82ba05968dc3637056e46a01e45f09433d8bc

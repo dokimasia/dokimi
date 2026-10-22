@@ -5,98 +5,195 @@
 package bare_test
 
 import (
-	"errors"
 	"strings"
 	"testing"
 
+	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/errors/bare"
 )
 
-// TestBareSentinels pins the contract every declared error in this package
-// carries.
-//
-// Callers match on these values, read them in logs and branch on them, so
-// their messages and identities are as much an API as any exported
-// signature — and nothing in the compiler holds them to it.
-func TestBareSentinels(t *testing.T) {
+// TestErrEmpty checks the sentinel error ErrEmpty. A caller matches it
+// with errors.Is and reads its message, so it has a message and an
+// identity of its own.
+func TestErrEmpty(t *testing.T) {
 	t.Parallel()
 
-	all := []struct {
+	others := []struct {
+		name string
+		err  error
+	}{
+		{"ErrFull", bare.ErrFull},
+		{"ErrInvalid", bare.ErrInvalid},
+	}
+
+	t.Run("Error", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, bare.ErrEmpty, "ErrEmpty is assigned")
+			assert.NotEqual(t, bare.ErrEmpty.Error(), "", "ErrEmpty has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(
+				t,
+				bare.ErrEmpty.Error(),
+				"bare: ",
+				"the message of ErrEmpty opens with the package prefix",
+			)
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(t, bare.ErrEmpty.Error(), other.err.Error(), "ErrEmpty has the message of "+other.name)
+			}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(bare.ErrEmpty.Error(), other.err.Error()),
+					"the message of ErrEmpty opens with the message of "+other.name)
+			}
+		})
+	})
+
+	t.Run("errors.Is", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, bare.ErrEmpty, other.err, "ErrEmpty does not match "+other.name)
+			}
+		})
+	})
+}
+
+// TestErrFull checks the sentinel error ErrFull. A caller matches it with
+// errors.Is and reads its message, so it has a message and an identity of
+// its own.
+func TestErrFull(t *testing.T) {
+	t.Parallel()
+
+	others := []struct {
+		name string
+		err  error
+	}{
+		{"ErrEmpty", bare.ErrEmpty},
+		{"ErrInvalid", bare.ErrInvalid},
+	}
+
+	t.Run("Error", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, bare.ErrFull, "ErrFull is assigned")
+			assert.NotEqual(t, bare.ErrFull.Error(), "", "ErrFull has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(t, bare.ErrFull.Error(), "bare: ", "the message of ErrFull opens with the package prefix")
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(t, bare.ErrFull.Error(), other.err.Error(), "ErrFull has the message of "+other.name)
+			}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(bare.ErrFull.Error(), other.err.Error()),
+					"the message of ErrFull opens with the message of "+other.name)
+			}
+		})
+	})
+
+	t.Run("errors.Is", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, bare.ErrFull, other.err, "ErrFull does not match "+other.name)
+			}
+		})
+	})
+}
+
+// TestErrInvalid checks the sentinel error ErrInvalid. A caller matches it
+// with errors.Is and reads its message, so it has a message and an
+// identity of its own.
+func TestErrInvalid(t *testing.T) {
+	t.Parallel()
+
+	others := []struct {
 		name string
 		err  error
 	}{
 		{"ErrEmpty", bare.ErrEmpty},
 		{"ErrFull", bare.ErrFull},
-		{"ErrInvalid", bare.ErrInvalid},
 	}
 
-	t.Run("every sentinel is assigned", func(t *testing.T) {
+	t.Run("Error", func(t *testing.T) {
 		t.Parallel()
-		for _, e := range all {
-			if e.err == nil {
-				t.Fatalf("every sentinel must be assigned: %s is nil", e.name)
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, bare.ErrInvalid, "ErrInvalid is assigned")
+			assert.NotEqual(t, bare.ErrInvalid.Error(), "", "ErrInvalid has a message")
+		})
+
+		t.Run("opens the message with the package prefix", func(t *testing.T) {
+			t.Parallel()
+			assert.HasPrefix(
+				t,
+				bare.ErrInvalid.Error(),
+				"bare: ",
+				"the message of ErrInvalid opens with the package prefix",
+			)
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(
+					t,
+					bare.ErrInvalid.Error(),
+					other.err.Error(),
+					"ErrInvalid has the message of "+other.name,
+				)
 			}
-		}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(bare.ErrInvalid.Error(), other.err.Error()),
+					"the message of ErrInvalid opens with the message of "+other.name)
+			}
+		})
 	})
 
-	t.Run("every sentinel carries a message", func(t *testing.T) {
+	t.Run("errors.Is", func(t *testing.T) {
 		t.Parallel()
-		for _, e := range all {
-			if e.err.Error() == "" {
-				t.Errorf("every sentinel must carry a message: %s has none", e.name)
-			}
-		}
-	})
 
-	t.Run("every sentinel carries the package prefix", func(t *testing.T) {
-		t.Parallel()
-		for _, e := range all {
-			if !strings.HasPrefix(e.err.Error(), "bare: ") {
-				t.Errorf("every sentinel must carry the package prefix %q: %s reads %q",
-					"bare: ", e.name, e.err.Error())
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, bare.ErrInvalid, other.err, "ErrInvalid does not match "+other.name)
 			}
-		}
-	})
-
-	t.Run("no two sentinels share a message", func(t *testing.T) {
-		t.Parallel()
-		seen := map[string]string{}
-		for _, e := range all {
-			if first, dup := seen[e.err.Error()]; dup {
-				t.Errorf("no two sentinels may share a message: %s repeats %s", e.name, first)
-			}
-			seen[e.err.Error()] = e.name
-		}
-	})
-
-	t.Run("no sentinel's message begins with another's", func(t *testing.T) {
-		t.Parallel()
-		for _, a := range all {
-			for _, b := range all {
-				if a.name == b.name {
-					continue
-				}
-				if strings.HasPrefix(a.err.Error(), b.err.Error()) {
-					t.Errorf("no sentinel's message may begin with another's: %s begins with the whole of %s",
-						a.name, b.name)
-				}
-			}
-		}
-	})
-
-	t.Run("no sentinel matches another", func(t *testing.T) {
-		t.Parallel()
-		for _, a := range all {
-			for _, b := range all {
-				if a.name == b.name {
-					continue
-				}
-				if errors.Is(a.err, b.err) {
-					t.Errorf("no sentinel may match another: %s matches %s", a.name, b.name)
-				}
-			}
-		}
+		})
 	})
 }
 
-// dokimi:provenance sha256:85e676236abd7437a480e2094f28412867ca0d8ae55528e0e562e09b7aa9f93b
+// dokimi:provenance sha256:5f61c218d48d82f436aee9c3787cf639125701ea9f1d80ad730af91c7c4c94f9

@@ -12,31 +12,71 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeaware/timeawaretest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubTouchSubject binds Touch into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubTouchArgs returns the samples of the arguments of Touch.
+func mixedStubTouchArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Touch-a"
+	return a0, a1
+}
+
+// mixedStubTouch calls Touch of s with the samples of its arguments.
+func mixedStubTouch(tb assert.TB, s *timeawaretest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubTouchArgs(tb)
+	return s.Touch(a0, a1)
+}
+
+// mixedStubTouchPins returns the samples of the results of Touch, with a
+// new error as its error result.
+func mixedStubTouchPins() error {
+	want0 := errors.New("Touch-returns")
+	return want0
+}
+
+// mixedStubAgeOfArgs returns the samples of the arguments of AgeOf.
+func mixedStubAgeOfArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "AgeOf-a"
+	return a0, a1
+}
+
+// mixedStubAgeOf calls AgeOf of s with the samples of its arguments.
+func mixedStubAgeOf(tb assert.TB, s *timeawaretest.MixedStub) (int64, error) {
+	tb.Helper()
+	a0, a1 := mixedStubAgeOfArgs(tb)
+	return s.AgeOf(a0, a1)
+}
+
+// mixedStubAgeOfPins returns the samples of the results of AgeOf, with a
+// new error as its error result.
+func mixedStubAgeOfPins() (int64, error) {
+	var want0 int64
+	want1 := errors.New("AgeOf-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// mixedStubTouchSubject returns the subject of [stub.Behaviour] for Touch.
+// The subject calls a new double that reports to tb.
 func mixedStubTouchSubject(tb assert.TB) stub.Subject[timeawaretest.MixedTouchCall, timeawaretest.MixedTouchReturn] {
 	tb.Helper()
 	s := timeawaretest.NewMixedStub(tb)
 	return stub.Subject[timeawaretest.MixedTouchCall, timeawaretest.MixedTouchReturn]{
 		Stub: s.OnTouch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Touch-a"
-			_ = s.Touch(a0, a1)
+			_ = mixedStubTouch(tb, s)
 		},
 		Result: func() timeawaretest.MixedTouchReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Touch-a"
-			got0 := s.Touch(a0, a1)
+			got0 := mixedStubTouch(tb, s)
 			return timeawaretest.MixedTouchReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,114 +87,24 @@ func mixedStubTouchSubject(tb assert.TB) stub.Subject[timeawaretest.MixedTouchCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Touch-a"
-			r0 := s.Touch(a0, a1)
+			r0 := mixedStubTouch(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubTouch pins how Touch answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubTouch(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Touch", mixedStubTouchSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := timeawaretest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		_ = s.Touch(a0, a1)
-		got := s.OnTouch.AssertCalledOnce(t, "Touch must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := timeawaretest.NewMixedStub(t)
-		var seen []timeawaretest.MixedTouchCall
-		s.OnTouch.OnRecord(func(c timeawaretest.MixedTouchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		_ = s.Touch(a0, a1)
-		_ = s.Touch(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Touch call")
-	})
-
-	t.Run("wires WithMixedTouch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := timeawaretest.NewMixedStub(t, timeawaretest.WithMixedTouch(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		_ = s.Touch(a0, a1)
-		assert.True(t, called, "WithMixedTouch must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Touch-failing")
-		s := timeawaretest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		r0 := s.Touch(a0, a1)
-		assert.ErrorIs(t, r0, want, "Touch must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := timeawaretest.NewMixedStub(t)
-		var want0 error
-		s.OnTouch.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		_ = s.Touch(a0, a1)
-		s.ResetCalls()
-		_ = s.Touch(a0, a1)
-		s.OnTouch.AssertCalledOnce(t, "Touch must record the call that followed the reset")
-	})
-}
-
-// mixedStubAgeOfSubject binds AgeOf into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubAgeOfSubject returns the subject of [stub.Behaviour] for AgeOf.
+// The subject calls a new double that reports to tb.
 func mixedStubAgeOfSubject(tb assert.TB) stub.Subject[timeawaretest.MixedAgeOfCall, timeawaretest.MixedAgeOfReturn] {
 	tb.Helper()
 	s := timeawaretest.NewMixedStub(tb)
 	return stub.Subject[timeawaretest.MixedAgeOfCall, timeawaretest.MixedAgeOfReturn]{
 		Stub: s.OnAgeOf.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "AgeOf-a"
-			_, _ = s.AgeOf(a0, a1)
+			_, _ = mixedStubAgeOf(tb, s)
 		},
 		Result: func() timeawaretest.MixedAgeOfReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "AgeOf-a"
-			got0, got1 := s.AgeOf(a0, a1)
+			got0, got1 := mixedStubAgeOf(tb, s)
 			return timeawaretest.MixedAgeOfReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -166,202 +116,395 @@ func mixedStubAgeOfSubject(tb assert.TB) stub.Subject[timeawaretest.MixedAgeOfCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "AgeOf-a"
-			_, r1 := s.AgeOf(a0, a1)
+			_, r1 := mixedStubAgeOf(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubAgeOf pins how AgeOf answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubAgeOf(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a timeawaretest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[timeawaretest.MixedTouchCall]
 
-	stub.Behaviour(t, "AgeOf", mixedStubAgeOfSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := timeawaretest.NewMixedStub(t)
-		var want0 int64
-		var want1 error
-		want0 = 42
-		s.OnAgeOf.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		got0, _ := s.AgeOf(a0, a1)
-		assert.Equal(t, got0, want0, "AgeOf must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := timeawaretest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		_, _ = s.AgeOf(a0, a1)
-		got := s.OnAgeOf.AssertCalledOnce(t, "AgeOf must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := timeawaretest.NewMixedStub(t)
-		var seen []timeawaretest.MixedAgeOfCall
-		s.OnAgeOf.OnRecord(func(c timeawaretest.MixedAgeOfCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		_, _ = s.AgeOf(a0, a1)
-		_, _ = s.AgeOf(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per AgeOf call")
-	})
-
-	t.Run("wires WithMixedAgeOf at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := timeawaretest.NewMixedStub(t, timeawaretest.WithMixedAgeOf(func(_ context.Context, _ string) (int64, error) {
-			called = true
-			var z0 int64
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		_, _ = s.AgeOf(a0, a1)
-		assert.True(t, called, "WithMixedAgeOf must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("AgeOf-failing")
-		s := timeawaretest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		_, r1 := s.AgeOf(a0, a1)
-		assert.ErrorIs(t, r1, want, "AgeOf must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := timeawaretest.NewMixedStub(t)
-		var want0 int64
-		var want1 error
-		want0 = 42
-		s.OnAgeOf.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		_, _ = s.AgeOf(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.AgeOf(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Touch stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[timeawaretest.MixedTouchCall] {
-	instance := func(s *timeawaretest.MixedStub) stub.Instance[timeawaretest.MixedTouchCall] {
-		return stub.Instance[timeawaretest.MixedTouchCall]{
-			Stub: s.OnTouch.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Touch-a"
-				_ = s.Touch(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[timeawaretest.MixedTouchCall]{
-		New: func(tb assert.TB) stub.Instance[timeawaretest.MixedTouchCall] {
-			return instance(timeawaretest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Touch alone.
+func mixedStubInstanceOf(tb assert.TB, s *timeawaretest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnTouch.MethodStub,
+		Call: func() {
+			_ = mixedStubTouch(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[timeawaretest.MixedTouchCall] {
-			return instance(timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[timeawaretest.MixedTouchCall] {
-			return instance(timeawaretest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[timeawaretest.MixedTouchCall] {
-			return instance(timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[timeawaretest.MixedTouchCall] {
-			return instance(timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[timeawaretest.MixedTouchCall] {
-			return instance(timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Touch", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Touch", mixedStubTouchSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			_ = mixedStubTouch(t, s)
+			got := s.OnTouch.AssertCalledOnce(t, "Touch records the call")
+			a0, a1 := mixedStubTouchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			var seen []timeawaretest.MixedTouchCall
+			s.OnTouch.OnRecord(func(c timeawaretest.MixedTouchCall) { seen = append(seen, c) })
+			_ = mixedStubTouch(t, s)
+			_ = mixedStubTouch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Touch")
+		})
+	})
+
+	t.Run("AgeOf", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "AgeOf", mixedStubAgeOfSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			_, _ = mixedStubAgeOf(t, s)
+			got := s.OnAgeOf.AssertCalledOnce(t, "AgeOf records the call")
+			a0, a1 := mixedStubAgeOfArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			var seen []timeawaretest.MixedAgeOfCall
+			s.OnAgeOf.OnRecord(func(c timeawaretest.MixedAgeOfCall) { seen = append(seen, c) })
+			_, _ = mixedStubAgeOf(t, s)
+			_, _ = mixedStubAgeOf(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of AgeOf")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeawaretest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Touch", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			_ = mixedStubTouch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnTouch.CallCount(), 0, "ResetCalls clears the calls of Touch")
+		})
+
+		t.Run("keeps the results of Returns of Touch", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			want0 := mixedStubTouchPins()
+			s.OnTouch.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubTouch(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Touch")
+		})
+
+		t.Run("clears the recorded calls of AgeOf", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			_, _ = mixedStubAgeOf(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAgeOf.CallCount(), 0, "ResetCalls clears the calls of AgeOf")
+		})
+
+		t.Run("keeps the results of Returns of AgeOf", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			want0, want1 := mixedStubAgeOfPins()
+			s.OnAgeOf.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubAgeOf(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of AgeOf")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of AgeOf")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeawaretest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Touch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Touch-failing")
+			s := timeawaretest.NewMixedStubFailing(t, want)
+			r0 := mixedStubTouch(t, s)
+			assert.ErrorIs(t, r0, want, "Touch fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails AgeOf with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("AgeOf-failing")
+			s := timeawaretest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubAgeOf(t, s)
+			assert.ErrorIs(t, r1, want, "AgeOf fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Touch to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := timeawaretest.NewMixedStub(t)
+			s := timeawaretest.NewMixedStub(t, timeawaretest.MixedStubDelegateTo(inner))
+			_ = mixedStubTouch(t, s)
+			inner.OnTouch.AssertCalledOnce(t, "Touch calls the implementation")
+		})
+
+		t.Run("fails Touch with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Touch-delegate")
+			inner := timeawaretest.NewMixedStub(t)
+			inner.OnTouch.Faults(want, 1)
+			s := timeawaretest.NewMixedStub(t, timeawaretest.MixedStubDelegateTo(inner))
+			r0 := mixedStubTouch(t, s)
+			assert.ErrorIs(t, r0, want, "Touch fails with the error of the implementation")
+		})
+
+		t.Run("passes AgeOf to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := timeawaretest.NewMixedStub(t)
+			s := timeawaretest.NewMixedStub(t, timeawaretest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubAgeOf(t, s)
+			inner.OnAgeOf.AssertCalledOnce(t, "AgeOf calls the implementation")
+		})
+
+		t.Run("fails AgeOf with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("AgeOf-delegate")
+			inner := timeawaretest.NewMixedStub(t)
+			inner.OnAgeOf.Faults(want, 1)
+			s := timeawaretest.NewMixedStub(t, timeawaretest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubAgeOf(t, s)
+			assert.ErrorIs(t, r1, want, "AgeOf fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeawaretest.NewMixedStub(tb, timeawaretest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				timeawaretest.NewMixedStub(
+					tb,
+					timeawaretest.MixedStubWithClock(clk),
+					timeawaretest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Touch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Touch-failing")
+			s := timeawaretest.NewMixedStub(t, timeawaretest.MixedStubFailing(want))
+			r0 := mixedStubTouch(t, s)
+			assert.ErrorIs(t, r0, want, "Touch fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails AgeOf with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("AgeOf-failing")
+			s := timeawaretest.NewMixedStub(t, timeawaretest.MixedStubFailing(want))
+			_, r1 := mixedStubAgeOf(t, s)
+			assert.ErrorIs(t, r1, want, "AgeOf fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedTouch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Touch", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := timeawaretest.NewMixedStub(t, timeawaretest.WithMixedTouch(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubTouch(t, s)
+			assert.True(t, called, "WithMixedTouch sets the function of Touch")
+		})
+	})
+
+	t.Run("WithMixedAgeOf", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of AgeOf", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := timeawaretest.NewMixedStub(
+				t,
+				timeawaretest.WithMixedAgeOf(func(_ context.Context, _ string) (int64, error) {
+					called = true
+					var z0 int64
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubAgeOf(t, s)
+			assert.True(t, called, "WithMixedAgeOf sets the function of AgeOf")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedTouchStub checks the methods of MixedTouchStub, which
+// configures Touch.
+func TestMixedTouchStub(t *testing.T) {
 	t.Parallel()
 
-	inner := timeawaretest.NewMixedStub(t)
-	s := timeawaretest.NewMixedStub(t, timeawaretest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Touch to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		_ = s.Touch(a0, a1)
-		inner.OnTouch.AssertCalledOnce(t, "Touch must reach the wrapped implementation")
+		t.Run("sets the results of each call of Touch", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			want0 := mixedStubTouchPins()
+			s.OnTouch.Returns(want0)
+			got0 := mixedStubTouch(t, s)
+			assert.ErrorIs(t, got0, want0, "Touch returns the error that Returns sets")
+		})
+
+		t.Run("configures Touch for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := timeawaretest.NewMixedStub(r)
+			s.OnTouch.Strict()
+			var want0 error
+			s.OnTouch.Returns(want0)
+			_ = mixedStubTouch(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Touch")
+		})
 	})
 
-	t.Run("surfaces what Touch answered", func(t *testing.T) {
-		want := errors.New("Touch-delegate")
-		inner.OnTouch.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		r0 := s.Touch(a0, a1)
-		assert.ErrorIs(t, r0, want, "Touch must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards AgeOf to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		_, _ = s.AgeOf(a0, a1)
-		inner.OnAgeOf.AssertCalledOnce(t, "AgeOf must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what AgeOf answered", func(t *testing.T) {
-		want := errors.New("AgeOf-delegate")
-		inner.OnAgeOf.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "AgeOf-a"
-		_, r1 := s.AgeOf(a0, a1)
-		assert.ErrorIs(t, r1, want, "AgeOf must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Touch to the function", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnTouch.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubTouch(t, s)
+			a0, a1 := mixedStubTouchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:18c0031cc639d2b99218d14e2257abbede4dbb939784593e413d595846daf58b
+// TestMixedAgeOfStub checks the methods of MixedAgeOfStub, which
+// configures AgeOf.
+func TestMixedAgeOfStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of AgeOf", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			want0, want1 := mixedStubAgeOfPins()
+			s.OnAgeOf.Returns(want0, want1)
+			got0, got1 := mixedStubAgeOf(t, s)
+			expect.Equal(t, got0, want0, "AgeOf returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "AgeOf returns the error that Returns sets")
+		})
+
+		t.Run("configures AgeOf for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := timeawaretest.NewMixedStub(r)
+			s.OnAgeOf.Strict()
+			var want0 int64
+			var want1 error
+			s.OnAgeOf.Returns(want0, want1)
+			_, _ = mixedStubAgeOf(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of AgeOf")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of AgeOf to the function", func(t *testing.T) {
+			t.Parallel()
+			s := timeawaretest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnAgeOf.Func(func(p0 context.Context, p1 string) (int64, error) {
+				got0, got1 = p0, p1
+				var z0 int64
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubAgeOf(t, s)
+			a0, a1 := mixedStubAgeOfArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:ea532f4c188e5fbce26449a7cac5bb9c92857b2ccc0b9def57f87338175080b3

@@ -7,7 +7,7 @@ package embeddedtest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embedded"
 )
 
@@ -56,33 +56,22 @@ func ComposedSuite() conform.Suite[embedded.Composed] {
 	return conform.Suite[embedded.Composed]{Declaration: "Composed"}
 }
 
-// RunComposed applies the checks of Composed, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunComposed[T embedded.Composed](t *testing.T, newSubject func() T, opts ...ComposedOption) {
+// RunComposedSuite applies the checks of Composed, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunComposedSuite[T embedded.Composed](t *testing.T, newSubject func() T, opts ...ComposedOption) {
 	t.Helper()
-	conform.Verify(t, ComposedSuite(), func(*ComposedHandle) embedded.Composed { return newSubject() }, opts...)
+	RunComposedSuiteFromHandle(t, func(*ComposedHandle) T { return newSubject() }, opts...)
 }
 
-// RunComposedOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunComposedOn[T embedded.Composed](t *testing.T, newSubject func(h *ComposedHandle) T, opts ...ComposedOption) {
+// RunComposedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunComposedSuiteFromHandle[T embedded.Composed](
+	t *testing.T,
+	newSubject func(h *ComposedHandle) T,
+	opts ...ComposedOption,
+) {
 	t.Helper()
-	conform.Verify(t, ComposedSuite(), func(h *ComposedHandle) embedded.Composed { return newSubject(h) }, opts...)
+	conform.Run(t, ComposedSuite(), func(h *ComposedHandle) embedded.Composed { return newSubject(h) }, opts...)
 }
 
-// ControlComposed applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlComposed[T embedded.Composed](t *testing.T, newControl func() T, opts ...ComposedOption) {
-	t.Helper()
-	conform.Control(t, ComposedSuite(), func(*ComposedHandle) embedded.Composed { return newControl() }, opts...)
-}
-
-// ControlComposedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlComposedOn[T embedded.Composed](t *testing.T, newControl func(h *ComposedHandle) T, opts ...ComposedOption) {
-	t.Helper()
-	conform.Control(t, ComposedSuite(), func(h *ComposedHandle) embedded.Composed { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:81242d6861fee202144bbbf5d44a5e264c00c3ef335165f134bd61bf42c5aafa
+// dokimi:provenance sha256:4c94901d439114161f62b64bd8851f38599fe746ca40892e3b085766fa06f41a

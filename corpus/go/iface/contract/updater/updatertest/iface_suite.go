@@ -7,7 +7,7 @@ package updatertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/updater"
 )
 
@@ -48,33 +48,22 @@ func ContractSuite() conform.Suite[updater.Contract] {
 	return conform.Suite[updater.Contract]{Declaration: "Contract"}
 }
 
-// RunContract applies the checks of Contract, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunContract[T updater.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
+// RunContractSuite applies the checks of Contract, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunContractSuite[T updater.Contract](t *testing.T, newSubject func() T, opts ...ContractOption) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(*ContractHandle) updater.Contract { return newSubject() }, opts...)
+	RunContractSuiteFromHandle(t, func(*ContractHandle) T { return newSubject() }, opts...)
 }
 
-// RunContractOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunContractOn[T updater.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+// RunContractSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunContractSuiteFromHandle[T updater.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
 	t.Helper()
-	conform.Verify(t, ContractSuite(), func(h *ContractHandle) updater.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), func(h *ContractHandle) updater.Contract { return newSubject(h) }, opts...)
 }
 
-// ControlContract applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlContract[T updater.Contract](t *testing.T, newControl func() T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(*ContractHandle) updater.Contract { return newControl() }, opts...)
-}
-
-// ControlContractOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlContractOn[T updater.Contract](t *testing.T, newControl func(h *ContractHandle) T, opts ...ContractOption) {
-	t.Helper()
-	conform.Control(t, ContractSuite(), func(h *ContractHandle) updater.Contract { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:0b625e218778cb80f13c3265bdd0e216fa398ee91e334a463541404f2b4ae69c
+// dokimi:provenance sha256:0c266a42a2ea2bc15b738d3e00a0c412dccc801139df7b346b4402c2672b3ea3

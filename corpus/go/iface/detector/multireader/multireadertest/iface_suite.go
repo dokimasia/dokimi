@@ -7,7 +7,7 @@ package multireadertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multireader"
 )
 
@@ -40,33 +40,26 @@ func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
 	return conform.Suite[multireader.MultiReader]{Declaration: "MultiReader"}
 }
 
-// RunMultiReader applies the checks of MultiReader, and the checks that
-// opts add, to a fresh subject of newSubject for each check.
-func RunMultiReader[T multireader.MultiReader](t *testing.T, newSubject func() T, opts ...MultiReaderOption) {
+// RunMultiReaderSuite applies the checks of MultiReader, and the checks
+// that opts add, to a fresh subject of newSubject for each check.
+func RunMultiReaderSuite[T multireader.MultiReader](t *testing.T, newSubject func() T, opts ...MultiReaderOption) {
 	t.Helper()
-	conform.Verify(t, MultiReaderSuite(), func(*MultiReaderHandle) multireader.MultiReader { return newSubject() }, opts...)
+	RunMultiReaderSuiteFromHandle(t, func(*MultiReaderHandle) T { return newSubject() }, opts...)
 }
 
-// RunMultiReaderOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunMultiReaderOn[T multireader.MultiReader](t *testing.T, newSubject func(h *MultiReaderHandle) T, opts ...MultiReaderOption) {
+// RunMultiReaderSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunMultiReaderSuiteFromHandle[T multireader.MultiReader](
+	t *testing.T,
+	newSubject func(h *MultiReaderHandle) T,
+	opts ...MultiReaderOption,
+) {
 	t.Helper()
-	conform.Verify(t, MultiReaderSuite(), func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		MultiReaderSuite(),
+		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
+		opts...)
 }
 
-// ControlMultiReader applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlMultiReader[T multireader.MultiReader](t *testing.T, newControl func() T, opts ...MultiReaderOption) {
-	t.Helper()
-	conform.Control(t, MultiReaderSuite(), func(*MultiReaderHandle) multireader.MultiReader { return newControl() }, opts...)
-}
-
-// ControlMultiReaderOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlMultiReaderOn[T multireader.MultiReader](t *testing.T, newControl func(h *MultiReaderHandle) T, opts ...MultiReaderOption) {
-	t.Helper()
-	conform.Control(t, MultiReaderSuite(), func(h *MultiReaderHandle) multireader.MultiReader { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:ee71012e523a1a318cd4f329908376b9a3e2df5ed886d059fabc774e88209764
+// dokimi:provenance sha256:b27f4721b1bd4f3593a9cd5ba735d7463e2e8e42ce2aff5445a6d23131eccda3

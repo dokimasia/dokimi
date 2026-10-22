@@ -5,87 +5,122 @@
 package noprefix_test
 
 import (
-	"errors"
 	"strings"
 	"testing"
 
+	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/errors/noprefix"
 )
 
-// TestNoprefixSentinels pins the contract every declared error in this
-// package carries.
-//
-// Callers match on these values, read them in logs and branch on them, so
-// their messages and identities are as much an API as any exported
-// signature — and nothing in the compiler holds them to it.
-func TestNoprefixSentinels(t *testing.T) {
+// TestErrRetry checks the sentinel error ErrRetry. A caller matches it
+// with errors.Is and reads its message, so it has a message and an
+// identity of its own.
+func TestErrRetry(t *testing.T) {
 	t.Parallel()
 
-	all := []struct {
+	others := []struct {
+		name string
+		err  error
+	}{
+		{"ErrGiveUp", noprefix.ErrGiveUp},
+	}
+
+	t.Run("Error", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, noprefix.ErrRetry, "ErrRetry is assigned")
+			assert.NotEqual(t, noprefix.ErrRetry.Error(), "", "ErrRetry has a message")
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(
+					t,
+					noprefix.ErrRetry.Error(),
+					other.err.Error(),
+					"ErrRetry has the message of "+other.name,
+				)
+			}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(noprefix.ErrRetry.Error(), other.err.Error()),
+					"the message of ErrRetry opens with the message of "+other.name)
+			}
+		})
+	})
+
+	t.Run("errors.Is", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, noprefix.ErrRetry, other.err, "ErrRetry does not match "+other.name)
+			}
+		})
+	})
+}
+
+// TestErrGiveUp checks the sentinel error ErrGiveUp. A caller matches it
+// with errors.Is and reads its message, so it has a message and an
+// identity of its own.
+func TestErrGiveUp(t *testing.T) {
+	t.Parallel()
+
+	others := []struct {
 		name string
 		err  error
 	}{
 		{"ErrRetry", noprefix.ErrRetry},
-		{"ErrGiveUp", noprefix.ErrGiveUp},
 	}
 
-	t.Run("every sentinel is assigned", func(t *testing.T) {
+	t.Run("Error", func(t *testing.T) {
 		t.Parallel()
-		for _, e := range all {
-			if e.err == nil {
-				t.Fatalf("every sentinel must be assigned: %s is nil", e.name)
+
+		t.Run("returns a message", func(t *testing.T) {
+			t.Parallel()
+			assert.NotNil(t, noprefix.ErrGiveUp, "ErrGiveUp is assigned")
+			assert.NotEqual(t, noprefix.ErrGiveUp.Error(), "", "ErrGiveUp has a message")
+		})
+
+		t.Run("returns a message of its own", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.NotEqual(
+					t,
+					noprefix.ErrGiveUp.Error(),
+					other.err.Error(),
+					"ErrGiveUp has the message of "+other.name,
+				)
 			}
-		}
+		})
+
+		t.Run("opens with the message of no other sentinel", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.False(t, strings.HasPrefix(noprefix.ErrGiveUp.Error(), other.err.Error()),
+					"the message of ErrGiveUp opens with the message of "+other.name)
+			}
+		})
 	})
 
-	t.Run("every sentinel carries a message", func(t *testing.T) {
+	t.Run("errors.Is", func(t *testing.T) {
 		t.Parallel()
-		for _, e := range all {
-			if e.err.Error() == "" {
-				t.Errorf("every sentinel must carry a message: %s has none", e.name)
-			}
-		}
-	})
 
-	t.Run("no two sentinels share a message", func(t *testing.T) {
-		t.Parallel()
-		seen := map[string]string{}
-		for _, e := range all {
-			if first, dup := seen[e.err.Error()]; dup {
-				t.Errorf("no two sentinels may share a message: %s repeats %s", e.name, first)
+		t.Run("matches no other sentinel of the package", func(t *testing.T) {
+			t.Parallel()
+			for _, other := range others {
+				expect.ErrorIsNot(t, noprefix.ErrGiveUp, other.err, "ErrGiveUp does not match "+other.name)
 			}
-			seen[e.err.Error()] = e.name
-		}
-	})
-
-	t.Run("no sentinel's message begins with another's", func(t *testing.T) {
-		t.Parallel()
-		for _, a := range all {
-			for _, b := range all {
-				if a.name == b.name {
-					continue
-				}
-				if strings.HasPrefix(a.err.Error(), b.err.Error()) {
-					t.Errorf("no sentinel's message may begin with another's: %s begins with the whole of %s",
-						a.name, b.name)
-				}
-			}
-		}
-	})
-
-	t.Run("no sentinel matches another", func(t *testing.T) {
-		t.Parallel()
-		for _, a := range all {
-			for _, b := range all {
-				if a.name == b.name {
-					continue
-				}
-				if errors.Is(a.err, b.err) {
-					t.Errorf("no sentinel may match another: %s matches %s", a.name, b.name)
-				}
-			}
-		}
+		})
 	})
 }
 
-// dokimi:provenance sha256:d3d6212c512d4756d561f09a9164cfac9aeb9497170ce5cb1f9463863b0abb00
+// dokimi:provenance sha256:0aec9875c7cb4e1720450a7131bc3e176b6e59187f6f0b4c097c452665b040db

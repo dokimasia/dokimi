@@ -10,27 +10,18 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embedded"
+	"go.dokimi.dev/stub"
 )
 
-// BasePingCall records one invocation of Base.Ping.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// BasePingCall records one call of Base.Ping.
 type BasePingCall struct {
 	Ctx context.Context
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// BasePingStub controls how the double answers Ping and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// BasePingStub configures Ping and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type BasePingStub struct {
 	*stub.MethodStub[BasePingCall]
 
@@ -38,110 +29,103 @@ type BasePingStub struct {
 	fallback *BasePingReturn
 }
 
-// BasePingReturn holds the fixed answer configured through Returns.
+// BasePingReturn contains the fixed results of Ping.
 type BasePingReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Ping. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Ping. A function and an
+// injected fault take precedence over them.
 func (s *BasePingStub) Returns(err error) *BasePingStub {
 	s.fallback = &BasePingReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Ping, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Ping from its
+// arguments. An injected fault takes precedence over it.
 func (s *BasePingStub) Func(fn func(context.Context) error) *BasePingStub {
 	s.fn = fn
 	return s
 }
 
-// --- BaseStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// BaseStubOption configures a [BaseStub] at construction time.
+// BaseStubOption configures a [BaseStub] at its construction.
 type BaseStubOption func(*BaseStub)
 
-// BaseStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// BaseStubStrict returns the option that makes an unconfigured method fail
+// the test instead of returning its zero value.
 func BaseStubStrict() BaseStubOption {
 	return func(s *BaseStub) { s.strict = true }
 }
 
-// BaseStubDelegateTo wraps a real implementation: every method forwards to
-// impl and is recorded on the double on the way through.
+// BaseStubDelegateTo returns the option that passes each call to impl. The
+// double still records the call.
 func BaseStubDelegateTo(impl embedded.Base) BaseStubOption {
 	return func(s *BaseStub) {
 		s.OnPing.Func(impl.Ping)
 	}
 }
 
-// BaseStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// BaseStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func BaseStubWithClock(clk assert.Clock) BaseStubOption {
 	return func(s *BaseStub) { s.group.SetClock(clk) }
 }
 
-// BaseStubWithRandSource makes probabilistic fault injection reproducible.
-// A failure nobody can replay is not a finding.
+// BaseStubWithRandSource returns the option that sets the random source of
+// the probabilistic faults to src. A seeded source repeats the faults of a
+// run.
 func BaseStubWithRandSource(src rand.Source) BaseStubOption {
 	return func(s *BaseStub) { s.group.SetRandSource(src) }
 }
 
-// BaseStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// BaseStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func BaseStubBenchMode() BaseStubOption {
 	return func(s *BaseStub) { s.group.BenchMode() }
 }
 
-// BaseStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with BaseStubWithClock, or d elapses in wall time.
+// BaseStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without BaseStubWithClock, d passes in real time.
 func BaseStubWithLatency(d time.Duration) BaseStubOption {
 	return func(s *BaseStub) { s.group.SetLatency(d) }
 }
 
-// BaseStubFailing arms every method that can fail with err, so a caller's
-// error path is one option rather than one Faults call per method. A
-// method answering no error is left alone.
+// BaseStubFailing returns the option that arms err on each method that can
+// fail. Each call of such a method then fails with err.
 func BaseStubFailing(err error) BaseStubOption {
 	return func(s *BaseStub) {
 		s.OnPing.Faults(err, 1)
 	}
 }
 
-// WithBasePing sets Ping's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithBasePing returns the option that sets the function of Ping.
 func WithBasePing(fn func(context.Context) error) BaseStubOption {
 	return func(s *BaseStub) { s.OnPing.Func(fn) }
 }
 
-// BaseStub is a recording test double for Base.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// BaseStub is a recording test double of Base. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type BaseStub struct {
 	OnPing *BasePingStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that BaseStub satisfies Base.
+// The compiler checks that BaseStub implements Base.
 var _ embedded.Base = (*BaseStub)(nil)
 
-// NewBaseStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewBaseStub returns a double of Base that reports its failures to tb and
+// applies opts. The double checks the expected counts of calls at the end
+// of the test. With a nil tb, the double reports nothing.
 func NewBaseStub(tb assert.TB, opts ...BaseStubOption) *BaseStub {
 	s := &BaseStub{
 		OnPing: &BasePingStub{MethodStub: stub.NewMethodStub[BasePingCall](tb, "Base.Ping")},
@@ -159,10 +143,8 @@ func NewBaseStub(tb assert.TB, opts ...BaseStubOption) *BaseStub {
 	return s
 }
 
-// NewBaseStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
+// NewBaseStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
 func NewBaseStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...BaseStubOption) *BaseStub {
 	return NewBaseStub(tb, append([]BaseStubOption{
 		BaseStubWithClock(clk),
@@ -170,26 +152,20 @@ func NewBaseStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ..
 	}, opts...)...)
 }
 
-// NewBaseStubFailing returns a double whose every fallible method answers
-// err — [BaseStubFailing] applied at construction, for the test whose
-// whole subject is the caller's error path. Further options apply after
-// it.
+// NewBaseStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
 func NewBaseStubFailing(tb assert.TB, err error, opts ...BaseStubOption) *BaseStub {
 	return NewBaseStub(tb, append([]BaseStubOption{BaseStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *BaseStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *BasePingStub) invoke(ctx context.Context) func() BasePingReturn {
 	if s.fn == nil {
 		return nil
@@ -200,12 +176,8 @@ func (s *BasePingStub) invoke(ctx context.Context) func() BasePingReturn {
 	}
 }
 
-// Ping records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Ping records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *BaseStub) Ping(ctx context.Context) error {
 	call := BasePingCall{Ctx: ctx}
 	r := stub.Answer(s.OnPing.MethodStub, &call, stub.Arms[BasePingCall, BasePingReturn]{
@@ -219,23 +191,14 @@ func (s *BaseStub) Ping(ctx context.Context) error {
 	return r.Err
 }
 
-// CloserCloseCall records one invocation of Closer.Close.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// CloserCloseCall records one call of Closer.Close.
 type CloserCloseCall struct {
 	Ctx context.Context
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// CloserCloseStub controls how the double answers Close and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// CloserCloseStub configures Close and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type CloserCloseStub struct {
 	*stub.MethodStub[CloserCloseCall]
 
@@ -243,110 +206,103 @@ type CloserCloseStub struct {
 	fallback *CloserCloseReturn
 }
 
-// CloserCloseReturn holds the fixed answer configured through Returns.
+// CloserCloseReturn contains the fixed results of Close.
 type CloserCloseReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Close. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Close. A function and an
+// injected fault take precedence over them.
 func (s *CloserCloseStub) Returns(err error) *CloserCloseStub {
 	s.fallback = &CloserCloseReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Close, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Close from its
+// arguments. An injected fault takes precedence over it.
 func (s *CloserCloseStub) Func(fn func(context.Context) error) *CloserCloseStub {
 	s.fn = fn
 	return s
 }
 
-// --- CloserStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// CloserStubOption configures a [CloserStub] at construction time.
+// CloserStubOption configures a [CloserStub] at its construction.
 type CloserStubOption func(*CloserStub)
 
-// CloserStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// CloserStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func CloserStubStrict() CloserStubOption {
 	return func(s *CloserStub) { s.strict = true }
 }
 
-// CloserStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// CloserStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func CloserStubDelegateTo(impl embedded.Closer) CloserStubOption {
 	return func(s *CloserStub) {
 		s.OnClose.Func(impl.Close)
 	}
 }
 
-// CloserStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// CloserStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func CloserStubWithClock(clk assert.Clock) CloserStubOption {
 	return func(s *CloserStub) { s.group.SetClock(clk) }
 }
 
-// CloserStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// CloserStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func CloserStubWithRandSource(src rand.Source) CloserStubOption {
 	return func(s *CloserStub) { s.group.SetRandSource(src) }
 }
 
-// CloserStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// CloserStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func CloserStubBenchMode() CloserStubOption {
 	return func(s *CloserStub) { s.group.BenchMode() }
 }
 
-// CloserStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with CloserStubWithClock, or d elapses in wall time.
+// CloserStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without CloserStubWithClock, d passes in real time.
 func CloserStubWithLatency(d time.Duration) CloserStubOption {
 	return func(s *CloserStub) { s.group.SetLatency(d) }
 }
 
-// CloserStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// CloserStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func CloserStubFailing(err error) CloserStubOption {
 	return func(s *CloserStub) {
 		s.OnClose.Faults(err, 1)
 	}
 }
 
-// WithCloserClose sets Close's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithCloserClose returns the option that sets the function of Close.
 func WithCloserClose(fn func(context.Context) error) CloserStubOption {
 	return func(s *CloserStub) { s.OnClose.Func(fn) }
 }
 
-// CloserStub is a recording test double for Closer.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// CloserStub is a recording test double of Closer. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type CloserStub struct {
 	OnClose *CloserCloseStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that CloserStub satisfies Closer.
+// The compiler checks that CloserStub implements Closer.
 var _ embedded.Closer = (*CloserStub)(nil)
 
-// NewCloserStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewCloserStub returns a double of Closer that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewCloserStub(tb assert.TB, opts ...CloserStubOption) *CloserStub {
 	s := &CloserStub{
 		OnClose: &CloserCloseStub{MethodStub: stub.NewMethodStub[CloserCloseCall](tb, "Closer.Close")},
@@ -364,11 +320,8 @@ func NewCloserStub(tb assert.TB, opts ...CloserStubOption) *CloserStub {
 	return s
 }
 
-// NewCloserStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewCloserStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewCloserStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...CloserStubOption) *CloserStub {
 	return NewCloserStub(tb, append([]CloserStubOption{
 		CloserStubWithClock(clk),
@@ -376,26 +329,20 @@ func NewCloserStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts 
 	}, opts...)...)
 }
 
-// NewCloserStubFailing returns a double whose every fallible method
-// answers err — [CloserStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewCloserStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewCloserStubFailing(tb assert.TB, err error, opts ...CloserStubOption) *CloserStub {
 	return NewCloserStub(tb, append([]CloserStubOption{CloserStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CloserStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *CloserCloseStub) invoke(ctx context.Context) func() CloserCloseReturn {
 	if s.fn == nil {
 		return nil
@@ -406,12 +353,8 @@ func (s *CloserCloseStub) invoke(ctx context.Context) func() CloserCloseReturn {
 	}
 }
 
-// Close records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Close records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *CloserStub) Close(ctx context.Context) error {
 	call := CloserCloseCall{Ctx: ctx}
 	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
@@ -425,10 +368,7 @@ func (s *CloserStub) Close(ctx context.Context) error {
 	return r.Err
 }
 
-// ComposedGetCall records one invocation of Composed.Get.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ComposedGetCall records one call of Composed.Get.
 type ComposedGetCall struct {
 	Ctx    context.Context
 	Key    string
@@ -436,32 +376,20 @@ type ComposedGetCall struct {
 	Err    error
 }
 
-// ComposedPingCall records one invocation of Composed.Ping.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ComposedPingCall records one call of Composed.Ping.
 type ComposedPingCall struct {
 	Ctx context.Context
 	Err error
 }
 
-// ComposedCloseCall records one invocation of Composed.Close.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ComposedCloseCall records one call of Composed.Close.
 type ComposedCloseCall struct {
 	Ctx context.Context
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// ComposedGetStub controls how the double answers Get and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ComposedGetStub configures Get and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type ComposedGetStub struct {
 	*stub.MethodStub[ComposedGetCall]
 
@@ -469,32 +397,28 @@ type ComposedGetStub struct {
 	fallback *ComposedGetReturn
 }
 
-// ComposedGetReturn holds the fixed answer configured through Returns.
+// ComposedGetReturn contains the fixed results of Get.
 type ComposedGetReturn struct {
 	Result string
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Get. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Get. A function and an
+// injected fault take precedence over them.
 func (s *ComposedGetStub) Returns(result string, err error) *ComposedGetStub {
 	s.fallback = &ComposedGetReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Get, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Get from its
+// arguments. An injected fault takes precedence over it.
 func (s *ComposedGetStub) Func(fn func(context.Context, string) (string, error)) *ComposedGetStub {
 	s.fn = fn
 	return s
 }
 
-// ComposedPingStub controls how the double answers Ping and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ComposedPingStub configures Ping and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type ComposedPingStub struct {
 	*stub.MethodStub[ComposedPingCall]
 
@@ -502,31 +426,27 @@ type ComposedPingStub struct {
 	fallback *ComposedPingReturn
 }
 
-// ComposedPingReturn holds the fixed answer configured through Returns.
+// ComposedPingReturn contains the fixed results of Ping.
 type ComposedPingReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Ping. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Ping. A function and an
+// injected fault take precedence over them.
 func (s *ComposedPingStub) Returns(err error) *ComposedPingStub {
 	s.fallback = &ComposedPingReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Ping, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Ping from its
+// arguments. An injected fault takes precedence over it.
 func (s *ComposedPingStub) Func(fn func(context.Context) error) *ComposedPingStub {
 	s.fn = fn
 	return s
 }
 
-// ComposedCloseStub controls how the double answers Close and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ComposedCloseStub configures Close and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type ComposedCloseStub struct {
 	*stub.MethodStub[ComposedCloseCall]
 
@@ -534,41 +454,40 @@ type ComposedCloseStub struct {
 	fallback *ComposedCloseReturn
 }
 
-// ComposedCloseReturn holds the fixed answer configured through Returns.
+// ComposedCloseReturn contains the fixed results of Close.
 type ComposedCloseReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Close. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Close. A function and an
+// injected fault take precedence over them.
 func (s *ComposedCloseStub) Returns(err error) *ComposedCloseStub {
 	s.fallback = &ComposedCloseReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Close, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Close from its
+// arguments. An injected fault takes precedence over it.
 func (s *ComposedCloseStub) Func(fn func(context.Context) error) *ComposedCloseStub {
 	s.fn = fn
 	return s
 }
 
-// --- ComposedStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ComposedStubOption configures a [ComposedStub] at construction time.
+// ComposedStubOption configures a [ComposedStub] at its construction.
 type ComposedStubOption func(*ComposedStub)
 
-// ComposedStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// ComposedStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func ComposedStubStrict() ComposedStubOption {
 	return func(s *ComposedStub) { s.strict = true }
 }
 
-// ComposedStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// ComposedStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func ComposedStubDelegateTo(impl embedded.Composed) ComposedStubOption {
 	return func(s *ComposedStub) {
 		s.OnGet.Func(impl.Get)
@@ -577,35 +496,36 @@ func ComposedStubDelegateTo(impl embedded.Composed) ComposedStubOption {
 	}
 }
 
-// ComposedStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// ComposedStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func ComposedStubWithClock(clk assert.Clock) ComposedStubOption {
 	return func(s *ComposedStub) { s.group.SetClock(clk) }
 }
 
-// ComposedStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ComposedStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func ComposedStubWithRandSource(src rand.Source) ComposedStubOption {
 	return func(s *ComposedStub) { s.group.SetRandSource(src) }
 }
 
-// ComposedStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// ComposedStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func ComposedStubBenchMode() ComposedStubOption {
 	return func(s *ComposedStub) { s.group.BenchMode() }
 }
 
-// ComposedStubWithLatency makes every method sleep d before answering, for
-// a test standing in for a slow dependency rather than one slow method.
-// Pair it with ComposedStubWithClock, or d elapses in wall time.
+// ComposedStubWithLatency returns the option that makes every method sleep
+// d before it returns. Without ComposedStubWithClock, d passes in real
+// time.
 func ComposedStubWithLatency(d time.Duration) ComposedStubOption {
 	return func(s *ComposedStub) { s.group.SetLatency(d) }
 }
 
-// ComposedStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// ComposedStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func ComposedStubFailing(err error) ComposedStubOption {
 	return func(s *ComposedStub) {
 		s.OnGet.Faults(err, 1)
@@ -614,50 +534,42 @@ func ComposedStubFailing(err error) ComposedStubOption {
 	}
 }
 
-// WithComposedGet sets Get's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithComposedGet returns the option that sets the function of Get.
 func WithComposedGet(fn func(context.Context, string) (string, error)) ComposedStubOption {
 	return func(s *ComposedStub) { s.OnGet.Func(fn) }
 }
 
-// WithComposedPing sets Ping's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithComposedPing returns the option that sets the function of Ping.
 func WithComposedPing(fn func(context.Context) error) ComposedStubOption {
 	return func(s *ComposedStub) { s.OnPing.Func(fn) }
 }
 
-// WithComposedClose sets Close's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithComposedClose returns the option that sets the function of Close.
 func WithComposedClose(fn func(context.Context) error) ComposedStubOption {
 	return func(s *ComposedStub) { s.OnClose.Func(fn) }
 }
 
-// ComposedStub is a recording test double for Composed.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ComposedStub is a recording test double of Composed. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type ComposedStub struct {
 	OnGet *ComposedGetStub
-	// OnPing configures Ping, contributed by Base.
+	// OnPing configures Ping, which Base declares.
 	OnPing *ComposedPingStub
-	// OnClose configures Close, contributed by Closer.
+	// OnClose configures Close, which Closer declares.
 	OnClose *ComposedCloseStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that ComposedStub satisfies Composed.
+// The compiler checks that ComposedStub implements Composed.
 var _ embedded.Composed = (*ComposedStub)(nil)
 
-// NewComposedStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewComposedStub returns a double of Composed that reports its failures
+// to tb and applies opts. The double checks the expected counts of calls
+// at the end of the test. With a nil tb, the double reports nothing.
 func NewComposedStub(tb assert.TB, opts ...ComposedStubOption) *ComposedStub {
 	s := &ComposedStub{
 		OnGet:   &ComposedGetStub{MethodStub: stub.NewMethodStub[ComposedGetCall](tb, "Composed.Get")},
@@ -679,11 +591,8 @@ func NewComposedStub(tb assert.TB, opts ...ComposedStubOption) *ComposedStub {
 	return s
 }
 
-// NewComposedStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewComposedStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewComposedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ComposedStubOption) *ComposedStub {
 	return NewComposedStub(tb, append([]ComposedStubOption{
 		ComposedStubWithClock(clk),
@@ -691,26 +600,20 @@ func NewComposedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opt
 	}, opts...)...)
 }
 
-// NewComposedStubFailing returns a double whose every fallible method
-// answers err — [ComposedStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewComposedStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewComposedStubFailing(tb assert.TB, err error, opts ...ComposedStubOption) *ComposedStub {
 	return NewComposedStub(tb, append([]ComposedStubOption{ComposedStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ComposedStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ComposedGetStub) invoke(ctx context.Context, key string) func() ComposedGetReturn {
 	if s.fn == nil {
 		return nil
@@ -721,12 +624,8 @@ func (s *ComposedGetStub) invoke(ctx context.Context, key string) func() Compose
 	}
 }
 
-// Get records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Get records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ComposedStub) Get(ctx context.Context, key string) (string, error) {
 	call := ComposedGetCall{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[ComposedGetCall, ComposedGetReturn]{
@@ -741,9 +640,8 @@ func (s *ComposedStub) Get(ctx context.Context, key string) (string, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ComposedPingStub) invoke(ctx context.Context) func() ComposedPingReturn {
 	if s.fn == nil {
 		return nil
@@ -754,12 +652,8 @@ func (s *ComposedPingStub) invoke(ctx context.Context) func() ComposedPingReturn
 	}
 }
 
-// Ping records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Ping records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ComposedStub) Ping(ctx context.Context) error {
 	call := ComposedPingCall{Ctx: ctx}
 	r := stub.Answer(s.OnPing.MethodStub, &call, stub.Arms[ComposedPingCall, ComposedPingReturn]{
@@ -773,9 +667,8 @@ func (s *ComposedStub) Ping(ctx context.Context) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ComposedCloseStub) invoke(ctx context.Context) func() ComposedCloseReturn {
 	if s.fn == nil {
 		return nil
@@ -786,12 +679,8 @@ func (s *ComposedCloseStub) invoke(ctx context.Context) func() ComposedCloseRetu
 	}
 }
 
-// Close records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Close records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ComposedStub) Close(ctx context.Context) error {
 	call := ComposedCloseCall{Ctx: ctx}
 	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[ComposedCloseCall, ComposedCloseReturn]{
@@ -805,4 +694,4 @@ func (s *ComposedStub) Close(ctx context.Context) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:3b6cf985d50b0b1d010445518850cef98fc26d3683b35ba8d3cc13fa8ac1bd16
+// dokimi:provenance sha256:599191712011b1c687ab4fb3f2946e855f76c11af3288535348703bb388e37b2

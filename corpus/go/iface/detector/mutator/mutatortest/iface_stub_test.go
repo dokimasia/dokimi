@@ -11,25 +11,36 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator/mutatortest"
+	"go.dokimi.dev/stub"
 )
 
-// mutatorStubTouchSubject binds Touch into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mutatorStubTouchArgs returns the samples of the arguments of Touch.
+func mutatorStubTouchArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Touch-a"
+	return a0, a1
+}
+
+// mutatorStubTouch calls Touch of s with the samples of its arguments.
+func mutatorStubTouch(tb assert.TB, s *mutatortest.MutatorStub) {
+	tb.Helper()
+	a0, a1 := mutatorStubTouchArgs(tb)
+	s.Touch(a0, a1)
+}
+
+// mutatorStubTouchSubject returns the subject of [stub.Behaviour] for
+// Touch. The subject calls a new double that reports to tb.
 func mutatorStubTouchSubject(tb assert.TB) stub.Subject[mutatortest.MutatorTouchCall, struct{}] {
 	tb.Helper()
 	s := mutatortest.NewMutatorStub(tb)
 	return stub.Subject[mutatortest.MutatorTouchCall, struct{}]{
 		Stub: s.OnTouch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Touch-a"
-			s.Touch(a0, a1)
+			mutatorStubTouch(tb, s)
 		},
 		Override: func(mark func()) {
 			s.OnTouch.Func(func(_ context.Context, _ string) {
@@ -39,121 +50,166 @@ func mutatorStubTouchSubject(tb assert.TB) stub.Subject[mutatortest.MutatorTouch
 	}
 }
 
-// TestMutatorStubTouch pins how Touch answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMutatorStubTouch(t *testing.T) {
-	t.Parallel()
+// mutatorStubInstance is the instance of a mutatortest.MutatorStub that
+// the checks of the constructors and the options drive.
+type mutatorStubInstance = stub.Instance[mutatortest.MutatorTouchCall]
 
-	stub.Behaviour(t, "Touch", mutatorStubTouchSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := mutatortest.NewMutatorStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		s.Touch(a0, a1)
-		got := s.OnTouch.AssertCalledOnce(t, "Touch must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := mutatortest.NewMutatorStub(t)
-		var seen []mutatortest.MutatorTouchCall
-		s.OnTouch.OnRecord(func(c mutatortest.MutatorTouchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		s.Touch(a0, a1)
-		s.Touch(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Touch call")
-	})
-
-	t.Run("wires WithMutatorTouch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := mutatortest.NewMutatorStub(t, mutatortest.WithMutatorTouch(func(_ context.Context, _ string) {
-			called = true
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		s.Touch(a0, a1)
-		assert.True(t, called, "WithMutatorTouch must install the override")
-	})
-}
-
-// mutatorStubDouble describes how to build a MutatorStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Touch stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mutatorStubDouble() stub.Double[mutatortest.MutatorTouchCall] {
-	instance := func(s *mutatortest.MutatorStub) stub.Instance[mutatortest.MutatorTouchCall] {
-		return stub.Instance[mutatortest.MutatorTouchCall]{
-			Stub: s.OnTouch.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Touch-a"
-				s.Touch(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[mutatortest.MutatorTouchCall]{
-		New: func(tb assert.TB) stub.Instance[mutatortest.MutatorTouchCall] {
-			return instance(mutatortest.NewMutatorStub(tb))
+// mutatorStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Touch alone.
+func mutatorStubInstanceOf(tb assert.TB, s *mutatortest.MutatorStub) mutatorStubInstance {
+	tb.Helper()
+	return mutatorStubInstance{
+		Stub: s.OnTouch.MethodStub,
+		Call: func() {
+			mutatorStubTouch(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[mutatortest.MutatorTouchCall] {
-			return instance(mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[mutatortest.MutatorTouchCall] {
-			return instance(mutatortest.NewMutatorStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[mutatortest.MutatorTouchCall] {
-			return instance(mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[mutatortest.MutatorTouchCall] {
-			return instance(mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[mutatortest.MutatorTouchCall] {
-			return instance(mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMutatorStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMutatorStubOptions(t *testing.T) {
+// TestMutatorStub checks the methods, the constructors and the options of
+// the double MutatorStub.
+func TestMutatorStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mutatorStubDouble())
-}
+	t.Run("Touch", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Touch", mutatorStubTouchSubject)
 
-// TestMutatorStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMutatorStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := mutatortest.NewMutatorStub(t)
+			mutatorStubTouch(t, s)
+			got := s.OnTouch.AssertCalledOnce(t, "Touch records the call")
+			a0, a1 := mutatorStubTouchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
 
-	inner := mutatortest.NewMutatorStub(t)
-	s := mutatortest.NewMutatorStub(t, mutatortest.MutatorStubDelegateTo(inner))
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := mutatortest.NewMutatorStub(t)
+			var seen []mutatortest.MutatorTouchCall
+			s.OnTouch.OnRecord(func(c mutatortest.MutatorTouchCall) { seen = append(seen, c) })
+			mutatorStubTouch(t, s)
+			mutatorStubTouch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Touch")
+		})
+	})
 
-	t.Run("forwards Touch to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Touch-a"
-		s.Touch(a0, a1)
-		inner.OnTouch.AssertCalledOnce(t, "Touch must reach the wrapped implementation")
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mutatorStubInstance {
+			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Touch", func(t *testing.T) {
+			t.Parallel()
+			s := mutatortest.NewMutatorStub(t)
+			mutatorStubTouch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnTouch.CallCount(), 0, "ResetCalls clears the calls of Touch")
+		})
+	})
+
+	t.Run("NewMutatorStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mutatorStubInstance {
+			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("MutatorStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mutatorStubInstance {
+			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubStrict()))
+		})
+	})
+
+	t.Run("MutatorStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Touch to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := mutatortest.NewMutatorStub(t)
+			s := mutatortest.NewMutatorStub(t, mutatortest.MutatorStubDelegateTo(inner))
+			mutatorStubTouch(t, s)
+			inner.OnTouch.AssertCalledOnce(t, "Touch calls the implementation")
+		})
+	})
+
+	t.Run("MutatorStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mutatorStubInstance {
+			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MutatorStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mutatorStubInstance {
+			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MutatorStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mutatorStubInstance {
+			return mutatorStubInstanceOf(tb, mutatortest.NewMutatorStub(tb, mutatortest.MutatorStubBenchMode()))
+		})
+	})
+
+	t.Run("MutatorStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mutatorStubInstance {
+			return mutatorStubInstanceOf(
+				tb,
+				mutatortest.NewMutatorStub(
+					tb,
+					mutatortest.MutatorStubWithClock(clk),
+					mutatortest.MutatorStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("WithMutatorTouch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Touch", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := mutatortest.NewMutatorStub(t, mutatortest.WithMutatorTouch(func(_ context.Context, _ string) {
+				called = true
+			}))
+			mutatorStubTouch(t, s)
+			assert.True(t, called, "WithMutatorTouch sets the function of Touch")
+		})
 	})
 }
 
-// dokimi:provenance sha256:bdb626cbb43b0c28996f3455a21632513f1316c23b68adcb8cebf769c80087c3
+// TestMutatorTouchStub checks the methods of MutatorTouchStub, which
+// configures Touch.
+func TestMutatorTouchStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Touch to the function", func(t *testing.T) {
+			t.Parallel()
+			s := mutatortest.NewMutatorStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnTouch.Func(func(p0 context.Context, p1 string) {
+				got0, got1 = p0, p1
+			})
+			mutatorStubTouch(t, s)
+			a0, a1 := mutatorStubTouchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:46943080376bbd7bcb2e56549b2d521b56010798ab02a4470824b95ebd3ec480

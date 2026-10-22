@@ -7,7 +7,7 @@ package stickytest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sticky"
 )
 
@@ -47,33 +47,18 @@ func MixedSuite() conform.Suite[sticky.Mixed] {
 	return conform.Suite[sticky.Mixed]{Declaration: "Mixed"}
 }
 
-// RunMixed applies the checks of Mixed, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunMixed[T sticky.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
+// RunMixedSuite applies the checks of Mixed, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunMixedSuite[T sticky.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(*MixedHandle) sticky.Mixed { return newSubject() }, opts...)
+	RunMixedSuiteFromHandle(t, func(*MixedHandle) T { return newSubject() }, opts...)
 }
 
-// RunMixedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunMixedOn[T sticky.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+// RunMixedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunMixedSuiteFromHandle[T sticky.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
 }
 
-// ControlMixed applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlMixed[T sticky.Mixed](t *testing.T, newControl func() T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(*MixedHandle) sticky.Mixed { return newControl() }, opts...)
-}
-
-// ControlMixedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlMixedOn[T sticky.Mixed](t *testing.T, newControl func(h *MixedHandle) T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(h *MixedHandle) sticky.Mixed { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:17a78dfc081ed618d5d4aee71ccba5f8ab11f9e07c74b1819bf93b02337aa144
+// dokimi:provenance sha256:25f6cd653d283bdff9dd0ff790a9dd8f7c256656c582ce06d9ea29a8d40e8bb8

@@ -10,57 +10,39 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually"
+	"go.dokimi.dev/stub"
 )
 
-// MixedPublishCall records one invocation of Mixed.Publish.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MixedPublishCall records one call of Mixed.Publish.
 type MixedPublishCall struct {
 	Ctx  context.Context
 	Item string
 	Err  error
 }
 
-// MixedSettleCall records one invocation of Mixed.Settle.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MixedSettleCall records one call of Mixed.Settle.
 type MixedSettleCall struct {
 	Ctx context.Context
 	Err error
 }
 
-// MixedSyncCall records one invocation of Mixed.Sync.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MixedSyncCall records one call of Mixed.Sync.
 type MixedSyncCall struct {
 	Ctx  context.Context
 	Peer eventually.Mixed
 	Err  error
 }
 
-// MixedItemsCall records one invocation of Mixed.Items.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MixedItemsCall records one call of Mixed.Items.
 type MixedItemsCall struct {
 	Ctx    context.Context
 	Result []string
 	Err    error
 }
 
-// --- Per-method configuration ---
-
-// MixedPublishStub controls how the double answers Publish and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MixedPublishStub configures Publish and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type MixedPublishStub struct {
 	*stub.MethodStub[MixedPublishCall]
 
@@ -68,31 +50,27 @@ type MixedPublishStub struct {
 	fallback *MixedPublishReturn
 }
 
-// MixedPublishReturn holds the fixed answer configured through Returns.
+// MixedPublishReturn contains the fixed results of Publish.
 type MixedPublishReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Publish. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Publish. A function and an
+// injected fault take precedence over them.
 func (s *MixedPublishStub) Returns(err error) *MixedPublishStub {
 	s.fallback = &MixedPublishReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Publish, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Publish from its
+// arguments. An injected fault takes precedence over it.
 func (s *MixedPublishStub) Func(fn func(context.Context, string) error) *MixedPublishStub {
 	s.fn = fn
 	return s
 }
 
-// MixedSettleStub controls how the double answers Settle and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MixedSettleStub configures Settle and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type MixedSettleStub struct {
 	*stub.MethodStub[MixedSettleCall]
 
@@ -100,31 +78,27 @@ type MixedSettleStub struct {
 	fallback *MixedSettleReturn
 }
 
-// MixedSettleReturn holds the fixed answer configured through Returns.
+// MixedSettleReturn contains the fixed results of Settle.
 type MixedSettleReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Settle. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Settle. A function and an
+// injected fault take precedence over them.
 func (s *MixedSettleStub) Returns(err error) *MixedSettleStub {
 	s.fallback = &MixedSettleReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Settle, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Settle from its
+// arguments. An injected fault takes precedence over it.
 func (s *MixedSettleStub) Func(fn func(context.Context) error) *MixedSettleStub {
 	s.fn = fn
 	return s
 }
 
-// MixedSyncStub controls how the double answers Sync and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MixedSyncStub configures Sync and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type MixedSyncStub struct {
 	*stub.MethodStub[MixedSyncCall]
 
@@ -132,31 +106,27 @@ type MixedSyncStub struct {
 	fallback *MixedSyncReturn
 }
 
-// MixedSyncReturn holds the fixed answer configured through Returns.
+// MixedSyncReturn contains the fixed results of Sync.
 type MixedSyncReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Sync. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Sync. A function and an
+// injected fault take precedence over them.
 func (s *MixedSyncStub) Returns(err error) *MixedSyncStub {
 	s.fallback = &MixedSyncReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Sync, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Sync from its
+// arguments. An injected fault takes precedence over it.
 func (s *MixedSyncStub) Func(fn func(context.Context, eventually.Mixed) error) *MixedSyncStub {
 	s.fn = fn
 	return s
 }
 
-// MixedItemsStub controls how the double answers Items and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MixedItemsStub configures Items and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type MixedItemsStub struct {
 	*stub.MethodStub[MixedItemsCall]
 
@@ -164,42 +134,41 @@ type MixedItemsStub struct {
 	fallback *MixedItemsReturn
 }
 
-// MixedItemsReturn holds the fixed answer configured through Returns.
+// MixedItemsReturn contains the fixed results of Items.
 type MixedItemsReturn struct {
 	Result []string
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Items. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Items. A function and an
+// injected fault take precedence over them.
 func (s *MixedItemsStub) Returns(result []string, err error) *MixedItemsStub {
 	s.fallback = &MixedItemsReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Items, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Items from its
+// arguments. An injected fault takes precedence over it.
 func (s *MixedItemsStub) Func(fn func(context.Context) ([]string, error)) *MixedItemsStub {
 	s.fn = fn
 	return s
 }
 
-// --- MixedStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// MixedStubOption configures a [MixedStub] at construction time.
+// MixedStubOption configures a [MixedStub] at its construction.
 type MixedStubOption func(*MixedStub)
 
-// MixedStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// MixedStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func MixedStubStrict() MixedStubOption {
 	return func(s *MixedStub) { s.strict = true }
 }
 
-// MixedStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// MixedStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func MixedStubDelegateTo(impl eventually.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnPublish.Func(impl.Publish)
@@ -209,35 +178,35 @@ func MixedStubDelegateTo(impl eventually.Mixed) MixedStubOption {
 	}
 }
 
-// MixedStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// MixedStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func MixedStubWithClock(clk assert.Clock) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetClock(clk) }
 }
 
-// MixedStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// MixedStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func MixedStubWithRandSource(src rand.Source) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetRandSource(src) }
 }
 
-// MixedStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// MixedStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func MixedStubBenchMode() MixedStubOption {
 	return func(s *MixedStub) { s.group.BenchMode() }
 }
 
-// MixedStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with MixedStubWithClock, or d elapses in wall time.
+// MixedStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without MixedStubWithClock, d passes in real time.
 func MixedStubWithLatency(d time.Duration) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetLatency(d) }
 }
 
-// MixedStubFailing arms every method that can fail with err, so a caller's
-// error path is one option rather than one Faults call per method. A
-// method answering no error is left alone.
+// MixedStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func MixedStubFailing(err error) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnPublish.Faults(err, 1)
@@ -247,56 +216,46 @@ func MixedStubFailing(err error) MixedStubOption {
 	}
 }
 
-// WithMixedPublish sets Publish's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithMixedPublish returns the option that sets the function of Publish.
 func WithMixedPublish(fn func(context.Context, string) error) MixedStubOption {
 	return func(s *MixedStub) { s.OnPublish.Func(fn) }
 }
 
-// WithMixedSettle sets Settle's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithMixedSettle returns the option that sets the function of Settle.
 func WithMixedSettle(fn func(context.Context) error) MixedStubOption {
 	return func(s *MixedStub) { s.OnSettle.Func(fn) }
 }
 
-// WithMixedSync sets Sync's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithMixedSync returns the option that sets the function of Sync.
 func WithMixedSync(fn func(context.Context, eventually.Mixed) error) MixedStubOption {
 	return func(s *MixedStub) { s.OnSync.Func(fn) }
 }
 
-// WithMixedItems sets Items's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithMixedItems returns the option that sets the function of Items.
 func WithMixedItems(fn func(context.Context) ([]string, error)) MixedStubOption {
 	return func(s *MixedStub) { s.OnItems.Func(fn) }
 }
 
-// MixedStub is a recording test double for Mixed.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// MixedStub is a recording test double of Mixed. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type MixedStub struct {
 	OnPublish *MixedPublishStub
 	OnSettle  *MixedSettleStub
 	OnSync    *MixedSyncStub
 	OnItems   *MixedItemsStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that MixedStub satisfies Mixed.
+// The compiler checks that MixedStub implements Mixed.
 var _ eventually.Mixed = (*MixedStub)(nil)
 
-// NewMixedStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewMixedStub returns a double of Mixed that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
 		OnPublish: &MixedPublishStub{MethodStub: stub.NewMethodStub[MixedPublishCall](tb, "Mixed.Publish")},
@@ -320,10 +279,8 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	return s
 }
 
-// NewMixedStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
+// NewMixedStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
 func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MixedStubOption) *MixedStub {
 	return NewMixedStub(tb, append([]MixedStubOption{
 		MixedStubWithClock(clk),
@@ -331,26 +288,20 @@ func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts .
 	}, opts...)...)
 }
 
-// NewMixedStubFailing returns a double whose every fallible method answers
-// err — [MixedStubFailing] applied at construction, for the test whose
-// whole subject is the caller's error path. Further options apply after
-// it.
+// NewMixedStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
 func NewMixedStubFailing(tb assert.TB, err error, opts ...MixedStubOption) *MixedStub {
 	return NewMixedStub(tb, append([]MixedStubOption{MixedStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MixedStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MixedPublishStub) invoke(ctx context.Context, item string) func() MixedPublishReturn {
 	if s.fn == nil {
 		return nil
@@ -361,12 +312,8 @@ func (s *MixedPublishStub) invoke(ctx context.Context, item string) func() Mixed
 	}
 }
 
-// Publish records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Publish records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Publish(ctx context.Context, item string) error {
 	call := MixedPublishCall{Ctx: ctx, Item: item}
 	r := stub.Answer(s.OnPublish.MethodStub, &call, stub.Arms[MixedPublishCall, MixedPublishReturn]{
@@ -380,9 +327,8 @@ func (s *MixedStub) Publish(ctx context.Context, item string) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MixedSettleStub) invoke(ctx context.Context) func() MixedSettleReturn {
 	if s.fn == nil {
 		return nil
@@ -393,12 +339,8 @@ func (s *MixedSettleStub) invoke(ctx context.Context) func() MixedSettleReturn {
 	}
 }
 
-// Settle records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Settle records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Settle(ctx context.Context) error {
 	call := MixedSettleCall{Ctx: ctx}
 	r := stub.Answer(s.OnSettle.MethodStub, &call, stub.Arms[MixedSettleCall, MixedSettleReturn]{
@@ -412,9 +354,8 @@ func (s *MixedStub) Settle(ctx context.Context) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MixedSyncStub) invoke(ctx context.Context, peer eventually.Mixed) func() MixedSyncReturn {
 	if s.fn == nil {
 		return nil
@@ -425,12 +366,8 @@ func (s *MixedSyncStub) invoke(ctx context.Context, peer eventually.Mixed) func(
 	}
 }
 
-// Sync records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Sync records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Sync(ctx context.Context, peer eventually.Mixed) error {
 	call := MixedSyncCall{Ctx: ctx, Peer: peer}
 	r := stub.Answer(s.OnSync.MethodStub, &call, stub.Arms[MixedSyncCall, MixedSyncReturn]{
@@ -444,9 +381,8 @@ func (s *MixedStub) Sync(ctx context.Context, peer eventually.Mixed) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MixedItemsStub) invoke(ctx context.Context) func() MixedItemsReturn {
 	if s.fn == nil {
 		return nil
@@ -457,12 +393,8 @@ func (s *MixedItemsStub) invoke(ctx context.Context) func() MixedItemsReturn {
 	}
 }
 
-// Items records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Items records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Items(ctx context.Context) ([]string, error) {
 	call := MixedItemsCall{Ctx: ctx}
 	r := stub.Answer(s.OnItems.MethodStub, &call, stub.Arms[MixedItemsCall, MixedItemsReturn]{
@@ -477,4 +409,4 @@ func (s *MixedStub) Items(ctx context.Context) ([]string, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:19905b4866b1195e44567844d638d769762e17c5e1da4e68b6aa975bfd1b1f0d
+// dokimi:provenance sha256:143224dfcc65b71200848690bd5c5605d956091617ed95755fe71355f1190468

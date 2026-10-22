@@ -7,7 +7,7 @@ package readerwithbooltest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool"
 )
 
@@ -40,33 +40,30 @@ func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 	return conform.Suite[readerwithbool.ReaderWithBool]{Declaration: "ReaderWithBool"}
 }
 
-// RunReaderWithBool applies the checks of ReaderWithBool, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunReaderWithBool[T readerwithbool.ReaderWithBool](t *testing.T, newSubject func() T, opts ...ReaderWithBoolOption) {
+// RunReaderWithBoolSuite applies the checks of ReaderWithBool, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
+	t *testing.T,
+	newSubject func() T,
+	opts ...ReaderWithBoolOption,
+) {
 	t.Helper()
-	conform.Verify(t, ReaderWithBoolSuite(), func(*ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject() }, opts...)
+	RunReaderWithBoolSuiteFromHandle(t, func(*ReaderWithBoolHandle) T { return newSubject() }, opts...)
 }
 
-// RunReaderWithBoolOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunReaderWithBoolOn[T readerwithbool.ReaderWithBool](t *testing.T, newSubject func(h *ReaderWithBoolHandle) T, opts ...ReaderWithBoolOption) {
+// RunReaderWithBoolSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunReaderWithBoolSuiteFromHandle[T readerwithbool.ReaderWithBool](
+	t *testing.T,
+	newSubject func(h *ReaderWithBoolHandle) T,
+	opts ...ReaderWithBoolOption,
+) {
 	t.Helper()
-	conform.Verify(t, ReaderWithBoolSuite(), func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		ReaderWithBoolSuite(),
+		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
+		opts...)
 }
 
-// ControlReaderWithBool applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlReaderWithBool[T readerwithbool.ReaderWithBool](t *testing.T, newControl func() T, opts ...ReaderWithBoolOption) {
-	t.Helper()
-	conform.Control(t, ReaderWithBoolSuite(), func(*ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newControl() }, opts...)
-}
-
-// ControlReaderWithBoolOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlReaderWithBoolOn[T readerwithbool.ReaderWithBool](t *testing.T, newControl func(h *ReaderWithBoolHandle) T, opts ...ReaderWithBoolOption) {
-	t.Helper()
-	conform.Control(t, ReaderWithBoolSuite(), func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:234c767fb6d4aecad2bb780adb32b2b06050c48a05da80d55625e545d4885317
+// dokimi:provenance sha256:fbe0268f01d28ffec6f1fa274bbacf174262fa9ce2a79403366222ab54361c4a

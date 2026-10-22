@@ -7,7 +7,7 @@ package multireturntest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn"
 )
 
@@ -55,33 +55,18 @@ func WideSuite() conform.Suite[multireturn.Wide] {
 	return conform.Suite[multireturn.Wide]{Declaration: "Wide"}
 }
 
-// RunWide applies the checks of Wide, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunWide[T multireturn.Wide](t *testing.T, newSubject func() T, opts ...WideOption) {
+// RunWideSuite applies the checks of Wide, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunWideSuite[T multireturn.Wide](t *testing.T, newSubject func() T, opts ...WideOption) {
 	t.Helper()
-	conform.Verify(t, WideSuite(), func(*WideHandle) multireturn.Wide { return newSubject() }, opts...)
+	RunWideSuiteFromHandle(t, func(*WideHandle) T { return newSubject() }, opts...)
 }
 
-// RunWideOn applies the same checks to a subject that newSubject builds on
-// the handle of each check.
-func RunWideOn[T multireturn.Wide](t *testing.T, newSubject func(h *WideHandle) T, opts ...WideOption) {
+// RunWideSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunWideSuiteFromHandle[T multireturn.Wide](t *testing.T, newSubject func(h *WideHandle) T, opts ...WideOption) {
 	t.Helper()
-	conform.Verify(t, WideSuite(), func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+	conform.Run(t, WideSuite(), func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
 }
 
-// ControlWide applies the same checks to a fresh control of newControl for
-// each check. A control is a correct implementation that differs from the
-// subject.
-func ControlWide[T multireturn.Wide](t *testing.T, newControl func() T, opts ...WideOption) {
-	t.Helper()
-	conform.Control(t, WideSuite(), func(*WideHandle) multireturn.Wide { return newControl() }, opts...)
-}
-
-// ControlWideOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlWideOn[T multireturn.Wide](t *testing.T, newControl func(h *WideHandle) T, opts ...WideOption) {
-	t.Helper()
-	conform.Control(t, WideSuite(), func(h *WideHandle) multireturn.Wide { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:858c6182ff28dda01f49fe1a5eedf035bc667b8f32953aee7d1cebadd9e5cbaa
+// dokimi:provenance sha256:15e9cb1a47d95fabece0c9e9a50aff47fe056c7114d1c44f5e5ffc4c2f3379ee

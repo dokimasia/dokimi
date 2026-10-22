@@ -12,32 +12,72 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	ifmatch "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-match"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/if-match/ifmatchtest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubPutSubject binds Put into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// contractStubPutArgs returns the samples of the arguments of Put.
+func contractStubPutArgs(tb assert.TB) (context.Context, ifmatch.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 ifmatch.Value
+	a1 = ifmatch.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// contractStubPut calls Put of s with the samples of its arguments.
+func contractStubPut(tb assert.TB, s *ifmatchtest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubPutArgs(tb)
+	return s.Put(a0, a1)
+}
+
+// contractStubPutPins returns the samples of the results of Put, with a
+// new error as its error result.
+func contractStubPutPins() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// contractStubMatchArgs returns the samples of the arguments of Match.
+func contractStubMatchArgs(tb assert.TB) (context.Context, ifmatch.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 ifmatch.Value
+	a1 = ifmatch.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// contractStubMatch calls Match of s with the samples of its arguments.
+func contractStubMatch(tb assert.TB, s *ifmatchtest.ContractStub) (bool, error) {
+	tb.Helper()
+	a0, a1 := contractStubMatchArgs(tb)
+	return s.Match(a0, a1)
+}
+
+// contractStubMatchPins returns the samples of the results of Match, with
+// a new error as its error result.
+func contractStubMatchPins() (bool, error) {
+	var want0 bool
+	want1 := errors.New("Match-returns")
+	want0 = true
+	return want0, want1
+}
+
+// contractStubPutSubject returns the subject of [stub.Behaviour] for Put.
+// The subject calls a new double that reports to tb.
 func contractStubPutSubject(tb assert.TB) stub.Subject[ifmatchtest.ContractPutCall, ifmatchtest.ContractPutReturn] {
 	tb.Helper()
 	s := ifmatchtest.NewContractStub(tb)
 	return stub.Subject[ifmatchtest.ContractPutCall, ifmatchtest.ContractPutReturn]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 ifmatch.Value
-			a1 = ifmatch.Value{Key: "Key-a"}
-			_ = s.Put(a0, a1)
+			_ = contractStubPut(tb, s)
 		},
 		Result: func() ifmatchtest.ContractPutReturn {
-			var a0 context.Context
-			var a1 ifmatch.Value
-			a1 = ifmatch.Value{Key: "Key-a"}
-			got0 := s.Put(a0, a1)
+			got0 := contractStubPut(tb, s)
 			return ifmatchtest.ContractPutReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,114 +88,26 @@ func contractStubPutSubject(tb assert.TB) stub.Subject[ifmatchtest.ContractPutCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 ifmatch.Value
-			a1 = ifmatch.Value{Key: "Key-a"}
-			r0 := s.Put(a0, a1)
+			r0 := contractStubPut(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubPut(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Put", contractStubPutSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := ifmatchtest.NewContractStub(t)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := ifmatchtest.NewContractStub(t)
-		var seen []ifmatchtest.ContractPutCall
-		s.OnPut.OnRecord(func(c ifmatchtest.ContractPutCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		_ = s.Put(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithContractPut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := ifmatchtest.NewContractStub(t, ifmatchtest.WithContractPut(func(_ context.Context, _ ifmatch.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		assert.True(t, called, "WithContractPut must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Put-failing")
-		s := ifmatchtest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := ifmatchtest.NewContractStub(t)
-		var want0 error
-		s.OnPut.Returns(want0)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		s.ResetCalls()
-		_ = s.Put(a0, a1)
-		s.OnPut.AssertCalledOnce(t, "Put must record the call that followed the reset")
-	})
-}
-
-// contractStubMatchSubject binds Match into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubMatchSubject(tb assert.TB) stub.Subject[ifmatchtest.ContractMatchCall, ifmatchtest.ContractMatchReturn] {
+// contractStubMatchSubject returns the subject of [stub.Behaviour] for
+// Match. The subject calls a new double that reports to tb.
+func contractStubMatchSubject(
+	tb assert.TB,
+) stub.Subject[ifmatchtest.ContractMatchCall, ifmatchtest.ContractMatchReturn] {
 	tb.Helper()
 	s := ifmatchtest.NewContractStub(tb)
 	return stub.Subject[ifmatchtest.ContractMatchCall, ifmatchtest.ContractMatchReturn]{
 		Stub: s.OnMatch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 ifmatch.Value
-			a1 = ifmatch.Value{Key: "Key-a"}
-			_, _ = s.Match(a0, a1)
+			_, _ = contractStubMatch(tb, s)
 		},
 		Result: func() ifmatchtest.ContractMatchReturn {
-			var a0 context.Context
-			var a1 ifmatch.Value
-			a1 = ifmatch.Value{Key: "Key-a"}
-			got0, got1 := s.Match(a0, a1)
+			got0, got1 := contractStubMatch(tb, s)
 			return ifmatchtest.ContractMatchReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -167,202 +119,401 @@ func contractStubMatchSubject(tb assert.TB) stub.Subject[ifmatchtest.ContractMat
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 ifmatch.Value
-			a1 = ifmatch.Value{Key: "Key-a"}
-			_, r1 := s.Match(a0, a1)
+			_, r1 := contractStubMatch(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubMatch pins how Match answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubMatch(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a ifmatchtest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[ifmatchtest.ContractPutCall]
 
-	stub.Behaviour(t, "Match", contractStubMatchSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := ifmatchtest.NewContractStub(t)
-		var want0 bool
-		var want1 error
-		want0 = true
-		s.OnMatch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		got0, _ := s.Match(a0, a1)
-		assert.Equal(t, got0, want0, "Match must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := ifmatchtest.NewContractStub(t)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_, _ = s.Match(a0, a1)
-		got := s.OnMatch.AssertCalledOnce(t, "Match must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := ifmatchtest.NewContractStub(t)
-		var seen []ifmatchtest.ContractMatchCall
-		s.OnMatch.OnRecord(func(c ifmatchtest.ContractMatchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_, _ = s.Match(a0, a1)
-		_, _ = s.Match(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Match call")
-	})
-
-	t.Run("wires WithContractMatch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := ifmatchtest.NewContractStub(t, ifmatchtest.WithContractMatch(func(_ context.Context, _ ifmatch.Value) (bool, error) {
-			called = true
-			var z0 bool
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_, _ = s.Match(a0, a1)
-		assert.True(t, called, "WithContractMatch must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Match-failing")
-		s := ifmatchtest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_, r1 := s.Match(a0, a1)
-		assert.ErrorIs(t, r1, want, "Match must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := ifmatchtest.NewContractStub(t)
-		var want0 bool
-		var want1 error
-		want0 = true
-		s.OnMatch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_, _ = s.Match(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Match(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Put stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func contractStubDouble() stub.Double[ifmatchtest.ContractPutCall] {
-	instance := func(s *ifmatchtest.ContractStub) stub.Instance[ifmatchtest.ContractPutCall] {
-		return stub.Instance[ifmatchtest.ContractPutCall]{
-			Stub: s.OnPut.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 ifmatch.Value
-				a1 = ifmatch.Value{Key: "Key-a"}
-				_ = s.Put(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[ifmatchtest.ContractPutCall]{
-		New: func(tb assert.TB) stub.Instance[ifmatchtest.ContractPutCall] {
-			return instance(ifmatchtest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Put alone.
+func contractStubInstanceOf(tb assert.TB, s *ifmatchtest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnPut.MethodStub,
+		Call: func() {
+			_ = contractStubPut(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[ifmatchtest.ContractPutCall] {
-			return instance(ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[ifmatchtest.ContractPutCall] {
-			return instance(ifmatchtest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[ifmatchtest.ContractPutCall] {
-			return instance(ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[ifmatchtest.ContractPutCall] {
-			return instance(ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[ifmatchtest.ContractPutCall] {
-			return instance(ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", contractStubPutSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			_ = contractStubPut(t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1 := contractStubPutArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			var seen []ifmatchtest.ContractPutCall
+			s.OnPut.OnRecord(func(c ifmatchtest.ContractPutCall) { seen = append(seen, c) })
+			_ = contractStubPut(t, s)
+			_ = contractStubPut(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("Match", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Match", contractStubMatchSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			_, _ = contractStubMatch(t, s)
+			got := s.OnMatch.AssertCalledOnce(t, "Match records the call")
+			a0, a1 := contractStubMatchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			var seen []ifmatchtest.ContractMatchCall
+			s.OnMatch.OnRecord(func(c ifmatchtest.ContractMatchCall) { seen = append(seen, c) })
+			_, _ = contractStubMatch(t, s)
+			_, _ = contractStubMatch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Match")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, ifmatchtest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			_ = contractStubPut(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			want0 := contractStubPutPins()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+
+		t.Run("clears the recorded calls of Match", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			_, _ = contractStubMatch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnMatch.CallCount(), 0, "ResetCalls clears the calls of Match")
+		})
+
+		t.Run("keeps the results of Returns of Match", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			want0, want1 := contractStubMatchPins()
+			s.OnMatch.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubMatch(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Match")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Match")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, ifmatchtest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := ifmatchtest.NewContractStubFailing(t, want)
+			r0 := contractStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Match with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Match-failing")
+			s := ifmatchtest.NewContractStubFailing(t, want)
+			_, r1 := contractStubMatch(t, s)
+			assert.ErrorIs(t, r1, want, "Match fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := ifmatchtest.NewContractStub(t)
+			s := ifmatchtest.NewContractStub(t, ifmatchtest.ContractStubDelegateTo(inner))
+			_ = contractStubPut(t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := ifmatchtest.NewContractStub(t)
+			inner.OnPut.Faults(want, 1)
+			s := ifmatchtest.NewContractStub(t, ifmatchtest.ContractStubDelegateTo(inner))
+			r0 := contractStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+
+		t.Run("passes Match to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := ifmatchtest.NewContractStub(t)
+			s := ifmatchtest.NewContractStub(t, ifmatchtest.ContractStubDelegateTo(inner))
+			_, _ = contractStubMatch(t, s)
+			inner.OnMatch.AssertCalledOnce(t, "Match calls the implementation")
+		})
+
+		t.Run("fails Match with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Match-delegate")
+			inner := ifmatchtest.NewContractStub(t)
+			inner.OnMatch.Faults(want, 1)
+			s := ifmatchtest.NewContractStub(t, ifmatchtest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubMatch(t, s)
+			assert.ErrorIs(t, r1, want, "Match fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, ifmatchtest.NewContractStub(tb, ifmatchtest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				ifmatchtest.NewContractStub(
+					tb,
+					ifmatchtest.ContractStubWithClock(clk),
+					ifmatchtest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := ifmatchtest.NewContractStub(t, ifmatchtest.ContractStubFailing(want))
+			r0 := contractStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Match with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Match-failing")
+			s := ifmatchtest.NewContractStub(t, ifmatchtest.ContractStubFailing(want))
+			_, r1 := contractStubMatch(t, s)
+			assert.ErrorIs(t, r1, want, "Match fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractPut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := ifmatchtest.NewContractStub(
+				t,
+				ifmatchtest.WithContractPut(func(_ context.Context, _ ifmatch.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubPut(t, s)
+			assert.True(t, called, "WithContractPut sets the function of Put")
+		})
+	})
+
+	t.Run("WithContractMatch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Match", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := ifmatchtest.NewContractStub(
+				t,
+				ifmatchtest.WithContractMatch(func(_ context.Context, _ ifmatch.Value) (bool, error) {
+					called = true
+					var z0 bool
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubMatch(t, s)
+			assert.True(t, called, "WithContractMatch sets the function of Match")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractPutStub checks the methods of ContractPutStub, which
+// configures Put.
+func TestContractPutStub(t *testing.T) {
 	t.Parallel()
 
-	inner := ifmatchtest.NewContractStub(t)
-	s := ifmatchtest.NewContractStub(t, ifmatchtest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_ = s.Put(a0, a1)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			want0 := contractStubPutPins()
+			s.OnPut.Returns(want0)
+			got0 := contractStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
+
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := ifmatchtest.NewContractStub(r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = contractStubPut(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
 	})
 
-	t.Run("surfaces what Put answered", func(t *testing.T) {
-		want := errors.New("Put-delegate")
-		inner.OnPut.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		r0 := s.Put(a0, a1)
-		assert.ErrorIs(t, r0, want, "Put must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Match to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_, _ = s.Match(a0, a1)
-		inner.OnMatch.AssertCalledOnce(t, "Match must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Match answered", func(t *testing.T) {
-		want := errors.New("Match-delegate")
-		inner.OnMatch.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 ifmatch.Value
-		a1 = ifmatch.Value{Key: "Key-a"}
-		_, r1 := s.Match(a0, a1)
-		assert.ErrorIs(t, r1, want, "Match must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			var got0 context.Context
+			var got1 ifmatch.Value
+			s.OnPut.Func(func(p0 context.Context, p1 ifmatch.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubPut(t, s)
+			a0, a1 := contractStubPutArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:df02e36c50a5adeb81b3188ca2dfd0e99beb89baf5d215bd1c1f2b0465b4e824
+// TestContractMatchStub checks the methods of ContractMatchStub, which
+// configures Match.
+func TestContractMatchStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Match", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			want0, want1 := contractStubMatchPins()
+			s.OnMatch.Returns(want0, want1)
+			got0, got1 := contractStubMatch(t, s)
+			expect.Equal(t, got0, want0, "Match returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Match returns the error that Returns sets")
+		})
+
+		t.Run("configures Match for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := ifmatchtest.NewContractStub(r)
+			s.OnMatch.Strict()
+			var want0 bool
+			var want1 error
+			s.OnMatch.Returns(want0, want1)
+			_, _ = contractStubMatch(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Match")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Match to the function", func(t *testing.T) {
+			t.Parallel()
+			s := ifmatchtest.NewContractStub(t)
+			var got0 context.Context
+			var got1 ifmatch.Value
+			s.OnMatch.Func(func(p0 context.Context, p1 ifmatch.Value) (bool, error) {
+				got0, got1 = p0, p1
+				var z0 bool
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubMatch(t, s)
+			a0, a1 := contractStubMatchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
+	})
+}
+
+// dokimi:provenance sha256:6ecfa9801aeeaf5055452a5e146ac955d8cb4c2af150856b3c0c51a4e84292b0

@@ -12,31 +12,69 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrent/concurrenttest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubBumpSubject binds Bump into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubBumpArgs returns the samples of the arguments of Bump.
+func mixedStubBumpArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Bump-a"
+	return a0, a1
+}
+
+// mixedStubBump calls Bump of s with the samples of its arguments.
+func mixedStubBump(tb assert.TB, s *concurrenttest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubBumpArgs(tb)
+	return s.Bump(a0, a1)
+}
+
+// mixedStubBumpPins returns the samples of the results of Bump, with a new
+// error as its error result.
+func mixedStubBumpPins() error {
+	want0 := errors.New("Bump-returns")
+	return want0
+}
+
+// mixedStubCountArgs returns the samples of the arguments of Count.
+func mixedStubCountArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubCount calls Count of s with the samples of its arguments.
+func mixedStubCount(tb assert.TB, s *concurrenttest.MixedStub) (int, error) {
+	tb.Helper()
+	a0 := mixedStubCountArgs(tb)
+	return s.Count(a0)
+}
+
+// mixedStubCountPins returns the samples of the results of Count, with a
+// new error as its error result.
+func mixedStubCountPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Count-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// mixedStubBumpSubject returns the subject of [stub.Behaviour] for Bump.
+// The subject calls a new double that reports to tb.
 func mixedStubBumpSubject(tb assert.TB) stub.Subject[concurrenttest.MixedBumpCall, concurrenttest.MixedBumpReturn] {
 	tb.Helper()
 	s := concurrenttest.NewMixedStub(tb)
 	return stub.Subject[concurrenttest.MixedBumpCall, concurrenttest.MixedBumpReturn]{
 		Stub: s.OnBump.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Bump-a"
-			_ = s.Bump(a0, a1)
+			_ = mixedStubBump(tb, s)
 		},
 		Result: func() concurrenttest.MixedBumpReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Bump-a"
-			got0 := s.Bump(a0, a1)
+			got0 := mixedStubBump(tb, s)
 			return concurrenttest.MixedBumpReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,110 +85,24 @@ func mixedStubBumpSubject(tb assert.TB) stub.Subject[concurrenttest.MixedBumpCal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Bump-a"
-			r0 := s.Bump(a0, a1)
+			r0 := mixedStubBump(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubBump pins how Bump answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubBump(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Bump", mixedStubBumpSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := concurrenttest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Bump-a"
-		_ = s.Bump(a0, a1)
-		got := s.OnBump.AssertCalledOnce(t, "Bump must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := concurrenttest.NewMixedStub(t)
-		var seen []concurrenttest.MixedBumpCall
-		s.OnBump.OnRecord(func(c concurrenttest.MixedBumpCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Bump-a"
-		_ = s.Bump(a0, a1)
-		_ = s.Bump(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Bump call")
-	})
-
-	t.Run("wires WithMixedBump at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := concurrenttest.NewMixedStub(t, concurrenttest.WithMixedBump(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Bump-a"
-		_ = s.Bump(a0, a1)
-		assert.True(t, called, "WithMixedBump must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Bump-failing")
-		s := concurrenttest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Bump-a"
-		r0 := s.Bump(a0, a1)
-		assert.ErrorIs(t, r0, want, "Bump must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := concurrenttest.NewMixedStub(t)
-		var want0 error
-		s.OnBump.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Bump-a"
-		_ = s.Bump(a0, a1)
-		s.ResetCalls()
-		_ = s.Bump(a0, a1)
-		s.OnBump.AssertCalledOnce(t, "Bump must record the call that followed the reset")
-	})
-}
-
-// mixedStubCountSubject binds Count into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubCountSubject returns the subject of [stub.Behaviour] for Count.
+// The subject calls a new double that reports to tb.
 func mixedStubCountSubject(tb assert.TB) stub.Subject[concurrenttest.MixedCountCall, concurrenttest.MixedCountReturn] {
 	tb.Helper()
 	s := concurrenttest.NewMixedStub(tb)
 	return stub.Subject[concurrenttest.MixedCountCall, concurrenttest.MixedCountReturn]{
 		Stub: s.OnCount.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Count(a0)
+			_, _ = mixedStubCount(tb, s)
 		},
 		Result: func() concurrenttest.MixedCountReturn {
-			var a0 context.Context
-			got0, got1 := s.Count(a0)
+			got0, got1 := mixedStubCount(tb, s)
 			return concurrenttest.MixedCountReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -162,183 +114,389 @@ func mixedStubCountSubject(tb assert.TB) stub.Subject[concurrenttest.MixedCountC
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Count(a0)
+			_, r1 := mixedStubCount(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubCount pins how Count answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubCount(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a concurrenttest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[concurrenttest.MixedBumpCall]
 
-	stub.Behaviour(t, "Count", mixedStubCountSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := concurrenttest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnCount.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Count(a0)
-		assert.Equal(t, got0, want0, "Count must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := concurrenttest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		got := s.OnCount.AssertCalledOnce(t, "Count must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := concurrenttest.NewMixedStub(t)
-		var seen []concurrenttest.MixedCountCall
-		s.OnCount.OnRecord(func(c concurrenttest.MixedCountCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		_, _ = s.Count(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Count call")
-	})
-
-	t.Run("wires WithMixedCount at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := concurrenttest.NewMixedStub(t, concurrenttest.WithMixedCount(func(_ context.Context) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		assert.True(t, called, "WithMixedCount must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Count-failing")
-		s := concurrenttest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Count(a0)
-		assert.ErrorIs(t, r1, want, "Count must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := concurrenttest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnCount.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		s.ResetCalls()
-		got0, _ := s.Count(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Bump stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[concurrenttest.MixedBumpCall] {
-	instance := func(s *concurrenttest.MixedStub) stub.Instance[concurrenttest.MixedBumpCall] {
-		return stub.Instance[concurrenttest.MixedBumpCall]{
-			Stub: s.OnBump.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Bump-a"
-				_ = s.Bump(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[concurrenttest.MixedBumpCall]{
-		New: func(tb assert.TB) stub.Instance[concurrenttest.MixedBumpCall] {
-			return instance(concurrenttest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Bump alone.
+func mixedStubInstanceOf(tb assert.TB, s *concurrenttest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnBump.MethodStub,
+		Call: func() {
+			_ = mixedStubBump(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[concurrenttest.MixedBumpCall] {
-			return instance(concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[concurrenttest.MixedBumpCall] {
-			return instance(concurrenttest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[concurrenttest.MixedBumpCall] {
-			return instance(concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[concurrenttest.MixedBumpCall] {
-			return instance(concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[concurrenttest.MixedBumpCall] {
-			return instance(concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Bump", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Bump", mixedStubBumpSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			_ = mixedStubBump(t, s)
+			got := s.OnBump.AssertCalledOnce(t, "Bump records the call")
+			a0, a1 := mixedStubBumpArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			var seen []concurrenttest.MixedBumpCall
+			s.OnBump.OnRecord(func(c concurrenttest.MixedBumpCall) { seen = append(seen, c) })
+			_ = mixedStubBump(t, s)
+			_ = mixedStubBump(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Bump")
+		})
+	})
+
+	t.Run("Count", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Count", mixedStubCountSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			_, _ = mixedStubCount(t, s)
+			got := s.OnCount.AssertCalledOnce(t, "Count records the call")
+			a0 := mixedStubCountArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			var seen []concurrenttest.MixedCountCall
+			s.OnCount.OnRecord(func(c concurrenttest.MixedCountCall) { seen = append(seen, c) })
+			_, _ = mixedStubCount(t, s)
+			_, _ = mixedStubCount(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Count")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Bump", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			_ = mixedStubBump(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnBump.CallCount(), 0, "ResetCalls clears the calls of Bump")
+		})
+
+		t.Run("keeps the results of Returns of Bump", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			want0 := mixedStubBumpPins()
+			s.OnBump.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubBump(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Bump")
+		})
+
+		t.Run("clears the recorded calls of Count", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			_, _ = mixedStubCount(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCount.CallCount(), 0, "ResetCalls clears the calls of Count")
+		})
+
+		t.Run("keeps the results of Returns of Count", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			want0, want1 := mixedStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubCount(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Count")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Count")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Bump with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Bump-failing")
+			s := concurrenttest.NewMixedStubFailing(t, want)
+			r0 := mixedStubBump(t, s)
+			assert.ErrorIs(t, r0, want, "Bump fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Count with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-failing")
+			s := concurrenttest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Bump to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := concurrenttest.NewMixedStub(t)
+			s := concurrenttest.NewMixedStub(t, concurrenttest.MixedStubDelegateTo(inner))
+			_ = mixedStubBump(t, s)
+			inner.OnBump.AssertCalledOnce(t, "Bump calls the implementation")
+		})
+
+		t.Run("fails Bump with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Bump-delegate")
+			inner := concurrenttest.NewMixedStub(t)
+			inner.OnBump.Faults(want, 1)
+			s := concurrenttest.NewMixedStub(t, concurrenttest.MixedStubDelegateTo(inner))
+			r0 := mixedStubBump(t, s)
+			assert.ErrorIs(t, r0, want, "Bump fails with the error of the implementation")
+		})
+
+		t.Run("passes Count to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := concurrenttest.NewMixedStub(t)
+			s := concurrenttest.NewMixedStub(t, concurrenttest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubCount(t, s)
+			inner.OnCount.AssertCalledOnce(t, "Count calls the implementation")
+		})
+
+		t.Run("fails Count with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-delegate")
+			inner := concurrenttest.NewMixedStub(t)
+			inner.OnCount.Faults(want, 1)
+			s := concurrenttest.NewMixedStub(t, concurrenttest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, concurrenttest.NewMixedStub(tb, concurrenttest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				concurrenttest.NewMixedStub(
+					tb,
+					concurrenttest.MixedStubWithClock(clk),
+					concurrenttest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Bump with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Bump-failing")
+			s := concurrenttest.NewMixedStub(t, concurrenttest.MixedStubFailing(want))
+			r0 := mixedStubBump(t, s)
+			assert.ErrorIs(t, r0, want, "Bump fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Count with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Count-failing")
+			s := concurrenttest.NewMixedStub(t, concurrenttest.MixedStubFailing(want))
+			_, r1 := mixedStubCount(t, s)
+			assert.ErrorIs(t, r1, want, "Count fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedBump", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Bump", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := concurrenttest.NewMixedStub(t, concurrenttest.WithMixedBump(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubBump(t, s)
+			assert.True(t, called, "WithMixedBump sets the function of Bump")
+		})
+	})
+
+	t.Run("WithMixedCount", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Count", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := concurrenttest.NewMixedStub(t, concurrenttest.WithMixedCount(func(_ context.Context) (int, error) {
+				called = true
+				var z0 int
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = mixedStubCount(t, s)
+			assert.True(t, called, "WithMixedCount sets the function of Count")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedBumpStub checks the methods of MixedBumpStub, which configures
+// Bump.
+func TestMixedBumpStub(t *testing.T) {
 	t.Parallel()
 
-	inner := concurrenttest.NewMixedStub(t)
-	s := concurrenttest.NewMixedStub(t, concurrenttest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Bump to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Bump-a"
-		_ = s.Bump(a0, a1)
-		inner.OnBump.AssertCalledOnce(t, "Bump must reach the wrapped implementation")
+		t.Run("sets the results of each call of Bump", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			want0 := mixedStubBumpPins()
+			s.OnBump.Returns(want0)
+			got0 := mixedStubBump(t, s)
+			assert.ErrorIs(t, got0, want0, "Bump returns the error that Returns sets")
+		})
+
+		t.Run("configures Bump for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := concurrenttest.NewMixedStub(r)
+			s.OnBump.Strict()
+			var want0 error
+			s.OnBump.Returns(want0)
+			_ = mixedStubBump(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Bump")
+		})
 	})
 
-	t.Run("surfaces what Bump answered", func(t *testing.T) {
-		want := errors.New("Bump-delegate")
-		inner.OnBump.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Bump-a"
-		r0 := s.Bump(a0, a1)
-		assert.ErrorIs(t, r0, want, "Bump must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Count to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Count(a0)
-		inner.OnCount.AssertCalledOnce(t, "Count must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Count answered", func(t *testing.T) {
-		want := errors.New("Count-delegate")
-		inner.OnCount.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Count(a0)
-		assert.ErrorIs(t, r1, want, "Count must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Bump to the function", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnBump.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubBump(t, s)
+			a0, a1 := mixedStubBumpArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:a7e9c911e300056d8ab09df1f50528559ab51d17995a16462c3ce83c0c129f56
+// TestMixedCountStub checks the methods of MixedCountStub, which
+// configures Count.
+func TestMixedCountStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Count", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			want0, want1 := mixedStubCountPins()
+			s.OnCount.Returns(want0, want1)
+			got0, got1 := mixedStubCount(t, s)
+			expect.Equal(t, got0, want0, "Count returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Count returns the error that Returns sets")
+		})
+
+		t.Run("configures Count for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := concurrenttest.NewMixedStub(r)
+			s.OnCount.Strict()
+			var want0 int
+			var want1 error
+			s.OnCount.Returns(want0, want1)
+			_, _ = mixedStubCount(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Count")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Count to the function", func(t *testing.T) {
+			t.Parallel()
+			s := concurrenttest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnCount.Func(func(p0 context.Context) (int, error) {
+				got0 = p0
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubCount(t, s)
+			a0 := mixedStubCountArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:63acf525290ce2824e303b8fc227586101fa3ff6959930db95d22bfc9597a00e

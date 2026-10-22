@@ -8,515 +8,715 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/struct/config"
 	"go.dokimi.dev/dokimi/corpus/go/struct/config/configtest"
 )
 
-// TestConfigBuilderConstruction pins what the constructors produce.
-func TestConfigBuilderConstruction(t *testing.T) {
+// TestConfigBuilder checks the constructors and the methods of
+// ConfigBuilder.
+func TestConfigBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewConfigBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var seed config.Config
-		seed.Host = "Host-a"
-		seed.Port = 42
-		seed.Verbose = true
-		seed.Ratio = 1.5
-		seed.Retries = 42
-		seed.Undirected = "Undirected-a"
-		got := configtest.NewConfigBuilderFrom(seed).Build()
-		assert.Equal(t, got.Host, seed.Host, "From keeps the member it was given")
-		assert.Equal(t, got.Port, seed.Port, "From keeps the member it was given")
-		assert.Equal(t, got.Verbose, seed.Verbose, "From keeps the member it was given")
-		assert.Equal(t, got.Ratio, seed.Ratio, "From keeps the member it was given")
-		assert.Equal(t, got.Retries, seed.Retries, "From keeps the member it was given")
-		assert.Equal(t, got.Undirected, seed.Undirected, "From keeps the member it was given")
+		t.Run("applies the declared default of Host", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "localhost"
+			got := configtest.NewConfigBuilder().Build()
+			assert.Equal(t, got.Host, want, "NewConfigBuilder applies the declared default of Host")
+		})
+
+		t.Run("applies the declared default of Port", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 8080
+			got := configtest.NewConfigBuilder().Build()
+			assert.Equal(t, got.Port, want, "NewConfigBuilder applies the declared default of Port")
+		})
+
+		t.Run("applies the declared default of Verbose", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := configtest.NewConfigBuilder().Build()
+			assert.Equal(t, got.Verbose, want, "NewConfigBuilder applies the declared default of Verbose")
+		})
+
+		t.Run("applies the declared default of Ratio", func(t *testing.T) {
+			t.Parallel()
+
+			var want float64
+			want = 0.75
+			got := configtest.NewConfigBuilder().Build()
+			assert.Equal(t, got.Ratio, want, "NewConfigBuilder applies the declared default of Ratio")
+		})
 	})
 
-	t.Run("Host carries its declared default", func(t *testing.T) {
+	t.Run("NewConfigBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "localhost"
-		got := configtest.NewConfigBuilder().Build()
-		assert.Equal(t, got.Host, want, "the constructor applies the declared default")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed config.Config
+			seed.Host = "Host-a"
+			seed.Port = 42
+			seed.Verbose = true
+			seed.Ratio = 1.5
+			seed.Retries = 42
+			seed.Undirected = "Undirected-a"
+			got := configtest.NewConfigBuilderFrom(seed).Build()
+			expect.Equal(t, got.Host, seed.Host, "NewConfigBuilderFrom keeps Host")
+			expect.Equal(t, got.Port, seed.Port, "NewConfigBuilderFrom keeps Port")
+			expect.Equal(t, got.Verbose, seed.Verbose, "NewConfigBuilderFrom keeps Verbose")
+			expect.Equal(t, got.Ratio, seed.Ratio, "NewConfigBuilderFrom keeps Ratio")
+			expect.Equal(t, got.Retries, seed.Retries, "NewConfigBuilderFrom keeps Retries")
+			expect.Equal(t, got.Undirected, seed.Undirected, "NewConfigBuilderFrom keeps Undirected")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := configtest.NewConfigBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				configtest.NewConfigBuilderFrom(want).Build(),
+				want,
+				"NewConfigBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("Port carries its declared default", func(t *testing.T) {
+	t.Run("WithHost", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 8080
-		got := configtest.NewConfigBuilder().Build()
-		assert.Equal(t, got.Port, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Host", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Host-a"
+			got := configtest.NewConfigBuilder().WithHost(want).Build()
+			assert.Equal(t, got.Host, want, "WithHost writes its argument to Host")
+		})
+
+		t.Run("replaces the value of Host", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Host-a"
+			want = "Host-b"
+			got := configtest.NewConfigBuilder().WithHost(first).WithHost(want).Build()
+			assert.Equal(t, got.Host, want, "the second call of WithHost replaces the first")
+		})
 	})
 
-	t.Run("Verbose carries its declared default", func(t *testing.T) {
+	t.Run("WithPort", func(t *testing.T) {
 		t.Parallel()
 
-		var want bool
-		want = true
-		got := configtest.NewConfigBuilder().Build()
-		assert.Equal(t, got.Verbose, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Port", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := configtest.NewConfigBuilder().WithPort(want).Build()
+			assert.Equal(t, got.Port, want, "WithPort writes its argument to Port")
+		})
+
+		t.Run("replaces the value of Port", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := configtest.NewConfigBuilder().WithPort(first).WithPort(want).Build()
+			assert.Equal(t, got.Port, want, "the second call of WithPort replaces the first")
+		})
 	})
 
-	t.Run("Ratio carries its declared default", func(t *testing.T) {
+	t.Run("WithVerbose", func(t *testing.T) {
 		t.Parallel()
 
-		var want float64
-		want = 0.75
-		got := configtest.NewConfigBuilder().Build()
-		assert.Equal(t, got.Ratio, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Verbose", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := configtest.NewConfigBuilder().WithVerbose(want).Build()
+			assert.Equal(t, got.Verbose, want, "WithVerbose writes its argument to Verbose")
+		})
+
+		t.Run("replaces the value of Verbose", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want bool
+			first = true
+			want = false
+			got := configtest.NewConfigBuilder().WithVerbose(first).WithVerbose(want).Build()
+			assert.Equal(t, got.Verbose, want, "the second call of WithVerbose replaces the first")
+		})
+	})
+
+	t.Run("WithRatio", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Ratio", func(t *testing.T) {
+			t.Parallel()
+
+			var want float64
+			want = 1.5
+			got := configtest.NewConfigBuilder().WithRatio(want).Build()
+			assert.Equal(t, got.Ratio, want, "WithRatio writes its argument to Ratio")
+		})
+
+		t.Run("replaces the value of Ratio", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want float64
+			first = 1.5
+			want = 2.5
+			got := configtest.NewConfigBuilder().WithRatio(first).WithRatio(want).Build()
+			assert.Equal(t, got.Ratio, want, "the second call of WithRatio replaces the first")
+		})
+	})
+
+	t.Run("WithRetries", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := configtest.NewConfigBuilder().WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "WithRetries writes its argument to Retries")
+		})
+
+		t.Run("replaces the value of Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := configtest.NewConfigBuilder().WithRetries(first).WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "the second call of WithRetries replaces the first")
+		})
+	})
+
+	t.Run("WithFallback", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("points Fallback at its argument", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Fallback-a"
+			got := configtest.NewConfigBuilder().WithFallback(want).Build()
+			assert.NotNil(t, got.Fallback, "WithFallback points Fallback at a value")
+			assert.Equal(t, *got.Fallback, want, "WithFallback points Fallback at its argument")
+		})
+
+		t.Run("replaces the value of Fallback", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Fallback-a"
+			want = "Fallback-b"
+			got := configtest.NewConfigBuilder().WithFallback(first).WithFallback(want).Build()
+			assert.NotNil(t, got.Fallback, "WithFallback points Fallback at a value")
+			assert.Equal(t, *got.Fallback, want, "the second call of WithFallback replaces the first")
+		})
+	})
+
+	t.Run("WithUndirected", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Undirected", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Undirected-a"
+			got := configtest.NewConfigBuilder().WithUndirected(want).Build()
+			assert.Equal(t, got.Undirected, want, "WithUndirected writes its argument to Undirected")
+		})
+
+		t.Run("replaces the value of Undirected", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Undirected-a"
+			want = "Undirected-b"
+			got := configtest.NewConfigBuilder().WithUndirected(first).WithUndirected(want).Build()
+			assert.Equal(t, got.Undirected, want, "the second call of WithUndirected replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*config.Config
+			record := func(v *config.Config) { got = append(got, v) }
+			configtest.NewConfigBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := configtest.NewConfigBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := configtest.NewConfigBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed config.Config
+			seed.Host = "Host-a"
+			seed.Port = 42
+			seed.Verbose = true
+			seed.Ratio = 1.5
+			seed.Retries = 42
+			seed.Undirected = "Undirected-a"
+			b := configtest.NewConfigBuilder()
+			b.Mutate(func(v *config.Config) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestConfigBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestConfigBuilderSetters(t *testing.T) {
+// TestTagConfigBuilder checks the constructors and the methods of
+// TagConfigBuilder.
+func TestTagConfigBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithHost writes Host", func(t *testing.T) {
+	t.Run("NewTagConfigBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Host-a"
-		got := configtest.NewConfigBuilder().WithHost(want).Build()
-		assert.Equal(t, got.Host, want, "the setter writes what it was given")
+		t.Run("applies the declared default of Host", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "localhost"
+			got := configtest.NewTagConfigBuilder().Build()
+			assert.Equal(t, got.Host, want, "NewTagConfigBuilder applies the declared default of Host")
+		})
+
+		t.Run("applies the declared default of Port", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 8080
+			got := configtest.NewTagConfigBuilder().Build()
+			assert.Equal(t, got.Port, want, "NewTagConfigBuilder applies the declared default of Port")
+		})
+
+		t.Run("applies the declared default of Verbose", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := configtest.NewTagConfigBuilder().Build()
+			assert.Equal(t, got.Verbose, want, "NewTagConfigBuilder applies the declared default of Verbose")
+		})
+
+		t.Run("applies the declared default of Ratio", func(t *testing.T) {
+			t.Parallel()
+
+			var want float64
+			want = 0.75
+			got := configtest.NewTagConfigBuilder().Build()
+			assert.Equal(t, got.Ratio, want, "NewTagConfigBuilder applies the declared default of Ratio")
+		})
 	})
 
-	t.Run("WithHost replaces what was already there", func(t *testing.T) {
+	t.Run("NewTagConfigBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want string
-		first = "Host-a"
-		want = "Host-b"
-		got := configtest.NewConfigBuilder().WithHost(first).WithHost(want).Build()
-		assert.Equal(t, got.Host, want, "the later call wins")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed config.TagConfig
+			seed.Host = "Host-a"
+			seed.Port = 42
+			seed.Verbose = true
+			seed.Ratio = 1.5
+			seed.Retries = 42
+			seed.Undirected = "Undirected-a"
+			got := configtest.NewTagConfigBuilderFrom(seed).Build()
+			expect.Equal(t, got.Host, seed.Host, "NewTagConfigBuilderFrom keeps Host")
+			expect.Equal(t, got.Port, seed.Port, "NewTagConfigBuilderFrom keeps Port")
+			expect.Equal(t, got.Verbose, seed.Verbose, "NewTagConfigBuilderFrom keeps Verbose")
+			expect.Equal(t, got.Ratio, seed.Ratio, "NewTagConfigBuilderFrom keeps Ratio")
+			expect.Equal(t, got.Retries, seed.Retries, "NewTagConfigBuilderFrom keeps Retries")
+			expect.Equal(t, got.Undirected, seed.Undirected, "NewTagConfigBuilderFrom keeps Undirected")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := configtest.NewTagConfigBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				configtest.NewTagConfigBuilderFrom(want).Build(),
+				want,
+				"NewTagConfigBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("WithPort writes Port", func(t *testing.T) {
+	t.Run("WithHost", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 42
-		got := configtest.NewConfigBuilder().WithPort(want).Build()
-		assert.Equal(t, got.Port, want, "the setter writes what it was given")
+		t.Run("writes its argument to Host", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Host-a"
+			got := configtest.NewTagConfigBuilder().WithHost(want).Build()
+			assert.Equal(t, got.Host, want, "WithHost writes its argument to Host")
+		})
+
+		t.Run("replaces the value of Host", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Host-a"
+			want = "Host-b"
+			got := configtest.NewTagConfigBuilder().WithHost(first).WithHost(want).Build()
+			assert.Equal(t, got.Host, want, "the second call of WithHost replaces the first")
+		})
 	})
 
-	t.Run("WithPort replaces what was already there", func(t *testing.T) {
+	t.Run("WithPort", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want int
-		first = 42
-		want = 7
-		got := configtest.NewConfigBuilder().WithPort(first).WithPort(want).Build()
-		assert.Equal(t, got.Port, want, "the later call wins")
+		t.Run("writes its argument to Port", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := configtest.NewTagConfigBuilder().WithPort(want).Build()
+			assert.Equal(t, got.Port, want, "WithPort writes its argument to Port")
+		})
+
+		t.Run("replaces the value of Port", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := configtest.NewTagConfigBuilder().WithPort(first).WithPort(want).Build()
+			assert.Equal(t, got.Port, want, "the second call of WithPort replaces the first")
+		})
 	})
 
-	t.Run("WithVerbose writes Verbose", func(t *testing.T) {
+	t.Run("WithVerbose", func(t *testing.T) {
 		t.Parallel()
 
-		var want bool
-		want = true
-		got := configtest.NewConfigBuilder().WithVerbose(want).Build()
-		assert.Equal(t, got.Verbose, want, "the setter writes what it was given")
+		t.Run("writes its argument to Verbose", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := configtest.NewTagConfigBuilder().WithVerbose(want).Build()
+			assert.Equal(t, got.Verbose, want, "WithVerbose writes its argument to Verbose")
+		})
+
+		t.Run("replaces the value of Verbose", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want bool
+			first = true
+			want = false
+			got := configtest.NewTagConfigBuilder().WithVerbose(first).WithVerbose(want).Build()
+			assert.Equal(t, got.Verbose, want, "the second call of WithVerbose replaces the first")
+		})
 	})
 
-	t.Run("WithVerbose replaces what was already there", func(t *testing.T) {
+	t.Run("WithRatio", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want bool
-		first = true
-		want = false
-		got := configtest.NewConfigBuilder().WithVerbose(first).WithVerbose(want).Build()
-		assert.Equal(t, got.Verbose, want, "the later call wins")
+		t.Run("writes its argument to Ratio", func(t *testing.T) {
+			t.Parallel()
+
+			var want float64
+			want = 1.5
+			got := configtest.NewTagConfigBuilder().WithRatio(want).Build()
+			assert.Equal(t, got.Ratio, want, "WithRatio writes its argument to Ratio")
+		})
+
+		t.Run("replaces the value of Ratio", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want float64
+			first = 1.5
+			want = 2.5
+			got := configtest.NewTagConfigBuilder().WithRatio(first).WithRatio(want).Build()
+			assert.Equal(t, got.Ratio, want, "the second call of WithRatio replaces the first")
+		})
 	})
 
-	t.Run("WithRatio writes Ratio", func(t *testing.T) {
+	t.Run("WithRetries", func(t *testing.T) {
 		t.Parallel()
 
-		var want float64
-		want = 1.5
-		got := configtest.NewConfigBuilder().WithRatio(want).Build()
-		assert.Equal(t, got.Ratio, want, "the setter writes what it was given")
+		t.Run("writes its argument to Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := configtest.NewTagConfigBuilder().WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "WithRetries writes its argument to Retries")
+		})
+
+		t.Run("replaces the value of Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := configtest.NewTagConfigBuilder().WithRetries(first).WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "the second call of WithRetries replaces the first")
+		})
 	})
 
-	t.Run("WithRatio replaces what was already there", func(t *testing.T) {
+	t.Run("WithFallback", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want float64
-		first = 1.5
-		want = 2.5
-		got := configtest.NewConfigBuilder().WithRatio(first).WithRatio(want).Build()
-		assert.Equal(t, got.Ratio, want, "the later call wins")
+		t.Run("points Fallback at its argument", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Fallback-a"
+			got := configtest.NewTagConfigBuilder().WithFallback(want).Build()
+			assert.NotNil(t, got.Fallback, "WithFallback points Fallback at a value")
+			assert.Equal(t, *got.Fallback, want, "WithFallback points Fallback at its argument")
+		})
+
+		t.Run("replaces the value of Fallback", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Fallback-a"
+			want = "Fallback-b"
+			got := configtest.NewTagConfigBuilder().WithFallback(first).WithFallback(want).Build()
+			assert.NotNil(t, got.Fallback, "WithFallback points Fallback at a value")
+			assert.Equal(t, *got.Fallback, want, "the second call of WithFallback replaces the first")
+		})
 	})
 
-	t.Run("WithRetries writes Retries", func(t *testing.T) {
+	t.Run("WithUndirected", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 42
-		got := configtest.NewConfigBuilder().WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the setter writes what it was given")
+		t.Run("writes its argument to Undirected", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Undirected-a"
+			got := configtest.NewTagConfigBuilder().WithUndirected(want).Build()
+			assert.Equal(t, got.Undirected, want, "WithUndirected writes its argument to Undirected")
+		})
+
+		t.Run("replaces the value of Undirected", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Undirected-a"
+			want = "Undirected-b"
+			got := configtest.NewTagConfigBuilder().WithUndirected(first).WithUndirected(want).Build()
+			assert.Equal(t, got.Undirected, want, "the second call of WithUndirected replaces the first")
+		})
 	})
 
-	t.Run("WithRetries replaces what was already there", func(t *testing.T) {
+	t.Run("Mutate", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want int
-		first = 42
-		want = 7
-		got := configtest.NewConfigBuilder().WithRetries(first).WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the later call wins")
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*config.TagConfig
+			record := func(v *config.TagConfig) { got = append(got, v) }
+			configtest.NewTagConfigBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
 	})
 
-	t.Run("WithFallback writes Fallback", func(t *testing.T) {
+	t.Run("Clone", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Fallback-a"
-		got := configtest.NewConfigBuilder().WithFallback(want).Build()
-		assert.NotNil(t, got.Fallback, "the setter addresses the value it was given")
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := configtest.NewTagConfigBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := configtest.NewTagConfigBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
 	})
 
-	t.Run("WithUndirected writes Undirected", func(t *testing.T) {
+	t.Run("Build", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Undirected-a"
-		got := configtest.NewConfigBuilder().WithUndirected(want).Build()
-		assert.Equal(t, got.Undirected, want, "the setter writes what it was given")
-	})
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
 
-	t.Run("WithUndirected replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Undirected-a"
-		want = "Undirected-b"
-		got := configtest.NewConfigBuilder().WithUndirected(first).WithUndirected(want).Build()
-		assert.Equal(t, got.Undirected, want, "the later call wins")
+			var seed config.TagConfig
+			seed.Host = "Host-a"
+			seed.Port = 42
+			seed.Verbose = true
+			seed.Ratio = 1.5
+			seed.Retries = 42
+			seed.Undirected = "Undirected-a"
+			b := configtest.NewTagConfigBuilder()
+			b.Mutate(func(v *config.TagConfig) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestConfigBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestConfigBuilderMethods(t *testing.T) {
+// TestMixedConfigBuilder checks the constructors and the methods of
+// MixedConfigBuilder.
+func TestMixedConfigBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
+	t.Run("NewMixedConfigBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var got []*config.Config
-		record := func(v *config.Config) { got = append(got, v) }
-		configtest.NewConfigBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		t.Run("applies the declared default of Label", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "directive-wins"
+			got := configtest.NewMixedConfigBuilder().Build()
+			assert.Equal(t, got.Label, want, "NewMixedConfigBuilder applies the declared default of Label")
+		})
 	})
 
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
+	t.Run("NewMixedConfigBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		original := configtest.NewConfigBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, configtest.NewConfigBuilderFrom(want).Build(), want, "From keeps the value it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed config.MixedConfig
+			seed.Label = "Label-a"
+			got := configtest.NewMixedConfigBuilderFrom(seed).Build()
+			assert.Equal(t, got.Label, seed.Label, "NewMixedConfigBuilderFrom keeps Label")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := configtest.NewMixedConfigBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				configtest.NewMixedConfigBuilderFrom(want).Build(),
+				want,
+				"NewMixedConfigBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithLabel", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Label", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Label-a"
+			got := configtest.NewMixedConfigBuilder().WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "WithLabel writes its argument to Label")
+		})
+
+		t.Run("replaces the value of Label", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Label-a"
+			want = "Label-b"
+			got := configtest.NewMixedConfigBuilder().WithLabel(first).WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "the second call of WithLabel replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*config.MixedConfig
+			record := func(v *config.MixedConfig) { got = append(got, v) }
+			configtest.NewMixedConfigBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := configtest.NewMixedConfigBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := configtest.NewMixedConfigBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed config.MixedConfig
+			seed.Label = "Label-a"
+			b := configtest.NewMixedConfigBuilder()
+			b.Mutate(func(v *config.MixedConfig) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestTagConfigBuilderConstruction pins what the constructors produce.
-func TestTagConfigBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed config.TagConfig
-		seed.Host = "Host-a"
-		seed.Port = 42
-		seed.Verbose = true
-		seed.Ratio = 1.5
-		seed.Retries = 42
-		seed.Undirected = "Undirected-a"
-		got := configtest.NewTagConfigBuilderFrom(seed).Build()
-		assert.Equal(t, got.Host, seed.Host, "From keeps the member it was given")
-		assert.Equal(t, got.Port, seed.Port, "From keeps the member it was given")
-		assert.Equal(t, got.Verbose, seed.Verbose, "From keeps the member it was given")
-		assert.Equal(t, got.Ratio, seed.Ratio, "From keeps the member it was given")
-		assert.Equal(t, got.Retries, seed.Retries, "From keeps the member it was given")
-		assert.Equal(t, got.Undirected, seed.Undirected, "From keeps the member it was given")
-	})
-
-	t.Run("Host carries its declared default", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "localhost"
-		got := configtest.NewTagConfigBuilder().Build()
-		assert.Equal(t, got.Host, want, "the constructor applies the declared default")
-	})
-
-	t.Run("Port carries its declared default", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 8080
-		got := configtest.NewTagConfigBuilder().Build()
-		assert.Equal(t, got.Port, want, "the constructor applies the declared default")
-	})
-
-	t.Run("Verbose carries its declared default", func(t *testing.T) {
-		t.Parallel()
-
-		var want bool
-		want = true
-		got := configtest.NewTagConfigBuilder().Build()
-		assert.Equal(t, got.Verbose, want, "the constructor applies the declared default")
-	})
-
-	t.Run("Ratio carries its declared default", func(t *testing.T) {
-		t.Parallel()
-
-		var want float64
-		want = 0.75
-		got := configtest.NewTagConfigBuilder().Build()
-		assert.Equal(t, got.Ratio, want, "the constructor applies the declared default")
-	})
-}
-
-// TestTagConfigBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestTagConfigBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithHost writes Host", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Host-a"
-		got := configtest.NewTagConfigBuilder().WithHost(want).Build()
-		assert.Equal(t, got.Host, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithHost replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Host-a"
-		want = "Host-b"
-		got := configtest.NewTagConfigBuilder().WithHost(first).WithHost(want).Build()
-		assert.Equal(t, got.Host, want, "the later call wins")
-	})
-
-	t.Run("WithPort writes Port", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := configtest.NewTagConfigBuilder().WithPort(want).Build()
-		assert.Equal(t, got.Port, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithPort replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := configtest.NewTagConfigBuilder().WithPort(first).WithPort(want).Build()
-		assert.Equal(t, got.Port, want, "the later call wins")
-	})
-
-	t.Run("WithVerbose writes Verbose", func(t *testing.T) {
-		t.Parallel()
-
-		var want bool
-		want = true
-		got := configtest.NewTagConfigBuilder().WithVerbose(want).Build()
-		assert.Equal(t, got.Verbose, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithVerbose replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want bool
-		first = true
-		want = false
-		got := configtest.NewTagConfigBuilder().WithVerbose(first).WithVerbose(want).Build()
-		assert.Equal(t, got.Verbose, want, "the later call wins")
-	})
-
-	t.Run("WithRatio writes Ratio", func(t *testing.T) {
-		t.Parallel()
-
-		var want float64
-		want = 1.5
-		got := configtest.NewTagConfigBuilder().WithRatio(want).Build()
-		assert.Equal(t, got.Ratio, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithRatio replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want float64
-		first = 1.5
-		want = 2.5
-		got := configtest.NewTagConfigBuilder().WithRatio(first).WithRatio(want).Build()
-		assert.Equal(t, got.Ratio, want, "the later call wins")
-	})
-
-	t.Run("WithRetries writes Retries", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := configtest.NewTagConfigBuilder().WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithRetries replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := configtest.NewTagConfigBuilder().WithRetries(first).WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the later call wins")
-	})
-
-	t.Run("WithFallback writes Fallback", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Fallback-a"
-		got := configtest.NewTagConfigBuilder().WithFallback(want).Build()
-		assert.NotNil(t, got.Fallback, "the setter addresses the value it was given")
-	})
-
-	t.Run("WithUndirected writes Undirected", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Undirected-a"
-		got := configtest.NewTagConfigBuilder().WithUndirected(want).Build()
-		assert.Equal(t, got.Undirected, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithUndirected replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Undirected-a"
-		want = "Undirected-b"
-		got := configtest.NewTagConfigBuilder().WithUndirected(first).WithUndirected(want).Build()
-		assert.Equal(t, got.Undirected, want, "the later call wins")
-	})
-}
-
-// TestTagConfigBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestTagConfigBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*config.TagConfig
-		record := func(v *config.TagConfig) { got = append(got, v) }
-		configtest.NewTagConfigBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := configtest.NewTagConfigBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, configtest.NewTagConfigBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestMixedConfigBuilderConstruction pins what the constructors produce.
-func TestMixedConfigBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed config.MixedConfig
-		seed.Label = "Label-a"
-		got := configtest.NewMixedConfigBuilderFrom(seed).Build()
-		assert.Equal(t, got.Label, seed.Label, "From keeps the member it was given")
-	})
-
-	t.Run("Label carries its declared default", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "directive-wins"
-		got := configtest.NewMixedConfigBuilder().Build()
-		assert.Equal(t, got.Label, want, "the constructor applies the declared default")
-	})
-}
-
-// TestMixedConfigBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestMixedConfigBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithLabel writes Label", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Label-a"
-		got := configtest.NewMixedConfigBuilder().WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithLabel replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Label-a"
-		want = "Label-b"
-		got := configtest.NewMixedConfigBuilder().WithLabel(first).WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the later call wins")
-	})
-}
-
-// TestMixedConfigBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestMixedConfigBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*config.MixedConfig
-		record := func(v *config.MixedConfig) { got = append(got, v) }
-		configtest.NewMixedConfigBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := configtest.NewMixedConfigBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, configtest.NewMixedConfigBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:1f5764a04c847c4b12248062f4868fbb422ea31dc1cf64dc54bf110191287a58
+// dokimi:provenance sha256:dc684413ba2ae953a964eb8d136fb7864aa2318eb0f580ee02ab0f43c8205cb3

@@ -12,32 +12,49 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader/readertest"
+	"go.dokimi.dev/stub"
 )
 
-// readerStubGetSubject binds Get into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// readerStubGetArgs returns the samples of the arguments of Get.
+func readerStubGetArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Get-a"
+	return a0, a1
+}
+
+// readerStubGet calls Get of s with the samples of its arguments.
+func readerStubGet(tb assert.TB, s *readertest.ReaderStub) (reader.Value, error) {
+	tb.Helper()
+	a0, a1 := readerStubGetArgs(tb)
+	return s.Get(a0, a1)
+}
+
+// readerStubGetPins returns the samples of the results of Get, with a new
+// error as its error result.
+func readerStubGetPins() (reader.Value, error) {
+	var want0 reader.Value
+	want1 := errors.New("Get-returns")
+	want0 = reader.Value{Key: "Key-a"}
+	return want0, want1
+}
+
+// readerStubGetSubject returns the subject of [stub.Behaviour] for Get.
+// The subject calls a new double that reports to tb.
 func readerStubGetSubject(tb assert.TB) stub.Subject[readertest.ReaderGetCall, readertest.ReaderGetReturn] {
 	tb.Helper()
 	s := readertest.NewReaderStub(tb)
 	return stub.Subject[readertest.ReaderGetCall, readertest.ReaderGetReturn]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			_, _ = s.Get(a0, a1)
+			_, _ = readerStubGet(tb, s)
 		},
 		Result: func() readertest.ReaderGetReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			got0, got1 := s.Get(a0, a1)
+			got0, got1 := readerStubGet(tb, s)
 			return readertest.ReaderGetReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -49,238 +66,322 @@ func readerStubGetSubject(tb assert.TB) stub.Subject[readertest.ReaderGetCall, r
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			_, r1 := s.Get(a0, a1)
+			_, r1 := readerStubGet(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestReaderStubGet pins how Get answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestReaderStubGet(t *testing.T) {
-	t.Parallel()
+// readerStubInstance is the instance of a readertest.ReaderStub that the
+// checks of the constructors and the options drive.
+type readerStubInstance = stub.Instance[readertest.ReaderGetCall]
 
-	stub.Behaviour(t, "Get", readerStubGetSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		var want0 reader.Value
-		var want1 error
-		want0 = reader.Value{Key: "Key-a"}
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		got0, _ := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		got := s.OnGet.AssertCalledOnce(t, "Get must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		var seen []readertest.ReaderGetCall
-		s.OnGet.OnRecord(func(c readertest.ReaderGetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		_, _ = s.Get(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Get call")
-	})
-
-	t.Run("wires WithReaderGet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := readertest.NewReaderStub(t, readertest.WithReaderGet(func(_ context.Context, _ string) (reader.Value, error) {
-			called = true
-			var z0 reader.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		assert.True(t, called, "WithReaderGet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Get-failing")
-		s := readertest.NewReaderStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must answer the armed error")
-	})
-
-	t.Run("answers ErrNotFound once FaultNotFound arms it", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		s.OnGet.FaultNotFound()
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, reader.ErrNotFound, "FaultNotFound must answer with ErrNotFound")
-		_, r1 = s.Get(a0, a1)
-		assert.NoError(t, r1, "the fault is one-shot and must clear")
-	})
-
-	t.Run("fails until attempt 3 then succeeds", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		want := errors.New("Get-retry")
-		s.OnGet.RetrySchedule(want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		for attempt := 1; attempt < 3; attempt++ {
-			_, r1 := s.Get(a0, a1)
-			assert.ErrorIs(t, r1, want, "a call before attempt 3 must fail")
-		}
-		_, r1 := s.Get(a0, a1)
-		assert.NoError(t, r1, "attempt 3 must succeed")
-	})
-
-	t.Run("faults only the targeted partition", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		key := a1
-		want := errors.New("Get-partition")
-		s.OnGet.FaultForPartition(key, want, 1)
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "a call in the targeted partition must fail")
-	})
-
-	t.Run("spares the partition FaultForOtherPartitions names", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		key := a1
-		s.OnGet.FaultForOtherPartitions(key, errors.New("Get-partition"), 1)
-		_, r1 := s.Get(a0, a1)
-		assert.NoError(t, r1, "a call in the named partition must be spared")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := readertest.NewReaderStub(t)
-		var want0 reader.Value
-		var want1 error
-		want0 = reader.Value{Key: "Key-a"}
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// readerStubDouble describes how to build a ReaderStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Get stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func readerStubDouble() stub.Double[readertest.ReaderGetCall] {
-	instance := func(s *readertest.ReaderStub) stub.Instance[readertest.ReaderGetCall] {
-		return stub.Instance[readertest.ReaderGetCall]{
-			Stub: s.OnGet.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Get-a"
-				_, _ = s.Get(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[readertest.ReaderGetCall]{
-		New: func(tb assert.TB) stub.Instance[readertest.ReaderGetCall] {
-			return instance(readertest.NewReaderStub(tb))
+// readerStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Get alone.
+func readerStubInstanceOf(tb assert.TB, s *readertest.ReaderStub) readerStubInstance {
+	tb.Helper()
+	return readerStubInstance{
+		Stub: s.OnGet.MethodStub,
+		Call: func() {
+			_, _ = readerStubGet(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[readertest.ReaderGetCall] {
-			return instance(readertest.NewReaderStub(tb, readertest.ReaderStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[readertest.ReaderGetCall] {
-			return instance(readertest.NewReaderStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[readertest.ReaderGetCall] {
-			return instance(readertest.NewReaderStub(tb, readertest.ReaderStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[readertest.ReaderGetCall] {
-			return instance(readertest.NewReaderStub(tb, readertest.ReaderStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[readertest.ReaderGetCall] {
-			return instance(readertest.NewReaderStub(tb, readertest.ReaderStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestReaderStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestReaderStubOptions(t *testing.T) {
+// TestReaderStub checks the methods, the constructors and the options of
+// the double ReaderStub.
+func TestReaderStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, readerStubDouble())
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Get", readerStubGetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			_, _ = readerStubGet(t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0, a1 := readerStubGetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			var seen []readertest.ReaderGetCall
+			s.OnGet.OnRecord(func(c readertest.ReaderGetCall) { seen = append(seen, c) })
+			_, _ = readerStubGet(t, s)
+			_, _ = readerStubGet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) readerStubInstance {
+			return readerStubInstanceOf(tb, readertest.NewReaderStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			_, _ = readerStubGet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+		})
+
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			want0, want1 := readerStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := readerStubGet(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+		})
+	})
+
+	t.Run("NewReaderStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) readerStubInstance {
+			return readerStubInstanceOf(tb, readertest.NewReaderStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewReaderStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := readertest.NewReaderStubFailing(t, want)
+			_, r1 := readerStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of NewReaderStubFailing")
+		})
+	})
+
+	t.Run("ReaderStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) readerStubInstance {
+			return readerStubInstanceOf(tb, readertest.NewReaderStub(tb, readertest.ReaderStubStrict()))
+		})
+	})
+
+	t.Run("ReaderStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Get to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := readertest.NewReaderStub(t)
+			s := readertest.NewReaderStub(t, readertest.ReaderStubDelegateTo(inner))
+			_, _ = readerStubGet(t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
+		})
+
+		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-delegate")
+			inner := readertest.NewReaderStub(t)
+			inner.OnGet.Faults(want, 1)
+			s := readertest.NewReaderStub(t, readertest.ReaderStubDelegateTo(inner))
+			_, r1 := readerStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ReaderStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) readerStubInstance {
+			return readerStubInstanceOf(tb, readertest.NewReaderStub(tb, readertest.ReaderStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ReaderStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) readerStubInstance {
+			return readerStubInstanceOf(tb, readertest.NewReaderStub(tb, readertest.ReaderStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("ReaderStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) readerStubInstance {
+			return readerStubInstanceOf(tb, readertest.NewReaderStub(tb, readertest.ReaderStubBenchMode()))
+		})
+	})
+
+	t.Run("ReaderStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) readerStubInstance {
+			return readerStubInstanceOf(
+				tb,
+				readertest.NewReaderStub(tb, readertest.ReaderStubWithClock(clk), readertest.ReaderStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("ReaderStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := readertest.NewReaderStub(t, readertest.ReaderStubFailing(want))
+			_, r1 := readerStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of ReaderStubFailing")
+		})
+	})
+
+	t.Run("WithReaderGet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Get", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := readertest.NewReaderStub(
+				t,
+				readertest.WithReaderGet(func(_ context.Context, _ string) (reader.Value, error) {
+					called = true
+					var z0 reader.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = readerStubGet(t, s)
+			assert.True(t, called, "WithReaderGet sets the function of Get")
+		})
+	})
 }
 
-// TestReaderStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestReaderStubDelegateTo(t *testing.T) {
+// TestReaderGetStub checks the methods of ReaderGetStub, which configures
+// Get.
+func TestReaderGetStub(t *testing.T) {
 	t.Parallel()
 
-	inner := readertest.NewReaderStub(t)
-	s := readertest.NewReaderStub(t, readertest.ReaderStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Get to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		inner.OnGet.AssertCalledOnce(t, "Get must reach the wrapped implementation")
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			want0, want1 := readerStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			got0, got1 := readerStubGet(t, s)
+			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
+		})
+
+		t.Run("configures Get for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := readertest.NewReaderStub(r)
+			s.OnGet.Strict()
+			var want0 reader.Value
+			var want1 error
+			s.OnGet.Returns(want0, want1)
+			_, _ = readerStubGet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
+		})
 	})
 
-	t.Run("surfaces what Get answered", func(t *testing.T) {
-		want := errors.New("Get-delegate")
-		inner.OnGet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnGet.Func(func(p0 context.Context, p1 string) (reader.Value, error) {
+				got0, got1 = p0, p1
+				var z0 reader.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = readerStubGet(t, s)
+			a0, a1 := readerStubGetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+
+	t.Run("FaultNotFound", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails the next call of Get with ErrNotFound", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			s.OnGet.FaultNotFound()
+			_, r1 := readerStubGet(t, s)
+			assert.ErrorIs(t, r1, reader.ErrNotFound, "the next call of Get fails with ErrNotFound")
+		})
+
+		t.Run("spares the call after the failed call", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			s.OnGet.FaultNotFound()
+			_, _ = readerStubGet(t, s)
+			_, r1 := readerStubGet(t, s)
+			assert.NoError(t, r1, "the call of Get after the failed call succeeds")
+		})
+	})
+
+	t.Run("RetrySchedule", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails each call of Get before call 3", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			want := errors.New("Get-retry")
+			s.OnGet.RetrySchedule(want)
+			for attempt := 1; attempt < 3; attempt++ {
+				_, r1 := readerStubGet(t, s)
+				assert.ErrorIs(t, r1, want, "a call of Get before call 3 fails")
+			}
+		})
+
+		t.Run("spares call 3 of Get", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			s.OnGet.RetrySchedule(errors.New("Get-retry"))
+			for attempt := 1; attempt < 3; attempt++ {
+				_, _ = readerStubGet(t, s)
+			}
+			_, r1 := readerStubGet(t, s)
+			assert.NoError(t, r1, "call 3 of Get succeeds")
+		})
+	})
+
+	t.Run("FaultForPartition", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails a call of Get in the partition of the key", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			_, key := readerStubGetArgs(t)
+			want := errors.New("Get-partition")
+			s.OnGet.FaultForPartition(key, want, 1)
+			_, r1 := readerStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "a call in the partition of the key fails")
+		})
+	})
+
+	t.Run("FaultForOtherPartitions", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("spares a call of Get in the partition of the key", func(t *testing.T) {
+			t.Parallel()
+			s := readertest.NewReaderStub(t)
+			_, key := readerStubGetArgs(t)
+			s.OnGet.FaultForOtherPartitions(key, errors.New("Get-partition"), 1)
+			_, r1 := readerStubGet(t, s)
+			assert.NoError(t, r1, "a call in the partition of the key succeeds")
+		})
 	})
 }
 
-// dokimi:provenance sha256:fb81b145930538fd3dc67d016d805d6b11b41143f04dfced99d8530212e434ec
+// dokimi:provenance sha256:8d7846712a70da4dd59b463e6a804cc81612a472edb3286813256de1352e4c8e

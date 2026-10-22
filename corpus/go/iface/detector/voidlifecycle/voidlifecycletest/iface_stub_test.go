@@ -10,22 +10,25 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle/voidlifecycletest"
+	"go.dokimi.dev/stub"
 )
 
-// voidLifecycleStubStopSubject binds Stop into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// voidLifecycleStubStop calls Stop of s with the samples of its arguments.
+func voidLifecycleStubStop(tb assert.TB, s *voidlifecycletest.VoidLifecycleStub) {
+	tb.Helper()
+	s.Stop()
+}
+
+// voidLifecycleStubStopSubject returns the subject of [stub.Behaviour] for
+// Stop. The subject calls a new double that reports to tb.
 func voidLifecycleStubStopSubject(tb assert.TB) stub.Subject[voidlifecycletest.VoidLifecycleStopCall, struct{}] {
 	tb.Helper()
 	s := voidlifecycletest.NewVoidLifecycleStub(tb)
 	return stub.Subject[voidlifecycletest.VoidLifecycleStopCall, struct{}]{
 		Stub: s.OnStop.MethodStub,
 		Call: func() {
-			s.Stop()
+			voidLifecycleStubStop(tb, s)
 		},
 		Override: func(mark func()) {
 			s.OnStop.Func(func() {
@@ -35,104 +38,145 @@ func voidLifecycleStubStopSubject(tb assert.TB) stub.Subject[voidlifecycletest.V
 	}
 }
 
-// TestVoidLifecycleStubStop pins how Stop answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestVoidLifecycleStubStop(t *testing.T) {
-	t.Parallel()
+// voidLifecycleStubInstance is the instance of a
+// voidlifecycletest.VoidLifecycleStub that the checks of the constructors
+// and the options drive.
+type voidLifecycleStubInstance = stub.Instance[voidlifecycletest.VoidLifecycleStopCall]
 
-	stub.Behaviour(t, "Stop", voidLifecycleStubStopSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := voidlifecycletest.NewVoidLifecycleStub(t)
-		s.Stop()
-		s.OnStop.AssertCalledOnce(t, "Stop must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := voidlifecycletest.NewVoidLifecycleStub(t)
-		var seen []voidlifecycletest.VoidLifecycleStopCall
-		s.OnStop.OnRecord(func(c voidlifecycletest.VoidLifecycleStopCall) { seen = append(seen, c) })
-		s.Stop()
-		s.Stop()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Stop call")
-	})
-
-	t.Run("wires WithVoidLifecycleStop at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := voidlifecycletest.NewVoidLifecycleStub(t, voidlifecycletest.WithVoidLifecycleStop(func() {
-			called = true
-		}))
-		s.Stop()
-		assert.True(t, called, "WithVoidLifecycleStop must install the override")
-	})
-}
-
-// voidLifecycleStubDouble describes how to build a VoidLifecycleStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// Stop stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func voidLifecycleStubDouble() stub.Double[voidlifecycletest.VoidLifecycleStopCall] {
-	instance := func(s *voidlifecycletest.VoidLifecycleStub) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-		return stub.Instance[voidlifecycletest.VoidLifecycleStopCall]{
-			Stub: s.OnStop.MethodStub,
-			Call: func() {
-				s.Stop()
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[voidlifecycletest.VoidLifecycleStopCall]{
-		New: func(tb assert.TB) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-			return instance(voidlifecycletest.NewVoidLifecycleStub(tb))
+// voidLifecycleStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call Stop alone.
+func voidLifecycleStubInstanceOf(tb assert.TB, s *voidlifecycletest.VoidLifecycleStub) voidLifecycleStubInstance {
+	tb.Helper()
+	return voidLifecycleStubInstance{
+		Stub: s.OnStop.MethodStub,
+		Call: func() {
+			voidLifecycleStubStop(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-			return instance(voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-			return instance(voidlifecycletest.NewVoidLifecycleStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-			return instance(voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-			return instance(voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[voidlifecycletest.VoidLifecycleStopCall] {
-			return instance(voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestVoidLifecycleStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestVoidLifecycleStubOptions(t *testing.T) {
+// TestVoidLifecycleStub checks the methods, the constructors and the
+// options of the double VoidLifecycleStub.
+func TestVoidLifecycleStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, voidLifecycleStubDouble())
-}
+	t.Run("Stop", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Stop", voidLifecycleStubStopSubject)
 
-// TestVoidLifecycleStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestVoidLifecycleStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := voidlifecycletest.NewVoidLifecycleStub(t)
+			var seen []voidlifecycletest.VoidLifecycleStopCall
+			s.OnStop.OnRecord(func(c voidlifecycletest.VoidLifecycleStopCall) { seen = append(seen, c) })
+			voidLifecycleStubStop(t, s)
+			voidLifecycleStubStop(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Stop")
+		})
+	})
 
-	inner := voidlifecycletest.NewVoidLifecycleStub(t)
-	s := voidlifecycletest.NewVoidLifecycleStub(t, voidlifecycletest.VoidLifecycleStubDelegateTo(inner))
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) voidLifecycleStubInstance {
+			return voidLifecycleStubInstanceOf(tb, voidlifecycletest.NewVoidLifecycleStub(tb))
+		})
 
-	t.Run("forwards Stop to the wrapped implementation", func(t *testing.T) {
-		s.Stop()
-		inner.OnStop.AssertCalledOnce(t, "Stop must reach the wrapped implementation")
+		t.Run("clears the recorded calls of Stop", func(t *testing.T) {
+			t.Parallel()
+			s := voidlifecycletest.NewVoidLifecycleStub(t)
+			voidLifecycleStubStop(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnStop.CallCount(), 0, "ResetCalls clears the calls of Stop")
+		})
+	})
+
+	t.Run("NewVoidLifecycleStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) voidLifecycleStubInstance {
+			return voidLifecycleStubInstanceOf(tb, voidlifecycletest.NewVoidLifecycleStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("VoidLifecycleStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) voidLifecycleStubInstance {
+			return voidLifecycleStubInstanceOf(
+				tb,
+				voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubStrict()),
+			)
+		})
+	})
+
+	t.Run("VoidLifecycleStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Stop to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := voidlifecycletest.NewVoidLifecycleStub(t)
+			s := voidlifecycletest.NewVoidLifecycleStub(t, voidlifecycletest.VoidLifecycleStubDelegateTo(inner))
+			voidLifecycleStubStop(t, s)
+			inner.OnStop.AssertCalledOnce(t, "Stop calls the implementation")
+		})
+	})
+
+	t.Run("VoidLifecycleStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) voidLifecycleStubInstance {
+			return voidLifecycleStubInstanceOf(
+				tb,
+				voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("VoidLifecycleStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) voidLifecycleStubInstance {
+			return voidLifecycleStubInstanceOf(
+				tb,
+				voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("VoidLifecycleStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) voidLifecycleStubInstance {
+			return voidLifecycleStubInstanceOf(
+				tb,
+				voidlifecycletest.NewVoidLifecycleStub(tb, voidlifecycletest.VoidLifecycleStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("VoidLifecycleStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) voidLifecycleStubInstance {
+			return voidLifecycleStubInstanceOf(
+				tb,
+				voidlifecycletest.NewVoidLifecycleStub(
+					tb,
+					voidlifecycletest.VoidLifecycleStubWithClock(clk),
+					voidlifecycletest.VoidLifecycleStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("WithVoidLifecycleStop", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Stop", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := voidlifecycletest.NewVoidLifecycleStub(t, voidlifecycletest.WithVoidLifecycleStop(func() {
+				called = true
+			}))
+			voidLifecycleStubStop(t, s)
+			assert.True(t, called, "WithVoidLifecycleStop sets the function of Stop")
+		})
 	})
 }
 
-// dokimi:provenance sha256:c7f739d3c5333eab3afa59c1ab4fac7bcc3a078a822b974024a1379a18d8edba
+// dokimi:provenance sha256:46732ae879345e4c6c42479fe580c817e69b8cec56b0c0030d37eecf5d2f08bd

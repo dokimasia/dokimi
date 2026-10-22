@@ -7,7 +7,7 @@ package batchreadertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader"
 )
 
@@ -40,33 +40,26 @@ func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 	return conform.Suite[batchreader.BatchReader]{Declaration: "BatchReader"}
 }
 
-// RunBatchReader applies the checks of BatchReader, and the checks that
-// opts add, to a fresh subject of newSubject for each check.
-func RunBatchReader[T batchreader.BatchReader](t *testing.T, newSubject func() T, opts ...BatchReaderOption) {
+// RunBatchReaderSuite applies the checks of BatchReader, and the checks
+// that opts add, to a fresh subject of newSubject for each check.
+func RunBatchReaderSuite[T batchreader.BatchReader](t *testing.T, newSubject func() T, opts ...BatchReaderOption) {
 	t.Helper()
-	conform.Verify(t, BatchReaderSuite(), func(*BatchReaderHandle) batchreader.BatchReader { return newSubject() }, opts...)
+	RunBatchReaderSuiteFromHandle(t, func(*BatchReaderHandle) T { return newSubject() }, opts...)
 }
 
-// RunBatchReaderOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunBatchReaderOn[T batchreader.BatchReader](t *testing.T, newSubject func(h *BatchReaderHandle) T, opts ...BatchReaderOption) {
+// RunBatchReaderSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunBatchReaderSuiteFromHandle[T batchreader.BatchReader](
+	t *testing.T,
+	newSubject func(h *BatchReaderHandle) T,
+	opts ...BatchReaderOption,
+) {
 	t.Helper()
-	conform.Verify(t, BatchReaderSuite(), func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		BatchReaderSuite(),
+		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
+		opts...)
 }
 
-// ControlBatchReader applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlBatchReader[T batchreader.BatchReader](t *testing.T, newControl func() T, opts ...BatchReaderOption) {
-	t.Helper()
-	conform.Control(t, BatchReaderSuite(), func(*BatchReaderHandle) batchreader.BatchReader { return newControl() }, opts...)
-}
-
-// ControlBatchReaderOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlBatchReaderOn[T batchreader.BatchReader](t *testing.T, newControl func(h *BatchReaderHandle) T, opts ...BatchReaderOption) {
-	t.Helper()
-	conform.Control(t, BatchReaderSuite(), func(h *BatchReaderHandle) batchreader.BatchReader { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:795299d37013552cb3ac79fef6b2dd7aab236cd849b95b0c1c6e31d3696432dd
+// dokimi:provenance sha256:15c8c1242792e3ed049c370d90025b44482322b4c64359be082a52b684bbc31f

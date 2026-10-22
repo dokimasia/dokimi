@@ -12,32 +12,78 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	publisheratleastonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce/publisheratleastoncetest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubPublishSubject binds Publish into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubPublishSubject(tb assert.TB) stub.Subject[publisheratleastoncetest.ContractPublishCall, publisheratleastoncetest.ContractPublishReturn] {
+// contractStubPublishArgs returns the samples of the arguments of Publish.
+func contractStubPublishArgs(tb assert.TB) (context.Context, publisheratleastonce.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 publisheratleastonce.Value
+	a1 = publisheratleastonce.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// contractStubPublish calls Publish of s with the samples of its
+// arguments.
+func contractStubPublish(tb assert.TB, s *publisheratleastoncetest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubPublishArgs(tb)
+	return s.Publish(a0, a1)
+}
+
+// contractStubPublishPins returns the samples of the results of Publish,
+// with a new error as its error result.
+func contractStubPublishPins() error {
+	want0 := errors.New("Publish-returns")
+	return want0
+}
+
+// contractStubSubscribeArgs returns the samples of the arguments of
+// Subscribe.
+func contractStubSubscribeArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubSubscribe calls Subscribe of s with the samples of its
+// arguments.
+func contractStubSubscribe(
+	tb assert.TB,
+	s *publisheratleastoncetest.ContractStub,
+) (<-chan publisheratleastonce.Value, error) {
+	tb.Helper()
+	a0 := contractStubSubscribeArgs(tb)
+	return s.Subscribe(a0)
+}
+
+// contractStubSubscribePins returns the samples of the results of
+// Subscribe, with a new error as its error result.
+func contractStubSubscribePins() (<-chan publisheratleastonce.Value, error) {
+	var want0 <-chan publisheratleastonce.Value
+	want1 := errors.New("Subscribe-returns")
+	want0 = make(<-chan publisheratleastonce.Value)
+	return want0, want1
+}
+
+// contractStubPublishSubject returns the subject of [stub.Behaviour] for
+// Publish. The subject calls a new double that reports to tb.
+func contractStubPublishSubject(
+	tb assert.TB,
+) stub.Subject[publisheratleastoncetest.ContractPublishCall, publisheratleastoncetest.ContractPublishReturn] {
 	tb.Helper()
 	s := publisheratleastoncetest.NewContractStub(tb)
 	return stub.Subject[publisheratleastoncetest.ContractPublishCall, publisheratleastoncetest.ContractPublishReturn]{
 		Stub: s.OnPublish.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 publisheratleastonce.Value
-			a1 = publisheratleastonce.Value{Key: "Key-a"}
-			_ = s.Publish(a0, a1)
+			_ = contractStubPublish(tb, s)
 		},
 		Result: func() publisheratleastoncetest.ContractPublishReturn {
-			var a0 context.Context
-			var a1 publisheratleastonce.Value
-			a1 = publisheratleastonce.Value{Key: "Key-a"}
-			got0 := s.Publish(a0, a1)
+			got0 := contractStubPublish(tb, s)
 			return publisheratleastoncetest.ContractPublishReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,111 +94,26 @@ func contractStubPublishSubject(tb assert.TB) stub.Subject[publisheratleastoncet
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 publisheratleastonce.Value
-			a1 = publisheratleastonce.Value{Key: "Key-a"}
-			r0 := s.Publish(a0, a1)
+			r0 := contractStubPublish(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubPublish pins how Publish answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubPublish(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Publish", contractStubPublishSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := publisheratleastoncetest.NewContractStub(t)
-		var a0 context.Context
-		var a1 publisheratleastonce.Value
-		a1 = publisheratleastonce.Value{Key: "Key-a"}
-		_ = s.Publish(a0, a1)
-		got := s.OnPublish.AssertCalledOnce(t, "Publish must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := publisheratleastoncetest.NewContractStub(t)
-		var seen []publisheratleastoncetest.ContractPublishCall
-		s.OnPublish.OnRecord(func(c publisheratleastoncetest.ContractPublishCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 publisheratleastonce.Value
-		a1 = publisheratleastonce.Value{Key: "Key-a"}
-		_ = s.Publish(a0, a1)
-		_ = s.Publish(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Publish call")
-	})
-
-	t.Run("wires WithContractPublish at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.WithContractPublish(func(_ context.Context, _ publisheratleastonce.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 publisheratleastonce.Value
-		a1 = publisheratleastonce.Value{Key: "Key-a"}
-		_ = s.Publish(a0, a1)
-		assert.True(t, called, "WithContractPublish must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Publish-failing")
-		s := publisheratleastoncetest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 publisheratleastonce.Value
-		a1 = publisheratleastonce.Value{Key: "Key-a"}
-		r0 := s.Publish(a0, a1)
-		assert.ErrorIs(t, r0, want, "Publish must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := publisheratleastoncetest.NewContractStub(t)
-		var want0 error
-		s.OnPublish.Returns(want0)
-		var a0 context.Context
-		var a1 publisheratleastonce.Value
-		a1 = publisheratleastonce.Value{Key: "Key-a"}
-		_ = s.Publish(a0, a1)
-		s.ResetCalls()
-		_ = s.Publish(a0, a1)
-		s.OnPublish.AssertCalledOnce(t, "Publish must record the call that followed the reset")
-	})
-}
-
-// contractStubSubscribeSubject binds Subscribe into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubSubscribeSubject(tb assert.TB) stub.Subject[publisheratleastoncetest.ContractSubscribeCall, publisheratleastoncetest.ContractSubscribeReturn] {
+// contractStubSubscribeSubject returns the subject of [stub.Behaviour] for
+// Subscribe. The subject calls a new double that reports to tb.
+func contractStubSubscribeSubject(
+	tb assert.TB,
+) stub.Subject[publisheratleastoncetest.ContractSubscribeCall, publisheratleastoncetest.ContractSubscribeReturn] {
 	tb.Helper()
 	s := publisheratleastoncetest.NewContractStub(tb)
 	return stub.Subject[publisheratleastoncetest.ContractSubscribeCall, publisheratleastoncetest.ContractSubscribeReturn]{
 		Stub: s.OnSubscribe.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Subscribe(a0)
+			_, _ = contractStubSubscribe(tb, s)
 		},
 		Result: func() publisheratleastoncetest.ContractSubscribeReturn {
-			var a0 context.Context
-			got0, got1 := s.Subscribe(a0)
+			got0, got1 := contractStubSubscribe(tb, s)
 			return publisheratleastoncetest.ContractSubscribeReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -164,183 +125,412 @@ func contractStubSubscribeSubject(tb assert.TB) stub.Subject[publisheratleastonc
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Subscribe(a0)
+			_, r1 := contractStubSubscribe(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubSubscribe pins how Subscribe answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubSubscribe(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a
+// publisheratleastoncetest.ContractStub that the checks of the
+// constructors and the options drive.
+type contractStubInstance = stub.Instance[publisheratleastoncetest.ContractPublishCall]
 
-	stub.Behaviour(t, "Subscribe", contractStubSubscribeSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := publisheratleastoncetest.NewContractStub(t)
-		var want0 <-chan publisheratleastonce.Value
-		var want1 error
-		want0 = make(<-chan publisheratleastonce.Value)
-		s.OnSubscribe.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Subscribe(a0)
-		assert.Equal(t, got0, want0, "Subscribe must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := publisheratleastoncetest.NewContractStub(t)
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		got := s.OnSubscribe.AssertCalledOnce(t, "Subscribe must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := publisheratleastoncetest.NewContractStub(t)
-		var seen []publisheratleastoncetest.ContractSubscribeCall
-		s.OnSubscribe.OnRecord(func(c publisheratleastoncetest.ContractSubscribeCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		_, _ = s.Subscribe(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Subscribe call")
-	})
-
-	t.Run("wires WithContractSubscribe at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.WithContractSubscribe(func(_ context.Context) (<-chan publisheratleastonce.Value, error) {
-			called = true
-			var z0 <-chan publisheratleastonce.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		assert.True(t, called, "WithContractSubscribe must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Subscribe-failing")
-		s := publisheratleastoncetest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Subscribe(a0)
-		assert.ErrorIs(t, r1, want, "Subscribe must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := publisheratleastoncetest.NewContractStub(t)
-		var want0 <-chan publisheratleastonce.Value
-		var want1 error
-		want0 = make(<-chan publisheratleastonce.Value)
-		s.OnSubscribe.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		s.ResetCalls()
-		got0, _ := s.Subscribe(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Publish stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func contractStubDouble() stub.Double[publisheratleastoncetest.ContractPublishCall] {
-	instance := func(s *publisheratleastoncetest.ContractStub) stub.Instance[publisheratleastoncetest.ContractPublishCall] {
-		return stub.Instance[publisheratleastoncetest.ContractPublishCall]{
-			Stub: s.OnPublish.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 publisheratleastonce.Value
-				a1 = publisheratleastonce.Value{Key: "Key-a"}
-				_ = s.Publish(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[publisheratleastoncetest.ContractPublishCall]{
-		New: func(tb assert.TB) stub.Instance[publisheratleastoncetest.ContractPublishCall] {
-			return instance(publisheratleastoncetest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Publish alone.
+func contractStubInstanceOf(tb assert.TB, s *publisheratleastoncetest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnPublish.MethodStub,
+		Call: func() {
+			_ = contractStubPublish(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[publisheratleastoncetest.ContractPublishCall] {
-			return instance(publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[publisheratleastoncetest.ContractPublishCall] {
-			return instance(publisheratleastoncetest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[publisheratleastoncetest.ContractPublishCall] {
-			return instance(publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[publisheratleastoncetest.ContractPublishCall] {
-			return instance(publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[publisheratleastoncetest.ContractPublishCall] {
-			return instance(publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Publish", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Publish", contractStubPublishSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			_ = contractStubPublish(t, s)
+			got := s.OnPublish.AssertCalledOnce(t, "Publish records the call")
+			a0, a1 := contractStubPublishArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			var seen []publisheratleastoncetest.ContractPublishCall
+			s.OnPublish.OnRecord(func(c publisheratleastoncetest.ContractPublishCall) { seen = append(seen, c) })
+			_ = contractStubPublish(t, s)
+			_ = contractStubPublish(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Publish")
+		})
+	})
+
+	t.Run("Subscribe", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Subscribe", contractStubSubscribeSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			_, _ = contractStubSubscribe(t, s)
+			got := s.OnSubscribe.AssertCalledOnce(t, "Subscribe records the call")
+			a0 := contractStubSubscribeArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			var seen []publisheratleastoncetest.ContractSubscribeCall
+			s.OnSubscribe.OnRecord(func(c publisheratleastoncetest.ContractSubscribeCall) { seen = append(seen, c) })
+			_, _ = contractStubSubscribe(t, s)
+			_, _ = contractStubSubscribe(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Subscribe")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, publisheratleastoncetest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Publish", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			_ = contractStubPublish(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPublish.CallCount(), 0, "ResetCalls clears the calls of Publish")
+		})
+
+		t.Run("keeps the results of Returns of Publish", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			want0 := contractStubPublishPins()
+			s.OnPublish.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubPublish(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Publish")
+		})
+
+		t.Run("clears the recorded calls of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			_, _ = contractStubSubscribe(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSubscribe.CallCount(), 0, "ResetCalls clears the calls of Subscribe")
+		})
+
+		t.Run("keeps the results of Returns of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			want0, want1 := contractStubSubscribePins()
+			s.OnSubscribe.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubSubscribe(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Subscribe")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Subscribe")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, publisheratleastoncetest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Publish with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Publish-failing")
+			s := publisheratleastoncetest.NewContractStubFailing(t, want)
+			r0 := contractStubPublish(t, s)
+			assert.ErrorIs(t, r0, want, "Publish fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Subscribe with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Subscribe-failing")
+			s := publisheratleastoncetest.NewContractStubFailing(t, want)
+			_, r1 := contractStubSubscribe(t, s)
+			assert.ErrorIs(t, r1, want, "Subscribe fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubStrict()),
+			)
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Publish to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := publisheratleastoncetest.NewContractStub(t)
+			s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.ContractStubDelegateTo(inner))
+			_ = contractStubPublish(t, s)
+			inner.OnPublish.AssertCalledOnce(t, "Publish calls the implementation")
+		})
+
+		t.Run("fails Publish with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Publish-delegate")
+			inner := publisheratleastoncetest.NewContractStub(t)
+			inner.OnPublish.Faults(want, 1)
+			s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.ContractStubDelegateTo(inner))
+			r0 := contractStubPublish(t, s)
+			assert.ErrorIs(t, r0, want, "Publish fails with the error of the implementation")
+		})
+
+		t.Run("passes Subscribe to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := publisheratleastoncetest.NewContractStub(t)
+			s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.ContractStubDelegateTo(inner))
+			_, _ = contractStubSubscribe(t, s)
+			inner.OnSubscribe.AssertCalledOnce(t, "Subscribe calls the implementation")
+		})
+
+		t.Run("fails Subscribe with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Subscribe-delegate")
+			inner := publisheratleastoncetest.NewContractStub(t)
+			inner.OnSubscribe.Faults(want, 1)
+			s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubSubscribe(t, s)
+			assert.ErrorIs(t, r1, want, "Subscribe fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				publisheratleastoncetest.NewContractStub(tb, publisheratleastoncetest.ContractStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				publisheratleastoncetest.NewContractStub(
+					tb,
+					publisheratleastoncetest.ContractStubWithClock(clk),
+					publisheratleastoncetest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Publish with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Publish-failing")
+			s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.ContractStubFailing(want))
+			r0 := contractStubPublish(t, s)
+			assert.ErrorIs(t, r0, want, "Publish fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Subscribe with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Subscribe-failing")
+			s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.ContractStubFailing(want))
+			_, r1 := contractStubSubscribe(t, s)
+			assert.ErrorIs(t, r1, want, "Subscribe fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractPublish", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Publish", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := publisheratleastoncetest.NewContractStub(
+				t,
+				publisheratleastoncetest.WithContractPublish(
+					func(_ context.Context, _ publisheratleastonce.Value) error {
+						called = true
+						var z0 error
+						return z0
+					},
+				),
+			)
+			_ = contractStubPublish(t, s)
+			assert.True(t, called, "WithContractPublish sets the function of Publish")
+		})
+	})
+
+	t.Run("WithContractSubscribe", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := publisheratleastoncetest.NewContractStub(
+				t,
+				publisheratleastoncetest.WithContractSubscribe(
+					func(_ context.Context) (<-chan publisheratleastonce.Value, error) {
+						called = true
+						var z0 <-chan publisheratleastonce.Value
+						var z1 error
+						return z0, z1
+					},
+				),
+			)
+			_, _ = contractStubSubscribe(t, s)
+			assert.True(t, called, "WithContractSubscribe sets the function of Subscribe")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractPublishStub checks the methods of ContractPublishStub, which
+// configures Publish.
+func TestContractPublishStub(t *testing.T) {
 	t.Parallel()
 
-	inner := publisheratleastoncetest.NewContractStub(t)
-	s := publisheratleastoncetest.NewContractStub(t, publisheratleastoncetest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Publish to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 publisheratleastonce.Value
-		a1 = publisheratleastonce.Value{Key: "Key-a"}
-		_ = s.Publish(a0, a1)
-		inner.OnPublish.AssertCalledOnce(t, "Publish must reach the wrapped implementation")
+		t.Run("sets the results of each call of Publish", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			want0 := contractStubPublishPins()
+			s.OnPublish.Returns(want0)
+			got0 := contractStubPublish(t, s)
+			assert.ErrorIs(t, got0, want0, "Publish returns the error that Returns sets")
+		})
+
+		t.Run("configures Publish for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := publisheratleastoncetest.NewContractStub(r)
+			s.OnPublish.Strict()
+			var want0 error
+			s.OnPublish.Returns(want0)
+			_ = contractStubPublish(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Publish")
+		})
 	})
 
-	t.Run("surfaces what Publish answered", func(t *testing.T) {
-		want := errors.New("Publish-delegate")
-		inner.OnPublish.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 publisheratleastonce.Value
-		a1 = publisheratleastonce.Value{Key: "Key-a"}
-		r0 := s.Publish(a0, a1)
-		assert.ErrorIs(t, r0, want, "Publish must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Subscribe to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Subscribe(a0)
-		inner.OnSubscribe.AssertCalledOnce(t, "Subscribe must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Subscribe answered", func(t *testing.T) {
-		want := errors.New("Subscribe-delegate")
-		inner.OnSubscribe.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Subscribe(a0)
-		assert.ErrorIs(t, r1, want, "Subscribe must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Publish to the function", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			var got0 context.Context
+			var got1 publisheratleastonce.Value
+			s.OnPublish.Func(func(p0 context.Context, p1 publisheratleastonce.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubPublish(t, s)
+			a0, a1 := contractStubPublishArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:4c39dcb0c53e0913703983e81d36c5a061c175f5c51b9cdc2ba571460dd814e1
+// TestContractSubscribeStub checks the methods of ContractSubscribeStub,
+// which configures Subscribe.
+func TestContractSubscribeStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Subscribe", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			want0, want1 := contractStubSubscribePins()
+			s.OnSubscribe.Returns(want0, want1)
+			got0, got1 := contractStubSubscribe(t, s)
+			expect.Equal(t, got0, want0, "Subscribe returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Subscribe returns the error that Returns sets")
+		})
+
+		t.Run("configures Subscribe for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := publisheratleastoncetest.NewContractStub(r)
+			s.OnSubscribe.Strict()
+			var want0 <-chan publisheratleastonce.Value
+			var want1 error
+			s.OnSubscribe.Returns(want0, want1)
+			_, _ = contractStubSubscribe(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Subscribe")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Subscribe to the function", func(t *testing.T) {
+			t.Parallel()
+			s := publisheratleastoncetest.NewContractStub(t)
+			var got0 context.Context
+			s.OnSubscribe.Func(func(p0 context.Context) (<-chan publisheratleastonce.Value, error) {
+				got0 = p0
+				var z0 <-chan publisheratleastonce.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubSubscribe(t, s)
+			a0 := contractStubSubscribeArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:243ead818e0825928136a1d54fabfa6440c2a091f6fd6da2f4687ea5fef1034d

@@ -7,7 +7,7 @@ package puretest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pure"
 )
 
@@ -40,33 +40,18 @@ func PureSuite() conform.Suite[pure.Pure] {
 	return conform.Suite[pure.Pure]{Declaration: "Pure"}
 }
 
-// RunPure applies the checks of Pure, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunPure[T pure.Pure](t *testing.T, newSubject func() T, opts ...PureOption) {
+// RunPureSuite applies the checks of Pure, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunPureSuite[T pure.Pure](t *testing.T, newSubject func() T, opts ...PureOption) {
 	t.Helper()
-	conform.Verify(t, PureSuite(), func(*PureHandle) pure.Pure { return newSubject() }, opts...)
+	RunPureSuiteFromHandle(t, func(*PureHandle) T { return newSubject() }, opts...)
 }
 
-// RunPureOn applies the same checks to a subject that newSubject builds on
-// the handle of each check.
-func RunPureOn[T pure.Pure](t *testing.T, newSubject func(h *PureHandle) T, opts ...PureOption) {
+// RunPureSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunPureSuiteFromHandle[T pure.Pure](t *testing.T, newSubject func(h *PureHandle) T, opts ...PureOption) {
 	t.Helper()
-	conform.Verify(t, PureSuite(), func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+	conform.Run(t, PureSuite(), func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
 }
 
-// ControlPure applies the same checks to a fresh control of newControl for
-// each check. A control is a correct implementation that differs from the
-// subject.
-func ControlPure[T pure.Pure](t *testing.T, newControl func() T, opts ...PureOption) {
-	t.Helper()
-	conform.Control(t, PureSuite(), func(*PureHandle) pure.Pure { return newControl() }, opts...)
-}
-
-// ControlPureOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlPureOn[T pure.Pure](t *testing.T, newControl func(h *PureHandle) T, opts ...PureOption) {
-	t.Helper()
-	conform.Control(t, PureSuite(), func(h *PureHandle) pure.Pure { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:d9e5b02783f8584d6a149f4f2dce683c465f93352fc573d5e2630c9135200195
+// dokimi:provenance sha256:b73b5ceb1f61df80a6dd7bc8e31c10a06463099893b62ea4e3f232f0d0a722c7

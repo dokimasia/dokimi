@@ -12,166 +12,101 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotent/idempotenttest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubPutSubject binds Put into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubPutArgs returns the samples of the arguments of Put.
+func mixedStubPutArgs(tb assert.TB) (context.Context, string, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 string
+	a1 = "Put-a"
+	a2 = "Put-a"
+	return a0, a1, a2
+}
+
+// mixedStubPut calls Put of s with the samples of its arguments.
+func mixedStubPut(tb assert.TB, s *idempotenttest.MixedStub) error {
+	tb.Helper()
+	a0, a1, a2 := mixedStubPutArgs(tb)
+	return s.Put(a0, a1, a2)
+}
+
+// mixedStubPutPins returns the samples of the results of Put, with a new
+// error as its error result.
+func mixedStubPutPins() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// mixedStubReadArgs returns the samples of the arguments of Read.
+func mixedStubReadArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Read-a"
+	return a0, a1
+}
+
+// mixedStubRead calls Read of s with the samples of its arguments.
+func mixedStubRead(tb assert.TB, s *idempotenttest.MixedStub) (string, error) {
+	tb.Helper()
+	a0, a1 := mixedStubReadArgs(tb)
+	return s.Read(a0, a1)
+}
+
+// mixedStubReadPins returns the samples of the results of Read, with a new
+// error as its error result.
+func mixedStubReadPins() (string, error) {
+	var want0 string
+	want1 := errors.New("Read-returns")
+	want0 = "Read-a"
+	return want0, want1
+}
+
+// mixedStubPutSubject returns the subject of [stub.Behaviour] for Put. The
+// subject calls a new double that reports to tb.
 func mixedStubPutSubject(tb assert.TB) stub.Subject[idempotenttest.MixedPutCall, idempotenttest.MixedPutReturn] {
 	tb.Helper()
 	s := idempotenttest.NewMixedStub(tb)
 	return stub.Subject[idempotenttest.MixedPutCall, idempotenttest.MixedPutReturn]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Put-a"
-			a2 = "Put-a"
-			_ = s.Put(a0, a1, a2)
+			_ = mixedStubPut(tb, s)
 		},
 		Result: func() idempotenttest.MixedPutReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Put-a"
-			a2 = "Put-a"
-			got0 := s.Put(a0, a1, a2)
+			got0 := mixedStubPut(tb, s)
 			return idempotenttest.MixedPutReturn{Err: got0}
 		},
 		Override: func(mark func()) {
-			s.OnPut.Func(func(_ context.Context, _ string, _ string) error {
+			s.OnPut.Func(func(_ context.Context, _, _ string) error {
 				mark()
 				var z0 error
 				return z0
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			a1 = "Put-a"
-			a2 = "Put-a"
-			r0 := s.Put(a0, a1, a2)
+			r0 := mixedStubPut(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubPut(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Put", mixedStubPutSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := idempotenttest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Put-a"
-		a2 = "Put-a"
-		_ = s.Put(a0, a1, a2)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.Value, a2, "the recorded call carries Value")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := idempotenttest.NewMixedStub(t)
-		var seen []idempotenttest.MixedPutCall
-		s.OnPut.OnRecord(func(c idempotenttest.MixedPutCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Put-a"
-		a2 = "Put-a"
-		_ = s.Put(a0, a1, a2)
-		_ = s.Put(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithMixedPut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := idempotenttest.NewMixedStub(t, idempotenttest.WithMixedPut(func(_ context.Context, _ string, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Put-a"
-		a2 = "Put-a"
-		_ = s.Put(a0, a1, a2)
-		assert.True(t, called, "WithMixedPut must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Put-failing")
-		s := idempotenttest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Put-a"
-		a2 = "Put-a"
-		r0 := s.Put(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Put must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := idempotenttest.NewMixedStub(t)
-		var want0 error
-		s.OnPut.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Put-a"
-		a2 = "Put-a"
-		_ = s.Put(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Put(a0, a1, a2)
-		s.OnPut.AssertCalledOnce(t, "Put must record the call that followed the reset")
-	})
-}
-
-// mixedStubReadSubject binds Read into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubReadSubject returns the subject of [stub.Behaviour] for Read.
+// The subject calls a new double that reports to tb.
 func mixedStubReadSubject(tb assert.TB) stub.Subject[idempotenttest.MixedReadCall, idempotenttest.MixedReadReturn] {
 	tb.Helper()
 	s := idempotenttest.NewMixedStub(tb)
 	return stub.Subject[idempotenttest.MixedReadCall, idempotenttest.MixedReadReturn]{
 		Stub: s.OnRead.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Read-a"
-			_, _ = s.Read(a0, a1)
+			_, _ = mixedStubRead(tb, s)
 		},
 		Result: func() idempotenttest.MixedReadReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Read-a"
-			got0, got1 := s.Read(a0, a1)
+			got0, got1 := mixedStubRead(tb, s)
 			return idempotenttest.MixedReadReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -183,208 +118,398 @@ func mixedStubReadSubject(tb assert.TB) stub.Subject[idempotenttest.MixedReadCal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Read-a"
-			_, r1 := s.Read(a0, a1)
+			_, r1 := mixedStubRead(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubRead pins how Read answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubRead(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a idempotenttest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[idempotenttest.MixedPutCall]
 
-	stub.Behaviour(t, "Read", mixedStubReadSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := idempotenttest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Read-a"
-		s.OnRead.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		got0, _ := s.Read(a0, a1)
-		assert.Equal(t, got0, want0, "Read must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := idempotenttest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		got := s.OnRead.AssertCalledOnce(t, "Read must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := idempotenttest.NewMixedStub(t)
-		var seen []idempotenttest.MixedReadCall
-		s.OnRead.OnRecord(func(c idempotenttest.MixedReadCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		_, _ = s.Read(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Read call")
-	})
-
-	t.Run("wires WithMixedRead at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := idempotenttest.NewMixedStub(t, idempotenttest.WithMixedRead(func(_ context.Context, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		assert.True(t, called, "WithMixedRead must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Read-failing")
-		s := idempotenttest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, r1 := s.Read(a0, a1)
-		assert.ErrorIs(t, r1, want, "Read must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := idempotenttest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Read-a"
-		s.OnRead.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Read(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Put stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[idempotenttest.MixedPutCall] {
-	instance := func(s *idempotenttest.MixedStub) stub.Instance[idempotenttest.MixedPutCall] {
-		return stub.Instance[idempotenttest.MixedPutCall]{
-			Stub: s.OnPut.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				var a2 string
-				a1 = "Put-a"
-				a2 = "Put-a"
-				_ = s.Put(a0, a1, a2)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[idempotenttest.MixedPutCall]{
-		New: func(tb assert.TB) stub.Instance[idempotenttest.MixedPutCall] {
-			return instance(idempotenttest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Put alone.
+func mixedStubInstanceOf(tb assert.TB, s *idempotenttest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnPut.MethodStub,
+		Call: func() {
+			_ = mixedStubPut(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[idempotenttest.MixedPutCall] {
-			return instance(idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[idempotenttest.MixedPutCall] {
-			return instance(idempotenttest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[idempotenttest.MixedPutCall] {
-			return instance(idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[idempotenttest.MixedPutCall] {
-			return instance(idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[idempotenttest.MixedPutCall] {
-			return instance(idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", mixedStubPutSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			_ = mixedStubPut(t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1, a2 := mixedStubPutArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.Value, a2, "the call records Value")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			var seen []idempotenttest.MixedPutCall
+			s.OnPut.OnRecord(func(c idempotenttest.MixedPutCall) { seen = append(seen, c) })
+			_ = mixedStubPut(t, s)
+			_ = mixedStubPut(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("Read", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Read", mixedStubReadSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			_, _ = mixedStubRead(t, s)
+			got := s.OnRead.AssertCalledOnce(t, "Read records the call")
+			a0, a1 := mixedStubReadArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			var seen []idempotenttest.MixedReadCall
+			s.OnRead.OnRecord(func(c idempotenttest.MixedReadCall) { seen = append(seen, c) })
+			_, _ = mixedStubRead(t, s)
+			_, _ = mixedStubRead(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Read")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, idempotenttest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			_ = mixedStubPut(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			want0 := mixedStubPutPins()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+
+		t.Run("clears the recorded calls of Read", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			_, _ = mixedStubRead(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRead.CallCount(), 0, "ResetCalls clears the calls of Read")
+		})
+
+		t.Run("keeps the results of Returns of Read", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			want0, want1 := mixedStubReadPins()
+			s.OnRead.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubRead(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Read")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Read")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, idempotenttest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := idempotenttest.NewMixedStubFailing(t, want)
+			r0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Read with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Read-failing")
+			s := idempotenttest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubRead(t, s)
+			assert.ErrorIs(t, r1, want, "Read fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := idempotenttest.NewMixedStub(t)
+			s := idempotenttest.NewMixedStub(t, idempotenttest.MixedStubDelegateTo(inner))
+			_ = mixedStubPut(t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := idempotenttest.NewMixedStub(t)
+			inner.OnPut.Faults(want, 1)
+			s := idempotenttest.NewMixedStub(t, idempotenttest.MixedStubDelegateTo(inner))
+			r0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+
+		t.Run("passes Read to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := idempotenttest.NewMixedStub(t)
+			s := idempotenttest.NewMixedStub(t, idempotenttest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubRead(t, s)
+			inner.OnRead.AssertCalledOnce(t, "Read calls the implementation")
+		})
+
+		t.Run("fails Read with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Read-delegate")
+			inner := idempotenttest.NewMixedStub(t)
+			inner.OnRead.Faults(want, 1)
+			s := idempotenttest.NewMixedStub(t, idempotenttest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubRead(t, s)
+			assert.ErrorIs(t, r1, want, "Read fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, idempotenttest.NewMixedStub(tb, idempotenttest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				idempotenttest.NewMixedStub(
+					tb,
+					idempotenttest.MixedStubWithClock(clk),
+					idempotenttest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := idempotenttest.NewMixedStub(t, idempotenttest.MixedStubFailing(want))
+			r0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Read with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Read-failing")
+			s := idempotenttest.NewMixedStub(t, idempotenttest.MixedStubFailing(want))
+			_, r1 := mixedStubRead(t, s)
+			assert.ErrorIs(t, r1, want, "Read fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedPut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := idempotenttest.NewMixedStub(t, idempotenttest.WithMixedPut(func(_ context.Context, _, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubPut(t, s)
+			assert.True(t, called, "WithMixedPut sets the function of Put")
+		})
+	})
+
+	t.Run("WithMixedRead", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Read", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := idempotenttest.NewMixedStub(
+				t,
+				idempotenttest.WithMixedRead(func(_ context.Context, _ string) (string, error) {
+					called = true
+					var z0 string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubRead(t, s)
+			assert.True(t, called, "WithMixedRead sets the function of Read")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedPutStub checks the methods of MixedPutStub, which configures
+// Put.
+func TestMixedPutStub(t *testing.T) {
 	t.Parallel()
 
-	inner := idempotenttest.NewMixedStub(t)
-	s := idempotenttest.NewMixedStub(t, idempotenttest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Put-a"
-		a2 = "Put-a"
-		_ = s.Put(a0, a1, a2)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			want0 := mixedStubPutPins()
+			s.OnPut.Returns(want0)
+			got0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
+
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := idempotenttest.NewMixedStub(r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = mixedStubPut(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
 	})
 
-	t.Run("surfaces what Put answered", func(t *testing.T) {
-		want := errors.New("Put-delegate")
-		inner.OnPut.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		a1 = "Put-a"
-		a2 = "Put-a"
-		r0 := s.Put(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Put must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Read to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		inner.OnRead.AssertCalledOnce(t, "Read must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Read answered", func(t *testing.T) {
-		want := errors.New("Read-delegate")
-		inner.OnRead.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, r1 := s.Read(a0, a1)
-		assert.ErrorIs(t, r1, want, "Read must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 string
+			s.OnPut.Func(func(p0 context.Context, p1, p2 string) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = mixedStubPut(t, s)
+			a0, a1, a2 := mixedStubPutArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives Value")
+		})
 	})
 }
 
-// dokimi:provenance sha256:a1418bec5b3ad42fceb8730c7adfa587c0e906e8c48ce849ea350e9ac4809c11
+// TestMixedReadStub checks the methods of MixedReadStub, which configures
+// Read.
+func TestMixedReadStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Read", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			want0, want1 := mixedStubReadPins()
+			s.OnRead.Returns(want0, want1)
+			got0, got1 := mixedStubRead(t, s)
+			expect.Equal(t, got0, want0, "Read returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Read returns the error that Returns sets")
+		})
+
+		t.Run("configures Read for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := idempotenttest.NewMixedStub(r)
+			s.OnRead.Strict()
+			var want0 string
+			var want1 error
+			s.OnRead.Returns(want0, want1)
+			_, _ = mixedStubRead(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Read")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Read to the function", func(t *testing.T) {
+			t.Parallel()
+			s := idempotenttest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnRead.Func(func(p0 context.Context, p1 string) (string, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubRead(t, s)
+			a0, a1 := mixedStubReadArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:0e17520df7bdc05f326a8adf3c20e6a2b63d9971ee410a609a42a58c08cf942c

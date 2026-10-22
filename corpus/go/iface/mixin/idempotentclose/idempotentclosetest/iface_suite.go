@@ -7,7 +7,7 @@ package idempotentclosetest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose"
 )
 
@@ -48,33 +48,22 @@ func CloserSuite() conform.Suite[idempotentclose.Closer] {
 	return conform.Suite[idempotentclose.Closer]{Declaration: "Closer"}
 }
 
-// RunCloser applies the checks of Closer, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunCloser[T idempotentclose.Closer](t *testing.T, newSubject func() T, opts ...CloserOption) {
+// RunCloserSuite applies the checks of Closer, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunCloserSuite[T idempotentclose.Closer](t *testing.T, newSubject func() T, opts ...CloserOption) {
 	t.Helper()
-	conform.Verify(t, CloserSuite(), func(*CloserHandle) idempotentclose.Closer { return newSubject() }, opts...)
+	RunCloserSuiteFromHandle(t, func(*CloserHandle) T { return newSubject() }, opts...)
 }
 
-// RunCloserOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunCloserOn[T idempotentclose.Closer](t *testing.T, newSubject func(h *CloserHandle) T, opts ...CloserOption) {
+// RunCloserSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunCloserSuiteFromHandle[T idempotentclose.Closer](
+	t *testing.T,
+	newSubject func(h *CloserHandle) T,
+	opts ...CloserOption,
+) {
 	t.Helper()
-	conform.Verify(t, CloserSuite(), func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) }, opts...)
+	conform.Run(t, CloserSuite(), func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) }, opts...)
 }
 
-// ControlCloser applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlCloser[T idempotentclose.Closer](t *testing.T, newControl func() T, opts ...CloserOption) {
-	t.Helper()
-	conform.Control(t, CloserSuite(), func(*CloserHandle) idempotentclose.Closer { return newControl() }, opts...)
-}
-
-// ControlCloserOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlCloserOn[T idempotentclose.Closer](t *testing.T, newControl func(h *CloserHandle) T, opts ...CloserOption) {
-	t.Helper()
-	conform.Control(t, CloserSuite(), func(h *CloserHandle) idempotentclose.Closer { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:f3406588e680d6aec48a34bf8f5b771ad09bc6f2f7f68ebd451413afcd142bf1
+// dokimi:provenance sha256:c1e9718176031d12bb02bc7b4804a583e916ff0e21ba1530975217e8cd514997

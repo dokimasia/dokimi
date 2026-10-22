@@ -7,7 +7,7 @@ package retrysucceedstest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/retrysucceeds"
 )
 
@@ -47,33 +47,22 @@ func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
 	return conform.Suite[retrysucceeds.Mixed]{Declaration: "Mixed"}
 }
 
-// RunMixed applies the checks of Mixed, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunMixed[T retrysucceeds.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
+// RunMixedSuite applies the checks of Mixed, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunMixedSuite[T retrysucceeds.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(*MixedHandle) retrysucceeds.Mixed { return newSubject() }, opts...)
+	RunMixedSuiteFromHandle(t, func(*MixedHandle) T { return newSubject() }, opts...)
 }
 
-// RunMixedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunMixedOn[T retrysucceeds.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+// RunMixedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunMixedSuiteFromHandle[T retrysucceeds.Mixed](
+	t *testing.T,
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(h *MixedHandle) retrysucceeds.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), func(h *MixedHandle) retrysucceeds.Mixed { return newSubject(h) }, opts...)
 }
 
-// ControlMixed applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlMixed[T retrysucceeds.Mixed](t *testing.T, newControl func() T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(*MixedHandle) retrysucceeds.Mixed { return newControl() }, opts...)
-}
-
-// ControlMixedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlMixedOn[T retrysucceeds.Mixed](t *testing.T, newControl func(h *MixedHandle) T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(h *MixedHandle) retrysucceeds.Mixed { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:88f0186c71cde525693687234eb0da1ba215e04340edf0863a2c4bdcd7b7cef3
+// dokimi:provenance sha256:6c3ae285e895fec6fe226ce887f628951b17176122570155a5fb95d8666bb002

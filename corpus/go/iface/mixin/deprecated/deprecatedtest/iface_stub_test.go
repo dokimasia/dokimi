@@ -12,31 +12,73 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deprecated/deprecatedtest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubOldSubject binds Old into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubOldArgs returns the samples of the arguments of Old.
+func mixedStubOldArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Old-a"
+	return a0, a1
+}
+
+// mixedStubOld calls Old of s with the samples of its arguments.
+func mixedStubOld(tb assert.TB, s *deprecatedtest.MixedStub) (string, error) {
+	tb.Helper()
+	a0, a1 := mixedStubOldArgs(tb)
+	return s.Old(a0, a1)
+}
+
+// mixedStubOldPins returns the samples of the results of Old, with a new
+// error as its error result.
+func mixedStubOldPins() (string, error) {
+	var want0 string
+	want1 := errors.New("Old-returns")
+	want0 = "Old-a"
+	return want0, want1
+}
+
+// mixedStubNewArgs returns the samples of the arguments of New.
+func mixedStubNewArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "New-a"
+	return a0, a1
+}
+
+// mixedStubNew calls New of s with the samples of its arguments.
+func mixedStubNew(tb assert.TB, s *deprecatedtest.MixedStub) (string, error) {
+	tb.Helper()
+	a0, a1 := mixedStubNewArgs(tb)
+	return s.New(a0, a1)
+}
+
+// mixedStubNewPins returns the samples of the results of New, with a new
+// error as its error result.
+func mixedStubNewPins() (string, error) {
+	var want0 string
+	want1 := errors.New("New-returns")
+	want0 = "New-a"
+	return want0, want1
+}
+
+// mixedStubOldSubject returns the subject of [stub.Behaviour] for Old. The
+// subject calls a new double that reports to tb.
 func mixedStubOldSubject(tb assert.TB) stub.Subject[deprecatedtest.MixedOldCall, deprecatedtest.MixedOldReturn] {
 	tb.Helper()
 	s := deprecatedtest.NewMixedStub(tb)
 	return stub.Subject[deprecatedtest.MixedOldCall, deprecatedtest.MixedOldReturn]{
 		Stub: s.OnOld.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Old-a"
-			_, _ = s.Old(a0, a1)
+			_, _ = mixedStubOld(tb, s)
 		},
 		Result: func() deprecatedtest.MixedOldReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Old-a"
-			got0, got1 := s.Old(a0, a1)
+			got0, got1 := mixedStubOld(tb, s)
 			return deprecatedtest.MixedOldReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -48,131 +90,24 @@ func mixedStubOldSubject(tb assert.TB) stub.Subject[deprecatedtest.MixedOldCall,
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Old-a"
-			_, r1 := s.Old(a0, a1)
+			_, r1 := mixedStubOld(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubOld pins how Old answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubOld(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Old", mixedStubOldSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Old-a"
-		s.OnOld.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		got0, _ := s.Old(a0, a1)
-		assert.Equal(t, got0, want0, "Old must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		_, _ = s.Old(a0, a1)
-		got := s.OnOld.AssertCalledOnce(t, "Old must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var seen []deprecatedtest.MixedOldCall
-		s.OnOld.OnRecord(func(c deprecatedtest.MixedOldCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		_, _ = s.Old(a0, a1)
-		_, _ = s.Old(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Old call")
-	})
-
-	t.Run("wires WithMixedOld at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := deprecatedtest.NewMixedStub(t, deprecatedtest.WithMixedOld(func(_ context.Context, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		_, _ = s.Old(a0, a1)
-		assert.True(t, called, "WithMixedOld must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Old-failing")
-		s := deprecatedtest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		_, r1 := s.Old(a0, a1)
-		assert.ErrorIs(t, r1, want, "Old must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Old-a"
-		s.OnOld.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		_, _ = s.Old(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Old(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubNewSubject binds New into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubNewSubject returns the subject of [stub.Behaviour] for New. The
+// subject calls a new double that reports to tb.
 func mixedStubNewSubject(tb assert.TB) stub.Subject[deprecatedtest.MixedNewCall, deprecatedtest.MixedNewReturn] {
 	tb.Helper()
 	s := deprecatedtest.NewMixedStub(tb)
 	return stub.Subject[deprecatedtest.MixedNewCall, deprecatedtest.MixedNewReturn]{
 		Stub: s.OnNew.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "New-a"
-			_, _ = s.New(a0, a1)
+			_, _ = mixedStubNew(tb, s)
 		},
 		Result: func() deprecatedtest.MixedNewReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "New-a"
-			got0, got1 := s.New(a0, a1)
+			got0, got1 := mixedStubNew(tb, s)
 			return deprecatedtest.MixedNewReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -184,202 +119,403 @@ func mixedStubNewSubject(tb assert.TB) stub.Subject[deprecatedtest.MixedNewCall,
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "New-a"
-			_, r1 := s.New(a0, a1)
+			_, r1 := mixedStubNew(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubNew pins how New answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubNew(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a deprecatedtest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[deprecatedtest.MixedOldCall]
 
-	stub.Behaviour(t, "New", mixedStubNewSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "New-a"
-		s.OnNew.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		got0, _ := s.New(a0, a1)
-		assert.Equal(t, got0, want0, "New must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		_, _ = s.New(a0, a1)
-		got := s.OnNew.AssertCalledOnce(t, "New must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var seen []deprecatedtest.MixedNewCall
-		s.OnNew.OnRecord(func(c deprecatedtest.MixedNewCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		_, _ = s.New(a0, a1)
-		_, _ = s.New(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per New call")
-	})
-
-	t.Run("wires WithMixedNew at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := deprecatedtest.NewMixedStub(t, deprecatedtest.WithMixedNew(func(_ context.Context, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		_, _ = s.New(a0, a1)
-		assert.True(t, called, "WithMixedNew must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("New-failing")
-		s := deprecatedtest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		_, r1 := s.New(a0, a1)
-		assert.ErrorIs(t, r1, want, "New must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := deprecatedtest.NewMixedStub(t)
-		var want0 string
-		var want1 error
-		want0 = "New-a"
-		s.OnNew.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		_, _ = s.New(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.New(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Old stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[deprecatedtest.MixedOldCall] {
-	instance := func(s *deprecatedtest.MixedStub) stub.Instance[deprecatedtest.MixedOldCall] {
-		return stub.Instance[deprecatedtest.MixedOldCall]{
-			Stub: s.OnOld.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Old-a"
-				_, _ = s.Old(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[deprecatedtest.MixedOldCall]{
-		New: func(tb assert.TB) stub.Instance[deprecatedtest.MixedOldCall] {
-			return instance(deprecatedtest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Old alone.
+func mixedStubInstanceOf(tb assert.TB, s *deprecatedtest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnOld.MethodStub,
+		Call: func() {
+			_, _ = mixedStubOld(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[deprecatedtest.MixedOldCall] {
-			return instance(deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[deprecatedtest.MixedOldCall] {
-			return instance(deprecatedtest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[deprecatedtest.MixedOldCall] {
-			return instance(deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[deprecatedtest.MixedOldCall] {
-			return instance(deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[deprecatedtest.MixedOldCall] {
-			return instance(deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Old", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Old", mixedStubOldSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			_, _ = mixedStubOld(t, s)
+			got := s.OnOld.AssertCalledOnce(t, "Old records the call")
+			a0, a1 := mixedStubOldArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			var seen []deprecatedtest.MixedOldCall
+			s.OnOld.OnRecord(func(c deprecatedtest.MixedOldCall) { seen = append(seen, c) })
+			_, _ = mixedStubOld(t, s)
+			_, _ = mixedStubOld(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Old")
+		})
+	})
+
+	t.Run("New", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "New", mixedStubNewSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			_, _ = mixedStubNew(t, s)
+			got := s.OnNew.AssertCalledOnce(t, "New records the call")
+			a0, a1 := mixedStubNewArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			var seen []deprecatedtest.MixedNewCall
+			s.OnNew.OnRecord(func(c deprecatedtest.MixedNewCall) { seen = append(seen, c) })
+			_, _ = mixedStubNew(t, s)
+			_, _ = mixedStubNew(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of New")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Old", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			_, _ = mixedStubOld(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnOld.CallCount(), 0, "ResetCalls clears the calls of Old")
+		})
+
+		t.Run("keeps the results of Returns of Old", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			want0, want1 := mixedStubOldPins()
+			s.OnOld.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubOld(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Old")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Old")
+		})
+
+		t.Run("clears the recorded calls of New", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			_, _ = mixedStubNew(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnNew.CallCount(), 0, "ResetCalls clears the calls of New")
+		})
+
+		t.Run("keeps the results of Returns of New", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			want0, want1 := mixedStubNewPins()
+			s.OnNew.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubNew(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of New")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of New")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Old with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Old-failing")
+			s := deprecatedtest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubOld(t, s)
+			assert.ErrorIs(t, r1, want, "Old fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails New with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("New-failing")
+			s := deprecatedtest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubNew(t, s)
+			assert.ErrorIs(t, r1, want, "New fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Old to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := deprecatedtest.NewMixedStub(t)
+			s := deprecatedtest.NewMixedStub(t, deprecatedtest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubOld(t, s)
+			inner.OnOld.AssertCalledOnce(t, "Old calls the implementation")
+		})
+
+		t.Run("fails Old with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Old-delegate")
+			inner := deprecatedtest.NewMixedStub(t)
+			inner.OnOld.Faults(want, 1)
+			s := deprecatedtest.NewMixedStub(t, deprecatedtest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubOld(t, s)
+			assert.ErrorIs(t, r1, want, "Old fails with the error of the implementation")
+		})
+
+		t.Run("passes New to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := deprecatedtest.NewMixedStub(t)
+			s := deprecatedtest.NewMixedStub(t, deprecatedtest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubNew(t, s)
+			inner.OnNew.AssertCalledOnce(t, "New calls the implementation")
+		})
+
+		t.Run("fails New with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("New-delegate")
+			inner := deprecatedtest.NewMixedStub(t)
+			inner.OnNew.Faults(want, 1)
+			s := deprecatedtest.NewMixedStub(t, deprecatedtest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubNew(t, s)
+			assert.ErrorIs(t, r1, want, "New fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, deprecatedtest.NewMixedStub(tb, deprecatedtest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				deprecatedtest.NewMixedStub(
+					tb,
+					deprecatedtest.MixedStubWithClock(clk),
+					deprecatedtest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Old with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Old-failing")
+			s := deprecatedtest.NewMixedStub(t, deprecatedtest.MixedStubFailing(want))
+			_, r1 := mixedStubOld(t, s)
+			assert.ErrorIs(t, r1, want, "Old fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails New with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("New-failing")
+			s := deprecatedtest.NewMixedStub(t, deprecatedtest.MixedStubFailing(want))
+			_, r1 := mixedStubNew(t, s)
+			assert.ErrorIs(t, r1, want, "New fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedOld", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Old", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := deprecatedtest.NewMixedStub(
+				t,
+				deprecatedtest.WithMixedOld(func(_ context.Context, _ string) (string, error) {
+					called = true
+					var z0 string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubOld(t, s)
+			assert.True(t, called, "WithMixedOld sets the function of Old")
+		})
+	})
+
+	t.Run("WithMixedNew", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of New", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := deprecatedtest.NewMixedStub(
+				t,
+				deprecatedtest.WithMixedNew(func(_ context.Context, _ string) (string, error) {
+					called = true
+					var z0 string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubNew(t, s)
+			assert.True(t, called, "WithMixedNew sets the function of New")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedOldStub checks the methods of MixedOldStub, which configures
+// Old.
+func TestMixedOldStub(t *testing.T) {
 	t.Parallel()
 
-	inner := deprecatedtest.NewMixedStub(t)
-	s := deprecatedtest.NewMixedStub(t, deprecatedtest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Old to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		_, _ = s.Old(a0, a1)
-		inner.OnOld.AssertCalledOnce(t, "Old must reach the wrapped implementation")
+		t.Run("sets the results of each call of Old", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			want0, want1 := mixedStubOldPins()
+			s.OnOld.Returns(want0, want1)
+			got0, got1 := mixedStubOld(t, s)
+			expect.Equal(t, got0, want0, "Old returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Old returns the error that Returns sets")
+		})
+
+		t.Run("configures Old for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := deprecatedtest.NewMixedStub(r)
+			s.OnOld.Strict()
+			var want0 string
+			var want1 error
+			s.OnOld.Returns(want0, want1)
+			_, _ = mixedStubOld(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Old")
+		})
 	})
 
-	t.Run("surfaces what Old answered", func(t *testing.T) {
-		want := errors.New("Old-delegate")
-		inner.OnOld.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Old-a"
-		_, r1 := s.Old(a0, a1)
-		assert.ErrorIs(t, r1, want, "Old must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards New to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		_, _ = s.New(a0, a1)
-		inner.OnNew.AssertCalledOnce(t, "New must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what New answered", func(t *testing.T) {
-		want := errors.New("New-delegate")
-		inner.OnNew.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "New-a"
-		_, r1 := s.New(a0, a1)
-		assert.ErrorIs(t, r1, want, "New must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Old to the function", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnOld.Func(func(p0 context.Context, p1 string) (string, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubOld(t, s)
+			a0, a1 := mixedStubOldArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:11ac9e898d0c8758dbcd1f561fbd4af2b3822bc6a92ab552e1c9e01b5a8cd7d9
+// TestMixedNewStub checks the methods of MixedNewStub, which configures
+// New.
+func TestMixedNewStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of New", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			want0, want1 := mixedStubNewPins()
+			s.OnNew.Returns(want0, want1)
+			got0, got1 := mixedStubNew(t, s)
+			expect.Equal(t, got0, want0, "New returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "New returns the error that Returns sets")
+		})
+
+		t.Run("configures New for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := deprecatedtest.NewMixedStub(r)
+			s.OnNew.Strict()
+			var want0 string
+			var want1 error
+			s.OnNew.Returns(want0, want1)
+			_, _ = mixedStubNew(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of New")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of New to the function", func(t *testing.T) {
+			t.Parallel()
+			s := deprecatedtest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnNew.Func(func(p0 context.Context, p1 string) (string, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubNew(t, s)
+			a0, a1 := mixedStubNewArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:454571aaa0d5e9226996e552099b4c186094c4bac34f311b63c1d66cbc1425c4

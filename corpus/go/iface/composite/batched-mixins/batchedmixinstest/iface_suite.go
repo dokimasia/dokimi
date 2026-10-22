@@ -7,7 +7,7 @@ package batchedmixinstest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	batchedmixins "go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins"
 )
 
@@ -51,38 +51,40 @@ type batchedList struct {
 	conform.Callable[batchedmixins.Batched]
 }
 
+// ListsAtMostTheLimit returns the identity of the check that List returns
+// at most 50 keys after 51 writes.
+func (c batchedList) ListsAtMostTheLimit() conform.ID[batchedmixins.Batched] {
+	return c.Check("lists-at-most-the-limit")
+}
+
 // BatchedSuite returns the checks of Batched.
 func BatchedSuite() conform.Suite[batchedmixins.Batched] {
-	return conform.Suite[batchedmixins.Batched]{Declaration: "Batched"}
+	return conform.Suite[batchedmixins.Batched]{Declaration: "Batched", Checks: []conform.Check[batchedmixins.Batched]{
+		{
+			ID:        BatchedChecks.List.ListsAtMostTheLimit(),
+			Statement: "List returns at most 50 keys after 51 writes",
+			Apply:     ListsAtMostTheLimit,
+			Defect:    unbounded,
+		},
+	}}
 }
 
-// RunBatched applies the checks of Batched, and the checks that opts add,
-// to a fresh subject of newSubject for each check.
-func RunBatched[T batchedmixins.Batched](t *testing.T, newSubject func() T, opts ...BatchedOption) {
+// RunBatchedSuite applies the checks of Batched, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunBatchedSuite[T batchedmixins.Batched](t *testing.T, newSubject func() T, opts ...BatchedOption) {
 	t.Helper()
-	conform.Verify(t, BatchedSuite(), func(*BatchedHandle) batchedmixins.Batched { return newSubject() }, opts...)
+	RunBatchedSuiteFromHandle(t, func(*BatchedHandle) T { return newSubject() }, opts...)
 }
 
-// RunBatchedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunBatchedOn[T batchedmixins.Batched](t *testing.T, newSubject func(h *BatchedHandle) T, opts ...BatchedOption) {
+// RunBatchedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunBatchedSuiteFromHandle[T batchedmixins.Batched](
+	t *testing.T,
+	newSubject func(h *BatchedHandle) T,
+	opts ...BatchedOption,
+) {
 	t.Helper()
-	conform.Verify(t, BatchedSuite(), func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) }, opts...)
+	conform.Run(t, BatchedSuite(), func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) }, opts...)
 }
 
-// ControlBatched applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlBatched[T batchedmixins.Batched](t *testing.T, newControl func() T, opts ...BatchedOption) {
-	t.Helper()
-	conform.Control(t, BatchedSuite(), func(*BatchedHandle) batchedmixins.Batched { return newControl() }, opts...)
-}
-
-// ControlBatchedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlBatchedOn[T batchedmixins.Batched](t *testing.T, newControl func(h *BatchedHandle) T, opts ...BatchedOption) {
-	t.Helper()
-	conform.Control(t, BatchedSuite(), func(h *BatchedHandle) batchedmixins.Batched { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:ebb49bf8c3e6b9b32959ca319cd730fc8de1f7810572f649ea09bc5f47ee2411
+// dokimi:provenance sha256:d114f58743c100804636a0f37243fe10fd76dd9218d1828484729e796689baae

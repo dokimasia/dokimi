@@ -18,8 +18,6 @@ import (
 var ErrUnadmitted = errors.New("memory: the entry depends on an entry that the log does not have")
 
 // Log is the causal log in memory.
-//
-//dokimi:subject causalchain.Log new=New
 type Log struct {
 	entries []causalchain.Entry
 	mu      sync.Mutex

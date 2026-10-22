@@ -10,30 +10,50 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup/lookuptest"
+	"go.dokimi.dev/stub"
 )
 
-// lookupStubInspectSubject binds Inspect into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// lookupStubInspectArgs returns the samples of the arguments of Inspect.
+func lookupStubInspectArgs(tb assert.TB) string {
+	tb.Helper()
+	var a0 string
+	a0 = "Inspect-a"
+	return a0
+}
+
+// lookupStubInspect calls Inspect of s with the samples of its arguments.
+func lookupStubInspect(tb assert.TB, s *lookuptest.LookupStub) (lookup.Value, lookup.Meta, bool) {
+	tb.Helper()
+	a0 := lookupStubInspectArgs(tb)
+	return s.Inspect(a0)
+}
+
+// lookupStubInspectPins returns the samples of the results of Inspect.
+func lookupStubInspectPins() (lookup.Value, lookup.Meta, bool) {
+	var want0 lookup.Value
+	var want1 lookup.Meta
+	var want2 bool
+	want0 = lookup.Value{Key: "Key-a"}
+	want1 = lookup.Meta{Revision: 42}
+	want2 = true
+	return want0, want1, want2
+}
+
+// lookupStubInspectSubject returns the subject of [stub.Behaviour] for
+// Inspect. The subject calls a new double that reports to tb.
 func lookupStubInspectSubject(tb assert.TB) stub.Subject[lookuptest.LookupInspectCall, lookuptest.LookupInspectReturn] {
 	tb.Helper()
 	s := lookuptest.NewLookupStub(tb)
 	return stub.Subject[lookuptest.LookupInspectCall, lookuptest.LookupInspectReturn]{
 		Stub: s.OnInspect.MethodStub,
 		Call: func() {
-			var a0 string
-			a0 = "Inspect-a"
-			_, _, _ = s.Inspect(a0)
+			_, _, _ = lookupStubInspect(tb, s)
 		},
 		Result: func() lookuptest.LookupInspectReturn {
-			var a0 string
-			a0 = "Inspect-a"
-			got0, got1, got2 := s.Inspect(a0)
+			got0, got1, got2 := lookupStubInspect(tb, s)
 			return lookuptest.LookupInspectReturn{Result0: got0, Result1: got1, Result2: got2}
 		},
 		Override: func(mark func()) {
@@ -48,157 +68,210 @@ func lookupStubInspectSubject(tb assert.TB) stub.Subject[lookuptest.LookupInspec
 	}
 }
 
-// TestLookupStubInspect pins how Inspect answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestLookupStubInspect(t *testing.T) {
-	t.Parallel()
+// lookupStubInstance is the instance of a lookuptest.LookupStub that the
+// checks of the constructors and the options drive.
+type lookupStubInstance = stub.Instance[lookuptest.LookupInspectCall]
 
-	stub.Behaviour(t, "Inspect", lookupStubInspectSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := lookuptest.NewLookupStub(t)
-		var want0 lookup.Value
-		var want1 lookup.Meta
-		var want2 bool
-		want0 = lookup.Value{Key: "Key-a"}
-		want1 = lookup.Meta{Revision: 42}
-		want2 = true
-		s.OnInspect.Returns(want0, want1, want2)
-		var a0 string
-		a0 = "Inspect-a"
-		got0, got1, got2 := s.Inspect(a0)
-		assert.Equal(t, got0, want0, "Inspect must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Inspect must answer with what Returns pinned")
-		assert.Equal(t, got2, want2, "Inspect must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := lookuptest.NewLookupStub(t)
-		var a0 string
-		a0 = "Inspect-a"
-		_, _, _ = s.Inspect(a0)
-		got := s.OnInspect.AssertCalledOnce(t, "Inspect must record the call")
-		assert.Equal(t, got.Key, a0, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := lookuptest.NewLookupStub(t)
-		var seen []lookuptest.LookupInspectCall
-		s.OnInspect.OnRecord(func(c lookuptest.LookupInspectCall) { seen = append(seen, c) })
-		var a0 string
-		a0 = "Inspect-a"
-		_, _, _ = s.Inspect(a0)
-		_, _, _ = s.Inspect(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Inspect call")
-	})
-
-	t.Run("wires WithLookupInspect at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := lookuptest.NewLookupStub(t, lookuptest.WithLookupInspect(func(_ string) (lookup.Value, lookup.Meta, bool) {
-			called = true
-			var z0 lookup.Value
-			var z1 lookup.Meta
-			var z2 bool
-			return z0, z1, z2
-		}))
-		var a0 string
-		a0 = "Inspect-a"
-		_, _, _ = s.Inspect(a0)
-		assert.True(t, called, "WithLookupInspect must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := lookuptest.NewLookupStub(t)
-		var want0 lookup.Value
-		var want1 lookup.Meta
-		var want2 bool
-		want0 = lookup.Value{Key: "Key-a"}
-		want1 = lookup.Meta{Revision: 42}
-		want2 = true
-		s.OnInspect.Returns(want0, want1, want2)
-		var a0 string
-		a0 = "Inspect-a"
-		_, _, _ = s.Inspect(a0)
-		s.ResetCalls()
-		got0, got1, got2 := s.Inspect(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-		assert.Equal(t, got2, want2, "a reset must keep what Returns pinned")
-	})
-}
-
-// lookupStubDouble describes how to build a LookupStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Inspect stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func lookupStubDouble() stub.Double[lookuptest.LookupInspectCall] {
-	instance := func(s *lookuptest.LookupStub) stub.Instance[lookuptest.LookupInspectCall] {
-		return stub.Instance[lookuptest.LookupInspectCall]{
-			Stub: s.OnInspect.MethodStub,
-			Call: func() {
-				var a0 string
-				a0 = "Inspect-a"
-				_, _, _ = s.Inspect(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[lookuptest.LookupInspectCall]{
-		New: func(tb assert.TB) stub.Instance[lookuptest.LookupInspectCall] {
-			return instance(lookuptest.NewLookupStub(tb))
+// lookupStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Inspect alone.
+func lookupStubInstanceOf(tb assert.TB, s *lookuptest.LookupStub) lookupStubInstance {
+	tb.Helper()
+	return lookupStubInstance{
+		Stub: s.OnInspect.MethodStub,
+		Call: func() {
+			_, _, _ = lookupStubInspect(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[lookuptest.LookupInspectCall] {
-			return instance(lookuptest.NewLookupStub(tb, lookuptest.LookupStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[lookuptest.LookupInspectCall] {
-			return instance(lookuptest.NewLookupStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[lookuptest.LookupInspectCall] {
-			return instance(lookuptest.NewLookupStub(tb, lookuptest.LookupStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[lookuptest.LookupInspectCall] {
-			return instance(lookuptest.NewLookupStub(tb, lookuptest.LookupStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[lookuptest.LookupInspectCall] {
-			return instance(lookuptest.NewLookupStub(tb, lookuptest.LookupStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestLookupStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestLookupStubOptions(t *testing.T) {
+// TestLookupStub checks the methods, the constructors and the options of
+// the double LookupStub.
+func TestLookupStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, lookupStubDouble())
-}
+	t.Run("Inspect", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Inspect", lookupStubInspectSubject)
 
-// TestLookupStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestLookupStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := lookuptest.NewLookupStub(t)
+			_, _, _ = lookupStubInspect(t, s)
+			got := s.OnInspect.AssertCalledOnce(t, "Inspect records the call")
+			a0 := lookupStubInspectArgs(t)
+			assert.Equal(t, got.Key, a0, "the call records Key")
+		})
 
-	inner := lookuptest.NewLookupStub(t)
-	s := lookuptest.NewLookupStub(t, lookuptest.LookupStubDelegateTo(inner))
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := lookuptest.NewLookupStub(t)
+			var seen []lookuptest.LookupInspectCall
+			s.OnInspect.OnRecord(func(c lookuptest.LookupInspectCall) { seen = append(seen, c) })
+			_, _, _ = lookupStubInspect(t, s)
+			_, _, _ = lookupStubInspect(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Inspect")
+		})
+	})
 
-	t.Run("forwards Inspect to the wrapped implementation", func(t *testing.T) {
-		var a0 string
-		a0 = "Inspect-a"
-		_, _, _ = s.Inspect(a0)
-		inner.OnInspect.AssertCalledOnce(t, "Inspect must reach the wrapped implementation")
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) lookupStubInstance {
+			return lookupStubInstanceOf(tb, lookuptest.NewLookupStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Inspect", func(t *testing.T) {
+			t.Parallel()
+			s := lookuptest.NewLookupStub(t)
+			_, _, _ = lookupStubInspect(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnInspect.CallCount(), 0, "ResetCalls clears the calls of Inspect")
+		})
+
+		t.Run("keeps the results of Returns of Inspect", func(t *testing.T) {
+			t.Parallel()
+			s := lookuptest.NewLookupStub(t)
+			want0, want1, want2 := lookupStubInspectPins()
+			s.OnInspect.Returns(want0, want1, want2)
+			s.ResetCalls()
+			got0, got1, got2 := lookupStubInspect(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Inspect")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Inspect")
+			expect.Equal(t, got2, want2, "ResetCalls keeps the Result2 of Inspect")
+		})
+	})
+
+	t.Run("NewLookupStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) lookupStubInstance {
+			return lookupStubInstanceOf(tb, lookuptest.NewLookupStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("LookupStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) lookupStubInstance {
+			return lookupStubInstanceOf(tb, lookuptest.NewLookupStub(tb, lookuptest.LookupStubStrict()))
+		})
+	})
+
+	t.Run("LookupStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Inspect to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := lookuptest.NewLookupStub(t)
+			s := lookuptest.NewLookupStub(t, lookuptest.LookupStubDelegateTo(inner))
+			_, _, _ = lookupStubInspect(t, s)
+			inner.OnInspect.AssertCalledOnce(t, "Inspect calls the implementation")
+		})
+	})
+
+	t.Run("LookupStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) lookupStubInstance {
+			return lookupStubInstanceOf(tb, lookuptest.NewLookupStub(tb, lookuptest.LookupStubWithClock(clk)))
+		})
+	})
+
+	t.Run("LookupStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) lookupStubInstance {
+			return lookupStubInstanceOf(tb, lookuptest.NewLookupStub(tb, lookuptest.LookupStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("LookupStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) lookupStubInstance {
+			return lookupStubInstanceOf(tb, lookuptest.NewLookupStub(tb, lookuptest.LookupStubBenchMode()))
+		})
+	})
+
+	t.Run("LookupStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) lookupStubInstance {
+			return lookupStubInstanceOf(
+				tb,
+				lookuptest.NewLookupStub(tb, lookuptest.LookupStubWithClock(clk), lookuptest.LookupStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("WithLookupInspect", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Inspect", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := lookuptest.NewLookupStub(
+				t,
+				lookuptest.WithLookupInspect(func(_ string) (lookup.Value, lookup.Meta, bool) {
+					called = true
+					var z0 lookup.Value
+					var z1 lookup.Meta
+					var z2 bool
+					return z0, z1, z2
+				}),
+			)
+			_, _, _ = lookupStubInspect(t, s)
+			assert.True(t, called, "WithLookupInspect sets the function of Inspect")
+		})
 	})
 }
 
-// dokimi:provenance sha256:74432ad148a4cc03f51bf59b051eec89c1dc415f3bc70b2043c2a3b9270377a6
+// TestLookupInspectStub checks the methods of LookupInspectStub, which
+// configures Inspect.
+func TestLookupInspectStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Inspect", func(t *testing.T) {
+			t.Parallel()
+			s := lookuptest.NewLookupStub(t)
+			want0, want1, want2 := lookupStubInspectPins()
+			s.OnInspect.Returns(want0, want1, want2)
+			got0, got1, got2 := lookupStubInspect(t, s)
+			expect.Equal(t, got0, want0, "Inspect returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "Inspect returns the Result1 that Returns sets")
+			expect.Equal(t, got2, want2, "Inspect returns the Result2 that Returns sets")
+		})
+
+		t.Run("configures Inspect for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := lookuptest.NewLookupStub(r)
+			s.OnInspect.Strict()
+			var want0 lookup.Value
+			var want1 lookup.Meta
+			var want2 bool
+			s.OnInspect.Returns(want0, want1, want2)
+			_, _, _ = lookupStubInspect(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Inspect")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Inspect to the function", func(t *testing.T) {
+			t.Parallel()
+			s := lookuptest.NewLookupStub(t)
+			var got0 string
+			s.OnInspect.Func(func(p0 string) (lookup.Value, lookup.Meta, bool) {
+				got0 = p0
+				var z0 lookup.Value
+				var z1 lookup.Meta
+				var z2 bool
+				return z0, z1, z2
+			})
+			_, _, _ = lookupStubInspect(t, s)
+			a0 := lookupStubInspectArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:543e439230e47548110454f42a3f70a23ba080fc3e3578ad3b0ebf95a4818aea

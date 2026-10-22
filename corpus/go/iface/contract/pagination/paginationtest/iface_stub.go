@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination"
+	"go.dokimi.dev/stub"
 )
 
-// ContractFetchCall records one invocation of Contract.Fetch.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ContractFetchCall records one call of Contract.Fetch.
 type ContractFetchCall struct {
 	Ctx    context.Context
 	Cur    pagination.Cursor
@@ -25,24 +22,15 @@ type ContractFetchCall struct {
 	Err    error
 }
 
-// ContractPutCall records one invocation of Contract.Put.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ContractPutCall records one call of Contract.Put.
 type ContractPutCall struct {
 	Ctx context.Context
 	V   pagination.Value
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// ContractFetchStub controls how the double answers Fetch and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ContractFetchStub configures Fetch and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type ContractFetchStub struct {
 	*stub.MethodStub[ContractFetchCall]
 
@@ -50,32 +38,30 @@ type ContractFetchStub struct {
 	fallback *ContractFetchReturn
 }
 
-// ContractFetchReturn holds the fixed answer configured through Returns.
+// ContractFetchReturn contains the fixed results of Fetch.
 type ContractFetchReturn struct {
 	Result pagination.Page
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Fetch. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Fetch. A function and an
+// injected fault take precedence over them.
 func (s *ContractFetchStub) Returns(result pagination.Page, err error) *ContractFetchStub {
 	s.fallback = &ContractFetchReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Fetch, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
-func (s *ContractFetchStub) Func(fn func(context.Context, pagination.Cursor) (pagination.Page, error)) *ContractFetchStub {
+// Func sets the function that computes the results of Fetch from its
+// arguments. An injected fault takes precedence over it.
+func (s *ContractFetchStub) Func(
+	fn func(context.Context, pagination.Cursor) (pagination.Page, error),
+) *ContractFetchStub {
 	s.fn = fn
 	return s
 }
 
-// ContractPutStub controls how the double answers Put and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ContractPutStub configures Put and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type ContractPutStub struct {
 	*stub.MethodStub[ContractPutCall]
 
@@ -83,41 +69,40 @@ type ContractPutStub struct {
 	fallback *ContractPutReturn
 }
 
-// ContractPutReturn holds the fixed answer configured through Returns.
+// ContractPutReturn contains the fixed results of Put.
 type ContractPutReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Put. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Put. A function and an
+// injected fault take precedence over them.
 func (s *ContractPutStub) Returns(err error) *ContractPutStub {
 	s.fallback = &ContractPutReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Put, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Put from its
+// arguments. An injected fault takes precedence over it.
 func (s *ContractPutStub) Func(fn func(context.Context, pagination.Value) error) *ContractPutStub {
 	s.fn = fn
 	return s
 }
 
-// --- ContractStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ContractStubOption configures a [ContractStub] at construction time.
+// ContractStubOption configures a [ContractStub] at its construction.
 type ContractStubOption func(*ContractStub)
 
-// ContractStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// ContractStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func ContractStubStrict() ContractStubOption {
 	return func(s *ContractStub) { s.strict = true }
 }
 
-// ContractStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// ContractStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func ContractStubDelegateTo(impl pagination.Contract) ContractStubOption {
 	return func(s *ContractStub) {
 		s.OnFetch.Func(impl.Fetch)
@@ -125,35 +110,36 @@ func ContractStubDelegateTo(impl pagination.Contract) ContractStubOption {
 	}
 }
 
-// ContractStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// ContractStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func ContractStubWithClock(clk assert.Clock) ContractStubOption {
 	return func(s *ContractStub) { s.group.SetClock(clk) }
 }
 
-// ContractStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ContractStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func ContractStubWithRandSource(src rand.Source) ContractStubOption {
 	return func(s *ContractStub) { s.group.SetRandSource(src) }
 }
 
-// ContractStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// ContractStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func ContractStubBenchMode() ContractStubOption {
 	return func(s *ContractStub) { s.group.BenchMode() }
 }
 
-// ContractStubWithLatency makes every method sleep d before answering, for
-// a test standing in for a slow dependency rather than one slow method.
-// Pair it with ContractStubWithClock, or d elapses in wall time.
+// ContractStubWithLatency returns the option that makes every method sleep
+// d before it returns. Without ContractStubWithClock, d passes in real
+// time.
 func ContractStubWithLatency(d time.Duration) ContractStubOption {
 	return func(s *ContractStub) { s.group.SetLatency(d) }
 }
 
-// ContractStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// ContractStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func ContractStubFailing(err error) ContractStubOption {
 	return func(s *ContractStub) {
 		s.OnFetch.Faults(err, 1)
@@ -161,41 +147,34 @@ func ContractStubFailing(err error) ContractStubOption {
 	}
 }
 
-// WithContractFetch sets Fetch's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithContractFetch returns the option that sets the function of Fetch.
 func WithContractFetch(fn func(context.Context, pagination.Cursor) (pagination.Page, error)) ContractStubOption {
 	return func(s *ContractStub) { s.OnFetch.Func(fn) }
 }
 
-// WithContractPut sets Put's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithContractPut returns the option that sets the function of Put.
 func WithContractPut(fn func(context.Context, pagination.Value) error) ContractStubOption {
 	return func(s *ContractStub) { s.OnPut.Func(fn) }
 }
 
-// ContractStub is a recording test double for Contract.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ContractStub is a recording test double of Contract. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type ContractStub struct {
 	OnFetch *ContractFetchStub
 	OnPut   *ContractPutStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that ContractStub satisfies Contract.
+// The compiler checks that ContractStub implements Contract.
 var _ pagination.Contract = (*ContractStub)(nil)
 
-// NewContractStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewContractStub returns a double of Contract that reports its failures
+// to tb and applies opts. The double checks the expected counts of calls
+// at the end of the test. With a nil tb, the double reports nothing.
 func NewContractStub(tb assert.TB, opts ...ContractStubOption) *ContractStub {
 	s := &ContractStub{
 		OnFetch: &ContractFetchStub{MethodStub: stub.NewMethodStub[ContractFetchCall](tb, "Contract.Fetch")},
@@ -215,11 +194,8 @@ func NewContractStub(tb assert.TB, opts ...ContractStubOption) *ContractStub {
 	return s
 }
 
-// NewContractStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewContractStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewContractStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ContractStubOption) *ContractStub {
 	return NewContractStub(tb, append([]ContractStubOption{
 		ContractStubWithClock(clk),
@@ -227,26 +203,20 @@ func NewContractStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opt
 	}, opts...)...)
 }
 
-// NewContractStubFailing returns a double whose every fallible method
-// answers err — [ContractStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewContractStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewContractStubFailing(tb assert.TB, err error, opts ...ContractStubOption) *ContractStub {
 	return NewContractStub(tb, append([]ContractStubOption{ContractStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ContractStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ContractFetchStub) invoke(ctx context.Context, cur pagination.Cursor) func() ContractFetchReturn {
 	if s.fn == nil {
 		return nil
@@ -257,12 +227,8 @@ func (s *ContractFetchStub) invoke(ctx context.Context, cur pagination.Cursor) f
 	}
 }
 
-// Fetch records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Fetch records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Fetch(ctx context.Context, cur pagination.Cursor) (pagination.Page, error) {
 	call := ContractFetchCall{Ctx: ctx, Cur: cur}
 	r := stub.Answer(s.OnFetch.MethodStub, &call, stub.Arms[ContractFetchCall, ContractFetchReturn]{
@@ -277,9 +243,8 @@ func (s *ContractStub) Fetch(ctx context.Context, cur pagination.Cursor) (pagina
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ContractPutStub) invoke(ctx context.Context, v pagination.Value) func() ContractPutReturn {
 	if s.fn == nil {
 		return nil
@@ -290,12 +255,8 @@ func (s *ContractPutStub) invoke(ctx context.Context, v pagination.Value) func()
 	}
 }
 
-// Put records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Put records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Put(ctx context.Context, v pagination.Value) error {
 	call := ContractPutCall{Ctx: ctx, V: v}
 	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[ContractPutCall, ContractPutReturn]{
@@ -309,4 +270,4 @@ func (s *ContractStub) Put(ctx context.Context, v pagination.Value) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:0f7984ea2b5d6dce436f6b8413825cb66ff630e83f0b654fc4faf504aa3a4436
+// dokimi:provenance sha256:d3a1ec96649f736691142b74c882fd1ac4c4a9c1f7f736d67397439223370506

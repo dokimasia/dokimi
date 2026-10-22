@@ -12,31 +12,48 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/integrationonly/integrationonlytest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubConnectSubject binds Connect into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubConnectSubject(tb assert.TB) stub.Subject[integrationonlytest.MixedConnectCall, integrationonlytest.MixedConnectReturn] {
+// mixedStubConnectArgs returns the samples of the arguments of Connect.
+func mixedStubConnectArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Connect-a"
+	return a0, a1
+}
+
+// mixedStubConnect calls Connect of s with the samples of its arguments.
+func mixedStubConnect(tb assert.TB, s *integrationonlytest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubConnectArgs(tb)
+	return s.Connect(a0, a1)
+}
+
+// mixedStubConnectPins returns the samples of the results of Connect, with
+// a new error as its error result.
+func mixedStubConnectPins() error {
+	want0 := errors.New("Connect-returns")
+	return want0
+}
+
+// mixedStubConnectSubject returns the subject of [stub.Behaviour] for
+// Connect. The subject calls a new double that reports to tb.
+func mixedStubConnectSubject(
+	tb assert.TB,
+) stub.Subject[integrationonlytest.MixedConnectCall, integrationonlytest.MixedConnectReturn] {
 	tb.Helper()
 	s := integrationonlytest.NewMixedStub(tb)
 	return stub.Subject[integrationonlytest.MixedConnectCall, integrationonlytest.MixedConnectReturn]{
 		Stub: s.OnConnect.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Connect-a"
-			_ = s.Connect(a0, a1)
+			_ = mixedStubConnect(tb, s)
 		},
 		Result: func() integrationonlytest.MixedConnectReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Connect-a"
-			got0 := s.Connect(a0, a1)
+			got0 := mixedStubConnect(tb, s)
 			return integrationonlytest.MixedConnectReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,167 +64,256 @@ func mixedStubConnectSubject(tb assert.TB) stub.Subject[integrationonlytest.Mixe
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Connect-a"
-			r0 := s.Connect(a0, a1)
+			r0 := mixedStubConnect(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubConnect pins how Connect answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubConnect(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a integrationonlytest.MixedStub
+// that the checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[integrationonlytest.MixedConnectCall]
 
-	stub.Behaviour(t, "Connect", mixedStubConnectSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := integrationonlytest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Connect-a"
-		_ = s.Connect(a0, a1)
-		got := s.OnConnect.AssertCalledOnce(t, "Connect must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Dsn, a1, "the recorded call carries Dsn")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := integrationonlytest.NewMixedStub(t)
-		var seen []integrationonlytest.MixedConnectCall
-		s.OnConnect.OnRecord(func(c integrationonlytest.MixedConnectCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Connect-a"
-		_ = s.Connect(a0, a1)
-		_ = s.Connect(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Connect call")
-	})
-
-	t.Run("wires WithMixedConnect at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := integrationonlytest.NewMixedStub(t, integrationonlytest.WithMixedConnect(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Connect-a"
-		_ = s.Connect(a0, a1)
-		assert.True(t, called, "WithMixedConnect must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Connect-failing")
-		s := integrationonlytest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Connect-a"
-		r0 := s.Connect(a0, a1)
-		assert.ErrorIs(t, r0, want, "Connect must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := integrationonlytest.NewMixedStub(t)
-		var want0 error
-		s.OnConnect.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Connect-a"
-		_ = s.Connect(a0, a1)
-		s.ResetCalls()
-		_ = s.Connect(a0, a1)
-		s.OnConnect.AssertCalledOnce(t, "Connect must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Connect stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func mixedStubDouble() stub.Double[integrationonlytest.MixedConnectCall] {
-	instance := func(s *integrationonlytest.MixedStub) stub.Instance[integrationonlytest.MixedConnectCall] {
-		return stub.Instance[integrationonlytest.MixedConnectCall]{
-			Stub: s.OnConnect.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Connect-a"
-				_ = s.Connect(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[integrationonlytest.MixedConnectCall]{
-		New: func(tb assert.TB) stub.Instance[integrationonlytest.MixedConnectCall] {
-			return instance(integrationonlytest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Connect alone.
+func mixedStubInstanceOf(tb assert.TB, s *integrationonlytest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnConnect.MethodStub,
+		Call: func() {
+			_ = mixedStubConnect(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[integrationonlytest.MixedConnectCall] {
-			return instance(integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[integrationonlytest.MixedConnectCall] {
-			return instance(integrationonlytest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[integrationonlytest.MixedConnectCall] {
-			return instance(integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[integrationonlytest.MixedConnectCall] {
-			return instance(integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[integrationonlytest.MixedConnectCall] {
-			return instance(integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Connect", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Connect", mixedStubConnectSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := integrationonlytest.NewMixedStub(t)
+			_ = mixedStubConnect(t, s)
+			got := s.OnConnect.AssertCalledOnce(t, "Connect records the call")
+			a0, a1 := mixedStubConnectArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Dsn, a1, "the call records Dsn")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := integrationonlytest.NewMixedStub(t)
+			var seen []integrationonlytest.MixedConnectCall
+			s.OnConnect.OnRecord(func(c integrationonlytest.MixedConnectCall) { seen = append(seen, c) })
+			_ = mixedStubConnect(t, s)
+			_ = mixedStubConnect(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Connect")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, integrationonlytest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Connect", func(t *testing.T) {
+			t.Parallel()
+			s := integrationonlytest.NewMixedStub(t)
+			_ = mixedStubConnect(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnConnect.CallCount(), 0, "ResetCalls clears the calls of Connect")
+		})
+
+		t.Run("keeps the results of Returns of Connect", func(t *testing.T) {
+			t.Parallel()
+			s := integrationonlytest.NewMixedStub(t)
+			want0 := mixedStubConnectPins()
+			s.OnConnect.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubConnect(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Connect")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, integrationonlytest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Connect with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Connect-failing")
+			s := integrationonlytest.NewMixedStubFailing(t, want)
+			r0 := mixedStubConnect(t, s)
+			assert.ErrorIs(t, r0, want, "Connect fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Connect to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := integrationonlytest.NewMixedStub(t)
+			s := integrationonlytest.NewMixedStub(t, integrationonlytest.MixedStubDelegateTo(inner))
+			_ = mixedStubConnect(t, s)
+			inner.OnConnect.AssertCalledOnce(t, "Connect calls the implementation")
+		})
+
+		t.Run("fails Connect with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Connect-delegate")
+			inner := integrationonlytest.NewMixedStub(t)
+			inner.OnConnect.Faults(want, 1)
+			s := integrationonlytest.NewMixedStub(t, integrationonlytest.MixedStubDelegateTo(inner))
+			r0 := mixedStubConnect(t, s)
+			assert.ErrorIs(t, r0, want, "Connect fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				integrationonlytest.NewMixedStub(tb, integrationonlytest.MixedStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				integrationonlytest.NewMixedStub(
+					tb,
+					integrationonlytest.MixedStubWithClock(clk),
+					integrationonlytest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Connect with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Connect-failing")
+			s := integrationonlytest.NewMixedStub(t, integrationonlytest.MixedStubFailing(want))
+			r0 := mixedStubConnect(t, s)
+			assert.ErrorIs(t, r0, want, "Connect fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedConnect", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Connect", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := integrationonlytest.NewMixedStub(
+				t,
+				integrationonlytest.WithMixedConnect(func(_ context.Context, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubConnect(t, s)
+			assert.True(t, called, "WithMixedConnect sets the function of Connect")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedConnectStub checks the methods of MixedConnectStub, which
+// configures Connect.
+func TestMixedConnectStub(t *testing.T) {
 	t.Parallel()
 
-	inner := integrationonlytest.NewMixedStub(t)
-	s := integrationonlytest.NewMixedStub(t, integrationonlytest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Connect to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Connect-a"
-		_ = s.Connect(a0, a1)
-		inner.OnConnect.AssertCalledOnce(t, "Connect must reach the wrapped implementation")
+		t.Run("sets the results of each call of Connect", func(t *testing.T) {
+			t.Parallel()
+			s := integrationonlytest.NewMixedStub(t)
+			want0 := mixedStubConnectPins()
+			s.OnConnect.Returns(want0)
+			got0 := mixedStubConnect(t, s)
+			assert.ErrorIs(t, got0, want0, "Connect returns the error that Returns sets")
+		})
+
+		t.Run("configures Connect for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := integrationonlytest.NewMixedStub(r)
+			s.OnConnect.Strict()
+			var want0 error
+			s.OnConnect.Returns(want0)
+			_ = mixedStubConnect(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Connect")
+		})
 	})
 
-	t.Run("surfaces what Connect answered", func(t *testing.T) {
-		want := errors.New("Connect-delegate")
-		inner.OnConnect.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Connect-a"
-		r0 := s.Connect(a0, a1)
-		assert.ErrorIs(t, r0, want, "Connect must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Connect to the function", func(t *testing.T) {
+			t.Parallel()
+			s := integrationonlytest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnConnect.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubConnect(t, s)
+			a0, a1 := mixedStubConnectArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Dsn")
+		})
 	})
 }
 
-// dokimi:provenance sha256:b6f2535706c696194f712386ab62e6456628c6566f92bd5398d1844501a8aae5
+// dokimi:provenance sha256:73440144993e6a1563d1ec13d2f8346b05d63ce3a066d833fd0f01a4247238af

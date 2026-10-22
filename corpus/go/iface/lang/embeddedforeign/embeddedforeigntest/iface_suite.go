@@ -7,7 +7,7 @@ package embeddedforeigntest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign"
 )
 
@@ -48,33 +48,22 @@ func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 	return conform.Suite[embeddedforeign.Stream]{Declaration: "Stream"}
 }
 
-// RunStream applies the checks of Stream, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunStream[T embeddedforeign.Stream](t *testing.T, newSubject func() T, opts ...StreamOption) {
+// RunStreamSuite applies the checks of Stream, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunStreamSuite[T embeddedforeign.Stream](t *testing.T, newSubject func() T, opts ...StreamOption) {
 	t.Helper()
-	conform.Verify(t, StreamSuite(), func(*StreamHandle) embeddedforeign.Stream { return newSubject() }, opts...)
+	RunStreamSuiteFromHandle(t, func(*StreamHandle) T { return newSubject() }, opts...)
 }
 
-// RunStreamOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunStreamOn[T embeddedforeign.Stream](t *testing.T, newSubject func(h *StreamHandle) T, opts ...StreamOption) {
+// RunStreamSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStreamSuiteFromHandle[T embeddedforeign.Stream](
+	t *testing.T,
+	newSubject func(h *StreamHandle) T,
+	opts ...StreamOption,
+) {
 	t.Helper()
-	conform.Verify(t, StreamSuite(), func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) }, opts...)
+	conform.Run(t, StreamSuite(), func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) }, opts...)
 }
 
-// ControlStream applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlStream[T embeddedforeign.Stream](t *testing.T, newControl func() T, opts ...StreamOption) {
-	t.Helper()
-	conform.Control(t, StreamSuite(), func(*StreamHandle) embeddedforeign.Stream { return newControl() }, opts...)
-}
-
-// ControlStreamOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlStreamOn[T embeddedforeign.Stream](t *testing.T, newControl func(h *StreamHandle) T, opts ...StreamOption) {
-	t.Helper()
-	conform.Control(t, StreamSuite(), func(h *StreamHandle) embeddedforeign.Stream { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:87e128cf7ce1068a9550c7cee23ffef76d32c546c34a8e51ed7f9cc842bd6d0f
+// dokimi:provenance sha256:509a9c6949fb06621ddea87c6e8e0655932f3f252256fe44aedcc6775690272a

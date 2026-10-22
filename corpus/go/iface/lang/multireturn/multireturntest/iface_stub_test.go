@@ -12,31 +12,104 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn/multireturntest"
+	"go.dokimi.dev/stub"
 )
 
-// wideStubQuadSubject binds Quad into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// wideStubQuadArgs returns the samples of the arguments of Quad.
+func wideStubQuadArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Quad-a"
+	return a0, a1
+}
+
+// wideStubQuad calls Quad of s with the samples of its arguments.
+func wideStubQuad(tb assert.TB, s *multireturntest.WideStub) (string, int, bool, error) {
+	tb.Helper()
+	a0, a1 := wideStubQuadArgs(tb)
+	return s.Quad(a0, a1)
+}
+
+// wideStubQuadPins returns the samples of the results of Quad, with a new
+// error as its error result.
+func wideStubQuadPins() (string, int, bool, error) {
+	var want0 string
+	var want1 int
+	var want2 bool
+	want3 := errors.New("Quad-returns")
+	want0 = "Quad-a"
+	want1 = 42
+	want2 = true
+	return want0, want1, want2, want3
+}
+
+// wideStubTripleArgs returns the samples of the arguments of Triple.
+func wideStubTripleArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Triple-a"
+	return a0, a1
+}
+
+// wideStubTriple calls Triple of s with the samples of its arguments.
+func wideStubTriple(tb assert.TB, s *multireturntest.WideStub) (string, int, bool) {
+	tb.Helper()
+	a0, a1 := wideStubTripleArgs(tb)
+	return s.Triple(a0, a1)
+}
+
+// wideStubTriplePins returns the samples of the results of Triple.
+func wideStubTriplePins() (string, int, bool) {
+	var want0 string
+	var want1 int
+	var want2 bool
+	want0 = "Triple-a"
+	want1 = 42
+	want2 = true
+	return want0, want1, want2
+}
+
+// wideStubNoErrorArgs returns the samples of the arguments of NoError.
+func wideStubNoErrorArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "NoError-a"
+	return a0, a1
+}
+
+// wideStubNoError calls NoError of s with the samples of its arguments.
+func wideStubNoError(tb assert.TB, s *multireturntest.WideStub) (string, int) {
+	tb.Helper()
+	a0, a1 := wideStubNoErrorArgs(tb)
+	return s.NoError(a0, a1)
+}
+
+// wideStubNoErrorPins returns the samples of the results of NoError.
+func wideStubNoErrorPins() (string, int) {
+	var want0 string
+	var want1 int
+	want0 = "NoError-a"
+	want1 = 42
+	return want0, want1
+}
+
+// wideStubQuadSubject returns the subject of [stub.Behaviour] for Quad.
+// The subject calls a new double that reports to tb.
 func wideStubQuadSubject(tb assert.TB) stub.Subject[multireturntest.WideQuadCall, multireturntest.WideQuadReturn] {
 	tb.Helper()
 	s := multireturntest.NewWideStub(tb)
 	return stub.Subject[multireturntest.WideQuadCall, multireturntest.WideQuadReturn]{
 		Stub: s.OnQuad.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Quad-a"
-			_, _, _, _ = s.Quad(a0, a1)
+			_, _, _, _ = wideStubQuad(tb, s)
 		},
 		Result: func() multireturntest.WideQuadReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Quad-a"
-			got0, got1, got2, got3 := s.Quad(a0, a1)
+			got0, got1, got2, got3 := wideStubQuad(tb, s)
 			return multireturntest.WideQuadReturn{Result0: got0, Result1: got1, Result2: got2, Err: got3}
 		},
 		Override: func(mark func()) {
@@ -50,145 +123,26 @@ func wideStubQuadSubject(tb assert.TB) stub.Subject[multireturntest.WideQuadCall
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Quad-a"
-			_, _, _, r3 := s.Quad(a0, a1)
+			_, _, _, r3 := wideStubQuad(tb, s)
 			return r3
 		},
 	}
 }
 
-// TestWideStubQuad pins how Quad answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestWideStubQuad(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Quad", wideStubQuadSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var want0 string
-		var want1 int
-		var want2 bool
-		var want3 error
-		want0 = "Quad-a"
-		want1 = 42
-		want2 = true
-		s.OnQuad.Returns(want0, want1, want2, want3)
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		got0, got1, got2, _ := s.Quad(a0, a1)
-		assert.Equal(t, got0, want0, "Quad must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Quad must answer with what Returns pinned")
-		assert.Equal(t, got2, want2, "Quad must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		_, _, _, _ = s.Quad(a0, a1)
-		got := s.OnQuad.AssertCalledOnce(t, "Quad must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.ID, a1, "the recorded call carries ID")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var seen []multireturntest.WideQuadCall
-		s.OnQuad.OnRecord(func(c multireturntest.WideQuadCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		_, _, _, _ = s.Quad(a0, a1)
-		_, _, _, _ = s.Quad(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Quad call")
-	})
-
-	t.Run("wires WithWideQuad at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := multireturntest.NewWideStub(t, multireturntest.WithWideQuad(func(_ context.Context, _ string) (string, int, bool, error) {
-			called = true
-			var z0 string
-			var z1 int
-			var z2 bool
-			var z3 error
-			return z0, z1, z2, z3
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		_, _, _, _ = s.Quad(a0, a1)
-		assert.True(t, called, "WithWideQuad must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Quad-failing")
-		s := multireturntest.NewWideStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		_, _, _, r3 := s.Quad(a0, a1)
-		assert.ErrorIs(t, r3, want, "Quad must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var want0 string
-		var want1 int
-		var want2 bool
-		var want3 error
-		want0 = "Quad-a"
-		want1 = 42
-		want2 = true
-		s.OnQuad.Returns(want0, want1, want2, want3)
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		_, _, _, _ = s.Quad(a0, a1)
-		s.ResetCalls()
-		got0, got1, got2, _ := s.Quad(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-		assert.Equal(t, got2, want2, "a reset must keep what Returns pinned")
-	})
-}
-
-// wideStubTripleSubject binds Triple into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func wideStubTripleSubject(tb assert.TB) stub.Subject[multireturntest.WideTripleCall, multireturntest.WideTripleReturn] {
+// wideStubTripleSubject returns the subject of [stub.Behaviour] for
+// Triple. The subject calls a new double that reports to tb.
+func wideStubTripleSubject(
+	tb assert.TB,
+) stub.Subject[multireturntest.WideTripleCall, multireturntest.WideTripleReturn] {
 	tb.Helper()
 	s := multireturntest.NewWideStub(tb)
 	return stub.Subject[multireturntest.WideTripleCall, multireturntest.WideTripleReturn]{
 		Stub: s.OnTriple.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Triple-a"
-			_, _, _ = s.Triple(a0, a1)
+			_, _, _ = wideStubTriple(tb, s)
 		},
 		Result: func() multireturntest.WideTripleReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Triple-a"
-			got0, got1, got2 := s.Triple(a0, a1)
+			got0, got1, got2 := wideStubTriple(tb, s)
 			return multireturntest.WideTripleReturn{Result0: got0, Result1: got1, Result2: got2}
 		},
 		Override: func(mark func()) {
@@ -203,122 +157,20 @@ func wideStubTripleSubject(tb assert.TB) stub.Subject[multireturntest.WideTriple
 	}
 }
 
-// TestWideStubTriple pins how Triple answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestWideStubTriple(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Triple", wideStubTripleSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var want0 string
-		var want1 int
-		var want2 bool
-		want0 = "Triple-a"
-		want1 = 42
-		want2 = true
-		s.OnTriple.Returns(want0, want1, want2)
-		var a0 context.Context
-		var a1 string
-		a1 = "Triple-a"
-		got0, got1, got2 := s.Triple(a0, a1)
-		assert.Equal(t, got0, want0, "Triple must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Triple must answer with what Returns pinned")
-		assert.Equal(t, got2, want2, "Triple must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Triple-a"
-		_, _, _ = s.Triple(a0, a1)
-		got := s.OnTriple.AssertCalledOnce(t, "Triple must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.ID, a1, "the recorded call carries ID")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var seen []multireturntest.WideTripleCall
-		s.OnTriple.OnRecord(func(c multireturntest.WideTripleCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Triple-a"
-		_, _, _ = s.Triple(a0, a1)
-		_, _, _ = s.Triple(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Triple call")
-	})
-
-	t.Run("wires WithWideTriple at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := multireturntest.NewWideStub(t, multireturntest.WithWideTriple(func(_ context.Context, _ string) (string, int, bool) {
-			called = true
-			var z0 string
-			var z1 int
-			var z2 bool
-			return z0, z1, z2
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Triple-a"
-		_, _, _ = s.Triple(a0, a1)
-		assert.True(t, called, "WithWideTriple must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var want0 string
-		var want1 int
-		var want2 bool
-		want0 = "Triple-a"
-		want1 = 42
-		want2 = true
-		s.OnTriple.Returns(want0, want1, want2)
-		var a0 context.Context
-		var a1 string
-		a1 = "Triple-a"
-		_, _, _ = s.Triple(a0, a1)
-		s.ResetCalls()
-		got0, got1, got2 := s.Triple(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-		assert.Equal(t, got2, want2, "a reset must keep what Returns pinned")
-	})
-}
-
-// wideStubNoErrorSubject binds NoError into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func wideStubNoErrorSubject(tb assert.TB) stub.Subject[multireturntest.WideNoErrorCall, multireturntest.WideNoErrorReturn] {
+// wideStubNoErrorSubject returns the subject of [stub.Behaviour] for
+// NoError. The subject calls a new double that reports to tb.
+func wideStubNoErrorSubject(
+	tb assert.TB,
+) stub.Subject[multireturntest.WideNoErrorCall, multireturntest.WideNoErrorReturn] {
 	tb.Helper()
 	s := multireturntest.NewWideStub(tb)
 	return stub.Subject[multireturntest.WideNoErrorCall, multireturntest.WideNoErrorReturn]{
 		Stub: s.OnNoError.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "NoError-a"
-			_, _ = s.NoError(a0, a1)
+			_, _ = wideStubNoError(tb, s)
 		},
 		Result: func() multireturntest.WideNoErrorReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "NoError-a"
-			got0, got1 := s.NoError(a0, a1)
+			got0, got1 := wideStubNoError(tb, s)
 			return multireturntest.WideNoErrorReturn{Result0: got0, Result1: got1}
 		},
 		Override: func(mark func()) {
@@ -332,184 +184,511 @@ func wideStubNoErrorSubject(tb assert.TB) stub.Subject[multireturntest.WideNoErr
 	}
 }
 
-// TestWideStubNoError pins how NoError answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestWideStubNoError(t *testing.T) {
-	t.Parallel()
+// wideStubInstance is the instance of a multireturntest.WideStub that the
+// checks of the constructors and the options drive.
+type wideStubInstance = stub.Instance[multireturntest.WideQuadCall]
 
-	stub.Behaviour(t, "NoError", wideStubNoErrorSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var want0 string
-		var want1 int
-		want0 = "NoError-a"
-		want1 = 42
-		s.OnNoError.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "NoError-a"
-		got0, got1 := s.NoError(a0, a1)
-		assert.Equal(t, got0, want0, "NoError must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "NoError must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "NoError-a"
-		_, _ = s.NoError(a0, a1)
-		got := s.OnNoError.AssertCalledOnce(t, "NoError must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.ID, a1, "the recorded call carries ID")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var seen []multireturntest.WideNoErrorCall
-		s.OnNoError.OnRecord(func(c multireturntest.WideNoErrorCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "NoError-a"
-		_, _ = s.NoError(a0, a1)
-		_, _ = s.NoError(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per NoError call")
-	})
-
-	t.Run("wires WithWideNoError at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := multireturntest.NewWideStub(t, multireturntest.WithWideNoError(func(_ context.Context, _ string) (string, int) {
-			called = true
-			var z0 string
-			var z1 int
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "NoError-a"
-		_, _ = s.NoError(a0, a1)
-		assert.True(t, called, "WithWideNoError must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := multireturntest.NewWideStub(t)
-		var want0 string
-		var want1 int
-		want0 = "NoError-a"
-		want1 = 42
-		s.OnNoError.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "NoError-a"
-		_, _ = s.NoError(a0, a1)
-		s.ResetCalls()
-		got0, got1 := s.NoError(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-	})
-}
-
-// wideStubDouble describes how to build a WideStub under each option whose
-// effect is the same whatever a method's signature.
-//
-// Quad stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func wideStubDouble() stub.Double[multireturntest.WideQuadCall] {
-	instance := func(s *multireturntest.WideStub) stub.Instance[multireturntest.WideQuadCall] {
-		return stub.Instance[multireturntest.WideQuadCall]{
-			Stub: s.OnQuad.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Quad-a"
-				_, _, _, _ = s.Quad(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[multireturntest.WideQuadCall]{
-		New: func(tb assert.TB) stub.Instance[multireturntest.WideQuadCall] {
-			return instance(multireturntest.NewWideStub(tb))
+// wideStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Quad alone.
+func wideStubInstanceOf(tb assert.TB, s *multireturntest.WideStub) wideStubInstance {
+	tb.Helper()
+	return wideStubInstance{
+		Stub: s.OnQuad.MethodStub,
+		Call: func() {
+			_, _, _, _ = wideStubQuad(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[multireturntest.WideQuadCall] {
-			return instance(multireturntest.NewWideStub(tb, multireturntest.WideStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[multireturntest.WideQuadCall] {
-			return instance(multireturntest.NewWideStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[multireturntest.WideQuadCall] {
-			return instance(multireturntest.NewWideStub(tb, multireturntest.WideStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[multireturntest.WideQuadCall] {
-			return instance(multireturntest.NewWideStub(tb, multireturntest.WideStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[multireturntest.WideQuadCall] {
-			return instance(multireturntest.NewWideStub(tb, multireturntest.WideStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestWideStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestWideStubOptions(t *testing.T) {
+// TestWideStub checks the methods, the constructors and the options of the
+// double WideStub.
+func TestWideStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, wideStubDouble())
+	t.Run("Quad", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Quad", wideStubQuadSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			_, _, _, _ = wideStubQuad(t, s)
+			got := s.OnQuad.AssertCalledOnce(t, "Quad records the call")
+			a0, a1 := wideStubQuadArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.ID, a1, "the call records ID")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			var seen []multireturntest.WideQuadCall
+			s.OnQuad.OnRecord(func(c multireturntest.WideQuadCall) { seen = append(seen, c) })
+			_, _, _, _ = wideStubQuad(t, s)
+			_, _, _, _ = wideStubQuad(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Quad")
+		})
+	})
+
+	t.Run("Triple", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Triple", wideStubTripleSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			_, _, _ = wideStubTriple(t, s)
+			got := s.OnTriple.AssertCalledOnce(t, "Triple records the call")
+			a0, a1 := wideStubTripleArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.ID, a1, "the call records ID")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			var seen []multireturntest.WideTripleCall
+			s.OnTriple.OnRecord(func(c multireturntest.WideTripleCall) { seen = append(seen, c) })
+			_, _, _ = wideStubTriple(t, s)
+			_, _, _ = wideStubTriple(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Triple")
+		})
+	})
+
+	t.Run("NoError", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "NoError", wideStubNoErrorSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			_, _ = wideStubNoError(t, s)
+			got := s.OnNoError.AssertCalledOnce(t, "NoError records the call")
+			a0, a1 := wideStubNoErrorArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.ID, a1, "the call records ID")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			var seen []multireturntest.WideNoErrorCall
+			s.OnNoError.OnRecord(func(c multireturntest.WideNoErrorCall) { seen = append(seen, c) })
+			_, _ = wideStubNoError(t, s)
+			_, _ = wideStubNoError(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of NoError")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) wideStubInstance {
+			return wideStubInstanceOf(tb, multireturntest.NewWideStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Quad", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			_, _, _, _ = wideStubQuad(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnQuad.CallCount(), 0, "ResetCalls clears the calls of Quad")
+		})
+
+		t.Run("keeps the results of Returns of Quad", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			want0, want1, want2, want3 := wideStubQuadPins()
+			s.OnQuad.Returns(want0, want1, want2, want3)
+			s.ResetCalls()
+			got0, got1, got2, got3 := wideStubQuad(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Quad")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Quad")
+			expect.Equal(t, got2, want2, "ResetCalls keeps the Result2 of Quad")
+			expect.ErrorIs(t, got3, want3, "ResetCalls keeps the error of Quad")
+		})
+
+		t.Run("clears the recorded calls of Triple", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			_, _, _ = wideStubTriple(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnTriple.CallCount(), 0, "ResetCalls clears the calls of Triple")
+		})
+
+		t.Run("keeps the results of Returns of Triple", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			want0, want1, want2 := wideStubTriplePins()
+			s.OnTriple.Returns(want0, want1, want2)
+			s.ResetCalls()
+			got0, got1, got2 := wideStubTriple(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Triple")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Triple")
+			expect.Equal(t, got2, want2, "ResetCalls keeps the Result2 of Triple")
+		})
+
+		t.Run("clears the recorded calls of NoError", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			_, _ = wideStubNoError(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnNoError.CallCount(), 0, "ResetCalls clears the calls of NoError")
+		})
+
+		t.Run("keeps the results of Returns of NoError", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			want0, want1 := wideStubNoErrorPins()
+			s.OnNoError.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := wideStubNoError(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of NoError")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of NoError")
+		})
+	})
+
+	t.Run("NewWideStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) wideStubInstance {
+			return wideStubInstanceOf(tb, multireturntest.NewWideStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewWideStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Quad with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Quad-failing")
+			s := multireturntest.NewWideStubFailing(t, want)
+			_, _, _, r3 := wideStubQuad(t, s)
+			assert.ErrorIs(t, r3, want, "Quad fails with the error of NewWideStubFailing")
+		})
+	})
+
+	t.Run("WideStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) wideStubInstance {
+			return wideStubInstanceOf(tb, multireturntest.NewWideStub(tb, multireturntest.WideStubStrict()))
+		})
+	})
+
+	t.Run("WideStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Quad to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := multireturntest.NewWideStub(t)
+			s := multireturntest.NewWideStub(t, multireturntest.WideStubDelegateTo(inner))
+			_, _, _, _ = wideStubQuad(t, s)
+			inner.OnQuad.AssertCalledOnce(t, "Quad calls the implementation")
+		})
+
+		t.Run("fails Quad with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Quad-delegate")
+			inner := multireturntest.NewWideStub(t)
+			inner.OnQuad.Faults(want, 1)
+			s := multireturntest.NewWideStub(t, multireturntest.WideStubDelegateTo(inner))
+			_, _, _, r3 := wideStubQuad(t, s)
+			assert.ErrorIs(t, r3, want, "Quad fails with the error of the implementation")
+		})
+
+		t.Run("passes Triple to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := multireturntest.NewWideStub(t)
+			s := multireturntest.NewWideStub(t, multireturntest.WideStubDelegateTo(inner))
+			_, _, _ = wideStubTriple(t, s)
+			inner.OnTriple.AssertCalledOnce(t, "Triple calls the implementation")
+		})
+
+		t.Run("passes NoError to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := multireturntest.NewWideStub(t)
+			s := multireturntest.NewWideStub(t, multireturntest.WideStubDelegateTo(inner))
+			_, _ = wideStubNoError(t, s)
+			inner.OnNoError.AssertCalledOnce(t, "NoError calls the implementation")
+		})
+	})
+
+	t.Run("WideStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) wideStubInstance {
+			return wideStubInstanceOf(tb, multireturntest.NewWideStub(tb, multireturntest.WideStubWithClock(clk)))
+		})
+	})
+
+	t.Run("WideStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) wideStubInstance {
+			return wideStubInstanceOf(tb, multireturntest.NewWideStub(tb, multireturntest.WideStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("WideStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) wideStubInstance {
+			return wideStubInstanceOf(tb, multireturntest.NewWideStub(tb, multireturntest.WideStubBenchMode()))
+		})
+	})
+
+	t.Run("WideStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) wideStubInstance {
+			return wideStubInstanceOf(
+				tb,
+				multireturntest.NewWideStub(
+					tb,
+					multireturntest.WideStubWithClock(clk),
+					multireturntest.WideStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("WideStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Quad with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Quad-failing")
+			s := multireturntest.NewWideStub(t, multireturntest.WideStubFailing(want))
+			_, _, _, r3 := wideStubQuad(t, s)
+			assert.ErrorIs(t, r3, want, "Quad fails with the error of WideStubFailing")
+		})
+	})
+
+	t.Run("WithWideQuad", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Quad", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := multireturntest.NewWideStub(
+				t,
+				multireturntest.WithWideQuad(func(_ context.Context, _ string) (string, int, bool, error) {
+					called = true
+					var z0 string
+					var z1 int
+					var z2 bool
+					var z3 error
+					return z0, z1, z2, z3
+				}),
+			)
+			_, _, _, _ = wideStubQuad(t, s)
+			assert.True(t, called, "WithWideQuad sets the function of Quad")
+		})
+	})
+
+	t.Run("WithWideTriple", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Triple", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := multireturntest.NewWideStub(
+				t,
+				multireturntest.WithWideTriple(func(_ context.Context, _ string) (string, int, bool) {
+					called = true
+					var z0 string
+					var z1 int
+					var z2 bool
+					return z0, z1, z2
+				}),
+			)
+			_, _, _ = wideStubTriple(t, s)
+			assert.True(t, called, "WithWideTriple sets the function of Triple")
+		})
+	})
+
+	t.Run("WithWideNoError", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of NoError", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := multireturntest.NewWideStub(
+				t,
+				multireturntest.WithWideNoError(func(_ context.Context, _ string) (string, int) {
+					called = true
+					var z0 string
+					var z1 int
+					return z0, z1
+				}),
+			)
+			_, _ = wideStubNoError(t, s)
+			assert.True(t, called, "WithWideNoError sets the function of NoError")
+		})
+	})
 }
 
-// TestWideStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestWideStubDelegateTo(t *testing.T) {
+// TestWideQuadStub checks the methods of WideQuadStub, which configures
+// Quad.
+func TestWideQuadStub(t *testing.T) {
 	t.Parallel()
 
-	inner := multireturntest.NewWideStub(t)
-	s := multireturntest.NewWideStub(t, multireturntest.WideStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Quad to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		_, _, _, _ = s.Quad(a0, a1)
-		inner.OnQuad.AssertCalledOnce(t, "Quad must reach the wrapped implementation")
+		t.Run("sets the results of each call of Quad", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			want0, want1, want2, want3 := wideStubQuadPins()
+			s.OnQuad.Returns(want0, want1, want2, want3)
+			got0, got1, got2, got3 := wideStubQuad(t, s)
+			expect.Equal(t, got0, want0, "Quad returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "Quad returns the Result1 that Returns sets")
+			expect.Equal(t, got2, want2, "Quad returns the Result2 that Returns sets")
+			expect.ErrorIs(t, got3, want3, "Quad returns the error that Returns sets")
+		})
+
+		t.Run("configures Quad for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := multireturntest.NewWideStub(r)
+			s.OnQuad.Strict()
+			var want0 string
+			var want1 int
+			var want2 bool
+			var want3 error
+			s.OnQuad.Returns(want0, want1, want2, want3)
+			_, _, _, _ = wideStubQuad(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Quad")
+		})
 	})
 
-	t.Run("surfaces what Quad answered", func(t *testing.T) {
-		want := errors.New("Quad-delegate")
-		inner.OnQuad.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Quad-a"
-		_, _, _, r3 := s.Quad(a0, a1)
-		assert.ErrorIs(t, r3, want, "Quad must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Triple to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Triple-a"
-		_, _, _ = s.Triple(a0, a1)
-		inner.OnTriple.AssertCalledOnce(t, "Triple must reach the wrapped implementation")
-	})
-
-	t.Run("forwards NoError to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "NoError-a"
-		_, _ = s.NoError(a0, a1)
-		inner.OnNoError.AssertCalledOnce(t, "NoError must reach the wrapped implementation")
+		t.Run("passes the arguments of each call of Quad to the function", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnQuad.Func(func(p0 context.Context, p1 string) (string, int, bool, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 int
+				var z2 bool
+				var z3 error
+				return z0, z1, z2, z3
+			})
+			_, _, _, _ = wideStubQuad(t, s)
+			a0, a1 := wideStubQuadArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives ID")
+		})
 	})
 }
 
-// dokimi:provenance sha256:e6cb3d3e30299b347e14b71cb187e03af7057ef177510975dd94862ae9bda3a3
+// TestWideTripleStub checks the methods of WideTripleStub, which
+// configures Triple.
+func TestWideTripleStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Triple", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			want0, want1, want2 := wideStubTriplePins()
+			s.OnTriple.Returns(want0, want1, want2)
+			got0, got1, got2 := wideStubTriple(t, s)
+			expect.Equal(t, got0, want0, "Triple returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "Triple returns the Result1 that Returns sets")
+			expect.Equal(t, got2, want2, "Triple returns the Result2 that Returns sets")
+		})
+
+		t.Run("configures Triple for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := multireturntest.NewWideStub(r)
+			s.OnTriple.Strict()
+			var want0 string
+			var want1 int
+			var want2 bool
+			s.OnTriple.Returns(want0, want1, want2)
+			_, _, _ = wideStubTriple(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Triple")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Triple to the function", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnTriple.Func(func(p0 context.Context, p1 string) (string, int, bool) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 int
+				var z2 bool
+				return z0, z1, z2
+			})
+			_, _, _ = wideStubTriple(t, s)
+			a0, a1 := wideStubTripleArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives ID")
+		})
+	})
+}
+
+// TestWideNoErrorStub checks the methods of WideNoErrorStub, which
+// configures NoError.
+func TestWideNoErrorStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of NoError", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			want0, want1 := wideStubNoErrorPins()
+			s.OnNoError.Returns(want0, want1)
+			got0, got1 := wideStubNoError(t, s)
+			expect.Equal(t, got0, want0, "NoError returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "NoError returns the Result1 that Returns sets")
+		})
+
+		t.Run("configures NoError for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := multireturntest.NewWideStub(r)
+			s.OnNoError.Strict()
+			var want0 string
+			var want1 int
+			s.OnNoError.Returns(want0, want1)
+			_, _ = wideStubNoError(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of NoError")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of NoError to the function", func(t *testing.T) {
+			t.Parallel()
+			s := multireturntest.NewWideStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnNoError.Func(func(p0 context.Context, p1 string) (string, int) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 int
+				return z0, z1
+			})
+			_, _ = wideStubNoError(t, s)
+			a0, a1 := wideStubNoErrorArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives ID")
+		})
+	})
+}
+
+// dokimi:provenance sha256:c67c158884060f0476048bd17beebaad2c8a81fd9565345f16136b520b79a5aa

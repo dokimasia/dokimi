@@ -12,32 +12,47 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe/nilsafetest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubStoreSubject binds Store into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubStoreArgs returns the samples of the arguments of Store.
+func mixedStubStoreArgs(tb assert.TB) (context.Context, *nilsafe.Payload) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 *nilsafe.Payload
+	a1 = &nilsafe.Payload{Key: "Key-a"}
+	return a0, a1
+}
+
+// mixedStubStore calls Store of s with the samples of its arguments.
+func mixedStubStore(tb assert.TB, s *nilsafetest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubStoreArgs(tb)
+	return s.Store(a0, a1)
+}
+
+// mixedStubStorePins returns the samples of the results of Store, with a
+// new error as its error result.
+func mixedStubStorePins() error {
+	want0 := errors.New("Store-returns")
+	return want0
+}
+
+// mixedStubStoreSubject returns the subject of [stub.Behaviour] for Store.
+// The subject calls a new double that reports to tb.
 func mixedStubStoreSubject(tb assert.TB) stub.Subject[nilsafetest.MixedStoreCall, nilsafetest.MixedStoreReturn] {
 	tb.Helper()
 	s := nilsafetest.NewMixedStub(tb)
 	return stub.Subject[nilsafetest.MixedStoreCall, nilsafetest.MixedStoreReturn]{
 		Stub: s.OnStore.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 *nilsafe.Payload
-			a1 = &nilsafe.Payload{Key: "Key-a"}
-			_ = s.Store(a0, a1)
+			_ = mixedStubStore(tb, s)
 		},
 		Result: func() nilsafetest.MixedStoreReturn {
-			var a0 context.Context
-			var a1 *nilsafe.Payload
-			a1 = &nilsafe.Payload{Key: "Key-a"}
-			got0 := s.Store(a0, a1)
+			got0 := mixedStubStore(tb, s)
 			return nilsafetest.MixedStoreReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,167 +63,243 @@ func mixedStubStoreSubject(tb assert.TB) stub.Subject[nilsafetest.MixedStoreCall
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 *nilsafe.Payload
-			a1 = &nilsafe.Payload{Key: "Key-a"}
-			r0 := s.Store(a0, a1)
+			r0 := mixedStubStore(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubStore pins how Store answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubStore(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a nilsafetest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[nilsafetest.MixedStoreCall]
 
-	stub.Behaviour(t, "Store", mixedStubStoreSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := nilsafetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 *nilsafe.Payload
-		a1 = &nilsafe.Payload{Key: "Key-a"}
-		_ = s.Store(a0, a1)
-		got := s.OnStore.AssertCalledOnce(t, "Store must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := nilsafetest.NewMixedStub(t)
-		var seen []nilsafetest.MixedStoreCall
-		s.OnStore.OnRecord(func(c nilsafetest.MixedStoreCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 *nilsafe.Payload
-		a1 = &nilsafe.Payload{Key: "Key-a"}
-		_ = s.Store(a0, a1)
-		_ = s.Store(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Store call")
-	})
-
-	t.Run("wires WithMixedStore at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := nilsafetest.NewMixedStub(t, nilsafetest.WithMixedStore(func(_ context.Context, _ *nilsafe.Payload) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 *nilsafe.Payload
-		a1 = &nilsafe.Payload{Key: "Key-a"}
-		_ = s.Store(a0, a1)
-		assert.True(t, called, "WithMixedStore must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Store-failing")
-		s := nilsafetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 *nilsafe.Payload
-		a1 = &nilsafe.Payload{Key: "Key-a"}
-		r0 := s.Store(a0, a1)
-		assert.ErrorIs(t, r0, want, "Store must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := nilsafetest.NewMixedStub(t)
-		var want0 error
-		s.OnStore.Returns(want0)
-		var a0 context.Context
-		var a1 *nilsafe.Payload
-		a1 = &nilsafe.Payload{Key: "Key-a"}
-		_ = s.Store(a0, a1)
-		s.ResetCalls()
-		_ = s.Store(a0, a1)
-		s.OnStore.AssertCalledOnce(t, "Store must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Store stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[nilsafetest.MixedStoreCall] {
-	instance := func(s *nilsafetest.MixedStub) stub.Instance[nilsafetest.MixedStoreCall] {
-		return stub.Instance[nilsafetest.MixedStoreCall]{
-			Stub: s.OnStore.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 *nilsafe.Payload
-				a1 = &nilsafe.Payload{Key: "Key-a"}
-				_ = s.Store(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[nilsafetest.MixedStoreCall]{
-		New: func(tb assert.TB) stub.Instance[nilsafetest.MixedStoreCall] {
-			return instance(nilsafetest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Store alone.
+func mixedStubInstanceOf(tb assert.TB, s *nilsafetest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnStore.MethodStub,
+		Call: func() {
+			_ = mixedStubStore(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[nilsafetest.MixedStoreCall] {
-			return instance(nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[nilsafetest.MixedStoreCall] {
-			return instance(nilsafetest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[nilsafetest.MixedStoreCall] {
-			return instance(nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[nilsafetest.MixedStoreCall] {
-			return instance(nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[nilsafetest.MixedStoreCall] {
-			return instance(nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Store", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Store", mixedStubStoreSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := nilsafetest.NewMixedStub(t)
+			_ = mixedStubStore(t, s)
+			got := s.OnStore.AssertCalledOnce(t, "Store records the call")
+			a0, a1 := mixedStubStoreArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := nilsafetest.NewMixedStub(t)
+			var seen []nilsafetest.MixedStoreCall
+			s.OnStore.OnRecord(func(c nilsafetest.MixedStoreCall) { seen = append(seen, c) })
+			_ = mixedStubStore(t, s)
+			_ = mixedStubStore(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Store")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, nilsafetest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Store", func(t *testing.T) {
+			t.Parallel()
+			s := nilsafetest.NewMixedStub(t)
+			_ = mixedStubStore(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnStore.CallCount(), 0, "ResetCalls clears the calls of Store")
+		})
+
+		t.Run("keeps the results of Returns of Store", func(t *testing.T) {
+			t.Parallel()
+			s := nilsafetest.NewMixedStub(t)
+			want0 := mixedStubStorePins()
+			s.OnStore.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubStore(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Store")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, nilsafetest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Store with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Store-failing")
+			s := nilsafetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubStore(t, s)
+			assert.ErrorIs(t, r0, want, "Store fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Store to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := nilsafetest.NewMixedStub(t)
+			s := nilsafetest.NewMixedStub(t, nilsafetest.MixedStubDelegateTo(inner))
+			_ = mixedStubStore(t, s)
+			inner.OnStore.AssertCalledOnce(t, "Store calls the implementation")
+		})
+
+		t.Run("fails Store with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Store-delegate")
+			inner := nilsafetest.NewMixedStub(t)
+			inner.OnStore.Faults(want, 1)
+			s := nilsafetest.NewMixedStub(t, nilsafetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubStore(t, s)
+			assert.ErrorIs(t, r0, want, "Store fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				nilsafetest.NewMixedStub(tb, nilsafetest.MixedStubWithClock(clk), nilsafetest.MixedStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Store with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Store-failing")
+			s := nilsafetest.NewMixedStub(t, nilsafetest.MixedStubFailing(want))
+			r0 := mixedStubStore(t, s)
+			assert.ErrorIs(t, r0, want, "Store fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedStore", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Store", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := nilsafetest.NewMixedStub(
+				t,
+				nilsafetest.WithMixedStore(func(_ context.Context, _ *nilsafe.Payload) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubStore(t, s)
+			assert.True(t, called, "WithMixedStore sets the function of Store")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedStoreStub checks the methods of MixedStoreStub, which
+// configures Store.
+func TestMixedStoreStub(t *testing.T) {
 	t.Parallel()
 
-	inner := nilsafetest.NewMixedStub(t)
-	s := nilsafetest.NewMixedStub(t, nilsafetest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Store to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 *nilsafe.Payload
-		a1 = &nilsafe.Payload{Key: "Key-a"}
-		_ = s.Store(a0, a1)
-		inner.OnStore.AssertCalledOnce(t, "Store must reach the wrapped implementation")
+		t.Run("sets the results of each call of Store", func(t *testing.T) {
+			t.Parallel()
+			s := nilsafetest.NewMixedStub(t)
+			want0 := mixedStubStorePins()
+			s.OnStore.Returns(want0)
+			got0 := mixedStubStore(t, s)
+			assert.ErrorIs(t, got0, want0, "Store returns the error that Returns sets")
+		})
+
+		t.Run("configures Store for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := nilsafetest.NewMixedStub(r)
+			s.OnStore.Strict()
+			var want0 error
+			s.OnStore.Returns(want0)
+			_ = mixedStubStore(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Store")
+		})
 	})
 
-	t.Run("surfaces what Store answered", func(t *testing.T) {
-		want := errors.New("Store-delegate")
-		inner.OnStore.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 *nilsafe.Payload
-		a1 = &nilsafe.Payload{Key: "Key-a"}
-		r0 := s.Store(a0, a1)
-		assert.ErrorIs(t, r0, want, "Store must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Store to the function", func(t *testing.T) {
+			t.Parallel()
+			s := nilsafetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 *nilsafe.Payload
+			s.OnStore.Func(func(p0 context.Context, p1 *nilsafe.Payload) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubStore(t, s)
+			a0, a1 := mixedStubStoreArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:c02550269049573766283752db46070f856a207945a45b0de6cab3a064db6847
+// dokimi:provenance sha256:d9603cac35ae466ed537483a2a50a670f774a38847de1a04d959476ad092f28c

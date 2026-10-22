@@ -9,27 +9,18 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pure"
+	"go.dokimi.dev/stub"
 )
 
-// MixedDeriveCall records one invocation of Mixed.Derive.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MixedDeriveCall records one call of Mixed.Derive.
 type MixedDeriveCall struct {
 	Input  string
 	Result string
 }
 
-// --- Per-method configuration ---
-
-// MixedDeriveStub controls how the double answers Derive and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MixedDeriveStub configures Derive and records its calls. Derive returns
+// no error, so a fault armed through it fails the test.
 type MixedDeriveStub struct {
 	*stub.MethodStub[MixedDeriveCall]
 
@@ -37,106 +28,95 @@ type MixedDeriveStub struct {
 	fallback *MixedDeriveReturn
 }
 
-// MixedDeriveReturn holds the fixed answer configured through Returns.
+// MixedDeriveReturn contains the fixed results of Derive.
 type MixedDeriveReturn struct {
 	Result string
 }
 
-// Returns pins a fixed result for every call to Derive. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Derive answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Derive. A function takes
+// precedence over them.
 func (s *MixedDeriveStub) Returns(result string) *MixedDeriveStub {
 	s.fallback = &MixedDeriveReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Derive, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Derive answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Derive from its
+// arguments.
 func (s *MixedDeriveStub) Func(fn func(string) string) *MixedDeriveStub {
 	s.fn = fn
 	return s
 }
 
-// --- MixedStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// MixedStubOption configures a [MixedStub] at construction time.
+// MixedStubOption configures a [MixedStub] at its construction.
 type MixedStubOption func(*MixedStub)
 
-// MixedStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// MixedStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func MixedStubStrict() MixedStubOption {
 	return func(s *MixedStub) { s.strict = true }
 }
 
-// MixedStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// MixedStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func MixedStubDelegateTo(impl pure.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnDerive.Func(impl.Derive)
 	}
 }
 
-// MixedStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// MixedStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func MixedStubWithClock(clk assert.Clock) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetClock(clk) }
 }
 
-// MixedStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// MixedStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func MixedStubWithRandSource(src rand.Source) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetRandSource(src) }
 }
 
-// MixedStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// MixedStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func MixedStubBenchMode() MixedStubOption {
 	return func(s *MixedStub) { s.group.BenchMode() }
 }
 
-// MixedStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with MixedStubWithClock, or d elapses in wall time.
+// MixedStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without MixedStubWithClock, d passes in real time.
 func MixedStubWithLatency(d time.Duration) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetLatency(d) }
 }
 
-// WithMixedDerive sets Derive's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithMixedDerive returns the option that sets the function of Derive.
 func WithMixedDerive(fn func(string) string) MixedStubOption {
 	return func(s *MixedStub) { s.OnDerive.Func(fn) }
 }
 
-// MixedStub is a recording test double for Mixed.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// MixedStub is a recording test double of Mixed. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type MixedStub struct {
 	OnDerive *MixedDeriveStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that MixedStub satisfies Mixed.
+// The compiler checks that MixedStub implements Mixed.
 var _ pure.Mixed = (*MixedStub)(nil)
 
-// NewMixedStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewMixedStub returns a double of Mixed that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
 		OnDerive: &MixedDeriveStub{MethodStub: stub.NewMethodStub[MixedDeriveCall](tb, "Mixed.Derive")},
@@ -154,10 +134,8 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	return s
 }
 
-// NewMixedStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
+// NewMixedStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
 func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MixedStubOption) *MixedStub {
 	return NewMixedStub(tb, append([]MixedStubOption{
 		MixedStubWithClock(clk),
@@ -165,18 +143,14 @@ func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts .
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MixedStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MixedDeriveStub) invoke(input string) func() MixedDeriveReturn {
 	if s.fn == nil {
 		return nil
@@ -187,12 +161,8 @@ func (s *MixedDeriveStub) invoke(input string) func() MixedDeriveReturn {
 	}
 }
 
-// Derive records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Derive records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Derive(input string) string {
 	call := MixedDeriveCall{Input: input}
 	r := stub.Answer(s.OnDerive.MethodStub, &call, stub.Arms[MixedDeriveCall, MixedDeriveReturn]{
@@ -205,4 +175,4 @@ func (s *MixedStub) Derive(input string) string {
 	return r.Result
 }
 
-// dokimi:provenance sha256:d430bbceb65050c03ccbf137f5d532d3278ee8d1382c38d4e13c45ad788e35ed
+// dokimi:provenance sha256:c0640551dd1326fc06507521c196b90ac7d3a08949ca711e2cd9f0310f3c8379

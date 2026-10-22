@@ -12,31 +12,69 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scheduled/scheduledtest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubAtSubject binds At into the shape [stub.Behaviour] drives: how
-// to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubAtArgs returns the samples of the arguments of At.
+func mixedStubAtArgs(tb assert.TB) (context.Context, time.Duration) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 time.Duration
+	a1 = time.Duration(1)
+	return a0, a1
+}
+
+// mixedStubAt calls At of s with the samples of its arguments.
+func mixedStubAt(tb assert.TB, s *scheduledtest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubAtArgs(tb)
+	return s.At(a0, a1)
+}
+
+// mixedStubAtPins returns the samples of the results of At, with a new
+// error as its error result.
+func mixedStubAtPins() error {
+	want0 := errors.New("At-returns")
+	return want0
+}
+
+// mixedStubFiredArgs returns the samples of the arguments of Fired.
+func mixedStubFiredArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubFired calls Fired of s with the samples of its arguments.
+func mixedStubFired(tb assert.TB, s *scheduledtest.MixedStub) (int, error) {
+	tb.Helper()
+	a0 := mixedStubFiredArgs(tb)
+	return s.Fired(a0)
+}
+
+// mixedStubFiredPins returns the samples of the results of Fired, with a
+// new error as its error result.
+func mixedStubFiredPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Fired-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// mixedStubAtSubject returns the subject of [stub.Behaviour] for At. The
+// subject calls a new double that reports to tb.
 func mixedStubAtSubject(tb assert.TB) stub.Subject[scheduledtest.MixedAtCall, scheduledtest.MixedAtReturn] {
 	tb.Helper()
 	s := scheduledtest.NewMixedStub(tb)
 	return stub.Subject[scheduledtest.MixedAtCall, scheduledtest.MixedAtReturn]{
 		Stub: s.OnAt.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 time.Duration
-			a1 = time.Duration(1)
-			_ = s.At(a0, a1)
+			_ = mixedStubAt(tb, s)
 		},
 		Result: func() scheduledtest.MixedAtReturn {
-			var a0 context.Context
-			var a1 time.Duration
-			a1 = time.Duration(1)
-			got0 := s.At(a0, a1)
+			got0 := mixedStubAt(tb, s)
 			return scheduledtest.MixedAtReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,110 +85,24 @@ func mixedStubAtSubject(tb assert.TB) stub.Subject[scheduledtest.MixedAtCall, sc
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 time.Duration
-			a1 = time.Duration(1)
-			r0 := s.At(a0, a1)
+			r0 := mixedStubAt(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubAt pins how At answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubAt(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "At", mixedStubAtSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := scheduledtest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 time.Duration
-		a1 = time.Duration(1)
-		_ = s.At(a0, a1)
-		got := s.OnAt.AssertCalledOnce(t, "At must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.After, a1, "the recorded call carries After")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := scheduledtest.NewMixedStub(t)
-		var seen []scheduledtest.MixedAtCall
-		s.OnAt.OnRecord(func(c scheduledtest.MixedAtCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 time.Duration
-		a1 = time.Duration(1)
-		_ = s.At(a0, a1)
-		_ = s.At(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per At call")
-	})
-
-	t.Run("wires WithMixedAt at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := scheduledtest.NewMixedStub(t, scheduledtest.WithMixedAt(func(_ context.Context, _ time.Duration) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 time.Duration
-		a1 = time.Duration(1)
-		_ = s.At(a0, a1)
-		assert.True(t, called, "WithMixedAt must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("At-failing")
-		s := scheduledtest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 time.Duration
-		a1 = time.Duration(1)
-		r0 := s.At(a0, a1)
-		assert.ErrorIs(t, r0, want, "At must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := scheduledtest.NewMixedStub(t)
-		var want0 error
-		s.OnAt.Returns(want0)
-		var a0 context.Context
-		var a1 time.Duration
-		a1 = time.Duration(1)
-		_ = s.At(a0, a1)
-		s.ResetCalls()
-		_ = s.At(a0, a1)
-		s.OnAt.AssertCalledOnce(t, "At must record the call that followed the reset")
-	})
-}
-
-// mixedStubFiredSubject binds Fired into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubFiredSubject returns the subject of [stub.Behaviour] for Fired.
+// The subject calls a new double that reports to tb.
 func mixedStubFiredSubject(tb assert.TB) stub.Subject[scheduledtest.MixedFiredCall, scheduledtest.MixedFiredReturn] {
 	tb.Helper()
 	s := scheduledtest.NewMixedStub(tb)
 	return stub.Subject[scheduledtest.MixedFiredCall, scheduledtest.MixedFiredReturn]{
 		Stub: s.OnFired.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Fired(a0)
+			_, _ = mixedStubFired(tb, s)
 		},
 		Result: func() scheduledtest.MixedFiredReturn {
-			var a0 context.Context
-			got0, got1 := s.Fired(a0)
+			got0, got1 := mixedStubFired(tb, s)
 			return scheduledtest.MixedFiredReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -162,183 +114,391 @@ func mixedStubFiredSubject(tb assert.TB) stub.Subject[scheduledtest.MixedFiredCa
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Fired(a0)
+			_, r1 := mixedStubFired(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubFired pins how Fired answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubFired(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a scheduledtest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[scheduledtest.MixedAtCall]
 
-	stub.Behaviour(t, "Fired", mixedStubFiredSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := scheduledtest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnFired.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Fired(a0)
-		assert.Equal(t, got0, want0, "Fired must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := scheduledtest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Fired(a0)
-		got := s.OnFired.AssertCalledOnce(t, "Fired must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := scheduledtest.NewMixedStub(t)
-		var seen []scheduledtest.MixedFiredCall
-		s.OnFired.OnRecord(func(c scheduledtest.MixedFiredCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Fired(a0)
-		_, _ = s.Fired(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Fired call")
-	})
-
-	t.Run("wires WithMixedFired at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := scheduledtest.NewMixedStub(t, scheduledtest.WithMixedFired(func(_ context.Context) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Fired(a0)
-		assert.True(t, called, "WithMixedFired must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Fired-failing")
-		s := scheduledtest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Fired(a0)
-		assert.ErrorIs(t, r1, want, "Fired must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := scheduledtest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnFired.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Fired(a0)
-		s.ResetCalls()
-		got0, _ := s.Fired(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// At stands in for the double as a whole: these checks assert only that an
-// option reached it.
-func mixedStubDouble() stub.Double[scheduledtest.MixedAtCall] {
-	instance := func(s *scheduledtest.MixedStub) stub.Instance[scheduledtest.MixedAtCall] {
-		return stub.Instance[scheduledtest.MixedAtCall]{
-			Stub: s.OnAt.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 time.Duration
-				a1 = time.Duration(1)
-				_ = s.At(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[scheduledtest.MixedAtCall]{
-		New: func(tb assert.TB) stub.Instance[scheduledtest.MixedAtCall] {
-			return instance(scheduledtest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call At alone.
+func mixedStubInstanceOf(tb assert.TB, s *scheduledtest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnAt.MethodStub,
+		Call: func() {
+			_ = mixedStubAt(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[scheduledtest.MixedAtCall] {
-			return instance(scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[scheduledtest.MixedAtCall] {
-			return instance(scheduledtest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[scheduledtest.MixedAtCall] {
-			return instance(scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[scheduledtest.MixedAtCall] {
-			return instance(scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[scheduledtest.MixedAtCall] {
-			return instance(scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("At", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "At", mixedStubAtSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			_ = mixedStubAt(t, s)
+			got := s.OnAt.AssertCalledOnce(t, "At records the call")
+			a0, a1 := mixedStubAtArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.After, a1, "the call records After")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			var seen []scheduledtest.MixedAtCall
+			s.OnAt.OnRecord(func(c scheduledtest.MixedAtCall) { seen = append(seen, c) })
+			_ = mixedStubAt(t, s)
+			_ = mixedStubAt(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of At")
+		})
+	})
+
+	t.Run("Fired", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Fired", mixedStubFiredSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			_, _ = mixedStubFired(t, s)
+			got := s.OnFired.AssertCalledOnce(t, "Fired records the call")
+			a0 := mixedStubFiredArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			var seen []scheduledtest.MixedFiredCall
+			s.OnFired.OnRecord(func(c scheduledtest.MixedFiredCall) { seen = append(seen, c) })
+			_, _ = mixedStubFired(t, s)
+			_, _ = mixedStubFired(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fired")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scheduledtest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of At", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			_ = mixedStubAt(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAt.CallCount(), 0, "ResetCalls clears the calls of At")
+		})
+
+		t.Run("keeps the results of Returns of At", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			want0 := mixedStubAtPins()
+			s.OnAt.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubAt(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of At")
+		})
+
+		t.Run("clears the recorded calls of Fired", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			_, _ = mixedStubFired(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnFired.CallCount(), 0, "ResetCalls clears the calls of Fired")
+		})
+
+		t.Run("keeps the results of Returns of Fired", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			want0, want1 := mixedStubFiredPins()
+			s.OnFired.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubFired(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Fired")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Fired")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scheduledtest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails At with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-failing")
+			s := scheduledtest.NewMixedStubFailing(t, want)
+			r0 := mixedStubAt(t, s)
+			assert.ErrorIs(t, r0, want, "At fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Fired with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fired-failing")
+			s := scheduledtest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubFired(t, s)
+			assert.ErrorIs(t, r1, want, "Fired fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes At to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := scheduledtest.NewMixedStub(t)
+			s := scheduledtest.NewMixedStub(t, scheduledtest.MixedStubDelegateTo(inner))
+			_ = mixedStubAt(t, s)
+			inner.OnAt.AssertCalledOnce(t, "At calls the implementation")
+		})
+
+		t.Run("fails At with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-delegate")
+			inner := scheduledtest.NewMixedStub(t)
+			inner.OnAt.Faults(want, 1)
+			s := scheduledtest.NewMixedStub(t, scheduledtest.MixedStubDelegateTo(inner))
+			r0 := mixedStubAt(t, s)
+			assert.ErrorIs(t, r0, want, "At fails with the error of the implementation")
+		})
+
+		t.Run("passes Fired to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := scheduledtest.NewMixedStub(t)
+			s := scheduledtest.NewMixedStub(t, scheduledtest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubFired(t, s)
+			inner.OnFired.AssertCalledOnce(t, "Fired calls the implementation")
+		})
+
+		t.Run("fails Fired with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fired-delegate")
+			inner := scheduledtest.NewMixedStub(t)
+			inner.OnFired.Faults(want, 1)
+			s := scheduledtest.NewMixedStub(t, scheduledtest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubFired(t, s)
+			assert.ErrorIs(t, r1, want, "Fired fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, scheduledtest.NewMixedStub(tb, scheduledtest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				scheduledtest.NewMixedStub(
+					tb,
+					scheduledtest.MixedStubWithClock(clk),
+					scheduledtest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails At with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-failing")
+			s := scheduledtest.NewMixedStub(t, scheduledtest.MixedStubFailing(want))
+			r0 := mixedStubAt(t, s)
+			assert.ErrorIs(t, r0, want, "At fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Fired with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fired-failing")
+			s := scheduledtest.NewMixedStub(t, scheduledtest.MixedStubFailing(want))
+			_, r1 := mixedStubFired(t, s)
+			assert.ErrorIs(t, r1, want, "Fired fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedAt", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of At", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := scheduledtest.NewMixedStub(
+				t,
+				scheduledtest.WithMixedAt(func(_ context.Context, _ time.Duration) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubAt(t, s)
+			assert.True(t, called, "WithMixedAt sets the function of At")
+		})
+	})
+
+	t.Run("WithMixedFired", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Fired", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := scheduledtest.NewMixedStub(t, scheduledtest.WithMixedFired(func(_ context.Context) (int, error) {
+				called = true
+				var z0 int
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = mixedStubFired(t, s)
+			assert.True(t, called, "WithMixedFired sets the function of Fired")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedAtStub checks the methods of MixedAtStub, which configures At.
+func TestMixedAtStub(t *testing.T) {
 	t.Parallel()
 
-	inner := scheduledtest.NewMixedStub(t)
-	s := scheduledtest.NewMixedStub(t, scheduledtest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards At to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 time.Duration
-		a1 = time.Duration(1)
-		_ = s.At(a0, a1)
-		inner.OnAt.AssertCalledOnce(t, "At must reach the wrapped implementation")
+		t.Run("sets the results of each call of At", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			want0 := mixedStubAtPins()
+			s.OnAt.Returns(want0)
+			got0 := mixedStubAt(t, s)
+			assert.ErrorIs(t, got0, want0, "At returns the error that Returns sets")
+		})
+
+		t.Run("configures At for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := scheduledtest.NewMixedStub(r)
+			s.OnAt.Strict()
+			var want0 error
+			s.OnAt.Returns(want0)
+			_ = mixedStubAt(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of At")
+		})
 	})
 
-	t.Run("surfaces what At answered", func(t *testing.T) {
-		want := errors.New("At-delegate")
-		inner.OnAt.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 time.Duration
-		a1 = time.Duration(1)
-		r0 := s.At(a0, a1)
-		assert.ErrorIs(t, r0, want, "At must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Fired to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Fired(a0)
-		inner.OnFired.AssertCalledOnce(t, "Fired must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Fired answered", func(t *testing.T) {
-		want := errors.New("Fired-delegate")
-		inner.OnFired.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Fired(a0)
-		assert.ErrorIs(t, r1, want, "Fired must surface the wrapped answer")
+		t.Run("passes the arguments of each call of At to the function", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 time.Duration
+			s.OnAt.Func(func(p0 context.Context, p1 time.Duration) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubAt(t, s)
+			a0, a1 := mixedStubAtArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives After")
+		})
 	})
 }
 
-// dokimi:provenance sha256:8e3a71c752ade766d0529a2bce15cec10d2f34b898560eab8dd83d9d99db1bbf
+// TestMixedFiredStub checks the methods of MixedFiredStub, which
+// configures Fired.
+func TestMixedFiredStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Fired", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			want0, want1 := mixedStubFiredPins()
+			s.OnFired.Returns(want0, want1)
+			got0, got1 := mixedStubFired(t, s)
+			expect.Equal(t, got0, want0, "Fired returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Fired returns the error that Returns sets")
+		})
+
+		t.Run("configures Fired for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := scheduledtest.NewMixedStub(r)
+			s.OnFired.Strict()
+			var want0 int
+			var want1 error
+			s.OnFired.Returns(want0, want1)
+			_, _ = mixedStubFired(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Fired")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Fired to the function", func(t *testing.T) {
+			t.Parallel()
+			s := scheduledtest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnFired.Func(func(p0 context.Context) (int, error) {
+				got0 = p0
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubFired(t, s)
+			a0 := mixedStubFiredArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:34d74113ab9f22fd07f9b277c21d5476ea38f90e5fdc27274944998800897e13

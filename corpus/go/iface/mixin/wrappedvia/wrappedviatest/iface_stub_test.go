@@ -12,31 +12,67 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia/wrappedviatest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubOpenSubject binds Open into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubOpenArgs returns the samples of the arguments of Open.
+func mixedStubOpenArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Open-a"
+	return a0, a1
+}
+
+// mixedStubOpen calls Open of s with the samples of its arguments.
+func mixedStubOpen(tb assert.TB, s *wrappedviatest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubOpenArgs(tb)
+	return s.Open(a0, a1)
+}
+
+// mixedStubOpenPins returns the samples of the results of Open, with a new
+// error as its error result.
+func mixedStubOpenPins() error {
+	want0 := errors.New("Open-returns")
+	return want0
+}
+
+// mixedStubCauseArgs returns the samples of the arguments of Cause.
+func mixedStubCauseArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubCause calls Cause of s with the samples of its arguments.
+func mixedStubCause(tb assert.TB, s *wrappedviatest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubCauseArgs(tb)
+	return s.Cause(a0)
+}
+
+// mixedStubCausePins returns the samples of the results of Cause, with a
+// new error as its error result.
+func mixedStubCausePins() error {
+	want0 := errors.New("Cause-returns")
+	return want0
+}
+
+// mixedStubOpenSubject returns the subject of [stub.Behaviour] for Open.
+// The subject calls a new double that reports to tb.
 func mixedStubOpenSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedOpenCall, wrappedviatest.MixedOpenReturn] {
 	tb.Helper()
 	s := wrappedviatest.NewMixedStub(tb)
 	return stub.Subject[wrappedviatest.MixedOpenCall, wrappedviatest.MixedOpenReturn]{
 		Stub: s.OnOpen.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Open-a"
-			_ = s.Open(a0, a1)
+			_ = mixedStubOpen(tb, s)
 		},
 		Result: func() wrappedviatest.MixedOpenReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Open-a"
-			got0 := s.Open(a0, a1)
+			got0 := mixedStubOpen(tb, s)
 			return wrappedviatest.MixedOpenReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,110 +83,24 @@ func mixedStubOpenSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedOpenCal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Open-a"
-			r0 := s.Open(a0, a1)
+			r0 := mixedStubOpen(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubOpen pins how Open answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubOpen(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Open", mixedStubOpenSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := wrappedviatest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Open-a"
-		_ = s.Open(a0, a1)
-		got := s.OnOpen.AssertCalledOnce(t, "Open must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Name, a1, "the recorded call carries Name")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := wrappedviatest.NewMixedStub(t)
-		var seen []wrappedviatest.MixedOpenCall
-		s.OnOpen.OnRecord(func(c wrappedviatest.MixedOpenCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Open-a"
-		_ = s.Open(a0, a1)
-		_ = s.Open(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Open call")
-	})
-
-	t.Run("wires WithMixedOpen at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := wrappedviatest.NewMixedStub(t, wrappedviatest.WithMixedOpen(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Open-a"
-		_ = s.Open(a0, a1)
-		assert.True(t, called, "WithMixedOpen must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Open-failing")
-		s := wrappedviatest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Open-a"
-		r0 := s.Open(a0, a1)
-		assert.ErrorIs(t, r0, want, "Open must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := wrappedviatest.NewMixedStub(t)
-		var want0 error
-		s.OnOpen.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Open-a"
-		_ = s.Open(a0, a1)
-		s.ResetCalls()
-		_ = s.Open(a0, a1)
-		s.OnOpen.AssertCalledOnce(t, "Open must record the call that followed the reset")
-	})
-}
-
-// mixedStubCauseSubject binds Cause into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubCauseSubject returns the subject of [stub.Behaviour] for Cause.
+// The subject calls a new double that reports to tb.
 func mixedStubCauseSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedCauseCall, wrappedviatest.MixedCauseReturn] {
 	tb.Helper()
 	s := wrappedviatest.NewMixedStub(tb)
 	return stub.Subject[wrappedviatest.MixedCauseCall, wrappedviatest.MixedCauseReturn]{
 		Stub: s.OnCause.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Cause(a0)
+			_ = mixedStubCause(tb, s)
 		},
 		Result: func() wrappedviatest.MixedCauseReturn {
-			var a0 context.Context
-			got0 := s.Cause(a0)
+			got0 := mixedStubCause(tb, s)
 			return wrappedviatest.MixedCauseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -161,168 +111,384 @@ func mixedStubCauseSubject(tb assert.TB) stub.Subject[wrappedviatest.MixedCauseC
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Cause(a0)
+			r0 := mixedStubCause(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubCause pins how Cause answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubCause(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a wrappedviatest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[wrappedviatest.MixedOpenCall]
 
-	stub.Behaviour(t, "Cause", mixedStubCauseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := wrappedviatest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Cause(a0)
-		got := s.OnCause.AssertCalledOnce(t, "Cause must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := wrappedviatest.NewMixedStub(t)
-		var seen []wrappedviatest.MixedCauseCall
-		s.OnCause.OnRecord(func(c wrappedviatest.MixedCauseCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Cause(a0)
-		_ = s.Cause(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Cause call")
-	})
-
-	t.Run("wires WithMixedCause at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := wrappedviatest.NewMixedStub(t, wrappedviatest.WithMixedCause(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Cause(a0)
-		assert.True(t, called, "WithMixedCause must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Cause-failing")
-		s := wrappedviatest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Cause(a0)
-		assert.ErrorIs(t, r0, want, "Cause must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := wrappedviatest.NewMixedStub(t)
-		var want0 error
-		s.OnCause.Returns(want0)
-		var a0 context.Context
-		_ = s.Cause(a0)
-		s.ResetCalls()
-		_ = s.Cause(a0)
-		s.OnCause.AssertCalledOnce(t, "Cause must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Open stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[wrappedviatest.MixedOpenCall] {
-	instance := func(s *wrappedviatest.MixedStub) stub.Instance[wrappedviatest.MixedOpenCall] {
-		return stub.Instance[wrappedviatest.MixedOpenCall]{
-			Stub: s.OnOpen.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Open-a"
-				_ = s.Open(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[wrappedviatest.MixedOpenCall]{
-		New: func(tb assert.TB) stub.Instance[wrappedviatest.MixedOpenCall] {
-			return instance(wrappedviatest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Open alone.
+func mixedStubInstanceOf(tb assert.TB, s *wrappedviatest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnOpen.MethodStub,
+		Call: func() {
+			_ = mixedStubOpen(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[wrappedviatest.MixedOpenCall] {
-			return instance(wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[wrappedviatest.MixedOpenCall] {
-			return instance(wrappedviatest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[wrappedviatest.MixedOpenCall] {
-			return instance(wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[wrappedviatest.MixedOpenCall] {
-			return instance(wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[wrappedviatest.MixedOpenCall] {
-			return instance(wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Open", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Open", mixedStubOpenSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			_ = mixedStubOpen(t, s)
+			got := s.OnOpen.AssertCalledOnce(t, "Open records the call")
+			a0, a1 := mixedStubOpenArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Name, a1, "the call records Name")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			var seen []wrappedviatest.MixedOpenCall
+			s.OnOpen.OnRecord(func(c wrappedviatest.MixedOpenCall) { seen = append(seen, c) })
+			_ = mixedStubOpen(t, s)
+			_ = mixedStubOpen(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Open")
+		})
+	})
+
+	t.Run("Cause", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Cause", mixedStubCauseSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			_ = mixedStubCause(t, s)
+			got := s.OnCause.AssertCalledOnce(t, "Cause records the call")
+			a0 := mixedStubCauseArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			var seen []wrappedviatest.MixedCauseCall
+			s.OnCause.OnRecord(func(c wrappedviatest.MixedCauseCall) { seen = append(seen, c) })
+			_ = mixedStubCause(t, s)
+			_ = mixedStubCause(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Cause")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Open", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			_ = mixedStubOpen(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnOpen.CallCount(), 0, "ResetCalls clears the calls of Open")
+		})
+
+		t.Run("keeps the results of Returns of Open", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			want0 := mixedStubOpenPins()
+			s.OnOpen.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubOpen(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Open")
+		})
+
+		t.Run("clears the recorded calls of Cause", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			_ = mixedStubCause(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCause.CallCount(), 0, "ResetCalls clears the calls of Cause")
+		})
+
+		t.Run("keeps the results of Returns of Cause", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			want0 := mixedStubCausePins()
+			s.OnCause.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubCause(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Cause")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Open with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Open-failing")
+			s := wrappedviatest.NewMixedStubFailing(t, want)
+			r0 := mixedStubOpen(t, s)
+			assert.ErrorIs(t, r0, want, "Open fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Cause with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Cause-failing")
+			s := wrappedviatest.NewMixedStubFailing(t, want)
+			r0 := mixedStubCause(t, s)
+			assert.ErrorIs(t, r0, want, "Cause fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Open to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := wrappedviatest.NewMixedStub(t)
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
+			_ = mixedStubOpen(t, s)
+			inner.OnOpen.AssertCalledOnce(t, "Open calls the implementation")
+		})
+
+		t.Run("fails Open with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Open-delegate")
+			inner := wrappedviatest.NewMixedStub(t)
+			inner.OnOpen.Faults(want, 1)
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
+			r0 := mixedStubOpen(t, s)
+			assert.ErrorIs(t, r0, want, "Open fails with the error of the implementation")
+		})
+
+		t.Run("passes Cause to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := wrappedviatest.NewMixedStub(t)
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
+			_ = mixedStubCause(t, s)
+			inner.OnCause.AssertCalledOnce(t, "Cause calls the implementation")
+		})
+
+		t.Run("fails Cause with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Cause-delegate")
+			inner := wrappedviatest.NewMixedStub(t)
+			inner.OnCause.Faults(want, 1)
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
+			r0 := mixedStubCause(t, s)
+			assert.ErrorIs(t, r0, want, "Cause fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, wrappedviatest.NewMixedStub(tb, wrappedviatest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				wrappedviatest.NewMixedStub(
+					tb,
+					wrappedviatest.MixedStubWithClock(clk),
+					wrappedviatest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Open with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Open-failing")
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubFailing(want))
+			r0 := mixedStubOpen(t, s)
+			assert.ErrorIs(t, r0, want, "Open fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Cause with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Cause-failing")
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubFailing(want))
+			r0 := mixedStubCause(t, s)
+			assert.ErrorIs(t, r0, want, "Cause fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedOpen", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Open", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.WithMixedOpen(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubOpen(t, s)
+			assert.True(t, called, "WithMixedOpen sets the function of Open")
+		})
+	})
+
+	t.Run("WithMixedCause", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Cause", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := wrappedviatest.NewMixedStub(t, wrappedviatest.WithMixedCause(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubCause(t, s)
+			assert.True(t, called, "WithMixedCause sets the function of Cause")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedOpenStub checks the methods of MixedOpenStub, which configures
+// Open.
+func TestMixedOpenStub(t *testing.T) {
 	t.Parallel()
 
-	inner := wrappedviatest.NewMixedStub(t)
-	s := wrappedviatest.NewMixedStub(t, wrappedviatest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Open to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Open-a"
-		_ = s.Open(a0, a1)
-		inner.OnOpen.AssertCalledOnce(t, "Open must reach the wrapped implementation")
+		t.Run("sets the results of each call of Open", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			want0 := mixedStubOpenPins()
+			s.OnOpen.Returns(want0)
+			got0 := mixedStubOpen(t, s)
+			assert.ErrorIs(t, got0, want0, "Open returns the error that Returns sets")
+		})
+
+		t.Run("configures Open for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := wrappedviatest.NewMixedStub(r)
+			s.OnOpen.Strict()
+			var want0 error
+			s.OnOpen.Returns(want0)
+			_ = mixedStubOpen(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Open")
+		})
 	})
 
-	t.Run("surfaces what Open answered", func(t *testing.T) {
-		want := errors.New("Open-delegate")
-		inner.OnOpen.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Open-a"
-		r0 := s.Open(a0, a1)
-		assert.ErrorIs(t, r0, want, "Open must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Cause to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Cause(a0)
-		inner.OnCause.AssertCalledOnce(t, "Cause must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Cause answered", func(t *testing.T) {
-		want := errors.New("Cause-delegate")
-		inner.OnCause.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Cause(a0)
-		assert.ErrorIs(t, r0, want, "Cause must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Open to the function", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnOpen.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubOpen(t, s)
+			a0, a1 := mixedStubOpenArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Name")
+		})
 	})
 }
 
-// dokimi:provenance sha256:7d68311cc146a432c6eb8b9c81c0515ea9aead6c36a1f930d32fa628eb22faf0
+// TestMixedCauseStub checks the methods of MixedCauseStub, which
+// configures Cause.
+func TestMixedCauseStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Cause", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			want0 := mixedStubCausePins()
+			s.OnCause.Returns(want0)
+			got0 := mixedStubCause(t, s)
+			assert.ErrorIs(t, got0, want0, "Cause returns the error that Returns sets")
+		})
+
+		t.Run("configures Cause for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := wrappedviatest.NewMixedStub(r)
+			s.OnCause.Strict()
+			var want0 error
+			s.OnCause.Returns(want0)
+			_ = mixedStubCause(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Cause")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Cause to the function", func(t *testing.T) {
+			t.Parallel()
+			s := wrappedviatest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnCause.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubCause(t, s)
+			a0 := mixedStubCauseArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:afdee79e9a434fa7d2e5d3c935464ddfcb79e13d8365dddc0818d102bf2b79aa

@@ -8,95 +8,136 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/integration/validated"
 	"go.dokimi.dev/dokimi/corpus/go/integration/validated/validatedtest"
 )
 
-// TestAccountBuilderConstruction pins what the constructors produce.
-func TestAccountBuilderConstruction(t *testing.T) {
+// TestAccountBuilder checks the constructors and the methods of
+// AccountBuilder.
+func TestAccountBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewAccountBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var seed validated.Account
-		seed.ID = "ID-a"
-		seed.Email = "Email-a"
-		got := validatedtest.NewAccountBuilderFrom(seed).Build()
-		assert.Equal(t, got.ID, seed.ID, "From keeps the member it was given")
-		assert.Equal(t, got.Email, seed.Email, "From keeps the member it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed validated.Account
+			seed.ID = "ID-a"
+			seed.Email = "Email-a"
+			got := validatedtest.NewAccountBuilderFrom(seed).Build()
+			expect.Equal(t, got.ID, seed.ID, "NewAccountBuilderFrom keeps ID")
+			expect.Equal(t, got.Email, seed.Email, "NewAccountBuilderFrom keeps Email")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := validatedtest.NewAccountBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				validatedtest.NewAccountBuilderFrom(want).Build(),
+				want,
+				"NewAccountBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithID", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to ID", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "ID-a"
+			got := validatedtest.NewAccountBuilder().WithID(want).Build()
+			assert.Equal(t, got.ID, want, "WithID writes its argument to ID")
+		})
+
+		t.Run("replaces the value of ID", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "ID-a"
+			want = "ID-b"
+			got := validatedtest.NewAccountBuilder().WithID(first).WithID(want).Build()
+			assert.Equal(t, got.ID, want, "the second call of WithID replaces the first")
+		})
+	})
+
+	t.Run("WithEmail", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Email", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Email-a"
+			got := validatedtest.NewAccountBuilder().WithEmail(want).Build()
+			assert.Equal(t, got.Email, want, "WithEmail writes its argument to Email")
+		})
+
+		t.Run("replaces the value of Email", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Email-a"
+			want = "Email-b"
+			got := validatedtest.NewAccountBuilder().WithEmail(first).WithEmail(want).Build()
+			assert.Equal(t, got.Email, want, "the second call of WithEmail replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*validated.Account
+			record := func(v *validated.Account) { got = append(got, v) }
+			validatedtest.NewAccountBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := validatedtest.NewAccountBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := validatedtest.NewAccountBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed validated.Account
+			seed.ID = "ID-a"
+			seed.Email = "Email-a"
+			b := validatedtest.NewAccountBuilder()
+			b.Mutate(func(v *validated.Account) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestAccountBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestAccountBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithID writes ID", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "ID-a"
-		got := validatedtest.NewAccountBuilder().WithID(want).Build()
-		assert.Equal(t, got.ID, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithID replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "ID-a"
-		want = "ID-b"
-		got := validatedtest.NewAccountBuilder().WithID(first).WithID(want).Build()
-		assert.Equal(t, got.ID, want, "the later call wins")
-	})
-
-	t.Run("WithEmail writes Email", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Email-a"
-		got := validatedtest.NewAccountBuilder().WithEmail(want).Build()
-		assert.Equal(t, got.Email, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithEmail replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Email-a"
-		want = "Email-b"
-		got := validatedtest.NewAccountBuilder().WithEmail(first).WithEmail(want).Build()
-		assert.Equal(t, got.Email, want, "the later call wins")
-	})
-}
-
-// TestAccountBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestAccountBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*validated.Account
-		record := func(v *validated.Account) { got = append(got, v) }
-		validatedtest.NewAccountBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := validatedtest.NewAccountBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, validatedtest.NewAccountBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:d9fa04c49f9665951e33bc8ef39ba9e9765b2c0fed7c4c9b98db5b895999c3c8
+// dokimi:provenance sha256:20f09f594a87f6ec444972b0e6c09ea245f0a90ad42f03650e1658241f005f2a

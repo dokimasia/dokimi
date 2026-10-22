@@ -10,28 +10,20 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator"
+	"go.dokimi.dev/stub"
 )
 
-// AggregatorCountCall records one invocation of Aggregator.Count.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// AggregatorCountCall records one call of Aggregator.Count.
 type AggregatorCountCall struct {
 	Ctx    context.Context
 	Result int
 	Err    error
 }
 
-// --- Per-method configuration ---
-
-// AggregatorCountStub controls how the double answers Count and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// AggregatorCountStub configures Count and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type AggregatorCountStub struct {
 	*stub.MethodStub[AggregatorCountCall]
 
@@ -39,112 +31,106 @@ type AggregatorCountStub struct {
 	fallback *AggregatorCountReturn
 }
 
-// AggregatorCountReturn holds the fixed answer configured through Returns.
+// AggregatorCountReturn contains the fixed results of Count.
 type AggregatorCountReturn struct {
 	Result int
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Count. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Count. A function and an
+// injected fault take precedence over them.
 func (s *AggregatorCountStub) Returns(result int, err error) *AggregatorCountStub {
 	s.fallback = &AggregatorCountReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Count, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Count from its
+// arguments. An injected fault takes precedence over it.
 func (s *AggregatorCountStub) Func(fn func(context.Context) (int, error)) *AggregatorCountStub {
 	s.fn = fn
 	return s
 }
 
-// --- AggregatorStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// AggregatorStubOption configures a [AggregatorStub] at construction time.
+// AggregatorStubOption configures a [AggregatorStub] at its construction.
 type AggregatorStubOption func(*AggregatorStub)
 
-// AggregatorStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// AggregatorStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func AggregatorStubStrict() AggregatorStubOption {
 	return func(s *AggregatorStub) { s.strict = true }
 }
 
-// AggregatorStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// AggregatorStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func AggregatorStubDelegateTo(impl aggregator.Aggregator) AggregatorStubOption {
 	return func(s *AggregatorStub) {
 		s.OnCount.Func(impl.Count)
 	}
 }
 
-// AggregatorStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// AggregatorStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func AggregatorStubWithClock(clk assert.Clock) AggregatorStubOption {
 	return func(s *AggregatorStub) { s.group.SetClock(clk) }
 }
 
-// AggregatorStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// AggregatorStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func AggregatorStubWithRandSource(src rand.Source) AggregatorStubOption {
 	return func(s *AggregatorStub) { s.group.SetRandSource(src) }
 }
 
-// AggregatorStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// AggregatorStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func AggregatorStubBenchMode() AggregatorStubOption {
 	return func(s *AggregatorStub) { s.group.BenchMode() }
 }
 
-// AggregatorStubWithLatency makes every method sleep d before answering,
-// for a test standing in for a slow dependency rather than one slow
-// method. Pair it with AggregatorStubWithClock, or d elapses in wall time.
+// AggregatorStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without AggregatorStubWithClock, d passes in
+// real time.
 func AggregatorStubWithLatency(d time.Duration) AggregatorStubOption {
 	return func(s *AggregatorStub) { s.group.SetLatency(d) }
 }
 
-// AggregatorStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// AggregatorStubFailing returns the option that arms err on each method
+// that can fail. Each call of such a method then fails with err.
 func AggregatorStubFailing(err error) AggregatorStubOption {
 	return func(s *AggregatorStub) {
 		s.OnCount.Faults(err, 1)
 	}
 }
 
-// WithAggregatorCount sets Count's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithAggregatorCount returns the option that sets the function of Count.
 func WithAggregatorCount(fn func(context.Context) (int, error)) AggregatorStubOption {
 	return func(s *AggregatorStub) { s.OnCount.Func(fn) }
 }
 
-// AggregatorStub is a recording test double for Aggregator.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// AggregatorStub is a recording test double of Aggregator. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type AggregatorStub struct {
 	OnCount *AggregatorCountStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that AggregatorStub satisfies Aggregator.
+// The compiler checks that AggregatorStub implements Aggregator.
 var _ aggregator.Aggregator = (*AggregatorStub)(nil)
 
-// NewAggregatorStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewAggregatorStub returns a double of Aggregator that reports its
+// failures to tb and applies opts. The double checks the expected counts
+// of calls at the end of the test. With a nil tb, the double reports
+// nothing.
 func NewAggregatorStub(tb assert.TB, opts ...AggregatorStubOption) *AggregatorStub {
 	s := &AggregatorStub{
 		OnCount: &AggregatorCountStub{MethodStub: stub.NewMethodStub[AggregatorCountCall](tb, "Aggregator.Count")},
@@ -162,38 +148,34 @@ func NewAggregatorStub(tb assert.TB, opts ...AggregatorStubOption) *AggregatorSt
 	return s
 }
 
-// NewAggregatorStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewAggregatorStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...AggregatorStubOption) *AggregatorStub {
+// NewAggregatorStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
+func NewAggregatorStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...AggregatorStubOption,
+) *AggregatorStub {
 	return NewAggregatorStub(tb, append([]AggregatorStubOption{
 		AggregatorStubWithClock(clk),
 		AggregatorStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewAggregatorStubFailing returns a double whose every fallible method
-// answers err — [AggregatorStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewAggregatorStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewAggregatorStubFailing(tb assert.TB, err error, opts ...AggregatorStubOption) *AggregatorStub {
 	return NewAggregatorStub(tb, append([]AggregatorStubOption{AggregatorStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *AggregatorStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *AggregatorCountStub) invoke(ctx context.Context) func() AggregatorCountReturn {
 	if s.fn == nil {
 		return nil
@@ -204,12 +186,8 @@ func (s *AggregatorCountStub) invoke(ctx context.Context) func() AggregatorCount
 	}
 }
 
-// Count records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Count records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *AggregatorStub) Count(ctx context.Context) (int, error) {
 	call := AggregatorCountCall{Ctx: ctx}
 	r := stub.Answer(s.OnCount.MethodStub, &call, stub.Arms[AggregatorCountCall, AggregatorCountReturn]{
@@ -224,4 +202,4 @@ func (s *AggregatorStub) Count(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:b6ab5c4df2ba94d60c8c62ca22863e7a74ffb90f2689d03061199604ca5e3b09
+// dokimi:provenance sha256:98b035cef4d6b0c0862e39a8ca8380a6a91ca5f08e5bb45b14c070e2ffc3077f

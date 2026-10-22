@@ -7,7 +7,7 @@ package txwithretrytest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	txwithretry "go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry"
 )
 
@@ -56,33 +56,26 @@ func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 	return conform.Suite[txwithretry.TxWithRetry]{Declaration: "TxWithRetry"}
 }
 
-// RunTxWithRetry applies the checks of TxWithRetry, and the checks that
-// opts add, to a fresh subject of newSubject for each check.
-func RunTxWithRetry[T txwithretry.TxWithRetry](t *testing.T, newSubject func() T, opts ...TxWithRetryOption) {
+// RunTxWithRetrySuite applies the checks of TxWithRetry, and the checks
+// that opts add, to a fresh subject of newSubject for each check.
+func RunTxWithRetrySuite[T txwithretry.TxWithRetry](t *testing.T, newSubject func() T, opts ...TxWithRetryOption) {
 	t.Helper()
-	conform.Verify(t, TxWithRetrySuite(), func(*TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject() }, opts...)
+	RunTxWithRetrySuiteFromHandle(t, func(*TxWithRetryHandle) T { return newSubject() }, opts...)
 }
 
-// RunTxWithRetryOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunTxWithRetryOn[T txwithretry.TxWithRetry](t *testing.T, newSubject func(h *TxWithRetryHandle) T, opts ...TxWithRetryOption) {
+// RunTxWithRetrySuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunTxWithRetrySuiteFromHandle[T txwithretry.TxWithRetry](
+	t *testing.T,
+	newSubject func(h *TxWithRetryHandle) T,
+	opts ...TxWithRetryOption,
+) {
 	t.Helper()
-	conform.Verify(t, TxWithRetrySuite(), func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		TxWithRetrySuite(),
+		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
+		opts...)
 }
 
-// ControlTxWithRetry applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlTxWithRetry[T txwithretry.TxWithRetry](t *testing.T, newControl func() T, opts ...TxWithRetryOption) {
-	t.Helper()
-	conform.Control(t, TxWithRetrySuite(), func(*TxWithRetryHandle) txwithretry.TxWithRetry { return newControl() }, opts...)
-}
-
-// ControlTxWithRetryOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlTxWithRetryOn[T txwithretry.TxWithRetry](t *testing.T, newControl func(h *TxWithRetryHandle) T, opts ...TxWithRetryOption) {
-	t.Helper()
-	conform.Control(t, TxWithRetrySuite(), func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:93635dbfffb3f6f3321833e368222c3087d6c7cd3b3f18c1de2f4b10b3b61d21
+// dokimi:provenance sha256:f790f940509880c2ac9a024f49ef3bd2517d6338f0c956d68d32f5f686705183

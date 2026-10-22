@@ -12,32 +12,75 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer/leasedidempotentwritertest"
+	"go.dokimi.dev/stub"
 )
 
-// leasedWriterStubAcquireSubject binds Acquire into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func leasedWriterStubAcquireSubject(tb assert.TB) stub.Subject[leasedidempotentwritertest.LeasedWriterAcquireCall, leasedidempotentwritertest.LeasedWriterAcquireReturn] {
+// leasedWriterStubAcquireArgs returns the samples of the arguments of
+// Acquire.
+func leasedWriterStubAcquireArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Acquire-a"
+	return a0, a1
+}
+
+// leasedWriterStubAcquire calls Acquire of s with the samples of its
+// arguments.
+func leasedWriterStubAcquire(tb assert.TB, s *leasedidempotentwritertest.LeasedWriterStub) error {
+	tb.Helper()
+	a0, a1 := leasedWriterStubAcquireArgs(tb)
+	return s.Acquire(a0, a1)
+}
+
+// leasedWriterStubAcquirePins returns the samples of the results of
+// Acquire, with a new error as its error result.
+func leasedWriterStubAcquirePins() error {
+	want0 := errors.New("Acquire-returns")
+	return want0
+}
+
+// leasedWriterStubReleaseArgs returns the samples of the arguments of
+// Release.
+func leasedWriterStubReleaseArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Release-a"
+	return a0, a1
+}
+
+// leasedWriterStubRelease calls Release of s with the samples of its
+// arguments.
+func leasedWriterStubRelease(tb assert.TB, s *leasedidempotentwritertest.LeasedWriterStub) error {
+	tb.Helper()
+	a0, a1 := leasedWriterStubReleaseArgs(tb)
+	return s.Release(a0, a1)
+}
+
+// leasedWriterStubReleasePins returns the samples of the results of
+// Release, with a new error as its error result.
+func leasedWriterStubReleasePins() error {
+	want0 := errors.New("Release-returns")
+	return want0
+}
+
+// leasedWriterStubAcquireSubject returns the subject of [stub.Behaviour]
+// for Acquire. The subject calls a new double that reports to tb.
+func leasedWriterStubAcquireSubject(
+	tb assert.TB,
+) stub.Subject[leasedidempotentwritertest.LeasedWriterAcquireCall, leasedidempotentwritertest.LeasedWriterAcquireReturn] {
 	tb.Helper()
 	s := leasedidempotentwritertest.NewLeasedWriterStub(tb)
 	return stub.Subject[leasedidempotentwritertest.LeasedWriterAcquireCall, leasedidempotentwritertest.LeasedWriterAcquireReturn]{
 		Stub: s.OnAcquire.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Acquire-a"
-			_ = s.Acquire(a0, a1)
+			_ = leasedWriterStubAcquire(tb, s)
 		},
 		Result: func() leasedidempotentwritertest.LeasedWriterAcquireReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Acquire-a"
-			got0 := s.Acquire(a0, a1)
+			got0 := leasedWriterStubAcquire(tb, s)
 			return leasedidempotentwritertest.LeasedWriterAcquireReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,115 +91,26 @@ func leasedWriterStubAcquireSubject(tb assert.TB) stub.Subject[leasedidempotentw
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Acquire-a"
-			r0 := s.Acquire(a0, a1)
+			r0 := leasedWriterStubAcquire(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestLeasedWriterStubAcquire pins how Acquire answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestLeasedWriterStubAcquire(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Acquire", leasedWriterStubAcquireSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		got := s.OnAcquire.AssertCalledOnce(t, "Acquire must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t)
-		var seen []leasedidempotentwritertest.LeasedWriterAcquireCall
-		s.OnAcquire.OnRecord(func(c leasedidempotentwritertest.LeasedWriterAcquireCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		_ = s.Acquire(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Acquire call")
-	})
-
-	t.Run("wires WithLeasedWriterAcquire at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t, leasedidempotentwritertest.WithLeasedWriterAcquire(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		assert.True(t, called, "WithLeasedWriterAcquire must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Acquire-failing")
-		s := leasedidempotentwritertest.NewLeasedWriterStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		r0 := s.Acquire(a0, a1)
-		assert.ErrorIs(t, r0, want, "Acquire must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t)
-		var want0 error
-		s.OnAcquire.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		s.ResetCalls()
-		_ = s.Acquire(a0, a1)
-		s.OnAcquire.AssertCalledOnce(t, "Acquire must record the call that followed the reset")
-	})
-}
-
-// leasedWriterStubReleaseSubject binds Release into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func leasedWriterStubReleaseSubject(tb assert.TB) stub.Subject[leasedidempotentwritertest.LeasedWriterReleaseCall, leasedidempotentwritertest.LeasedWriterReleaseReturn] {
+// leasedWriterStubReleaseSubject returns the subject of [stub.Behaviour]
+// for Release. The subject calls a new double that reports to tb.
+func leasedWriterStubReleaseSubject(
+	tb assert.TB,
+) stub.Subject[leasedidempotentwritertest.LeasedWriterReleaseCall, leasedidempotentwritertest.LeasedWriterReleaseReturn] {
 	tb.Helper()
 	s := leasedidempotentwritertest.NewLeasedWriterStub(tb)
 	return stub.Subject[leasedidempotentwritertest.LeasedWriterReleaseCall, leasedidempotentwritertest.LeasedWriterReleaseReturn]{
 		Stub: s.OnRelease.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Release-a"
-			_ = s.Release(a0, a1)
+			_ = leasedWriterStubRelease(tb, s)
 		},
 		Result: func() leasedidempotentwritertest.LeasedWriterReleaseReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Release-a"
-			got0 := s.Release(a0, a1)
+			got0 := leasedWriterStubRelease(tb, s)
 			return leasedidempotentwritertest.LeasedWriterReleaseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -167,185 +121,433 @@ func leasedWriterStubReleaseSubject(tb assert.TB) stub.Subject[leasedidempotentw
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Release-a"
-			r0 := s.Release(a0, a1)
+			r0 := leasedWriterStubRelease(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestLeasedWriterStubRelease pins how Release answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestLeasedWriterStubRelease(t *testing.T) {
-	t.Parallel()
+// leasedWriterStubInstance is the instance of a
+// leasedidempotentwritertest.LeasedWriterStub that the checks of the
+// constructors and the options drive.
+type leasedWriterStubInstance = stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall]
 
-	stub.Behaviour(t, "Release", leasedWriterStubReleaseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		got := s.OnRelease.AssertCalledOnce(t, "Release must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t)
-		var seen []leasedidempotentwritertest.LeasedWriterReleaseCall
-		s.OnRelease.OnRecord(func(c leasedidempotentwritertest.LeasedWriterReleaseCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		_ = s.Release(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Release call")
-	})
-
-	t.Run("wires WithLeasedWriterRelease at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t, leasedidempotentwritertest.WithLeasedWriterRelease(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		assert.True(t, called, "WithLeasedWriterRelease must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Release-failing")
-		s := leasedidempotentwritertest.NewLeasedWriterStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		r0 := s.Release(a0, a1)
-		assert.ErrorIs(t, r0, want, "Release must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := leasedidempotentwritertest.NewLeasedWriterStub(t)
-		var want0 error
-		s.OnRelease.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		s.ResetCalls()
-		_ = s.Release(a0, a1)
-		s.OnRelease.AssertCalledOnce(t, "Release must record the call that followed the reset")
-	})
-}
-
-// leasedWriterStubDouble describes how to build a LeasedWriterStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// Acquire stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func leasedWriterStubDouble() stub.Double[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-	instance := func(s *leasedidempotentwritertest.LeasedWriterStub) stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-		return stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall]{
-			Stub: s.OnAcquire.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Acquire-a"
-				_ = s.Acquire(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[leasedidempotentwritertest.LeasedWriterAcquireCall]{
-		New: func(tb assert.TB) stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-			return instance(leasedidempotentwritertest.NewLeasedWriterStub(tb))
+// leasedWriterStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call Acquire alone.
+func leasedWriterStubInstanceOf(tb assert.TB, s *leasedidempotentwritertest.LeasedWriterStub) leasedWriterStubInstance {
+	tb.Helper()
+	return leasedWriterStubInstance{
+		Stub: s.OnAcquire.MethodStub,
+		Call: func() {
+			_ = leasedWriterStubAcquire(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-			return instance(leasedidempotentwritertest.NewLeasedWriterStub(tb, leasedidempotentwritertest.LeasedWriterStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-			return instance(leasedidempotentwritertest.NewLeasedWriterStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-			return instance(leasedidempotentwritertest.NewLeasedWriterStub(tb, leasedidempotentwritertest.LeasedWriterStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-			return instance(leasedidempotentwritertest.NewLeasedWriterStub(tb, leasedidempotentwritertest.LeasedWriterStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[leasedidempotentwritertest.LeasedWriterAcquireCall] {
-			return instance(leasedidempotentwritertest.NewLeasedWriterStub(tb, leasedidempotentwritertest.LeasedWriterStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestLeasedWriterStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestLeasedWriterStubOptions(t *testing.T) {
+// TestLeasedWriterStub checks the methods, the constructors and the
+// options of the double LeasedWriterStub.
+func TestLeasedWriterStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, leasedWriterStubDouble())
+	t.Run("Acquire", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Acquire", leasedWriterStubAcquireSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			_ = leasedWriterStubAcquire(t, s)
+			got := s.OnAcquire.AssertCalledOnce(t, "Acquire records the call")
+			a0, a1 := leasedWriterStubAcquireArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			var seen []leasedidempotentwritertest.LeasedWriterAcquireCall
+			s.OnAcquire.OnRecord(func(c leasedidempotentwritertest.LeasedWriterAcquireCall) { seen = append(seen, c) })
+			_ = leasedWriterStubAcquire(t, s)
+			_ = leasedWriterStubAcquire(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Acquire")
+		})
+	})
+
+	t.Run("Release", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Release", leasedWriterStubReleaseSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			_ = leasedWriterStubRelease(t, s)
+			got := s.OnRelease.AssertCalledOnce(t, "Release records the call")
+			a0, a1 := leasedWriterStubReleaseArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			var seen []leasedidempotentwritertest.LeasedWriterReleaseCall
+			s.OnRelease.OnRecord(func(c leasedidempotentwritertest.LeasedWriterReleaseCall) { seen = append(seen, c) })
+			_ = leasedWriterStubRelease(t, s)
+			_ = leasedWriterStubRelease(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Release")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) leasedWriterStubInstance {
+			return leasedWriterStubInstanceOf(tb, leasedidempotentwritertest.NewLeasedWriterStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Acquire", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			_ = leasedWriterStubAcquire(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAcquire.CallCount(), 0, "ResetCalls clears the calls of Acquire")
+		})
+
+		t.Run("keeps the results of Returns of Acquire", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			want0 := leasedWriterStubAcquirePins()
+			s.OnAcquire.Returns(want0)
+			s.ResetCalls()
+			got0 := leasedWriterStubAcquire(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Acquire")
+		})
+
+		t.Run("clears the recorded calls of Release", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			_ = leasedWriterStubRelease(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRelease.CallCount(), 0, "ResetCalls clears the calls of Release")
+		})
+
+		t.Run("keeps the results of Returns of Release", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			want0 := leasedWriterStubReleasePins()
+			s.OnRelease.Returns(want0)
+			s.ResetCalls()
+			got0 := leasedWriterStubRelease(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Release")
+		})
+	})
+
+	t.Run("NewLeasedWriterStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) leasedWriterStubInstance {
+			return leasedWriterStubInstanceOf(tb, leasedidempotentwritertest.NewLeasedWriterStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewLeasedWriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Acquire with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Acquire-failing")
+			s := leasedidempotentwritertest.NewLeasedWriterStubFailing(t, want)
+			r0 := leasedWriterStubAcquire(t, s)
+			assert.ErrorIs(t, r0, want, "Acquire fails with the error of NewLeasedWriterStubFailing")
+		})
+
+		t.Run("fails Release with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Release-failing")
+			s := leasedidempotentwritertest.NewLeasedWriterStubFailing(t, want)
+			r0 := leasedWriterStubRelease(t, s)
+			assert.ErrorIs(t, r0, want, "Release fails with the error of NewLeasedWriterStubFailing")
+		})
+	})
+
+	t.Run("LeasedWriterStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) leasedWriterStubInstance {
+			return leasedWriterStubInstanceOf(
+				tb,
+				leasedidempotentwritertest.NewLeasedWriterStub(tb, leasedidempotentwritertest.LeasedWriterStubStrict()),
+			)
+		})
+	})
+
+	t.Run("LeasedWriterStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Acquire to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.LeasedWriterStubDelegateTo(inner),
+			)
+			_ = leasedWriterStubAcquire(t, s)
+			inner.OnAcquire.AssertCalledOnce(t, "Acquire calls the implementation")
+		})
+
+		t.Run("fails Acquire with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Acquire-delegate")
+			inner := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			inner.OnAcquire.Faults(want, 1)
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.LeasedWriterStubDelegateTo(inner),
+			)
+			r0 := leasedWriterStubAcquire(t, s)
+			assert.ErrorIs(t, r0, want, "Acquire fails with the error of the implementation")
+		})
+
+		t.Run("passes Release to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.LeasedWriterStubDelegateTo(inner),
+			)
+			_ = leasedWriterStubRelease(t, s)
+			inner.OnRelease.AssertCalledOnce(t, "Release calls the implementation")
+		})
+
+		t.Run("fails Release with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Release-delegate")
+			inner := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			inner.OnRelease.Faults(want, 1)
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.LeasedWriterStubDelegateTo(inner),
+			)
+			r0 := leasedWriterStubRelease(t, s)
+			assert.ErrorIs(t, r0, want, "Release fails with the error of the implementation")
+		})
+	})
+
+	t.Run("LeasedWriterStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) leasedWriterStubInstance {
+			return leasedWriterStubInstanceOf(
+				tb,
+				leasedidempotentwritertest.NewLeasedWriterStub(
+					tb,
+					leasedidempotentwritertest.LeasedWriterStubWithClock(clk),
+				),
+			)
+		})
+	})
+
+	t.Run("LeasedWriterStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) leasedWriterStubInstance {
+			return leasedWriterStubInstanceOf(
+				tb,
+				leasedidempotentwritertest.NewLeasedWriterStub(
+					tb,
+					leasedidempotentwritertest.LeasedWriterStubWithRandSource(src),
+				),
+			)
+		})
+	})
+
+	t.Run("LeasedWriterStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) leasedWriterStubInstance {
+			return leasedWriterStubInstanceOf(
+				tb,
+				leasedidempotentwritertest.NewLeasedWriterStub(
+					tb,
+					leasedidempotentwritertest.LeasedWriterStubBenchMode(),
+				),
+			)
+		})
+	})
+
+	t.Run("LeasedWriterStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) leasedWriterStubInstance {
+			return leasedWriterStubInstanceOf(
+				tb,
+				leasedidempotentwritertest.NewLeasedWriterStub(
+					tb,
+					leasedidempotentwritertest.LeasedWriterStubWithClock(clk),
+					leasedidempotentwritertest.LeasedWriterStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("LeasedWriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Acquire with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Acquire-failing")
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.LeasedWriterStubFailing(want),
+			)
+			r0 := leasedWriterStubAcquire(t, s)
+			assert.ErrorIs(t, r0, want, "Acquire fails with the error of LeasedWriterStubFailing")
+		})
+
+		t.Run("fails Release with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Release-failing")
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.LeasedWriterStubFailing(want),
+			)
+			r0 := leasedWriterStubRelease(t, s)
+			assert.ErrorIs(t, r0, want, "Release fails with the error of LeasedWriterStubFailing")
+		})
+	})
+
+	t.Run("WithLeasedWriterAcquire", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Acquire", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.WithLeasedWriterAcquire(func(_ context.Context, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = leasedWriterStubAcquire(t, s)
+			assert.True(t, called, "WithLeasedWriterAcquire sets the function of Acquire")
+		})
+	})
+
+	t.Run("WithLeasedWriterRelease", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Release", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := leasedidempotentwritertest.NewLeasedWriterStub(
+				t,
+				leasedidempotentwritertest.WithLeasedWriterRelease(func(_ context.Context, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = leasedWriterStubRelease(t, s)
+			assert.True(t, called, "WithLeasedWriterRelease sets the function of Release")
+		})
+	})
 }
 
-// TestLeasedWriterStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestLeasedWriterStubDelegateTo(t *testing.T) {
+// TestLeasedWriterAcquireStub checks the methods of
+// LeasedWriterAcquireStub, which configures Acquire.
+func TestLeasedWriterAcquireStub(t *testing.T) {
 	t.Parallel()
 
-	inner := leasedidempotentwritertest.NewLeasedWriterStub(t)
-	s := leasedidempotentwritertest.NewLeasedWriterStub(t, leasedidempotentwritertest.LeasedWriterStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Acquire to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		inner.OnAcquire.AssertCalledOnce(t, "Acquire must reach the wrapped implementation")
+		t.Run("sets the results of each call of Acquire", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			want0 := leasedWriterStubAcquirePins()
+			s.OnAcquire.Returns(want0)
+			got0 := leasedWriterStubAcquire(t, s)
+			assert.ErrorIs(t, got0, want0, "Acquire returns the error that Returns sets")
+		})
+
+		t.Run("configures Acquire for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(r)
+			s.OnAcquire.Strict()
+			var want0 error
+			s.OnAcquire.Returns(want0)
+			_ = leasedWriterStubAcquire(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Acquire")
+		})
 	})
 
-	t.Run("surfaces what Acquire answered", func(t *testing.T) {
-		want := errors.New("Acquire-delegate")
-		inner.OnAcquire.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		r0 := s.Acquire(a0, a1)
-		assert.ErrorIs(t, r0, want, "Acquire must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Release to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		inner.OnRelease.AssertCalledOnce(t, "Release must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Release answered", func(t *testing.T) {
-		want := errors.New("Release-delegate")
-		inner.OnRelease.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		r0 := s.Release(a0, a1)
-		assert.ErrorIs(t, r0, want, "Release must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Acquire to the function", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnAcquire.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = leasedWriterStubAcquire(t, s)
+			a0, a1 := leasedWriterStubAcquireArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:1cac6790e75f42dcdd18f83a42d372fc3cf34e86f9f3ddefd50e3cd5062add0e
+// TestLeasedWriterReleaseStub checks the methods of
+// LeasedWriterReleaseStub, which configures Release.
+func TestLeasedWriterReleaseStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Release", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			want0 := leasedWriterStubReleasePins()
+			s.OnRelease.Returns(want0)
+			got0 := leasedWriterStubRelease(t, s)
+			assert.ErrorIs(t, got0, want0, "Release returns the error that Returns sets")
+		})
+
+		t.Run("configures Release for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(r)
+			s.OnRelease.Strict()
+			var want0 error
+			s.OnRelease.Returns(want0)
+			_ = leasedWriterStubRelease(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Release")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Release to the function", func(t *testing.T) {
+			t.Parallel()
+			s := leasedidempotentwritertest.NewLeasedWriterStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnRelease.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = leasedWriterStubRelease(t, s)
+			a0, a1 := leasedWriterStubReleaseArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:ec03e53168a91e131df221a5983293c3de88253af7d1223eb7daaa0cbfce831c

@@ -9,14 +9,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup"
+	"go.dokimi.dev/stub"
 )
 
-// LookupInspectCall records one invocation of Lookup.Inspect.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// LookupInspectCall records one call of Lookup.Inspect.
 type LookupInspectCall struct {
 	Key     string
 	Result0 lookup.Value
@@ -24,14 +21,8 @@ type LookupInspectCall struct {
 	Result2 bool
 }
 
-// --- Per-method configuration ---
-
-// LookupInspectStub controls how the double answers Inspect and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// LookupInspectStub configures Inspect and records its calls. Inspect
+// returns no error, so a fault armed through it fails the test.
 type LookupInspectStub struct {
 	*stub.MethodStub[LookupInspectCall]
 
@@ -39,109 +30,97 @@ type LookupInspectStub struct {
 	fallback *LookupInspectReturn
 }
 
-// LookupInspectReturn holds the fixed answer configured through Returns.
+// LookupInspectReturn contains the fixed results of Inspect.
 type LookupInspectReturn struct {
 	Result0 lookup.Value
 	Result1 lookup.Meta
 	Result2 bool
 }
 
-// Returns pins a fixed result for every call to Inspect. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Inspect answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Inspect. A function takes
+// precedence over them.
 func (s *LookupInspectStub) Returns(result0 lookup.Value, result1 lookup.Meta, result2 bool) *LookupInspectStub {
 	s.fallback = &LookupInspectReturn{Result0: result0, Result1: result1, Result2: result2}
 	return s
 }
 
-// Func supplies a body for Inspect, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Inspect answers no error,
-// so the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Inspect from its
+// arguments.
 func (s *LookupInspectStub) Func(fn func(string) (lookup.Value, lookup.Meta, bool)) *LookupInspectStub {
 	s.fn = fn
 	return s
 }
 
-// --- LookupStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// LookupStubOption configures a [LookupStub] at construction time.
+// LookupStubOption configures a [LookupStub] at its construction.
 type LookupStubOption func(*LookupStub)
 
-// LookupStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// LookupStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func LookupStubStrict() LookupStubOption {
 	return func(s *LookupStub) { s.strict = true }
 }
 
-// LookupStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// LookupStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func LookupStubDelegateTo(impl lookup.Lookup) LookupStubOption {
 	return func(s *LookupStub) {
 		s.OnInspect.Func(impl.Inspect)
 	}
 }
 
-// LookupStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// LookupStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func LookupStubWithClock(clk assert.Clock) LookupStubOption {
 	return func(s *LookupStub) { s.group.SetClock(clk) }
 }
 
-// LookupStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// LookupStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func LookupStubWithRandSource(src rand.Source) LookupStubOption {
 	return func(s *LookupStub) { s.group.SetRandSource(src) }
 }
 
-// LookupStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// LookupStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func LookupStubBenchMode() LookupStubOption {
 	return func(s *LookupStub) { s.group.BenchMode() }
 }
 
-// LookupStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with LookupStubWithClock, or d elapses in wall time.
+// LookupStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without LookupStubWithClock, d passes in real time.
 func LookupStubWithLatency(d time.Duration) LookupStubOption {
 	return func(s *LookupStub) { s.group.SetLatency(d) }
 }
 
-// WithLookupInspect sets Inspect's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithLookupInspect returns the option that sets the function of Inspect.
 func WithLookupInspect(fn func(string) (lookup.Value, lookup.Meta, bool)) LookupStubOption {
 	return func(s *LookupStub) { s.OnInspect.Func(fn) }
 }
 
-// LookupStub is a recording test double for Lookup.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// LookupStub is a recording test double of Lookup. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type LookupStub struct {
 	OnInspect *LookupInspectStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that LookupStub satisfies Lookup.
+// The compiler checks that LookupStub implements Lookup.
 var _ lookup.Lookup = (*LookupStub)(nil)
 
-// NewLookupStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewLookupStub returns a double of Lookup that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewLookupStub(tb assert.TB, opts ...LookupStubOption) *LookupStub {
 	s := &LookupStub{
 		OnInspect: &LookupInspectStub{MethodStub: stub.NewMethodStub[LookupInspectCall](tb, "Lookup.Inspect")},
@@ -159,11 +138,8 @@ func NewLookupStub(tb assert.TB, opts ...LookupStubOption) *LookupStub {
 	return s
 }
 
-// NewLookupStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewLookupStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewLookupStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...LookupStubOption) *LookupStub {
 	return NewLookupStub(tb, append([]LookupStubOption{
 		LookupStubWithClock(clk),
@@ -171,18 +147,14 @@ func NewLookupStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts 
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *LookupStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *LookupInspectStub) invoke(key string) func() LookupInspectReturn {
 	if s.fn == nil {
 		return nil
@@ -193,12 +165,8 @@ func (s *LookupInspectStub) invoke(key string) func() LookupInspectReturn {
 	}
 }
 
-// Inspect records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Inspect records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *LookupStub) Inspect(key string) (lookup.Value, lookup.Meta, bool) {
 	call := LookupInspectCall{Key: key}
 	r := stub.Answer(s.OnInspect.MethodStub, &call, stub.Arms[LookupInspectCall, LookupInspectReturn]{
@@ -213,4 +181,4 @@ func (s *LookupStub) Inspect(key string) (lookup.Value, lookup.Meta, bool) {
 	return r.Result0, r.Result1, r.Result2
 }
 
-// dokimi:provenance sha256:c18c5a206e0d2a7547e910a4b8719c089f7e97c3d1394441300d94af72cbb9c6
+// dokimi:provenance sha256:0657af9617923287cddd2d0a73c41a3af1100f6b226fbcc51443285d46566823

@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound"
+	"go.dokimi.dev/stub"
 )
 
-// RankedRankCall records one invocation of Ranked.Rank.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// RankedRankCall records one call of Ranked.Rank.
 type RankedRankCall[K genericbound.Ordered, V any] struct {
 	Ctx    context.Context
 	Key    K
@@ -25,23 +22,14 @@ type RankedRankCall[K genericbound.Ordered, V any] struct {
 	Err    error
 }
 
-// RankedResetCall records one invocation of Ranked.Reset.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// RankedResetCall records one call of Ranked.Reset.
 type RankedResetCall[K genericbound.Ordered, V any] struct {
 	Ctx context.Context
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// RankedRankStub controls how the double answers Rank and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// RankedRankStub configures Rank and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type RankedRankStub[K genericbound.Ordered, V any] struct {
 	*stub.MethodStub[RankedRankCall[K, V]]
 
@@ -49,32 +37,28 @@ type RankedRankStub[K genericbound.Ordered, V any] struct {
 	fallback *RankedRankReturn[K, V]
 }
 
-// RankedRankReturn holds the fixed answer configured through Returns.
+// RankedRankReturn contains the fixed results of Rank.
 type RankedRankReturn[K genericbound.Ordered, V any] struct {
 	Result V
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Rank. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Rank. A function and an
+// injected fault take precedence over them.
 func (s *RankedRankStub[K, V]) Returns(result V, err error) *RankedRankStub[K, V] {
 	s.fallback = &RankedRankReturn[K, V]{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Rank, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Rank from its
+// arguments. An injected fault takes precedence over it.
 func (s *RankedRankStub[K, V]) Func(fn func(context.Context, K) (V, error)) *RankedRankStub[K, V] {
 	s.fn = fn
 	return s
 }
 
-// RankedResetStub controls how the double answers Reset and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// RankedResetStub configures Reset and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type RankedResetStub[K genericbound.Ordered, V any] struct {
 	*stub.MethodStub[RankedResetCall[K, V]]
 
@@ -82,41 +66,40 @@ type RankedResetStub[K genericbound.Ordered, V any] struct {
 	fallback *RankedResetReturn[K, V]
 }
 
-// RankedResetReturn holds the fixed answer configured through Returns.
+// RankedResetReturn contains the fixed results of Reset.
 type RankedResetReturn[K genericbound.Ordered, V any] struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Reset. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Reset. A function and an
+// injected fault take precedence over them.
 func (s *RankedResetStub[K, V]) Returns(err error) *RankedResetStub[K, V] {
 	s.fallback = &RankedResetReturn[K, V]{Err: err}
 	return s
 }
 
-// Func supplies a body for Reset, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Reset from its
+// arguments. An injected fault takes precedence over it.
 func (s *RankedResetStub[K, V]) Func(fn func(context.Context) error) *RankedResetStub[K, V] {
 	s.fn = fn
 	return s
 }
 
-// --- RankedStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// RankedStubOption configures a [RankedStub] at construction time.
+// RankedStubOption configures a [RankedStub] at its construction.
 type RankedStubOption[K genericbound.Ordered, V any] func(*RankedStub[K, V])
 
-// RankedStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// RankedStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func RankedStubStrict[K genericbound.Ordered, V any]() RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) { s.strict = true }
 }
 
-// RankedStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// RankedStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func RankedStubDelegateTo[K genericbound.Ordered, V any](impl genericbound.Ranked[K, V]) RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) {
 		s.OnRank.Func(impl.Rank)
@@ -124,35 +107,35 @@ func RankedStubDelegateTo[K genericbound.Ordered, V any](impl genericbound.Ranke
 	}
 }
 
-// RankedStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// RankedStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func RankedStubWithClock[K genericbound.Ordered, V any](clk assert.Clock) RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) { s.group.SetClock(clk) }
 }
 
-// RankedStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// RankedStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func RankedStubWithRandSource[K genericbound.Ordered, V any](src rand.Source) RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) { s.group.SetRandSource(src) }
 }
 
-// RankedStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// RankedStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func RankedStubBenchMode[K genericbound.Ordered, V any]() RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) { s.group.BenchMode() }
 }
 
-// RankedStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with RankedStubWithClock, or d elapses in wall time.
+// RankedStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without RankedStubWithClock, d passes in real time.
 func RankedStubWithLatency[K genericbound.Ordered, V any](d time.Duration) RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) { s.group.SetLatency(d) }
 }
 
-// RankedStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// RankedStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func RankedStubFailing[K genericbound.Ordered, V any](err error) RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) {
 		s.OnRank.Faults(err, 1)
@@ -160,45 +143,36 @@ func RankedStubFailing[K genericbound.Ordered, V any](err error) RankedStubOptio
 	}
 }
 
-// WithRankedRank sets Rank's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithRankedRank returns the option that sets the function of Rank.
 func WithRankedRank[K genericbound.Ordered, V any](fn func(context.Context, K) (V, error)) RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) { s.OnRank.Func(fn) }
 }
 
-// WithRankedReset sets Reset's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithRankedReset returns the option that sets the function of Reset.
 func WithRankedReset[K genericbound.Ordered, V any](fn func(context.Context) error) RankedStubOption[K, V] {
 	return func(s *RankedStub[K, V]) { s.OnReset.Func(fn) }
 }
 
-// RankedStub is a recording test double for Ranked.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// RankedStub is a recording test double of Ranked. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type RankedStub[K genericbound.Ordered, V any] struct {
 	OnRank  *RankedRankStub[K, V]
 	OnReset *RankedResetStub[K, V]
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that RankedStub satisfies Ranked.
-//
-// A generic double is asserted at one instantiation. It never branches on
-// its type parameters, so satisfying the interface at these types means
-// satisfying it at every type the constraints admit.
+// The compiler checks that RankedStub implements Ranked at the witnesses
+// of its type parameters. The double does not branch on its type
+// parameters, so it implements Ranked at every instance.
 var _ genericbound.Ranked[int, genericbound.Score] = (*RankedStub[int, genericbound.Score])(nil)
 
-// NewRankedStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewRankedStub returns a double of Ranked that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewRankedStub[K genericbound.Ordered, V any](tb assert.TB, opts ...RankedStubOption[K, V]) *RankedStub[K, V] {
 	s := &RankedStub[K, V]{
 		OnRank:  &RankedRankStub[K, V]{MethodStub: stub.NewMethodStub[RankedRankCall[K, V]](tb, "Ranked.Rank")},
@@ -218,38 +192,38 @@ func NewRankedStub[K genericbound.Ordered, V any](tb assert.TB, opts ...RankedSt
 	return s
 }
 
-// NewRankedStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewRankedStubDelayed[K genericbound.Ordered, V any](tb assert.TB, d time.Duration, clk assert.Clock, opts ...RankedStubOption[K, V]) *RankedStub[K, V] {
+// NewRankedStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
+func NewRankedStubDelayed[K genericbound.Ordered, V any](
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...RankedStubOption[K, V],
+) *RankedStub[K, V] {
 	return NewRankedStub[K, V](tb, append([]RankedStubOption[K, V]{
 		RankedStubWithClock[K, V](clk),
 		RankedStubWithLatency[K, V](d),
 	}, opts...)...)
 }
 
-// NewRankedStubFailing returns a double whose every fallible method
-// answers err — [RankedStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
-func NewRankedStubFailing[K genericbound.Ordered, V any](tb assert.TB, err error, opts ...RankedStubOption[K, V]) *RankedStub[K, V] {
+// NewRankedStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
+func NewRankedStubFailing[K genericbound.Ordered, V any](
+	tb assert.TB,
+	err error,
+	opts ...RankedStubOption[K, V],
+) *RankedStub[K, V] {
 	return NewRankedStub[K, V](tb, append([]RankedStubOption[K, V]{RankedStubFailing[K, V](err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *RankedStub[K, V]) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *RankedRankStub[K, V]) invoke(ctx context.Context, key K) func() RankedRankReturn[K, V] {
 	if s.fn == nil {
 		return nil
@@ -260,12 +234,8 @@ func (s *RankedRankStub[K, V]) invoke(ctx context.Context, key K) func() RankedR
 	}
 }
 
-// Rank records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Rank records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *RankedStub[K, V]) Rank(ctx context.Context, key K) (V, error) {
 	call := RankedRankCall[K, V]{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnRank.MethodStub, &call, stub.Arms[RankedRankCall[K, V], RankedRankReturn[K, V]]{
@@ -280,9 +250,8 @@ func (s *RankedStub[K, V]) Rank(ctx context.Context, key K) (V, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *RankedResetStub[K, V]) invoke(ctx context.Context) func() RankedResetReturn[K, V] {
 	if s.fn == nil {
 		return nil
@@ -293,12 +262,8 @@ func (s *RankedResetStub[K, V]) invoke(ctx context.Context) func() RankedResetRe
 	}
 }
 
-// Reset records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Reset records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *RankedStub[K, V]) Reset(ctx context.Context) error {
 	call := RankedResetCall[K, V]{Ctx: ctx}
 	r := stub.Answer(s.OnReset.MethodStub, &call, stub.Arms[RankedResetCall[K, V], RankedResetReturn[K, V]]{
@@ -312,4 +277,4 @@ func (s *RankedStub[K, V]) Reset(ctx context.Context) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:65734e6056ee584618332955e802c9ce98bf75e1054bd8d0e289419479d1613b
+// dokimi:provenance sha256:4c479f2b7072a95a27a19fe5adcdf92ee4635db8989ab51994066a7573667d93

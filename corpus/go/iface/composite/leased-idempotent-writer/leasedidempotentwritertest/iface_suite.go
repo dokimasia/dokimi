@@ -7,7 +7,7 @@ package leasedidempotentwritertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	leasedidempotentwriter "go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer"
 )
 
@@ -48,33 +48,30 @@ func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 	return conform.Suite[leasedidempotentwriter.LeasedWriter]{Declaration: "LeasedWriter"}
 }
 
-// RunLeasedWriter applies the checks of LeasedWriter, and the checks that
-// opts add, to a fresh subject of newSubject for each check.
-func RunLeasedWriter[T leasedidempotentwriter.LeasedWriter](t *testing.T, newSubject func() T, opts ...LeasedWriterOption) {
+// RunLeasedWriterSuite applies the checks of LeasedWriter, and the checks
+// that opts add, to a fresh subject of newSubject for each check.
+func RunLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
+	t *testing.T,
+	newSubject func() T,
+	opts ...LeasedWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, LeasedWriterSuite(), func(*LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject() }, opts...)
+	RunLeasedWriterSuiteFromHandle(t, func(*LeasedWriterHandle) T { return newSubject() }, opts...)
 }
 
-// RunLeasedWriterOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunLeasedWriterOn[T leasedidempotentwriter.LeasedWriter](t *testing.T, newSubject func(h *LeasedWriterHandle) T, opts ...LeasedWriterOption) {
+// RunLeasedWriterSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunLeasedWriterSuiteFromHandle[T leasedidempotentwriter.LeasedWriter](
+	t *testing.T,
+	newSubject func(h *LeasedWriterHandle) T,
+	opts ...LeasedWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, LeasedWriterSuite(), func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		LeasedWriterSuite(),
+		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
+		opts...)
 }
 
-// ControlLeasedWriter applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlLeasedWriter[T leasedidempotentwriter.LeasedWriter](t *testing.T, newControl func() T, opts ...LeasedWriterOption) {
-	t.Helper()
-	conform.Control(t, LeasedWriterSuite(), func(*LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newControl() }, opts...)
-}
-
-// ControlLeasedWriterOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlLeasedWriterOn[T leasedidempotentwriter.LeasedWriter](t *testing.T, newControl func(h *LeasedWriterHandle) T, opts ...LeasedWriterOption) {
-	t.Helper()
-	conform.Control(t, LeasedWriterSuite(), func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:4001997fa92f88e7cbcd4db04165c2808f78c1f232fcb1ad09c0a61a36467841
+// dokimi:provenance sha256:259f2976653c24454ccd0b1f6c4efbc982ec62857fc284db276a56caa0c49c15

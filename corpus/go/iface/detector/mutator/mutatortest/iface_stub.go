@@ -10,117 +10,102 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator"
+	"go.dokimi.dev/stub"
 )
 
-// MutatorTouchCall records one invocation of Mutator.Touch.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MutatorTouchCall records one call of Mutator.Touch.
 type MutatorTouchCall struct {
 	Ctx context.Context
 	Key string
 }
 
-// --- Per-method configuration ---
-
-// MutatorTouchStub controls how the double answers Touch and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MutatorTouchStub configures Touch and records its calls. Touch returns
+// no error, so a fault armed through it fails the test.
 type MutatorTouchStub struct {
 	*stub.MethodStub[MutatorTouchCall]
 
 	fn func(context.Context, string)
 }
 
-// Func supplies a body for Touch, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Touch answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Touch from its
+// arguments.
 func (s *MutatorTouchStub) Func(fn func(context.Context, string)) *MutatorTouchStub {
 	s.fn = fn
 	return s
 }
 
-// --- MutatorStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// MutatorStubOption configures a [MutatorStub] at construction time.
+// MutatorStubOption configures a [MutatorStub] at its construction.
 type MutatorStubOption func(*MutatorStub)
 
-// MutatorStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// MutatorStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func MutatorStubStrict() MutatorStubOption {
 	return func(s *MutatorStub) { s.strict = true }
 }
 
-// MutatorStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// MutatorStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func MutatorStubDelegateTo(impl mutator.Mutator) MutatorStubOption {
 	return func(s *MutatorStub) {
 		s.OnTouch.Func(impl.Touch)
 	}
 }
 
-// MutatorStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// MutatorStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func MutatorStubWithClock(clk assert.Clock) MutatorStubOption {
 	return func(s *MutatorStub) { s.group.SetClock(clk) }
 }
 
-// MutatorStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// MutatorStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func MutatorStubWithRandSource(src rand.Source) MutatorStubOption {
 	return func(s *MutatorStub) { s.group.SetRandSource(src) }
 }
 
-// MutatorStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// MutatorStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func MutatorStubBenchMode() MutatorStubOption {
 	return func(s *MutatorStub) { s.group.BenchMode() }
 }
 
-// MutatorStubWithLatency makes every method sleep d before answering, for
-// a test standing in for a slow dependency rather than one slow method.
-// Pair it with MutatorStubWithClock, or d elapses in wall time.
+// MutatorStubWithLatency returns the option that makes every method sleep
+// d before it returns. Without MutatorStubWithClock, d passes in real
+// time.
 func MutatorStubWithLatency(d time.Duration) MutatorStubOption {
 	return func(s *MutatorStub) { s.group.SetLatency(d) }
 }
 
-// WithMutatorTouch sets Touch's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithMutatorTouch returns the option that sets the function of Touch.
 func WithMutatorTouch(fn func(context.Context, string)) MutatorStubOption {
 	return func(s *MutatorStub) { s.OnTouch.Func(fn) }
 }
 
-// MutatorStub is a recording test double for Mutator.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// MutatorStub is a recording test double of Mutator. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type MutatorStub struct {
 	OnTouch *MutatorTouchStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that MutatorStub satisfies Mutator.
+// The compiler checks that MutatorStub implements Mutator.
 var _ mutator.Mutator = (*MutatorStub)(nil)
 
-// NewMutatorStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewMutatorStub returns a double of Mutator that reports its failures to
+// tb and applies opts. The double checks the expected counts of calls at
+// the end of the test. With a nil tb, the double reports nothing.
 func NewMutatorStub(tb assert.TB, opts ...MutatorStubOption) *MutatorStub {
 	s := &MutatorStub{
 		OnTouch: &MutatorTouchStub{MethodStub: stub.NewMethodStub[MutatorTouchCall](tb, "Mutator.Touch")},
@@ -138,11 +123,8 @@ func NewMutatorStub(tb assert.TB, opts ...MutatorStubOption) *MutatorStub {
 	return s
 }
 
-// NewMutatorStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewMutatorStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewMutatorStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MutatorStubOption) *MutatorStub {
 	return NewMutatorStub(tb, append([]MutatorStubOption{
 		MutatorStubWithClock(clk),
@@ -150,18 +132,15 @@ func NewMutatorStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MutatorStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
 func (s *MutatorTouchStub) invokeVoid(ctx context.Context, key string) func() struct{} {
 	if s.fn == nil {
 		return nil
@@ -172,12 +151,8 @@ func (s *MutatorTouchStub) invokeVoid(ctx context.Context, key string) func() st
 	}
 }
 
-// Touch records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Touch records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *MutatorStub) Touch(ctx context.Context, key string) {
 	call := MutatorTouchCall{Ctx: ctx, Key: key}
 	stub.Answer(s.OnTouch.MethodStub, &call, stub.Arms[MutatorTouchCall, struct{}]{
@@ -185,4 +160,4 @@ func (s *MutatorStub) Touch(ctx context.Context, key string) {
 	})
 }
 
-// dokimi:provenance sha256:c2a948bc1d2720a7e5ca9564ff6b0c1d4e9aed9549b65c8872b536f4052fa9e2
+// dokimi:provenance sha256:b93d2e7f91971538ab0a0c17cf0043dadfccea2a43fdbe76ce379c420ffd5520

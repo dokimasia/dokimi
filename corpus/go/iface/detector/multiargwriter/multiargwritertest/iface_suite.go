@@ -7,7 +7,7 @@ package multiargwritertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiargwriter"
 )
 
@@ -48,33 +48,30 @@ func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
 	return conform.Suite[multiargwriter.MultiArgWriter]{Declaration: "MultiArgWriter"}
 }
 
-// RunMultiArgWriter applies the checks of MultiArgWriter, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunMultiArgWriter[T multiargwriter.MultiArgWriter](t *testing.T, newSubject func() T, opts ...MultiArgWriterOption) {
+// RunMultiArgWriterSuite applies the checks of MultiArgWriter, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
+	t *testing.T,
+	newSubject func() T,
+	opts ...MultiArgWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, MultiArgWriterSuite(), func(*MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject() }, opts...)
+	RunMultiArgWriterSuiteFromHandle(t, func(*MultiArgWriterHandle) T { return newSubject() }, opts...)
 }
 
-// RunMultiArgWriterOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunMultiArgWriterOn[T multiargwriter.MultiArgWriter](t *testing.T, newSubject func(h *MultiArgWriterHandle) T, opts ...MultiArgWriterOption) {
+// RunMultiArgWriterSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunMultiArgWriterSuiteFromHandle[T multiargwriter.MultiArgWriter](
+	t *testing.T,
+	newSubject func(h *MultiArgWriterHandle) T,
+	opts ...MultiArgWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, MultiArgWriterSuite(), func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		MultiArgWriterSuite(),
+		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
+		opts...)
 }
 
-// ControlMultiArgWriter applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlMultiArgWriter[T multiargwriter.MultiArgWriter](t *testing.T, newControl func() T, opts ...MultiArgWriterOption) {
-	t.Helper()
-	conform.Control(t, MultiArgWriterSuite(), func(*MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newControl() }, opts...)
-}
-
-// ControlMultiArgWriterOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlMultiArgWriterOn[T multiargwriter.MultiArgWriter](t *testing.T, newControl func(h *MultiArgWriterHandle) T, opts ...MultiArgWriterOption) {
-	t.Helper()
-	conform.Control(t, MultiArgWriterSuite(), func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:f5a242d623ad9338e78cdf1ed15273603ba37b50f771101e7b1584f77f15ac31
+// dokimi:provenance sha256:1586be844d417cb8c74cfd75e02240d175b1ac8eb9a02615e29cdf414ece1df2

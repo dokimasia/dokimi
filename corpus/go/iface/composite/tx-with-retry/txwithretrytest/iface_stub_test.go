@@ -12,27 +12,91 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry/txwithretrytest"
+	"go.dokimi.dev/stub"
 )
 
-// txWithRetryStubBeginSubject binds Begin into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func txWithRetryStubBeginSubject(tb assert.TB) stub.Subject[txwithretrytest.TxWithRetryBeginCall, txwithretrytest.TxWithRetryBeginReturn] {
+// txWithRetryStubBeginArgs returns the samples of the arguments of Begin.
+func txWithRetryStubBeginArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// txWithRetryStubBegin calls Begin of s with the samples of its arguments.
+func txWithRetryStubBegin(tb assert.TB, s *txwithretrytest.TxWithRetryStub) error {
+	tb.Helper()
+	a0 := txWithRetryStubBeginArgs(tb)
+	return s.Begin(a0)
+}
+
+// txWithRetryStubBeginPins returns the samples of the results of Begin,
+// with a new error as its error result.
+func txWithRetryStubBeginPins() error {
+	want0 := errors.New("Begin-returns")
+	return want0
+}
+
+// txWithRetryStubCommitArgs returns the samples of the arguments of
+// Commit.
+func txWithRetryStubCommitArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// txWithRetryStubCommit calls Commit of s with the samples of its
+// arguments.
+func txWithRetryStubCommit(tb assert.TB, s *txwithretrytest.TxWithRetryStub) error {
+	tb.Helper()
+	a0 := txWithRetryStubCommitArgs(tb)
+	return s.Commit(a0)
+}
+
+// txWithRetryStubCommitPins returns the samples of the results of Commit,
+// with a new error as its error result.
+func txWithRetryStubCommitPins() error {
+	want0 := errors.New("Commit-returns")
+	return want0
+}
+
+// txWithRetryStubRollbackArgs returns the samples of the arguments of
+// Rollback.
+func txWithRetryStubRollbackArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// txWithRetryStubRollback calls Rollback of s with the samples of its
+// arguments.
+func txWithRetryStubRollback(tb assert.TB, s *txwithretrytest.TxWithRetryStub) error {
+	tb.Helper()
+	a0 := txWithRetryStubRollbackArgs(tb)
+	return s.Rollback(a0)
+}
+
+// txWithRetryStubRollbackPins returns the samples of the results of
+// Rollback, with a new error as its error result.
+func txWithRetryStubRollbackPins() error {
+	want0 := errors.New("Rollback-returns")
+	return want0
+}
+
+// txWithRetryStubBeginSubject returns the subject of [stub.Behaviour] for
+// Begin. The subject calls a new double that reports to tb.
+func txWithRetryStubBeginSubject(
+	tb assert.TB,
+) stub.Subject[txwithretrytest.TxWithRetryBeginCall, txwithretrytest.TxWithRetryBeginReturn] {
 	tb.Helper()
 	s := txwithretrytest.NewTxWithRetryStub(tb)
 	return stub.Subject[txwithretrytest.TxWithRetryBeginCall, txwithretrytest.TxWithRetryBeginReturn]{
 		Stub: s.OnBegin.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Begin(a0)
+			_ = txWithRetryStubBegin(tb, s)
 		},
 		Result: func() txwithretrytest.TxWithRetryBeginReturn {
-			var a0 context.Context
-			got0 := s.Begin(a0)
+			got0 := txWithRetryStubBegin(tb, s)
 			return txwithretrytest.TxWithRetryBeginReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -43,98 +107,26 @@ func txWithRetryStubBeginSubject(tb assert.TB) stub.Subject[txwithretrytest.TxWi
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Begin(a0)
+			r0 := txWithRetryStubBegin(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestTxWithRetryStubBegin pins how Begin answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestTxWithRetryStubBegin(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Begin", txWithRetryStubBeginSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var a0 context.Context
-		_ = s.Begin(a0)
-		got := s.OnBegin.AssertCalledOnce(t, "Begin must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var seen []txwithretrytest.TxWithRetryBeginCall
-		s.OnBegin.OnRecord(func(c txwithretrytest.TxWithRetryBeginCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Begin(a0)
-		_ = s.Begin(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Begin call")
-	})
-
-	t.Run("wires WithTxWithRetryBegin at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.WithTxWithRetryBegin(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Begin(a0)
-		assert.True(t, called, "WithTxWithRetryBegin must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Begin-failing")
-		s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Begin(a0)
-		assert.ErrorIs(t, r0, want, "Begin must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var want0 error
-		s.OnBegin.Returns(want0)
-		var a0 context.Context
-		_ = s.Begin(a0)
-		s.ResetCalls()
-		_ = s.Begin(a0)
-		s.OnBegin.AssertCalledOnce(t, "Begin must record the call that followed the reset")
-	})
-}
-
-// txWithRetryStubCommitSubject binds Commit into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func txWithRetryStubCommitSubject(tb assert.TB) stub.Subject[txwithretrytest.TxWithRetryCommitCall, txwithretrytest.TxWithRetryCommitReturn] {
+// txWithRetryStubCommitSubject returns the subject of [stub.Behaviour] for
+// Commit. The subject calls a new double that reports to tb.
+func txWithRetryStubCommitSubject(
+	tb assert.TB,
+) stub.Subject[txwithretrytest.TxWithRetryCommitCall, txwithretrytest.TxWithRetryCommitReturn] {
 	tb.Helper()
 	s := txwithretrytest.NewTxWithRetryStub(tb)
 	return stub.Subject[txwithretrytest.TxWithRetryCommitCall, txwithretrytest.TxWithRetryCommitReturn]{
 		Stub: s.OnCommit.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Commit(a0)
+			_ = txWithRetryStubCommit(tb, s)
 		},
 		Result: func() txwithretrytest.TxWithRetryCommitReturn {
-			var a0 context.Context
-			got0 := s.Commit(a0)
+			got0 := txWithRetryStubCommit(tb, s)
 			return txwithretrytest.TxWithRetryCommitReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -145,98 +137,26 @@ func txWithRetryStubCommitSubject(tb assert.TB) stub.Subject[txwithretrytest.TxW
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Commit(a0)
+			r0 := txWithRetryStubCommit(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestTxWithRetryStubCommit pins how Commit answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestTxWithRetryStubCommit(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Commit", txWithRetryStubCommitSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var a0 context.Context
-		_ = s.Commit(a0)
-		got := s.OnCommit.AssertCalledOnce(t, "Commit must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var seen []txwithretrytest.TxWithRetryCommitCall
-		s.OnCommit.OnRecord(func(c txwithretrytest.TxWithRetryCommitCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Commit(a0)
-		_ = s.Commit(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Commit call")
-	})
-
-	t.Run("wires WithTxWithRetryCommit at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.WithTxWithRetryCommit(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Commit(a0)
-		assert.True(t, called, "WithTxWithRetryCommit must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Commit-failing")
-		s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Commit(a0)
-		assert.ErrorIs(t, r0, want, "Commit must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var want0 error
-		s.OnCommit.Returns(want0)
-		var a0 context.Context
-		_ = s.Commit(a0)
-		s.ResetCalls()
-		_ = s.Commit(a0)
-		s.OnCommit.AssertCalledOnce(t, "Commit must record the call that followed the reset")
-	})
-}
-
-// txWithRetryStubRollbackSubject binds Rollback into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func txWithRetryStubRollbackSubject(tb assert.TB) stub.Subject[txwithretrytest.TxWithRetryRollbackCall, txwithretrytest.TxWithRetryRollbackReturn] {
+// txWithRetryStubRollbackSubject returns the subject of [stub.Behaviour]
+// for Rollback. The subject calls a new double that reports to tb.
+func txWithRetryStubRollbackSubject(
+	tb assert.TB,
+) stub.Subject[txwithretrytest.TxWithRetryRollbackCall, txwithretrytest.TxWithRetryRollbackReturn] {
 	tb.Helper()
 	s := txwithretrytest.NewTxWithRetryStub(tb)
 	return stub.Subject[txwithretrytest.TxWithRetryRollbackCall, txwithretrytest.TxWithRetryRollbackReturn]{
 		Stub: s.OnRollback.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Rollback(a0)
+			_ = txWithRetryStubRollback(tb, s)
 		},
 		Result: func() txwithretrytest.TxWithRetryRollbackReturn {
-			var a0 context.Context
-			got0 := s.Rollback(a0)
+			got0 := txWithRetryStubRollback(tb, s)
 			return txwithretrytest.TxWithRetryRollbackReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -247,176 +167,543 @@ func txWithRetryStubRollbackSubject(tb assert.TB) stub.Subject[txwithretrytest.T
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Rollback(a0)
+			r0 := txWithRetryStubRollback(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestTxWithRetryStubRollback pins how Rollback answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestTxWithRetryStubRollback(t *testing.T) {
-	t.Parallel()
+// txWithRetryStubInstance is the instance of a
+// txwithretrytest.TxWithRetryStub that the checks of the constructors and
+// the options drive.
+type txWithRetryStubInstance = stub.Instance[txwithretrytest.TxWithRetryBeginCall]
 
-	stub.Behaviour(t, "Rollback", txWithRetryStubRollbackSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var a0 context.Context
-		_ = s.Rollback(a0)
-		got := s.OnRollback.AssertCalledOnce(t, "Rollback must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var seen []txwithretrytest.TxWithRetryRollbackCall
-		s.OnRollback.OnRecord(func(c txwithretrytest.TxWithRetryRollbackCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Rollback(a0)
-		_ = s.Rollback(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Rollback call")
-	})
-
-	t.Run("wires WithTxWithRetryRollback at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.WithTxWithRetryRollback(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Rollback(a0)
-		assert.True(t, called, "WithTxWithRetryRollback must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Rollback-failing")
-		s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Rollback(a0)
-		assert.ErrorIs(t, r0, want, "Rollback must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := txwithretrytest.NewTxWithRetryStub(t)
-		var want0 error
-		s.OnRollback.Returns(want0)
-		var a0 context.Context
-		_ = s.Rollback(a0)
-		s.ResetCalls()
-		_ = s.Rollback(a0)
-		s.OnRollback.AssertCalledOnce(t, "Rollback must record the call that followed the reset")
-	})
-}
-
-// txWithRetryStubDouble describes how to build a TxWithRetryStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// Begin stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func txWithRetryStubDouble() stub.Double[txwithretrytest.TxWithRetryBeginCall] {
-	instance := func(s *txwithretrytest.TxWithRetryStub) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-		return stub.Instance[txwithretrytest.TxWithRetryBeginCall]{
-			Stub: s.OnBegin.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_ = s.Begin(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[txwithretrytest.TxWithRetryBeginCall]{
-		New: func(tb assert.TB) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-			return instance(txwithretrytest.NewTxWithRetryStub(tb))
+// txWithRetryStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call Begin alone.
+func txWithRetryStubInstanceOf(tb assert.TB, s *txwithretrytest.TxWithRetryStub) txWithRetryStubInstance {
+	tb.Helper()
+	return txWithRetryStubInstance{
+		Stub: s.OnBegin.MethodStub,
+		Call: func() {
+			_ = txWithRetryStubBegin(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-			return instance(txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-			return instance(txwithretrytest.NewTxWithRetryStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-			return instance(txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-			return instance(txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[txwithretrytest.TxWithRetryBeginCall] {
-			return instance(txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestTxWithRetryStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestTxWithRetryStubOptions(t *testing.T) {
+// TestTxWithRetryStub checks the methods, the constructors and the options
+// of the double TxWithRetryStub.
+func TestTxWithRetryStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, txWithRetryStubDouble())
+	t.Run("Begin", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Begin", txWithRetryStubBeginSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			_ = txWithRetryStubBegin(t, s)
+			got := s.OnBegin.AssertCalledOnce(t, "Begin records the call")
+			a0 := txWithRetryStubBeginArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			var seen []txwithretrytest.TxWithRetryBeginCall
+			s.OnBegin.OnRecord(func(c txwithretrytest.TxWithRetryBeginCall) { seen = append(seen, c) })
+			_ = txWithRetryStubBegin(t, s)
+			_ = txWithRetryStubBegin(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Begin")
+		})
+	})
+
+	t.Run("Commit", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Commit", txWithRetryStubCommitSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			_ = txWithRetryStubCommit(t, s)
+			got := s.OnCommit.AssertCalledOnce(t, "Commit records the call")
+			a0 := txWithRetryStubCommitArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			var seen []txwithretrytest.TxWithRetryCommitCall
+			s.OnCommit.OnRecord(func(c txwithretrytest.TxWithRetryCommitCall) { seen = append(seen, c) })
+			_ = txWithRetryStubCommit(t, s)
+			_ = txWithRetryStubCommit(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Commit")
+		})
+	})
+
+	t.Run("Rollback", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Rollback", txWithRetryStubRollbackSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			_ = txWithRetryStubRollback(t, s)
+			got := s.OnRollback.AssertCalledOnce(t, "Rollback records the call")
+			a0 := txWithRetryStubRollbackArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			var seen []txwithretrytest.TxWithRetryRollbackCall
+			s.OnRollback.OnRecord(func(c txwithretrytest.TxWithRetryRollbackCall) { seen = append(seen, c) })
+			_ = txWithRetryStubRollback(t, s)
+			_ = txWithRetryStubRollback(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Rollback")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) txWithRetryStubInstance {
+			return txWithRetryStubInstanceOf(tb, txwithretrytest.NewTxWithRetryStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Begin", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			_ = txWithRetryStubBegin(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnBegin.CallCount(), 0, "ResetCalls clears the calls of Begin")
+		})
+
+		t.Run("keeps the results of Returns of Begin", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			want0 := txWithRetryStubBeginPins()
+			s.OnBegin.Returns(want0)
+			s.ResetCalls()
+			got0 := txWithRetryStubBegin(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Begin")
+		})
+
+		t.Run("clears the recorded calls of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			_ = txWithRetryStubCommit(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCommit.CallCount(), 0, "ResetCalls clears the calls of Commit")
+		})
+
+		t.Run("keeps the results of Returns of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			want0 := txWithRetryStubCommitPins()
+			s.OnCommit.Returns(want0)
+			s.ResetCalls()
+			got0 := txWithRetryStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Commit")
+		})
+
+		t.Run("clears the recorded calls of Rollback", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			_ = txWithRetryStubRollback(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRollback.CallCount(), 0, "ResetCalls clears the calls of Rollback")
+		})
+
+		t.Run("keeps the results of Returns of Rollback", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			want0 := txWithRetryStubRollbackPins()
+			s.OnRollback.Returns(want0)
+			s.ResetCalls()
+			got0 := txWithRetryStubRollback(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Rollback")
+		})
+	})
+
+	t.Run("NewTxWithRetryStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) txWithRetryStubInstance {
+			return txWithRetryStubInstanceOf(tb, txwithretrytest.NewTxWithRetryStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewTxWithRetryStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Begin with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Begin-failing")
+			s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
+			r0 := txWithRetryStubBegin(t, s)
+			assert.ErrorIs(t, r0, want, "Begin fails with the error of NewTxWithRetryStubFailing")
+		})
+
+		t.Run("fails Commit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-failing")
+			s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
+			r0 := txWithRetryStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of NewTxWithRetryStubFailing")
+		})
+
+		t.Run("fails Rollback with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rollback-failing")
+			s := txwithretrytest.NewTxWithRetryStubFailing(t, want)
+			r0 := txWithRetryStubRollback(t, s)
+			assert.ErrorIs(t, r0, want, "Rollback fails with the error of NewTxWithRetryStubFailing")
+		})
+	})
+
+	t.Run("TxWithRetryStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) txWithRetryStubInstance {
+			return txWithRetryStubInstanceOf(
+				tb,
+				txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubStrict()),
+			)
+		})
+	})
+
+	t.Run("TxWithRetryStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Begin to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := txwithretrytest.NewTxWithRetryStub(t)
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubDelegateTo(inner))
+			_ = txWithRetryStubBegin(t, s)
+			inner.OnBegin.AssertCalledOnce(t, "Begin calls the implementation")
+		})
+
+		t.Run("fails Begin with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Begin-delegate")
+			inner := txwithretrytest.NewTxWithRetryStub(t)
+			inner.OnBegin.Faults(want, 1)
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubDelegateTo(inner))
+			r0 := txWithRetryStubBegin(t, s)
+			assert.ErrorIs(t, r0, want, "Begin fails with the error of the implementation")
+		})
+
+		t.Run("passes Commit to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := txwithretrytest.NewTxWithRetryStub(t)
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubDelegateTo(inner))
+			_ = txWithRetryStubCommit(t, s)
+			inner.OnCommit.AssertCalledOnce(t, "Commit calls the implementation")
+		})
+
+		t.Run("fails Commit with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-delegate")
+			inner := txwithretrytest.NewTxWithRetryStub(t)
+			inner.OnCommit.Faults(want, 1)
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubDelegateTo(inner))
+			r0 := txWithRetryStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of the implementation")
+		})
+
+		t.Run("passes Rollback to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := txwithretrytest.NewTxWithRetryStub(t)
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubDelegateTo(inner))
+			_ = txWithRetryStubRollback(t, s)
+			inner.OnRollback.AssertCalledOnce(t, "Rollback calls the implementation")
+		})
+
+		t.Run("fails Rollback with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rollback-delegate")
+			inner := txwithretrytest.NewTxWithRetryStub(t)
+			inner.OnRollback.Faults(want, 1)
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubDelegateTo(inner))
+			r0 := txWithRetryStubRollback(t, s)
+			assert.ErrorIs(t, r0, want, "Rollback fails with the error of the implementation")
+		})
+	})
+
+	t.Run("TxWithRetryStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) txWithRetryStubInstance {
+			return txWithRetryStubInstanceOf(
+				tb,
+				txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("TxWithRetryStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) txWithRetryStubInstance {
+			return txWithRetryStubInstanceOf(
+				tb,
+				txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("TxWithRetryStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) txWithRetryStubInstance {
+			return txWithRetryStubInstanceOf(
+				tb,
+				txwithretrytest.NewTxWithRetryStub(tb, txwithretrytest.TxWithRetryStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("TxWithRetryStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) txWithRetryStubInstance {
+			return txWithRetryStubInstanceOf(
+				tb,
+				txwithretrytest.NewTxWithRetryStub(
+					tb,
+					txwithretrytest.TxWithRetryStubWithClock(clk),
+					txwithretrytest.TxWithRetryStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("TxWithRetryStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Begin with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Begin-failing")
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubFailing(want))
+			r0 := txWithRetryStubBegin(t, s)
+			assert.ErrorIs(t, r0, want, "Begin fails with the error of TxWithRetryStubFailing")
+		})
+
+		t.Run("fails Commit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-failing")
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubFailing(want))
+			r0 := txWithRetryStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of TxWithRetryStubFailing")
+		})
+
+		t.Run("fails Rollback with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rollback-failing")
+			s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubFailing(want))
+			r0 := txWithRetryStubRollback(t, s)
+			assert.ErrorIs(t, r0, want, "Rollback fails with the error of TxWithRetryStubFailing")
+		})
+	})
+
+	t.Run("WithTxWithRetryBegin", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Begin", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := txwithretrytest.NewTxWithRetryStub(
+				t,
+				txwithretrytest.WithTxWithRetryBegin(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = txWithRetryStubBegin(t, s)
+			assert.True(t, called, "WithTxWithRetryBegin sets the function of Begin")
+		})
+	})
+
+	t.Run("WithTxWithRetryCommit", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Commit", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := txwithretrytest.NewTxWithRetryStub(
+				t,
+				txwithretrytest.WithTxWithRetryCommit(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = txWithRetryStubCommit(t, s)
+			assert.True(t, called, "WithTxWithRetryCommit sets the function of Commit")
+		})
+	})
+
+	t.Run("WithTxWithRetryRollback", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Rollback", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := txwithretrytest.NewTxWithRetryStub(
+				t,
+				txwithretrytest.WithTxWithRetryRollback(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = txWithRetryStubRollback(t, s)
+			assert.True(t, called, "WithTxWithRetryRollback sets the function of Rollback")
+		})
+	})
 }
 
-// TestTxWithRetryStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestTxWithRetryStubDelegateTo(t *testing.T) {
+// TestTxWithRetryBeginStub checks the methods of TxWithRetryBeginStub,
+// which configures Begin.
+func TestTxWithRetryBeginStub(t *testing.T) {
 	t.Parallel()
 
-	inner := txwithretrytest.NewTxWithRetryStub(t)
-	s := txwithretrytest.NewTxWithRetryStub(t, txwithretrytest.TxWithRetryStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Begin to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Begin(a0)
-		inner.OnBegin.AssertCalledOnce(t, "Begin must reach the wrapped implementation")
+		t.Run("sets the results of each call of Begin", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			want0 := txWithRetryStubBeginPins()
+			s.OnBegin.Returns(want0)
+			got0 := txWithRetryStubBegin(t, s)
+			assert.ErrorIs(t, got0, want0, "Begin returns the error that Returns sets")
+		})
+
+		t.Run("configures Begin for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := txwithretrytest.NewTxWithRetryStub(r)
+			s.OnBegin.Strict()
+			var want0 error
+			s.OnBegin.Returns(want0)
+			_ = txWithRetryStubBegin(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Begin")
+		})
 	})
 
-	t.Run("surfaces what Begin answered", func(t *testing.T) {
-		want := errors.New("Begin-delegate")
-		inner.OnBegin.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Begin(a0)
-		assert.ErrorIs(t, r0, want, "Begin must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Commit to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Commit(a0)
-		inner.OnCommit.AssertCalledOnce(t, "Commit must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Commit answered", func(t *testing.T) {
-		want := errors.New("Commit-delegate")
-		inner.OnCommit.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Commit(a0)
-		assert.ErrorIs(t, r0, want, "Commit must surface the wrapped answer")
-	})
-
-	t.Run("forwards Rollback to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Rollback(a0)
-		inner.OnRollback.AssertCalledOnce(t, "Rollback must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Rollback answered", func(t *testing.T) {
-		want := errors.New("Rollback-delegate")
-		inner.OnRollback.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Rollback(a0)
-		assert.ErrorIs(t, r0, want, "Rollback must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Begin to the function", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			var got0 context.Context
+			s.OnBegin.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = txWithRetryStubBegin(t, s)
+			a0 := txWithRetryStubBeginArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:e888862eca4a88fb05c98ac5b92d42b55027e95748294007d05281e61d742dfc
+// TestTxWithRetryCommitStub checks the methods of TxWithRetryCommitStub,
+// which configures Commit.
+func TestTxWithRetryCommitStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			want0 := txWithRetryStubCommitPins()
+			s.OnCommit.Returns(want0)
+			got0 := txWithRetryStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "Commit returns the error that Returns sets")
+		})
+
+		t.Run("configures Commit for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := txwithretrytest.NewTxWithRetryStub(r)
+			s.OnCommit.Strict()
+			var want0 error
+			s.OnCommit.Returns(want0)
+			_ = txWithRetryStubCommit(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Commit")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Commit to the function", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			var got0 context.Context
+			s.OnCommit.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = txWithRetryStubCommit(t, s)
+			a0 := txWithRetryStubCommitArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// TestTxWithRetryRollbackStub checks the methods of
+// TxWithRetryRollbackStub, which configures Rollback.
+func TestTxWithRetryRollbackStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Rollback", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			want0 := txWithRetryStubRollbackPins()
+			s.OnRollback.Returns(want0)
+			got0 := txWithRetryStubRollback(t, s)
+			assert.ErrorIs(t, got0, want0, "Rollback returns the error that Returns sets")
+		})
+
+		t.Run("configures Rollback for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := txwithretrytest.NewTxWithRetryStub(r)
+			s.OnRollback.Strict()
+			var want0 error
+			s.OnRollback.Returns(want0)
+			_ = txWithRetryStubRollback(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Rollback")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Rollback to the function", func(t *testing.T) {
+			t.Parallel()
+			s := txwithretrytest.NewTxWithRetryStub(t)
+			var got0 context.Context
+			s.OnRollback.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = txWithRetryStubRollback(t, s)
+			a0 := txWithRetryStubRollbackArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:492d5b73969e5e49aa8481931a992d70b06d3b7618ce7d9c31dac2d15b625942

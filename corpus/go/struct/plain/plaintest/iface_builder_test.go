@@ -5,133 +5,201 @@
 package plaintest_test
 
 import (
+	"slices"
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/struct/plain"
 	"go.dokimi.dev/dokimi/corpus/go/struct/plain/plaintest"
 )
 
-// TestItemBuilderConstruction pins what the constructors produce.
-func TestItemBuilderConstruction(t *testing.T) {
+// TestItemBuilder checks the constructors and the methods of ItemBuilder.
+func TestItemBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewItemBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var seed plain.Item
-		seed.ID = "ID-a"
-		seed.Count = 42
-		got := plaintest.NewItemBuilderFrom(seed).Build()
-		assert.Equal(t, got.ID, seed.ID, "From keeps the member it was given")
-		assert.Equal(t, got.Count, seed.Count, "From keeps the member it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed plain.Item
+			seed.ID = "ID-a"
+			seed.Count = 42
+			got := plaintest.NewItemBuilderFrom(seed).Build()
+			expect.Equal(t, got.ID, seed.ID, "NewItemBuilderFrom keeps ID")
+			expect.Equal(t, got.Count, seed.Count, "NewItemBuilderFrom keeps Count")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := plaintest.NewItemBuilder()
+			b.WithTags("")
+			want := b.Build()
+			assert.Equal(
+				t,
+				plaintest.NewItemBuilderFrom(want).Build(),
+				want,
+				"NewItemBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithID", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to ID", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "ID-a"
+			got := plaintest.NewItemBuilder().WithID(want).Build()
+			assert.Equal(t, got.ID, want, "WithID writes its argument to ID")
+		})
+
+		t.Run("replaces the value of ID", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "ID-a"
+			want = "ID-b"
+			got := plaintest.NewItemBuilder().WithID(first).WithID(want).Build()
+			assert.Equal(t, got.ID, want, "the second call of WithID replaces the first")
+		})
+	})
+
+	t.Run("WithCount", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Count", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := plaintest.NewItemBuilder().WithCount(want).Build()
+			assert.Equal(t, got.Count, want, "WithCount writes its argument to Count")
+		})
+
+		t.Run("replaces the value of Count", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := plaintest.NewItemBuilder().WithCount(first).WithCount(want).Build()
+			assert.Equal(t, got.Count, want, "the second call of WithCount replaces the first")
+		})
+	})
+
+	t.Run("WithTags", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Tags", func(t *testing.T) {
+			t.Parallel()
+
+			var want []string
+			want = []string{"Tags-a"}
+			got := plaintest.NewItemBuilder().WithTags(want...).Build()
+			assert.Equal(t, got.Tags, want, "WithTags writes its argument to Tags")
+		})
+
+		t.Run("replaces the value of Tags", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []string
+			first = []string{"Tags-a"}
+			want = []string{"Tags-b"}
+			got := plaintest.NewItemBuilder().WithTags(first...).WithTags(want...).Build()
+			assert.Equal(t, got.Tags, want, "the second call of WithTags replaces the first")
+		})
+	})
+
+	t.Run("AppendTags", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("appends to the elements of Tags", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []string
+			first = []string{"Tags-a"}
+			want = []string{"Tags-b"}
+			got := plaintest.NewItemBuilder().WithTags(first...).AppendTags(want...).Build()
+			assert.Equal(
+				t,
+				got.Tags,
+				slices.Concat(first, want),
+				"AppendTags appends its elements after those of WithTags",
+			)
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*plain.Item
+			record := func(v *plain.Item) { got = append(got, v) }
+			plaintest.NewItemBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := plaintest.NewItemBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := plaintest.NewItemBuilder()
+			b.WithTags("")
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+
+		t.Run("copies Tags into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other []string
+			want = []string{"Tags-a"}
+			other = []string{"Tags-b"}
+			original := plaintest.NewItemBuilder().WithTags(want...)
+			before := slices.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *plain.Item) { copy(v.Tags, other) })
+			assert.Equal(
+				t,
+				original.Build().Tags,
+				before,
+				"a change of Tags in the clone leaves the original unchanged",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed plain.Item
+			seed.ID = "ID-a"
+			seed.Count = 42
+			b := plaintest.NewItemBuilder()
+			b.Mutate(func(v *plain.Item) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestItemBuilderSetters pins that each setter writes the member it names,
-// and writes nothing else.
-func TestItemBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithID writes ID", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "ID-a"
-		got := plaintest.NewItemBuilder().WithID(want).Build()
-		assert.Equal(t, got.ID, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithID replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "ID-a"
-		want = "ID-b"
-		got := plaintest.NewItemBuilder().WithID(first).WithID(want).Build()
-		assert.Equal(t, got.ID, want, "the later call wins")
-	})
-
-	t.Run("WithCount writes Count", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := plaintest.NewItemBuilder().WithCount(want).Build()
-		assert.Equal(t, got.Count, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithCount replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := plaintest.NewItemBuilder().WithCount(first).WithCount(want).Build()
-		assert.Equal(t, got.Count, want, "the later call wins")
-	})
-
-	t.Run("WithTags writes Tags", func(t *testing.T) {
-		t.Parallel()
-
-		var want []string
-		want = []string{"Tags-a"}
-		got := plaintest.NewItemBuilder().WithTags(want...).Build()
-		assert.Length(t, got.Tags, 1, "the setter replaces the sequence")
-	})
-
-	t.Run("AppendTags keeps what Tags holds", func(t *testing.T) {
-		t.Parallel()
-
-		got := plaintest.NewItemBuilder().WithTags(*new(string)).AppendTags(*new(string)).Build()
-		assert.Length(t, got.Tags, 2, "the appender adds to the sequence")
-	})
-}
-
-// TestItemBuilderClone pins that a clone can be configured without the
-// original seeing it.
-func TestItemBuilderClone(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Tags is not shared with a clone", func(t *testing.T) {
-		t.Parallel()
-
-		var want, other []string
-		want = []string{"Tags-a"}
-		other = []string{"Tags-b"}
-		original := plaintest.NewItemBuilder().WithTags(want...)
-		clone := original.Clone()
-		clone.Mutate(func(v *plain.Item) { copy(v.Tags, other) })
-		assert.NotEqual(t, original.Build().Tags, other, "writing through a clone must not reach the original")
-	})
-}
-
-// TestItemBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestItemBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*plain.Item
-		record := func(v *plain.Item) { got = append(got, v) }
-		plaintest.NewItemBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := plaintest.NewItemBuilder()
-		original.WithTags(*new(string))
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, plaintest.NewItemBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:bdba80156b756f4741a06afbdd5ad9198b83fed73bb7dde189f155cb7f7df2d1
+// dokimi:provenance sha256:1f5bc55f5ebb28d24e83cf3cfcc7e41e7200c68fadeda84e4ebf321136eeb9ed

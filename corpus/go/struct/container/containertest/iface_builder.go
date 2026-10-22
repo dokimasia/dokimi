@@ -5,207 +5,120 @@
 package containertest
 
 import (
+	"maps"
+	"slices"
 	"time"
 
 	"go.dokimi.dev/dokimi/corpus/go/struct/container"
 )
 
-// ContainerBuilder constructs [Container] values.
-//
-// Start with [NewContainerBuilder] or [NewContainerBuilderFrom], set what
-// you care about, and call [ContainerBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Container breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [ContainerBuilder.Clone] is how one becomes two.
+// ContainerBuilder constructs [Container] values. [NewContainerBuilder]
+// and [NewContainerBuilderFrom] return a new builder. Each setter sets one
+// member and returns the builder, so the calls chain.
+// [ContainerBuilder.Build] returns the value. A builder is not safe for
+// concurrent use.
 type ContainerBuilder[T any] struct {
 	v container.Container[T]
 }
 
-// NewContainerBuilder returns a builder holding the zero value.
-//
-// No member declares a default, so there is nothing to seed. A caller that
-// builds immediately gets the same value a composite literal with no
-// fields would, and the setters are what make it differ.
+// NewContainerBuilder returns a builder of the zero value.
 func NewContainerBuilder[T any]() *ContainerBuilder[T] {
 	return &ContainerBuilder[T]{}
 }
 
-// NewContainerBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewContainerBuilderFrom returns a builder of v.
 func NewContainerBuilderFrom[T any](v container.Container[T]) *ContainerBuilder[T] {
 	return &ContainerBuilder[T]{v: v}
 }
 
-// WithValue replaces Value.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithValue replaces Value with v.
 func (b *ContainerBuilder[T]) WithValue(v T) *ContainerBuilder[T] {
 	b.v.Value = v
 	return b
 }
 
-// WithItems replaces Items with the elements given.
-//
-// Variadic, and replacing: whatever the collection held is discarded,
-// including anything a constructor seeded. AppendItems is the counterpart
-// that keeps it. Called with no arguments this empties the member rather
-// than leaving it alone, which is how a caller clears a seeded default.
+// WithItems replaces the elements of Items with v. A call without
+// arguments empties Items.
 func (b *ContainerBuilder[T]) WithItems(v ...T) *ContainerBuilder[T] {
 	b.v.Items = v
 	return b
 }
 
-// AppendItems adds to Items, keeping what is already there.
-//
-// The counterpart to WithItems, which discards it. Both are offered
-// because a caller extending a seeded default and a caller replacing it
-// want opposite things, and one method cannot mean both.
+// AppendItems appends v to the elements of Items.
 func (b *ContainerBuilder[T]) AppendItems(v ...T) *ContainerBuilder[T] {
 	b.v.Items = append(b.v.Items, v...)
 	return b
 }
 
-// WithLabel replaces Label.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithLabel replaces Label with v.
 func (b *ContainerBuilder[T]) WithLabel(v string) *ContainerBuilder[T] {
 	b.v.Label = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *ContainerBuilder[T]) Mutate(fn func(*container.Container[T])) *ContainerBuilder[T] {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [ContainerBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *ContainerBuilder[T]) Clone() *ContainerBuilder[T] {
 	out := &ContainerBuilder[T]{v: b.v}
-	if b.v.Items != nil {
-		out.v.Items = append([]T(nil), b.v.Items...)
-	}
+	out.v.Items = slices.Clone(b.v.Items)
 	return out
 }
 
-// Build returns the constructed [Container].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [ContainerBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [ContainerBuilder.Clone] returns a builder that shares none of them.
 func (b *ContainerBuilder[T]) Build() container.Container[T] {
 	return b.v
 }
 
-// PairBuilder constructs [Pair] values.
-//
-// Start with [NewPairBuilder] or [NewPairBuilderFrom], set what you care
-// about, and call [PairBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Pair breaks every literal
-// at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [PairBuilder.Clone] is how one becomes two.
+// PairBuilder constructs [Pair] values. [NewPairBuilder] and
+// [NewPairBuilderFrom] return a new builder. Each setter sets one member
+// and returns the builder, so the calls chain. [PairBuilder.Build] returns
+// the value. A builder is not safe for concurrent use.
 type PairBuilder[K comparable, V any] struct {
 	v container.Pair[K, V]
 }
 
-// NewPairBuilder returns a builder holding the zero value.
-//
-// No member declares a default, so there is nothing to seed. A caller that
-// builds immediately gets the same value a composite literal with no
-// fields would, and the setters are what make it differ.
+// NewPairBuilder returns a builder of the zero value.
 func NewPairBuilder[K comparable, V any]() *PairBuilder[K, V] {
 	return &PairBuilder[K, V]{}
 }
 
-// NewPairBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewPairBuilderFrom returns a builder of v.
 func NewPairBuilderFrom[K comparable, V any](v container.Pair[K, V]) *PairBuilder[K, V] {
 	return &PairBuilder[K, V]{v: v}
 }
 
-// WithKey replaces Key.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithKey replaces Key with v.
 func (b *PairBuilder[K, V]) WithKey(v K) *PairBuilder[K, V] {
 	b.v.Key = v
 	return b
 }
 
-// WithValue replaces Value.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithValue replaces Value with v.
 func (b *PairBuilder[K, V]) WithValue(v V) *PairBuilder[K, V] {
 	b.v.Value = v
 	return b
 }
 
-// WithIndex replaces Index wholesale.
-//
-// The whole mapping, not one entry: what the member held is discarded
-// rather than merged into, and the map is kept rather than copied — so a
-// caller that writes to it afterwards changes what was already built.
-// WithIndexEntry is what sets a single key.
+// WithIndex replaces Index with v. The builder keeps v without a copy.
 func (b *PairBuilder[K, V]) WithIndex(v map[K]V) *PairBuilder[K, V] {
 	b.v.Index = v
 	return b
 }
 
-// WithIndexEntry sets one key of Index, allocating on first use.
-//
-// A key already present takes the new value. The allocation is why this is
-// offered at all: a caller writing to the member directly has to check for
-// nil first, and the builder is the thing that knows whether a constructor
-// seeded one.
+// WithIndexEntry sets the key k of Index to v. It allocates the map where
+// Index is nil.
 func (b *PairBuilder[K, V]) WithIndexEntry(k K, v V) *PairBuilder[K, V] {
 	if b.v.Index == nil {
 		b.v.Index = make(map[K]V)
@@ -214,593 +127,333 @@ func (b *PairBuilder[K, V]) WithIndexEntry(k K, v V) *PairBuilder[K, V] {
 	return b
 }
 
-// WithIndexEntries merges entries into Index.
-//
-// Merges rather than replaces: a key already present takes the new value,
-// and keys absent from entries are left alone. Use WithIndex to discard
-// what is there.
+// WithIndexEntries copies each entry of entries into Index. A key of
+// entries replaces the value of that key in Index. It allocates the map
+// where Index is nil.
 func (b *PairBuilder[K, V]) WithIndexEntries(entries map[K]V) *PairBuilder[K, V] {
 	if b.v.Index == nil {
 		b.v.Index = make(map[K]V, len(entries))
 	}
-	for k, v := range entries {
-		b.v.Index[k] = v
-	}
+	maps.Copy(b.v.Index, entries)
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *PairBuilder[K, V]) Mutate(fn func(*container.Pair[K, V])) *PairBuilder[K, V] {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [PairBuilder.Mutate] to replace such a member outright rather than
-// editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *PairBuilder[K, V]) Clone() *PairBuilder[K, V] {
 	out := &PairBuilder[K, V]{v: b.v}
-	if b.v.Index != nil {
-		out.v.Index = make(map[K]V, len(b.v.Index))
-		for k, v := range b.v.Index {
-			out.v.Index[k] = v
-		}
-	}
+	out.v.Index = maps.Clone(b.v.Index)
 	return out
 }
 
-// Build returns the constructed [Pair].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [PairBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [PairBuilder.Clone] returns a builder that shares none of them.
 func (b *PairBuilder[K, V]) Build() container.Pair[K, V] {
 	return b.v
 }
 
-// SoloBuilder constructs [Solo] values.
-//
-// Start with [NewSoloBuilder] or [NewSoloBuilderFrom], set what you care
-// about, and call [SoloBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Solo breaks every literal
-// at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [SoloBuilder.Clone] is how one becomes two.
+// SoloBuilder constructs [Solo] values. [NewSoloBuilder] and
+// [NewSoloBuilderFrom] return a new builder. Each setter sets one member
+// and returns the builder, so the calls chain. [SoloBuilder.Build] returns
+// the value. A builder is not safe for concurrent use.
 type SoloBuilder[K container.Keyable] struct {
 	v container.Solo[K]
 }
 
-// NewSoloBuilder returns a builder holding the zero value.
-//
-// No member declares a default, so there is nothing to seed. A caller that
-// builds immediately gets the same value a composite literal with no
-// fields would, and the setters are what make it differ.
+// NewSoloBuilder returns a builder of the zero value.
 func NewSoloBuilder[K container.Keyable]() *SoloBuilder[K] {
 	return &SoloBuilder[K]{}
 }
 
-// NewSoloBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewSoloBuilderFrom returns a builder of v.
 func NewSoloBuilderFrom[K container.Keyable](v container.Solo[K]) *SoloBuilder[K] {
 	return &SoloBuilder[K]{v: v}
 }
 
-// WithKey replaces Key.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithKey replaces Key with v.
 func (b *SoloBuilder[K]) WithKey(v K) *SoloBuilder[K] {
 	b.v.Key = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *SoloBuilder[K]) Mutate(fn func(*container.Solo[K])) *SoloBuilder[K] {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [SoloBuilder.Mutate] to replace such a member outright rather than
-// editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *SoloBuilder[K]) Clone() *SoloBuilder[K] {
 	out := &SoloBuilder[K]{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Solo].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [SoloBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [SoloBuilder.Clone] returns a builder that shares none of them.
 func (b *SoloBuilder[K]) Build() container.Solo[K] {
 	return b.v
 }
 
 // PartialPairBuilder constructs [PartialPair] values.
-//
-// Start with [NewPartialPairBuilder] or [NewPartialPairBuilderFrom], set
-// what you care about, and call [PartialPairBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to PartialPair breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [PartialPairBuilder.Clone] is how one becomes two.
+// [NewPartialPairBuilder] and [NewPartialPairBuilderFrom] return a new
+// builder. Each setter sets one member and returns the builder, so the
+// calls chain. [PartialPairBuilder.Build] returns the value. A builder is
+// not safe for concurrent use.
 type PartialPairBuilder[K container.Keyable, V any] struct {
 	v container.PartialPair[K, V]
 }
 
-// NewPartialPairBuilder returns a builder holding the zero value.
-//
-// No member declares a default, so there is nothing to seed. A caller that
-// builds immediately gets the same value a composite literal with no
-// fields would, and the setters are what make it differ.
+// NewPartialPairBuilder returns a builder of the zero value.
 func NewPartialPairBuilder[K container.Keyable, V any]() *PartialPairBuilder[K, V] {
 	return &PartialPairBuilder[K, V]{}
 }
 
-// NewPartialPairBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewPartialPairBuilderFrom returns a builder of v.
 func NewPartialPairBuilderFrom[K container.Keyable, V any](v container.PartialPair[K, V]) *PartialPairBuilder[K, V] {
 	return &PartialPairBuilder[K, V]{v: v}
 }
 
-// WithKey replaces Key.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithKey replaces Key with v.
 func (b *PartialPairBuilder[K, V]) WithKey(v K) *PartialPairBuilder[K, V] {
 	b.v.Key = v
 	return b
 }
 
-// WithValue replaces Value.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithValue replaces Value with v.
 func (b *PartialPairBuilder[K, V]) WithValue(v V) *PartialPairBuilder[K, V] {
 	b.v.Value = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *PartialPairBuilder[K, V]) Mutate(fn func(*container.PartialPair[K, V])) *PartialPairBuilder[K, V] {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [PartialPairBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *PartialPairBuilder[K, V]) Clone() *PartialPairBuilder[K, V] {
 	out := &PartialPairBuilder[K, V]{v: b.v}
 	return out
 }
 
-// Build returns the constructed [PartialPair].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [PartialPairBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [PartialPairBuilder.Clone] returns a builder that shares none of them.
 func (b *PartialPairBuilder[K, V]) Build() container.PartialPair[K, V] {
 	return b.v
 }
 
-// BucketBuilder constructs [Bucket] values.
-//
-// Start with [NewBucketBuilder] or [NewBucketBuilderFrom], set what you
-// care about, and call [BucketBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Bucket breaks every literal
-// at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [BucketBuilder.Clone] is how one becomes two.
+// BucketBuilder constructs [Bucket] values. [NewBucketBuilder] and
+// [NewBucketBuilderFrom] return a new builder. Each setter sets one member
+// and returns the builder, so the calls chain. [BucketBuilder.Build]
+// returns the value. A builder is not safe for concurrent use.
 type BucketBuilder[K container.Keyable, V any] struct {
 	v container.Bucket[K, V]
 }
 
-// NewBucketBuilder returns a builder holding the zero value.
-//
-// No member declares a default, so there is nothing to seed. A caller that
-// builds immediately gets the same value a composite literal with no
-// fields would, and the setters are what make it differ.
+// NewBucketBuilder returns a builder of the zero value.
 func NewBucketBuilder[K container.Keyable, V any]() *BucketBuilder[K, V] {
 	return &BucketBuilder[K, V]{}
 }
 
-// NewBucketBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewBucketBuilderFrom returns a builder of v.
 func NewBucketBuilderFrom[K container.Keyable, V any](v container.Bucket[K, V]) *BucketBuilder[K, V] {
 	return &BucketBuilder[K, V]{v: v}
 }
 
-// WithKey replaces Key.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithKey replaces Key with v.
 func (b *BucketBuilder[K, V]) WithKey(v K) *BucketBuilder[K, V] {
 	b.v.Key = v
 	return b
 }
 
-// WithValue replaces Value.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithValue replaces Value with v.
 func (b *BucketBuilder[K, V]) WithValue(v V) *BucketBuilder[K, V] {
 	b.v.Value = v
 	return b
 }
 
-// WithTTL replaces TTL.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithTTL replaces TTL with v.
 func (b *BucketBuilder[K, V]) WithTTL(v time.Duration) *BucketBuilder[K, V] {
 	b.v.TTL = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *BucketBuilder[K, V]) Mutate(fn func(*container.Bucket[K, V])) *BucketBuilder[K, V] {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [BucketBuilder.Mutate] to replace such a member outright rather than
-// editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *BucketBuilder[K, V]) Clone() *BucketBuilder[K, V] {
 	out := &BucketBuilder[K, V]{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Bucket].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [BucketBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [BucketBuilder.Clone] returns a builder that shares none of them.
 func (b *BucketBuilder[K, V]) Build() container.Bucket[K, V] {
 	return b.v
 }
 
-// TripleBuilder constructs [Triple] values.
-//
-// Start with [NewTripleBuilder] or [NewTripleBuilderFrom], set what you
-// care about, and call [TripleBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Triple breaks every literal
-// at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [TripleBuilder.Clone] is how one becomes two.
+// TripleBuilder constructs [Triple] values. [NewTripleBuilder] and
+// [NewTripleBuilderFrom] return a new builder. Each setter sets one member
+// and returns the builder, so the calls chain. [TripleBuilder.Build]
+// returns the value. A builder is not safe for concurrent use.
 type TripleBuilder[A container.Keyable, B any, C comparable] struct {
 	v container.Triple[A, B, C]
 }
 
-// NewTripleBuilder returns a builder holding the zero value.
-//
-// No member declares a default, so there is nothing to seed. A caller that
-// builds immediately gets the same value a composite literal with no
-// fields would, and the setters are what make it differ.
+// NewTripleBuilder returns a builder of the zero value.
 func NewTripleBuilder[A container.Keyable, B any, C comparable]() *TripleBuilder[A, B, C] {
 	return &TripleBuilder[A, B, C]{}
 }
 
-// NewTripleBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
-func NewTripleBuilderFrom[A container.Keyable, B any, C comparable](v container.Triple[A, B, C]) *TripleBuilder[A, B, C] {
+// NewTripleBuilderFrom returns a builder of v.
+func NewTripleBuilderFrom[A container.Keyable, B any, C comparable](
+	v container.Triple[A, B, C],
+) *TripleBuilder[A, B, C] {
 	return &TripleBuilder[A, B, C]{v: v}
 }
 
-// WithFirst replaces First.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithFirst replaces First with v.
 func (b *TripleBuilder[A, B, C]) WithFirst(v A) *TripleBuilder[A, B, C] {
 	b.v.First = v
 	return b
 }
 
-// WithSecond replaces Second.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithSecond replaces Second with v.
 func (b *TripleBuilder[A, B, C]) WithSecond(v B) *TripleBuilder[A, B, C] {
 	b.v.Second = v
 	return b
 }
 
-// WithThird replaces Third.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithThird replaces Third with v.
 func (b *TripleBuilder[A, B, C]) WithThird(v C) *TripleBuilder[A, B, C] {
 	b.v.Third = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *TripleBuilder[A, B, C]) Mutate(fn func(*container.Triple[A, B, C])) *TripleBuilder[A, B, C] {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [TripleBuilder.Mutate] to replace such a member outright rather than
-// editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *TripleBuilder[A, B, C]) Clone() *TripleBuilder[A, B, C] {
 	out := &TripleBuilder[A, B, C]{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Triple].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [TripleBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [TripleBuilder.Clone] returns a builder that shares none of them.
 func (b *TripleBuilder[A, B, C]) Build() container.Triple[A, B, C] {
 	return b.v
 }
 
-// QuadBuilder constructs [Quad] values.
-//
-// Start with [NewQuadBuilder] or [NewQuadBuilderFrom], set what you care
-// about, and call [QuadBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Quad breaks every literal
-// at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [QuadBuilder.Clone] is how one becomes two.
+// QuadBuilder constructs [Quad] values. [NewQuadBuilder] and
+// [NewQuadBuilderFrom] return a new builder. Each setter sets one member
+// and returns the builder, so the calls chain. [QuadBuilder.Build] returns
+// the value. A builder is not safe for concurrent use.
 type QuadBuilder[A container.Keyable, B any, C comparable, D container.Keyable] struct {
 	v container.Quad[A, B, C, D]
 }
 
-// NewQuadBuilder returns a builder holding the zero value.
-//
-// No member declares a default, so there is nothing to seed. A caller that
-// builds immediately gets the same value a composite literal with no
-// fields would, and the setters are what make it differ.
+// NewQuadBuilder returns a builder of the zero value.
 func NewQuadBuilder[A container.Keyable, B any, C comparable, D container.Keyable]() *QuadBuilder[A, B, C, D] {
 	return &QuadBuilder[A, B, C, D]{}
 }
 
-// NewQuadBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
-func NewQuadBuilderFrom[A container.Keyable, B any, C comparable, D container.Keyable](v container.Quad[A, B, C, D]) *QuadBuilder[A, B, C, D] {
+// NewQuadBuilderFrom returns a builder of v.
+func NewQuadBuilderFrom[A container.Keyable, B any, C comparable, D container.Keyable](
+	v container.Quad[A, B, C, D],
+) *QuadBuilder[A, B, C, D] {
 	return &QuadBuilder[A, B, C, D]{v: v}
 }
 
-// WithFirst replaces First.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithFirst replaces First with v.
 func (b *QuadBuilder[A, B, C, D]) WithFirst(v A) *QuadBuilder[A, B, C, D] {
 	b.v.First = v
 	return b
 }
 
-// WithSecond replaces Second.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithSecond replaces Second with v.
 func (b *QuadBuilder[A, B, C, D]) WithSecond(v B) *QuadBuilder[A, B, C, D] {
 	b.v.Second = v
 	return b
 }
 
-// WithThird replaces Third.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithThird replaces Third with v.
 func (b *QuadBuilder[A, B, C, D]) WithThird(v C) *QuadBuilder[A, B, C, D] {
 	b.v.Third = v
 	return b
 }
 
-// WithFourth replaces Fourth.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithFourth replaces Fourth with v.
 func (b *QuadBuilder[A, B, C, D]) WithFourth(v D) *QuadBuilder[A, B, C, D] {
 	b.v.Fourth = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *QuadBuilder[A, B, C, D]) Mutate(fn func(*container.Quad[A, B, C, D])) *QuadBuilder[A, B, C, D] {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [QuadBuilder.Mutate] to replace such a member outright rather than
-// editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *QuadBuilder[A, B, C, D]) Clone() *QuadBuilder[A, B, C, D] {
 	out := &QuadBuilder[A, B, C, D]{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Quad].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [QuadBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [QuadBuilder.Clone] returns a builder that shares none of them.
 func (b *QuadBuilder[A, B, C, D]) Build() container.Quad[A, B, C, D] {
 	return b.v
 }
 
-// dokimi:provenance sha256:6fd71cf7ef35b96aa57b9913d3621671787436bb3b059a38a6b8ad02e0b39b45
+// dokimi:provenance sha256:a6daf7d8342215c25e31de9182bedbe6cf76a9c5189935f5f6ab3ccbe2002b48

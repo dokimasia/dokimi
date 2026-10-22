@@ -8,106 +8,62 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/integration/validated"
 )
 
-// AccountBuilder constructs [Account] values.
-//
-// Start with [NewAccountBuilder] or [NewAccountBuilderFrom], set what you
-// care about, and call [AccountBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Account breaks every
-// literal at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [AccountBuilder.Clone] is how one becomes two.
+// AccountBuilder constructs [Account] values. [NewAccountBuilder] and
+// [NewAccountBuilderFrom] return a new builder. Each setter sets one
+// member and returns the builder, so the calls chain.
+// [AccountBuilder.Build] returns the value. A builder is not safe for
+// concurrent use.
 type AccountBuilder struct {
 	v validated.Account
 }
 
-// NewAccountBuilder returns a builder seeded from the package's companion,
-// with any declared per-member default applied over it.
-//
-// Two layers, in that order: whatever the companion supplies, then each
-// member that declares its own default. A member the companion sets and
-// the declaration does not keeps the companion's value, so the two sources
-// compose rather than one replacing the other.
+// NewAccountBuilder returns a builder of the value that the companion
+// function returns. The declared default of each member applies over that
+// value.
 func NewAccountBuilder() *AccountBuilder {
 	v := validated.AccountDefaults()
 	return &AccountBuilder{v: v}
 }
 
-// NewAccountBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewAccountBuilderFrom returns a builder of v.
 func NewAccountBuilderFrom(v validated.Account) *AccountBuilder {
 	return &AccountBuilder{v: v}
 }
 
-// WithID replaces ID.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithID replaces ID with v.
 func (b *AccountBuilder) WithID(v string) *AccountBuilder {
 	b.v.ID = v
 	return b
 }
 
-// WithEmail replaces Email.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithEmail replaces Email with v.
 func (b *AccountBuilder) WithEmail(v string) *AccountBuilder {
 	b.v.Email = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *AccountBuilder) Mutate(fn func(*validated.Account)) *AccountBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [AccountBuilder.Mutate] to replace such a member outright rather
-// than editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *AccountBuilder) Clone() *AccountBuilder {
 	out := &AccountBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Account].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [AccountBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [AccountBuilder.Clone] returns a builder that shares none of them.
 func (b *AccountBuilder) Build() validated.Account {
 	return b.v
 }
 
-// dokimi:provenance sha256:8d1ae9bdab60ea27fc195698bbbe6559cf1a1de0338f142ec150b91856fde97e
+// dokimi:provenance sha256:e2cb50f95576d25d0d1b3fc3afef38ee6256de6878506e56f34992fd1f8f3eb6

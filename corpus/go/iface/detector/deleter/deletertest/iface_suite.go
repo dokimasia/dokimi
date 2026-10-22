@@ -7,7 +7,7 @@ package deletertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter"
 )
 
@@ -40,33 +40,22 @@ func DeleterSuite() conform.Suite[deleter.Deleter] {
 	return conform.Suite[deleter.Deleter]{Declaration: "Deleter"}
 }
 
-// RunDeleter applies the checks of Deleter, and the checks that opts add,
-// to a fresh subject of newSubject for each check.
-func RunDeleter[T deleter.Deleter](t *testing.T, newSubject func() T, opts ...DeleterOption) {
+// RunDeleterSuite applies the checks of Deleter, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunDeleterSuite[T deleter.Deleter](t *testing.T, newSubject func() T, opts ...DeleterOption) {
 	t.Helper()
-	conform.Verify(t, DeleterSuite(), func(*DeleterHandle) deleter.Deleter { return newSubject() }, opts...)
+	RunDeleterSuiteFromHandle(t, func(*DeleterHandle) T { return newSubject() }, opts...)
 }
 
-// RunDeleterOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunDeleterOn[T deleter.Deleter](t *testing.T, newSubject func(h *DeleterHandle) T, opts ...DeleterOption) {
+// RunDeleterSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunDeleterSuiteFromHandle[T deleter.Deleter](
+	t *testing.T,
+	newSubject func(h *DeleterHandle) T,
+	opts ...DeleterOption,
+) {
 	t.Helper()
-	conform.Verify(t, DeleterSuite(), func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+	conform.Run(t, DeleterSuite(), func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
 }
 
-// ControlDeleter applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlDeleter[T deleter.Deleter](t *testing.T, newControl func() T, opts ...DeleterOption) {
-	t.Helper()
-	conform.Control(t, DeleterSuite(), func(*DeleterHandle) deleter.Deleter { return newControl() }, opts...)
-}
-
-// ControlDeleterOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlDeleterOn[T deleter.Deleter](t *testing.T, newControl func(h *DeleterHandle) T, opts ...DeleterOption) {
-	t.Helper()
-	conform.Control(t, DeleterSuite(), func(h *DeleterHandle) deleter.Deleter { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:de8993909882e01538b633137104bba22d50bfdf385b9c0f1d4ecafc4d7eb8d8
+// dokimi:provenance sha256:834e33171b6b4b3cad1f7a067e12eae06d6fb0fa5bbd7ee5db44fde5cd634b74

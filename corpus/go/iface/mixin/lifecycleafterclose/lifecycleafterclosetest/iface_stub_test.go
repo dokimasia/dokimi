@@ -12,27 +12,66 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/lifecycleafterclose/lifecycleafterclosetest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubCloseSubject binds Close into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubCloseSubject(tb assert.TB) stub.Subject[lifecycleafterclosetest.MixedCloseCall, lifecycleafterclosetest.MixedCloseReturn] {
+// mixedStubCloseArgs returns the samples of the arguments of Close.
+func mixedStubCloseArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubClose calls Close of s with the samples of its arguments.
+func mixedStubClose(tb assert.TB, s *lifecycleafterclosetest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubCloseArgs(tb)
+	return s.Close(a0)
+}
+
+// mixedStubClosePins returns the samples of the results of Close, with a
+// new error as its error result.
+func mixedStubClosePins() error {
+	want0 := errors.New("Close-returns")
+	return want0
+}
+
+// mixedStubWorkArgs returns the samples of the arguments of Work.
+func mixedStubWorkArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubWork calls Work of s with the samples of its arguments.
+func mixedStubWork(tb assert.TB, s *lifecycleafterclosetest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubWorkArgs(tb)
+	return s.Work(a0)
+}
+
+// mixedStubWorkPins returns the samples of the results of Work, with a new
+// error as its error result.
+func mixedStubWorkPins() error {
+	want0 := errors.New("Work-returns")
+	return want0
+}
+
+// mixedStubCloseSubject returns the subject of [stub.Behaviour] for Close.
+// The subject calls a new double that reports to tb.
+func mixedStubCloseSubject(
+	tb assert.TB,
+) stub.Subject[lifecycleafterclosetest.MixedCloseCall, lifecycleafterclosetest.MixedCloseReturn] {
 	tb.Helper()
 	s := lifecycleafterclosetest.NewMixedStub(tb)
 	return stub.Subject[lifecycleafterclosetest.MixedCloseCall, lifecycleafterclosetest.MixedCloseReturn]{
 		Stub: s.OnClose.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Close(a0)
+			_ = mixedStubClose(tb, s)
 		},
 		Result: func() lifecycleafterclosetest.MixedCloseReturn {
-			var a0 context.Context
-			got0 := s.Close(a0)
+			got0 := mixedStubClose(tb, s)
 			return lifecycleafterclosetest.MixedCloseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -43,97 +82,26 @@ func mixedStubCloseSubject(tb assert.TB) stub.Subject[lifecycleafterclosetest.Mi
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Close(a0)
+			r0 := mixedStubClose(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubClose pins how Close answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubClose(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Close", mixedStubCloseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := lifecycleafterclosetest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Close(a0)
-		got := s.OnClose.AssertCalledOnce(t, "Close must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := lifecycleafterclosetest.NewMixedStub(t)
-		var seen []lifecycleafterclosetest.MixedCloseCall
-		s.OnClose.OnRecord(func(c lifecycleafterclosetest.MixedCloseCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Close(a0)
-		_ = s.Close(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Close call")
-	})
-
-	t.Run("wires WithMixedClose at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.WithMixedClose(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Close(a0)
-		assert.True(t, called, "WithMixedClose must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Close-failing")
-		s := lifecycleafterclosetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Close(a0)
-		assert.ErrorIs(t, r0, want, "Close must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := lifecycleafterclosetest.NewMixedStub(t)
-		var want0 error
-		s.OnClose.Returns(want0)
-		var a0 context.Context
-		_ = s.Close(a0)
-		s.ResetCalls()
-		_ = s.Close(a0)
-		s.OnClose.AssertCalledOnce(t, "Close must record the call that followed the reset")
-	})
-}
-
-// mixedStubWorkSubject binds Work into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubWorkSubject(tb assert.TB) stub.Subject[lifecycleafterclosetest.MixedWorkCall, lifecycleafterclosetest.MixedWorkReturn] {
+// mixedStubWorkSubject returns the subject of [stub.Behaviour] for Work.
+// The subject calls a new double that reports to tb.
+func mixedStubWorkSubject(
+	tb assert.TB,
+) stub.Subject[lifecycleafterclosetest.MixedWorkCall, lifecycleafterclosetest.MixedWorkReturn] {
 	tb.Helper()
 	s := lifecycleafterclosetest.NewMixedStub(tb)
 	return stub.Subject[lifecycleafterclosetest.MixedWorkCall, lifecycleafterclosetest.MixedWorkReturn]{
 		Stub: s.OnWork.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Work(a0)
+			_ = mixedStubWork(tb, s)
 		},
 		Result: func() lifecycleafterclosetest.MixedWorkReturn {
-			var a0 context.Context
-			got0 := s.Work(a0)
+			got0 := mixedStubWork(tb, s)
 			return lifecycleafterclosetest.MixedWorkReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -144,162 +112,399 @@ func mixedStubWorkSubject(tb assert.TB) stub.Subject[lifecycleafterclosetest.Mix
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Work(a0)
+			r0 := mixedStubWork(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubWork pins how Work answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubWork(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a lifecycleafterclosetest.MixedStub
+// that the checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[lifecycleafterclosetest.MixedCloseCall]
 
-	stub.Behaviour(t, "Work", mixedStubWorkSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := lifecycleafterclosetest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Work(a0)
-		got := s.OnWork.AssertCalledOnce(t, "Work must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := lifecycleafterclosetest.NewMixedStub(t)
-		var seen []lifecycleafterclosetest.MixedWorkCall
-		s.OnWork.OnRecord(func(c lifecycleafterclosetest.MixedWorkCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Work(a0)
-		_ = s.Work(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Work call")
-	})
-
-	t.Run("wires WithMixedWork at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.WithMixedWork(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Work(a0)
-		assert.True(t, called, "WithMixedWork must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Work-failing")
-		s := lifecycleafterclosetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Work(a0)
-		assert.ErrorIs(t, r0, want, "Work must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := lifecycleafterclosetest.NewMixedStub(t)
-		var want0 error
-		s.OnWork.Returns(want0)
-		var a0 context.Context
-		_ = s.Work(a0)
-		s.ResetCalls()
-		_ = s.Work(a0)
-		s.OnWork.AssertCalledOnce(t, "Work must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Close stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[lifecycleafterclosetest.MixedCloseCall] {
-	instance := func(s *lifecycleafterclosetest.MixedStub) stub.Instance[lifecycleafterclosetest.MixedCloseCall] {
-		return stub.Instance[lifecycleafterclosetest.MixedCloseCall]{
-			Stub: s.OnClose.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_ = s.Close(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[lifecycleafterclosetest.MixedCloseCall]{
-		New: func(tb assert.TB) stub.Instance[lifecycleafterclosetest.MixedCloseCall] {
-			return instance(lifecycleafterclosetest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Close alone.
+func mixedStubInstanceOf(tb assert.TB, s *lifecycleafterclosetest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnClose.MethodStub,
+		Call: func() {
+			_ = mixedStubClose(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[lifecycleafterclosetest.MixedCloseCall] {
-			return instance(lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[lifecycleafterclosetest.MixedCloseCall] {
-			return instance(lifecycleafterclosetest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[lifecycleafterclosetest.MixedCloseCall] {
-			return instance(lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[lifecycleafterclosetest.MixedCloseCall] {
-			return instance(lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[lifecycleafterclosetest.MixedCloseCall] {
-			return instance(lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Close", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Close", mixedStubCloseSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			_ = mixedStubClose(t, s)
+			got := s.OnClose.AssertCalledOnce(t, "Close records the call")
+			a0 := mixedStubCloseArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			var seen []lifecycleafterclosetest.MixedCloseCall
+			s.OnClose.OnRecord(func(c lifecycleafterclosetest.MixedCloseCall) { seen = append(seen, c) })
+			_ = mixedStubClose(t, s)
+			_ = mixedStubClose(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
+		})
+	})
+
+	t.Run("Work", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Work", mixedStubWorkSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			_ = mixedStubWork(t, s)
+			got := s.OnWork.AssertCalledOnce(t, "Work records the call")
+			a0 := mixedStubWorkArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			var seen []lifecycleafterclosetest.MixedWorkCall
+			s.OnWork.OnRecord(func(c lifecycleafterclosetest.MixedWorkCall) { seen = append(seen, c) })
+			_ = mixedStubWork(t, s)
+			_ = mixedStubWork(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Work")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, lifecycleafterclosetest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			_ = mixedStubClose(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
+		})
+
+		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			want0 := mixedStubClosePins()
+			s.OnClose.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
+		})
+
+		t.Run("clears the recorded calls of Work", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			_ = mixedStubWork(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnWork.CallCount(), 0, "ResetCalls clears the calls of Work")
+		})
+
+		t.Run("keeps the results of Returns of Work", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			want0 := mixedStubWorkPins()
+			s.OnWork.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubWork(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Work")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, lifecycleafterclosetest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := lifecycleafterclosetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Work with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Work-failing")
+			s := lifecycleafterclosetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubWork(t, s)
+			assert.ErrorIs(t, r0, want, "Work fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubStrict()),
+			)
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Close to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := lifecycleafterclosetest.NewMixedStub(t)
+			s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.MixedStubDelegateTo(inner))
+			_ = mixedStubClose(t, s)
+			inner.OnClose.AssertCalledOnce(t, "Close calls the implementation")
+		})
+
+		t.Run("fails Close with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-delegate")
+			inner := lifecycleafterclosetest.NewMixedStub(t)
+			inner.OnClose.Faults(want, 1)
+			s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of the implementation")
+		})
+
+		t.Run("passes Work to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := lifecycleafterclosetest.NewMixedStub(t)
+			s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.MixedStubDelegateTo(inner))
+			_ = mixedStubWork(t, s)
+			inner.OnWork.AssertCalledOnce(t, "Work calls the implementation")
+		})
+
+		t.Run("fails Work with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Work-delegate")
+			inner := lifecycleafterclosetest.NewMixedStub(t)
+			inner.OnWork.Faults(want, 1)
+			s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubWork(t, s)
+			assert.ErrorIs(t, r0, want, "Work fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				lifecycleafterclosetest.NewMixedStub(tb, lifecycleafterclosetest.MixedStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				lifecycleafterclosetest.NewMixedStub(
+					tb,
+					lifecycleafterclosetest.MixedStubWithClock(clk),
+					lifecycleafterclosetest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.MixedStubFailing(want))
+			r0 := mixedStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Work with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Work-failing")
+			s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.MixedStubFailing(want))
+			r0 := mixedStubWork(t, s)
+			assert.ErrorIs(t, r0, want, "Work fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedClose", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Close", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := lifecycleafterclosetest.NewMixedStub(
+				t,
+				lifecycleafterclosetest.WithMixedClose(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubClose(t, s)
+			assert.True(t, called, "WithMixedClose sets the function of Close")
+		})
+	})
+
+	t.Run("WithMixedWork", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Work", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := lifecycleafterclosetest.NewMixedStub(
+				t,
+				lifecycleafterclosetest.WithMixedWork(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubWork(t, s)
+			assert.True(t, called, "WithMixedWork sets the function of Work")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedCloseStub checks the methods of MixedCloseStub, which
+// configures Close.
+func TestMixedCloseStub(t *testing.T) {
 	t.Parallel()
 
-	inner := lifecycleafterclosetest.NewMixedStub(t)
-	s := lifecycleafterclosetest.NewMixedStub(t, lifecycleafterclosetest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Close to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Close(a0)
-		inner.OnClose.AssertCalledOnce(t, "Close must reach the wrapped implementation")
+		t.Run("sets the results of each call of Close", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			want0 := mixedStubClosePins()
+			s.OnClose.Returns(want0)
+			got0 := mixedStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
+		})
+
+		t.Run("configures Close for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := lifecycleafterclosetest.NewMixedStub(r)
+			s.OnClose.Strict()
+			var want0 error
+			s.OnClose.Returns(want0)
+			_ = mixedStubClose(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
+		})
 	})
 
-	t.Run("surfaces what Close answered", func(t *testing.T) {
-		want := errors.New("Close-delegate")
-		inner.OnClose.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Close(a0)
-		assert.ErrorIs(t, r0, want, "Close must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Work to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Work(a0)
-		inner.OnWork.AssertCalledOnce(t, "Work must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Work answered", func(t *testing.T) {
-		want := errors.New("Work-delegate")
-		inner.OnWork.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Work(a0)
-		assert.ErrorIs(t, r0, want, "Work must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Close to the function", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnClose.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubClose(t, s)
+			a0 := mixedStubCloseArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:a0b3462ef945ce938789872424953f283b4f7c7e6a3cb5a23927452a256e6cd7
+// TestMixedWorkStub checks the methods of MixedWorkStub, which configures
+// Work.
+func TestMixedWorkStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Work", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			want0 := mixedStubWorkPins()
+			s.OnWork.Returns(want0)
+			got0 := mixedStubWork(t, s)
+			assert.ErrorIs(t, got0, want0, "Work returns the error that Returns sets")
+		})
+
+		t.Run("configures Work for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := lifecycleafterclosetest.NewMixedStub(r)
+			s.OnWork.Strict()
+			var want0 error
+			s.OnWork.Returns(want0)
+			_ = mixedStubWork(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Work")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Work to the function", func(t *testing.T) {
+			t.Parallel()
+			s := lifecycleafterclosetest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnWork.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubWork(t, s)
+			a0 := mixedStubWorkArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:dd0e7b79d39a8462331e993ea9a5ec45991924f804584eb07deae1e14b7f9510

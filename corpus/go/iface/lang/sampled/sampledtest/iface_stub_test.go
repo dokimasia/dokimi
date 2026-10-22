@@ -12,36 +12,51 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled/sampledtest"
+	"go.dokimi.dev/stub"
 )
 
-// labellerStubApplySubject binds Apply into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func labellerStubApplySubject(tb assert.TB) stub.Subject[sampledtest.LabellerApplyCall, sampledtest.LabellerApplyReturn] {
+// labellerStubApplyArgs returns the samples of the arguments of Apply.
+func labellerStubApplyArgs(tb assert.TB) (context.Context, sampled.Tag, sampled.Level) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 sampled.Tag
+	var a2 sampled.Level
+	a1 = sampled.NewTestTag()
+	a2 = sampled.NewTestLevel()
+	return a0, a1, a2
+}
+
+// labellerStubApply calls Apply of s with the samples of its arguments.
+func labellerStubApply(tb assert.TB, s *sampledtest.LabellerStub) error {
+	tb.Helper()
+	a0, a1, a2 := labellerStubApplyArgs(tb)
+	return s.Apply(a0, a1, a2)
+}
+
+// labellerStubApplyPins returns the samples of the results of Apply, with
+// a new error as its error result.
+func labellerStubApplyPins() error {
+	want0 := errors.New("Apply-returns")
+	return want0
+}
+
+// labellerStubApplySubject returns the subject of [stub.Behaviour] for
+// Apply. The subject calls a new double that reports to tb.
+func labellerStubApplySubject(
+	tb assert.TB,
+) stub.Subject[sampledtest.LabellerApplyCall, sampledtest.LabellerApplyReturn] {
 	tb.Helper()
 	s := sampledtest.NewLabellerStub(tb)
 	return stub.Subject[sampledtest.LabellerApplyCall, sampledtest.LabellerApplyReturn]{
 		Stub: s.OnApply.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 sampled.Tag
-			var a2 sampled.Level
-			a1 = sampled.NewTestTag()
-			a2 = sampled.NewTestLevel()
-			_ = s.Apply(a0, a1, a2)
+			_ = labellerStubApply(tb, s)
 		},
 		Result: func() sampledtest.LabellerApplyReturn {
-			var a0 context.Context
-			var a1 sampled.Tag
-			var a2 sampled.Level
-			a1 = sampled.NewTestTag()
-			a2 = sampled.NewTestLevel()
-			got0 := s.Apply(a0, a1, a2)
+			got0 := labellerStubApply(tb, s)
 			return sampledtest.LabellerApplyReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -52,186 +67,253 @@ func labellerStubApplySubject(tb assert.TB) stub.Subject[sampledtest.LabellerApp
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 sampled.Tag
-			var a2 sampled.Level
-			a1 = sampled.NewTestTag()
-			a2 = sampled.NewTestLevel()
-			r0 := s.Apply(a0, a1, a2)
+			r0 := labellerStubApply(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestLabellerStubApply pins how Apply answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestLabellerStubApply(t *testing.T) {
-	t.Parallel()
+// labellerStubInstance is the instance of a sampledtest.LabellerStub that
+// the checks of the constructors and the options drive.
+type labellerStubInstance = stub.Instance[sampledtest.LabellerApplyCall]
 
-	stub.Behaviour(t, "Apply", labellerStubApplySubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := sampledtest.NewLabellerStub(t)
-		var a0 context.Context
-		var a1 sampled.Tag
-		var a2 sampled.Level
-		a1 = sampled.NewTestTag()
-		a2 = sampled.NewTestLevel()
-		_ = s.Apply(a0, a1, a2)
-		got := s.OnApply.AssertCalledOnce(t, "Apply must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Tag, a1, "the recorded call carries Tag")
-		assert.Equal(t, got.Level, a2, "the recorded call carries Level")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := sampledtest.NewLabellerStub(t)
-		var seen []sampledtest.LabellerApplyCall
-		s.OnApply.OnRecord(func(c sampledtest.LabellerApplyCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 sampled.Tag
-		var a2 sampled.Level
-		a1 = sampled.NewTestTag()
-		a2 = sampled.NewTestLevel()
-		_ = s.Apply(a0, a1, a2)
-		_ = s.Apply(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Apply call")
-	})
-
-	t.Run("wires WithLabellerApply at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := sampledtest.NewLabellerStub(t, sampledtest.WithLabellerApply(func(_ context.Context, _ sampled.Tag, _ sampled.Level) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 sampled.Tag
-		var a2 sampled.Level
-		a1 = sampled.NewTestTag()
-		a2 = sampled.NewTestLevel()
-		_ = s.Apply(a0, a1, a2)
-		assert.True(t, called, "WithLabellerApply must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Apply-failing")
-		s := sampledtest.NewLabellerStubFailing(t, want)
-		var a0 context.Context
-		var a1 sampled.Tag
-		var a2 sampled.Level
-		a1 = sampled.NewTestTag()
-		a2 = sampled.NewTestLevel()
-		r0 := s.Apply(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Apply must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := sampledtest.NewLabellerStub(t)
-		var want0 error
-		s.OnApply.Returns(want0)
-		var a0 context.Context
-		var a1 sampled.Tag
-		var a2 sampled.Level
-		a1 = sampled.NewTestTag()
-		a2 = sampled.NewTestLevel()
-		_ = s.Apply(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Apply(a0, a1, a2)
-		s.OnApply.AssertCalledOnce(t, "Apply must record the call that followed the reset")
-	})
-}
-
-// labellerStubDouble describes how to build a LabellerStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Apply stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func labellerStubDouble() stub.Double[sampledtest.LabellerApplyCall] {
-	instance := func(s *sampledtest.LabellerStub) stub.Instance[sampledtest.LabellerApplyCall] {
-		return stub.Instance[sampledtest.LabellerApplyCall]{
-			Stub: s.OnApply.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 sampled.Tag
-				var a2 sampled.Level
-				a1 = sampled.NewTestTag()
-				a2 = sampled.NewTestLevel()
-				_ = s.Apply(a0, a1, a2)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[sampledtest.LabellerApplyCall]{
-		New: func(tb assert.TB) stub.Instance[sampledtest.LabellerApplyCall] {
-			return instance(sampledtest.NewLabellerStub(tb))
+// labellerStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Apply alone.
+func labellerStubInstanceOf(tb assert.TB, s *sampledtest.LabellerStub) labellerStubInstance {
+	tb.Helper()
+	return labellerStubInstance{
+		Stub: s.OnApply.MethodStub,
+		Call: func() {
+			_ = labellerStubApply(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[sampledtest.LabellerApplyCall] {
-			return instance(sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[sampledtest.LabellerApplyCall] {
-			return instance(sampledtest.NewLabellerStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[sampledtest.LabellerApplyCall] {
-			return instance(sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[sampledtest.LabellerApplyCall] {
-			return instance(sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[sampledtest.LabellerApplyCall] {
-			return instance(sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestLabellerStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestLabellerStubOptions(t *testing.T) {
+// TestLabellerStub checks the methods, the constructors and the options of
+// the double LabellerStub.
+func TestLabellerStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, labellerStubDouble())
+	t.Run("Apply", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Apply", labellerStubApplySubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := sampledtest.NewLabellerStub(t)
+			_ = labellerStubApply(t, s)
+			got := s.OnApply.AssertCalledOnce(t, "Apply records the call")
+			a0, a1, a2 := labellerStubApplyArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Tag, a1, "the call records Tag")
+			expect.Equal(t, got.Level, a2, "the call records Level")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := sampledtest.NewLabellerStub(t)
+			var seen []sampledtest.LabellerApplyCall
+			s.OnApply.OnRecord(func(c sampledtest.LabellerApplyCall) { seen = append(seen, c) })
+			_ = labellerStubApply(t, s)
+			_ = labellerStubApply(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Apply")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) labellerStubInstance {
+			return labellerStubInstanceOf(tb, sampledtest.NewLabellerStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Apply", func(t *testing.T) {
+			t.Parallel()
+			s := sampledtest.NewLabellerStub(t)
+			_ = labellerStubApply(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnApply.CallCount(), 0, "ResetCalls clears the calls of Apply")
+		})
+
+		t.Run("keeps the results of Returns of Apply", func(t *testing.T) {
+			t.Parallel()
+			s := sampledtest.NewLabellerStub(t)
+			want0 := labellerStubApplyPins()
+			s.OnApply.Returns(want0)
+			s.ResetCalls()
+			got0 := labellerStubApply(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Apply")
+		})
+	})
+
+	t.Run("NewLabellerStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) labellerStubInstance {
+			return labellerStubInstanceOf(tb, sampledtest.NewLabellerStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewLabellerStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Apply with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Apply-failing")
+			s := sampledtest.NewLabellerStubFailing(t, want)
+			r0 := labellerStubApply(t, s)
+			assert.ErrorIs(t, r0, want, "Apply fails with the error of NewLabellerStubFailing")
+		})
+	})
+
+	t.Run("LabellerStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) labellerStubInstance {
+			return labellerStubInstanceOf(tb, sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubStrict()))
+		})
+	})
+
+	t.Run("LabellerStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Apply to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := sampledtest.NewLabellerStub(t)
+			s := sampledtest.NewLabellerStub(t, sampledtest.LabellerStubDelegateTo(inner))
+			_ = labellerStubApply(t, s)
+			inner.OnApply.AssertCalledOnce(t, "Apply calls the implementation")
+		})
+
+		t.Run("fails Apply with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Apply-delegate")
+			inner := sampledtest.NewLabellerStub(t)
+			inner.OnApply.Faults(want, 1)
+			s := sampledtest.NewLabellerStub(t, sampledtest.LabellerStubDelegateTo(inner))
+			r0 := labellerStubApply(t, s)
+			assert.ErrorIs(t, r0, want, "Apply fails with the error of the implementation")
+		})
+	})
+
+	t.Run("LabellerStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) labellerStubInstance {
+			return labellerStubInstanceOf(tb, sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubWithClock(clk)))
+		})
+	})
+
+	t.Run("LabellerStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) labellerStubInstance {
+			return labellerStubInstanceOf(
+				tb,
+				sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("LabellerStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) labellerStubInstance {
+			return labellerStubInstanceOf(tb, sampledtest.NewLabellerStub(tb, sampledtest.LabellerStubBenchMode()))
+		})
+	})
+
+	t.Run("LabellerStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) labellerStubInstance {
+			return labellerStubInstanceOf(
+				tb,
+				sampledtest.NewLabellerStub(
+					tb,
+					sampledtest.LabellerStubWithClock(clk),
+					sampledtest.LabellerStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("LabellerStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Apply with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Apply-failing")
+			s := sampledtest.NewLabellerStub(t, sampledtest.LabellerStubFailing(want))
+			r0 := labellerStubApply(t, s)
+			assert.ErrorIs(t, r0, want, "Apply fails with the error of LabellerStubFailing")
+		})
+	})
+
+	t.Run("WithLabellerApply", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Apply", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := sampledtest.NewLabellerStub(
+				t,
+				sampledtest.WithLabellerApply(func(_ context.Context, _ sampled.Tag, _ sampled.Level) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = labellerStubApply(t, s)
+			assert.True(t, called, "WithLabellerApply sets the function of Apply")
+		})
+	})
 }
 
-// TestLabellerStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestLabellerStubDelegateTo(t *testing.T) {
+// TestLabellerApplyStub checks the methods of LabellerApplyStub, which
+// configures Apply.
+func TestLabellerApplyStub(t *testing.T) {
 	t.Parallel()
 
-	inner := sampledtest.NewLabellerStub(t)
-	s := sampledtest.NewLabellerStub(t, sampledtest.LabellerStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Apply to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 sampled.Tag
-		var a2 sampled.Level
-		a1 = sampled.NewTestTag()
-		a2 = sampled.NewTestLevel()
-		_ = s.Apply(a0, a1, a2)
-		inner.OnApply.AssertCalledOnce(t, "Apply must reach the wrapped implementation")
+		t.Run("sets the results of each call of Apply", func(t *testing.T) {
+			t.Parallel()
+			s := sampledtest.NewLabellerStub(t)
+			want0 := labellerStubApplyPins()
+			s.OnApply.Returns(want0)
+			got0 := labellerStubApply(t, s)
+			assert.ErrorIs(t, got0, want0, "Apply returns the error that Returns sets")
+		})
+
+		t.Run("configures Apply for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := sampledtest.NewLabellerStub(r)
+			s.OnApply.Strict()
+			var want0 error
+			s.OnApply.Returns(want0)
+			_ = labellerStubApply(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Apply")
+		})
 	})
 
-	t.Run("surfaces what Apply answered", func(t *testing.T) {
-		want := errors.New("Apply-delegate")
-		inner.OnApply.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 sampled.Tag
-		var a2 sampled.Level
-		a1 = sampled.NewTestTag()
-		a2 = sampled.NewTestLevel()
-		r0 := s.Apply(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Apply must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Apply to the function", func(t *testing.T) {
+			t.Parallel()
+			s := sampledtest.NewLabellerStub(t)
+			var got0 context.Context
+			var got1 sampled.Tag
+			var got2 sampled.Level
+			s.OnApply.Func(func(p0 context.Context, p1 sampled.Tag, p2 sampled.Level) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = labellerStubApply(t, s)
+			a0, a1, a2 := labellerStubApplyArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Tag")
+			expect.Equal(t, got2, a2, "the function receives Level")
+		})
 	})
 }
 
-// dokimi:provenance sha256:dd13c690f6712a8a3c322b26d61756bf6c62e101f11a4223066a0da37b3c5391
+// dokimi:provenance sha256:f85df41734d536666cf950d23ff1abccc9641cf850a954b70c27f4c5bc262d78

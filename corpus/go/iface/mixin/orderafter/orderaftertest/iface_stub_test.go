@@ -12,27 +12,66 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/orderafter/orderaftertest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubCommitSubject binds Commit into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubCommitSubject(tb assert.TB) stub.Subject[orderaftertest.MixedCommitCall, orderaftertest.MixedCommitReturn] {
+// mixedStubCommitArgs returns the samples of the arguments of Commit.
+func mixedStubCommitArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubCommit calls Commit of s with the samples of its arguments.
+func mixedStubCommit(tb assert.TB, s *orderaftertest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubCommitArgs(tb)
+	return s.Commit(a0)
+}
+
+// mixedStubCommitPins returns the samples of the results of Commit, with a
+// new error as its error result.
+func mixedStubCommitPins() error {
+	want0 := errors.New("Commit-returns")
+	return want0
+}
+
+// mixedStubPrepareArgs returns the samples of the arguments of Prepare.
+func mixedStubPrepareArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubPrepare calls Prepare of s with the samples of its arguments.
+func mixedStubPrepare(tb assert.TB, s *orderaftertest.MixedStub) error {
+	tb.Helper()
+	a0 := mixedStubPrepareArgs(tb)
+	return s.Prepare(a0)
+}
+
+// mixedStubPreparePins returns the samples of the results of Prepare, with
+// a new error as its error result.
+func mixedStubPreparePins() error {
+	want0 := errors.New("Prepare-returns")
+	return want0
+}
+
+// mixedStubCommitSubject returns the subject of [stub.Behaviour] for
+// Commit. The subject calls a new double that reports to tb.
+func mixedStubCommitSubject(
+	tb assert.TB,
+) stub.Subject[orderaftertest.MixedCommitCall, orderaftertest.MixedCommitReturn] {
 	tb.Helper()
 	s := orderaftertest.NewMixedStub(tb)
 	return stub.Subject[orderaftertest.MixedCommitCall, orderaftertest.MixedCommitReturn]{
 		Stub: s.OnCommit.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Commit(a0)
+			_ = mixedStubCommit(tb, s)
 		},
 		Result: func() orderaftertest.MixedCommitReturn {
-			var a0 context.Context
-			got0 := s.Commit(a0)
+			got0 := mixedStubCommit(tb, s)
 			return orderaftertest.MixedCommitReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -43,106 +82,26 @@ func mixedStubCommitSubject(tb assert.TB) stub.Subject[orderaftertest.MixedCommi
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Commit(a0)
+			r0 := mixedStubCommit(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubCommit pins how Commit answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubCommit(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Commit", mixedStubCommitSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := orderaftertest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Commit(a0)
-		got := s.OnCommit.AssertCalledOnce(t, "Commit must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := orderaftertest.NewMixedStub(t)
-		var seen []orderaftertest.MixedCommitCall
-		s.OnCommit.OnRecord(func(c orderaftertest.MixedCommitCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Commit(a0)
-		_ = s.Commit(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Commit call")
-	})
-
-	t.Run("wires WithMixedCommit at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := orderaftertest.NewMixedStub(t, orderaftertest.WithMixedCommit(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Commit(a0)
-		assert.True(t, called, "WithMixedCommit must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Commit-failing")
-		s := orderaftertest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Commit(a0)
-		assert.ErrorIs(t, r0, want, "Commit must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := orderaftertest.NewMixedStub(t)
-		var want0 error
-		s.OnCommit.Returns(want0)
-		var a0 context.Context
-		_ = s.Commit(a0)
-		s.ResetCalls()
-		_ = s.Commit(a0)
-		s.OnCommit.AssertCalledOnce(t, "Commit must record the call that followed the reset")
-	})
-
-	t.Run("refuses Commit before Prepare in strict mode", func(t *testing.T) {
-		t.Parallel()
-		r := assert.NewRecorder()
-		s := orderaftertest.NewMixedStub(r, orderaftertest.MixedStubStrict())
-		var a0 context.Context
-		_ = s.Commit(a0)
-		assert.True(t, r.Failed(), "Commit before Prepare must be refused")
-	})
-}
-
-// mixedStubPrepareSubject binds Prepare into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubPrepareSubject(tb assert.TB) stub.Subject[orderaftertest.MixedPrepareCall, orderaftertest.MixedPrepareReturn] {
+// mixedStubPrepareSubject returns the subject of [stub.Behaviour] for
+// Prepare. The subject calls a new double that reports to tb.
+func mixedStubPrepareSubject(
+	tb assert.TB,
+) stub.Subject[orderaftertest.MixedPrepareCall, orderaftertest.MixedPrepareReturn] {
 	tb.Helper()
 	s := orderaftertest.NewMixedStub(tb)
 	return stub.Subject[orderaftertest.MixedPrepareCall, orderaftertest.MixedPrepareReturn]{
 		Stub: s.OnPrepare.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Prepare(a0)
+			_ = mixedStubPrepare(tb, s)
 		},
 		Result: func() orderaftertest.MixedPrepareReturn {
-			var a0 context.Context
-			got0 := s.Prepare(a0)
+			got0 := mixedStubPrepare(tb, s)
 			return orderaftertest.MixedPrepareReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -153,162 +112,393 @@ func mixedStubPrepareSubject(tb assert.TB) stub.Subject[orderaftertest.MixedPrep
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Prepare(a0)
+			r0 := mixedStubPrepare(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubPrepare pins how Prepare answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubPrepare(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a orderaftertest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[orderaftertest.MixedCommitCall]
 
-	stub.Behaviour(t, "Prepare", mixedStubPrepareSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := orderaftertest.NewMixedStub(t)
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		got := s.OnPrepare.AssertCalledOnce(t, "Prepare must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := orderaftertest.NewMixedStub(t)
-		var seen []orderaftertest.MixedPrepareCall
-		s.OnPrepare.OnRecord(func(c orderaftertest.MixedPrepareCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		_ = s.Prepare(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Prepare call")
-	})
-
-	t.Run("wires WithMixedPrepare at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := orderaftertest.NewMixedStub(t, orderaftertest.WithMixedPrepare(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		assert.True(t, called, "WithMixedPrepare must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Prepare-failing")
-		s := orderaftertest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Prepare(a0)
-		assert.ErrorIs(t, r0, want, "Prepare must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := orderaftertest.NewMixedStub(t)
-		var want0 error
-		s.OnPrepare.Returns(want0)
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		s.ResetCalls()
-		_ = s.Prepare(a0)
-		s.OnPrepare.AssertCalledOnce(t, "Prepare must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Commit stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func mixedStubDouble() stub.Double[orderaftertest.MixedCommitCall] {
-	instance := func(s *orderaftertest.MixedStub) stub.Instance[orderaftertest.MixedCommitCall] {
-		return stub.Instance[orderaftertest.MixedCommitCall]{
-			Stub: s.OnCommit.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_ = s.Commit(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[orderaftertest.MixedCommitCall]{
-		New: func(tb assert.TB) stub.Instance[orderaftertest.MixedCommitCall] {
-			return instance(orderaftertest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Commit alone.
+func mixedStubInstanceOf(tb assert.TB, s *orderaftertest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnCommit.MethodStub,
+		Call: func() {
+			_ = mixedStubCommit(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[orderaftertest.MixedCommitCall] {
-			return instance(orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[orderaftertest.MixedCommitCall] {
-			return instance(orderaftertest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[orderaftertest.MixedCommitCall] {
-			return instance(orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[orderaftertest.MixedCommitCall] {
-			return instance(orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[orderaftertest.MixedCommitCall] {
-			return instance(orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Commit", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Commit", mixedStubCommitSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			_ = mixedStubCommit(t, s)
+			got := s.OnCommit.AssertCalledOnce(t, "Commit records the call")
+			a0 := mixedStubCommitArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			var seen []orderaftertest.MixedCommitCall
+			s.OnCommit.OnRecord(func(c orderaftertest.MixedCommitCall) { seen = append(seen, c) })
+			_ = mixedStubCommit(t, s)
+			_ = mixedStubCommit(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Commit")
+		})
+	})
+
+	t.Run("Prepare", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Prepare", mixedStubPrepareSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			_ = mixedStubPrepare(t, s)
+			got := s.OnPrepare.AssertCalledOnce(t, "Prepare records the call")
+			a0 := mixedStubPrepareArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			var seen []orderaftertest.MixedPrepareCall
+			s.OnPrepare.OnRecord(func(c orderaftertest.MixedPrepareCall) { seen = append(seen, c) })
+			_ = mixedStubPrepare(t, s)
+			_ = mixedStubPrepare(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Prepare")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, orderaftertest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			_ = mixedStubCommit(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCommit.CallCount(), 0, "ResetCalls clears the calls of Commit")
+		})
+
+		t.Run("keeps the results of Returns of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			want0 := mixedStubCommitPins()
+			s.OnCommit.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Commit")
+		})
+
+		t.Run("clears the recorded calls of Prepare", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			_ = mixedStubPrepare(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPrepare.CallCount(), 0, "ResetCalls clears the calls of Prepare")
+		})
+
+		t.Run("keeps the results of Returns of Prepare", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			want0 := mixedStubPreparePins()
+			s.OnPrepare.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubPrepare(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Prepare")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, orderaftertest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Commit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-failing")
+			s := orderaftertest.NewMixedStubFailing(t, want)
+			r0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Prepare with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Prepare-failing")
+			s := orderaftertest.NewMixedStubFailing(t, want)
+			r0 := mixedStubPrepare(t, s)
+			assert.ErrorIs(t, r0, want, "Prepare fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubStrict()))
+		})
+
+		t.Run("refuses Commit before Prepare", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			fn := func(_ context.Context) error {
+				var z0 error
+				return z0
+			}
+			s := orderaftertest.NewMixedStub(r, orderaftertest.MixedStubStrict(), orderaftertest.WithMixedCommit(fn))
+			_ = mixedStubCommit(t, s)
+			assert.True(t, r.Failed(), "a strict double refuses Commit before Prepare")
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Commit to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := orderaftertest.NewMixedStub(t)
+			s := orderaftertest.NewMixedStub(t, orderaftertest.MixedStubDelegateTo(inner))
+			_ = mixedStubCommit(t, s)
+			inner.OnCommit.AssertCalledOnce(t, "Commit calls the implementation")
+		})
+
+		t.Run("fails Commit with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-delegate")
+			inner := orderaftertest.NewMixedStub(t)
+			inner.OnCommit.Faults(want, 1)
+			s := orderaftertest.NewMixedStub(t, orderaftertest.MixedStubDelegateTo(inner))
+			r0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of the implementation")
+		})
+
+		t.Run("passes Prepare to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := orderaftertest.NewMixedStub(t)
+			s := orderaftertest.NewMixedStub(t, orderaftertest.MixedStubDelegateTo(inner))
+			_ = mixedStubPrepare(t, s)
+			inner.OnPrepare.AssertCalledOnce(t, "Prepare calls the implementation")
+		})
+
+		t.Run("fails Prepare with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Prepare-delegate")
+			inner := orderaftertest.NewMixedStub(t)
+			inner.OnPrepare.Faults(want, 1)
+			s := orderaftertest.NewMixedStub(t, orderaftertest.MixedStubDelegateTo(inner))
+			r0 := mixedStubPrepare(t, s)
+			assert.ErrorIs(t, r0, want, "Prepare fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, orderaftertest.NewMixedStub(tb, orderaftertest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				orderaftertest.NewMixedStub(
+					tb,
+					orderaftertest.MixedStubWithClock(clk),
+					orderaftertest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Commit with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Commit-failing")
+			s := orderaftertest.NewMixedStub(t, orderaftertest.MixedStubFailing(want))
+			r0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, r0, want, "Commit fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Prepare with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Prepare-failing")
+			s := orderaftertest.NewMixedStub(t, orderaftertest.MixedStubFailing(want))
+			r0 := mixedStubPrepare(t, s)
+			assert.ErrorIs(t, r0, want, "Prepare fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedCommit", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Commit", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := orderaftertest.NewMixedStub(t, orderaftertest.WithMixedCommit(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubCommit(t, s)
+			assert.True(t, called, "WithMixedCommit sets the function of Commit")
+		})
+	})
+
+	t.Run("WithMixedPrepare", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Prepare", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := orderaftertest.NewMixedStub(t, orderaftertest.WithMixedPrepare(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubPrepare(t, s)
+			assert.True(t, called, "WithMixedPrepare sets the function of Prepare")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedCommitStub checks the methods of MixedCommitStub, which
+// configures Commit.
+func TestMixedCommitStub(t *testing.T) {
 	t.Parallel()
 
-	inner := orderaftertest.NewMixedStub(t)
-	s := orderaftertest.NewMixedStub(t, orderaftertest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Commit to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Commit(a0)
-		inner.OnCommit.AssertCalledOnce(t, "Commit must reach the wrapped implementation")
+		t.Run("sets the results of each call of Commit", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			want0 := mixedStubCommitPins()
+			s.OnCommit.Returns(want0)
+			got0 := mixedStubCommit(t, s)
+			assert.ErrorIs(t, got0, want0, "Commit returns the error that Returns sets")
+		})
+
+		t.Run("configures Commit for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := orderaftertest.NewMixedStub(r)
+			s.OnCommit.Strict()
+			var want0 error
+			s.OnCommit.Returns(want0)
+			_ = mixedStubCommit(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Commit")
+		})
 	})
 
-	t.Run("surfaces what Commit answered", func(t *testing.T) {
-		want := errors.New("Commit-delegate")
-		inner.OnCommit.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Commit(a0)
-		assert.ErrorIs(t, r0, want, "Commit must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Prepare to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Prepare(a0)
-		inner.OnPrepare.AssertCalledOnce(t, "Prepare must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Prepare answered", func(t *testing.T) {
-		want := errors.New("Prepare-delegate")
-		inner.OnPrepare.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Prepare(a0)
-		assert.ErrorIs(t, r0, want, "Prepare must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Commit to the function", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnCommit.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubCommit(t, s)
+			a0 := mixedStubCommitArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:f4da03807a1e90f2afb83a1a0201ebd786d55442398fd954e5a0f3f9ca43bc77
+// TestMixedPrepareStub checks the methods of MixedPrepareStub, which
+// configures Prepare.
+func TestMixedPrepareStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Prepare", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			want0 := mixedStubPreparePins()
+			s.OnPrepare.Returns(want0)
+			got0 := mixedStubPrepare(t, s)
+			assert.ErrorIs(t, got0, want0, "Prepare returns the error that Returns sets")
+		})
+
+		t.Run("configures Prepare for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := orderaftertest.NewMixedStub(r)
+			s.OnPrepare.Strict()
+			var want0 error
+			s.OnPrepare.Returns(want0)
+			_ = mixedStubPrepare(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Prepare")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Prepare to the function", func(t *testing.T) {
+			t.Parallel()
+			s := orderaftertest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnPrepare.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = mixedStubPrepare(t, s)
+			a0 := mixedStubPrepareArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:148971b8673800e4faeac099251d37f0fb53248fdcdac3e34adce1b2f621cc97

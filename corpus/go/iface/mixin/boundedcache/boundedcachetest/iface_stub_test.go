@@ -12,36 +12,97 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/boundedcache"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/boundedcache/boundedcachetest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubPutSubject binds Put into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubPutArgs returns the samples of the arguments of Put.
+func mixedStubPutArgs(tb assert.TB) (context.Context, boundedcache.Key, boundedcache.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 boundedcache.Key
+	var a2 boundedcache.Value
+	a1 = boundedcache.Key("Put-a")
+	a2 = boundedcache.Value{Body: "Body-a"}
+	return a0, a1, a2
+}
+
+// mixedStubPut calls Put of s with the samples of its arguments.
+func mixedStubPut(tb assert.TB, s *boundedcachetest.MixedStub) error {
+	tb.Helper()
+	a0, a1, a2 := mixedStubPutArgs(tb)
+	return s.Put(a0, a1, a2)
+}
+
+// mixedStubPutPins returns the samples of the results of Put, with a new
+// error as its error result.
+func mixedStubPutPins() error {
+	want0 := errors.New("Put-returns")
+	return want0
+}
+
+// mixedStubGetArgs returns the samples of the arguments of Get.
+func mixedStubGetArgs(tb assert.TB) (context.Context, boundedcache.Key) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 boundedcache.Key
+	a1 = boundedcache.Key("Get-a")
+	return a0, a1
+}
+
+// mixedStubGet calls Get of s with the samples of its arguments.
+func mixedStubGet(tb assert.TB, s *boundedcachetest.MixedStub) (boundedcache.Value, bool) {
+	tb.Helper()
+	a0, a1 := mixedStubGetArgs(tb)
+	return s.Get(a0, a1)
+}
+
+// mixedStubGetPins returns the samples of the results of Get.
+func mixedStubGetPins() (boundedcache.Value, bool) {
+	var want0 boundedcache.Value
+	var want1 bool
+	want0 = boundedcache.Value{Body: "Body-a"}
+	want1 = true
+	return want0, want1
+}
+
+// mixedStubLenArgs returns the samples of the arguments of Len.
+func mixedStubLenArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubLen calls Len of s with the samples of its arguments.
+func mixedStubLen(tb assert.TB, s *boundedcachetest.MixedStub) (int, error) {
+	tb.Helper()
+	a0 := mixedStubLenArgs(tb)
+	return s.Len(a0)
+}
+
+// mixedStubLenPins returns the samples of the results of Len, with a new
+// error as its error result.
+func mixedStubLenPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Len-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// mixedStubPutSubject returns the subject of [stub.Behaviour] for Put. The
+// subject calls a new double that reports to tb.
 func mixedStubPutSubject(tb assert.TB) stub.Subject[boundedcachetest.MixedPutCall, boundedcachetest.MixedPutReturn] {
 	tb.Helper()
 	s := boundedcachetest.NewMixedStub(tb)
 	return stub.Subject[boundedcachetest.MixedPutCall, boundedcachetest.MixedPutReturn]{
 		Stub: s.OnPut.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 boundedcache.Key
-			var a2 boundedcache.Value
-			a1 = boundedcache.Key("Put-a")
-			a2 = boundedcache.Value{Body: "Body-a"}
-			_ = s.Put(a0, a1, a2)
+			_ = mixedStubPut(tb, s)
 		},
 		Result: func() boundedcachetest.MixedPutReturn {
-			var a0 context.Context
-			var a1 boundedcache.Key
-			var a2 boundedcache.Value
-			a1 = boundedcache.Key("Put-a")
-			a2 = boundedcache.Value{Body: "Body-a"}
-			got0 := s.Put(a0, a1, a2)
+			got0 := mixedStubPut(tb, s)
 			return boundedcachetest.MixedPutReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -52,127 +113,24 @@ func mixedStubPutSubject(tb assert.TB) stub.Subject[boundedcachetest.MixedPutCal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 boundedcache.Key
-			var a2 boundedcache.Value
-			a1 = boundedcache.Key("Put-a")
-			a2 = boundedcache.Value{Body: "Body-a"}
-			r0 := s.Put(a0, a1, a2)
+			r0 := mixedStubPut(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubPut pins how Put answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubPut(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Put", mixedStubPutSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 boundedcache.Key
-		var a2 boundedcache.Value
-		a1 = boundedcache.Key("Put-a")
-		a2 = boundedcache.Value{Body: "Body-a"}
-		_ = s.Put(a0, a1, a2)
-		got := s.OnPut.AssertCalledOnce(t, "Put must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.Value, a2, "the recorded call carries Value")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var seen []boundedcachetest.MixedPutCall
-		s.OnPut.OnRecord(func(c boundedcachetest.MixedPutCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 boundedcache.Key
-		var a2 boundedcache.Value
-		a1 = boundedcache.Key("Put-a")
-		a2 = boundedcache.Value{Body: "Body-a"}
-		_ = s.Put(a0, a1, a2)
-		_ = s.Put(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Put call")
-	})
-
-	t.Run("wires WithMixedPut at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := boundedcachetest.NewMixedStub(t, boundedcachetest.WithMixedPut(func(_ context.Context, _ boundedcache.Key, _ boundedcache.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 boundedcache.Key
-		var a2 boundedcache.Value
-		a1 = boundedcache.Key("Put-a")
-		a2 = boundedcache.Value{Body: "Body-a"}
-		_ = s.Put(a0, a1, a2)
-		assert.True(t, called, "WithMixedPut must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Put-failing")
-		s := boundedcachetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 boundedcache.Key
-		var a2 boundedcache.Value
-		a1 = boundedcache.Key("Put-a")
-		a2 = boundedcache.Value{Body: "Body-a"}
-		r0 := s.Put(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Put must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var want0 error
-		s.OnPut.Returns(want0)
-		var a0 context.Context
-		var a1 boundedcache.Key
-		var a2 boundedcache.Value
-		a1 = boundedcache.Key("Put-a")
-		a2 = boundedcache.Value{Body: "Body-a"}
-		_ = s.Put(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Put(a0, a1, a2)
-		s.OnPut.AssertCalledOnce(t, "Put must record the call that followed the reset")
-	})
-}
-
-// mixedStubGetSubject binds Get into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubGetSubject returns the subject of [stub.Behaviour] for Get. The
+// subject calls a new double that reports to tb.
 func mixedStubGetSubject(tb assert.TB) stub.Subject[boundedcachetest.MixedGetCall, boundedcachetest.MixedGetReturn] {
 	tb.Helper()
 	s := boundedcachetest.NewMixedStub(tb)
 	return stub.Subject[boundedcachetest.MixedGetCall, boundedcachetest.MixedGetReturn]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 boundedcache.Key
-			a1 = boundedcache.Key("Get-a")
-			_, _ = s.Get(a0, a1)
+			_, _ = mixedStubGet(tb, s)
 		},
 		Result: func() boundedcachetest.MixedGetReturn {
-			var a0 context.Context
-			var a1 boundedcache.Key
-			a1 = boundedcache.Key("Get-a")
-			got0, got1 := s.Get(a0, a1)
+			got0, got1 := mixedStubGet(tb, s)
 			return boundedcachetest.MixedGetReturn{Result0: got0, Result1: got1}
 		},
 		Override: func(mark func()) {
@@ -186,111 +144,18 @@ func mixedStubGetSubject(tb assert.TB) stub.Subject[boundedcachetest.MixedGetCal
 	}
 }
 
-// TestMixedStubGet pins how Get answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubGet(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Get", mixedStubGetSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var want0 boundedcache.Value
-		var want1 bool
-		want0 = boundedcache.Value{Body: "Body-a"}
-		want1 = true
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 boundedcache.Key
-		a1 = boundedcache.Key("Get-a")
-		got0, got1 := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Get must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 boundedcache.Key
-		a1 = boundedcache.Key("Get-a")
-		_, _ = s.Get(a0, a1)
-		got := s.OnGet.AssertCalledOnce(t, "Get must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var seen []boundedcachetest.MixedGetCall
-		s.OnGet.OnRecord(func(c boundedcachetest.MixedGetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 boundedcache.Key
-		a1 = boundedcache.Key("Get-a")
-		_, _ = s.Get(a0, a1)
-		_, _ = s.Get(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Get call")
-	})
-
-	t.Run("wires WithMixedGet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := boundedcachetest.NewMixedStub(t, boundedcachetest.WithMixedGet(func(_ context.Context, _ boundedcache.Key) (boundedcache.Value, bool) {
-			called = true
-			var z0 boundedcache.Value
-			var z1 bool
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 boundedcache.Key
-		a1 = boundedcache.Key("Get-a")
-		_, _ = s.Get(a0, a1)
-		assert.True(t, called, "WithMixedGet must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var want0 boundedcache.Value
-		var want1 bool
-		want0 = boundedcache.Value{Body: "Body-a"}
-		want1 = true
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 boundedcache.Key
-		a1 = boundedcache.Key("Get-a")
-		_, _ = s.Get(a0, a1)
-		s.ResetCalls()
-		got0, got1 := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubLenSubject binds Len into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubLenSubject returns the subject of [stub.Behaviour] for Len. The
+// subject calls a new double that reports to tb.
 func mixedStubLenSubject(tb assert.TB) stub.Subject[boundedcachetest.MixedLenCall, boundedcachetest.MixedLenReturn] {
 	tb.Helper()
 	s := boundedcachetest.NewMixedStub(tb)
 	return stub.Subject[boundedcachetest.MixedLenCall, boundedcachetest.MixedLenReturn]{
 		Stub: s.OnLen.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Len(a0)
+			_, _ = mixedStubLen(tb, s)
 		},
 		Result: func() boundedcachetest.MixedLenReturn {
-			var a0 context.Context
-			got0, got1 := s.Len(a0)
+			got0, got1 := mixedStubLen(tb, s)
 			return boundedcachetest.MixedLenReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -302,197 +167,523 @@ func mixedStubLenSubject(tb assert.TB) stub.Subject[boundedcachetest.MixedLenCal
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Len(a0)
+			_, r1 := mixedStubLen(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubLen pins how Len answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubLen(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a boundedcachetest.MixedStub that
+// the checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[boundedcachetest.MixedPutCall]
 
-	stub.Behaviour(t, "Len", mixedStubLenSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnLen.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Len(a0)
-		assert.Equal(t, got0, want0, "Len must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		got := s.OnLen.AssertCalledOnce(t, "Len must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var seen []boundedcachetest.MixedLenCall
-		s.OnLen.OnRecord(func(c boundedcachetest.MixedLenCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		_, _ = s.Len(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Len call")
-	})
-
-	t.Run("wires WithMixedLen at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := boundedcachetest.NewMixedStub(t, boundedcachetest.WithMixedLen(func(_ context.Context) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		assert.True(t, called, "WithMixedLen must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Len-failing")
-		s := boundedcachetest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Len(a0)
-		assert.ErrorIs(t, r1, want, "Len must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := boundedcachetest.NewMixedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnLen.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		s.ResetCalls()
-		got0, _ := s.Len(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Put stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[boundedcachetest.MixedPutCall] {
-	instance := func(s *boundedcachetest.MixedStub) stub.Instance[boundedcachetest.MixedPutCall] {
-		return stub.Instance[boundedcachetest.MixedPutCall]{
-			Stub: s.OnPut.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 boundedcache.Key
-				var a2 boundedcache.Value
-				a1 = boundedcache.Key("Put-a")
-				a2 = boundedcache.Value{Body: "Body-a"}
-				_ = s.Put(a0, a1, a2)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[boundedcachetest.MixedPutCall]{
-		New: func(tb assert.TB) stub.Instance[boundedcachetest.MixedPutCall] {
-			return instance(boundedcachetest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Put alone.
+func mixedStubInstanceOf(tb assert.TB, s *boundedcachetest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnPut.MethodStub,
+		Call: func() {
+			_ = mixedStubPut(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[boundedcachetest.MixedPutCall] {
-			return instance(boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[boundedcachetest.MixedPutCall] {
-			return instance(boundedcachetest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[boundedcachetest.MixedPutCall] {
-			return instance(boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[boundedcachetest.MixedPutCall] {
-			return instance(boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[boundedcachetest.MixedPutCall] {
-			return instance(boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Put", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Put", mixedStubPutSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			_ = mixedStubPut(t, s)
+			got := s.OnPut.AssertCalledOnce(t, "Put records the call")
+			a0, a1, a2 := mixedStubPutArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.Value, a2, "the call records Value")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			var seen []boundedcachetest.MixedPutCall
+			s.OnPut.OnRecord(func(c boundedcachetest.MixedPutCall) { seen = append(seen, c) })
+			_ = mixedStubPut(t, s)
+			_ = mixedStubPut(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Put")
+		})
+	})
+
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Get", mixedStubGetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			_, _ = mixedStubGet(t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0, a1 := mixedStubGetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			var seen []boundedcachetest.MixedGetCall
+			s.OnGet.OnRecord(func(c boundedcachetest.MixedGetCall) { seen = append(seen, c) })
+			_, _ = mixedStubGet(t, s)
+			_, _ = mixedStubGet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
+		})
+	})
+
+	t.Run("Len", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Len", mixedStubLenSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			_, _ = mixedStubLen(t, s)
+			got := s.OnLen.AssertCalledOnce(t, "Len records the call")
+			a0 := mixedStubLenArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			var seen []boundedcachetest.MixedLenCall
+			s.OnLen.OnRecord(func(c boundedcachetest.MixedLenCall) { seen = append(seen, c) })
+			_, _ = mixedStubLen(t, s)
+			_, _ = mixedStubLen(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Len")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, boundedcachetest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Put", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			_ = mixedStubPut(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnPut.CallCount(), 0, "ResetCalls clears the calls of Put")
+		})
+
+		t.Run("keeps the results of Returns of Put", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			want0 := mixedStubPutPins()
+			s.OnPut.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Put")
+		})
+
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			_, _ = mixedStubGet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+		})
+
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubGet(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Get")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Get")
+		})
+
+		t.Run("clears the recorded calls of Len", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			_, _ = mixedStubLen(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnLen.CallCount(), 0, "ResetCalls clears the calls of Len")
+		})
+
+		t.Run("keeps the results of Returns of Len", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			want0, want1 := mixedStubLenPins()
+			s.OnLen.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubLen(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Len")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Len")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, boundedcachetest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := boundedcachetest.NewMixedStubFailing(t, want)
+			r0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Len with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Len-failing")
+			s := boundedcachetest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubLen(t, s)
+			assert.ErrorIs(t, r1, want, "Len fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Put to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := boundedcachetest.NewMixedStub(t)
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubDelegateTo(inner))
+			_ = mixedStubPut(t, s)
+			inner.OnPut.AssertCalledOnce(t, "Put calls the implementation")
+		})
+
+		t.Run("fails Put with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-delegate")
+			inner := boundedcachetest.NewMixedStub(t)
+			inner.OnPut.Faults(want, 1)
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubDelegateTo(inner))
+			r0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of the implementation")
+		})
+
+		t.Run("passes Get to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := boundedcachetest.NewMixedStub(t)
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubGet(t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
+		})
+
+		t.Run("passes Len to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := boundedcachetest.NewMixedStub(t)
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubLen(t, s)
+			inner.OnLen.AssertCalledOnce(t, "Len calls the implementation")
+		})
+
+		t.Run("fails Len with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Len-delegate")
+			inner := boundedcachetest.NewMixedStub(t)
+			inner.OnLen.Faults(want, 1)
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubLen(t, s)
+			assert.ErrorIs(t, r1, want, "Len fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, boundedcachetest.NewMixedStub(tb, boundedcachetest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				boundedcachetest.NewMixedStub(
+					tb,
+					boundedcachetest.MixedStubWithClock(clk),
+					boundedcachetest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Put with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Put-failing")
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubFailing(want))
+			r0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, r0, want, "Put fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Len with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Len-failing")
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubFailing(want))
+			_, r1 := mixedStubLen(t, s)
+			assert.ErrorIs(t, r1, want, "Len fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedPut", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Put", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := boundedcachetest.NewMixedStub(
+				t,
+				boundedcachetest.WithMixedPut(func(_ context.Context, _ boundedcache.Key, _ boundedcache.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubPut(t, s)
+			assert.True(t, called, "WithMixedPut sets the function of Put")
+		})
+	})
+
+	t.Run("WithMixedGet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Get", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := boundedcachetest.NewMixedStub(
+				t,
+				boundedcachetest.WithMixedGet(func(_ context.Context, _ boundedcache.Key) (boundedcache.Value, bool) {
+					called = true
+					var z0 boundedcache.Value
+					var z1 bool
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubGet(t, s)
+			assert.True(t, called, "WithMixedGet sets the function of Get")
+		})
+	})
+
+	t.Run("WithMixedLen", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Len", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := boundedcachetest.NewMixedStub(t, boundedcachetest.WithMixedLen(func(_ context.Context) (int, error) {
+				called = true
+				var z0 int
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = mixedStubLen(t, s)
+			assert.True(t, called, "WithMixedLen sets the function of Len")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedPutStub checks the methods of MixedPutStub, which configures
+// Put.
+func TestMixedPutStub(t *testing.T) {
 	t.Parallel()
 
-	inner := boundedcachetest.NewMixedStub(t)
-	s := boundedcachetest.NewMixedStub(t, boundedcachetest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Put to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 boundedcache.Key
-		var a2 boundedcache.Value
-		a1 = boundedcache.Key("Put-a")
-		a2 = boundedcache.Value{Body: "Body-a"}
-		_ = s.Put(a0, a1, a2)
-		inner.OnPut.AssertCalledOnce(t, "Put must reach the wrapped implementation")
+		t.Run("sets the results of each call of Put", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			want0 := mixedStubPutPins()
+			s.OnPut.Returns(want0)
+			got0 := mixedStubPut(t, s)
+			assert.ErrorIs(t, got0, want0, "Put returns the error that Returns sets")
+		})
+
+		t.Run("configures Put for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := boundedcachetest.NewMixedStub(r)
+			s.OnPut.Strict()
+			var want0 error
+			s.OnPut.Returns(want0)
+			_ = mixedStubPut(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Put")
+		})
 	})
 
-	t.Run("surfaces what Put answered", func(t *testing.T) {
-		want := errors.New("Put-delegate")
-		inner.OnPut.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 boundedcache.Key
-		var a2 boundedcache.Value
-		a1 = boundedcache.Key("Put-a")
-		a2 = boundedcache.Value{Body: "Body-a"}
-		r0 := s.Put(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Put must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Get to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 boundedcache.Key
-		a1 = boundedcache.Key("Get-a")
-		_, _ = s.Get(a0, a1)
-		inner.OnGet.AssertCalledOnce(t, "Get must reach the wrapped implementation")
-	})
-
-	t.Run("forwards Len to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		inner.OnLen.AssertCalledOnce(t, "Len must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Len answered", func(t *testing.T) {
-		want := errors.New("Len-delegate")
-		inner.OnLen.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Len(a0)
-		assert.ErrorIs(t, r1, want, "Len must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Put to the function", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 boundedcache.Key
+			var got2 boundedcache.Value
+			s.OnPut.Func(func(p0 context.Context, p1 boundedcache.Key, p2 boundedcache.Value) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = mixedStubPut(t, s)
+			a0, a1, a2 := mixedStubPutArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives Value")
+		})
 	})
 }
 
-// dokimi:provenance sha256:cf4cf716b8d0f89bb4e856038f7fc21d86f2a77c3b1e661c3120ad132a2aec01
+// TestMixedGetStub checks the methods of MixedGetStub, which configures
+// Get.
+func TestMixedGetStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			want0, want1 := mixedStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			got0, got1 := mixedStubGet(t, s)
+			expect.Equal(t, got0, want0, "Get returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "Get returns the Result1 that Returns sets")
+		})
+
+		t.Run("configures Get for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := boundedcachetest.NewMixedStub(r)
+			s.OnGet.Strict()
+			var want0 boundedcache.Value
+			var want1 bool
+			s.OnGet.Returns(want0, want1)
+			_, _ = mixedStubGet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 boundedcache.Key
+			s.OnGet.Func(func(p0 context.Context, p1 boundedcache.Key) (boundedcache.Value, bool) {
+				got0, got1 = p0, p1
+				var z0 boundedcache.Value
+				var z1 bool
+				return z0, z1
+			})
+			_, _ = mixedStubGet(t, s)
+			a0, a1 := mixedStubGetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// TestMixedLenStub checks the methods of MixedLenStub, which configures
+// Len.
+func TestMixedLenStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Len", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			want0, want1 := mixedStubLenPins()
+			s.OnLen.Returns(want0, want1)
+			got0, got1 := mixedStubLen(t, s)
+			expect.Equal(t, got0, want0, "Len returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Len returns the error that Returns sets")
+		})
+
+		t.Run("configures Len for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := boundedcachetest.NewMixedStub(r)
+			s.OnLen.Strict()
+			var want0 int
+			var want1 error
+			s.OnLen.Returns(want0, want1)
+			_, _ = mixedStubLen(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Len")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Len to the function", func(t *testing.T) {
+			t.Parallel()
+			s := boundedcachetest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnLen.Func(func(p0 context.Context) (int, error) {
+				got0 = p0
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubLen(t, s)
+			a0 := mixedStubLenArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:19e0cea8bcfd9045a44387e31273d9196ca9c8ce4d8b31de45dc947530bc1a3d

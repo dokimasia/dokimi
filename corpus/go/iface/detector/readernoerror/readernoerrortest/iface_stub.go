@@ -10,28 +10,19 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror"
+	"go.dokimi.dev/stub"
 )
 
-// ReaderNoErrorLookupCall records one invocation of ReaderNoError.Lookup.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ReaderNoErrorLookupCall records one call of ReaderNoError.Lookup.
 type ReaderNoErrorLookupCall struct {
 	Ctx    context.Context
 	Key    string
 	Result readernoerror.Value
 }
 
-// --- Per-method configuration ---
-
-// ReaderNoErrorLookupStub controls how the double answers Lookup and
-// records what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ReaderNoErrorLookupStub configures Lookup and records its calls. Lookup
+// returns no error, so a fault armed through it fails the test.
 type ReaderNoErrorLookupStub struct {
 	*stub.MethodStub[ReaderNoErrorLookupCall]
 
@@ -39,113 +30,104 @@ type ReaderNoErrorLookupStub struct {
 	fallback *ReaderNoErrorLookupReturn
 }
 
-// ReaderNoErrorLookupReturn holds the fixed answer configured through
-// Returns.
+// ReaderNoErrorLookupReturn contains the fixed results of Lookup.
 type ReaderNoErrorLookupReturn struct {
 	Result readernoerror.Value
 }
 
-// Returns pins a fixed result for every call to Lookup. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Lookup answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Lookup. A function takes
+// precedence over them.
 func (s *ReaderNoErrorLookupStub) Returns(result readernoerror.Value) *ReaderNoErrorLookupStub {
 	s.fallback = &ReaderNoErrorLookupReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Lookup, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Lookup answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Lookup from its
+// arguments.
 func (s *ReaderNoErrorLookupStub) Func(fn func(context.Context, string) readernoerror.Value) *ReaderNoErrorLookupStub {
 	s.fn = fn
 	return s
 }
 
-// --- ReaderNoErrorStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ReaderNoErrorStubOption configures a [ReaderNoErrorStub] at construction
-// time.
+// ReaderNoErrorStubOption configures a [ReaderNoErrorStub] at its
+// construction.
 type ReaderNoErrorStubOption func(*ReaderNoErrorStub)
 
-// ReaderNoErrorStubStrict makes an unconfigured method fail the test
-// rather than return its zero value.
+// ReaderNoErrorStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func ReaderNoErrorStubStrict() ReaderNoErrorStubOption {
 	return func(s *ReaderNoErrorStub) { s.strict = true }
 }
 
-// ReaderNoErrorStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// ReaderNoErrorStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func ReaderNoErrorStubDelegateTo(impl readernoerror.ReaderNoError) ReaderNoErrorStubOption {
 	return func(s *ReaderNoErrorStub) {
 		s.OnLookup.Func(impl.Lookup)
 	}
 }
 
-// ReaderNoErrorStubWithClock drives latency and time-windowed faults from
-// clk rather than from wall time, so a test asserting on a five-second
-// timeout does not take five seconds.
+// ReaderNoErrorStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func ReaderNoErrorStubWithClock(clk assert.Clock) ReaderNoErrorStubOption {
 	return func(s *ReaderNoErrorStub) { s.group.SetClock(clk) }
 }
 
-// ReaderNoErrorStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ReaderNoErrorStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func ReaderNoErrorStubWithRandSource(src rand.Source) ReaderNoErrorStubOption {
 	return func(s *ReaderNoErrorStub) { s.group.SetRandSource(src) }
 }
 
-// ReaderNoErrorStubBenchMode disables call recording. Dispatch still
-// works; only the accumulating call log is dropped.
+// ReaderNoErrorStubBenchMode returns the option that turns the recording
+// of calls off. The methods still return their results.
 func ReaderNoErrorStubBenchMode() ReaderNoErrorStubOption {
 	return func(s *ReaderNoErrorStub) { s.group.BenchMode() }
 }
 
-// ReaderNoErrorStubWithLatency makes every method sleep d before
-// answering, for a test standing in for a slow dependency rather than one
-// slow method. Pair it with ReaderNoErrorStubWithClock, or d elapses in
-// wall time.
+// ReaderNoErrorStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without ReaderNoErrorStubWithClock, d passes
+// in real time.
 func ReaderNoErrorStubWithLatency(d time.Duration) ReaderNoErrorStubOption {
 	return func(s *ReaderNoErrorStub) { s.group.SetLatency(d) }
 }
 
-// WithReaderNoErrorLookup sets Lookup's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithReaderNoErrorLookup returns the option that sets the function of
+// Lookup.
 func WithReaderNoErrorLookup(fn func(context.Context, string) readernoerror.Value) ReaderNoErrorStubOption {
 	return func(s *ReaderNoErrorStub) { s.OnLookup.Func(fn) }
 }
 
-// ReaderNoErrorStub is a recording test double for ReaderNoError.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ReaderNoErrorStub is a recording test double of ReaderNoError. Each
+// field On<Method> configures its method. An unconfigured method records
+// the call and returns the zero values of its results.
 type ReaderNoErrorStub struct {
 	OnLookup *ReaderNoErrorLookupStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that ReaderNoErrorStub satisfies ReaderNoError.
+// The compiler checks that ReaderNoErrorStub implements ReaderNoError.
 var _ readernoerror.ReaderNoError = (*ReaderNoErrorStub)(nil)
 
-// NewReaderNoErrorStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewReaderNoErrorStub returns a double of ReaderNoError that reports its
+// failures to tb and applies opts. The double checks the expected counts
+// of calls at the end of the test. With a nil tb, the double reports
+// nothing.
 func NewReaderNoErrorStub(tb assert.TB, opts ...ReaderNoErrorStubOption) *ReaderNoErrorStub {
 	s := &ReaderNoErrorStub{
-		OnLookup: &ReaderNoErrorLookupStub{MethodStub: stub.NewMethodStub[ReaderNoErrorLookupCall](tb, "ReaderNoError.Lookup")},
+		OnLookup: &ReaderNoErrorLookupStub{
+			MethodStub: stub.NewMethodStub[ReaderNoErrorLookupCall](tb, "ReaderNoError.Lookup"),
+		},
 	}
 	s.group = stub.NewGroup(
 		s.OnLookup.MethodStub,
@@ -160,30 +142,28 @@ func NewReaderNoErrorStub(tb assert.TB, opts ...ReaderNoErrorStubOption) *Reader
 	return s
 }
 
-// NewReaderNoErrorStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewReaderNoErrorStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ReaderNoErrorStubOption) *ReaderNoErrorStub {
+// NewReaderNoErrorStubDelayed returns a double whose methods sleep d on
+// clk before they return. It applies opts after the clock and the latency.
+func NewReaderNoErrorStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...ReaderNoErrorStubOption,
+) *ReaderNoErrorStub {
 	return NewReaderNoErrorStub(tb, append([]ReaderNoErrorStubOption{
 		ReaderNoErrorStubWithClock(clk),
 		ReaderNoErrorStubWithLatency(d),
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ReaderNoErrorStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ReaderNoErrorLookupStub) invoke(ctx context.Context, key string) func() ReaderNoErrorLookupReturn {
 	if s.fn == nil {
 		return nil
@@ -194,12 +174,8 @@ func (s *ReaderNoErrorLookupStub) invoke(ctx context.Context, key string) func()
 	}
 }
 
-// Lookup records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Lookup records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *ReaderNoErrorStub) Lookup(ctx context.Context, key string) readernoerror.Value {
 	call := ReaderNoErrorLookupCall{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[ReaderNoErrorLookupCall, ReaderNoErrorLookupReturn]{
@@ -212,4 +188,4 @@ func (s *ReaderNoErrorStub) Lookup(ctx context.Context, key string) readernoerro
 	return r.Result
 }
 
-// dokimi:provenance sha256:634c3dfa545c8b00e508b63133d895e2e0c4d11992213a6b9d36ab51a19e1a46
+// dokimi:provenance sha256:6a0d0d362a254de3995a2860626a667244306d2ab534920e354c6a749210e88c

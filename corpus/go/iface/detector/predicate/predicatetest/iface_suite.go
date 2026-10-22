@@ -7,7 +7,7 @@ package predicatetest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate"
 )
 
@@ -40,33 +40,22 @@ func PredicateSuite() conform.Suite[predicate.Predicate] {
 	return conform.Suite[predicate.Predicate]{Declaration: "Predicate"}
 }
 
-// RunPredicate applies the checks of Predicate, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunPredicate[T predicate.Predicate](t *testing.T, newSubject func() T, opts ...PredicateOption) {
+// RunPredicateSuite applies the checks of Predicate, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunPredicateSuite[T predicate.Predicate](t *testing.T, newSubject func() T, opts ...PredicateOption) {
 	t.Helper()
-	conform.Verify(t, PredicateSuite(), func(*PredicateHandle) predicate.Predicate { return newSubject() }, opts...)
+	RunPredicateSuiteFromHandle(t, func(*PredicateHandle) T { return newSubject() }, opts...)
 }
 
-// RunPredicateOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunPredicateOn[T predicate.Predicate](t *testing.T, newSubject func(h *PredicateHandle) T, opts ...PredicateOption) {
+// RunPredicateSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunPredicateSuiteFromHandle[T predicate.Predicate](
+	t *testing.T,
+	newSubject func(h *PredicateHandle) T,
+	opts ...PredicateOption,
+) {
 	t.Helper()
-	conform.Verify(t, PredicateSuite(), func(h *PredicateHandle) predicate.Predicate { return newSubject(h) }, opts...)
+	conform.Run(t, PredicateSuite(), func(h *PredicateHandle) predicate.Predicate { return newSubject(h) }, opts...)
 }
 
-// ControlPredicate applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlPredicate[T predicate.Predicate](t *testing.T, newControl func() T, opts ...PredicateOption) {
-	t.Helper()
-	conform.Control(t, PredicateSuite(), func(*PredicateHandle) predicate.Predicate { return newControl() }, opts...)
-}
-
-// ControlPredicateOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlPredicateOn[T predicate.Predicate](t *testing.T, newControl func(h *PredicateHandle) T, opts ...PredicateOption) {
-	t.Helper()
-	conform.Control(t, PredicateSuite(), func(h *PredicateHandle) predicate.Predicate { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:10d8aca414eb13f3344845e846bf700bc3127dda55bf802869173e6a2239fbf5
+// dokimi:provenance sha256:605efdd894365fa303b3de4cfe4880b8cd316fddf02b63d463d1308ad1aba7e9

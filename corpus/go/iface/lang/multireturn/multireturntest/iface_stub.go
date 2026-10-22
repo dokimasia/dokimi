@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn"
+	"go.dokimi.dev/stub"
 )
 
-// WideQuadCall records one invocation of Wide.Quad.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// WideQuadCall records one call of Wide.Quad.
 type WideQuadCall struct {
 	Ctx     context.Context
 	ID      string
@@ -27,10 +24,7 @@ type WideQuadCall struct {
 	Err     error
 }
 
-// WideTripleCall records one invocation of Wide.Triple.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// WideTripleCall records one call of Wide.Triple.
 type WideTripleCall struct {
 	Ctx     context.Context
 	ID      string
@@ -39,10 +33,7 @@ type WideTripleCall struct {
 	Result2 bool
 }
 
-// WideNoErrorCall records one invocation of Wide.NoError.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// WideNoErrorCall records one call of Wide.NoError.
 type WideNoErrorCall struct {
 	Ctx     context.Context
 	ID      string
@@ -50,14 +41,8 @@ type WideNoErrorCall struct {
 	Result1 int
 }
 
-// --- Per-method configuration ---
-
-// WideQuadStub controls how the double answers Quad and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// WideQuadStub configures Quad and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type WideQuadStub struct {
 	*stub.MethodStub[WideQuadCall]
 
@@ -65,7 +50,7 @@ type WideQuadStub struct {
 	fallback *WideQuadReturn
 }
 
-// WideQuadReturn holds the fixed answer configured through Returns.
+// WideQuadReturn contains the fixed results of Quad.
 type WideQuadReturn struct {
 	Result0 string
 	Result1 int
@@ -73,26 +58,22 @@ type WideQuadReturn struct {
 	Err     error
 }
 
-// Returns pins a fixed result for every call to Quad. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Quad. A function and an
+// injected fault take precedence over them.
 func (s *WideQuadStub) Returns(result0 string, result1 int, result2 bool, err error) *WideQuadStub {
 	s.fallback = &WideQuadReturn{Result0: result0, Result1: result1, Result2: result2, Err: err}
 	return s
 }
 
-// Func supplies a body for Quad, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Quad from its
+// arguments. An injected fault takes precedence over it.
 func (s *WideQuadStub) Func(fn func(context.Context, string) (string, int, bool, error)) *WideQuadStub {
 	s.fn = fn
 	return s
 }
 
-// WideTripleStub controls how the double answers Triple and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// WideTripleStub configures Triple and records its calls. Triple returns
+// no error, so a fault armed through it fails the test.
 type WideTripleStub struct {
 	*stub.MethodStub[WideTripleCall]
 
@@ -100,38 +81,29 @@ type WideTripleStub struct {
 	fallback *WideTripleReturn
 }
 
-// WideTripleReturn holds the fixed answer configured through Returns.
+// WideTripleReturn contains the fixed results of Triple.
 type WideTripleReturn struct {
 	Result0 string
 	Result1 int
 	Result2 bool
 }
 
-// Returns pins a fixed result for every call to Triple. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Triple answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Triple. A function takes
+// precedence over them.
 func (s *WideTripleStub) Returns(result0 string, result1 int, result2 bool) *WideTripleStub {
 	s.fallback = &WideTripleReturn{Result0: result0, Result1: result1, Result2: result2}
 	return s
 }
 
-// Func supplies a body for Triple, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Triple answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Triple from its
+// arguments.
 func (s *WideTripleStub) Func(fn func(context.Context, string) (string, int, bool)) *WideTripleStub {
 	s.fn = fn
 	return s
 }
 
-// WideNoErrorStub controls how the double answers NoError and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// WideNoErrorStub configures NoError and records its calls. NoError
+// returns no error, so a fault armed through it fails the test.
 type WideNoErrorStub struct {
 	*stub.MethodStub[WideNoErrorCall]
 
@@ -139,47 +111,41 @@ type WideNoErrorStub struct {
 	fallback *WideNoErrorReturn
 }
 
-// WideNoErrorReturn holds the fixed answer configured through Returns.
+// WideNoErrorReturn contains the fixed results of NoError.
 type WideNoErrorReturn struct {
 	Result0 string
 	Result1 int
 }
 
-// Returns pins a fixed result for every call to NoError. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: NoError answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of NoError. A function takes
+// precedence over them.
 func (s *WideNoErrorStub) Returns(result0 string, result1 int) *WideNoErrorStub {
 	s.fallback = &WideNoErrorReturn{Result0: result0, Result1: result1}
 	return s
 }
 
-// Func supplies a body for NoError, for when the answer depends on the
-// arguments. Nothing takes precedence over it: NoError answers no error,
-// so the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of NoError from its
+// arguments.
 func (s *WideNoErrorStub) Func(fn func(context.Context, string) (string, int)) *WideNoErrorStub {
 	s.fn = fn
 	return s
 }
 
-// --- WideStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// WideStubOption configures a [WideStub] at construction time.
+// WideStubOption configures a [WideStub] at its construction.
 type WideStubOption func(*WideStub)
 
-// WideStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// WideStubStrict returns the option that makes an unconfigured method fail
+// the test instead of returning its zero value.
 func WideStubStrict() WideStubOption {
 	return func(s *WideStub) { s.strict = true }
 }
 
-// WideStubDelegateTo wraps a real implementation: every method forwards to
-// impl and is recorded on the double on the way through.
+// WideStubDelegateTo returns the option that passes each call to impl. The
+// double still records the call.
 func WideStubDelegateTo(impl multireturn.Wide) WideStubOption {
 	return func(s *WideStub) {
 		s.OnQuad.Func(impl.Quad)
@@ -188,83 +154,75 @@ func WideStubDelegateTo(impl multireturn.Wide) WideStubOption {
 	}
 }
 
-// WideStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// WideStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func WideStubWithClock(clk assert.Clock) WideStubOption {
 	return func(s *WideStub) { s.group.SetClock(clk) }
 }
 
-// WideStubWithRandSource makes probabilistic fault injection reproducible.
-// A failure nobody can replay is not a finding.
+// WideStubWithRandSource returns the option that sets the random source of
+// the probabilistic faults to src. A seeded source repeats the faults of a
+// run.
 func WideStubWithRandSource(src rand.Source) WideStubOption {
 	return func(s *WideStub) { s.group.SetRandSource(src) }
 }
 
-// WideStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// WideStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func WideStubBenchMode() WideStubOption {
 	return func(s *WideStub) { s.group.BenchMode() }
 }
 
-// WideStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with WideStubWithClock, or d elapses in wall time.
+// WideStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without WideStubWithClock, d passes in real time.
 func WideStubWithLatency(d time.Duration) WideStubOption {
 	return func(s *WideStub) { s.group.SetLatency(d) }
 }
 
-// WideStubFailing arms every method that can fail with err, so a caller's
-// error path is one option rather than one Faults call per method. A
-// method answering no error is left alone.
+// WideStubFailing returns the option that arms err on each method that can
+// fail. Each call of such a method then fails with err.
 func WideStubFailing(err error) WideStubOption {
 	return func(s *WideStub) {
 		s.OnQuad.Faults(err, 1)
 	}
 }
 
-// WithWideQuad sets Quad's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithWideQuad returns the option that sets the function of Quad.
 func WithWideQuad(fn func(context.Context, string) (string, int, bool, error)) WideStubOption {
 	return func(s *WideStub) { s.OnQuad.Func(fn) }
 }
 
-// WithWideTriple sets Triple's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithWideTriple returns the option that sets the function of Triple.
 func WithWideTriple(fn func(context.Context, string) (string, int, bool)) WideStubOption {
 	return func(s *WideStub) { s.OnTriple.Func(fn) }
 }
 
-// WithWideNoError sets NoError's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithWideNoError returns the option that sets the function of NoError.
 func WithWideNoError(fn func(context.Context, string) (string, int)) WideStubOption {
 	return func(s *WideStub) { s.OnNoError.Func(fn) }
 }
 
-// WideStub is a recording test double for Wide.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// WideStub is a recording test double of Wide. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type WideStub struct {
 	OnQuad    *WideQuadStub
 	OnTriple  *WideTripleStub
 	OnNoError *WideNoErrorStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that WideStub satisfies Wide.
+// The compiler checks that WideStub implements Wide.
 var _ multireturn.Wide = (*WideStub)(nil)
 
-// NewWideStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewWideStub returns a double of Wide that reports its failures to tb and
+// applies opts. The double checks the expected counts of calls at the end
+// of the test. With a nil tb, the double reports nothing.
 func NewWideStub(tb assert.TB, opts ...WideStubOption) *WideStub {
 	s := &WideStub{
 		OnQuad:    &WideQuadStub{MethodStub: stub.NewMethodStub[WideQuadCall](tb, "Wide.Quad")},
@@ -286,10 +244,8 @@ func NewWideStub(tb assert.TB, opts ...WideStubOption) *WideStub {
 	return s
 }
 
-// NewWideStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
+// NewWideStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
 func NewWideStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...WideStubOption) *WideStub {
 	return NewWideStub(tb, append([]WideStubOption{
 		WideStubWithClock(clk),
@@ -297,26 +253,20 @@ func NewWideStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ..
 	}, opts...)...)
 }
 
-// NewWideStubFailing returns a double whose every fallible method answers
-// err — [WideStubFailing] applied at construction, for the test whose
-// whole subject is the caller's error path. Further options apply after
-// it.
+// NewWideStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
 func NewWideStubFailing(tb assert.TB, err error, opts ...WideStubOption) *WideStub {
 	return NewWideStub(tb, append([]WideStubOption{WideStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *WideStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *WideQuadStub) invoke(ctx context.Context, id string) func() WideQuadReturn {
 	if s.fn == nil {
 		return nil
@@ -327,12 +277,8 @@ func (s *WideQuadStub) invoke(ctx context.Context, id string) func() WideQuadRet
 	}
 }
 
-// Quad records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Quad records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *WideStub) Quad(ctx context.Context, id string) (string, int, bool, error) {
 	call := WideQuadCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnQuad.MethodStub, &call, stub.Arms[WideQuadCall, WideQuadReturn]{
@@ -349,9 +295,8 @@ func (s *WideStub) Quad(ctx context.Context, id string) (string, int, bool, erro
 	return r.Result0, r.Result1, r.Result2, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *WideTripleStub) invoke(ctx context.Context, id string) func() WideTripleReturn {
 	if s.fn == nil {
 		return nil
@@ -362,12 +307,8 @@ func (s *WideTripleStub) invoke(ctx context.Context, id string) func() WideTripl
 	}
 }
 
-// Triple records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Triple records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *WideStub) Triple(ctx context.Context, id string) (string, int, bool) {
 	call := WideTripleCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnTriple.MethodStub, &call, stub.Arms[WideTripleCall, WideTripleReturn]{
@@ -382,9 +323,8 @@ func (s *WideStub) Triple(ctx context.Context, id string) (string, int, bool) {
 	return r.Result0, r.Result1, r.Result2
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *WideNoErrorStub) invoke(ctx context.Context, id string) func() WideNoErrorReturn {
 	if s.fn == nil {
 		return nil
@@ -395,12 +335,8 @@ func (s *WideNoErrorStub) invoke(ctx context.Context, id string) func() WideNoEr
 	}
 }
 
-// NoError records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// NoError records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *WideStub) NoError(ctx context.Context, id string) (string, int) {
 	call := WideNoErrorCall{Ctx: ctx, ID: id}
 	r := stub.Answer(s.OnNoError.MethodStub, &call, stub.Arms[WideNoErrorCall, WideNoErrorReturn]{
@@ -414,4 +350,4 @@ func (s *WideStub) NoError(ctx context.Context, id string) (string, int) {
 	return r.Result0, r.Result1
 }
 
-// dokimi:provenance sha256:164e7aeb63dd909c762850da1609681edbfb6b899052d985df6b7cc55e757a75
+// dokimi:provenance sha256:00c7ca405f54d579c37f00ca8634ec4e623edf4000a4f155f3cb55761159bc3a

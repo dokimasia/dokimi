@@ -11,119 +11,194 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/enum/priority"
 )
 
-// TestPriorityVariants pins the declared set itself, which every other
-// check here takes as given.
-func TestPriorityVariants(t *testing.T) {
+// TestPriority checks the functions and the methods of the enumeration
+// Priority.
+func TestPriority(t *testing.T) {
 	t.Parallel()
 
-	all := priority.PriorityValues()
-
-	t.Run("declares exactly 4 variants", func(t *testing.T) {
-		t.Parallel()
-		assert.Length(t, all, 4, "the declared set must not change unnoticed")
-	})
-
-	t.Run("no two variants share a value", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
 		seen := map[priority.Priority]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v], "each variant must hold a distinct value")
+		for _, v := range []priority.Priority{
+			priority.Low,
+			priority.Medium,
+			priority.High,
+			priority.Critical,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 
-	t.Run("no two variants share a textual form", func(t *testing.T) {
+	t.Run("PriorityValues", func(t *testing.T) {
 		t.Parallel()
-		seen := map[string]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v.String()], "each variant must render distinctly")
-			seen[v.String()] = true
+
+		t.Run("returns the declared variants in the order of their declaration", func(t *testing.T) {
+			t.Parallel()
+			want := []priority.Priority{
+				priority.Low,
+				priority.Medium,
+				priority.High,
+				priority.Critical,
+			}
+			assert.Equal(t, priority.PriorityValues(), want, "PriorityValues returns the declared variants")
+		})
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := priority.PriorityValues(), priority.PriorityValues()
+			assert.NotEqual(t, &first[0], &second[0], "the two calls return two slices", assert.ByIdentity())
+		})
+	})
+
+	t.Run("String", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []priority.Priority{
+				priority.Low,
+				priority.Medium,
+				priority.High,
+				priority.Critical,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+
+		t.Run("renders a value outside the declared set with a text of its own", func(t *testing.T) {
+			t.Parallel()
+			out := priority.Priority(4)
+			for _, v := range []priority.Priority{
+				priority.Low,
+				priority.Medium,
+				priority.High,
+				priority.Critical,
+			} {
+				assert.NotEqual(t, out.String(), v.String(), "an undeclared value has a text of its own")
+			}
+		})
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give priority.Priority
+		}{
+			{name: "accepts Low", give: priority.Low},
+			{name: "accepts Medium", give: priority.Medium},
+			{name: "accepts High", give: priority.High},
+			{name: "accepts Critical", give: priority.Critical},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			assert.False(t, priority.Priority(4).IsValid(), "IsValid refuses an undeclared value")
+		})
+
+		t.Run("accepts the zero value Low", func(t *testing.T) {
+			t.Parallel()
+			var zero priority.Priority
+			assert.Equal(t, zero, priority.Low, "the zero value is Low")
+			assert.True(t, zero.IsValid(), "IsValid accepts the zero value")
+		})
+	})
+
+	t.Run("ParsePriority", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give priority.Priority
+		}{
+			{name: "returns Low for its text", give: priority.Low},
+			{name: "returns Medium for its text", give: priority.Medium},
+			{name: "returns High for its text", give: priority.High},
+			{name: "returns Critical for its text", give: priority.Critical},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := priority.ParsePriority(tt.give.String())
+				assert.NoError(t, err, "ParsePriority accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParsePriority returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := priority.ParsePriority("?????????")
+			assert.ErrorIs(
+				t,
+				err,
+				priority.ErrUnknownPriority,
+				"ParsePriority refuses the text with ErrUnknownPriority",
+			)
+			assert.Contains(t, err.Error(), "?????????", "the error contains the refused text")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give priority.Priority
+		}{
+			{name: "encodes Low as its text", give: priority.Low},
+			{name: "encodes Medium as its text", give: priority.Medium},
+			{name: "encodes High as its text", give: priority.High},
+			{name: "encodes Critical as its text", give: priority.Critical},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(t, string(text), tt.give.String(), "the encoding of the variant is its text")
+			})
 		}
 	})
 
-	t.Run("a value outside the set is not valid", func(t *testing.T) {
+	t.Run("UnmarshalText", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, priority.Priority(4).IsValid(), "an undeclared value must not be valid")
-	})
 
-	t.Run("every declared variant is valid", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			assert.True(t, v.IsValid(), "a declared variant must be valid")
+		tests := []struct {
+			name string
+			give priority.Priority
+		}{
+			{name: "decodes Low from its encoding", give: priority.Low},
+			{name: "decodes Medium from its encoding", give: priority.Medium},
+			{name: "decodes High from its encoding", give: priority.High},
+			{name: "decodes Critical from its encoding", give: priority.Critical},
 		}
-	})
-
-	t.Run("the zero value is Low", func(t *testing.T) {
-		t.Parallel()
-		var zero priority.Priority
-		assert.True(t, zero.IsValid(), "the zero value is a declared variant")
-		assert.Equal(t, zero, priority.Low, "the zero value is Low")
-	})
-}
-
-// TestPriorityText pins the round trip a value makes through anything that
-// carries it as text — a log line, a JSON field, a database column.
-func TestPriorityText(t *testing.T) {
-	t.Parallel()
-
-	all := priority.PriorityValues()
-
-	t.Run("every variant survives a text round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			got, err := priority.ParsePriority(v.String())
-			assert.NoError(t, err, "a declared variant must parse back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got priority.Priority
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
 		}
-	})
 
-	t.Run("text naming no variant is refused", func(t *testing.T) {
-		t.Parallel()
-		_, err := priority.ParsePriority("?????????")
-		assert.ErrorIs(t, err, priority.ErrUnknownPriority, "unknown text must be refused with the declared refusal")
-	})
-
-	t.Run("a value outside the set does not render as one inside it", func(t *testing.T) {
-		t.Parallel()
-		out := priority.Priority(4)
-		for _, v := range all {
-			assert.NotEqual(t, out.String(), v.String(), "an undeclared value must render distinctly")
-		}
-	})
-}
-
-// TestPriorityEncoding pins the boundary where a value most often crosses
-// out of the program's control.
-func TestPriorityEncoding(t *testing.T) {
-	t.Parallel()
-
-	all := priority.PriorityValues()
-
-	t.Run("every variant encodes to its textual form", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
-			assert.Equal(t, string(text), v.String(), "the encoding must match the textual form")
-		}
-	})
-
-	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
 			var got priority.Priority
-			assert.NoError(t, got.UnmarshalText(text), "and decode back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
-		}
-	})
-
-	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
-		t.Parallel()
-		var got priority.Priority
-		assert.HasError(t, got.UnmarshalText([]byte("?????????")), "unknown text must not decode")
+			assert.HasError(t, got.UnmarshalText([]byte("?????????")), "UnmarshalText refuses the text")
+		})
 	})
 }
 
-// dokimi:provenance sha256:f88c640a81337ff42e8bb7a364e1f2289215d046be7e6398224e225ad1fb8c9a
+// dokimi:provenance sha256:563cd173146cefd7ceb5c13e416eecb9fd7163ac167f04b05482086cb7d11405

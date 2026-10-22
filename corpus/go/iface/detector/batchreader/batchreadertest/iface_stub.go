@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader"
+	"go.dokimi.dev/stub"
 )
 
-// BatchReaderGetAllCall records one invocation of BatchReader.GetAll.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// BatchReaderGetAllCall records one call of BatchReader.GetAll.
 type BatchReaderGetAllCall struct {
 	Ctx    context.Context
 	Keys   []string
@@ -25,14 +22,9 @@ type BatchReaderGetAllCall struct {
 	Err    error
 }
 
-// --- Per-method configuration ---
-
-// BatchReaderGetAllStub controls how the double answers GetAll and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// BatchReaderGetAllStub configures GetAll and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type BatchReaderGetAllStub struct {
 	*stub.MethodStub[BatchReaderGetAllCall]
 
@@ -40,118 +32,115 @@ type BatchReaderGetAllStub struct {
 	fallback *BatchReaderGetAllReturn
 }
 
-// BatchReaderGetAllReturn holds the fixed answer configured through
-// Returns.
+// BatchReaderGetAllReturn contains the fixed results of GetAll.
 type BatchReaderGetAllReturn struct {
 	Result []batchreader.Value
 	Err    error
 }
 
-// Returns pins a fixed result for every call to GetAll. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of GetAll. A function and an
+// injected fault take precedence over them.
 func (s *BatchReaderGetAllStub) Returns(result []batchreader.Value, err error) *BatchReaderGetAllStub {
 	s.fallback = &BatchReaderGetAllReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for GetAll, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
-func (s *BatchReaderGetAllStub) Func(fn func(context.Context, ...string) ([]batchreader.Value, error)) *BatchReaderGetAllStub {
+// Func sets the function that computes the results of GetAll from its
+// arguments. An injected fault takes precedence over it.
+func (s *BatchReaderGetAllStub) Func(
+	fn func(context.Context, ...string) ([]batchreader.Value, error),
+) *BatchReaderGetAllStub {
 	s.fn = fn
 	return s
 }
 
-// --- BatchReaderStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// BatchReaderStubOption configures a [BatchReaderStub] at construction
-// time.
+// BatchReaderStubOption configures a [BatchReaderStub] at its
+// construction.
 type BatchReaderStubOption func(*BatchReaderStub)
 
-// BatchReaderStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// BatchReaderStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func BatchReaderStubStrict() BatchReaderStubOption {
 	return func(s *BatchReaderStub) { s.strict = true }
 }
 
-// BatchReaderStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// BatchReaderStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func BatchReaderStubDelegateTo(impl batchreader.BatchReader) BatchReaderStubOption {
 	return func(s *BatchReaderStub) {
 		s.OnGetAll.Func(impl.GetAll)
 	}
 }
 
-// BatchReaderStubWithClock drives latency and time-windowed faults from
-// clk rather than from wall time, so a test asserting on a five-second
-// timeout does not take five seconds.
+// BatchReaderStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func BatchReaderStubWithClock(clk assert.Clock) BatchReaderStubOption {
 	return func(s *BatchReaderStub) { s.group.SetClock(clk) }
 }
 
-// BatchReaderStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// BatchReaderStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func BatchReaderStubWithRandSource(src rand.Source) BatchReaderStubOption {
 	return func(s *BatchReaderStub) { s.group.SetRandSource(src) }
 }
 
-// BatchReaderStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// BatchReaderStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func BatchReaderStubBenchMode() BatchReaderStubOption {
 	return func(s *BatchReaderStub) { s.group.BenchMode() }
 }
 
-// BatchReaderStubWithLatency makes every method sleep d before answering,
-// for a test standing in for a slow dependency rather than one slow
-// method. Pair it with BatchReaderStubWithClock, or d elapses in wall
-// time.
+// BatchReaderStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without BatchReaderStubWithClock, d passes in
+// real time.
 func BatchReaderStubWithLatency(d time.Duration) BatchReaderStubOption {
 	return func(s *BatchReaderStub) { s.group.SetLatency(d) }
 }
 
-// BatchReaderStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// BatchReaderStubFailing returns the option that arms err on each method
+// that can fail. Each call of such a method then fails with err.
 func BatchReaderStubFailing(err error) BatchReaderStubOption {
 	return func(s *BatchReaderStub) {
 		s.OnGetAll.Faults(err, 1)
 	}
 }
 
-// WithBatchReaderGetAll sets GetAll's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithBatchReaderGetAll returns the option that sets the function of
+// GetAll.
 func WithBatchReaderGetAll(fn func(context.Context, ...string) ([]batchreader.Value, error)) BatchReaderStubOption {
 	return func(s *BatchReaderStub) { s.OnGetAll.Func(fn) }
 }
 
-// BatchReaderStub is a recording test double for BatchReader.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// BatchReaderStub is a recording test double of BatchReader. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type BatchReaderStub struct {
 	OnGetAll *BatchReaderGetAllStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that BatchReaderStub satisfies BatchReader.
+// The compiler checks that BatchReaderStub implements BatchReader.
 var _ batchreader.BatchReader = (*BatchReaderStub)(nil)
 
-// NewBatchReaderStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewBatchReaderStub returns a double of BatchReader that reports its
+// failures to tb and applies opts. The double checks the expected counts
+// of calls at the end of the test. With a nil tb, the double reports
+// nothing.
 func NewBatchReaderStub(tb assert.TB, opts ...BatchReaderStubOption) *BatchReaderStub {
 	s := &BatchReaderStub{
-		OnGetAll: &BatchReaderGetAllStub{MethodStub: stub.NewMethodStub[BatchReaderGetAllCall](tb, "BatchReader.GetAll")},
+		OnGetAll: &BatchReaderGetAllStub{
+			MethodStub: stub.NewMethodStub[BatchReaderGetAllCall](tb, "BatchReader.GetAll"),
+		},
 	}
 	s.group = stub.NewGroup(
 		s.OnGetAll.MethodStub,
@@ -166,38 +155,34 @@ func NewBatchReaderStub(tb assert.TB, opts ...BatchReaderStubOption) *BatchReade
 	return s
 }
 
-// NewBatchReaderStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewBatchReaderStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...BatchReaderStubOption) *BatchReaderStub {
+// NewBatchReaderStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
+func NewBatchReaderStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...BatchReaderStubOption,
+) *BatchReaderStub {
 	return NewBatchReaderStub(tb, append([]BatchReaderStubOption{
 		BatchReaderStubWithClock(clk),
 		BatchReaderStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewBatchReaderStubFailing returns a double whose every fallible method
-// answers err — [BatchReaderStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewBatchReaderStubFailing returns a double on which each call of a
+// method that can fail fails with err. It applies opts after the failure.
 func NewBatchReaderStubFailing(tb assert.TB, err error, opts ...BatchReaderStubOption) *BatchReaderStub {
 	return NewBatchReaderStub(tb, append([]BatchReaderStubOption{BatchReaderStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *BatchReaderStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *BatchReaderGetAllStub) invoke(ctx context.Context, keys ...string) func() BatchReaderGetAllReturn {
 	if s.fn == nil {
 		return nil
@@ -208,12 +193,8 @@ func (s *BatchReaderGetAllStub) invoke(ctx context.Context, keys ...string) func
 	}
 }
 
-// GetAll records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// GetAll records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *BatchReaderStub) GetAll(ctx context.Context, keys ...string) ([]batchreader.Value, error) {
 	call := BatchReaderGetAllCall{Ctx: ctx, Keys: keys}
 	r := stub.Answer(s.OnGetAll.MethodStub, &call, stub.Arms[BatchReaderGetAllCall, BatchReaderGetAllReturn]{
@@ -228,4 +209,4 @@ func (s *BatchReaderStub) GetAll(ctx context.Context, keys ...string) ([]batchre
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:fed492d7e0621ff738e1cee505cc9355a3962bd5cde64af649003f03bd0eec91
+// dokimi:provenance sha256:4a17d50a961fac0eb5b5a51d37a111611278357c8ab5ed811c0b037695bb657b

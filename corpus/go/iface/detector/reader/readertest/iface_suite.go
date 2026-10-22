@@ -7,7 +7,7 @@ package readertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader"
 )
 
@@ -39,33 +39,18 @@ func ReaderSuite() conform.Suite[reader.Reader] {
 	return conform.Suite[reader.Reader]{Declaration: "Reader"}
 }
 
-// RunReader applies the checks of Reader, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunReader[T reader.Reader](t *testing.T, newSubject func() T, opts ...ReaderOption) {
+// RunReaderSuite applies the checks of Reader, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunReaderSuite[T reader.Reader](t *testing.T, newSubject func() T, opts ...ReaderOption) {
 	t.Helper()
-	conform.Verify(t, ReaderSuite(), func(*ReaderHandle) reader.Reader { return newSubject() }, opts...)
+	RunReaderSuiteFromHandle(t, func(*ReaderHandle) T { return newSubject() }, opts...)
 }
 
-// RunReaderOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunReaderOn[T reader.Reader](t *testing.T, newSubject func(h *ReaderHandle) T, opts ...ReaderOption) {
+// RunReaderSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunReaderSuiteFromHandle[T reader.Reader](t *testing.T, newSubject func(h *ReaderHandle) T, opts ...ReaderOption) {
 	t.Helper()
-	conform.Verify(t, ReaderSuite(), func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+	conform.Run(t, ReaderSuite(), func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
 }
 
-// ControlReader applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlReader[T reader.Reader](t *testing.T, newControl func() T, opts ...ReaderOption) {
-	t.Helper()
-	conform.Control(t, ReaderSuite(), func(*ReaderHandle) reader.Reader { return newControl() }, opts...)
-}
-
-// ControlReaderOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlReaderOn[T reader.Reader](t *testing.T, newControl func(h *ReaderHandle) T, opts ...ReaderOption) {
-	t.Helper()
-	conform.Control(t, ReaderSuite(), func(h *ReaderHandle) reader.Reader { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:ebd2835d87bfed2660fffc8abcc84be39fbd4c2ec70f882db7c7d4dc823d7498
+// dokimi:provenance sha256:5d0c30393550e84ce2e7cad18862edd3dd1d131590fdf8f94170b8902d60a0e3

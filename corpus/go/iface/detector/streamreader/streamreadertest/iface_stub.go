@@ -11,37 +11,25 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader"
+	"go.dokimi.dev/stub"
 )
 
-// StreamReaderAddCall records one invocation of StreamReader.Add.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StreamReaderAddCall records one call of StreamReader.Add.
 type StreamReaderAddCall struct {
 	Ctx context.Context
 	V   streamreader.Value
 	Err error
 }
 
-// StreamReaderListCall records one invocation of StreamReader.List.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StreamReaderListCall records one call of StreamReader.List.
 type StreamReaderListCall struct {
 	Ctx    context.Context
 	Result iter.Seq2[streamreader.Value, error]
 }
 
-// --- Per-method configuration ---
-
-// StreamReaderAddStub controls how the double answers Add and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StreamReaderAddStub configures Add and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type StreamReaderAddStub struct {
 	*stub.MethodStub[StreamReaderAddCall]
 
@@ -49,31 +37,27 @@ type StreamReaderAddStub struct {
 	fallback *StreamReaderAddReturn
 }
 
-// StreamReaderAddReturn holds the fixed answer configured through Returns.
+// StreamReaderAddReturn contains the fixed results of Add.
 type StreamReaderAddReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Add. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Add. A function and an
+// injected fault take precedence over them.
 func (s *StreamReaderAddStub) Returns(err error) *StreamReaderAddStub {
 	s.fallback = &StreamReaderAddReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Add, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Add from its
+// arguments. An injected fault takes precedence over it.
 func (s *StreamReaderAddStub) Func(fn func(context.Context, streamreader.Value) error) *StreamReaderAddStub {
 	s.fn = fn
 	return s
 }
 
-// StreamReaderListStub controls how the double answers List and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StreamReaderListStub configures List and records its calls. List returns
+// no error, so a fault armed through it fails the test.
 type StreamReaderListStub struct {
 	*stub.MethodStub[StreamReaderListCall]
 
@@ -81,36 +65,29 @@ type StreamReaderListStub struct {
 	fallback *StreamReaderListReturn
 }
 
-// StreamReaderListReturn holds the fixed answer configured through
-// Returns.
+// StreamReaderListReturn contains the fixed results of List.
 type StreamReaderListReturn struct {
 	Result iter.Seq2[streamreader.Value, error]
 }
 
-// Returns pins a fixed result for every call to List. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: List answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of List. A function takes
+// precedence over them.
 func (s *StreamReaderListStub) Returns(result iter.Seq2[streamreader.Value, error]) *StreamReaderListStub {
 	s.fallback = &StreamReaderListReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for List, for when the answer depends on the
-// arguments. Nothing takes precedence over it: List answers no error, so
-// the double carries no fault arm for one to be reported through.
-func (s *StreamReaderListStub) Func(fn func(context.Context) iter.Seq2[streamreader.Value, error]) *StreamReaderListStub {
+// Func sets the function that computes the results of List from its
+// arguments.
+func (s *StreamReaderListStub) Func(
+	fn func(context.Context) iter.Seq2[streamreader.Value, error],
+) *StreamReaderListStub {
 	s.fn = fn
 	return s
 }
 
-// Yields makes List return a sequence over items.
-//
-// Building a range-over-func by hand is a closure with a break-handling
-// branch in it, and a test that gets that branch wrong reports a bug in
-// itself rather than in the subject.
+// Yields makes List return a sequence of items. The sequence stops where
+// the caller breaks out of the loop.
 func (s *StreamReaderListStub) Yields(items ...streamreader.Value) *StreamReaderListStub {
 	s.fn = func(_ context.Context) iter.Seq2[streamreader.Value, error] {
 		return func(yield func(streamreader.Value, error) bool) {
@@ -124,11 +101,8 @@ func (s *StreamReaderListStub) Yields(items ...streamreader.Value) *StreamReader
 	return s
 }
 
-// YieldsError makes List return a sequence that produces items and then
-// fails.
-//
-// Failing partway through is the case a consumer's loop most often gets
-// wrong, and it cannot be reached by a sequence that only ever succeeds.
+// YieldsError makes List return a sequence of items that fails with err
+// after the last item.
 func (s *StreamReaderListStub) YieldsError(items []streamreader.Value, err error) *StreamReaderListStub {
 	s.fn = func(_ context.Context) iter.Seq2[streamreader.Value, error] {
 		return func(yield func(streamreader.Value, error) bool) {
@@ -144,23 +118,22 @@ func (s *StreamReaderListStub) YieldsError(items []streamreader.Value, err error
 	return s
 }
 
-// --- StreamReaderStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// StreamReaderStubOption configures a [StreamReaderStub] at construction
-// time.
+// StreamReaderStubOption configures a [StreamReaderStub] at its
+// construction.
 type StreamReaderStubOption func(*StreamReaderStub)
 
-// StreamReaderStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// StreamReaderStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func StreamReaderStubStrict() StreamReaderStubOption {
 	return func(s *StreamReaderStub) { s.strict = true }
 }
 
-// StreamReaderStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// StreamReaderStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func StreamReaderStubDelegateTo(impl streamreader.StreamReader) StreamReaderStubOption {
 	return func(s *StreamReaderStub) {
 		s.OnAdd.Func(impl.Add)
@@ -168,78 +141,71 @@ func StreamReaderStubDelegateTo(impl streamreader.StreamReader) StreamReaderStub
 	}
 }
 
-// StreamReaderStubWithClock drives latency and time-windowed faults from
-// clk rather than from wall time, so a test asserting on a five-second
-// timeout does not take five seconds.
+// StreamReaderStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func StreamReaderStubWithClock(clk assert.Clock) StreamReaderStubOption {
 	return func(s *StreamReaderStub) { s.group.SetClock(clk) }
 }
 
-// StreamReaderStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// StreamReaderStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func StreamReaderStubWithRandSource(src rand.Source) StreamReaderStubOption {
 	return func(s *StreamReaderStub) { s.group.SetRandSource(src) }
 }
 
-// StreamReaderStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// StreamReaderStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func StreamReaderStubBenchMode() StreamReaderStubOption {
 	return func(s *StreamReaderStub) { s.group.BenchMode() }
 }
 
-// StreamReaderStubWithLatency makes every method sleep d before answering,
-// for a test standing in for a slow dependency rather than one slow
-// method. Pair it with StreamReaderStubWithClock, or d elapses in wall
-// time.
+// StreamReaderStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without StreamReaderStubWithClock, d passes
+// in real time.
 func StreamReaderStubWithLatency(d time.Duration) StreamReaderStubOption {
 	return func(s *StreamReaderStub) { s.group.SetLatency(d) }
 }
 
-// StreamReaderStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// StreamReaderStubFailing returns the option that arms err on each method
+// that can fail. Each call of such a method then fails with err.
 func StreamReaderStubFailing(err error) StreamReaderStubOption {
 	return func(s *StreamReaderStub) {
 		s.OnAdd.Faults(err, 1)
 	}
 }
 
-// WithStreamReaderAdd sets Add's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithStreamReaderAdd returns the option that sets the function of Add.
 func WithStreamReaderAdd(fn func(context.Context, streamreader.Value) error) StreamReaderStubOption {
 	return func(s *StreamReaderStub) { s.OnAdd.Func(fn) }
 }
 
-// WithStreamReaderList sets List's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithStreamReaderList returns the option that sets the function of List.
 func WithStreamReaderList(fn func(context.Context) iter.Seq2[streamreader.Value, error]) StreamReaderStubOption {
 	return func(s *StreamReaderStub) { s.OnList.Func(fn) }
 }
 
-// StreamReaderStub is a recording test double for StreamReader.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// StreamReaderStub is a recording test double of StreamReader. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type StreamReaderStub struct {
 	OnAdd  *StreamReaderAddStub
 	OnList *StreamReaderListStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that StreamReaderStub satisfies StreamReader.
+// The compiler checks that StreamReaderStub implements StreamReader.
 var _ streamreader.StreamReader = (*StreamReaderStub)(nil)
 
-// NewStreamReaderStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewStreamReaderStub returns a double of StreamReader that reports its
+// failures to tb and applies opts. The double checks the expected counts
+// of calls at the end of the test. With a nil tb, the double reports
+// nothing.
 func NewStreamReaderStub(tb assert.TB, opts ...StreamReaderStubOption) *StreamReaderStub {
 	s := &StreamReaderStub{
 		OnAdd:  &StreamReaderAddStub{MethodStub: stub.NewMethodStub[StreamReaderAddCall](tb, "StreamReader.Add")},
@@ -259,38 +225,34 @@ func NewStreamReaderStub(tb assert.TB, opts ...StreamReaderStubOption) *StreamRe
 	return s
 }
 
-// NewStreamReaderStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewStreamReaderStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...StreamReaderStubOption) *StreamReaderStub {
+// NewStreamReaderStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
+func NewStreamReaderStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...StreamReaderStubOption,
+) *StreamReaderStub {
 	return NewStreamReaderStub(tb, append([]StreamReaderStubOption{
 		StreamReaderStubWithClock(clk),
 		StreamReaderStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewStreamReaderStubFailing returns a double whose every fallible method
-// answers err — [StreamReaderStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewStreamReaderStubFailing returns a double on which each call of a
+// method that can fail fails with err. It applies opts after the failure.
 func NewStreamReaderStubFailing(tb assert.TB, err error, opts ...StreamReaderStubOption) *StreamReaderStub {
 	return NewStreamReaderStub(tb, append([]StreamReaderStubOption{StreamReaderStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StreamReaderStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StreamReaderAddStub) invoke(ctx context.Context, v streamreader.Value) func() StreamReaderAddReturn {
 	if s.fn == nil {
 		return nil
@@ -301,12 +263,8 @@ func (s *StreamReaderAddStub) invoke(ctx context.Context, v streamreader.Value) 
 	}
 }
 
-// Add records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Add records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StreamReaderStub) Add(ctx context.Context, v streamreader.Value) error {
 	call := StreamReaderAddCall{Ctx: ctx, V: v}
 	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[StreamReaderAddCall, StreamReaderAddReturn]{
@@ -320,9 +278,8 @@ func (s *StreamReaderStub) Add(ctx context.Context, v streamreader.Value) error 
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StreamReaderListStub) invoke(ctx context.Context) func() StreamReaderListReturn {
 	if s.fn == nil {
 		return nil
@@ -333,12 +290,8 @@ func (s *StreamReaderListStub) invoke(ctx context.Context) func() StreamReaderLi
 	}
 }
 
-// List records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// List records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StreamReaderStub) List(ctx context.Context) iter.Seq2[streamreader.Value, error] {
 	call := StreamReaderListCall{Ctx: ctx}
 	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[StreamReaderListCall, StreamReaderListReturn]{
@@ -351,4 +304,4 @@ func (s *StreamReaderStub) List(ctx context.Context) iter.Seq2[streamreader.Valu
 	return r.Result
 }
 
-// dokimi:provenance sha256:f1ccab80904350e7851b1357e8d3ad61bd3bb24be6e36c883877a7c6c68ef77e
+// dokimi:provenance sha256:1595f5f4f0429a49650b6d65a18fd256acbf96c4a97a55db9fedb5b2d959e020

@@ -7,7 +7,7 @@ package nocontexttest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext"
 )
 
@@ -56,33 +56,22 @@ func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 	return conform.Suite[nocontext.Calculator]{Declaration: "Calculator"}
 }
 
-// RunCalculator applies the checks of Calculator, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunCalculator[T nocontext.Calculator](t *testing.T, newSubject func() T, opts ...CalculatorOption) {
+// RunCalculatorSuite applies the checks of Calculator, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunCalculatorSuite[T nocontext.Calculator](t *testing.T, newSubject func() T, opts ...CalculatorOption) {
 	t.Helper()
-	conform.Verify(t, CalculatorSuite(), func(*CalculatorHandle) nocontext.Calculator { return newSubject() }, opts...)
+	RunCalculatorSuiteFromHandle(t, func(*CalculatorHandle) T { return newSubject() }, opts...)
 }
 
-// RunCalculatorOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunCalculatorOn[T nocontext.Calculator](t *testing.T, newSubject func(h *CalculatorHandle) T, opts ...CalculatorOption) {
+// RunCalculatorSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunCalculatorSuiteFromHandle[T nocontext.Calculator](
+	t *testing.T,
+	newSubject func(h *CalculatorHandle) T,
+	opts ...CalculatorOption,
+) {
 	t.Helper()
-	conform.Verify(t, CalculatorSuite(), func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) }, opts...)
+	conform.Run(t, CalculatorSuite(), func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) }, opts...)
 }
 
-// ControlCalculator applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlCalculator[T nocontext.Calculator](t *testing.T, newControl func() T, opts ...CalculatorOption) {
-	t.Helper()
-	conform.Control(t, CalculatorSuite(), func(*CalculatorHandle) nocontext.Calculator { return newControl() }, opts...)
-}
-
-// ControlCalculatorOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlCalculatorOn[T nocontext.Calculator](t *testing.T, newControl func(h *CalculatorHandle) T, opts ...CalculatorOption) {
-	t.Helper()
-	conform.Control(t, CalculatorSuite(), func(h *CalculatorHandle) nocontext.Calculator { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:a36f0472e775b6cf6357fa96a2e2a064e0e16740c0a06854511c0029050f63e0
+// dokimi:provenance sha256:18e8a31c196fdf560190c0266e85dac489621a4d5a76c0c0836397e3c4a331e5

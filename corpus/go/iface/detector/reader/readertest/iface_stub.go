@@ -10,15 +10,12 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/fault"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader"
+	"go.dokimi.dev/fault"
+	"go.dokimi.dev/stub"
 )
 
-// ReaderGetCall records one invocation of Reader.Get.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ReaderGetCall records one call of Reader.Get.
 type ReaderGetCall struct {
 	Ctx    context.Context
 	Key    string
@@ -26,14 +23,8 @@ type ReaderGetCall struct {
 	Err    error
 }
 
-// --- Per-method configuration ---
-
-// ReaderGetStub controls how the double answers Get and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ReaderGetStub configures Get and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type ReaderGetStub struct {
 	*stub.MethodStub[ReaderGetCall]
 
@@ -41,146 +32,137 @@ type ReaderGetStub struct {
 	fallback *ReaderGetReturn
 }
 
-// ReaderGetReturn holds the fixed answer configured through Returns.
+// ReaderGetReturn contains the fixed results of Get.
 type ReaderGetReturn struct {
 	Result reader.Value
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Get. A Func override takes
-// precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Get. A function and an
+// injected fault take precedence over them.
 func (s *ReaderGetStub) Returns(result reader.Value, err error) *ReaderGetStub {
 	s.fallback = &ReaderGetReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Get, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Get from its
+// arguments. An injected fault takes precedence over it.
 func (s *ReaderGetStub) Func(fn func(context.Context, string) (reader.Value, error)) *ReaderGetStub {
 	s.fn = fn
 	return s
 }
 
-// FaultNotFound makes the next Get call fail with ErrNotFound; the calls
-// after it succeed.
-//
-// One-shot, because that is what a test asserting on this error's handling
-// wants: poison a single call, then let the scenario continue. Faults is
-// the periodic form for the rest.
+// FaultNotFound makes the next call of Get fail with ErrNotFound. The
+// calls after it succeed.
 func (s *ReaderGetStub) FaultNotFound() *ReaderGetStub {
 	s.FaultsOnce(reader.ErrNotFound)
 	return s
 }
 
-// RetrySchedule makes Get fail with err on every call before call number
-// 3, which succeeds along with every call after it.
+// RetrySchedule makes Get fail with err on every call before call 3. Call
+// 3 and every call after it succeed.
 func (s *ReaderGetStub) RetrySchedule(err error) *ReaderGetStub {
 	s.SetFault(fault.NewRetryFault[ReaderGetCall](err, 3))
 	return s
 }
 
-// FaultForPartition makes Get fail every nth call whose Key matches key,
-// leaving other partitions untouched.
-//
-// Partitioned failure is what proves isolation: a test asserting that one
-// tenant's outage does not reach another needs the fault to be selective.
+// FaultForPartition makes Get fail every nth call whose Key matches key.
+// The fault leaves the calls of the other partitions alone. A test of the
+// isolation of a partition needs a fault that selects its calls.
 func (s *ReaderGetStub) FaultForPartition(key string, err error, n int) *ReaderGetStub {
 	s.FaultsWhen(func(c ReaderGetCall) bool { return c.Key == key }, err, n)
 	return s
 }
 
-// FaultForOtherPartitions inverts FaultForPartition: every nth call whose
-// Key does not match key fails, and the named partition is left healthy.
+// FaultForOtherPartitions makes Get fail every nth call whose Key differs
+// from key. The fault leaves the calls of the partition of key alone.
 func (s *ReaderGetStub) FaultForOtherPartitions(key string, err error, n int) *ReaderGetStub {
 	s.FaultsWhen(func(c ReaderGetCall) bool { return c.Key != key }, err, n)
 	return s
 }
 
-// --- ReaderStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ReaderStubOption configures a [ReaderStub] at construction time.
+// The reference to fault.CompatV1 fails the build against another major
+// version of the fault strategies.
+var _ = fault.CompatV1
+
+// ReaderStubOption configures a [ReaderStub] at its construction.
 type ReaderStubOption func(*ReaderStub)
 
-// ReaderStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// ReaderStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func ReaderStubStrict() ReaderStubOption {
 	return func(s *ReaderStub) { s.strict = true }
 }
 
-// ReaderStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// ReaderStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func ReaderStubDelegateTo(impl reader.Reader) ReaderStubOption {
 	return func(s *ReaderStub) {
 		s.OnGet.Func(impl.Get)
 	}
 }
 
-// ReaderStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// ReaderStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func ReaderStubWithClock(clk assert.Clock) ReaderStubOption {
 	return func(s *ReaderStub) { s.group.SetClock(clk) }
 }
 
-// ReaderStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ReaderStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func ReaderStubWithRandSource(src rand.Source) ReaderStubOption {
 	return func(s *ReaderStub) { s.group.SetRandSource(src) }
 }
 
-// ReaderStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// ReaderStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func ReaderStubBenchMode() ReaderStubOption {
 	return func(s *ReaderStub) { s.group.BenchMode() }
 }
 
-// ReaderStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with ReaderStubWithClock, or d elapses in wall time.
+// ReaderStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without ReaderStubWithClock, d passes in real time.
 func ReaderStubWithLatency(d time.Duration) ReaderStubOption {
 	return func(s *ReaderStub) { s.group.SetLatency(d) }
 }
 
-// ReaderStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// ReaderStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func ReaderStubFailing(err error) ReaderStubOption {
 	return func(s *ReaderStub) {
 		s.OnGet.Faults(err, 1)
 	}
 }
 
-// WithReaderGet sets Get's body at construction time, for the common case
-// of configuring one method and taking the defaults for the rest.
+// WithReaderGet returns the option that sets the function of Get.
 func WithReaderGet(fn func(context.Context, string) (reader.Value, error)) ReaderStubOption {
 	return func(s *ReaderStub) { s.OnGet.Func(fn) }
 }
 
-// ReaderStub is a recording test double for Reader.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ReaderStub is a recording test double of Reader. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type ReaderStub struct {
 	OnGet *ReaderGetStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that ReaderStub satisfies Reader.
+// The compiler checks that ReaderStub implements Reader.
 var _ reader.Reader = (*ReaderStub)(nil)
 
-// NewReaderStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewReaderStub returns a double of Reader that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewReaderStub(tb assert.TB, opts ...ReaderStubOption) *ReaderStub {
 	s := &ReaderStub{
 		OnGet: &ReaderGetStub{MethodStub: stub.NewMethodStub[ReaderGetCall](tb, "Reader.Get")},
@@ -198,11 +180,8 @@ func NewReaderStub(tb assert.TB, opts ...ReaderStubOption) *ReaderStub {
 	return s
 }
 
-// NewReaderStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewReaderStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewReaderStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ReaderStubOption) *ReaderStub {
 	return NewReaderStub(tb, append([]ReaderStubOption{
 		ReaderStubWithClock(clk),
@@ -210,26 +189,20 @@ func NewReaderStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts 
 	}, opts...)...)
 }
 
-// NewReaderStubFailing returns a double whose every fallible method
-// answers err — [ReaderStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewReaderStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewReaderStubFailing(tb assert.TB, err error, opts ...ReaderStubOption) *ReaderStub {
 	return NewReaderStub(tb, append([]ReaderStubOption{ReaderStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ReaderStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ReaderGetStub) invoke(ctx context.Context, key string) func() ReaderGetReturn {
 	if s.fn == nil {
 		return nil
@@ -240,12 +213,8 @@ func (s *ReaderGetStub) invoke(ctx context.Context, key string) func() ReaderGet
 	}
 }
 
-// Get records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Get records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ReaderStub) Get(ctx context.Context, key string) (reader.Value, error) {
 	call := ReaderGetCall{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[ReaderGetCall, ReaderGetReturn]{
@@ -260,4 +229,4 @@ func (s *ReaderStub) Get(ctx context.Context, key string) (reader.Value, error) 
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:2dbd5b877b9743830a8e6600da0d215938c2d5b0bd66d46298d67c33ae48903e
+// dokimi:provenance sha256:42f9fa3d70a53283abe8469e1faa825549846527d5ef9a9c1cdb907115e3f75e

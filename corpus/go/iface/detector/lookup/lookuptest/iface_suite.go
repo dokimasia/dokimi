@@ -7,7 +7,7 @@ package lookuptest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup"
 )
 
@@ -40,33 +40,18 @@ func LookupSuite() conform.Suite[lookup.Lookup] {
 	return conform.Suite[lookup.Lookup]{Declaration: "Lookup"}
 }
 
-// RunLookup applies the checks of Lookup, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunLookup[T lookup.Lookup](t *testing.T, newSubject func() T, opts ...LookupOption) {
+// RunLookupSuite applies the checks of Lookup, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunLookupSuite[T lookup.Lookup](t *testing.T, newSubject func() T, opts ...LookupOption) {
 	t.Helper()
-	conform.Verify(t, LookupSuite(), func(*LookupHandle) lookup.Lookup { return newSubject() }, opts...)
+	RunLookupSuiteFromHandle(t, func(*LookupHandle) T { return newSubject() }, opts...)
 }
 
-// RunLookupOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunLookupOn[T lookup.Lookup](t *testing.T, newSubject func(h *LookupHandle) T, opts ...LookupOption) {
+// RunLookupSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunLookupSuiteFromHandle[T lookup.Lookup](t *testing.T, newSubject func(h *LookupHandle) T, opts ...LookupOption) {
 	t.Helper()
-	conform.Verify(t, LookupSuite(), func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+	conform.Run(t, LookupSuite(), func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
 }
 
-// ControlLookup applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlLookup[T lookup.Lookup](t *testing.T, newControl func() T, opts ...LookupOption) {
-	t.Helper()
-	conform.Control(t, LookupSuite(), func(*LookupHandle) lookup.Lookup { return newControl() }, opts...)
-}
-
-// ControlLookupOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlLookupOn[T lookup.Lookup](t *testing.T, newControl func(h *LookupHandle) T, opts ...LookupOption) {
-	t.Helper()
-	conform.Control(t, LookupSuite(), func(h *LookupHandle) lookup.Lookup { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:670d494064c5fef6c0cfa3307241f2e62087570fb6963d58d0b135ea2c727e6c
+// dokimi:provenance sha256:a72fc1208854f2f322565e2fbc9e1d35dd458b660bd12b1d4bc34b19960003ae

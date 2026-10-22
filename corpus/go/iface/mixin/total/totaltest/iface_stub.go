@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/total"
+	"go.dokimi.dev/stub"
 )
 
-// MixedClassifyCall records one invocation of Mixed.Classify.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MixedClassifyCall records one call of Mixed.Classify.
 type MixedClassifyCall struct {
 	Ctx    context.Context
 	In     string
@@ -25,23 +22,15 @@ type MixedClassifyCall struct {
 	Err    error
 }
 
-// MixedNormalizeCall records one invocation of Mixed.Normalize.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// MixedNormalizeCall records one call of Mixed.Normalize.
 type MixedNormalizeCall struct {
 	In     string
 	Result string
 }
 
-// --- Per-method configuration ---
-
-// MixedClassifyStub controls how the double answers Classify and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MixedClassifyStub configures Classify and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type MixedClassifyStub struct {
 	*stub.MethodStub[MixedClassifyCall]
 
@@ -49,32 +38,28 @@ type MixedClassifyStub struct {
 	fallback *MixedClassifyReturn
 }
 
-// MixedClassifyReturn holds the fixed answer configured through Returns.
+// MixedClassifyReturn contains the fixed results of Classify.
 type MixedClassifyReturn struct {
 	Result string
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Classify. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Classify. A function and an
+// injected fault take precedence over them.
 func (s *MixedClassifyStub) Returns(result string, err error) *MixedClassifyStub {
 	s.fallback = &MixedClassifyReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Classify, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Classify from its
+// arguments. An injected fault takes precedence over it.
 func (s *MixedClassifyStub) Func(fn func(context.Context, string) (string, error)) *MixedClassifyStub {
 	s.fn = fn
 	return s
 }
 
-// MixedNormalizeStub controls how the double answers Normalize and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// MixedNormalizeStub configures Normalize and records its calls. Normalize
+// returns no error, so a fault armed through it fails the test.
 type MixedNormalizeStub struct {
 	*stub.MethodStub[MixedNormalizeCall]
 
@@ -82,46 +67,40 @@ type MixedNormalizeStub struct {
 	fallback *MixedNormalizeReturn
 }
 
-// MixedNormalizeReturn holds the fixed answer configured through Returns.
+// MixedNormalizeReturn contains the fixed results of Normalize.
 type MixedNormalizeReturn struct {
 	Result string
 }
 
-// Returns pins a fixed result for every call to Normalize. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Normalize answers no error, so the
-// double is built with no fault arm and a fault armed through Faults fails
-// the test.
+// Returns sets the results of every call of Normalize. A function takes
+// precedence over them.
 func (s *MixedNormalizeStub) Returns(result string) *MixedNormalizeStub {
 	s.fallback = &MixedNormalizeReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Normalize, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Normalize answers no error,
-// so the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Normalize from its
+// arguments.
 func (s *MixedNormalizeStub) Func(fn func(string) string) *MixedNormalizeStub {
 	s.fn = fn
 	return s
 }
 
-// --- MixedStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// MixedStubOption configures a [MixedStub] at construction time.
+// MixedStubOption configures a [MixedStub] at its construction.
 type MixedStubOption func(*MixedStub)
 
-// MixedStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// MixedStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func MixedStubStrict() MixedStubOption {
 	return func(s *MixedStub) { s.strict = true }
 }
 
-// MixedStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// MixedStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func MixedStubDelegateTo(impl total.Mixed) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnClassify.Func(impl.Classify)
@@ -129,78 +108,70 @@ func MixedStubDelegateTo(impl total.Mixed) MixedStubOption {
 	}
 }
 
-// MixedStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// MixedStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func MixedStubWithClock(clk assert.Clock) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetClock(clk) }
 }
 
-// MixedStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// MixedStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func MixedStubWithRandSource(src rand.Source) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetRandSource(src) }
 }
 
-// MixedStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// MixedStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func MixedStubBenchMode() MixedStubOption {
 	return func(s *MixedStub) { s.group.BenchMode() }
 }
 
-// MixedStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with MixedStubWithClock, or d elapses in wall time.
+// MixedStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without MixedStubWithClock, d passes in real time.
 func MixedStubWithLatency(d time.Duration) MixedStubOption {
 	return func(s *MixedStub) { s.group.SetLatency(d) }
 }
 
-// MixedStubFailing arms every method that can fail with err, so a caller's
-// error path is one option rather than one Faults call per method. A
-// method answering no error is left alone.
+// MixedStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func MixedStubFailing(err error) MixedStubOption {
 	return func(s *MixedStub) {
 		s.OnClassify.Faults(err, 1)
 	}
 }
 
-// WithMixedClassify sets Classify's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithMixedClassify returns the option that sets the function of Classify.
 func WithMixedClassify(fn func(context.Context, string) (string, error)) MixedStubOption {
 	return func(s *MixedStub) { s.OnClassify.Func(fn) }
 }
 
-// WithMixedNormalize sets Normalize's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithMixedNormalize returns the option that sets the function of
+// Normalize.
 func WithMixedNormalize(fn func(string) string) MixedStubOption {
 	return func(s *MixedStub) { s.OnNormalize.Func(fn) }
 }
 
-// MixedStub is a recording test double for Mixed.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// MixedStub is a recording test double of Mixed. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type MixedStub struct {
 	OnClassify  *MixedClassifyStub
 	OnNormalize *MixedNormalizeStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that MixedStub satisfies Mixed.
+// The compiler checks that MixedStub implements Mixed.
 var _ total.Mixed = (*MixedStub)(nil)
 
-// NewMixedStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewMixedStub returns a double of Mixed that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	s := &MixedStub{
 		OnClassify:  &MixedClassifyStub{MethodStub: stub.NewMethodStub[MixedClassifyCall](tb, "Mixed.Classify")},
@@ -220,10 +191,8 @@ func NewMixedStub(tb assert.TB, opts ...MixedStubOption) *MixedStub {
 	return s
 }
 
-// NewMixedStubDelayed returns a double whose every method sleeps d against
-// clk before answering — the clock and the latency a slow-dependency test
-// wants, in one call rather than two options. Further options apply after
-// the pair, so a caller can still add Strict or a method override.
+// NewMixedStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
 func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...MixedStubOption) *MixedStub {
 	return NewMixedStub(tb, append([]MixedStubOption{
 		MixedStubWithClock(clk),
@@ -231,26 +200,20 @@ func NewMixedStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts .
 	}, opts...)...)
 }
 
-// NewMixedStubFailing returns a double whose every fallible method answers
-// err — [MixedStubFailing] applied at construction, for the test whose
-// whole subject is the caller's error path. Further options apply after
-// it.
+// NewMixedStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
 func NewMixedStubFailing(tb assert.TB, err error, opts ...MixedStubOption) *MixedStub {
 	return NewMixedStub(tb, append([]MixedStubOption{MixedStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *MixedStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MixedClassifyStub) invoke(ctx context.Context, in string) func() MixedClassifyReturn {
 	if s.fn == nil {
 		return nil
@@ -261,12 +224,8 @@ func (s *MixedClassifyStub) invoke(ctx context.Context, in string) func() MixedC
 	}
 }
 
-// Classify records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Classify records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Classify(ctx context.Context, in string) (string, error) {
 	call := MixedClassifyCall{Ctx: ctx, In: in}
 	r := stub.Answer(s.OnClassify.MethodStub, &call, stub.Arms[MixedClassifyCall, MixedClassifyReturn]{
@@ -281,9 +240,8 @@ func (s *MixedStub) Classify(ctx context.Context, in string) (string, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *MixedNormalizeStub) invoke(in string) func() MixedNormalizeReturn {
 	if s.fn == nil {
 		return nil
@@ -294,12 +252,8 @@ func (s *MixedNormalizeStub) invoke(in string) func() MixedNormalizeReturn {
 	}
 }
 
-// Normalize records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Normalize records the call. An armed fault comes first, then the
+// function of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Normalize(in string) string {
 	call := MixedNormalizeCall{In: in}
 	r := stub.Answer(s.OnNormalize.MethodStub, &call, stub.Arms[MixedNormalizeCall, MixedNormalizeReturn]{
@@ -312,4 +266,4 @@ func (s *MixedStub) Normalize(in string) string {
 	return r.Result
 }
 
-// dokimi:provenance sha256:f1fb239287b08fe77ddc11dc8d98085aded66a38b91ed219460d73b53e291c4f
+// dokimi:provenance sha256:a33f4412b42b4cf5688f3f1ed7e24a36139461efc0335da12959447938fe1c1f

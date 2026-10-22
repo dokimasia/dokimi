@@ -7,7 +7,7 @@ package sampledtest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled"
 )
 
@@ -40,33 +40,22 @@ func LabellerSuite() conform.Suite[sampled.Labeller] {
 	return conform.Suite[sampled.Labeller]{Declaration: "Labeller"}
 }
 
-// RunLabeller applies the checks of Labeller, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunLabeller[T sampled.Labeller](t *testing.T, newSubject func() T, opts ...LabellerOption) {
+// RunLabellerSuite applies the checks of Labeller, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunLabellerSuite[T sampled.Labeller](t *testing.T, newSubject func() T, opts ...LabellerOption) {
 	t.Helper()
-	conform.Verify(t, LabellerSuite(), func(*LabellerHandle) sampled.Labeller { return newSubject() }, opts...)
+	RunLabellerSuiteFromHandle(t, func(*LabellerHandle) T { return newSubject() }, opts...)
 }
 
-// RunLabellerOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunLabellerOn[T sampled.Labeller](t *testing.T, newSubject func(h *LabellerHandle) T, opts ...LabellerOption) {
+// RunLabellerSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunLabellerSuiteFromHandle[T sampled.Labeller](
+	t *testing.T,
+	newSubject func(h *LabellerHandle) T,
+	opts ...LabellerOption,
+) {
 	t.Helper()
-	conform.Verify(t, LabellerSuite(), func(h *LabellerHandle) sampled.Labeller { return newSubject(h) }, opts...)
+	conform.Run(t, LabellerSuite(), func(h *LabellerHandle) sampled.Labeller { return newSubject(h) }, opts...)
 }
 
-// ControlLabeller applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlLabeller[T sampled.Labeller](t *testing.T, newControl func() T, opts ...LabellerOption) {
-	t.Helper()
-	conform.Control(t, LabellerSuite(), func(*LabellerHandle) sampled.Labeller { return newControl() }, opts...)
-}
-
-// ControlLabellerOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlLabellerOn[T sampled.Labeller](t *testing.T, newControl func(h *LabellerHandle) T, opts ...LabellerOption) {
-	t.Helper()
-	conform.Control(t, LabellerSuite(), func(h *LabellerHandle) sampled.Labeller { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:148ba95113879f41ca641e8dc194168893d01fa9c65718308fa26023613d1145
+// dokimi:provenance sha256:95b55734d9f4ece47b2221208e8274f4fcf6a62a0d8ec7d6f909522cc03526f3

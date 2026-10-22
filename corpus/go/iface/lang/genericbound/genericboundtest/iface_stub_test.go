@@ -12,30 +12,70 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound/genericboundtest"
+	"go.dokimi.dev/stub"
 )
 
-// rankedStubRankSubject binds Rank into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func rankedStubRankSubject[K genericbound.Ordered, V any](tb assert.TB) stub.Subject[genericboundtest.RankedRankCall[K, V], genericboundtest.RankedRankReturn[K, V]] {
+// rankedStubRankArgs returns the samples of the arguments of Rank.
+func rankedStubRankArgs[K genericbound.Ordered, V any](tb assert.TB) (context.Context, K) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 K
+	return a0, a1
+}
+
+// rankedStubRank calls Rank of s with the samples of its arguments.
+func rankedStubRank[K genericbound.Ordered, V any](tb assert.TB, s *genericboundtest.RankedStub[K, V]) (V, error) {
+	tb.Helper()
+	a0, a1 := rankedStubRankArgs[K, V](tb)
+	return s.Rank(a0, a1)
+}
+
+// rankedStubRankPins returns the samples of the results of Rank, with a
+// new error as its error result.
+func rankedStubRankPins[K genericbound.Ordered, V any]() (V, error) {
+	var want0 V
+	want1 := errors.New("Rank-returns")
+	return want0, want1
+}
+
+// rankedStubResetArgs returns the samples of the arguments of Reset.
+func rankedStubResetArgs[K genericbound.Ordered, V any](tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// rankedStubReset calls Reset of s with the samples of its arguments.
+func rankedStubReset[K genericbound.Ordered, V any](tb assert.TB, s *genericboundtest.RankedStub[K, V]) error {
+	tb.Helper()
+	a0 := rankedStubResetArgs[K, V](tb)
+	return s.Reset(a0)
+}
+
+// rankedStubResetPins returns the samples of the results of Reset, with a
+// new error as its error result.
+func rankedStubResetPins[K genericbound.Ordered, V any]() error {
+	want0 := errors.New("Reset-returns")
+	return want0
+}
+
+// rankedStubRankSubject returns the subject of [stub.Behaviour] for Rank.
+// The subject calls a new double that reports to tb.
+func rankedStubRankSubject[K genericbound.Ordered, V any](
+	tb assert.TB,
+) stub.Subject[genericboundtest.RankedRankCall[K, V], genericboundtest.RankedRankReturn[K, V]] {
 	tb.Helper()
 	s := genericboundtest.NewRankedStub[K, V](tb)
 	return stub.Subject[genericboundtest.RankedRankCall[K, V], genericboundtest.RankedRankReturn[K, V]]{
 		Stub: s.OnRank.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 K
-			_, _ = s.Rank(a0, a1)
+			_, _ = rankedStubRank[K, V](tb, s)
 		},
 		Result: func() genericboundtest.RankedRankReturn[K, V] {
-			var a0 context.Context
-			var a1 K
-			got0, got1 := s.Rank(a0, a1)
+			got0, got1 := rankedStubRank[K, V](tb, s)
 			return genericboundtest.RankedRankReturn[K, V]{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -47,106 +87,26 @@ func rankedStubRankSubject[K genericbound.Ordered, V any](tb assert.TB) stub.Sub
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 K
-			_, r1 := s.Rank(a0, a1)
+			_, r1 := rankedStubRank[K, V](tb, s)
 			return r1
 		},
 	}
 }
 
-// TestRankedStubRank pins how Rank answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func rankedStubRankChecks[K genericbound.Ordered, V any](t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Rank", rankedStubRankSubject[K, V])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := genericboundtest.NewRankedStub[K, V](t)
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Rank(a0, a1)
-		got := s.OnRank.AssertCalledOnce(t, "Rank must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := genericboundtest.NewRankedStub[K, V](t)
-		var seen []genericboundtest.RankedRankCall[K, V]
-		s.OnRank.OnRecord(func(c genericboundtest.RankedRankCall[K, V]) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Rank(a0, a1)
-		_, _ = s.Rank(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Rank call")
-	})
-
-	t.Run("wires WithRankedRank at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := genericboundtest.NewRankedStub(t, genericboundtest.WithRankedRank[K, V](func(_ context.Context, _ K) (V, error) {
-			called = true
-			var z0 V
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Rank(a0, a1)
-		assert.True(t, called, "WithRankedRank must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Rank-failing")
-		s := genericboundtest.NewRankedStubFailing[K, V](t, want)
-		var a0 context.Context
-		var a1 K
-		_, r1 := s.Rank(a0, a1)
-		assert.ErrorIs(t, r1, want, "Rank must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := genericboundtest.NewRankedStub[K, V](t)
-		var want0 V
-		var want1 error
-		s.OnRank.Returns(want0, want1)
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Rank(a0, a1)
-		s.ResetCalls()
-		_, _ = s.Rank(a0, a1)
-		s.OnRank.AssertCalledOnce(t, "Rank must record the call that followed the reset")
-	})
-}
-
-// rankedStubResetSubject binds Reset into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func rankedStubResetSubject[K genericbound.Ordered, V any](tb assert.TB) stub.Subject[genericboundtest.RankedResetCall[K, V], genericboundtest.RankedResetReturn[K, V]] {
+// rankedStubResetSubject returns the subject of [stub.Behaviour] for
+// Reset. The subject calls a new double that reports to tb.
+func rankedStubResetSubject[K genericbound.Ordered, V any](
+	tb assert.TB,
+) stub.Subject[genericboundtest.RankedResetCall[K, V], genericboundtest.RankedResetReturn[K, V]] {
 	tb.Helper()
 	s := genericboundtest.NewRankedStub[K, V](tb)
 	return stub.Subject[genericboundtest.RankedResetCall[K, V], genericboundtest.RankedResetReturn[K, V]]{
 		Stub: s.OnReset.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Reset(a0)
+			_ = rankedStubReset[K, V](tb, s)
 		},
 		Result: func() genericboundtest.RankedResetReturn[K, V] {
-			var a0 context.Context
-			got0 := s.Reset(a0)
+			got0 := rankedStubReset[K, V](tb, s)
 			return genericboundtest.RankedResetReturn[K, V]{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -157,187 +117,432 @@ func rankedStubResetSubject[K genericbound.Ordered, V any](tb assert.TB) stub.Su
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Reset(a0)
+			r0 := rankedStubReset[K, V](tb, s)
 			return r0
 		},
 	}
 }
 
-// TestRankedStubReset pins how Reset answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func rankedStubResetChecks[K genericbound.Ordered, V any](t *testing.T) {
-	t.Parallel()
+// rankedStubInstance is the instance of a genericboundtest.RankedStub that
+// the checks of the constructors and the options drive.
+type rankedStubInstance[K genericbound.Ordered, V any] = stub.Instance[genericboundtest.RankedRankCall[K, V]]
 
-	stub.Behaviour(t, "Reset", rankedStubResetSubject[K, V])
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := genericboundtest.NewRankedStub[K, V](t)
-		var a0 context.Context
-		_ = s.Reset(a0)
-		got := s.OnReset.AssertCalledOnce(t, "Reset must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := genericboundtest.NewRankedStub[K, V](t)
-		var seen []genericboundtest.RankedResetCall[K, V]
-		s.OnReset.OnRecord(func(c genericboundtest.RankedResetCall[K, V]) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Reset(a0)
-		_ = s.Reset(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Reset call")
-	})
-
-	t.Run("wires WithRankedReset at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := genericboundtest.NewRankedStub(t, genericboundtest.WithRankedReset[K, V](func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Reset(a0)
-		assert.True(t, called, "WithRankedReset must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Reset-failing")
-		s := genericboundtest.NewRankedStubFailing[K, V](t, want)
-		var a0 context.Context
-		r0 := s.Reset(a0)
-		assert.ErrorIs(t, r0, want, "Reset must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := genericboundtest.NewRankedStub[K, V](t)
-		var want0 error
-		s.OnReset.Returns(want0)
-		var a0 context.Context
-		_ = s.Reset(a0)
-		s.ResetCalls()
-		_ = s.Reset(a0)
-		s.OnReset.AssertCalledOnce(t, "Reset must record the call that followed the reset")
-	})
-}
-
-// rankedStubDouble describes how to build a RankedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Rank stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func rankedStubDouble[K genericbound.Ordered, V any]() stub.Double[genericboundtest.RankedRankCall[K, V]] {
-	instance := func(s *genericboundtest.RankedStub[K, V]) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-		return stub.Instance[genericboundtest.RankedRankCall[K, V]]{
-			Stub: s.OnRank.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 K
-				_, _ = s.Rank(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[genericboundtest.RankedRankCall[K, V]]{
-		New: func(tb assert.TB) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-			return instance(genericboundtest.NewRankedStub[K, V](tb))
+// rankedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Rank alone.
+func rankedStubInstanceOf[K genericbound.Ordered, V any](
+	tb assert.TB,
+	s *genericboundtest.RankedStub[K, V],
+) rankedStubInstance[K, V] {
+	tb.Helper()
+	return rankedStubInstance[K, V]{
+		Stub: s.OnRank.MethodStub,
+		Call: func() {
+			_, _ = rankedStubRank[K, V](tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-			return instance(genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubWithClock[K, V](clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-			return instance(genericboundtest.NewRankedStubDelayed[K, V](tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-			return instance(genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubWithRandSource[K, V](src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-			return instance(genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubBenchMode[K, V]()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[genericboundtest.RankedRankCall[K, V]] {
-			return instance(genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubStrict[K, V]()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestRankedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func rankedStubOptionChecks[K genericbound.Ordered, V any](t *testing.T) {
-	t.Parallel()
+// checkRankedStub checks the methods, the constructors and the options of
+// the double RankedStub at its type parameters.
+func checkRankedStub[K genericbound.Ordered, V any](t *testing.T) {
+	t.Helper()
 
-	stub.DoubleBehaviour(t, rankedStubDouble[K, V]())
+	t.Run("Rank", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Rank", rankedStubRankSubject[K, V])
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			_, _ = rankedStubRank[K, V](t, s)
+			got := s.OnRank.AssertCalledOnce(t, "Rank records the call")
+			a0, a1 := rankedStubRankArgs[K, V](t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			var seen []genericboundtest.RankedRankCall[K, V]
+			s.OnRank.OnRecord(func(c genericboundtest.RankedRankCall[K, V]) { seen = append(seen, c) })
+			_, _ = rankedStubRank[K, V](t, s)
+			_, _ = rankedStubRank[K, V](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Rank")
+		})
+	})
+
+	t.Run("Reset", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Reset", rankedStubResetSubject[K, V])
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			_ = rankedStubReset[K, V](t, s)
+			got := s.OnReset.AssertCalledOnce(t, "Reset records the call")
+			a0 := rankedStubResetArgs[K, V](t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			var seen []genericboundtest.RankedResetCall[K, V]
+			s.OnReset.OnRecord(func(c genericboundtest.RankedResetCall[K, V]) { seen = append(seen, c) })
+			_ = rankedStubReset[K, V](t, s)
+			_ = rankedStubReset[K, V](t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Reset")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) rankedStubInstance[K, V] {
+			return rankedStubInstanceOf[K, V](tb, genericboundtest.NewRankedStub[K, V](tb))
+		})
+
+		t.Run("clears the recorded calls of Rank", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			_, _ = rankedStubRank[K, V](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRank.CallCount(), 0, "ResetCalls clears the calls of Rank")
+		})
+
+		t.Run("keeps the results of Returns of Rank", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			want0, want1 := rankedStubRankPins[K, V]()
+			s.OnRank.Returns(want0, want1)
+			s.ResetCalls()
+			_, got1 := rankedStubRank[K, V](t, s)
+			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Rank")
+		})
+
+		t.Run("clears the recorded calls of Reset", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			_ = rankedStubReset[K, V](t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnReset.CallCount(), 0, "ResetCalls clears the calls of Reset")
+		})
+
+		t.Run("keeps the results of Returns of Reset", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			want0 := rankedStubResetPins[K, V]()
+			s.OnReset.Returns(want0)
+			s.ResetCalls()
+			got0 := rankedStubReset[K, V](t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Reset")
+		})
+	})
+
+	t.Run("NewRankedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) rankedStubInstance[K, V] {
+			return rankedStubInstanceOf[K, V](tb, genericboundtest.NewRankedStubDelayed[K, V](tb, d, clk))
+		})
+	})
+
+	t.Run("NewRankedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Rank with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rank-failing")
+			s := genericboundtest.NewRankedStubFailing[K, V](t, want)
+			_, r1 := rankedStubRank[K, V](t, s)
+			assert.ErrorIs(t, r1, want, "Rank fails with the error of NewRankedStubFailing")
+		})
+
+		t.Run("fails Reset with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Reset-failing")
+			s := genericboundtest.NewRankedStubFailing[K, V](t, want)
+			r0 := rankedStubReset[K, V](t, s)
+			assert.ErrorIs(t, r0, want, "Reset fails with the error of NewRankedStubFailing")
+		})
+	})
+
+	t.Run("RankedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) rankedStubInstance[K, V] {
+			return rankedStubInstanceOf[K, V](
+				tb,
+				genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubStrict[K, V]()),
+			)
+		})
+	})
+
+	t.Run("RankedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Rank to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := genericboundtest.NewRankedStub[K, V](t)
+			s := genericboundtest.NewRankedStub[K, V](t, genericboundtest.RankedStubDelegateTo[K, V](inner))
+			_, _ = rankedStubRank[K, V](t, s)
+			inner.OnRank.AssertCalledOnce(t, "Rank calls the implementation")
+		})
+
+		t.Run("fails Rank with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rank-delegate")
+			inner := genericboundtest.NewRankedStub[K, V](t)
+			inner.OnRank.Faults(want, 1)
+			s := genericboundtest.NewRankedStub[K, V](t, genericboundtest.RankedStubDelegateTo[K, V](inner))
+			_, r1 := rankedStubRank[K, V](t, s)
+			assert.ErrorIs(t, r1, want, "Rank fails with the error of the implementation")
+		})
+
+		t.Run("passes Reset to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := genericboundtest.NewRankedStub[K, V](t)
+			s := genericboundtest.NewRankedStub[K, V](t, genericboundtest.RankedStubDelegateTo[K, V](inner))
+			_ = rankedStubReset[K, V](t, s)
+			inner.OnReset.AssertCalledOnce(t, "Reset calls the implementation")
+		})
+
+		t.Run("fails Reset with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Reset-delegate")
+			inner := genericboundtest.NewRankedStub[K, V](t)
+			inner.OnReset.Faults(want, 1)
+			s := genericboundtest.NewRankedStub[K, V](t, genericboundtest.RankedStubDelegateTo[K, V](inner))
+			r0 := rankedStubReset[K, V](t, s)
+			assert.ErrorIs(t, r0, want, "Reset fails with the error of the implementation")
+		})
+	})
+
+	t.Run("RankedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) rankedStubInstance[K, V] {
+			return rankedStubInstanceOf[K, V](
+				tb,
+				genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubWithClock[K, V](clk)),
+			)
+		})
+	})
+
+	t.Run("RankedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) rankedStubInstance[K, V] {
+			return rankedStubInstanceOf[K, V](
+				tb,
+				genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubWithRandSource[K, V](src)),
+			)
+		})
+	})
+
+	t.Run("RankedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) rankedStubInstance[K, V] {
+			return rankedStubInstanceOf[K, V](
+				tb,
+				genericboundtest.NewRankedStub[K, V](tb, genericboundtest.RankedStubBenchMode[K, V]()),
+			)
+		})
+	})
+
+	t.Run("RankedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) rankedStubInstance[K, V] {
+			return rankedStubInstanceOf[K, V](
+				tb,
+				genericboundtest.NewRankedStub[K, V](
+					tb,
+					genericboundtest.RankedStubWithClock[K, V](clk),
+					genericboundtest.RankedStubWithLatency[K, V](d),
+				),
+			)
+		})
+	})
+
+	t.Run("RankedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Rank with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Rank-failing")
+			s := genericboundtest.NewRankedStub[K, V](t, genericboundtest.RankedStubFailing[K, V](want))
+			_, r1 := rankedStubRank[K, V](t, s)
+			assert.ErrorIs(t, r1, want, "Rank fails with the error of RankedStubFailing")
+		})
+
+		t.Run("fails Reset with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Reset-failing")
+			s := genericboundtest.NewRankedStub[K, V](t, genericboundtest.RankedStubFailing[K, V](want))
+			r0 := rankedStubReset[K, V](t, s)
+			assert.ErrorIs(t, r0, want, "Reset fails with the error of RankedStubFailing")
+		})
+	})
+
+	t.Run("WithRankedRank", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Rank", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := genericboundtest.NewRankedStub(
+				t,
+				genericboundtest.WithRankedRank[K, V](func(_ context.Context, _ K) (V, error) {
+					called = true
+					var z0 V
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = rankedStubRank[K, V](t, s)
+			assert.True(t, called, "WithRankedRank sets the function of Rank")
+		})
+	})
+
+	t.Run("WithRankedReset", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Reset", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := genericboundtest.NewRankedStub(
+				t,
+				genericboundtest.WithRankedReset[K, V](func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = rankedStubReset[K, V](t, s)
+			assert.True(t, called, "WithRankedReset sets the function of Reset")
+		})
+	})
 }
 
-// TestRankedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func rankedStubDelegationChecks[K genericbound.Ordered, V any](t *testing.T) {
-	t.Parallel()
+// checkRankedRankStub checks the methods of RankedRankStub, which
+// configures Rank, at the type parameters of the double.
+func checkRankedRankStub[K genericbound.Ordered, V any](t *testing.T) {
+	t.Helper()
 
-	inner := genericboundtest.NewRankedStub[K, V](t)
-	s := genericboundtest.NewRankedStub[K, V](t, genericboundtest.RankedStubDelegateTo[K, V](inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Rank to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 K
-		_, _ = s.Rank(a0, a1)
-		inner.OnRank.AssertCalledOnce(t, "Rank must reach the wrapped implementation")
+		t.Run("sets the results of each call of Rank", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			want0, want1 := rankedStubRankPins[K, V]()
+			s.OnRank.Returns(want0, want1)
+			_, got1 := rankedStubRank[K, V](t, s)
+			assert.ErrorIs(t, got1, want1, "Rank returns the error that Returns sets")
+		})
+
+		t.Run("configures Rank for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := genericboundtest.NewRankedStub[K, V](r)
+			s.OnRank.Strict()
+			var want0 V
+			var want1 error
+			s.OnRank.Returns(want0, want1)
+			_, _ = rankedStubRank[K, V](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Rank")
+		})
 	})
 
-	t.Run("surfaces what Rank answered", func(t *testing.T) {
-		want := errors.New("Rank-delegate")
-		inner.OnRank.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 K
-		_, r1 := s.Rank(a0, a1)
-		assert.ErrorIs(t, r1, want, "Rank must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Reset to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Reset(a0)
-		inner.OnReset.AssertCalledOnce(t, "Reset must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Reset answered", func(t *testing.T) {
-		want := errors.New("Reset-delegate")
-		inner.OnReset.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Reset(a0)
-		assert.ErrorIs(t, r0, want, "Reset must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Rank to the function", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			var got0 context.Context
+			var got1 K
+			s.OnRank.Func(func(p0 context.Context, p1 K) (V, error) {
+				got0, got1 = p0, p1
+				var z0 V
+				var z1 error
+				return z0, z1
+			})
+			_, _ = rankedStubRank[K, V](t, s)
+			a0, a1 := rankedStubRankArgs[K, V](t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// TestRankedStubRank runs Rank's checks at the witness types its
-// constraints admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestRankedStubRank(t *testing.T) { rankedStubRankChecks[int, genericbound.Score](t) }
+// checkRankedResetStub checks the methods of RankedResetStub, which
+// configures Reset, at the type parameters of the double.
+func checkRankedResetStub[K genericbound.Ordered, V any](t *testing.T) {
+	t.Helper()
 
-// TestRankedStubReset runs Reset's checks at the witness types its
-// constraints admit.
-//
-// A Go test function cannot take type parameters, so the checks live in a
-// generic helper and this instantiates it at one set of witnesses.
-func TestRankedStubReset(t *testing.T) { rankedStubResetChecks[int, genericbound.Score](t) }
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-// TestRankedStubOptions runs the whole-double checks at the same
+		t.Run("sets the results of each call of Reset", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			want0 := rankedStubResetPins[K, V]()
+			s.OnReset.Returns(want0)
+			got0 := rankedStubReset[K, V](t, s)
+			assert.ErrorIs(t, got0, want0, "Reset returns the error that Returns sets")
+		})
+
+		t.Run("configures Reset for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := genericboundtest.NewRankedStub[K, V](r)
+			s.OnReset.Strict()
+			var want0 error
+			s.OnReset.Returns(want0)
+			_ = rankedStubReset[K, V](t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Reset")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Reset to the function", func(t *testing.T) {
+			t.Parallel()
+			s := genericboundtest.NewRankedStub[K, V](t)
+			var got0 context.Context
+			s.OnReset.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = rankedStubReset[K, V](t, s)
+			a0 := rankedStubResetArgs[K, V](t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// TestRankedStub runs the checks of RankedStub at the witnesses of its
+// type parameters.
+func TestRankedStub(t *testing.T) {
+	t.Parallel()
+
+	checkRankedStub[int, genericbound.Score](t)
+}
+
+// TestRankedRankStub runs the checks of RankedRankStub at the same
 // witnesses.
-func TestRankedStubOptions(t *testing.T) { rankedStubOptionChecks[int, genericbound.Score](t) }
+func TestRankedRankStub(t *testing.T) {
+	t.Parallel()
 
-// TestRankedStubDelegateTo runs the delegation checks at the same
+	checkRankedRankStub[int, genericbound.Score](t)
+}
+
+// TestRankedResetStub runs the checks of RankedResetStub at the same
 // witnesses.
-func TestRankedStubDelegateTo(t *testing.T) { rankedStubDelegationChecks[int, genericbound.Score](t) }
+func TestRankedResetStub(t *testing.T) {
+	t.Parallel()
 
-// dokimi:provenance sha256:ed07bee62e0a16340699b98bf4470a22ba9904e0d3c840b3650b38347fc33ccb
+	checkRankedResetStub[int, genericbound.Score](t)
+}
+
+// dokimi:provenance sha256:c8374c7530be8122de179a95959c81235be429bd1cfbb345b44d3696295792b7

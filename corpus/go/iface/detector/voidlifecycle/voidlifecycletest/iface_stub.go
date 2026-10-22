@@ -9,118 +9,101 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle"
+	"go.dokimi.dev/stub"
 )
 
-// VoidLifecycleStopCall records one invocation of VoidLifecycle.Stop.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
-type VoidLifecycleStopCall struct {
-}
+// VoidLifecycleStopCall records one call of VoidLifecycle.Stop.
+type VoidLifecycleStopCall struct{}
 
-// --- Per-method configuration ---
-
-// VoidLifecycleStopStub controls how the double answers Stop and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// VoidLifecycleStopStub configures Stop and records its calls. Stop
+// returns no error, so a fault armed through it fails the test.
 type VoidLifecycleStopStub struct {
 	*stub.MethodStub[VoidLifecycleStopCall]
 
 	fn func()
 }
 
-// Func supplies a body for Stop, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Stop answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Stop from its
+// arguments.
 func (s *VoidLifecycleStopStub) Func(fn func()) *VoidLifecycleStopStub {
 	s.fn = fn
 	return s
 }
 
-// --- VoidLifecycleStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// VoidLifecycleStubOption configures a [VoidLifecycleStub] at construction
-// time.
+// VoidLifecycleStubOption configures a [VoidLifecycleStub] at its
+// construction.
 type VoidLifecycleStubOption func(*VoidLifecycleStub)
 
-// VoidLifecycleStubStrict makes an unconfigured method fail the test
-// rather than return its zero value.
+// VoidLifecycleStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func VoidLifecycleStubStrict() VoidLifecycleStubOption {
 	return func(s *VoidLifecycleStub) { s.strict = true }
 }
 
-// VoidLifecycleStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// VoidLifecycleStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func VoidLifecycleStubDelegateTo(impl voidlifecycle.VoidLifecycle) VoidLifecycleStubOption {
 	return func(s *VoidLifecycleStub) {
 		s.OnStop.Func(impl.Stop)
 	}
 }
 
-// VoidLifecycleStubWithClock drives latency and time-windowed faults from
-// clk rather than from wall time, so a test asserting on a five-second
-// timeout does not take five seconds.
+// VoidLifecycleStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func VoidLifecycleStubWithClock(clk assert.Clock) VoidLifecycleStubOption {
 	return func(s *VoidLifecycleStub) { s.group.SetClock(clk) }
 }
 
-// VoidLifecycleStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// VoidLifecycleStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func VoidLifecycleStubWithRandSource(src rand.Source) VoidLifecycleStubOption {
 	return func(s *VoidLifecycleStub) { s.group.SetRandSource(src) }
 }
 
-// VoidLifecycleStubBenchMode disables call recording. Dispatch still
-// works; only the accumulating call log is dropped.
+// VoidLifecycleStubBenchMode returns the option that turns the recording
+// of calls off. The methods still return their results.
 func VoidLifecycleStubBenchMode() VoidLifecycleStubOption {
 	return func(s *VoidLifecycleStub) { s.group.BenchMode() }
 }
 
-// VoidLifecycleStubWithLatency makes every method sleep d before
-// answering, for a test standing in for a slow dependency rather than one
-// slow method. Pair it with VoidLifecycleStubWithClock, or d elapses in
-// wall time.
+// VoidLifecycleStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without VoidLifecycleStubWithClock, d passes
+// in real time.
 func VoidLifecycleStubWithLatency(d time.Duration) VoidLifecycleStubOption {
 	return func(s *VoidLifecycleStub) { s.group.SetLatency(d) }
 }
 
-// WithVoidLifecycleStop sets Stop's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithVoidLifecycleStop returns the option that sets the function of Stop.
 func WithVoidLifecycleStop(fn func()) VoidLifecycleStubOption {
 	return func(s *VoidLifecycleStub) { s.OnStop.Func(fn) }
 }
 
-// VoidLifecycleStub is a recording test double for VoidLifecycle.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// VoidLifecycleStub is a recording test double of VoidLifecycle. Each
+// field On<Method> configures its method. An unconfigured method records
+// the call and returns the zero values of its results.
 type VoidLifecycleStub struct {
 	OnStop *VoidLifecycleStopStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that VoidLifecycleStub satisfies VoidLifecycle.
+// The compiler checks that VoidLifecycleStub implements VoidLifecycle.
 var _ voidlifecycle.VoidLifecycle = (*VoidLifecycleStub)(nil)
 
-// NewVoidLifecycleStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewVoidLifecycleStub returns a double of VoidLifecycle that reports its
+// failures to tb and applies opts. The double checks the expected counts
+// of calls at the end of the test. With a nil tb, the double reports
+// nothing.
 func NewVoidLifecycleStub(tb assert.TB, opts ...VoidLifecycleStubOption) *VoidLifecycleStub {
 	s := &VoidLifecycleStub{
 		OnStop: &VoidLifecycleStopStub{MethodStub: stub.NewMethodStub[VoidLifecycleStopCall](tb, "VoidLifecycle.Stop")},
@@ -138,30 +121,29 @@ func NewVoidLifecycleStub(tb assert.TB, opts ...VoidLifecycleStubOption) *VoidLi
 	return s
 }
 
-// NewVoidLifecycleStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewVoidLifecycleStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...VoidLifecycleStubOption) *VoidLifecycleStub {
+// NewVoidLifecycleStubDelayed returns a double whose methods sleep d on
+// clk before they return. It applies opts after the clock and the latency.
+func NewVoidLifecycleStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...VoidLifecycleStubOption,
+) *VoidLifecycleStub {
 	return NewVoidLifecycleStub(tb, append([]VoidLifecycleStubOption{
 		VoidLifecycleStubWithClock(clk),
 		VoidLifecycleStubWithLatency(d),
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *VoidLifecycleStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
 func (s *VoidLifecycleStopStub) invokeVoid() func() struct{} {
 	if s.fn == nil {
 		return nil
@@ -172,12 +154,8 @@ func (s *VoidLifecycleStopStub) invokeVoid() func() struct{} {
 	}
 }
 
-// Stop records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Stop records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *VoidLifecycleStub) Stop() {
 	call := VoidLifecycleStopCall{}
 	stub.Answer(s.OnStop.MethodStub, &call, stub.Arms[VoidLifecycleStopCall, struct{}]{
@@ -185,4 +163,4 @@ func (s *VoidLifecycleStub) Stop() {
 	})
 }
 
-// dokimi:provenance sha256:5b2d326b6ee1a1e5fecba511f6589a60ba9472c2484df9828247a840ab385f26
+// dokimi:provenance sha256:8bd2b0bbc5a7afdd4057bb5bbf9b41331d94ba1b7c4f3d4b15529e1d0f7933d9

@@ -12,70 +12,105 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/integration/built/billing/billingtest"
 )
 
-// TestInvoiceBuilderConstruction pins what the constructors produce.
-func TestInvoiceBuilderConstruction(t *testing.T) {
+// TestInvoiceBuilder checks the constructors and the methods of
+// InvoiceBuilder.
+func TestInvoiceBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewInvoiceBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var seed billing.Invoice
-		seed.Number = "Number-a"
-		got := billingtest.NewInvoiceBuilderFrom(seed).Build()
-		assert.Equal(t, got.Number, seed.Number, "From keeps the member it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed billing.Invoice
+			seed.Number = "Number-a"
+			got := billingtest.NewInvoiceBuilderFrom(seed).Build()
+			assert.Equal(t, got.Number, seed.Number, "NewInvoiceBuilderFrom keeps Number")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := billingtest.NewInvoiceBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				billingtest.NewInvoiceBuilderFrom(want).Build(),
+				want,
+				"NewInvoiceBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithNumber", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Number", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Number-a"
+			got := billingtest.NewInvoiceBuilder().WithNumber(want).Build()
+			assert.Equal(t, got.Number, want, "WithNumber writes its argument to Number")
+		})
+
+		t.Run("replaces the value of Number", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Number-a"
+			want = "Number-b"
+			got := billingtest.NewInvoiceBuilder().WithNumber(first).WithNumber(want).Build()
+			assert.Equal(t, got.Number, want, "the second call of WithNumber replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*billing.Invoice
+			record := func(v *billing.Invoice) { got = append(got, v) }
+			billingtest.NewInvoiceBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := billingtest.NewInvoiceBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := billingtest.NewInvoiceBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed billing.Invoice
+			seed.Number = "Number-a"
+			b := billingtest.NewInvoiceBuilder()
+			b.Mutate(func(v *billing.Invoice) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestInvoiceBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestInvoiceBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithNumber writes Number", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Number-a"
-		got := billingtest.NewInvoiceBuilder().WithNumber(want).Build()
-		assert.Equal(t, got.Number, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithNumber replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Number-a"
-		want = "Number-b"
-		got := billingtest.NewInvoiceBuilder().WithNumber(first).WithNumber(want).Build()
-		assert.Equal(t, got.Number, want, "the later call wins")
-	})
-}
-
-// TestInvoiceBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestInvoiceBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*billing.Invoice
-		record := func(v *billing.Invoice) { got = append(got, v) }
-		billingtest.NewInvoiceBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := billingtest.NewInvoiceBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, billingtest.NewInvoiceBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:713e513cb8de463301e81b7f72b54fab94ca8af63761e4df55c8a9de4a397ffd
+// dokimi:provenance sha256:3a157e7a053cc00cd1d83ef28667a59a867006a0247f57dadfd30417446eaa54

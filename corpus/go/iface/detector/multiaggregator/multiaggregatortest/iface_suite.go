@@ -7,7 +7,7 @@ package multiaggregatortest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator"
 )
 
@@ -40,33 +40,30 @@ func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
 	return conform.Suite[multiaggregator.MultiAggregator]{Declaration: "MultiAggregator"}
 }
 
-// RunMultiAggregator applies the checks of MultiAggregator, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunMultiAggregator[T multiaggregator.MultiAggregator](t *testing.T, newSubject func() T, opts ...MultiAggregatorOption) {
+// RunMultiAggregatorSuite applies the checks of MultiAggregator, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunMultiAggregatorSuite[T multiaggregator.MultiAggregator](
+	t *testing.T,
+	newSubject func() T,
+	opts ...MultiAggregatorOption,
+) {
 	t.Helper()
-	conform.Verify(t, MultiAggregatorSuite(), func(*MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject() }, opts...)
+	RunMultiAggregatorSuiteFromHandle(t, func(*MultiAggregatorHandle) T { return newSubject() }, opts...)
 }
 
-// RunMultiAggregatorOn applies the same checks to a subject that
-// newSubject builds on the handle of each check.
-func RunMultiAggregatorOn[T multiaggregator.MultiAggregator](t *testing.T, newSubject func(h *MultiAggregatorHandle) T, opts ...MultiAggregatorOption) {
+// RunMultiAggregatorSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunMultiAggregatorSuiteFromHandle[T multiaggregator.MultiAggregator](
+	t *testing.T,
+	newSubject func(h *MultiAggregatorHandle) T,
+	opts ...MultiAggregatorOption,
+) {
 	t.Helper()
-	conform.Verify(t, MultiAggregatorSuite(), func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		MultiAggregatorSuite(),
+		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
+		opts...)
 }
 
-// ControlMultiAggregator applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlMultiAggregator[T multiaggregator.MultiAggregator](t *testing.T, newControl func() T, opts ...MultiAggregatorOption) {
-	t.Helper()
-	conform.Control(t, MultiAggregatorSuite(), func(*MultiAggregatorHandle) multiaggregator.MultiAggregator { return newControl() }, opts...)
-}
-
-// ControlMultiAggregatorOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlMultiAggregatorOn[T multiaggregator.MultiAggregator](t *testing.T, newControl func(h *MultiAggregatorHandle) T, opts ...MultiAggregatorOption) {
-	t.Helper()
-	conform.Control(t, MultiAggregatorSuite(), func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:b4e11e5d23ff115bd8db5f760634f8328e9cd7cc7b6d959b1d2a6ccb335da7b8
+// dokimi:provenance sha256:6f7b66350ccb2c104f1d028d78078e4181c6f6b85231dc7ff26326dea18d2ecf

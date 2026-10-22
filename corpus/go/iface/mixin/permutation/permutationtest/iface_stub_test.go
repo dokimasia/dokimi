@@ -12,32 +12,70 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation/permutationtest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubAddSubject binds Add into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubAddArgs returns the samples of the arguments of Add.
+func mixedStubAddArgs(tb assert.TB) (context.Context, permutation.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 permutation.Value
+	a1 = permutation.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// mixedStubAdd calls Add of s with the samples of its arguments.
+func mixedStubAdd(tb assert.TB, s *permutationtest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubAddArgs(tb)
+	return s.Add(a0, a1)
+}
+
+// mixedStubAddPins returns the samples of the results of Add, with a new
+// error as its error result.
+func mixedStubAddPins() error {
+	want0 := errors.New("Add-returns")
+	return want0
+}
+
+// mixedStubItemsArgs returns the samples of the arguments of Items.
+func mixedStubItemsArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// mixedStubItems calls Items of s with the samples of its arguments.
+func mixedStubItems(tb assert.TB, s *permutationtest.MixedStub) ([]permutation.Value, error) {
+	tb.Helper()
+	a0 := mixedStubItemsArgs(tb)
+	return s.Items(a0)
+}
+
+// mixedStubItemsPins returns the samples of the results of Items, with a
+// new error as its error result.
+func mixedStubItemsPins() ([]permutation.Value, error) {
+	var want0 []permutation.Value
+	want1 := errors.New("Items-returns")
+	want0 = []permutation.Value{{Key: "Key-a"}}
+	return want0, want1
+}
+
+// mixedStubAddSubject returns the subject of [stub.Behaviour] for Add. The
+// subject calls a new double that reports to tb.
 func mixedStubAddSubject(tb assert.TB) stub.Subject[permutationtest.MixedAddCall, permutationtest.MixedAddReturn] {
 	tb.Helper()
 	s := permutationtest.NewMixedStub(tb)
 	return stub.Subject[permutationtest.MixedAddCall, permutationtest.MixedAddReturn]{
 		Stub: s.OnAdd.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 permutation.Value
-			a1 = permutation.Value{Key: "Key-a"}
-			_ = s.Add(a0, a1)
+			_ = mixedStubAdd(tb, s)
 		},
 		Result: func() permutationtest.MixedAddReturn {
-			var a0 context.Context
-			var a1 permutation.Value
-			a1 = permutation.Value{Key: "Key-a"}
-			got0 := s.Add(a0, a1)
+			got0 := mixedStubAdd(tb, s)
 			return permutationtest.MixedAddReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,110 +86,26 @@ func mixedStubAddSubject(tb assert.TB) stub.Subject[permutationtest.MixedAddCall
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 permutation.Value
-			a1 = permutation.Value{Key: "Key-a"}
-			r0 := s.Add(a0, a1)
+			r0 := mixedStubAdd(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubAdd pins how Add answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubAdd(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Add", mixedStubAddSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := permutationtest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 permutation.Value
-		a1 = permutation.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		got := s.OnAdd.AssertCalledOnce(t, "Add must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := permutationtest.NewMixedStub(t)
-		var seen []permutationtest.MixedAddCall
-		s.OnAdd.OnRecord(func(c permutationtest.MixedAddCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 permutation.Value
-		a1 = permutation.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		_ = s.Add(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Add call")
-	})
-
-	t.Run("wires WithMixedAdd at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := permutationtest.NewMixedStub(t, permutationtest.WithMixedAdd(func(_ context.Context, _ permutation.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 permutation.Value
-		a1 = permutation.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		assert.True(t, called, "WithMixedAdd must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Add-failing")
-		s := permutationtest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 permutation.Value
-		a1 = permutation.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := permutationtest.NewMixedStub(t)
-		var want0 error
-		s.OnAdd.Returns(want0)
-		var a0 context.Context
-		var a1 permutation.Value
-		a1 = permutation.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		s.ResetCalls()
-		_ = s.Add(a0, a1)
-		s.OnAdd.AssertCalledOnce(t, "Add must record the call that followed the reset")
-	})
-}
-
-// mixedStubItemsSubject binds Items into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func mixedStubItemsSubject(tb assert.TB) stub.Subject[permutationtest.MixedItemsCall, permutationtest.MixedItemsReturn] {
+// mixedStubItemsSubject returns the subject of [stub.Behaviour] for Items.
+// The subject calls a new double that reports to tb.
+func mixedStubItemsSubject(
+	tb assert.TB,
+) stub.Subject[permutationtest.MixedItemsCall, permutationtest.MixedItemsReturn] {
 	tb.Helper()
 	s := permutationtest.NewMixedStub(tb)
 	return stub.Subject[permutationtest.MixedItemsCall, permutationtest.MixedItemsReturn]{
 		Stub: s.OnItems.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Items(a0)
+			_, _ = mixedStubItems(tb, s)
 		},
 		Result: func() permutationtest.MixedItemsReturn {
-			var a0 context.Context
-			got0, got1 := s.Items(a0)
+			got0, got1 := mixedStubItems(tb, s)
 			return permutationtest.MixedItemsReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -163,183 +117,398 @@ func mixedStubItemsSubject(tb assert.TB) stub.Subject[permutationtest.MixedItems
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Items(a0)
+			_, r1 := mixedStubItems(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMixedStubItems pins how Items answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubItems(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a permutationtest.MixedStub that
+// the checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[permutationtest.MixedAddCall]
 
-	stub.Behaviour(t, "Items", mixedStubItemsSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := permutationtest.NewMixedStub(t)
-		var want0 []permutation.Value
-		var want1 error
-		want0 = []permutation.Value{permutation.Value{Key: "Key-a"}}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "Items must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := permutationtest.NewMixedStub(t)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		got := s.OnItems.AssertCalledOnce(t, "Items must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := permutationtest.NewMixedStub(t)
-		var seen []permutationtest.MixedItemsCall
-		s.OnItems.OnRecord(func(c permutationtest.MixedItemsCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		_, _ = s.Items(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Items call")
-	})
-
-	t.Run("wires WithMixedItems at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := permutationtest.NewMixedStub(t, permutationtest.WithMixedItems(func(_ context.Context) ([]permutation.Value, error) {
-			called = true
-			var z0 []permutation.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		assert.True(t, called, "WithMixedItems must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Items-failing")
-		s := permutationtest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := permutationtest.NewMixedStub(t)
-		var want0 []permutation.Value
-		var want1 error
-		want0 = []permutation.Value{permutation.Value{Key: "Key-a"}}
-		s.OnItems.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		s.ResetCalls()
-		got0, _ := s.Items(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Add stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[permutationtest.MixedAddCall] {
-	instance := func(s *permutationtest.MixedStub) stub.Instance[permutationtest.MixedAddCall] {
-		return stub.Instance[permutationtest.MixedAddCall]{
-			Stub: s.OnAdd.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 permutation.Value
-				a1 = permutation.Value{Key: "Key-a"}
-				_ = s.Add(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[permutationtest.MixedAddCall]{
-		New: func(tb assert.TB) stub.Instance[permutationtest.MixedAddCall] {
-			return instance(permutationtest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Add alone.
+func mixedStubInstanceOf(tb assert.TB, s *permutationtest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnAdd.MethodStub,
+		Call: func() {
+			_ = mixedStubAdd(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[permutationtest.MixedAddCall] {
-			return instance(permutationtest.NewMixedStub(tb, permutationtest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[permutationtest.MixedAddCall] {
-			return instance(permutationtest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[permutationtest.MixedAddCall] {
-			return instance(permutationtest.NewMixedStub(tb, permutationtest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[permutationtest.MixedAddCall] {
-			return instance(permutationtest.NewMixedStub(tb, permutationtest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[permutationtest.MixedAddCall] {
-			return instance(permutationtest.NewMixedStub(tb, permutationtest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Add", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Add", mixedStubAddSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			_ = mixedStubAdd(t, s)
+			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
+			a0, a1 := mixedStubAddArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			var seen []permutationtest.MixedAddCall
+			s.OnAdd.OnRecord(func(c permutationtest.MixedAddCall) { seen = append(seen, c) })
+			_ = mixedStubAdd(t, s)
+			_ = mixedStubAdd(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
+		})
+	})
+
+	t.Run("Items", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Items", mixedStubItemsSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			_, _ = mixedStubItems(t, s)
+			got := s.OnItems.AssertCalledOnce(t, "Items records the call")
+			a0 := mixedStubItemsArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			var seen []permutationtest.MixedItemsCall
+			s.OnItems.OnRecord(func(c permutationtest.MixedItemsCall) { seen = append(seen, c) })
+			_, _ = mixedStubItems(t, s)
+			_, _ = mixedStubItems(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Items")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, permutationtest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			_ = mixedStubAdd(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
+		})
+
+		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			want0 := mixedStubAddPins()
+			s.OnAdd.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Add")
+		})
+
+		t.Run("clears the recorded calls of Items", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			_, _ = mixedStubItems(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnItems.CallCount(), 0, "ResetCalls clears the calls of Items")
+		})
+
+		t.Run("keeps the results of Returns of Items", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			want0, want1 := mixedStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := mixedStubItems(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Items")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Items")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, permutationtest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := permutationtest.NewMixedStubFailing(t, want)
+			r0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of NewMixedStubFailing")
+		})
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := permutationtest.NewMixedStubFailing(t, want)
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, permutationtest.NewMixedStub(tb, permutationtest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Add to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := permutationtest.NewMixedStub(t)
+			s := permutationtest.NewMixedStub(t, permutationtest.MixedStubDelegateTo(inner))
+			_ = mixedStubAdd(t, s)
+			inner.OnAdd.AssertCalledOnce(t, "Add calls the implementation")
+		})
+
+		t.Run("fails Add with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-delegate")
+			inner := permutationtest.NewMixedStub(t)
+			inner.OnAdd.Faults(want, 1)
+			s := permutationtest.NewMixedStub(t, permutationtest.MixedStubDelegateTo(inner))
+			r0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of the implementation")
+		})
+
+		t.Run("passes Items to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := permutationtest.NewMixedStub(t)
+			s := permutationtest.NewMixedStub(t, permutationtest.MixedStubDelegateTo(inner))
+			_, _ = mixedStubItems(t, s)
+			inner.OnItems.AssertCalledOnce(t, "Items calls the implementation")
+		})
+
+		t.Run("fails Items with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-delegate")
+			inner := permutationtest.NewMixedStub(t)
+			inner.OnItems.Faults(want, 1)
+			s := permutationtest.NewMixedStub(t, permutationtest.MixedStubDelegateTo(inner))
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, permutationtest.NewMixedStub(tb, permutationtest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				permutationtest.NewMixedStub(tb, permutationtest.MixedStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, permutationtest.NewMixedStub(tb, permutationtest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				permutationtest.NewMixedStub(
+					tb,
+					permutationtest.MixedStubWithClock(clk),
+					permutationtest.MixedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := permutationtest.NewMixedStub(t, permutationtest.MixedStubFailing(want))
+			r0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of MixedStubFailing")
+		})
+
+		t.Run("fails Items with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Items-failing")
+			s := permutationtest.NewMixedStub(t, permutationtest.MixedStubFailing(want))
+			_, r1 := mixedStubItems(t, s)
+			assert.ErrorIs(t, r1, want, "Items fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedAdd", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Add", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := permutationtest.NewMixedStub(
+				t,
+				permutationtest.WithMixedAdd(func(_ context.Context, _ permutation.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = mixedStubAdd(t, s)
+			assert.True(t, called, "WithMixedAdd sets the function of Add")
+		})
+	})
+
+	t.Run("WithMixedItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Items", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := permutationtest.NewMixedStub(
+				t,
+				permutationtest.WithMixedItems(func(_ context.Context) ([]permutation.Value, error) {
+					called = true
+					var z0 []permutation.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = mixedStubItems(t, s)
+			assert.True(t, called, "WithMixedItems sets the function of Items")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedAddStub checks the methods of MixedAddStub, which configures
+// Add.
+func TestMixedAddStub(t *testing.T) {
 	t.Parallel()
 
-	inner := permutationtest.NewMixedStub(t)
-	s := permutationtest.NewMixedStub(t, permutationtest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Add to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 permutation.Value
-		a1 = permutation.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		inner.OnAdd.AssertCalledOnce(t, "Add must reach the wrapped implementation")
+		t.Run("sets the results of each call of Add", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			want0 := mixedStubAddPins()
+			s.OnAdd.Returns(want0)
+			got0 := mixedStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "Add returns the error that Returns sets")
+		})
+
+		t.Run("configures Add for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := permutationtest.NewMixedStub(r)
+			s.OnAdd.Strict()
+			var want0 error
+			s.OnAdd.Returns(want0)
+			_ = mixedStubAdd(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
+		})
 	})
 
-	t.Run("surfaces what Add answered", func(t *testing.T) {
-		want := errors.New("Add-delegate")
-		inner.OnAdd.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 permutation.Value
-		a1 = permutation.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Items to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Items(a0)
-		inner.OnItems.AssertCalledOnce(t, "Items must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Items answered", func(t *testing.T) {
-		want := errors.New("Items-delegate")
-		inner.OnItems.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Items(a0)
-		assert.ErrorIs(t, r1, want, "Items must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 permutation.Value
+			s.OnAdd.Func(func(p0 context.Context, p1 permutation.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubAdd(t, s)
+			a0, a1 := mixedStubAddArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:1b5ecc8b56c8f0ebebcdc5208e916f4b6c22d484db36ac0cac959c037a0893d5
+// TestMixedItemsStub checks the methods of MixedItemsStub, which
+// configures Items.
+func TestMixedItemsStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Items", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			want0, want1 := mixedStubItemsPins()
+			s.OnItems.Returns(want0, want1)
+			got0, got1 := mixedStubItems(t, s)
+			expect.Equal(t, got0, want0, "Items returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Items returns the error that Returns sets")
+		})
+
+		t.Run("configures Items for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := permutationtest.NewMixedStub(r)
+			s.OnItems.Strict()
+			var want0 []permutation.Value
+			var want1 error
+			s.OnItems.Returns(want0, want1)
+			_, _ = mixedStubItems(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Items")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Items to the function", func(t *testing.T) {
+			t.Parallel()
+			s := permutationtest.NewMixedStub(t)
+			var got0 context.Context
+			s.OnItems.Func(func(p0 context.Context) ([]permutation.Value, error) {
+				got0 = p0
+				var z0 []permutation.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = mixedStubItems(t, s)
+			a0 := mixedStubItemsArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:41169dd2d61cc06939eae6bc4423fcacbe3912fc479b8077586896d3b3c84aa7

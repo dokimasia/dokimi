@@ -12,33 +12,76 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	paginatedreader "go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader/paginatedreadertest"
+	"go.dokimi.dev/stub"
 )
 
-// paginatedReaderStubFetchSubject binds Fetch into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func paginatedReaderStubFetchSubject(tb assert.TB) stub.Subject[paginatedreadertest.PaginatedReaderFetchCall, paginatedreadertest.PaginatedReaderFetchReturn] {
+// paginatedReaderStubFetchArgs returns the samples of the arguments of
+// Fetch.
+func paginatedReaderStubFetchArgs(tb assert.TB) (context.Context, int) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 int
+	a1 = 42
+	return a0, a1
+}
+
+// paginatedReaderStubFetch calls Fetch of s with the samples of its
+// arguments.
+func paginatedReaderStubFetch(tb assert.TB, s *paginatedreadertest.PaginatedReaderStub) (paginatedreader.Page, error) {
+	tb.Helper()
+	a0, a1 := paginatedReaderStubFetchArgs(tb)
+	return s.Fetch(a0, a1)
+}
+
+// paginatedReaderStubFetchPins returns the samples of the results of
+// Fetch, with a new error as its error result.
+func paginatedReaderStubFetchPins() (paginatedreader.Page, error) {
+	var want0 paginatedreader.Page
+	want1 := errors.New("Fetch-returns")
+	want0 = paginatedreader.Page{Items: []paginatedreader.Value{{Key: "Key-a"}}}
+	return want0, want1
+}
+
+// paginatedReaderStubAddArgs returns the samples of the arguments of Add.
+func paginatedReaderStubAddArgs(tb assert.TB) (context.Context, paginatedreader.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 paginatedreader.Value
+	a1 = paginatedreader.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// paginatedReaderStubAdd calls Add of s with the samples of its arguments.
+func paginatedReaderStubAdd(tb assert.TB, s *paginatedreadertest.PaginatedReaderStub) error {
+	tb.Helper()
+	a0, a1 := paginatedReaderStubAddArgs(tb)
+	return s.Add(a0, a1)
+}
+
+// paginatedReaderStubAddPins returns the samples of the results of Add,
+// with a new error as its error result.
+func paginatedReaderStubAddPins() error {
+	want0 := errors.New("Add-returns")
+	return want0
+}
+
+// paginatedReaderStubFetchSubject returns the subject of [stub.Behaviour]
+// for Fetch. The subject calls a new double that reports to tb.
+func paginatedReaderStubFetchSubject(
+	tb assert.TB,
+) stub.Subject[paginatedreadertest.PaginatedReaderFetchCall, paginatedreadertest.PaginatedReaderFetchReturn] {
 	tb.Helper()
 	s := paginatedreadertest.NewPaginatedReaderStub(tb)
 	return stub.Subject[paginatedreadertest.PaginatedReaderFetchCall, paginatedreadertest.PaginatedReaderFetchReturn]{
 		Stub: s.OnFetch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			_, _ = s.Fetch(a0, a1)
+			_, _ = paginatedReaderStubFetch(tb, s)
 		},
 		Result: func() paginatedreadertest.PaginatedReaderFetchReturn {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			got0, got1 := s.Fetch(a0, a1)
+			got0, got1 := paginatedReaderStubFetch(tb, s)
 			return paginatedreadertest.PaginatedReaderFetchReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -50,131 +93,26 @@ func paginatedReaderStubFetchSubject(tb assert.TB) stub.Subject[paginatedreadert
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			_, r1 := s.Fetch(a0, a1)
+			_, r1 := paginatedReaderStubFetch(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestPaginatedReaderStubFetch pins how Fetch answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestPaginatedReaderStubFetch(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Fetch", paginatedReaderStubFetchSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		var want0 paginatedreader.Page
-		var want1 error
-		want0 = paginatedreader.Page{Items: []paginatedreader.Value{paginatedreader.Value{Key: "Key-a"}}}
-		s.OnFetch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		got0, _ := s.Fetch(a0, a1)
-		assert.Equal(t, got0, want0, "Fetch must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Fetch(a0, a1)
-		got := s.OnFetch.AssertCalledOnce(t, "Fetch must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Cursor, a1, "the recorded call carries Cursor")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		var seen []paginatedreadertest.PaginatedReaderFetchCall
-		s.OnFetch.OnRecord(func(c paginatedreadertest.PaginatedReaderFetchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Fetch(a0, a1)
-		_, _ = s.Fetch(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Fetch call")
-	})
-
-	t.Run("wires WithPaginatedReaderFetch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.WithPaginatedReaderFetch(func(_ context.Context, _ int) (paginatedreader.Page, error) {
-			called = true
-			var z0 paginatedreader.Page
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Fetch(a0, a1)
-		assert.True(t, called, "WithPaginatedReaderFetch must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Fetch-failing")
-		s := paginatedreadertest.NewPaginatedReaderStubFailing(t, want)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, r1 := s.Fetch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Fetch must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		var want0 paginatedreader.Page
-		var want1 error
-		want0 = paginatedreader.Page{Items: []paginatedreader.Value{paginatedreader.Value{Key: "Key-a"}}}
-		s.OnFetch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Fetch(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Fetch(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// paginatedReaderStubAddSubject binds Add into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func paginatedReaderStubAddSubject(tb assert.TB) stub.Subject[paginatedreadertest.PaginatedReaderAddCall, paginatedreadertest.PaginatedReaderAddReturn] {
+// paginatedReaderStubAddSubject returns the subject of [stub.Behaviour]
+// for Add. The subject calls a new double that reports to tb.
+func paginatedReaderStubAddSubject(
+	tb assert.TB,
+) stub.Subject[paginatedreadertest.PaginatedReaderAddCall, paginatedreadertest.PaginatedReaderAddReturn] {
 	tb.Helper()
 	s := paginatedreadertest.NewPaginatedReaderStub(tb)
 	return stub.Subject[paginatedreadertest.PaginatedReaderAddCall, paginatedreadertest.PaginatedReaderAddReturn]{
 		Stub: s.OnAdd.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 paginatedreader.Value
-			a1 = paginatedreader.Value{Key: "Key-a"}
-			_ = s.Add(a0, a1)
+			_ = paginatedReaderStubAdd(tb, s)
 		},
 		Result: func() paginatedreadertest.PaginatedReaderAddReturn {
-			var a0 context.Context
-			var a1 paginatedreader.Value
-			a1 = paginatedreader.Value{Key: "Key-a"}
-			got0 := s.Add(a0, a1)
+			got0 := paginatedReaderStubAdd(tb, s)
 			return paginatedreadertest.PaginatedReaderAddReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -185,186 +123,419 @@ func paginatedReaderStubAddSubject(tb assert.TB) stub.Subject[paginatedreadertes
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 paginatedreader.Value
-			a1 = paginatedreader.Value{Key: "Key-a"}
-			r0 := s.Add(a0, a1)
+			r0 := paginatedReaderStubAdd(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestPaginatedReaderStubAdd pins how Add answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestPaginatedReaderStubAdd(t *testing.T) {
-	t.Parallel()
+// paginatedReaderStubInstance is the instance of a
+// paginatedreadertest.PaginatedReaderStub that the checks of the
+// constructors and the options drive.
+type paginatedReaderStubInstance = stub.Instance[paginatedreadertest.PaginatedReaderFetchCall]
 
-	stub.Behaviour(t, "Add", paginatedReaderStubAddSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		var a0 context.Context
-		var a1 paginatedreader.Value
-		a1 = paginatedreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		got := s.OnAdd.AssertCalledOnce(t, "Add must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		var seen []paginatedreadertest.PaginatedReaderAddCall
-		s.OnAdd.OnRecord(func(c paginatedreadertest.PaginatedReaderAddCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 paginatedreader.Value
-		a1 = paginatedreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		_ = s.Add(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Add call")
-	})
-
-	t.Run("wires WithPaginatedReaderAdd at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.WithPaginatedReaderAdd(func(_ context.Context, _ paginatedreader.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 paginatedreader.Value
-		a1 = paginatedreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		assert.True(t, called, "WithPaginatedReaderAdd must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Add-failing")
-		s := paginatedreadertest.NewPaginatedReaderStubFailing(t, want)
-		var a0 context.Context
-		var a1 paginatedreader.Value
-		a1 = paginatedreader.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := paginatedreadertest.NewPaginatedReaderStub(t)
-		var want0 error
-		s.OnAdd.Returns(want0)
-		var a0 context.Context
-		var a1 paginatedreader.Value
-		a1 = paginatedreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		s.ResetCalls()
-		_ = s.Add(a0, a1)
-		s.OnAdd.AssertCalledOnce(t, "Add must record the call that followed the reset")
-	})
-}
-
-// paginatedReaderStubDouble describes how to build a PaginatedReaderStub
-// under each option whose effect is the same whatever a method's
-// signature.
-//
-// Fetch stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func paginatedReaderStubDouble() stub.Double[paginatedreadertest.PaginatedReaderFetchCall] {
-	instance := func(s *paginatedreadertest.PaginatedReaderStub) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-		return stub.Instance[paginatedreadertest.PaginatedReaderFetchCall]{
-			Stub: s.OnFetch.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 int
-				a1 = 42
-				_, _ = s.Fetch(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[paginatedreadertest.PaginatedReaderFetchCall]{
-		New: func(tb assert.TB) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-			return instance(paginatedreadertest.NewPaginatedReaderStub(tb))
+// paginatedReaderStubInstanceOf returns the instance of s. The options
+// apply to the whole double, so the checks call Fetch alone.
+func paginatedReaderStubInstanceOf(
+	tb assert.TB,
+	s *paginatedreadertest.PaginatedReaderStub,
+) paginatedReaderStubInstance {
+	tb.Helper()
+	return paginatedReaderStubInstance{
+		Stub: s.OnFetch.MethodStub,
+		Call: func() {
+			_, _ = paginatedReaderStubFetch(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-			return instance(paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-			return instance(paginatedreadertest.NewPaginatedReaderStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-			return instance(paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-			return instance(paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[paginatedreadertest.PaginatedReaderFetchCall] {
-			return instance(paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestPaginatedReaderStubOptions pins the settings that apply to the
-// double rather than to one method: bench mode, the injected clock and
-// random source, and what a reset clears.
-func TestPaginatedReaderStubOptions(t *testing.T) {
+// TestPaginatedReaderStub checks the methods, the constructors and the
+// options of the double PaginatedReaderStub.
+func TestPaginatedReaderStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, paginatedReaderStubDouble())
+	t.Run("Fetch", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Fetch", paginatedReaderStubFetchSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			_, _ = paginatedReaderStubFetch(t, s)
+			got := s.OnFetch.AssertCalledOnce(t, "Fetch records the call")
+			a0, a1 := paginatedReaderStubFetchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Cursor, a1, "the call records Cursor")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			var seen []paginatedreadertest.PaginatedReaderFetchCall
+			s.OnFetch.OnRecord(func(c paginatedreadertest.PaginatedReaderFetchCall) { seen = append(seen, c) })
+			_, _ = paginatedReaderStubFetch(t, s)
+			_, _ = paginatedReaderStubFetch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fetch")
+		})
+	})
+
+	t.Run("Add", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Add", paginatedReaderStubAddSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			_ = paginatedReaderStubAdd(t, s)
+			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
+			a0, a1 := paginatedReaderStubAddArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			var seen []paginatedreadertest.PaginatedReaderAddCall
+			s.OnAdd.OnRecord(func(c paginatedreadertest.PaginatedReaderAddCall) { seen = append(seen, c) })
+			_ = paginatedReaderStubAdd(t, s)
+			_ = paginatedReaderStubAdd(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) paginatedReaderStubInstance {
+			return paginatedReaderStubInstanceOf(tb, paginatedreadertest.NewPaginatedReaderStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			_, _ = paginatedReaderStubFetch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnFetch.CallCount(), 0, "ResetCalls clears the calls of Fetch")
+		})
+
+		t.Run("keeps the results of Returns of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			want0, want1 := paginatedReaderStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := paginatedReaderStubFetch(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Fetch")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Fetch")
+		})
+
+		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			_ = paginatedReaderStubAdd(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
+		})
+
+		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			want0 := paginatedReaderStubAddPins()
+			s.OnAdd.Returns(want0)
+			s.ResetCalls()
+			got0 := paginatedReaderStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Add")
+		})
+	})
+
+	t.Run("NewPaginatedReaderStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) paginatedReaderStubInstance {
+			return paginatedReaderStubInstanceOf(tb, paginatedreadertest.NewPaginatedReaderStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewPaginatedReaderStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Fetch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-failing")
+			s := paginatedreadertest.NewPaginatedReaderStubFailing(t, want)
+			_, r1 := paginatedReaderStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of NewPaginatedReaderStubFailing")
+		})
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := paginatedreadertest.NewPaginatedReaderStubFailing(t, want)
+			r0 := paginatedReaderStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of NewPaginatedReaderStubFailing")
+		})
+	})
+
+	t.Run("PaginatedReaderStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) paginatedReaderStubInstance {
+			return paginatedReaderStubInstanceOf(
+				tb,
+				paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubStrict()),
+			)
+		})
+	})
+
+	t.Run("PaginatedReaderStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Fetch to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := paginatedreadertest.NewPaginatedReaderStub(t)
+			s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.PaginatedReaderStubDelegateTo(inner))
+			_, _ = paginatedReaderStubFetch(t, s)
+			inner.OnFetch.AssertCalledOnce(t, "Fetch calls the implementation")
+		})
+
+		t.Run("fails Fetch with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-delegate")
+			inner := paginatedreadertest.NewPaginatedReaderStub(t)
+			inner.OnFetch.Faults(want, 1)
+			s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.PaginatedReaderStubDelegateTo(inner))
+			_, r1 := paginatedReaderStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of the implementation")
+		})
+
+		t.Run("passes Add to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := paginatedreadertest.NewPaginatedReaderStub(t)
+			s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.PaginatedReaderStubDelegateTo(inner))
+			_ = paginatedReaderStubAdd(t, s)
+			inner.OnAdd.AssertCalledOnce(t, "Add calls the implementation")
+		})
+
+		t.Run("fails Add with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-delegate")
+			inner := paginatedreadertest.NewPaginatedReaderStub(t)
+			inner.OnAdd.Faults(want, 1)
+			s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.PaginatedReaderStubDelegateTo(inner))
+			r0 := paginatedReaderStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of the implementation")
+		})
+	})
+
+	t.Run("PaginatedReaderStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) paginatedReaderStubInstance {
+			return paginatedReaderStubInstanceOf(
+				tb,
+				paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("PaginatedReaderStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) paginatedReaderStubInstance {
+			return paginatedReaderStubInstanceOf(
+				tb,
+				paginatedreadertest.NewPaginatedReaderStub(
+					tb,
+					paginatedreadertest.PaginatedReaderStubWithRandSource(src),
+				),
+			)
+		})
+	})
+
+	t.Run("PaginatedReaderStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) paginatedReaderStubInstance {
+			return paginatedReaderStubInstanceOf(
+				tb,
+				paginatedreadertest.NewPaginatedReaderStub(tb, paginatedreadertest.PaginatedReaderStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("PaginatedReaderStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) paginatedReaderStubInstance {
+			return paginatedReaderStubInstanceOf(
+				tb,
+				paginatedreadertest.NewPaginatedReaderStub(
+					tb,
+					paginatedreadertest.PaginatedReaderStubWithClock(clk),
+					paginatedreadertest.PaginatedReaderStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("PaginatedReaderStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Fetch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-failing")
+			s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.PaginatedReaderStubFailing(want))
+			_, r1 := paginatedReaderStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of PaginatedReaderStubFailing")
+		})
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.PaginatedReaderStubFailing(want))
+			r0 := paginatedReaderStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of PaginatedReaderStubFailing")
+		})
+	})
+
+	t.Run("WithPaginatedReaderFetch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Fetch", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := paginatedreadertest.NewPaginatedReaderStub(
+				t,
+				paginatedreadertest.WithPaginatedReaderFetch(
+					func(_ context.Context, _ int) (paginatedreader.Page, error) {
+						called = true
+						var z0 paginatedreader.Page
+						var z1 error
+						return z0, z1
+					},
+				),
+			)
+			_, _ = paginatedReaderStubFetch(t, s)
+			assert.True(t, called, "WithPaginatedReaderFetch sets the function of Fetch")
+		})
+	})
+
+	t.Run("WithPaginatedReaderAdd", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Add", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := paginatedreadertest.NewPaginatedReaderStub(
+				t,
+				paginatedreadertest.WithPaginatedReaderAdd(func(_ context.Context, _ paginatedreader.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = paginatedReaderStubAdd(t, s)
+			assert.True(t, called, "WithPaginatedReaderAdd sets the function of Add")
+		})
+	})
 }
 
-// TestPaginatedReaderStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestPaginatedReaderStubDelegateTo(t *testing.T) {
+// TestPaginatedReaderFetchStub checks the methods of
+// PaginatedReaderFetchStub, which configures Fetch.
+func TestPaginatedReaderFetchStub(t *testing.T) {
 	t.Parallel()
 
-	inner := paginatedreadertest.NewPaginatedReaderStub(t)
-	s := paginatedreadertest.NewPaginatedReaderStub(t, paginatedreadertest.PaginatedReaderStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Fetch to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.Fetch(a0, a1)
-		inner.OnFetch.AssertCalledOnce(t, "Fetch must reach the wrapped implementation")
+		t.Run("sets the results of each call of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			want0, want1 := paginatedReaderStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			got0, got1 := paginatedReaderStubFetch(t, s)
+			expect.Equal(t, got0, want0, "Fetch returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Fetch returns the error that Returns sets")
+		})
+
+		t.Run("configures Fetch for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := paginatedreadertest.NewPaginatedReaderStub(r)
+			s.OnFetch.Strict()
+			var want0 paginatedreader.Page
+			var want1 error
+			s.OnFetch.Returns(want0, want1)
+			_, _ = paginatedReaderStubFetch(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Fetch")
+		})
 	})
 
-	t.Run("surfaces what Fetch answered", func(t *testing.T) {
-		want := errors.New("Fetch-delegate")
-		inner.OnFetch.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, r1 := s.Fetch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Fetch must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Add to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 paginatedreader.Value
-		a1 = paginatedreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		inner.OnAdd.AssertCalledOnce(t, "Add must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Add answered", func(t *testing.T) {
-		want := errors.New("Add-delegate")
-		inner.OnAdd.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 paginatedreader.Value
-		a1 = paginatedreader.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Fetch to the function", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			var got0 context.Context
+			var got1 int
+			s.OnFetch.Func(func(p0 context.Context, p1 int) (paginatedreader.Page, error) {
+				got0, got1 = p0, p1
+				var z0 paginatedreader.Page
+				var z1 error
+				return z0, z1
+			})
+			_, _ = paginatedReaderStubFetch(t, s)
+			a0, a1 := paginatedReaderStubFetchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Cursor")
+		})
 	})
 }
 
-// dokimi:provenance sha256:2d27793d1a5f15143042c8a213a56fb4d10141c8146899c58da2c1f3f5f5db08
+// TestPaginatedReaderAddStub checks the methods of PaginatedReaderAddStub,
+// which configures Add.
+func TestPaginatedReaderAddStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Add", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			want0 := paginatedReaderStubAddPins()
+			s.OnAdd.Returns(want0)
+			got0 := paginatedReaderStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "Add returns the error that Returns sets")
+		})
+
+		t.Run("configures Add for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := paginatedreadertest.NewPaginatedReaderStub(r)
+			s.OnAdd.Strict()
+			var want0 error
+			s.OnAdd.Returns(want0)
+			_ = paginatedReaderStubAdd(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
+			t.Parallel()
+			s := paginatedreadertest.NewPaginatedReaderStub(t)
+			var got0 context.Context
+			var got1 paginatedreader.Value
+			s.OnAdd.Func(func(p0 context.Context, p1 paginatedreader.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = paginatedReaderStubAdd(t, s)
+			a0, a1 := paginatedReaderStubAddArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
+	})
+}
+
+// dokimi:provenance sha256:7d52cf5b8990aa4e30489ddaf144fe6618d7f28623faec963dfee35745b63703

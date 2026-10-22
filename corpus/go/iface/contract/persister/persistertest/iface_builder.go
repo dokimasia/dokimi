@@ -8,29 +8,16 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/persister"
 )
 
-// ValueBuilder constructs [Value] values.
-//
-// Start with [NewValueBuilder] or [NewValueBuilderFrom], set what you care
-// about, and call [ValueBuilder.Build].
-//
-// The point is what you do not have to write. A composite literal restates
-// every member each time, so a member added to Value breaks every literal
-// at once and a reader cannot tell which members a given call site
-// actually cares about. Here the constructor supplies the rest, and each
-// call states only what it varies.
-//
-// Every setter returns the builder, so calls chain. A builder is a value
-// under construction and is not safe for concurrent use;
-// [ValueBuilder.Clone] is how one becomes two.
+// ValueBuilder constructs [Value] values. [NewValueBuilder] and
+// [NewValueBuilderFrom] return a new builder. Each setter sets one member
+// and returns the builder, so the calls chain. [ValueBuilder.Build]
+// returns the value. A builder is not safe for concurrent use.
 type ValueBuilder struct {
 	v persister.Value
 }
 
-// NewValueBuilder returns a builder seeded with the declared defaults.
-//
-// Only the members that declare one. Everything else holds its zero value,
-// so a caller that sets nothing gets a mixture rather than either extreme
-// — which is what makes a check against a built value worth writing.
+// NewValueBuilder returns a builder of the declared defaults. A member
+// without a declared default has its zero value.
 func NewValueBuilder() *ValueBuilder {
 	var v persister.Value
 	v.Key = "test-key"
@@ -38,76 +25,45 @@ func NewValueBuilder() *ValueBuilder {
 	return &ValueBuilder{v: v}
 }
 
-// NewValueBuilderFrom returns a builder seeded with v.
-//
-// For the case where a caller already holds a value and wants one member
-// different — a round trip, a near-copy, a regression fixture built from
-// something a previous step produced.
+// NewValueBuilderFrom returns a builder of v.
 func NewValueBuilderFrom(v persister.Value) *ValueBuilder {
 	return &ValueBuilder{v: v}
 }
 
-// WithKey replaces Key.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithKey replaces Key with v.
 func (b *ValueBuilder) WithKey(v string) *ValueBuilder {
 	b.v.Key = v
 	return b
 }
 
-// WithBody replaces Body.
-//
-// The later call wins: a setter overwrites rather than merges, so a caller
-// building from a constructor that seeded this member states only what it
-// varies.
+// WithBody replaces Body with v.
 func (b *ValueBuilder) WithBody(v string) *ValueBuilder {
 	b.v.Body = v
 	return b
 }
 
-// Mutate applies fn to the value under construction.
-//
-// The way out for what the setters do not reach: a member this
-// builder cannot name, a shape it does not model, or a change that
-// touches several members at once and only makes sense as one edit.
-//
-// Prefer a setter where one exists. A setter says which member it
-// writes, and a reader of the call site learns that without following
-// a closure.
+// Mutate applies fn to the value under construction. It changes what no
+// setter changes, such as several members in one step.
 func (b *ValueBuilder) Mutate(fn func(*persister.Value)) *ValueBuilder {
 	fn(&b.v)
 	return b
 }
 
-// Clone returns a builder that can be configured without affecting this
-// one.
-//
-// One level deep, and the boundary matters. The sequence, byte-sequence
-// and keyed members are copied, so appending or setting an entry through
-// one clone is not visible through another.
-//
-// What is shared: anything held *inside* those — a struct in a slice that
-// owns a slice of its own — and every optional member, which is what a
-// reference means. Mutating through one of those does reach the original.
-// Use [ValueBuilder.Mutate] to replace such a member outright rather than
-// editing it in place.
+// Clone returns a builder of a copy of the value under construction. The copy
+// has its own lists, maps, sets and bytes, so a change of one builder leaves
+// the other unchanged. The two builders share the elements of those members
+// and the value of each optional member.
 func (b *ValueBuilder) Clone() *ValueBuilder {
 	out := &ValueBuilder{v: b.v}
 	return out
 }
 
-// Build returns the constructed [Value].
-//
-// The builder stays usable afterwards, and a second call returns the value
-// as it stands then — so a caller may build, set one more member, and
-// build again. What it returns is a copy of the value under construction,
-// but only as far as Go copies: a member holding a slice or a map is
-// shared with the builder and with every value built from it, and
-// [ValueBuilder.Clone] is what separates them.
+// Build returns the value under construction. The builder stays usable,
+// and a later call returns the value with the changes since. The value
+// shares its lists, maps, sets and bytes with the builder, and
+// [ValueBuilder.Clone] returns a builder that shares none of them.
 func (b *ValueBuilder) Build() persister.Value {
 	return b.v
 }
 
-// dokimi:provenance sha256:24c4d2be9d6abd11604cbcdc75a3258f5d49c9eec5f3c834ac05486b57318305
+// dokimi:provenance sha256:215c3e5142b85ca04e6311ecfc9f9841e6cb77dc9a1b860f91200aadaac0e7ad

@@ -11,33 +11,52 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror/readernoerrortest"
+	"go.dokimi.dev/stub"
 )
 
-// readerNoErrorStubLookupSubject binds Lookup into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func readerNoErrorStubLookupSubject(tb assert.TB) stub.Subject[readernoerrortest.ReaderNoErrorLookupCall, readernoerrortest.ReaderNoErrorLookupReturn] {
+// readerNoErrorStubLookupArgs returns the samples of the arguments of
+// Lookup.
+func readerNoErrorStubLookupArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Lookup-a"
+	return a0, a1
+}
+
+// readerNoErrorStubLookup calls Lookup of s with the samples of its
+// arguments.
+func readerNoErrorStubLookup(tb assert.TB, s *readernoerrortest.ReaderNoErrorStub) readernoerror.Value {
+	tb.Helper()
+	a0, a1 := readerNoErrorStubLookupArgs(tb)
+	return s.Lookup(a0, a1)
+}
+
+// readerNoErrorStubLookupPins returns the samples of the results of
+// Lookup.
+func readerNoErrorStubLookupPins() readernoerror.Value {
+	var want0 readernoerror.Value
+	want0 = readernoerror.Value{Key: "Key-a"}
+	return want0
+}
+
+// readerNoErrorStubLookupSubject returns the subject of [stub.Behaviour]
+// for Lookup. The subject calls a new double that reports to tb.
+func readerNoErrorStubLookupSubject(
+	tb assert.TB,
+) stub.Subject[readernoerrortest.ReaderNoErrorLookupCall, readernoerrortest.ReaderNoErrorLookupReturn] {
 	tb.Helper()
 	s := readernoerrortest.NewReaderNoErrorStub(tb)
 	return stub.Subject[readernoerrortest.ReaderNoErrorLookupCall, readernoerrortest.ReaderNoErrorLookupReturn]{
 		Stub: s.OnLookup.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Lookup-a"
-			_ = s.Lookup(a0, a1)
+			_ = readerNoErrorStubLookup(tb, s)
 		},
 		Result: func() readernoerrortest.ReaderNoErrorLookupReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Lookup-a"
-			got0 := s.Lookup(a0, a1)
+			got0 := readerNoErrorStubLookup(tb, s)
 			return readernoerrortest.ReaderNoErrorLookupReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -50,151 +69,220 @@ func readerNoErrorStubLookupSubject(tb assert.TB) stub.Subject[readernoerrortest
 	}
 }
 
-// TestReaderNoErrorStubLookup pins how Lookup answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestReaderNoErrorStubLookup(t *testing.T) {
-	t.Parallel()
+// readerNoErrorStubInstance is the instance of a
+// readernoerrortest.ReaderNoErrorStub that the checks of the constructors
+// and the options drive.
+type readerNoErrorStubInstance = stub.Instance[readernoerrortest.ReaderNoErrorLookupCall]
 
-	stub.Behaviour(t, "Lookup", readerNoErrorStubLookupSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := readernoerrortest.NewReaderNoErrorStub(t)
-		var want0 readernoerror.Value
-		want0 = readernoerror.Value{Key: "Key-a"}
-		s.OnLookup.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		got0 := s.Lookup(a0, a1)
-		assert.Equal(t, got0, want0, "Lookup must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := readernoerrortest.NewReaderNoErrorStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_ = s.Lookup(a0, a1)
-		got := s.OnLookup.AssertCalledOnce(t, "Lookup must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := readernoerrortest.NewReaderNoErrorStub(t)
-		var seen []readernoerrortest.ReaderNoErrorLookupCall
-		s.OnLookup.OnRecord(func(c readernoerrortest.ReaderNoErrorLookupCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_ = s.Lookup(a0, a1)
-		_ = s.Lookup(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Lookup call")
-	})
-
-	t.Run("wires WithReaderNoErrorLookup at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := readernoerrortest.NewReaderNoErrorStub(t, readernoerrortest.WithReaderNoErrorLookup(func(_ context.Context, _ string) readernoerror.Value {
-			called = true
-			var z0 readernoerror.Value
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_ = s.Lookup(a0, a1)
-		assert.True(t, called, "WithReaderNoErrorLookup must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := readernoerrortest.NewReaderNoErrorStub(t)
-		var want0 readernoerror.Value
-		want0 = readernoerror.Value{Key: "Key-a"}
-		s.OnLookup.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_ = s.Lookup(a0, a1)
-		s.ResetCalls()
-		got0 := s.Lookup(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// readerNoErrorStubDouble describes how to build a ReaderNoErrorStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// Lookup stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func readerNoErrorStubDouble() stub.Double[readernoerrortest.ReaderNoErrorLookupCall] {
-	instance := func(s *readernoerrortest.ReaderNoErrorStub) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-		return stub.Instance[readernoerrortest.ReaderNoErrorLookupCall]{
-			Stub: s.OnLookup.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Lookup-a"
-				_ = s.Lookup(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[readernoerrortest.ReaderNoErrorLookupCall]{
-		New: func(tb assert.TB) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-			return instance(readernoerrortest.NewReaderNoErrorStub(tb))
+// readerNoErrorStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call Lookup alone.
+func readerNoErrorStubInstanceOf(tb assert.TB, s *readernoerrortest.ReaderNoErrorStub) readerNoErrorStubInstance {
+	tb.Helper()
+	return readerNoErrorStubInstance{
+		Stub: s.OnLookup.MethodStub,
+		Call: func() {
+			_ = readerNoErrorStubLookup(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-			return instance(readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-			return instance(readernoerrortest.NewReaderNoErrorStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-			return instance(readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-			return instance(readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[readernoerrortest.ReaderNoErrorLookupCall] {
-			return instance(readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestReaderNoErrorStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestReaderNoErrorStubOptions(t *testing.T) {
+// TestReaderNoErrorStub checks the methods, the constructors and the
+// options of the double ReaderNoErrorStub.
+func TestReaderNoErrorStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, readerNoErrorStubDouble())
-}
+	t.Run("Lookup", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Lookup", readerNoErrorStubLookupSubject)
 
-// TestReaderNoErrorStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestReaderNoErrorStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := readernoerrortest.NewReaderNoErrorStub(t)
+			_ = readerNoErrorStubLookup(t, s)
+			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
+			a0, a1 := readerNoErrorStubLookupArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
 
-	inner := readernoerrortest.NewReaderNoErrorStub(t)
-	s := readernoerrortest.NewReaderNoErrorStub(t, readernoerrortest.ReaderNoErrorStubDelegateTo(inner))
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := readernoerrortest.NewReaderNoErrorStub(t)
+			var seen []readernoerrortest.ReaderNoErrorLookupCall
+			s.OnLookup.OnRecord(func(c readernoerrortest.ReaderNoErrorLookupCall) { seen = append(seen, c) })
+			_ = readerNoErrorStubLookup(t, s)
+			_ = readerNoErrorStubLookup(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
+		})
+	})
 
-	t.Run("forwards Lookup to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_ = s.Lookup(a0, a1)
-		inner.OnLookup.AssertCalledOnce(t, "Lookup must reach the wrapped implementation")
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) readerNoErrorStubInstance {
+			return readerNoErrorStubInstanceOf(tb, readernoerrortest.NewReaderNoErrorStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := readernoerrortest.NewReaderNoErrorStub(t)
+			_ = readerNoErrorStubLookup(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
+		})
+
+		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := readernoerrortest.NewReaderNoErrorStub(t)
+			want0 := readerNoErrorStubLookupPins()
+			s.OnLookup.Returns(want0)
+			s.ResetCalls()
+			got0 := readerNoErrorStubLookup(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Lookup")
+		})
+	})
+
+	t.Run("NewReaderNoErrorStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) readerNoErrorStubInstance {
+			return readerNoErrorStubInstanceOf(tb, readernoerrortest.NewReaderNoErrorStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("ReaderNoErrorStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) readerNoErrorStubInstance {
+			return readerNoErrorStubInstanceOf(
+				tb,
+				readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubStrict()),
+			)
+		})
+	})
+
+	t.Run("ReaderNoErrorStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Lookup to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := readernoerrortest.NewReaderNoErrorStub(t)
+			s := readernoerrortest.NewReaderNoErrorStub(t, readernoerrortest.ReaderNoErrorStubDelegateTo(inner))
+			_ = readerNoErrorStubLookup(t, s)
+			inner.OnLookup.AssertCalledOnce(t, "Lookup calls the implementation")
+		})
+	})
+
+	t.Run("ReaderNoErrorStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) readerNoErrorStubInstance {
+			return readerNoErrorStubInstanceOf(
+				tb,
+				readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("ReaderNoErrorStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) readerNoErrorStubInstance {
+			return readerNoErrorStubInstanceOf(
+				tb,
+				readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ReaderNoErrorStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) readerNoErrorStubInstance {
+			return readerNoErrorStubInstanceOf(
+				tb,
+				readernoerrortest.NewReaderNoErrorStub(tb, readernoerrortest.ReaderNoErrorStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("ReaderNoErrorStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) readerNoErrorStubInstance {
+			return readerNoErrorStubInstanceOf(
+				tb,
+				readernoerrortest.NewReaderNoErrorStub(
+					tb,
+					readernoerrortest.ReaderNoErrorStubWithClock(clk),
+					readernoerrortest.ReaderNoErrorStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("WithReaderNoErrorLookup", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Lookup", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := readernoerrortest.NewReaderNoErrorStub(
+				t,
+				readernoerrortest.WithReaderNoErrorLookup(func(_ context.Context, _ string) readernoerror.Value {
+					called = true
+					var z0 readernoerror.Value
+					return z0
+				}),
+			)
+			_ = readerNoErrorStubLookup(t, s)
+			assert.True(t, called, "WithReaderNoErrorLookup sets the function of Lookup")
+		})
 	})
 }
 
-// dokimi:provenance sha256:d8c2a1f16ac4c020865bd55b5f3d9490c49d03a50d35129e115739c736354007
+// TestReaderNoErrorLookupStub checks the methods of
+// ReaderNoErrorLookupStub, which configures Lookup.
+func TestReaderNoErrorLookupStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := readernoerrortest.NewReaderNoErrorStub(t)
+			want0 := readerNoErrorStubLookupPins()
+			s.OnLookup.Returns(want0)
+			got0 := readerNoErrorStubLookup(t, s)
+			assert.Equal(t, got0, want0, "Lookup returns the Result that Returns sets")
+		})
+
+		t.Run("configures Lookup for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := readernoerrortest.NewReaderNoErrorStub(r)
+			s.OnLookup.Strict()
+			var want0 readernoerror.Value
+			s.OnLookup.Returns(want0)
+			_ = readerNoErrorStubLookup(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Lookup")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
+			t.Parallel()
+			s := readernoerrortest.NewReaderNoErrorStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnLookup.Func(func(p0 context.Context, p1 string) readernoerror.Value {
+				got0, got1 = p0, p1
+				var z0 readernoerror.Value
+				return z0
+			})
+			_ = readerNoErrorStubLookup(t, s)
+			a0, a1 := readerNoErrorStubLookupArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:f87c336d2824f34d82ad2db84b0f5239fb154e55454a92a05cff7527694ab2af

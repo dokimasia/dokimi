@@ -7,7 +7,7 @@ package readernoerrortest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror"
 )
 
@@ -40,33 +40,30 @@ func ReaderNoErrorSuite() conform.Suite[readernoerror.ReaderNoError] {
 	return conform.Suite[readernoerror.ReaderNoError]{Declaration: "ReaderNoError"}
 }
 
-// RunReaderNoError applies the checks of ReaderNoError, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunReaderNoError[T readernoerror.ReaderNoError](t *testing.T, newSubject func() T, opts ...ReaderNoErrorOption) {
+// RunReaderNoErrorSuite applies the checks of ReaderNoError, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunReaderNoErrorSuite[T readernoerror.ReaderNoError](
+	t *testing.T,
+	newSubject func() T,
+	opts ...ReaderNoErrorOption,
+) {
 	t.Helper()
-	conform.Verify(t, ReaderNoErrorSuite(), func(*ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject() }, opts...)
+	RunReaderNoErrorSuiteFromHandle(t, func(*ReaderNoErrorHandle) T { return newSubject() }, opts...)
 }
 
-// RunReaderNoErrorOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunReaderNoErrorOn[T readernoerror.ReaderNoError](t *testing.T, newSubject func(h *ReaderNoErrorHandle) T, opts ...ReaderNoErrorOption) {
+// RunReaderNoErrorSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunReaderNoErrorSuiteFromHandle[T readernoerror.ReaderNoError](
+	t *testing.T,
+	newSubject func(h *ReaderNoErrorHandle) T,
+	opts ...ReaderNoErrorOption,
+) {
 	t.Helper()
-	conform.Verify(t, ReaderNoErrorSuite(), func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		ReaderNoErrorSuite(),
+		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
+		opts...)
 }
 
-// ControlReaderNoError applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlReaderNoError[T readernoerror.ReaderNoError](t *testing.T, newControl func() T, opts ...ReaderNoErrorOption) {
-	t.Helper()
-	conform.Control(t, ReaderNoErrorSuite(), func(*ReaderNoErrorHandle) readernoerror.ReaderNoError { return newControl() }, opts...)
-}
-
-// ControlReaderNoErrorOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlReaderNoErrorOn[T readernoerror.ReaderNoError](t *testing.T, newControl func(h *ReaderNoErrorHandle) T, opts ...ReaderNoErrorOption) {
-	t.Helper()
-	conform.Control(t, ReaderNoErrorSuite(), func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:2b57caf3b1f414d528cbcaee50915a4eee6c617d0a861c024f3a27701496f9ca
+// dokimi:provenance sha256:8c9c6d1ad7a4aa66b20e1f686d961e1231a04e0784ec8db20de02b5efe25d429

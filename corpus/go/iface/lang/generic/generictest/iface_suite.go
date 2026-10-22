@@ -7,7 +7,7 @@ package generictest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/generic"
 )
 
@@ -46,33 +46,22 @@ func StoreSuite() conform.Suite[generic.Store[int, int]] {
 	return conform.Suite[generic.Store[int, int]]{Declaration: "Store"}
 }
 
-// RunStore applies the checks of Store, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunStore[T generic.Store[int, int]](t *testing.T, newSubject func() T, opts ...StoreOption) {
+// RunStoreSuite applies the checks of Store, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunStoreSuite[T generic.Store[int, int]](t *testing.T, newSubject func() T, opts ...StoreOption) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(*StoreHandle) generic.Store[int, int] { return newSubject() }, opts...)
+	RunStoreSuiteFromHandle(t, func(*StoreHandle) T { return newSubject() }, opts...)
 }
 
-// RunStoreOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunStoreOn[T generic.Store[int, int]](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+// RunStoreSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStoreSuiteFromHandle[T generic.Store[int, int]](
+	t *testing.T,
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(h *StoreHandle) generic.Store[int, int] { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), func(h *StoreHandle) generic.Store[int, int] { return newSubject(h) }, opts...)
 }
 
-// ControlStore applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlStore[T generic.Store[int, int]](t *testing.T, newControl func() T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(*StoreHandle) generic.Store[int, int] { return newControl() }, opts...)
-}
-
-// ControlStoreOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlStoreOn[T generic.Store[int, int]](t *testing.T, newControl func(h *StoreHandle) T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(h *StoreHandle) generic.Store[int, int] { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:6bef85dbe37022d0e7850c5799d7289c92032024cc8c6808570d2a4fadf12b44
+// dokimi:provenance sha256:13704d70231cb83e8c4685d2682cc97ce40d83ba33c163acbf4613401cd9515d

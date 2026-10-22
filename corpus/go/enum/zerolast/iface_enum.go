@@ -6,24 +6,22 @@ package zerolast
 
 import (
 	"errors"
+	"fmt"
 )
 
-// String returns Region's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Region) String() string {
 	return string(v)
 }
 
-// ErrUnknownRegion reports text that names no declared variant.
+// ErrUnknownRegion is the error of text that names no declared variant.
+// The error of [ParseRegion] wraps it with the text.
 var ErrUnknownRegion = errors.New("zerolast: unknown Region value")
 
-// ParseRegion maps text back to a Region.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseRegion returns the variant of Region whose text is s. It is the
+// inverse of [Region.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownRegion] for text that names no declared variant.
 func ParseRegion(s string) (Region, error) {
 	switch s {
 	case "us-east":
@@ -34,13 +32,11 @@ func ParseRegion(s string) (Region, error) {
 		return Unset, nil
 	}
 	var zero Region
-	return zero, ErrUnknownRegion
+	return zero, fmt.Errorf("%w %q", ErrUnknownRegion, s)
 }
 
-// RegionValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// RegionValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func RegionValues() []Region {
 	return []Region{
 		US,
@@ -49,34 +45,25 @@ func RegionValues() []Region {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Region) IsValid() bool {
 	switch v {
-	case US:
+	case US, EU, Unset:
 		return true
-	case EU:
-		return true
-	case Unset:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Region legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Region) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseRegion] for text that names no declared variant.
 func (v *Region) UnmarshalText(text []byte) error {
 	parsed, err := ParseRegion(string(text))
 	if err != nil {
@@ -86,4 +73,4 @@ func (v *Region) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:148180a2e4c78b66606db207a0ba765560131b1f0c3673ab9d46f22ef3e00b39
+// dokimi:provenance sha256:020356b1179e644b27b4e95070da4ec98f9a38ab03c2a6148a0fed8cf7210619

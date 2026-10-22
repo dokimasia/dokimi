@@ -10,25 +10,35 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pure/puretest"
+	"go.dokimi.dev/stub"
 )
 
-// pureStubDescribeSubject binds Describe into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// pureStubDescribe calls Describe of s with the samples of its arguments.
+func pureStubDescribe(tb assert.TB, s *puretest.PureStub) string {
+	tb.Helper()
+	return s.Describe()
+}
+
+// pureStubDescribePins returns the samples of the results of Describe.
+func pureStubDescribePins() string {
+	var want0 string
+	want0 = "Describe-a"
+	return want0
+}
+
+// pureStubDescribeSubject returns the subject of [stub.Behaviour] for
+// Describe. The subject calls a new double that reports to tb.
 func pureStubDescribeSubject(tb assert.TB) stub.Subject[puretest.PureDescribeCall, puretest.PureDescribeReturn] {
 	tb.Helper()
 	s := puretest.NewPureStub(tb)
 	return stub.Subject[puretest.PureDescribeCall, puretest.PureDescribeReturn]{
 		Stub: s.OnDescribe.MethodStub,
 		Call: func() {
-			_ = s.Describe()
+			_ = pureStubDescribe(tb, s)
 		},
 		Result: func() puretest.PureDescribeReturn {
-			got0 := s.Describe()
+			got0 := pureStubDescribe(tb, s)
 			return puretest.PureDescribeReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -41,128 +51,170 @@ func pureStubDescribeSubject(tb assert.TB) stub.Subject[puretest.PureDescribeCal
 	}
 }
 
-// TestPureStubDescribe pins how Describe answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestPureStubDescribe(t *testing.T) {
-	t.Parallel()
+// pureStubInstance is the instance of a puretest.PureStub that the checks
+// of the constructors and the options drive.
+type pureStubInstance = stub.Instance[puretest.PureDescribeCall]
 
-	stub.Behaviour(t, "Describe", pureStubDescribeSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewPureStub(t)
-		var want0 string
-		want0 = "Describe-a"
-		s.OnDescribe.Returns(want0)
-		got0 := s.Describe()
-		assert.Equal(t, got0, want0, "Describe must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewPureStub(t)
-		_ = s.Describe()
-		s.OnDescribe.AssertCalledOnce(t, "Describe must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewPureStub(t)
-		var seen []puretest.PureDescribeCall
-		s.OnDescribe.OnRecord(func(c puretest.PureDescribeCall) { seen = append(seen, c) })
-		_ = s.Describe()
-		_ = s.Describe()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Describe call")
-	})
-
-	t.Run("wires WithPureDescribe at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := puretest.NewPureStub(t, puretest.WithPureDescribe(func() string {
-			called = true
-			var z0 string
-			return z0
-		}))
-		_ = s.Describe()
-		assert.True(t, called, "WithPureDescribe must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewPureStub(t)
-		var want0 string
-		want0 = "Describe-a"
-		s.OnDescribe.Returns(want0)
-		_ = s.Describe()
-		s.ResetCalls()
-		got0 := s.Describe()
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// pureStubDouble describes how to build a PureStub under each option whose
-// effect is the same whatever a method's signature.
-//
-// Describe stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func pureStubDouble() stub.Double[puretest.PureDescribeCall] {
-	instance := func(s *puretest.PureStub) stub.Instance[puretest.PureDescribeCall] {
-		return stub.Instance[puretest.PureDescribeCall]{
-			Stub: s.OnDescribe.MethodStub,
-			Call: func() {
-				_ = s.Describe()
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[puretest.PureDescribeCall]{
-		New: func(tb assert.TB) stub.Instance[puretest.PureDescribeCall] {
-			return instance(puretest.NewPureStub(tb))
+// pureStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Describe alone.
+func pureStubInstanceOf(tb assert.TB, s *puretest.PureStub) pureStubInstance {
+	tb.Helper()
+	return pureStubInstance{
+		Stub: s.OnDescribe.MethodStub,
+		Call: func() {
+			_ = pureStubDescribe(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[puretest.PureDescribeCall] {
-			return instance(puretest.NewPureStub(tb, puretest.PureStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[puretest.PureDescribeCall] {
-			return instance(puretest.NewPureStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[puretest.PureDescribeCall] {
-			return instance(puretest.NewPureStub(tb, puretest.PureStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[puretest.PureDescribeCall] {
-			return instance(puretest.NewPureStub(tb, puretest.PureStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[puretest.PureDescribeCall] {
-			return instance(puretest.NewPureStub(tb, puretest.PureStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestPureStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestPureStubOptions(t *testing.T) {
+// TestPureStub checks the methods, the constructors and the options of the
+// double PureStub.
+func TestPureStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, pureStubDouble())
-}
+	t.Run("Describe", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Describe", pureStubDescribeSubject)
 
-// TestPureStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestPureStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewPureStub(t)
+			var seen []puretest.PureDescribeCall
+			s.OnDescribe.OnRecord(func(c puretest.PureDescribeCall) { seen = append(seen, c) })
+			_ = pureStubDescribe(t, s)
+			_ = pureStubDescribe(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Describe")
+		})
+	})
 
-	inner := puretest.NewPureStub(t)
-	s := puretest.NewPureStub(t, puretest.PureStubDelegateTo(inner))
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) pureStubInstance {
+			return pureStubInstanceOf(tb, puretest.NewPureStub(tb))
+		})
 
-	t.Run("forwards Describe to the wrapped implementation", func(t *testing.T) {
-		_ = s.Describe()
-		inner.OnDescribe.AssertCalledOnce(t, "Describe must reach the wrapped implementation")
+		t.Run("clears the recorded calls of Describe", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewPureStub(t)
+			_ = pureStubDescribe(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnDescribe.CallCount(), 0, "ResetCalls clears the calls of Describe")
+		})
+
+		t.Run("keeps the results of Returns of Describe", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewPureStub(t)
+			want0 := pureStubDescribePins()
+			s.OnDescribe.Returns(want0)
+			s.ResetCalls()
+			got0 := pureStubDescribe(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Describe")
+		})
+	})
+
+	t.Run("NewPureStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) pureStubInstance {
+			return pureStubInstanceOf(tb, puretest.NewPureStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("PureStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) pureStubInstance {
+			return pureStubInstanceOf(tb, puretest.NewPureStub(tb, puretest.PureStubStrict()))
+		})
+	})
+
+	t.Run("PureStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Describe to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := puretest.NewPureStub(t)
+			s := puretest.NewPureStub(t, puretest.PureStubDelegateTo(inner))
+			_ = pureStubDescribe(t, s)
+			inner.OnDescribe.AssertCalledOnce(t, "Describe calls the implementation")
+		})
+	})
+
+	t.Run("PureStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) pureStubInstance {
+			return pureStubInstanceOf(tb, puretest.NewPureStub(tb, puretest.PureStubWithClock(clk)))
+		})
+	})
+
+	t.Run("PureStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) pureStubInstance {
+			return pureStubInstanceOf(tb, puretest.NewPureStub(tb, puretest.PureStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("PureStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) pureStubInstance {
+			return pureStubInstanceOf(tb, puretest.NewPureStub(tb, puretest.PureStubBenchMode()))
+		})
+	})
+
+	t.Run("PureStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) pureStubInstance {
+			return pureStubInstanceOf(
+				tb,
+				puretest.NewPureStub(tb, puretest.PureStubWithClock(clk), puretest.PureStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("WithPureDescribe", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Describe", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := puretest.NewPureStub(t, puretest.WithPureDescribe(func() string {
+				called = true
+				var z0 string
+				return z0
+			}))
+			_ = pureStubDescribe(t, s)
+			assert.True(t, called, "WithPureDescribe sets the function of Describe")
+		})
 	})
 }
 
-// dokimi:provenance sha256:c5cff1d410364b4ac79bef427952cecc8673f3b07641d4977c8cd0bcd50bc61b
+// TestPureDescribeStub checks the methods of PureDescribeStub, which
+// configures Describe.
+func TestPureDescribeStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Describe", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewPureStub(t)
+			want0 := pureStubDescribePins()
+			s.OnDescribe.Returns(want0)
+			got0 := pureStubDescribe(t, s)
+			assert.Equal(t, got0, want0, "Describe returns the Result that Returns sets")
+		})
+
+		t.Run("configures Describe for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := puretest.NewPureStub(r)
+			s.OnDescribe.Strict()
+			var want0 string
+			s.OnDescribe.Returns(want0)
+			_ = pureStubDescribe(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Describe")
+		})
+	})
+}
+
+// dokimi:provenance sha256:4376018461e0ed299e63f905c7d9e78826d0f4122aeb4801800a6abda40f3342

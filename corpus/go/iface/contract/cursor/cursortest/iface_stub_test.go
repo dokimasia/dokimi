@@ -12,28 +12,70 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor/cursortest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubNextSubject binds Next into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// contractStubNextArgs returns the samples of the arguments of Next.
+func contractStubNextArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubNext calls Next of s with the samples of its arguments.
+func contractStubNext(tb assert.TB, s *cursortest.ContractStub) (cursor.Value, bool, error) {
+	tb.Helper()
+	a0 := contractStubNextArgs(tb)
+	return s.Next(a0)
+}
+
+// contractStubNextPins returns the samples of the results of Next, with a
+// new error as its error result.
+func contractStubNextPins() (cursor.Value, bool, error) {
+	var want0 cursor.Value
+	var want1 bool
+	want2 := errors.New("Next-returns")
+	want0 = cursor.Value{Key: "Key-a"}
+	want1 = true
+	return want0, want1, want2
+}
+
+// contractStubCloseArgs returns the samples of the arguments of Close.
+func contractStubCloseArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubClose calls Close of s with the samples of its arguments.
+func contractStubClose(tb assert.TB, s *cursortest.ContractStub) error {
+	tb.Helper()
+	a0 := contractStubCloseArgs(tb)
+	return s.Close(a0)
+}
+
+// contractStubClosePins returns the samples of the results of Close, with
+// a new error as its error result.
+func contractStubClosePins() error {
+	want0 := errors.New("Close-returns")
+	return want0
+}
+
+// contractStubNextSubject returns the subject of [stub.Behaviour] for
+// Next. The subject calls a new double that reports to tb.
 func contractStubNextSubject(tb assert.TB) stub.Subject[cursortest.ContractNextCall, cursortest.ContractNextReturn] {
 	tb.Helper()
 	s := cursortest.NewContractStub(tb)
 	return stub.Subject[cursortest.ContractNextCall, cursortest.ContractNextReturn]{
 		Stub: s.OnNext.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _, _ = s.Next(a0)
+			_, _, _ = contractStubNext(tb, s)
 		},
 		Result: func() cursortest.ContractNextReturn {
-			var a0 context.Context
-			got0, got1, got2 := s.Next(a0)
+			got0, got1, got2 := contractStubNext(tb, s)
 			return cursortest.ContractNextReturn{Result0: got0, Result1: got1, Err: got2}
 		},
 		Override: func(mark func()) {
@@ -46,119 +88,24 @@ func contractStubNextSubject(tb assert.TB) stub.Subject[cursortest.ContractNextC
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, _, r2 := s.Next(a0)
+			_, _, r2 := contractStubNext(tb, s)
 			return r2
 		},
 	}
 }
 
-// TestContractStubNext pins how Next answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubNext(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Next", contractStubNextSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := cursortest.NewContractStub(t)
-		var want0 cursor.Value
-		var want1 bool
-		var want2 error
-		want0 = cursor.Value{Key: "Key-a"}
-		want1 = true
-		s.OnNext.Returns(want0, want1, want2)
-		var a0 context.Context
-		got0, got1, _ := s.Next(a0)
-		assert.Equal(t, got0, want0, "Next must answer with what Returns pinned")
-		assert.Equal(t, got1, want1, "Next must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := cursortest.NewContractStub(t)
-		var a0 context.Context
-		_, _, _ = s.Next(a0)
-		got := s.OnNext.AssertCalledOnce(t, "Next must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := cursortest.NewContractStub(t)
-		var seen []cursortest.ContractNextCall
-		s.OnNext.OnRecord(func(c cursortest.ContractNextCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _, _ = s.Next(a0)
-		_, _, _ = s.Next(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Next call")
-	})
-
-	t.Run("wires WithContractNext at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := cursortest.NewContractStub(t, cursortest.WithContractNext(func(_ context.Context) (cursor.Value, bool, error) {
-			called = true
-			var z0 cursor.Value
-			var z1 bool
-			var z2 error
-			return z0, z1, z2
-		}))
-		var a0 context.Context
-		_, _, _ = s.Next(a0)
-		assert.True(t, called, "WithContractNext must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Next-failing")
-		s := cursortest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		_, _, r2 := s.Next(a0)
-		assert.ErrorIs(t, r2, want, "Next must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := cursortest.NewContractStub(t)
-		var want0 cursor.Value
-		var want1 bool
-		var want2 error
-		want0 = cursor.Value{Key: "Key-a"}
-		want1 = true
-		s.OnNext.Returns(want0, want1, want2)
-		var a0 context.Context
-		_, _, _ = s.Next(a0)
-		s.ResetCalls()
-		got0, got1, _ := s.Next(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-		assert.Equal(t, got1, want1, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubCloseSubject binds Close into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// contractStubCloseSubject returns the subject of [stub.Behaviour] for
+// Close. The subject calls a new double that reports to tb.
 func contractStubCloseSubject(tb assert.TB) stub.Subject[cursortest.ContractCloseCall, cursortest.ContractCloseReturn] {
 	tb.Helper()
 	s := cursortest.NewContractStub(tb)
 	return stub.Subject[cursortest.ContractCloseCall, cursortest.ContractCloseReturn]{
 		Stub: s.OnClose.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Close(a0)
+			_ = contractStubClose(tb, s)
 		},
 		Result: func() cursortest.ContractCloseReturn {
-			var a0 context.Context
-			got0 := s.Close(a0)
+			got0 := contractStubClose(tb, s)
 			return cursortest.ContractCloseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -169,162 +116,397 @@ func contractStubCloseSubject(tb assert.TB) stub.Subject[cursortest.ContractClos
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Close(a0)
+			r0 := contractStubClose(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubClose pins how Close answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubClose(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a cursortest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[cursortest.ContractNextCall]
 
-	stub.Behaviour(t, "Close", contractStubCloseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := cursortest.NewContractStub(t)
-		var a0 context.Context
-		_ = s.Close(a0)
-		got := s.OnClose.AssertCalledOnce(t, "Close must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := cursortest.NewContractStub(t)
-		var seen []cursortest.ContractCloseCall
-		s.OnClose.OnRecord(func(c cursortest.ContractCloseCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Close(a0)
-		_ = s.Close(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Close call")
-	})
-
-	t.Run("wires WithContractClose at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := cursortest.NewContractStub(t, cursortest.WithContractClose(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Close(a0)
-		assert.True(t, called, "WithContractClose must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Close-failing")
-		s := cursortest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Close(a0)
-		assert.ErrorIs(t, r0, want, "Close must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := cursortest.NewContractStub(t)
-		var want0 error
-		s.OnClose.Returns(want0)
-		var a0 context.Context
-		_ = s.Close(a0)
-		s.ResetCalls()
-		_ = s.Close(a0)
-		s.OnClose.AssertCalledOnce(t, "Close must record the call that followed the reset")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Next stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func contractStubDouble() stub.Double[cursortest.ContractNextCall] {
-	instance := func(s *cursortest.ContractStub) stub.Instance[cursortest.ContractNextCall] {
-		return stub.Instance[cursortest.ContractNextCall]{
-			Stub: s.OnNext.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_, _, _ = s.Next(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[cursortest.ContractNextCall]{
-		New: func(tb assert.TB) stub.Instance[cursortest.ContractNextCall] {
-			return instance(cursortest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Next alone.
+func contractStubInstanceOf(tb assert.TB, s *cursortest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnNext.MethodStub,
+		Call: func() {
+			_, _, _ = contractStubNext(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[cursortest.ContractNextCall] {
-			return instance(cursortest.NewContractStub(tb, cursortest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[cursortest.ContractNextCall] {
-			return instance(cursortest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[cursortest.ContractNextCall] {
-			return instance(cursortest.NewContractStub(tb, cursortest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[cursortest.ContractNextCall] {
-			return instance(cursortest.NewContractStub(tb, cursortest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[cursortest.ContractNextCall] {
-			return instance(cursortest.NewContractStub(tb, cursortest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Next", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Next", contractStubNextSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			_, _, _ = contractStubNext(t, s)
+			got := s.OnNext.AssertCalledOnce(t, "Next records the call")
+			a0 := contractStubNextArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			var seen []cursortest.ContractNextCall
+			s.OnNext.OnRecord(func(c cursortest.ContractNextCall) { seen = append(seen, c) })
+			_, _, _ = contractStubNext(t, s)
+			_, _, _ = contractStubNext(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Next")
+		})
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Close", contractStubCloseSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			_ = contractStubClose(t, s)
+			got := s.OnClose.AssertCalledOnce(t, "Close records the call")
+			a0 := contractStubCloseArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			var seen []cursortest.ContractCloseCall
+			s.OnClose.OnRecord(func(c cursortest.ContractCloseCall) { seen = append(seen, c) })
+			_ = contractStubClose(t, s)
+			_ = contractStubClose(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, cursortest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Next", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			_, _, _ = contractStubNext(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnNext.CallCount(), 0, "ResetCalls clears the calls of Next")
+		})
+
+		t.Run("keeps the results of Returns of Next", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			want0, want1, want2 := contractStubNextPins()
+			s.OnNext.Returns(want0, want1, want2)
+			s.ResetCalls()
+			got0, got1, got2 := contractStubNext(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result0 of Next")
+			expect.Equal(t, got1, want1, "ResetCalls keeps the Result1 of Next")
+			expect.ErrorIs(t, got2, want2, "ResetCalls keeps the error of Next")
+		})
+
+		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			_ = contractStubClose(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
+		})
+
+		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			want0 := contractStubClosePins()
+			s.OnClose.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, cursortest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Next with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Next-failing")
+			s := cursortest.NewContractStubFailing(t, want)
+			_, _, r2 := contractStubNext(t, s)
+			assert.ErrorIs(t, r2, want, "Next fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := cursortest.NewContractStubFailing(t, want)
+			r0 := contractStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, cursortest.NewContractStub(tb, cursortest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Next to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := cursortest.NewContractStub(t)
+			s := cursortest.NewContractStub(t, cursortest.ContractStubDelegateTo(inner))
+			_, _, _ = contractStubNext(t, s)
+			inner.OnNext.AssertCalledOnce(t, "Next calls the implementation")
+		})
+
+		t.Run("fails Next with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Next-delegate")
+			inner := cursortest.NewContractStub(t)
+			inner.OnNext.Faults(want, 1)
+			s := cursortest.NewContractStub(t, cursortest.ContractStubDelegateTo(inner))
+			_, _, r2 := contractStubNext(t, s)
+			assert.ErrorIs(t, r2, want, "Next fails with the error of the implementation")
+		})
+
+		t.Run("passes Close to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := cursortest.NewContractStub(t)
+			s := cursortest.NewContractStub(t, cursortest.ContractStubDelegateTo(inner))
+			_ = contractStubClose(t, s)
+			inner.OnClose.AssertCalledOnce(t, "Close calls the implementation")
+		})
+
+		t.Run("fails Close with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-delegate")
+			inner := cursortest.NewContractStub(t)
+			inner.OnClose.Faults(want, 1)
+			s := cursortest.NewContractStub(t, cursortest.ContractStubDelegateTo(inner))
+			r0 := contractStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, cursortest.NewContractStub(tb, cursortest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				cursortest.NewContractStub(tb, cursortest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, cursortest.NewContractStub(tb, cursortest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				cursortest.NewContractStub(
+					tb,
+					cursortest.ContractStubWithClock(clk),
+					cursortest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Next with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Next-failing")
+			s := cursortest.NewContractStub(t, cursortest.ContractStubFailing(want))
+			_, _, r2 := contractStubNext(t, s)
+			assert.ErrorIs(t, r2, want, "Next fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := cursortest.NewContractStub(t, cursortest.ContractStubFailing(want))
+			r0 := contractStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractNext", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Next", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := cursortest.NewContractStub(
+				t,
+				cursortest.WithContractNext(func(_ context.Context) (cursor.Value, bool, error) {
+					called = true
+					var z0 cursor.Value
+					var z1 bool
+					var z2 error
+					return z0, z1, z2
+				}),
+			)
+			_, _, _ = contractStubNext(t, s)
+			assert.True(t, called, "WithContractNext sets the function of Next")
+		})
+	})
+
+	t.Run("WithContractClose", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Close", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := cursortest.NewContractStub(t, cursortest.WithContractClose(func(_ context.Context) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = contractStubClose(t, s)
+			assert.True(t, called, "WithContractClose sets the function of Close")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractNextStub checks the methods of ContractNextStub, which
+// configures Next.
+func TestContractNextStub(t *testing.T) {
 	t.Parallel()
 
-	inner := cursortest.NewContractStub(t)
-	s := cursortest.NewContractStub(t, cursortest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Next to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _, _ = s.Next(a0)
-		inner.OnNext.AssertCalledOnce(t, "Next must reach the wrapped implementation")
+		t.Run("sets the results of each call of Next", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			want0, want1, want2 := contractStubNextPins()
+			s.OnNext.Returns(want0, want1, want2)
+			got0, got1, got2 := contractStubNext(t, s)
+			expect.Equal(t, got0, want0, "Next returns the Result0 that Returns sets")
+			expect.Equal(t, got1, want1, "Next returns the Result1 that Returns sets")
+			expect.ErrorIs(t, got2, want2, "Next returns the error that Returns sets")
+		})
+
+		t.Run("configures Next for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := cursortest.NewContractStub(r)
+			s.OnNext.Strict()
+			var want0 cursor.Value
+			var want1 bool
+			var want2 error
+			s.OnNext.Returns(want0, want1, want2)
+			_, _, _ = contractStubNext(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Next")
+		})
 	})
 
-	t.Run("surfaces what Next answered", func(t *testing.T) {
-		want := errors.New("Next-delegate")
-		inner.OnNext.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, _, r2 := s.Next(a0)
-		assert.ErrorIs(t, r2, want, "Next must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Close to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Close(a0)
-		inner.OnClose.AssertCalledOnce(t, "Close must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Close answered", func(t *testing.T) {
-		want := errors.New("Close-delegate")
-		inner.OnClose.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Close(a0)
-		assert.ErrorIs(t, r0, want, "Close must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Next to the function", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			var got0 context.Context
+			s.OnNext.Func(func(p0 context.Context) (cursor.Value, bool, error) {
+				got0 = p0
+				var z0 cursor.Value
+				var z1 bool
+				var z2 error
+				return z0, z1, z2
+			})
+			_, _, _ = contractStubNext(t, s)
+			a0 := contractStubNextArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:3cec8480ec93e78b0a8f4f58a2641726ead6331aca09f66edaf78a2ad0af0ed2
+// TestContractCloseStub checks the methods of ContractCloseStub, which
+// configures Close.
+func TestContractCloseStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Close", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			want0 := contractStubClosePins()
+			s.OnClose.Returns(want0)
+			got0 := contractStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
+		})
+
+		t.Run("configures Close for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := cursortest.NewContractStub(r)
+			s.OnClose.Strict()
+			var want0 error
+			s.OnClose.Returns(want0)
+			_ = contractStubClose(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Close to the function", func(t *testing.T) {
+			t.Parallel()
+			s := cursortest.NewContractStub(t)
+			var got0 context.Context
+			s.OnClose.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = contractStubClose(t, s)
+			a0 := contractStubCloseArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:a374d015a218b12276bb5b3a21682ff751ec7e3a80dedaaeec1528848a0f5859

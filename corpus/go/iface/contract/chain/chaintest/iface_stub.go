@@ -10,47 +10,33 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain"
+	"go.dokimi.dev/stub"
 )
 
-// ContractAppendCall records one invocation of Contract.Append.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ContractAppendCall records one call of Contract.Append.
 type ContractAppendCall struct {
 	Ctx context.Context
 	E   chain.Entry
 	Err error
 }
 
-// ContractReplayCall records one invocation of Contract.Replay.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ContractReplayCall records one call of Contract.Replay.
 type ContractReplayCall struct {
 	Ctx    context.Context
 	Result []chain.Entry
 	Err    error
 }
 
-// ContractVerifyCall records one invocation of Contract.Verify.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ContractVerifyCall records one call of Contract.Verify.
 type ContractVerifyCall struct {
 	Ctx context.Context
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// ContractAppendStub controls how the double answers Append and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ContractAppendStub configures Append and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type ContractAppendStub struct {
 	*stub.MethodStub[ContractAppendCall]
 
@@ -58,31 +44,28 @@ type ContractAppendStub struct {
 	fallback *ContractAppendReturn
 }
 
-// ContractAppendReturn holds the fixed answer configured through Returns.
+// ContractAppendReturn contains the fixed results of Append.
 type ContractAppendReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Append. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Append. A function and an
+// injected fault take precedence over them.
 func (s *ContractAppendStub) Returns(err error) *ContractAppendStub {
 	s.fallback = &ContractAppendReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Append, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Append from its
+// arguments. An injected fault takes precedence over it.
 func (s *ContractAppendStub) Func(fn func(context.Context, chain.Entry) error) *ContractAppendStub {
 	s.fn = fn
 	return s
 }
 
-// ContractReplayStub controls how the double answers Replay and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ContractReplayStub configures Replay and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type ContractReplayStub struct {
 	*stub.MethodStub[ContractReplayCall]
 
@@ -90,32 +73,29 @@ type ContractReplayStub struct {
 	fallback *ContractReplayReturn
 }
 
-// ContractReplayReturn holds the fixed answer configured through Returns.
+// ContractReplayReturn contains the fixed results of Replay.
 type ContractReplayReturn struct {
 	Result []chain.Entry
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Replay. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Replay. A function and an
+// injected fault take precedence over them.
 func (s *ContractReplayStub) Returns(result []chain.Entry, err error) *ContractReplayStub {
 	s.fallback = &ContractReplayReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Replay, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Replay from its
+// arguments. An injected fault takes precedence over it.
 func (s *ContractReplayStub) Func(fn func(context.Context) ([]chain.Entry, error)) *ContractReplayStub {
 	s.fn = fn
 	return s
 }
 
-// ContractVerifyStub controls how the double answers Verify and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ContractVerifyStub configures Verify and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type ContractVerifyStub struct {
 	*stub.MethodStub[ContractVerifyCall]
 
@@ -123,41 +103,40 @@ type ContractVerifyStub struct {
 	fallback *ContractVerifyReturn
 }
 
-// ContractVerifyReturn holds the fixed answer configured through Returns.
+// ContractVerifyReturn contains the fixed results of Verify.
 type ContractVerifyReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Verify. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Verify. A function and an
+// injected fault take precedence over them.
 func (s *ContractVerifyStub) Returns(err error) *ContractVerifyStub {
 	s.fallback = &ContractVerifyReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Verify, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Verify from its
+// arguments. An injected fault takes precedence over it.
 func (s *ContractVerifyStub) Func(fn func(context.Context) error) *ContractVerifyStub {
 	s.fn = fn
 	return s
 }
 
-// --- ContractStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ContractStubOption configures a [ContractStub] at construction time.
+// ContractStubOption configures a [ContractStub] at its construction.
 type ContractStubOption func(*ContractStub)
 
-// ContractStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// ContractStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func ContractStubStrict() ContractStubOption {
 	return func(s *ContractStub) { s.strict = true }
 }
 
-// ContractStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// ContractStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func ContractStubDelegateTo(impl chain.Contract) ContractStubOption {
 	return func(s *ContractStub) {
 		s.OnAppend.Func(impl.Append)
@@ -166,35 +145,36 @@ func ContractStubDelegateTo(impl chain.Contract) ContractStubOption {
 	}
 }
 
-// ContractStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// ContractStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func ContractStubWithClock(clk assert.Clock) ContractStubOption {
 	return func(s *ContractStub) { s.group.SetClock(clk) }
 }
 
-// ContractStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ContractStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func ContractStubWithRandSource(src rand.Source) ContractStubOption {
 	return func(s *ContractStub) { s.group.SetRandSource(src) }
 }
 
-// ContractStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// ContractStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func ContractStubBenchMode() ContractStubOption {
 	return func(s *ContractStub) { s.group.BenchMode() }
 }
 
-// ContractStubWithLatency makes every method sleep d before answering, for
-// a test standing in for a slow dependency rather than one slow method.
-// Pair it with ContractStubWithClock, or d elapses in wall time.
+// ContractStubWithLatency returns the option that makes every method sleep
+// d before it returns. Without ContractStubWithClock, d passes in real
+// time.
 func ContractStubWithLatency(d time.Duration) ContractStubOption {
 	return func(s *ContractStub) { s.group.SetLatency(d) }
 }
 
-// ContractStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// ContractStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func ContractStubFailing(err error) ContractStubOption {
 	return func(s *ContractStub) {
 		s.OnAppend.Faults(err, 1)
@@ -203,51 +183,40 @@ func ContractStubFailing(err error) ContractStubOption {
 	}
 }
 
-// WithContractAppend sets Append's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithContractAppend returns the option that sets the function of Append.
 func WithContractAppend(fn func(context.Context, chain.Entry) error) ContractStubOption {
 	return func(s *ContractStub) { s.OnAppend.Func(fn) }
 }
 
-// WithContractReplay sets Replay's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithContractReplay returns the option that sets the function of Replay.
 func WithContractReplay(fn func(context.Context) ([]chain.Entry, error)) ContractStubOption {
 	return func(s *ContractStub) { s.OnReplay.Func(fn) }
 }
 
-// WithContractVerify sets Verify's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithContractVerify returns the option that sets the function of Verify.
 func WithContractVerify(fn func(context.Context) error) ContractStubOption {
 	return func(s *ContractStub) { s.OnVerify.Func(fn) }
 }
 
-// ContractStub is a recording test double for Contract.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ContractStub is a recording test double of Contract. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type ContractStub struct {
 	OnAppend *ContractAppendStub
 	OnReplay *ContractReplayStub
 	OnVerify *ContractVerifyStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that ContractStub satisfies Contract.
+// The compiler checks that ContractStub implements Contract.
 var _ chain.Contract = (*ContractStub)(nil)
 
-// NewContractStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewContractStub returns a double of Contract that reports its failures
+// to tb and applies opts. The double checks the expected counts of calls
+// at the end of the test. With a nil tb, the double reports nothing.
 func NewContractStub(tb assert.TB, opts ...ContractStubOption) *ContractStub {
 	s := &ContractStub{
 		OnAppend: &ContractAppendStub{MethodStub: stub.NewMethodStub[ContractAppendCall](tb, "Contract.Append")},
@@ -269,11 +238,8 @@ func NewContractStub(tb assert.TB, opts ...ContractStubOption) *ContractStub {
 	return s
 }
 
-// NewContractStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewContractStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewContractStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ContractStubOption) *ContractStub {
 	return NewContractStub(tb, append([]ContractStubOption{
 		ContractStubWithClock(clk),
@@ -281,26 +247,20 @@ func NewContractStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opt
 	}, opts...)...)
 }
 
-// NewContractStubFailing returns a double whose every fallible method
-// answers err — [ContractStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewContractStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewContractStubFailing(tb assert.TB, err error, opts ...ContractStubOption) *ContractStub {
 	return NewContractStub(tb, append([]ContractStubOption{ContractStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ContractStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ContractAppendStub) invoke(ctx context.Context, e chain.Entry) func() ContractAppendReturn {
 	if s.fn == nil {
 		return nil
@@ -311,12 +271,8 @@ func (s *ContractAppendStub) invoke(ctx context.Context, e chain.Entry) func() C
 	}
 }
 
-// Append records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Append records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Append(ctx context.Context, e chain.Entry) error {
 	call := ContractAppendCall{Ctx: ctx, E: e}
 	r := stub.Answer(s.OnAppend.MethodStub, &call, stub.Arms[ContractAppendCall, ContractAppendReturn]{
@@ -330,9 +286,8 @@ func (s *ContractStub) Append(ctx context.Context, e chain.Entry) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ContractReplayStub) invoke(ctx context.Context) func() ContractReplayReturn {
 	if s.fn == nil {
 		return nil
@@ -343,12 +298,8 @@ func (s *ContractReplayStub) invoke(ctx context.Context) func() ContractReplayRe
 	}
 }
 
-// Replay records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Replay records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Replay(ctx context.Context) ([]chain.Entry, error) {
 	call := ContractReplayCall{Ctx: ctx}
 	r := stub.Answer(s.OnReplay.MethodStub, &call, stub.Arms[ContractReplayCall, ContractReplayReturn]{
@@ -363,9 +314,8 @@ func (s *ContractStub) Replay(ctx context.Context) ([]chain.Entry, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ContractVerifyStub) invoke(ctx context.Context) func() ContractVerifyReturn {
 	if s.fn == nil {
 		return nil
@@ -376,12 +326,8 @@ func (s *ContractVerifyStub) invoke(ctx context.Context) func() ContractVerifyRe
 	}
 }
 
-// Verify records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Verify records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Verify(ctx context.Context) error {
 	call := ContractVerifyCall{Ctx: ctx}
 	r := stub.Answer(s.OnVerify.MethodStub, &call, stub.Arms[ContractVerifyCall, ContractVerifyReturn]{
@@ -395,4 +341,4 @@ func (s *ContractStub) Verify(ctx context.Context) error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:863303600672cb71e41a7f6ac338c1d796dba23affb19f26ee3ed7b8200aac86
+// dokimi:provenance sha256:2b742a69afb08fc3b2eb06130afad8eddb8b594e9529c0dfd3aa29913b0a734f

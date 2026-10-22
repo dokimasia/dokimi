@@ -11,32 +11,49 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader/pointerreadertest"
+	"go.dokimi.dev/stub"
 )
 
-// pointerReaderStubFindSubject binds Find into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func pointerReaderStubFindSubject(tb assert.TB) stub.Subject[pointerreadertest.PointerReaderFindCall, pointerreadertest.PointerReaderFindReturn] {
+// pointerReaderStubFindArgs returns the samples of the arguments of Find.
+func pointerReaderStubFindArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Find-a"
+	return a0, a1
+}
+
+// pointerReaderStubFind calls Find of s with the samples of its arguments.
+func pointerReaderStubFind(tb assert.TB, s *pointerreadertest.PointerReaderStub) *pointerreader.Value {
+	tb.Helper()
+	a0, a1 := pointerReaderStubFindArgs(tb)
+	return s.Find(a0, a1)
+}
+
+// pointerReaderStubFindPins returns the samples of the results of Find.
+func pointerReaderStubFindPins() *pointerreader.Value {
+	var want0 *pointerreader.Value
+	want0 = &pointerreader.Value{Key: "Key-a"}
+	return want0
+}
+
+// pointerReaderStubFindSubject returns the subject of [stub.Behaviour] for
+// Find. The subject calls a new double that reports to tb.
+func pointerReaderStubFindSubject(
+	tb assert.TB,
+) stub.Subject[pointerreadertest.PointerReaderFindCall, pointerreadertest.PointerReaderFindReturn] {
 	tb.Helper()
 	s := pointerreadertest.NewPointerReaderStub(tb)
 	return stub.Subject[pointerreadertest.PointerReaderFindCall, pointerreadertest.PointerReaderFindReturn]{
 		Stub: s.OnFind.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Find-a"
-			_ = s.Find(a0, a1)
+			_ = pointerReaderStubFind(tb, s)
 		},
 		Result: func() pointerreadertest.PointerReaderFindReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Find-a"
-			got0 := s.Find(a0, a1)
+			got0 := pointerReaderStubFind(tb, s)
 			return pointerreadertest.PointerReaderFindReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -49,151 +66,220 @@ func pointerReaderStubFindSubject(tb assert.TB) stub.Subject[pointerreadertest.P
 	}
 }
 
-// TestPointerReaderStubFind pins how Find answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestPointerReaderStubFind(t *testing.T) {
-	t.Parallel()
+// pointerReaderStubInstance is the instance of a
+// pointerreadertest.PointerReaderStub that the checks of the constructors
+// and the options drive.
+type pointerReaderStubInstance = stub.Instance[pointerreadertest.PointerReaderFindCall]
 
-	stub.Behaviour(t, "Find", pointerReaderStubFindSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := pointerreadertest.NewPointerReaderStub(t)
-		var want0 *pointerreader.Value
-		want0 = &pointerreader.Value{Key: "Key-a"}
-		s.OnFind.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Find-a"
-		got0 := s.Find(a0, a1)
-		assert.Equal(t, got0, want0, "Find must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := pointerreadertest.NewPointerReaderStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Find-a"
-		_ = s.Find(a0, a1)
-		got := s.OnFind.AssertCalledOnce(t, "Find must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := pointerreadertest.NewPointerReaderStub(t)
-		var seen []pointerreadertest.PointerReaderFindCall
-		s.OnFind.OnRecord(func(c pointerreadertest.PointerReaderFindCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Find-a"
-		_ = s.Find(a0, a1)
-		_ = s.Find(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Find call")
-	})
-
-	t.Run("wires WithPointerReaderFind at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := pointerreadertest.NewPointerReaderStub(t, pointerreadertest.WithPointerReaderFind(func(_ context.Context, _ string) *pointerreader.Value {
-			called = true
-			var z0 *pointerreader.Value
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Find-a"
-		_ = s.Find(a0, a1)
-		assert.True(t, called, "WithPointerReaderFind must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := pointerreadertest.NewPointerReaderStub(t)
-		var want0 *pointerreader.Value
-		want0 = &pointerreader.Value{Key: "Key-a"}
-		s.OnFind.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Find-a"
-		_ = s.Find(a0, a1)
-		s.ResetCalls()
-		got0 := s.Find(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// pointerReaderStubDouble describes how to build a PointerReaderStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// Find stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func pointerReaderStubDouble() stub.Double[pointerreadertest.PointerReaderFindCall] {
-	instance := func(s *pointerreadertest.PointerReaderStub) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-		return stub.Instance[pointerreadertest.PointerReaderFindCall]{
-			Stub: s.OnFind.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Find-a"
-				_ = s.Find(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[pointerreadertest.PointerReaderFindCall]{
-		New: func(tb assert.TB) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-			return instance(pointerreadertest.NewPointerReaderStub(tb))
+// pointerReaderStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call Find alone.
+func pointerReaderStubInstanceOf(tb assert.TB, s *pointerreadertest.PointerReaderStub) pointerReaderStubInstance {
+	tb.Helper()
+	return pointerReaderStubInstance{
+		Stub: s.OnFind.MethodStub,
+		Call: func() {
+			_ = pointerReaderStubFind(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-			return instance(pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-			return instance(pointerreadertest.NewPointerReaderStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-			return instance(pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-			return instance(pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[pointerreadertest.PointerReaderFindCall] {
-			return instance(pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestPointerReaderStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestPointerReaderStubOptions(t *testing.T) {
+// TestPointerReaderStub checks the methods, the constructors and the
+// options of the double PointerReaderStub.
+func TestPointerReaderStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, pointerReaderStubDouble())
-}
+	t.Run("Find", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Find", pointerReaderStubFindSubject)
 
-// TestPointerReaderStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestPointerReaderStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := pointerreadertest.NewPointerReaderStub(t)
+			_ = pointerReaderStubFind(t, s)
+			got := s.OnFind.AssertCalledOnce(t, "Find records the call")
+			a0, a1 := pointerReaderStubFindArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
 
-	inner := pointerreadertest.NewPointerReaderStub(t)
-	s := pointerreadertest.NewPointerReaderStub(t, pointerreadertest.PointerReaderStubDelegateTo(inner))
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := pointerreadertest.NewPointerReaderStub(t)
+			var seen []pointerreadertest.PointerReaderFindCall
+			s.OnFind.OnRecord(func(c pointerreadertest.PointerReaderFindCall) { seen = append(seen, c) })
+			_ = pointerReaderStubFind(t, s)
+			_ = pointerReaderStubFind(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Find")
+		})
+	})
 
-	t.Run("forwards Find to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Find-a"
-		_ = s.Find(a0, a1)
-		inner.OnFind.AssertCalledOnce(t, "Find must reach the wrapped implementation")
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) pointerReaderStubInstance {
+			return pointerReaderStubInstanceOf(tb, pointerreadertest.NewPointerReaderStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Find", func(t *testing.T) {
+			t.Parallel()
+			s := pointerreadertest.NewPointerReaderStub(t)
+			_ = pointerReaderStubFind(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnFind.CallCount(), 0, "ResetCalls clears the calls of Find")
+		})
+
+		t.Run("keeps the results of Returns of Find", func(t *testing.T) {
+			t.Parallel()
+			s := pointerreadertest.NewPointerReaderStub(t)
+			want0 := pointerReaderStubFindPins()
+			s.OnFind.Returns(want0)
+			s.ResetCalls()
+			got0 := pointerReaderStubFind(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Find")
+		})
+	})
+
+	t.Run("NewPointerReaderStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) pointerReaderStubInstance {
+			return pointerReaderStubInstanceOf(tb, pointerreadertest.NewPointerReaderStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("PointerReaderStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) pointerReaderStubInstance {
+			return pointerReaderStubInstanceOf(
+				tb,
+				pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubStrict()),
+			)
+		})
+	})
+
+	t.Run("PointerReaderStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Find to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := pointerreadertest.NewPointerReaderStub(t)
+			s := pointerreadertest.NewPointerReaderStub(t, pointerreadertest.PointerReaderStubDelegateTo(inner))
+			_ = pointerReaderStubFind(t, s)
+			inner.OnFind.AssertCalledOnce(t, "Find calls the implementation")
+		})
+	})
+
+	t.Run("PointerReaderStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) pointerReaderStubInstance {
+			return pointerReaderStubInstanceOf(
+				tb,
+				pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("PointerReaderStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) pointerReaderStubInstance {
+			return pointerReaderStubInstanceOf(
+				tb,
+				pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("PointerReaderStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) pointerReaderStubInstance {
+			return pointerReaderStubInstanceOf(
+				tb,
+				pointerreadertest.NewPointerReaderStub(tb, pointerreadertest.PointerReaderStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("PointerReaderStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) pointerReaderStubInstance {
+			return pointerReaderStubInstanceOf(
+				tb,
+				pointerreadertest.NewPointerReaderStub(
+					tb,
+					pointerreadertest.PointerReaderStubWithClock(clk),
+					pointerreadertest.PointerReaderStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("WithPointerReaderFind", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Find", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := pointerreadertest.NewPointerReaderStub(
+				t,
+				pointerreadertest.WithPointerReaderFind(func(_ context.Context, _ string) *pointerreader.Value {
+					called = true
+					var z0 *pointerreader.Value
+					return z0
+				}),
+			)
+			_ = pointerReaderStubFind(t, s)
+			assert.True(t, called, "WithPointerReaderFind sets the function of Find")
+		})
 	})
 }
 
-// dokimi:provenance sha256:41651cff88f304b81423ba4079499b273229eccf0a37ac084abb628f46063580
+// TestPointerReaderFindStub checks the methods of PointerReaderFindStub,
+// which configures Find.
+func TestPointerReaderFindStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Find", func(t *testing.T) {
+			t.Parallel()
+			s := pointerreadertest.NewPointerReaderStub(t)
+			want0 := pointerReaderStubFindPins()
+			s.OnFind.Returns(want0)
+			got0 := pointerReaderStubFind(t, s)
+			assert.Equal(t, got0, want0, "Find returns the Result that Returns sets")
+		})
+
+		t.Run("configures Find for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := pointerreadertest.NewPointerReaderStub(r)
+			s.OnFind.Strict()
+			var want0 *pointerreader.Value
+			s.OnFind.Returns(want0)
+			_ = pointerReaderStubFind(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Find")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Find to the function", func(t *testing.T) {
+			t.Parallel()
+			s := pointerreadertest.NewPointerReaderStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnFind.Func(func(p0 context.Context, p1 string) *pointerreader.Value {
+				got0, got1 = p0, p1
+				var z0 *pointerreader.Value
+				return z0
+			})
+			_ = pointerReaderStubFind(t, s)
+			a0, a1 := pointerReaderStubFindArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:b1088a6954c7f7773d83f8801db8a4ebaba7231aa50aebe2d718d2228b100b0d

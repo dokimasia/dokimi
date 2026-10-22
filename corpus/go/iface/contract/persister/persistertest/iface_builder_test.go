@@ -8,113 +8,158 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/persister"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/persister/persistertest"
 )
 
-// TestValueBuilderConstruction pins what the constructors produce.
-func TestValueBuilderConstruction(t *testing.T) {
+// TestValueBuilder checks the constructors and the methods of
+// ValueBuilder.
+func TestValueBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewValueBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var seed persister.Value
-		seed.Key = "Key-a"
-		seed.Body = "Body-a"
-		got := persistertest.NewValueBuilderFrom(seed).Build()
-		assert.Equal(t, got.Key, seed.Key, "From keeps the member it was given")
-		assert.Equal(t, got.Body, seed.Body, "From keeps the member it was given")
+		t.Run("applies the declared default of Key", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "test-key"
+			got := persistertest.NewValueBuilder().Build()
+			assert.Equal(t, got.Key, want, "NewValueBuilder applies the declared default of Key")
+		})
+
+		t.Run("applies the declared default of Body", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "test-body"
+			got := persistertest.NewValueBuilder().Build()
+			assert.Equal(t, got.Body, want, "NewValueBuilder applies the declared default of Body")
+		})
 	})
 
-	t.Run("Key carries its declared default", func(t *testing.T) {
+	t.Run("NewValueBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "test-key"
-		got := persistertest.NewValueBuilder().Build()
-		assert.Equal(t, got.Key, want, "the constructor applies the declared default")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed persister.Value
+			seed.Key = "Key-a"
+			seed.Body = "Body-a"
+			got := persistertest.NewValueBuilderFrom(seed).Build()
+			expect.Equal(t, got.Key, seed.Key, "NewValueBuilderFrom keeps Key")
+			expect.Equal(t, got.Body, seed.Body, "NewValueBuilderFrom keeps Body")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := persistertest.NewValueBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				persistertest.NewValueBuilderFrom(want).Build(),
+				want,
+				"NewValueBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("Body carries its declared default", func(t *testing.T) {
+	t.Run("WithKey", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "test-body"
-		got := persistertest.NewValueBuilder().Build()
-		assert.Equal(t, got.Body, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Key", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Key-a"
+			got := persistertest.NewValueBuilder().WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "WithKey writes its argument to Key")
+		})
+
+		t.Run("replaces the value of Key", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Key-a"
+			want = "Key-b"
+			got := persistertest.NewValueBuilder().WithKey(first).WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "the second call of WithKey replaces the first")
+		})
+	})
+
+	t.Run("WithBody", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Body", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Body-a"
+			got := persistertest.NewValueBuilder().WithBody(want).Build()
+			assert.Equal(t, got.Body, want, "WithBody writes its argument to Body")
+		})
+
+		t.Run("replaces the value of Body", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Body-a"
+			want = "Body-b"
+			got := persistertest.NewValueBuilder().WithBody(first).WithBody(want).Build()
+			assert.Equal(t, got.Body, want, "the second call of WithBody replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*persister.Value
+			record := func(v *persister.Value) { got = append(got, v) }
+			persistertest.NewValueBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := persistertest.NewValueBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := persistertest.NewValueBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed persister.Value
+			seed.Key = "Key-a"
+			seed.Body = "Body-a"
+			b := persistertest.NewValueBuilder()
+			b.Mutate(func(v *persister.Value) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestValueBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestValueBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithKey writes Key", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Key-a"
-		got := persistertest.NewValueBuilder().WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithKey replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Key-a"
-		want = "Key-b"
-		got := persistertest.NewValueBuilder().WithKey(first).WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the later call wins")
-	})
-
-	t.Run("WithBody writes Body", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Body-a"
-		got := persistertest.NewValueBuilder().WithBody(want).Build()
-		assert.Equal(t, got.Body, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithBody replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Body-a"
-		want = "Body-b"
-		got := persistertest.NewValueBuilder().WithBody(first).WithBody(want).Build()
-		assert.Equal(t, got.Body, want, "the later call wins")
-	})
-}
-
-// TestValueBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestValueBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*persister.Value
-		record := func(v *persister.Value) { got = append(got, v) }
-		persistertest.NewValueBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := persistertest.NewValueBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, persistertest.NewValueBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:ba68cb6d864718dcbbb17502c36b8fdbfe8085b5292e98b0ada36315c360868b
+// dokimi:provenance sha256:63f6f3958bf109db531af34991b00bf6e769007c150cbb3fe0ab9ba65288f6f9

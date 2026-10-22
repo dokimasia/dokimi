@@ -9,24 +9,18 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext"
+	"go.dokimi.dev/stub"
 )
 
-// CalculatorAddCall records one invocation of Calculator.Add.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// CalculatorAddCall records one call of Calculator.Add.
 type CalculatorAddCall struct {
 	A      int
 	B      int
 	Result int
 }
 
-// CalculatorDivideCall records one invocation of Calculator.Divide.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// CalculatorDivideCall records one call of Calculator.Divide.
 type CalculatorDivideCall struct {
 	A      int
 	B      int
@@ -34,21 +28,11 @@ type CalculatorDivideCall struct {
 	Err    error
 }
 
-// CalculatorResetCall records one invocation of Calculator.Reset.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
-type CalculatorResetCall struct {
-}
+// CalculatorResetCall records one call of Calculator.Reset.
+type CalculatorResetCall struct{}
 
-// --- Per-method configuration ---
-
-// CalculatorAddStub controls how the double answers Add and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// CalculatorAddStub configures Add and records its calls. Add returns no
+// error, so a fault armed through it fails the test.
 type CalculatorAddStub struct {
 	*stub.MethodStub[CalculatorAddCall]
 
@@ -56,36 +40,28 @@ type CalculatorAddStub struct {
 	fallback *CalculatorAddReturn
 }
 
-// CalculatorAddReturn holds the fixed answer configured through Returns.
+// CalculatorAddReturn contains the fixed results of Add.
 type CalculatorAddReturn struct {
 	Result int
 }
 
-// Returns pins a fixed result for every call to Add. A Func override takes
-// precedence over it.
-//
-// No fault can take precedence here: Add answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Add. A function takes
+// precedence over them.
 func (s *CalculatorAddStub) Returns(result int) *CalculatorAddStub {
 	s.fallback = &CalculatorAddReturn{Result: result}
 	return s
 }
 
-// Func supplies a body for Add, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Add answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Add from its
+// arguments.
 func (s *CalculatorAddStub) Func(fn func(int, int) int) *CalculatorAddStub {
 	s.fn = fn
 	return s
 }
 
-// CalculatorDivideStub controls how the double answers Divide and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// CalculatorDivideStub configures Divide and records its calls. A fault
+// armed through it takes precedence over the function and the fixed
+// results.
 type CalculatorDivideStub struct {
 	*stub.MethodStub[CalculatorDivideCall]
 
@@ -93,63 +69,56 @@ type CalculatorDivideStub struct {
 	fallback *CalculatorDivideReturn
 }
 
-// CalculatorDivideReturn holds the fixed answer configured through
-// Returns.
+// CalculatorDivideReturn contains the fixed results of Divide.
 type CalculatorDivideReturn struct {
 	Result int
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Divide. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Divide. A function and an
+// injected fault take precedence over them.
 func (s *CalculatorDivideStub) Returns(result int, err error) *CalculatorDivideStub {
 	s.fallback = &CalculatorDivideReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Divide, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Divide from its
+// arguments. An injected fault takes precedence over it.
 func (s *CalculatorDivideStub) Func(fn func(int, int) (int, error)) *CalculatorDivideStub {
 	s.fn = fn
 	return s
 }
 
-// CalculatorResetStub controls how the double answers Reset and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// CalculatorResetStub configures Reset and records its calls. Reset
+// returns no error, so a fault armed through it fails the test.
 type CalculatorResetStub struct {
 	*stub.MethodStub[CalculatorResetCall]
 
 	fn func()
 }
 
-// Func supplies a body for Reset, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Reset answers no error, so
-// the double carries no fault arm for one to be reported through.
+// Func sets the function that computes the results of Reset from its
+// arguments.
 func (s *CalculatorResetStub) Func(fn func()) *CalculatorResetStub {
 	s.fn = fn
 	return s
 }
 
-// --- CalculatorStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// CalculatorStubOption configures a [CalculatorStub] at construction time.
+// CalculatorStubOption configures a [CalculatorStub] at its construction.
 type CalculatorStubOption func(*CalculatorStub)
 
-// CalculatorStubStrict makes an unconfigured method fail the test rather
-// than return its zero value.
+// CalculatorStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func CalculatorStubStrict() CalculatorStubOption {
 	return func(s *CalculatorStub) { s.strict = true }
 }
 
-// CalculatorStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// CalculatorStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func CalculatorStubDelegateTo(impl nocontext.Calculator) CalculatorStubOption {
 	return func(s *CalculatorStub) {
 		s.OnAdd.Func(impl.Add)
@@ -158,85 +127,78 @@ func CalculatorStubDelegateTo(impl nocontext.Calculator) CalculatorStubOption {
 	}
 }
 
-// CalculatorStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// CalculatorStubWithClock returns the option that sets the clock of the
+// double to clk. The double takes the latency, the windows of the faults
+// and the instants of the calls from clk. A latency on a controlled clock
+// costs no real time.
 func CalculatorStubWithClock(clk assert.Clock) CalculatorStubOption {
 	return func(s *CalculatorStub) { s.group.SetClock(clk) }
 }
 
-// CalculatorStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// CalculatorStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func CalculatorStubWithRandSource(src rand.Source) CalculatorStubOption {
 	return func(s *CalculatorStub) { s.group.SetRandSource(src) }
 }
 
-// CalculatorStubBenchMode disables call recording. Dispatch still works;
-// only the accumulating call log is dropped.
+// CalculatorStubBenchMode returns the option that turns the recording of
+// calls off. The methods still return their results.
 func CalculatorStubBenchMode() CalculatorStubOption {
 	return func(s *CalculatorStub) { s.group.BenchMode() }
 }
 
-// CalculatorStubWithLatency makes every method sleep d before answering,
-// for a test standing in for a slow dependency rather than one slow
-// method. Pair it with CalculatorStubWithClock, or d elapses in wall time.
+// CalculatorStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without CalculatorStubWithClock, d passes in
+// real time.
 func CalculatorStubWithLatency(d time.Duration) CalculatorStubOption {
 	return func(s *CalculatorStub) { s.group.SetLatency(d) }
 }
 
-// CalculatorStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// CalculatorStubFailing returns the option that arms err on each method
+// that can fail. Each call of such a method then fails with err.
 func CalculatorStubFailing(err error) CalculatorStubOption {
 	return func(s *CalculatorStub) {
 		s.OnDivide.Faults(err, 1)
 	}
 }
 
-// WithCalculatorAdd sets Add's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithCalculatorAdd returns the option that sets the function of Add.
 func WithCalculatorAdd(fn func(int, int) int) CalculatorStubOption {
 	return func(s *CalculatorStub) { s.OnAdd.Func(fn) }
 }
 
-// WithCalculatorDivide sets Divide's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithCalculatorDivide returns the option that sets the function of
+// Divide.
 func WithCalculatorDivide(fn func(int, int) (int, error)) CalculatorStubOption {
 	return func(s *CalculatorStub) { s.OnDivide.Func(fn) }
 }
 
-// WithCalculatorReset sets Reset's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithCalculatorReset returns the option that sets the function of Reset.
 func WithCalculatorReset(fn func()) CalculatorStubOption {
 	return func(s *CalculatorStub) { s.OnReset.Func(fn) }
 }
 
-// CalculatorStub is a recording test double for Calculator.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// CalculatorStub is a recording test double of Calculator. Each field
+// On<Method> configures its method. An unconfigured method records the
+// call and returns the zero values of its results.
 type CalculatorStub struct {
 	OnAdd    *CalculatorAddStub
 	OnDivide *CalculatorDivideStub
 	OnReset  *CalculatorResetStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that CalculatorStub satisfies Calculator.
+// The compiler checks that CalculatorStub implements Calculator.
 var _ nocontext.Calculator = (*CalculatorStub)(nil)
 
-// NewCalculatorStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewCalculatorStub returns a double of Calculator that reports its
+// failures to tb and applies opts. The double checks the expected counts
+// of calls at the end of the test. With a nil tb, the double reports
+// nothing.
 func NewCalculatorStub(tb assert.TB, opts ...CalculatorStubOption) *CalculatorStub {
 	s := &CalculatorStub{
 		OnAdd:    &CalculatorAddStub{MethodStub: stub.NewMethodStub[CalculatorAddCall](tb, "Calculator.Add")},
@@ -258,39 +220,35 @@ func NewCalculatorStub(tb assert.TB, opts ...CalculatorStubOption) *CalculatorSt
 	return s
 }
 
-// NewCalculatorStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewCalculatorStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...CalculatorStubOption) *CalculatorStub {
+// NewCalculatorStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
+func NewCalculatorStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...CalculatorStubOption,
+) *CalculatorStub {
 	return NewCalculatorStub(tb, append([]CalculatorStubOption{
 		CalculatorStubWithClock(clk),
 		CalculatorStubWithLatency(d),
 	}, opts...)...)
 }
 
-// NewCalculatorStubFailing returns a double whose every fallible method
-// answers err — [CalculatorStubFailing] applied at construction, for the
-// test whose whole subject is the caller's error path. Further options
-// apply after it.
+// NewCalculatorStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewCalculatorStubFailing(tb assert.TB, err error, opts ...CalculatorStubOption) *CalculatorStub {
 	return NewCalculatorStub(tb, append([]CalculatorStubOption{CalculatorStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CalculatorStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
-func (s *CalculatorAddStub) invoke(a int, b int) func() CalculatorAddReturn {
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *CalculatorAddStub) invoke(a, b int) func() CalculatorAddReturn {
 	if s.fn == nil {
 		return nil
 	}
@@ -300,13 +258,9 @@ func (s *CalculatorAddStub) invoke(a int, b int) func() CalculatorAddReturn {
 	}
 }
 
-// Add records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
-func (s *CalculatorStub) Add(a int, b int) int {
+// Add records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *CalculatorStub) Add(a, b int) int {
 	call := CalculatorAddCall{A: a, B: b}
 	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[CalculatorAddCall, CalculatorAddReturn]{
 		Invoke:   s.OnAdd.invoke(a, b),
@@ -318,10 +272,9 @@ func (s *CalculatorStub) Add(a int, b int) int {
 	return r.Result
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
-func (s *CalculatorDivideStub) invoke(a int, b int) func() CalculatorDivideReturn {
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *CalculatorDivideStub) invoke(a, b int) func() CalculatorDivideReturn {
 	if s.fn == nil {
 		return nil
 	}
@@ -331,13 +284,9 @@ func (s *CalculatorDivideStub) invoke(a int, b int) func() CalculatorDivideRetur
 	}
 }
 
-// Divide records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
-func (s *CalculatorStub) Divide(a int, b int) (int, error) {
+// Divide records the call. An armed fault comes first, then the function
+// of Func, then the results of Returns, and then the zero values.
+func (s *CalculatorStub) Divide(a, b int) (int, error) {
 	call := CalculatorDivideCall{A: a, B: b}
 	r := stub.Answer(s.OnDivide.MethodStub, &call, stub.Arms[CalculatorDivideCall, CalculatorDivideReturn]{
 		Invoke:   s.OnDivide.invoke(a, b),
@@ -351,9 +300,9 @@ func (s *CalculatorStub) Divide(a int, b int) (int, error) {
 	return r.Result, r.Err
 }
 
-// invokeVoid adapts the Func override to the shape [stub.Answer] consumes.
-// A method returning nothing still has an override worth dispatching to and
-// a call worth recording; the empty struct is the return tuple of no returns.
+// invokeVoid returns a call of the function of Func with the arguments, and
+// nil where no function is set. The empty struct is the result of a method
+// without results.
 func (s *CalculatorResetStub) invokeVoid() func() struct{} {
 	if s.fn == nil {
 		return nil
@@ -364,12 +313,8 @@ func (s *CalculatorResetStub) invokeVoid() func() struct{} {
 	}
 }
 
-// Reset records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Reset records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *CalculatorStub) Reset() {
 	call := CalculatorResetCall{}
 	stub.Answer(s.OnReset.MethodStub, &call, stub.Arms[CalculatorResetCall, struct{}]{
@@ -377,4 +322,4 @@ func (s *CalculatorStub) Reset() {
 	})
 }
 
-// dokimi:provenance sha256:e17ebda855b09c97fa88ed05892d8092776ee11e4b50e1f63a9b22443f12626b
+// dokimi:provenance sha256:238098487d44a1b24a546d35d3c68ee96473c5cca027fdfd04e7e38a6735f281

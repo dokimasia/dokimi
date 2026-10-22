@@ -7,7 +7,7 @@ package poisonaccessortest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/poisonaccessor"
 )
 
@@ -40,33 +40,30 @@ func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
 	return conform.Suite[poisonaccessor.PoisonAccessor]{Declaration: "PoisonAccessor"}
 }
 
-// RunPoisonAccessor applies the checks of PoisonAccessor, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunPoisonAccessor[T poisonaccessor.PoisonAccessor](t *testing.T, newSubject func() T, opts ...PoisonAccessorOption) {
+// RunPoisonAccessorSuite applies the checks of PoisonAccessor, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunPoisonAccessorSuite[T poisonaccessor.PoisonAccessor](
+	t *testing.T,
+	newSubject func() T,
+	opts ...PoisonAccessorOption,
+) {
 	t.Helper()
-	conform.Verify(t, PoisonAccessorSuite(), func(*PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject() }, opts...)
+	RunPoisonAccessorSuiteFromHandle(t, func(*PoisonAccessorHandle) T { return newSubject() }, opts...)
 }
 
-// RunPoisonAccessorOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunPoisonAccessorOn[T poisonaccessor.PoisonAccessor](t *testing.T, newSubject func(h *PoisonAccessorHandle) T, opts ...PoisonAccessorOption) {
+// RunPoisonAccessorSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunPoisonAccessorSuiteFromHandle[T poisonaccessor.PoisonAccessor](
+	t *testing.T,
+	newSubject func(h *PoisonAccessorHandle) T,
+	opts ...PoisonAccessorOption,
+) {
 	t.Helper()
-	conform.Verify(t, PoisonAccessorSuite(), func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		PoisonAccessorSuite(),
+		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
+		opts...)
 }
 
-// ControlPoisonAccessor applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlPoisonAccessor[T poisonaccessor.PoisonAccessor](t *testing.T, newControl func() T, opts ...PoisonAccessorOption) {
-	t.Helper()
-	conform.Control(t, PoisonAccessorSuite(), func(*PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newControl() }, opts...)
-}
-
-// ControlPoisonAccessorOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlPoisonAccessorOn[T poisonaccessor.PoisonAccessor](t *testing.T, newControl func(h *PoisonAccessorHandle) T, opts ...PoisonAccessorOption) {
-	t.Helper()
-	conform.Control(t, PoisonAccessorSuite(), func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:0a206054574be650acdf8fd791a735c7d75f77c6e848585e6aaf96d1edbe3799
+// dokimi:provenance sha256:7658c062c8b4bcbf1e5a2ad1dab9392f5ad2a476a68c12b18c582f5b70409133

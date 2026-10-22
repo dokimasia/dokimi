@@ -10,29 +10,44 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pure/puretest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubDeriveSubject binds Derive into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubDeriveArgs returns the samples of the arguments of Derive.
+func mixedStubDeriveArgs(tb assert.TB) string {
+	tb.Helper()
+	var a0 string
+	a0 = "Derive-a"
+	return a0
+}
+
+// mixedStubDerive calls Derive of s with the samples of its arguments.
+func mixedStubDerive(tb assert.TB, s *puretest.MixedStub) string {
+	tb.Helper()
+	a0 := mixedStubDeriveArgs(tb)
+	return s.Derive(a0)
+}
+
+// mixedStubDerivePins returns the samples of the results of Derive.
+func mixedStubDerivePins() string {
+	var want0 string
+	want0 = "Derive-a"
+	return want0
+}
+
+// mixedStubDeriveSubject returns the subject of [stub.Behaviour] for
+// Derive. The subject calls a new double that reports to tb.
 func mixedStubDeriveSubject(tb assert.TB) stub.Subject[puretest.MixedDeriveCall, puretest.MixedDeriveReturn] {
 	tb.Helper()
 	s := puretest.NewMixedStub(tb)
 	return stub.Subject[puretest.MixedDeriveCall, puretest.MixedDeriveReturn]{
 		Stub: s.OnDerive.MethodStub,
 		Call: func() {
-			var a0 string
-			a0 = "Derive-a"
-			_ = s.Derive(a0)
+			_ = mixedStubDerive(tb, s)
 		},
 		Result: func() puretest.MixedDeriveReturn {
-			var a0 string
-			a0 = "Derive-a"
-			got0 := s.Derive(a0)
+			got0 := mixedStubDerive(tb, s)
 			return puretest.MixedDeriveReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -45,143 +60,197 @@ func mixedStubDeriveSubject(tb assert.TB) stub.Subject[puretest.MixedDeriveCall,
 	}
 }
 
-// TestMixedStubDerive pins how Derive answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubDerive(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a puretest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[puretest.MixedDeriveCall]
 
-	stub.Behaviour(t, "Derive", mixedStubDeriveSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewMixedStub(t)
-		var want0 string
-		want0 = "Derive-a"
-		s.OnDerive.Returns(want0)
-		var a0 string
-		a0 = "Derive-a"
-		got0 := s.Derive(a0)
-		assert.Equal(t, got0, want0, "Derive must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewMixedStub(t)
-		var a0 string
-		a0 = "Derive-a"
-		_ = s.Derive(a0)
-		got := s.OnDerive.AssertCalledOnce(t, "Derive must record the call")
-		assert.Equal(t, got.Input, a0, "the recorded call carries Input")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewMixedStub(t)
-		var seen []puretest.MixedDeriveCall
-		s.OnDerive.OnRecord(func(c puretest.MixedDeriveCall) { seen = append(seen, c) })
-		var a0 string
-		a0 = "Derive-a"
-		_ = s.Derive(a0)
-		_ = s.Derive(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Derive call")
-	})
-
-	t.Run("wires WithMixedDerive at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := puretest.NewMixedStub(t, puretest.WithMixedDerive(func(_ string) string {
-			called = true
-			var z0 string
-			return z0
-		}))
-		var a0 string
-		a0 = "Derive-a"
-		_ = s.Derive(a0)
-		assert.True(t, called, "WithMixedDerive must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := puretest.NewMixedStub(t)
-		var want0 string
-		want0 = "Derive-a"
-		s.OnDerive.Returns(want0)
-		var a0 string
-		a0 = "Derive-a"
-		_ = s.Derive(a0)
-		s.ResetCalls()
-		got0 := s.Derive(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Derive stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func mixedStubDouble() stub.Double[puretest.MixedDeriveCall] {
-	instance := func(s *puretest.MixedStub) stub.Instance[puretest.MixedDeriveCall] {
-		return stub.Instance[puretest.MixedDeriveCall]{
-			Stub: s.OnDerive.MethodStub,
-			Call: func() {
-				var a0 string
-				a0 = "Derive-a"
-				_ = s.Derive(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[puretest.MixedDeriveCall]{
-		New: func(tb assert.TB) stub.Instance[puretest.MixedDeriveCall] {
-			return instance(puretest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Derive alone.
+func mixedStubInstanceOf(tb assert.TB, s *puretest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnDerive.MethodStub,
+		Call: func() {
+			_ = mixedStubDerive(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[puretest.MixedDeriveCall] {
-			return instance(puretest.NewMixedStub(tb, puretest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[puretest.MixedDeriveCall] {
-			return instance(puretest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[puretest.MixedDeriveCall] {
-			return instance(puretest.NewMixedStub(tb, puretest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[puretest.MixedDeriveCall] {
-			return instance(puretest.NewMixedStub(tb, puretest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[puretest.MixedDeriveCall] {
-			return instance(puretest.NewMixedStub(tb, puretest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
-}
+	t.Run("Derive", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Derive", mixedStubDeriveSubject)
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewMixedStub(t)
+			_ = mixedStubDerive(t, s)
+			got := s.OnDerive.AssertCalledOnce(t, "Derive records the call")
+			a0 := mixedStubDeriveArgs(t)
+			assert.Equal(t, got.Input, a0, "the call records Input")
+		})
 
-	inner := puretest.NewMixedStub(t)
-	s := puretest.NewMixedStub(t, puretest.MixedStubDelegateTo(inner))
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewMixedStub(t)
+			var seen []puretest.MixedDeriveCall
+			s.OnDerive.OnRecord(func(c puretest.MixedDeriveCall) { seen = append(seen, c) })
+			_ = mixedStubDerive(t, s)
+			_ = mixedStubDerive(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Derive")
+		})
+	})
 
-	t.Run("forwards Derive to the wrapped implementation", func(t *testing.T) {
-		var a0 string
-		a0 = "Derive-a"
-		_ = s.Derive(a0)
-		inner.OnDerive.AssertCalledOnce(t, "Derive must reach the wrapped implementation")
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, puretest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Derive", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewMixedStub(t)
+			_ = mixedStubDerive(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnDerive.CallCount(), 0, "ResetCalls clears the calls of Derive")
+		})
+
+		t.Run("keeps the results of Returns of Derive", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewMixedStub(t)
+			want0 := mixedStubDerivePins()
+			s.OnDerive.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubDerive(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of Derive")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, puretest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, puretest.NewMixedStub(tb, puretest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Derive to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := puretest.NewMixedStub(t)
+			s := puretest.NewMixedStub(t, puretest.MixedStubDelegateTo(inner))
+			_ = mixedStubDerive(t, s)
+			inner.OnDerive.AssertCalledOnce(t, "Derive calls the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, puretest.NewMixedStub(tb, puretest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, puretest.NewMixedStub(tb, puretest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, puretest.NewMixedStub(tb, puretest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				puretest.NewMixedStub(tb, puretest.MixedStubWithClock(clk), puretest.MixedStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("WithMixedDerive", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Derive", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := puretest.NewMixedStub(t, puretest.WithMixedDerive(func(_ string) string {
+				called = true
+				var z0 string
+				return z0
+			}))
+			_ = mixedStubDerive(t, s)
+			assert.True(t, called, "WithMixedDerive sets the function of Derive")
+		})
 	})
 }
 
-// dokimi:provenance sha256:1d62837f8fcae4907af4db72baa890715ca4626e7503d6b0ceafd2e37619c756
+// TestMixedDeriveStub checks the methods of MixedDeriveStub, which
+// configures Derive.
+func TestMixedDeriveStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Derive", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewMixedStub(t)
+			want0 := mixedStubDerivePins()
+			s.OnDerive.Returns(want0)
+			got0 := mixedStubDerive(t, s)
+			assert.Equal(t, got0, want0, "Derive returns the Result that Returns sets")
+		})
+
+		t.Run("configures Derive for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := puretest.NewMixedStub(r)
+			s.OnDerive.Strict()
+			var want0 string
+			s.OnDerive.Returns(want0)
+			_ = mixedStubDerive(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Derive")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Derive to the function", func(t *testing.T) {
+			t.Parallel()
+			s := puretest.NewMixedStub(t)
+			var got0 string
+			s.OnDerive.Func(func(p0 string) string {
+				got0 = p0
+				var z0 string
+				return z0
+			})
+			_ = mixedStubDerive(t, s)
+			a0 := mixedStubDeriveArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Input")
+		})
+	})
+}
+
+// dokimi:provenance sha256:0f588aef940f108d0340943e99a74079e4b1ada2481e15035906008b769a00bb

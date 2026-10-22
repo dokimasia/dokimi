@@ -13,32 +13,70 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader/streamreadertest"
+	"go.dokimi.dev/stub"
 )
 
-// streamReaderStubAddSubject binds Add into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func streamReaderStubAddSubject(tb assert.TB) stub.Subject[streamreadertest.StreamReaderAddCall, streamreadertest.StreamReaderAddReturn] {
+// streamReaderStubAddArgs returns the samples of the arguments of Add.
+func streamReaderStubAddArgs(tb assert.TB) (context.Context, streamreader.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 streamreader.Value
+	a1 = streamreader.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// streamReaderStubAdd calls Add of s with the samples of its arguments.
+func streamReaderStubAdd(tb assert.TB, s *streamreadertest.StreamReaderStub) error {
+	tb.Helper()
+	a0, a1 := streamReaderStubAddArgs(tb)
+	return s.Add(a0, a1)
+}
+
+// streamReaderStubAddPins returns the samples of the results of Add, with
+// a new error as its error result.
+func streamReaderStubAddPins() error {
+	want0 := errors.New("Add-returns")
+	return want0
+}
+
+// streamReaderStubListArgs returns the samples of the arguments of List.
+func streamReaderStubListArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// streamReaderStubList calls List of s with the samples of its arguments.
+func streamReaderStubList(tb assert.TB, s *streamreadertest.StreamReaderStub) iter.Seq2[streamreader.Value, error] {
+	tb.Helper()
+	a0 := streamReaderStubListArgs(tb)
+	return s.List(a0)
+}
+
+// streamReaderStubListPins returns the samples of the results of List.
+func streamReaderStubListPins() iter.Seq2[streamreader.Value, error] {
+	var want0 iter.Seq2[streamreader.Value, error]
+	want0 = iter.Seq2[streamreader.Value, error](func(func(streamreader.Value, error) bool) {})
+	return want0
+}
+
+// streamReaderStubAddSubject returns the subject of [stub.Behaviour] for
+// Add. The subject calls a new double that reports to tb.
+func streamReaderStubAddSubject(
+	tb assert.TB,
+) stub.Subject[streamreadertest.StreamReaderAddCall, streamreadertest.StreamReaderAddReturn] {
 	tb.Helper()
 	s := streamreadertest.NewStreamReaderStub(tb)
 	return stub.Subject[streamreadertest.StreamReaderAddCall, streamreadertest.StreamReaderAddReturn]{
 		Stub: s.OnAdd.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 streamreader.Value
-			a1 = streamreader.Value{Key: "Key-a"}
-			_ = s.Add(a0, a1)
+			_ = streamReaderStubAdd(tb, s)
 		},
 		Result: func() streamreadertest.StreamReaderAddReturn {
-			var a0 context.Context
-			var a1 streamreader.Value
-			a1 = streamreader.Value{Key: "Key-a"}
-			got0 := s.Add(a0, a1)
+			got0 := streamReaderStubAdd(tb, s)
 			return streamreadertest.StreamReaderAddReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -49,110 +87,26 @@ func streamReaderStubAddSubject(tb assert.TB) stub.Subject[streamreadertest.Stre
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 streamreader.Value
-			a1 = streamreader.Value{Key: "Key-a"}
-			r0 := s.Add(a0, a1)
+			r0 := streamReaderStubAdd(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStreamReaderStubAdd pins how Add answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStreamReaderStubAdd(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Add", streamReaderStubAddSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var a0 context.Context
-		var a1 streamreader.Value
-		a1 = streamreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		got := s.OnAdd.AssertCalledOnce(t, "Add must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var seen []streamreadertest.StreamReaderAddCall
-		s.OnAdd.OnRecord(func(c streamreadertest.StreamReaderAddCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 streamreader.Value
-		a1 = streamreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		_ = s.Add(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Add call")
-	})
-
-	t.Run("wires WithStreamReaderAdd at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := streamreadertest.NewStreamReaderStub(t, streamreadertest.WithStreamReaderAdd(func(_ context.Context, _ streamreader.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 streamreader.Value
-		a1 = streamreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		assert.True(t, called, "WithStreamReaderAdd must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Add-failing")
-		s := streamreadertest.NewStreamReaderStubFailing(t, want)
-		var a0 context.Context
-		var a1 streamreader.Value
-		a1 = streamreader.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var want0 error
-		s.OnAdd.Returns(want0)
-		var a0 context.Context
-		var a1 streamreader.Value
-		a1 = streamreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		s.ResetCalls()
-		_ = s.Add(a0, a1)
-		s.OnAdd.AssertCalledOnce(t, "Add must record the call that followed the reset")
-	})
-}
-
-// streamReaderStubListSubject binds List into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func streamReaderStubListSubject(tb assert.TB) stub.Subject[streamreadertest.StreamReaderListCall, streamreadertest.StreamReaderListReturn] {
+// streamReaderStubListSubject returns the subject of [stub.Behaviour] for
+// List. The subject calls a new double that reports to tb.
+func streamReaderStubListSubject(
+	tb assert.TB,
+) stub.Subject[streamreadertest.StreamReaderListCall, streamreadertest.StreamReaderListReturn] {
 	tb.Helper()
 	s := streamreadertest.NewStreamReaderStub(tb)
 	return stub.Subject[streamreadertest.StreamReaderListCall, streamreadertest.StreamReaderListReturn]{
 		Stub: s.OnList.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.List(a0)
+			_ = streamReaderStubList(tb, s)
 		},
 		Result: func() streamreadertest.StreamReaderListReturn {
-			var a0 context.Context
-			got0 := s.List(a0)
+			got0 := streamReaderStubList(tb, s)
 			return streamreadertest.StreamReaderListReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -165,221 +119,440 @@ func streamReaderStubListSubject(tb assert.TB) stub.Subject[streamreadertest.Str
 	}
 }
 
-// TestStreamReaderStubList pins how List answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStreamReaderStubList(t *testing.T) {
+// streamReaderStubInstance is the instance of a
+// streamreadertest.StreamReaderStub that the checks of the constructors
+// and the options drive.
+type streamReaderStubInstance = stub.Instance[streamreadertest.StreamReaderAddCall]
+
+// streamReaderStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call Add alone.
+func streamReaderStubInstanceOf(tb assert.TB, s *streamreadertest.StreamReaderStub) streamReaderStubInstance {
+	tb.Helper()
+	return streamReaderStubInstance{
+		Stub: s.OnAdd.MethodStub,
+		Call: func() {
+			_ = streamReaderStubAdd(tb, s)
+		},
+		Reset: s.ResetCalls,
+	}
+}
+
+// TestStreamReaderStub checks the methods, the constructors and the
+// options of the double StreamReaderStub.
+func TestStreamReaderStub(t *testing.T) {
 	t.Parallel()
 
-	stub.Behaviour(t, "List", streamReaderStubListSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
+	t.Run("Add", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var want0 iter.Seq2[streamreader.Value, error]
-		want0 = iter.Seq2[streamreader.Value, error](func(func(streamreader.Value, error) bool) {})
-		s.OnList.Returns(want0)
-		var a0 context.Context
-		got0 := s.List(a0)
-		assert.Equal(t, got0, want0, "List must answer with what Returns pinned")
+		stub.Behaviour(t, "Add", streamReaderStubAddSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			_ = streamReaderStubAdd(t, s)
+			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
+			a0, a1 := streamReaderStubAddArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var seen []streamreadertest.StreamReaderAddCall
+			s.OnAdd.OnRecord(func(c streamreadertest.StreamReaderAddCall) { seen = append(seen, c) })
+			_ = streamReaderStubAdd(t, s)
+			_ = streamReaderStubAdd(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
+		})
 	})
 
-	t.Run("records what it was called with", func(t *testing.T) {
+	t.Run("List", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var a0 context.Context
-		_ = s.List(a0)
-		got := s.OnList.AssertCalledOnce(t, "List must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
+		stub.Behaviour(t, "List", streamReaderStubListSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			_ = streamReaderStubList(t, s)
+			got := s.OnList.AssertCalledOnce(t, "List records the call")
+			a0 := streamReaderStubListArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var seen []streamreadertest.StreamReaderListCall
+			s.OnList.OnRecord(func(c streamreadertest.StreamReaderListCall) { seen = append(seen, c) })
+			_ = streamReaderStubList(t, s)
+			_ = streamReaderStubList(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of List")
+		})
 	})
 
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
+	t.Run("ResetCalls", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var seen []streamreadertest.StreamReaderListCall
-		s.OnList.OnRecord(func(c streamreadertest.StreamReaderListCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.List(a0)
-		_ = s.List(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per List call")
+		stub.ResetBehaviour(t, func(tb assert.TB) streamReaderStubInstance {
+			return streamReaderStubInstanceOf(tb, streamreadertest.NewStreamReaderStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			_ = streamReaderStubAdd(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
+		})
+
+		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			want0 := streamReaderStubAddPins()
+			s.OnAdd.Returns(want0)
+			s.ResetCalls()
+			got0 := streamReaderStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Add")
+		})
+
+		t.Run("clears the recorded calls of List", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			_ = streamReaderStubList(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnList.CallCount(), 0, "ResetCalls clears the calls of List")
+		})
+
+		t.Run("keeps the results of Returns of List", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			want0 := streamReaderStubListPins()
+			s.OnList.Returns(want0)
+			s.ResetCalls()
+			got0 := streamReaderStubList(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of List")
+		})
 	})
 
-	t.Run("wires WithStreamReaderList at construction", func(t *testing.T) {
+	t.Run("NewStreamReaderStubDelayed", func(t *testing.T) {
 		t.Parallel()
-		called := false
-		s := streamreadertest.NewStreamReaderStub(t, streamreadertest.WithStreamReaderList(func(_ context.Context) iter.Seq2[streamreader.Value, error] {
-			called = true
-			var z0 iter.Seq2[streamreader.Value, error]
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.List(a0)
-		assert.True(t, called, "WithStreamReaderList must install the override")
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) streamReaderStubInstance {
+			return streamReaderStubInstanceOf(tb, streamreadertest.NewStreamReaderStubDelayed(tb, d, clk))
+		})
 	})
 
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
+	t.Run("NewStreamReaderStubFailing", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var want0 iter.Seq2[streamreader.Value, error]
-		want0 = iter.Seq2[streamreader.Value, error](func(func(streamreader.Value, error) bool) {})
-		s.OnList.Returns(want0)
-		var a0 context.Context
-		_ = s.List(a0)
-		s.ResetCalls()
-		got0 := s.List(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := streamreadertest.NewStreamReaderStubFailing(t, want)
+			r0 := streamReaderStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of NewStreamReaderStubFailing")
+		})
 	})
 
-	t.Run("yields the items Yields configured", func(t *testing.T) {
+	t.Run("StreamReaderStubStrict", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var want streamreader.Value
-		s.OnList.Yields(want, want)
-		var a0 context.Context
-		got0 := s.List(a0)
-		seen := 0
-		for range got0 {
-			seen++
-		}
-		assert.Equal(t, seen, 2, "List must yield every configured item")
+		stub.StrictBehaviour(t, func(tb assert.TB) streamReaderStubInstance {
+			return streamReaderStubInstanceOf(
+				tb,
+				streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubStrict()),
+			)
+		})
 	})
 
-	t.Run("stops yielding when the caller breaks", func(t *testing.T) {
+	t.Run("StreamReaderStubDelegateTo", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var want streamreader.Value
-		s.OnList.Yields(want, want, want)
-		var a0 context.Context
-		got0 := s.List(a0)
-		seen := 0
-		for range got0 {
-			seen++
-			break
-		}
-		assert.Equal(t, seen, 1, "List must stop when the caller breaks")
+
+		t.Run("passes Add to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := streamreadertest.NewStreamReaderStub(t)
+			s := streamreadertest.NewStreamReaderStub(t, streamreadertest.StreamReaderStubDelegateTo(inner))
+			_ = streamReaderStubAdd(t, s)
+			inner.OnAdd.AssertCalledOnce(t, "Add calls the implementation")
+		})
+
+		t.Run("fails Add with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-delegate")
+			inner := streamreadertest.NewStreamReaderStub(t)
+			inner.OnAdd.Faults(want, 1)
+			s := streamreadertest.NewStreamReaderStub(t, streamreadertest.StreamReaderStubDelegateTo(inner))
+			r0 := streamReaderStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of the implementation")
+		})
+
+		t.Run("passes List to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := streamreadertest.NewStreamReaderStub(t)
+			s := streamreadertest.NewStreamReaderStub(t, streamreadertest.StreamReaderStubDelegateTo(inner))
+			_ = streamReaderStubList(t, s)
+			inner.OnList.AssertCalledOnce(t, "List calls the implementation")
+		})
 	})
 
-	t.Run("yields the items YieldsError configured and then fails", func(t *testing.T) {
+	t.Run("StreamReaderStubWithClock", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var item streamreader.Value
-		want := errors.New("List-yields")
-		s.OnList.YieldsError([]streamreader.Value{item, item}, want)
-		var a0 context.Context
-		got0 := s.List(a0)
-		seen := 0
-		var last error
-		for _, err := range got0 {
-			if err != nil {
-				last = err
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) streamReaderStubInstance {
+			return streamReaderStubInstanceOf(
+				tb,
+				streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("StreamReaderStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) streamReaderStubInstance {
+			return streamReaderStubInstanceOf(
+				tb,
+				streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("StreamReaderStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) streamReaderStubInstance {
+			return streamReaderStubInstanceOf(
+				tb,
+				streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("StreamReaderStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) streamReaderStubInstance {
+			return streamReaderStubInstanceOf(
+				tb,
+				streamreadertest.NewStreamReaderStub(
+					tb,
+					streamreadertest.StreamReaderStubWithClock(clk),
+					streamreadertest.StreamReaderStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("StreamReaderStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := streamreadertest.NewStreamReaderStub(t, streamreadertest.StreamReaderStubFailing(want))
+			r0 := streamReaderStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of StreamReaderStubFailing")
+		})
+	})
+
+	t.Run("WithStreamReaderAdd", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Add", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := streamreadertest.NewStreamReaderStub(
+				t,
+				streamreadertest.WithStreamReaderAdd(func(_ context.Context, _ streamreader.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = streamReaderStubAdd(t, s)
+			assert.True(t, called, "WithStreamReaderAdd sets the function of Add")
+		})
+	})
+
+	t.Run("WithStreamReaderList", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of List", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := streamreadertest.NewStreamReaderStub(
+				t,
+				streamreadertest.WithStreamReaderList(func(_ context.Context) iter.Seq2[streamreader.Value, error] {
+					called = true
+					var z0 iter.Seq2[streamreader.Value, error]
+					return z0
+				}),
+			)
+			_ = streamReaderStubList(t, s)
+			assert.True(t, called, "WithStreamReaderList sets the function of List")
+		})
+	})
+}
+
+// TestStreamReaderAddStub checks the methods of StreamReaderAddStub, which
+// configures Add.
+func TestStreamReaderAddStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Add", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			want0 := streamReaderStubAddPins()
+			s.OnAdd.Returns(want0)
+			got0 := streamReaderStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "Add returns the error that Returns sets")
+		})
+
+		t.Run("configures Add for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := streamreadertest.NewStreamReaderStub(r)
+			s.OnAdd.Strict()
+			var want0 error
+			s.OnAdd.Returns(want0)
+			_ = streamReaderStubAdd(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var got0 context.Context
+			var got1 streamreader.Value
+			s.OnAdd.Func(func(p0 context.Context, p1 streamreader.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = streamReaderStubAdd(t, s)
+			a0, a1 := streamReaderStubAddArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
+	})
+}
+
+// TestStreamReaderListStub checks the methods of StreamReaderListStub,
+// which configures List.
+func TestStreamReaderListStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of List", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			want0 := streamReaderStubListPins()
+			s.OnList.Returns(want0)
+			got0 := streamReaderStubList(t, s)
+			assert.Equal(t, got0, want0, "List returns the Result that Returns sets")
+		})
+
+		t.Run("configures List for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := streamreadertest.NewStreamReaderStub(r)
+			s.OnList.Strict()
+			var want0 iter.Seq2[streamreader.Value, error]
+			s.OnList.Returns(want0)
+			_ = streamReaderStubList(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of List")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of List to the function", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var got0 context.Context
+			s.OnList.Func(func(p0 context.Context) iter.Seq2[streamreader.Value, error] {
+				got0 = p0
+				var z0 iter.Seq2[streamreader.Value, error]
+				return z0
+			})
+			_ = streamReaderStubList(t, s)
+			a0 := streamReaderStubListArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Yields", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("yields each item", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var want streamreader.Value
+			s.OnList.Yields(want, want)
+			got0 := streamReaderStubList(t, s)
+			seen := 0
+			for range got0 {
+				seen++
+			}
+			assert.Equal(t, seen, 2, "List yields each item")
+		})
+
+		t.Run("stops yielding when the caller breaks", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var want streamreader.Value
+			s.OnList.Yields(want, want, want)
+			got0 := streamReaderStubList(t, s)
+			seen := 0
+			for range got0 {
+				seen++
 				break
 			}
-			seen++
-		}
-		assert.Equal(t, seen, 2, "List must yield every item before failing")
-		assert.ErrorIs(t, last, want, "List must end with the configured error")
+			assert.Equal(t, seen, 1, "List stops when the caller breaks")
+		})
 	})
 
-	t.Run("stops a failing sequence when the caller breaks", func(t *testing.T) {
+	t.Run("YieldsError", func(t *testing.T) {
 		t.Parallel()
-		s := streamreadertest.NewStreamReaderStub(t)
-		var item streamreader.Value
-		s.OnList.YieldsError([]streamreader.Value{item, item, item}, errors.New("List-yields"))
-		var a0 context.Context
-		got0 := s.List(a0)
-		seen := 0
-		for range got0 {
-			seen++
-			break
-		}
-		assert.Equal(t, seen, 1, "List must stop when the caller breaks")
+
+		t.Run("yields the error after the items", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var item streamreader.Value
+			want := errors.New("List-yields")
+			s.OnList.YieldsError([]streamreader.Value{item, item}, want)
+			got0 := streamReaderStubList(t, s)
+			seen := 0
+			var last error
+			for _, err := range got0 {
+				if err != nil {
+					last = err
+					break
+				}
+				seen++
+			}
+			assert.Equal(t, seen, 2, "List yields each item before the error")
+			assert.ErrorIs(t, last, want, "List ends with the error of YieldsError")
+		})
+
+		t.Run("stops the sequence when the caller breaks", func(t *testing.T) {
+			t.Parallel()
+			s := streamreadertest.NewStreamReaderStub(t)
+			var item streamreader.Value
+			s.OnList.YieldsError([]streamreader.Value{item, item, item}, errors.New("List-yields"))
+			got0 := streamReaderStubList(t, s)
+			seen := 0
+			for range got0 {
+				seen++
+				break
+			}
+			assert.Equal(t, seen, 1, "List stops when the caller breaks")
+		})
 	})
 }
 
-// streamReaderStubDouble describes how to build a StreamReaderStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// Add stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func streamReaderStubDouble() stub.Double[streamreadertest.StreamReaderAddCall] {
-	instance := func(s *streamreadertest.StreamReaderStub) stub.Instance[streamreadertest.StreamReaderAddCall] {
-		return stub.Instance[streamreadertest.StreamReaderAddCall]{
-			Stub: s.OnAdd.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 streamreader.Value
-				a1 = streamreader.Value{Key: "Key-a"}
-				_ = s.Add(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[streamreadertest.StreamReaderAddCall]{
-		New: func(tb assert.TB) stub.Instance[streamreadertest.StreamReaderAddCall] {
-			return instance(streamreadertest.NewStreamReaderStub(tb))
-		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[streamreadertest.StreamReaderAddCall] {
-			return instance(streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[streamreadertest.StreamReaderAddCall] {
-			return instance(streamreadertest.NewStreamReaderStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[streamreadertest.StreamReaderAddCall] {
-			return instance(streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[streamreadertest.StreamReaderAddCall] {
-			return instance(streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[streamreadertest.StreamReaderAddCall] {
-			return instance(streamreadertest.NewStreamReaderStub(tb, streamreadertest.StreamReaderStubStrict()))
-		},
-	}
-}
-
-// TestStreamReaderStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestStreamReaderStubOptions(t *testing.T) {
-	t.Parallel()
-
-	stub.DoubleBehaviour(t, streamReaderStubDouble())
-}
-
-// TestStreamReaderStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestStreamReaderStubDelegateTo(t *testing.T) {
-	t.Parallel()
-
-	inner := streamreadertest.NewStreamReaderStub(t)
-	s := streamreadertest.NewStreamReaderStub(t, streamreadertest.StreamReaderStubDelegateTo(inner))
-
-	t.Run("forwards Add to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 streamreader.Value
-		a1 = streamreader.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		inner.OnAdd.AssertCalledOnce(t, "Add must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Add answered", func(t *testing.T) {
-		want := errors.New("Add-delegate")
-		inner.OnAdd.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 streamreader.Value
-		a1 = streamreader.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must surface the wrapped answer")
-	})
-
-	t.Run("forwards List to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.List(a0)
-		inner.OnList.AssertCalledOnce(t, "List must reach the wrapped implementation")
-	})
-}
-
-// dokimi:provenance sha256:032b493d23851042152aad9873970d10e65d6ac69a974fd470831a0706a1734c
+// dokimi:provenance sha256:3a8ade9e38793ba5c12f7bd6ec8166b89ab1038bd48b8a0a007153bfdaa81752

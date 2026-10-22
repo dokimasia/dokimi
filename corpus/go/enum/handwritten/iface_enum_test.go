@@ -11,95 +11,120 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/enum/handwritten"
 )
 
-// TestWeekdayVariants pins the declared set itself, which every other
-// check here takes as given.
-func TestWeekdayVariants(t *testing.T) {
+// TestWeekday checks the functions and the methods of the enumeration
+// Weekday.
+func TestWeekday(t *testing.T) {
 	t.Parallel()
 
-	all := []handwritten.Weekday{
-		handwritten.Monday,
-		handwritten.Tuesday,
-		handwritten.Wednesday,
-	}
-
-	t.Run("declares exactly 3 variants", func(t *testing.T) {
-		t.Parallel()
-		assert.Length(t, all, 3, "the declared set must not change unnoticed")
-	})
-
-	t.Run("no two variants share a value", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
 		seen := map[handwritten.Weekday]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v], "each variant must hold a distinct value")
+		for _, v := range []handwritten.Weekday{
+			handwritten.Monday,
+			handwritten.Tuesday,
+			handwritten.Wednesday,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 
-	t.Run("no two variants share a textual form", func(t *testing.T) {
+	t.Run("String", func(t *testing.T) {
 		t.Parallel()
-		seen := map[string]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v.String()], "each variant must render distinctly")
-			seen[v.String()] = true
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []handwritten.Weekday{
+				handwritten.Monday,
+				handwritten.Tuesday,
+				handwritten.Wednesday,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give handwritten.Weekday
+		}{
+			{name: "accepts Monday", give: handwritten.Monday},
+			{name: "accepts Tuesday", give: handwritten.Tuesday},
+			{name: "accepts Wednesday", give: handwritten.Wednesday},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			assert.False(t, handwritten.Weekday(4).IsValid(), "IsValid refuses an undeclared value")
+		})
+
+		t.Run("refuses the zero value", func(t *testing.T) {
+			t.Parallel()
+			var zero handwritten.Weekday
+			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give handwritten.Weekday
+		}{
+			{name: "encodes Monday as its text", give: handwritten.Monday},
+			{name: "encodes Tuesday as its text", give: handwritten.Tuesday},
+			{name: "encodes Wednesday as its text", give: handwritten.Wednesday},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(t, string(text), tt.give.String(), "the encoding of the variant is its text")
+			})
 		}
 	})
 
-	t.Run("a value outside the set is not valid", func(t *testing.T) {
+	t.Run("UnmarshalText", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, handwritten.Weekday(4).IsValid(), "an undeclared value must not be valid")
-	})
 
-	t.Run("every declared variant is valid", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			assert.True(t, v.IsValid(), "a declared variant must be valid")
+		tests := []struct {
+			name string
+			give handwritten.Weekday
+		}{
+			{name: "decodes Monday from its encoding", give: handwritten.Monday},
+			{name: "decodes Tuesday from its encoding", give: handwritten.Tuesday},
+			{name: "decodes Wednesday from its encoding", give: handwritten.Wednesday},
 		}
-	})
-
-	t.Run("the zero value is not a declared variant", func(t *testing.T) {
-		t.Parallel()
-		var zero handwritten.Weekday
-		assert.False(t, zero.IsValid(), "the zero value must not be a variant")
-	})
-}
-
-// TestWeekdayEncoding pins the boundary where a value most often crosses
-// out of the program's control.
-func TestWeekdayEncoding(t *testing.T) {
-	t.Parallel()
-
-	all := []handwritten.Weekday{
-		handwritten.Monday,
-		handwritten.Tuesday,
-		handwritten.Wednesday,
-	}
-
-	t.Run("every variant encodes to its textual form", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
-			assert.Equal(t, string(text), v.String(), "the encoding must match the textual form")
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got handwritten.Weekday
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
 		}
-	})
 
-	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
 			var got handwritten.Weekday
-			assert.NoError(t, got.UnmarshalText(text), "and decode back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
-		}
-	})
-
-	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
-		t.Parallel()
-		var got handwritten.Weekday
-		assert.HasError(t, got.UnmarshalText([]byte("??????????")), "unknown text must not decode")
+			assert.HasError(t, got.UnmarshalText([]byte("??????????")), "UnmarshalText refuses the text")
+		})
 	})
 }
 
-// dokimi:provenance sha256:2b6e2ef2a1ec6c6592660d8ce59aaef51b1fd1db3c5244f6d2ab2ca698c02813
+// dokimi:provenance sha256:75be9e2f1ddf5c7fb33d95c758821937862fd515231d11e80a5ce6b6c3c4c063

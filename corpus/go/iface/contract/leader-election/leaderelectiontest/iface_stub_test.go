@@ -12,28 +12,91 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/leader-election/leaderelectiontest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubCampaignSubject binds Campaign into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubCampaignSubject(tb assert.TB) stub.Subject[leaderelectiontest.ContractCampaignCall, leaderelectiontest.ContractCampaignReturn] {
+// contractStubCampaignArgs returns the samples of the arguments of
+// Campaign.
+func contractStubCampaignArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubCampaign calls Campaign of s with the samples of its
+// arguments.
+func contractStubCampaign(tb assert.TB, s *leaderelectiontest.ContractStub) error {
+	tb.Helper()
+	a0 := contractStubCampaignArgs(tb)
+	return s.Campaign(a0)
+}
+
+// contractStubCampaignPins returns the samples of the results of Campaign,
+// with a new error as its error result.
+func contractStubCampaignPins() error {
+	want0 := errors.New("Campaign-returns")
+	return want0
+}
+
+// contractStubResignArgs returns the samples of the arguments of Resign.
+func contractStubResignArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubResign calls Resign of s with the samples of its arguments.
+func contractStubResign(tb assert.TB, s *leaderelectiontest.ContractStub) error {
+	tb.Helper()
+	a0 := contractStubResignArgs(tb)
+	return s.Resign(a0)
+}
+
+// contractStubResignPins returns the samples of the results of Resign,
+// with a new error as its error result.
+func contractStubResignPins() error {
+	want0 := errors.New("Resign-returns")
+	return want0
+}
+
+// contractStubIsLeaderArgs returns the samples of the arguments of
+// IsLeader.
+func contractStubIsLeaderArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// contractStubIsLeader calls IsLeader of s with the samples of its
+// arguments.
+func contractStubIsLeader(tb assert.TB, s *leaderelectiontest.ContractStub) bool {
+	tb.Helper()
+	a0 := contractStubIsLeaderArgs(tb)
+	return s.IsLeader(a0)
+}
+
+// contractStubIsLeaderPins returns the samples of the results of IsLeader.
+func contractStubIsLeaderPins() bool {
+	var want0 bool
+	want0 = true
+	return want0
+}
+
+// contractStubCampaignSubject returns the subject of [stub.Behaviour] for
+// Campaign. The subject calls a new double that reports to tb.
+func contractStubCampaignSubject(
+	tb assert.TB,
+) stub.Subject[leaderelectiontest.ContractCampaignCall, leaderelectiontest.ContractCampaignReturn] {
 	tb.Helper()
 	s := leaderelectiontest.NewContractStub(tb)
 	return stub.Subject[leaderelectiontest.ContractCampaignCall, leaderelectiontest.ContractCampaignReturn]{
 		Stub: s.OnCampaign.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Campaign(a0)
+			_ = contractStubCampaign(tb, s)
 		},
 		Result: func() leaderelectiontest.ContractCampaignReturn {
-			var a0 context.Context
-			got0 := s.Campaign(a0)
+			got0 := contractStubCampaign(tb, s)
 			return leaderelectiontest.ContractCampaignReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -44,97 +107,26 @@ func contractStubCampaignSubject(tb assert.TB) stub.Subject[leaderelectiontest.C
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Campaign(a0)
+			r0 := contractStubCampaign(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubCampaign pins how Campaign answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubCampaign(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Campaign", contractStubCampaignSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var a0 context.Context
-		_ = s.Campaign(a0)
-		got := s.OnCampaign.AssertCalledOnce(t, "Campaign must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var seen []leaderelectiontest.ContractCampaignCall
-		s.OnCampaign.OnRecord(func(c leaderelectiontest.ContractCampaignCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Campaign(a0)
-		_ = s.Campaign(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Campaign call")
-	})
-
-	t.Run("wires WithContractCampaign at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := leaderelectiontest.NewContractStub(t, leaderelectiontest.WithContractCampaign(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Campaign(a0)
-		assert.True(t, called, "WithContractCampaign must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Campaign-failing")
-		s := leaderelectiontest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Campaign(a0)
-		assert.ErrorIs(t, r0, want, "Campaign must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var want0 error
-		s.OnCampaign.Returns(want0)
-		var a0 context.Context
-		_ = s.Campaign(a0)
-		s.ResetCalls()
-		_ = s.Campaign(a0)
-		s.OnCampaign.AssertCalledOnce(t, "Campaign must record the call that followed the reset")
-	})
-}
-
-// contractStubResignSubject binds Resign into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubResignSubject(tb assert.TB) stub.Subject[leaderelectiontest.ContractResignCall, leaderelectiontest.ContractResignReturn] {
+// contractStubResignSubject returns the subject of [stub.Behaviour] for
+// Resign. The subject calls a new double that reports to tb.
+func contractStubResignSubject(
+	tb assert.TB,
+) stub.Subject[leaderelectiontest.ContractResignCall, leaderelectiontest.ContractResignReturn] {
 	tb.Helper()
 	s := leaderelectiontest.NewContractStub(tb)
 	return stub.Subject[leaderelectiontest.ContractResignCall, leaderelectiontest.ContractResignReturn]{
 		Stub: s.OnResign.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.Resign(a0)
+			_ = contractStubResign(tb, s)
 		},
 		Result: func() leaderelectiontest.ContractResignReturn {
-			var a0 context.Context
-			got0 := s.Resign(a0)
+			got0 := contractStubResign(tb, s)
 			return leaderelectiontest.ContractResignReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -145,98 +137,26 @@ func contractStubResignSubject(tb assert.TB) stub.Subject[leaderelectiontest.Con
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			r0 := s.Resign(a0)
+			r0 := contractStubResign(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubResign pins how Resign answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubResign(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Resign", contractStubResignSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var a0 context.Context
-		_ = s.Resign(a0)
-		got := s.OnResign.AssertCalledOnce(t, "Resign must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var seen []leaderelectiontest.ContractResignCall
-		s.OnResign.OnRecord(func(c leaderelectiontest.ContractResignCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.Resign(a0)
-		_ = s.Resign(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Resign call")
-	})
-
-	t.Run("wires WithContractResign at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := leaderelectiontest.NewContractStub(t, leaderelectiontest.WithContractResign(func(_ context.Context) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.Resign(a0)
-		assert.True(t, called, "WithContractResign must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Resign-failing")
-		s := leaderelectiontest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		r0 := s.Resign(a0)
-		assert.ErrorIs(t, r0, want, "Resign must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var want0 error
-		s.OnResign.Returns(want0)
-		var a0 context.Context
-		_ = s.Resign(a0)
-		s.ResetCalls()
-		_ = s.Resign(a0)
-		s.OnResign.AssertCalledOnce(t, "Resign must record the call that followed the reset")
-	})
-}
-
-// contractStubIsLeaderSubject binds IsLeader into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubIsLeaderSubject(tb assert.TB) stub.Subject[leaderelectiontest.ContractIsLeaderCall, leaderelectiontest.ContractIsLeaderReturn] {
+// contractStubIsLeaderSubject returns the subject of [stub.Behaviour] for
+// IsLeader. The subject calls a new double that reports to tb.
+func contractStubIsLeaderSubject(
+	tb assert.TB,
+) stub.Subject[leaderelectiontest.ContractIsLeaderCall, leaderelectiontest.ContractIsLeaderReturn] {
 	tb.Helper()
 	s := leaderelectiontest.NewContractStub(tb)
 	return stub.Subject[leaderelectiontest.ContractIsLeaderCall, leaderelectiontest.ContractIsLeaderReturn]{
 		Stub: s.OnIsLeader.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_ = s.IsLeader(a0)
+			_ = contractStubIsLeader(tb, s)
 		},
 		Result: func() leaderelectiontest.ContractIsLeaderReturn {
-			var a0 context.Context
-			got0 := s.IsLeader(a0)
+			got0 := contractStubIsLeader(tb, s)
 			return leaderelectiontest.ContractIsLeaderReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -249,164 +169,511 @@ func contractStubIsLeaderSubject(tb assert.TB) stub.Subject[leaderelectiontest.C
 	}
 }
 
-// TestContractStubIsLeader pins how IsLeader answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubIsLeader(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a
+// leaderelectiontest.ContractStub that the checks of the constructors and
+// the options drive.
+type contractStubInstance = stub.Instance[leaderelectiontest.ContractCampaignCall]
 
-	stub.Behaviour(t, "IsLeader", contractStubIsLeaderSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var want0 bool
-		want0 = true
-		s.OnIsLeader.Returns(want0)
-		var a0 context.Context
-		got0 := s.IsLeader(a0)
-		assert.Equal(t, got0, want0, "IsLeader must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var a0 context.Context
-		_ = s.IsLeader(a0)
-		got := s.OnIsLeader.AssertCalledOnce(t, "IsLeader must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var seen []leaderelectiontest.ContractIsLeaderCall
-		s.OnIsLeader.OnRecord(func(c leaderelectiontest.ContractIsLeaderCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_ = s.IsLeader(a0)
-		_ = s.IsLeader(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per IsLeader call")
-	})
-
-	t.Run("wires WithContractIsLeader at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := leaderelectiontest.NewContractStub(t, leaderelectiontest.WithContractIsLeader(func(_ context.Context) bool {
-			called = true
-			var z0 bool
-			return z0
-		}))
-		var a0 context.Context
-		_ = s.IsLeader(a0)
-		assert.True(t, called, "WithContractIsLeader must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := leaderelectiontest.NewContractStub(t)
-		var want0 bool
-		want0 = true
-		s.OnIsLeader.Returns(want0)
-		var a0 context.Context
-		_ = s.IsLeader(a0)
-		s.ResetCalls()
-		got0 := s.IsLeader(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Campaign stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func contractStubDouble() stub.Double[leaderelectiontest.ContractCampaignCall] {
-	instance := func(s *leaderelectiontest.ContractStub) stub.Instance[leaderelectiontest.ContractCampaignCall] {
-		return stub.Instance[leaderelectiontest.ContractCampaignCall]{
-			Stub: s.OnCampaign.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				_ = s.Campaign(a0)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[leaderelectiontest.ContractCampaignCall]{
-		New: func(tb assert.TB) stub.Instance[leaderelectiontest.ContractCampaignCall] {
-			return instance(leaderelectiontest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Campaign alone.
+func contractStubInstanceOf(tb assert.TB, s *leaderelectiontest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnCampaign.MethodStub,
+		Call: func() {
+			_ = contractStubCampaign(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[leaderelectiontest.ContractCampaignCall] {
-			return instance(leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[leaderelectiontest.ContractCampaignCall] {
-			return instance(leaderelectiontest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[leaderelectiontest.ContractCampaignCall] {
-			return instance(leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[leaderelectiontest.ContractCampaignCall] {
-			return instance(leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[leaderelectiontest.ContractCampaignCall] {
-			return instance(leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Campaign", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Campaign", contractStubCampaignSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			_ = contractStubCampaign(t, s)
+			got := s.OnCampaign.AssertCalledOnce(t, "Campaign records the call")
+			a0 := contractStubCampaignArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			var seen []leaderelectiontest.ContractCampaignCall
+			s.OnCampaign.OnRecord(func(c leaderelectiontest.ContractCampaignCall) { seen = append(seen, c) })
+			_ = contractStubCampaign(t, s)
+			_ = contractStubCampaign(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Campaign")
+		})
+	})
+
+	t.Run("Resign", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Resign", contractStubResignSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			_ = contractStubResign(t, s)
+			got := s.OnResign.AssertCalledOnce(t, "Resign records the call")
+			a0 := contractStubResignArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			var seen []leaderelectiontest.ContractResignCall
+			s.OnResign.OnRecord(func(c leaderelectiontest.ContractResignCall) { seen = append(seen, c) })
+			_ = contractStubResign(t, s)
+			_ = contractStubResign(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Resign")
+		})
+	})
+
+	t.Run("IsLeader", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "IsLeader", contractStubIsLeaderSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			_ = contractStubIsLeader(t, s)
+			got := s.OnIsLeader.AssertCalledOnce(t, "IsLeader records the call")
+			a0 := contractStubIsLeaderArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			var seen []leaderelectiontest.ContractIsLeaderCall
+			s.OnIsLeader.OnRecord(func(c leaderelectiontest.ContractIsLeaderCall) { seen = append(seen, c) })
+			_ = contractStubIsLeader(t, s)
+			_ = contractStubIsLeader(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of IsLeader")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, leaderelectiontest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Campaign", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			_ = contractStubCampaign(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnCampaign.CallCount(), 0, "ResetCalls clears the calls of Campaign")
+		})
+
+		t.Run("keeps the results of Returns of Campaign", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			want0 := contractStubCampaignPins()
+			s.OnCampaign.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubCampaign(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Campaign")
+		})
+
+		t.Run("clears the recorded calls of Resign", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			_ = contractStubResign(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnResign.CallCount(), 0, "ResetCalls clears the calls of Resign")
+		})
+
+		t.Run("keeps the results of Returns of Resign", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			want0 := contractStubResignPins()
+			s.OnResign.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubResign(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Resign")
+		})
+
+		t.Run("clears the recorded calls of IsLeader", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			_ = contractStubIsLeader(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnIsLeader.CallCount(), 0, "ResetCalls clears the calls of IsLeader")
+		})
+
+		t.Run("keeps the results of Returns of IsLeader", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			want0 := contractStubIsLeaderPins()
+			s.OnIsLeader.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubIsLeader(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of IsLeader")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, leaderelectiontest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Campaign with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Campaign-failing")
+			s := leaderelectiontest.NewContractStubFailing(t, want)
+			r0 := contractStubCampaign(t, s)
+			assert.ErrorIs(t, r0, want, "Campaign fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Resign with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Resign-failing")
+			s := leaderelectiontest.NewContractStubFailing(t, want)
+			r0 := contractStubResign(t, s)
+			assert.ErrorIs(t, r0, want, "Resign fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubStrict()),
+			)
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Campaign to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := leaderelectiontest.NewContractStub(t)
+			s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubDelegateTo(inner))
+			_ = contractStubCampaign(t, s)
+			inner.OnCampaign.AssertCalledOnce(t, "Campaign calls the implementation")
+		})
+
+		t.Run("fails Campaign with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Campaign-delegate")
+			inner := leaderelectiontest.NewContractStub(t)
+			inner.OnCampaign.Faults(want, 1)
+			s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubDelegateTo(inner))
+			r0 := contractStubCampaign(t, s)
+			assert.ErrorIs(t, r0, want, "Campaign fails with the error of the implementation")
+		})
+
+		t.Run("passes Resign to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := leaderelectiontest.NewContractStub(t)
+			s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubDelegateTo(inner))
+			_ = contractStubResign(t, s)
+			inner.OnResign.AssertCalledOnce(t, "Resign calls the implementation")
+		})
+
+		t.Run("fails Resign with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Resign-delegate")
+			inner := leaderelectiontest.NewContractStub(t)
+			inner.OnResign.Faults(want, 1)
+			s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubDelegateTo(inner))
+			r0 := contractStubResign(t, s)
+			assert.ErrorIs(t, r0, want, "Resign fails with the error of the implementation")
+		})
+
+		t.Run("passes IsLeader to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := leaderelectiontest.NewContractStub(t)
+			s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubDelegateTo(inner))
+			_ = contractStubIsLeader(t, s)
+			inner.OnIsLeader.AssertCalledOnce(t, "IsLeader calls the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				leaderelectiontest.NewContractStub(tb, leaderelectiontest.ContractStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				leaderelectiontest.NewContractStub(
+					tb,
+					leaderelectiontest.ContractStubWithClock(clk),
+					leaderelectiontest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Campaign with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Campaign-failing")
+			s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubFailing(want))
+			r0 := contractStubCampaign(t, s)
+			assert.ErrorIs(t, r0, want, "Campaign fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Resign with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Resign-failing")
+			s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubFailing(want))
+			r0 := contractStubResign(t, s)
+			assert.ErrorIs(t, r0, want, "Resign fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractCampaign", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Campaign", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := leaderelectiontest.NewContractStub(
+				t,
+				leaderelectiontest.WithContractCampaign(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubCampaign(t, s)
+			assert.True(t, called, "WithContractCampaign sets the function of Campaign")
+		})
+	})
+
+	t.Run("WithContractResign", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Resign", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := leaderelectiontest.NewContractStub(
+				t,
+				leaderelectiontest.WithContractResign(func(_ context.Context) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubResign(t, s)
+			assert.True(t, called, "WithContractResign sets the function of Resign")
+		})
+	})
+
+	t.Run("WithContractIsLeader", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of IsLeader", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := leaderelectiontest.NewContractStub(
+				t,
+				leaderelectiontest.WithContractIsLeader(func(_ context.Context) bool {
+					called = true
+					var z0 bool
+					return z0
+				}),
+			)
+			_ = contractStubIsLeader(t, s)
+			assert.True(t, called, "WithContractIsLeader sets the function of IsLeader")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractCampaignStub checks the methods of ContractCampaignStub,
+// which configures Campaign.
+func TestContractCampaignStub(t *testing.T) {
 	t.Parallel()
 
-	inner := leaderelectiontest.NewContractStub(t)
-	s := leaderelectiontest.NewContractStub(t, leaderelectiontest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Campaign to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Campaign(a0)
-		inner.OnCampaign.AssertCalledOnce(t, "Campaign must reach the wrapped implementation")
+		t.Run("sets the results of each call of Campaign", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			want0 := contractStubCampaignPins()
+			s.OnCampaign.Returns(want0)
+			got0 := contractStubCampaign(t, s)
+			assert.ErrorIs(t, got0, want0, "Campaign returns the error that Returns sets")
+		})
+
+		t.Run("configures Campaign for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := leaderelectiontest.NewContractStub(r)
+			s.OnCampaign.Strict()
+			var want0 error
+			s.OnCampaign.Returns(want0)
+			_ = contractStubCampaign(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Campaign")
+		})
 	})
 
-	t.Run("surfaces what Campaign answered", func(t *testing.T) {
-		want := errors.New("Campaign-delegate")
-		inner.OnCampaign.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Campaign(a0)
-		assert.ErrorIs(t, r0, want, "Campaign must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Resign to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.Resign(a0)
-		inner.OnResign.AssertCalledOnce(t, "Resign must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Resign answered", func(t *testing.T) {
-		want := errors.New("Resign-delegate")
-		inner.OnResign.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		r0 := s.Resign(a0)
-		assert.ErrorIs(t, r0, want, "Resign must surface the wrapped answer")
-	})
-
-	t.Run("forwards IsLeader to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_ = s.IsLeader(a0)
-		inner.OnIsLeader.AssertCalledOnce(t, "IsLeader must reach the wrapped implementation")
+		t.Run("passes the arguments of each call of Campaign to the function", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			var got0 context.Context
+			s.OnCampaign.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = contractStubCampaign(t, s)
+			a0 := contractStubCampaignArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
 	})
 }
 
-// dokimi:provenance sha256:07b118d7d4aacc1734134cd03616afd793aad9a871fcb1910c26b68b124e28df
+// TestContractResignStub checks the methods of ContractResignStub, which
+// configures Resign.
+func TestContractResignStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Resign", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			want0 := contractStubResignPins()
+			s.OnResign.Returns(want0)
+			got0 := contractStubResign(t, s)
+			assert.ErrorIs(t, got0, want0, "Resign returns the error that Returns sets")
+		})
+
+		t.Run("configures Resign for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := leaderelectiontest.NewContractStub(r)
+			s.OnResign.Strict()
+			var want0 error
+			s.OnResign.Returns(want0)
+			_ = contractStubResign(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Resign")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Resign to the function", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			var got0 context.Context
+			s.OnResign.Func(func(p0 context.Context) error {
+				got0 = p0
+				var z0 error
+				return z0
+			})
+			_ = contractStubResign(t, s)
+			a0 := contractStubResignArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// TestContractIsLeaderStub checks the methods of ContractIsLeaderStub,
+// which configures IsLeader.
+func TestContractIsLeaderStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of IsLeader", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			want0 := contractStubIsLeaderPins()
+			s.OnIsLeader.Returns(want0)
+			got0 := contractStubIsLeader(t, s)
+			assert.Equal(t, got0, want0, "IsLeader returns the Result that Returns sets")
+		})
+
+		t.Run("configures IsLeader for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := leaderelectiontest.NewContractStub(r)
+			s.OnIsLeader.Strict()
+			var want0 bool
+			s.OnIsLeader.Returns(want0)
+			_ = contractStubIsLeader(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of IsLeader")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of IsLeader to the function", func(t *testing.T) {
+			t.Parallel()
+			s := leaderelectiontest.NewContractStub(t)
+			var got0 context.Context
+			s.OnIsLeader.Func(func(p0 context.Context) bool {
+				got0 = p0
+				var z0 bool
+				return z0
+			})
+			_ = contractStubIsLeader(t, s)
+			a0 := contractStubIsLeaderArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// dokimi:provenance sha256:2c5732b41c1c9d68d895e4f739c81990b04e1689238ca559c40a5b900b2d2f9f

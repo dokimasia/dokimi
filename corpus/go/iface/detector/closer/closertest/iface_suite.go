@@ -7,7 +7,7 @@ package closertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/closer"
 )
 
@@ -40,33 +40,18 @@ func CloserSuite() conform.Suite[closer.Closer] {
 	return conform.Suite[closer.Closer]{Declaration: "Closer"}
 }
 
-// RunCloser applies the checks of Closer, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunCloser[T closer.Closer](t *testing.T, newSubject func() T, opts ...CloserOption) {
+// RunCloserSuite applies the checks of Closer, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunCloserSuite[T closer.Closer](t *testing.T, newSubject func() T, opts ...CloserOption) {
 	t.Helper()
-	conform.Verify(t, CloserSuite(), func(*CloserHandle) closer.Closer { return newSubject() }, opts...)
+	RunCloserSuiteFromHandle(t, func(*CloserHandle) T { return newSubject() }, opts...)
 }
 
-// RunCloserOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunCloserOn[T closer.Closer](t *testing.T, newSubject func(h *CloserHandle) T, opts ...CloserOption) {
+// RunCloserSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunCloserSuiteFromHandle[T closer.Closer](t *testing.T, newSubject func(h *CloserHandle) T, opts ...CloserOption) {
 	t.Helper()
-	conform.Verify(t, CloserSuite(), func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+	conform.Run(t, CloserSuite(), func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
 }
 
-// ControlCloser applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlCloser[T closer.Closer](t *testing.T, newControl func() T, opts ...CloserOption) {
-	t.Helper()
-	conform.Control(t, CloserSuite(), func(*CloserHandle) closer.Closer { return newControl() }, opts...)
-}
-
-// ControlCloserOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlCloserOn[T closer.Closer](t *testing.T, newControl func(h *CloserHandle) T, opts ...CloserOption) {
-	t.Helper()
-	conform.Control(t, CloserSuite(), func(h *CloserHandle) closer.Closer { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:34bc0a192e484ff785b400a645d81a372e39807db4fcc725b5e31c0b148a1ad7
+// dokimi:provenance sha256:adb6a25f211e4dafc8b3ffcc74f56efbc040466b4f4689d65b5d6e86a7e34350

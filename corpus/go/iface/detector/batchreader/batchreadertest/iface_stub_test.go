@@ -12,31 +12,52 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader/batchreadertest"
+	"go.dokimi.dev/stub"
 )
 
-// batchReaderStubGetAllSubject binds GetAll into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func batchReaderStubGetAllSubject(tb assert.TB) stub.Subject[batchreadertest.BatchReaderGetAllCall, batchreadertest.BatchReaderGetAllReturn] {
+// batchReaderStubGetAllArgs returns the samples of the arguments of
+// GetAll.
+func batchReaderStubGetAllArgs(tb assert.TB) (context.Context, []string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 []string
+	return a0, a1
+}
+
+// batchReaderStubGetAll calls GetAll of s with the samples of its
+// arguments.
+func batchReaderStubGetAll(tb assert.TB, s *batchreadertest.BatchReaderStub) ([]batchreader.Value, error) {
+	tb.Helper()
+	a0, a1 := batchReaderStubGetAllArgs(tb)
+	return s.GetAll(a0, a1...)
+}
+
+// batchReaderStubGetAllPins returns the samples of the results of GetAll,
+// with a new error as its error result.
+func batchReaderStubGetAllPins() ([]batchreader.Value, error) {
+	var want0 []batchreader.Value
+	want1 := errors.New("GetAll-returns")
+	want0 = []batchreader.Value{{Key: "Key-a"}}
+	return want0, want1
+}
+
+// batchReaderStubGetAllSubject returns the subject of [stub.Behaviour] for
+// GetAll. The subject calls a new double that reports to tb.
+func batchReaderStubGetAllSubject(
+	tb assert.TB,
+) stub.Subject[batchreadertest.BatchReaderGetAllCall, batchreadertest.BatchReaderGetAllReturn] {
 	tb.Helper()
 	s := batchreadertest.NewBatchReaderStub(tb)
 	return stub.Subject[batchreadertest.BatchReaderGetAllCall, batchreadertest.BatchReaderGetAllReturn]{
 		Stub: s.OnGetAll.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 []string
-			_, _ = s.GetAll(a0, a1...)
+			_, _ = batchReaderStubGetAll(tb, s)
 		},
 		Result: func() batchreadertest.BatchReaderGetAllReturn {
-			var a0 context.Context
-			var a1 []string
-			got0, got1 := s.GetAll(a0, a1...)
+			got0, got1 := batchReaderStubGetAll(tb, s)
 			return batchreadertest.BatchReaderGetAllReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -48,174 +69,267 @@ func batchReaderStubGetAllSubject(tb assert.TB) stub.Subject[batchreadertest.Bat
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 []string
-			_, r1 := s.GetAll(a0, a1...)
+			_, r1 := batchReaderStubGetAll(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestBatchReaderStubGetAll pins how GetAll answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestBatchReaderStubGetAll(t *testing.T) {
-	t.Parallel()
+// batchReaderStubInstance is the instance of a
+// batchreadertest.BatchReaderStub that the checks of the constructors and
+// the options drive.
+type batchReaderStubInstance = stub.Instance[batchreadertest.BatchReaderGetAllCall]
 
-	stub.Behaviour(t, "GetAll", batchReaderStubGetAllSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := batchreadertest.NewBatchReaderStub(t)
-		var want0 []batchreader.Value
-		var want1 error
-		want0 = []batchreader.Value{batchreader.Value{Key: "Key-a"}}
-		s.OnGetAll.Returns(want0, want1)
-		var a0 context.Context
-		var a1 []string
-		got0, _ := s.GetAll(a0, a1...)
-		assert.Equal(t, got0, want0, "GetAll must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := batchreadertest.NewBatchReaderStub(t)
-		var a0 context.Context
-		var a1 []string
-		_, _ = s.GetAll(a0, a1...)
-		got := s.OnGetAll.AssertCalledOnce(t, "GetAll must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Keys, a1, "the recorded call carries Keys")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := batchreadertest.NewBatchReaderStub(t)
-		var seen []batchreadertest.BatchReaderGetAllCall
-		s.OnGetAll.OnRecord(func(c batchreadertest.BatchReaderGetAllCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 []string
-		_, _ = s.GetAll(a0, a1...)
-		_, _ = s.GetAll(a0, a1...)
-		assert.Length(t, seen, 2, "OnRecord must fire once per GetAll call")
-	})
-
-	t.Run("wires WithBatchReaderGetAll at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := batchreadertest.NewBatchReaderStub(t, batchreadertest.WithBatchReaderGetAll(func(_ context.Context, _ ...string) ([]batchreader.Value, error) {
-			called = true
-			var z0 []batchreader.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 []string
-		_, _ = s.GetAll(a0, a1...)
-		assert.True(t, called, "WithBatchReaderGetAll must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("GetAll-failing")
-		s := batchreadertest.NewBatchReaderStubFailing(t, want)
-		var a0 context.Context
-		var a1 []string
-		_, r1 := s.GetAll(a0, a1...)
-		assert.ErrorIs(t, r1, want, "GetAll must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := batchreadertest.NewBatchReaderStub(t)
-		var want0 []batchreader.Value
-		var want1 error
-		want0 = []batchreader.Value{batchreader.Value{Key: "Key-a"}}
-		s.OnGetAll.Returns(want0, want1)
-		var a0 context.Context
-		var a1 []string
-		_, _ = s.GetAll(a0, a1...)
-		s.ResetCalls()
-		got0, _ := s.GetAll(a0, a1...)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// batchReaderStubDouble describes how to build a BatchReaderStub under
-// each option whose effect is the same whatever a method's signature.
-//
-// GetAll stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func batchReaderStubDouble() stub.Double[batchreadertest.BatchReaderGetAllCall] {
-	instance := func(s *batchreadertest.BatchReaderStub) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-		return stub.Instance[batchreadertest.BatchReaderGetAllCall]{
-			Stub: s.OnGetAll.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 []string
-				_, _ = s.GetAll(a0, a1...)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[batchreadertest.BatchReaderGetAllCall]{
-		New: func(tb assert.TB) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-			return instance(batchreadertest.NewBatchReaderStub(tb))
+// batchReaderStubInstanceOf returns the instance of s. The options apply
+// to the whole double, so the checks call GetAll alone.
+func batchReaderStubInstanceOf(tb assert.TB, s *batchreadertest.BatchReaderStub) batchReaderStubInstance {
+	tb.Helper()
+	return batchReaderStubInstance{
+		Stub: s.OnGetAll.MethodStub,
+		Call: func() {
+			_, _ = batchReaderStubGetAll(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-			return instance(batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-			return instance(batchreadertest.NewBatchReaderStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-			return instance(batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-			return instance(batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[batchreadertest.BatchReaderGetAllCall] {
-			return instance(batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestBatchReaderStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestBatchReaderStubOptions(t *testing.T) {
+// TestBatchReaderStub checks the methods, the constructors and the options
+// of the double BatchReaderStub.
+func TestBatchReaderStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, batchReaderStubDouble())
+	t.Run("GetAll", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "GetAll", batchReaderStubGetAllSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := batchreadertest.NewBatchReaderStub(t)
+			_, _ = batchReaderStubGetAll(t, s)
+			got := s.OnGetAll.AssertCalledOnce(t, "GetAll records the call")
+			a0, a1 := batchReaderStubGetAllArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Keys, a1, "the call records Keys")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := batchreadertest.NewBatchReaderStub(t)
+			var seen []batchreadertest.BatchReaderGetAllCall
+			s.OnGetAll.OnRecord(func(c batchreadertest.BatchReaderGetAllCall) { seen = append(seen, c) })
+			_, _ = batchReaderStubGetAll(t, s)
+			_, _ = batchReaderStubGetAll(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of GetAll")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) batchReaderStubInstance {
+			return batchReaderStubInstanceOf(tb, batchreadertest.NewBatchReaderStub(tb))
+		})
+
+		t.Run("clears the recorded calls of GetAll", func(t *testing.T) {
+			t.Parallel()
+			s := batchreadertest.NewBatchReaderStub(t)
+			_, _ = batchReaderStubGetAll(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGetAll.CallCount(), 0, "ResetCalls clears the calls of GetAll")
+		})
+
+		t.Run("keeps the results of Returns of GetAll", func(t *testing.T) {
+			t.Parallel()
+			s := batchreadertest.NewBatchReaderStub(t)
+			want0, want1 := batchReaderStubGetAllPins()
+			s.OnGetAll.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := batchReaderStubGetAll(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of GetAll")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of GetAll")
+		})
+	})
+
+	t.Run("NewBatchReaderStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) batchReaderStubInstance {
+			return batchReaderStubInstanceOf(tb, batchreadertest.NewBatchReaderStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewBatchReaderStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails GetAll with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("GetAll-failing")
+			s := batchreadertest.NewBatchReaderStubFailing(t, want)
+			_, r1 := batchReaderStubGetAll(t, s)
+			assert.ErrorIs(t, r1, want, "GetAll fails with the error of NewBatchReaderStubFailing")
+		})
+	})
+
+	t.Run("BatchReaderStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) batchReaderStubInstance {
+			return batchReaderStubInstanceOf(
+				tb,
+				batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubStrict()),
+			)
+		})
+	})
+
+	t.Run("BatchReaderStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes GetAll to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := batchreadertest.NewBatchReaderStub(t)
+			s := batchreadertest.NewBatchReaderStub(t, batchreadertest.BatchReaderStubDelegateTo(inner))
+			_, _ = batchReaderStubGetAll(t, s)
+			inner.OnGetAll.AssertCalledOnce(t, "GetAll calls the implementation")
+		})
+
+		t.Run("fails GetAll with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("GetAll-delegate")
+			inner := batchreadertest.NewBatchReaderStub(t)
+			inner.OnGetAll.Faults(want, 1)
+			s := batchreadertest.NewBatchReaderStub(t, batchreadertest.BatchReaderStubDelegateTo(inner))
+			_, r1 := batchReaderStubGetAll(t, s)
+			assert.ErrorIs(t, r1, want, "GetAll fails with the error of the implementation")
+		})
+	})
+
+	t.Run("BatchReaderStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) batchReaderStubInstance {
+			return batchReaderStubInstanceOf(
+				tb,
+				batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("BatchReaderStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) batchReaderStubInstance {
+			return batchReaderStubInstanceOf(
+				tb,
+				batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("BatchReaderStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) batchReaderStubInstance {
+			return batchReaderStubInstanceOf(
+				tb,
+				batchreadertest.NewBatchReaderStub(tb, batchreadertest.BatchReaderStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("BatchReaderStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) batchReaderStubInstance {
+			return batchReaderStubInstanceOf(
+				tb,
+				batchreadertest.NewBatchReaderStub(
+					tb,
+					batchreadertest.BatchReaderStubWithClock(clk),
+					batchreadertest.BatchReaderStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("BatchReaderStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails GetAll with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("GetAll-failing")
+			s := batchreadertest.NewBatchReaderStub(t, batchreadertest.BatchReaderStubFailing(want))
+			_, r1 := batchReaderStubGetAll(t, s)
+			assert.ErrorIs(t, r1, want, "GetAll fails with the error of BatchReaderStubFailing")
+		})
+	})
+
+	t.Run("WithBatchReaderGetAll", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of GetAll", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := batchreadertest.NewBatchReaderStub(
+				t,
+				batchreadertest.WithBatchReaderGetAll(
+					func(_ context.Context, _ ...string) ([]batchreader.Value, error) {
+						called = true
+						var z0 []batchreader.Value
+						var z1 error
+						return z0, z1
+					},
+				),
+			)
+			_, _ = batchReaderStubGetAll(t, s)
+			assert.True(t, called, "WithBatchReaderGetAll sets the function of GetAll")
+		})
+	})
 }
 
-// TestBatchReaderStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestBatchReaderStubDelegateTo(t *testing.T) {
+// TestBatchReaderGetAllStub checks the methods of BatchReaderGetAllStub,
+// which configures GetAll.
+func TestBatchReaderGetAllStub(t *testing.T) {
 	t.Parallel()
 
-	inner := batchreadertest.NewBatchReaderStub(t)
-	s := batchreadertest.NewBatchReaderStub(t, batchreadertest.BatchReaderStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards GetAll to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 []string
-		_, _ = s.GetAll(a0, a1...)
-		inner.OnGetAll.AssertCalledOnce(t, "GetAll must reach the wrapped implementation")
+		t.Run("sets the results of each call of GetAll", func(t *testing.T) {
+			t.Parallel()
+			s := batchreadertest.NewBatchReaderStub(t)
+			want0, want1 := batchReaderStubGetAllPins()
+			s.OnGetAll.Returns(want0, want1)
+			got0, got1 := batchReaderStubGetAll(t, s)
+			expect.Equal(t, got0, want0, "GetAll returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "GetAll returns the error that Returns sets")
+		})
+
+		t.Run("configures GetAll for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := batchreadertest.NewBatchReaderStub(r)
+			s.OnGetAll.Strict()
+			var want0 []batchreader.Value
+			var want1 error
+			s.OnGetAll.Returns(want0, want1)
+			_, _ = batchReaderStubGetAll(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of GetAll")
+		})
 	})
 
-	t.Run("surfaces what GetAll answered", func(t *testing.T) {
-		want := errors.New("GetAll-delegate")
-		inner.OnGetAll.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 []string
-		_, r1 := s.GetAll(a0, a1...)
-		assert.ErrorIs(t, r1, want, "GetAll must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of GetAll to the function", func(t *testing.T) {
+			t.Parallel()
+			s := batchreadertest.NewBatchReaderStub(t)
+			var got0 context.Context
+			var got1 []string
+			s.OnGetAll.Func(func(p0 context.Context, p1 ...string) ([]batchreader.Value, error) {
+				got0, got1 = p0, p1
+				var z0 []batchreader.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = batchReaderStubGetAll(t, s)
+			a0, a1 := batchReaderStubGetAllArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Keys")
+		})
 	})
 }
 
-// dokimi:provenance sha256:b4e696b4eae1aa9429f8fb86186bf53ffe718b4acc13589bdba504e4c0fca133
+// dokimi:provenance sha256:23fb3c5f16c971a24ed359f25e2e52a2d05acbce58e008bec83d27e362a65062

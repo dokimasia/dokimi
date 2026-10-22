@@ -6,736 +6,1085 @@ package containertest_test
 
 import (
 	"maps"
+	"slices"
 	"testing"
 	"time"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/struct/container"
 	"go.dokimi.dev/dokimi/corpus/go/struct/container/containertest"
 )
 
-// TestContainerBuilderConstruction pins what the constructors produce.
-func TestContainerBuilderConstruction(t *testing.T) {
+// TestContainerBuilder checks the constructors and the methods of
+// ContainerBuilder.
+func TestContainerBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewContainerBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var seed container.Container[int]
-		seed.Value = 42
-		seed.Label = "Label-a"
-		got := containertest.NewContainerBuilderFrom[int](seed).Build()
-		assert.Equal(t, got.Value, seed.Value, "From keeps the member it was given")
-		assert.Equal(t, got.Label, seed.Label, "From keeps the member it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Container[int]
+			seed.Value = 42
+			seed.Label = "Label-a"
+			got := containertest.NewContainerBuilderFrom[int](seed).Build()
+			expect.Equal(t, got.Value, seed.Value, "NewContainerBuilderFrom keeps Value")
+			expect.Equal(t, got.Label, seed.Label, "NewContainerBuilderFrom keeps Label")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewContainerBuilder[int]()
+			b.WithItems(0)
+			want := b.Build()
+			assert.Equal(
+				t,
+				containertest.NewContainerBuilderFrom[int](want).Build(),
+				want,
+				"NewContainerBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithValue", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Value", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := containertest.NewContainerBuilder[int]().WithValue(want).Build()
+			assert.Equal(t, got.Value, want, "WithValue writes its argument to Value")
+		})
+
+		t.Run("replaces the value of Value", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := containertest.NewContainerBuilder[int]().WithValue(first).WithValue(want).Build()
+			assert.Equal(t, got.Value, want, "the second call of WithValue replaces the first")
+		})
+	})
+
+	t.Run("WithItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Items", func(t *testing.T) {
+			t.Parallel()
+
+			var want []int
+			want = []int{42}
+			got := containertest.NewContainerBuilder[int]().WithItems(want...).Build()
+			assert.Equal(t, got.Items, want, "WithItems writes its argument to Items")
+		})
+
+		t.Run("replaces the value of Items", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []int
+			first = []int{42}
+			want = []int{7}
+			got := containertest.NewContainerBuilder[int]().WithItems(first...).WithItems(want...).Build()
+			assert.Equal(t, got.Items, want, "the second call of WithItems replaces the first")
+		})
+	})
+
+	t.Run("WithLabel", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Label", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Label-a"
+			got := containertest.NewContainerBuilder[int]().WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "WithLabel writes its argument to Label")
+		})
+
+		t.Run("replaces the value of Label", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Label-a"
+			want = "Label-b"
+			got := containertest.NewContainerBuilder[int]().WithLabel(first).WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "the second call of WithLabel replaces the first")
+		})
+	})
+
+	t.Run("AppendItems", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("appends to the elements of Items", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []int
+			first = []int{42}
+			want = []int{7}
+			got := containertest.NewContainerBuilder[int]().WithItems(first...).AppendItems(want...).Build()
+			assert.Equal(
+				t,
+				got.Items,
+				slices.Concat(first, want),
+				"AppendItems appends its elements after those of WithItems",
+			)
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*container.Container[int]
+			record := func(v *container.Container[int]) { got = append(got, v) }
+			containertest.NewContainerBuilder[int]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := containertest.NewContainerBuilder[int]()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewContainerBuilder[int]()
+			b.WithItems(0)
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+
+		t.Run("copies Items into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other []int
+			want = []int{42}
+			other = []int{7}
+			original := containertest.NewContainerBuilder[int]().WithItems(want...)
+			before := slices.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *container.Container[int]) { copy(v.Items, other) })
+			assert.Equal(
+				t,
+				original.Build().Items,
+				before,
+				"a change of Items in the clone leaves the original unchanged",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Container[int]
+			seed.Value = 42
+			seed.Label = "Label-a"
+			b := containertest.NewContainerBuilder[int]()
+			b.Mutate(func(v *container.Container[int]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestContainerBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestContainerBuilderSetters(t *testing.T) {
+// TestPairBuilder checks the constructors and the methods of PairBuilder.
+func TestPairBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithValue writes Value", func(t *testing.T) {
+	t.Run("NewPairBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 42
-		got := containertest.NewContainerBuilder[int]().WithValue(want).Build()
-		assert.Equal(t, got.Value, want, "the setter writes what it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Pair[int, int]
+			seed.Key = 42
+			seed.Value = 42
+			got := containertest.NewPairBuilderFrom[int, int](seed).Build()
+			expect.Equal(t, got.Key, seed.Key, "NewPairBuilderFrom keeps Key")
+			expect.Equal(t, got.Value, seed.Value, "NewPairBuilderFrom keeps Value")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewPairBuilder[int, int]()
+			b.WithIndex(map[int]int{0: 0})
+			want := b.Build()
+			assert.Equal(
+				t,
+				containertest.NewPairBuilderFrom[int, int](want).Build(),
+				want,
+				"NewPairBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("WithValue replaces what was already there", func(t *testing.T) {
+	t.Run("WithKey", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want int
-		first = 42
-		want = 7
-		got := containertest.NewContainerBuilder[int]().WithValue(first).WithValue(want).Build()
-		assert.Equal(t, got.Value, want, "the later call wins")
+		t.Run("writes its argument to Key", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := containertest.NewPairBuilder[int, int]().WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "WithKey writes its argument to Key")
+		})
+
+		t.Run("replaces the value of Key", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := containertest.NewPairBuilder[int, int]().WithKey(first).WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "the second call of WithKey replaces the first")
+		})
 	})
 
-	t.Run("WithItems writes Items", func(t *testing.T) {
+	t.Run("WithValue", func(t *testing.T) {
 		t.Parallel()
 
-		var want []int
-		want = []int{42}
-		got := containertest.NewContainerBuilder[int]().WithItems(want...).Build()
-		assert.Length(t, got.Items, 1, "the setter replaces the sequence")
+		t.Run("writes its argument to Value", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := containertest.NewPairBuilder[int, int]().WithValue(want).Build()
+			assert.Equal(t, got.Value, want, "WithValue writes its argument to Value")
+		})
+
+		t.Run("replaces the value of Value", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := containertest.NewPairBuilder[int, int]().WithValue(first).WithValue(want).Build()
+			assert.Equal(t, got.Value, want, "the second call of WithValue replaces the first")
+		})
 	})
 
-	t.Run("WithLabel writes Label", func(t *testing.T) {
+	t.Run("WithIndex", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Label-a"
-		got := containertest.NewContainerBuilder[int]().WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the setter writes what it was given")
+		t.Run("writes its argument to Index", func(t *testing.T) {
+			t.Parallel()
+
+			var want map[int]int
+			want = map[int]int{42: 42}
+			got := containertest.NewPairBuilder[int, int]().WithIndex(want).Build()
+			assert.Equal(t, got.Index, want, "WithIndex writes its argument to Index")
+		})
+
+		t.Run("replaces the value of Index", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want map[int]int
+			first = map[int]int{42: 42}
+			want = map[int]int{7: 42}
+			got := containertest.NewPairBuilder[int, int]().WithIndex(first).WithIndex(want).Build()
+			assert.Equal(t, got.Index, want, "the second call of WithIndex replaces the first")
+		})
 	})
 
-	t.Run("WithLabel replaces what was already there", func(t *testing.T) {
+	t.Run("WithIndexEntry", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want string
-		first = "Label-a"
-		want = "Label-b"
-		got := containertest.NewContainerBuilder[int]().WithLabel(first).WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the later call wins")
+		t.Run("adds one key to Index", func(t *testing.T) {
+			t.Parallel()
+
+			got := containertest.NewPairBuilder[int, int]().WithIndex(nil).WithIndexEntry(0, 0).Build()
+			assert.Equal(t, got.Index, map[int]int{0: 0}, "WithIndexEntry adds the key to a nil map")
+		})
 	})
 
-	t.Run("AppendItems keeps what Items holds", func(t *testing.T) {
+	t.Run("WithIndexEntries", func(t *testing.T) {
 		t.Parallel()
 
-		got := containertest.NewContainerBuilder[int]().WithItems(*new(int)).AppendItems(*new(int)).Build()
-		assert.Length(t, got.Items, 2, "the appender adds to the sequence")
+		t.Run("adds each key to Index", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want map[int]int
+			first = map[int]int{42: 42}
+			want = map[int]int{7: 42}
+			merged := maps.Clone(first)
+			maps.Copy(merged, want)
+			got := containertest.NewPairBuilder[int, int]().WithIndex(nil).
+				WithIndexEntries(first).
+				WithIndexEntries(want).
+				Build()
+			assert.Equal(t, got.Index, merged, "WithIndexEntries keeps the entries of its earlier call")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*container.Pair[int, int]
+			record := func(v *container.Pair[int, int]) { got = append(got, v) }
+			containertest.NewPairBuilder[int, int]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := containertest.NewPairBuilder[int, int]()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewPairBuilder[int, int]()
+			b.WithIndex(map[int]int{0: 0})
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+
+		t.Run("copies Index into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other map[int]int
+			want = map[int]int{42: 42}
+			other = map[int]int{7: 42}
+			original := containertest.NewPairBuilder[int, int]().WithIndex(want)
+			before := maps.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *container.Pair[int, int]) { maps.Copy(v.Index, other) })
+			assert.Equal(
+				t,
+				original.Build().Index,
+				before,
+				"a change of Index in the clone leaves the original unchanged",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Pair[int, int]
+			seed.Key = 42
+			seed.Value = 42
+			b := containertest.NewPairBuilder[int, int]()
+			b.Mutate(func(v *container.Pair[int, int]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestContainerBuilderClone pins that a clone can be configured without
-// the original seeing it.
-func TestContainerBuilderClone(t *testing.T) {
+// TestSoloBuilder checks the constructors and the methods of SoloBuilder.
+func TestSoloBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Items is not shared with a clone", func(t *testing.T) {
+	t.Run("NewSoloBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want, other []int
-		want = []int{42}
-		other = []int{7}
-		original := containertest.NewContainerBuilder[int]().WithItems(want...)
-		clone := original.Clone()
-		clone.Mutate(func(v *container.Container[int]) { copy(v.Items, other) })
-		assert.NotEqual(t, original.Build().Items, other, "writing through a clone must not reach the original")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Solo[int]
+			seed.Key = 42
+			got := containertest.NewSoloBuilderFrom[int](seed).Build()
+			assert.Equal(t, got.Key, seed.Key, "NewSoloBuilderFrom keeps Key")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewSoloBuilder[int]()
+			want := b.Build()
+			assert.Equal(
+				t,
+				containertest.NewSoloBuilderFrom[int](want).Build(),
+				want,
+				"NewSoloBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithKey", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Key", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := containertest.NewSoloBuilder[int]().WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "WithKey writes its argument to Key")
+		})
+
+		t.Run("replaces the value of Key", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := containertest.NewSoloBuilder[int]().WithKey(first).WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "the second call of WithKey replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*container.Solo[int]
+			record := func(v *container.Solo[int]) { got = append(got, v) }
+			containertest.NewSoloBuilder[int]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := containertest.NewSoloBuilder[int]()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewSoloBuilder[int]()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Solo[int]
+			seed.Key = 42
+			b := containertest.NewSoloBuilder[int]()
+			b.Mutate(func(v *container.Solo[int]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestContainerBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestContainerBuilderMethods(t *testing.T) {
+// TestPartialPairBuilder checks the constructors and the methods of
+// PartialPairBuilder.
+func TestPartialPairBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
+	t.Run("NewPartialPairBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var got []*container.Container[int]
-		record := func(v *container.Container[int]) { got = append(got, v) }
-		containertest.NewContainerBuilder[int]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.PartialPair[int, time.Duration]
+			seed.Key = 42
+			got := containertest.NewPartialPairBuilderFrom[int, time.Duration](seed).Build()
+			assert.Equal(t, got.Key, seed.Key, "NewPartialPairBuilderFrom keeps Key")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewPartialPairBuilder[int, time.Duration]()
+			want := b.Build()
+			assert.Equal(
+				t,
+				containertest.NewPartialPairBuilderFrom[int, time.Duration](want).Build(),
+				want,
+				"NewPartialPairBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
+	t.Run("WithKey", func(t *testing.T) {
 		t.Parallel()
 
-		original := containertest.NewContainerBuilder[int]()
-		original.WithItems(*new(int))
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, containertest.NewContainerBuilderFrom[int](want).Build(), want, "From keeps the value it was given")
+		t.Run("writes its argument to Key", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := containertest.NewPartialPairBuilder[int, time.Duration]().WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "WithKey writes its argument to Key")
+		})
+
+		t.Run("replaces the value of Key", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := containertest.NewPartialPairBuilder[int, time.Duration]().WithKey(first).WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "the second call of WithKey replaces the first")
+		})
+	})
+
+	t.Run("WithValue", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns its builder", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewPartialPairBuilder[int, time.Duration]()
+			assert.Equal(t, b.WithValue(b.Build().Value), b, "WithValue returns its builder for the next call",
+				assert.ByIdentity())
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*container.PartialPair[int, time.Duration]
+			record := func(v *container.PartialPair[int, time.Duration]) { got = append(got, v) }
+			containertest.NewPartialPairBuilder[int, time.Duration]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := containertest.NewPartialPairBuilder[int, time.Duration]()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewPartialPairBuilder[int, time.Duration]()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.PartialPair[int, time.Duration]
+			seed.Key = 42
+			b := containertest.NewPartialPairBuilder[int, time.Duration]()
+			b.Mutate(func(v *container.PartialPair[int, time.Duration]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestPairBuilderConstruction pins what the constructors produce.
-func TestPairBuilderConstruction(t *testing.T) {
+// TestBucketBuilder checks the constructors and the methods of
+// BucketBuilder.
+func TestBucketBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewBucketBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var seed container.Pair[int, int]
-		seed.Key = 42
-		seed.Value = 42
-		got := containertest.NewPairBuilderFrom[int, int](seed).Build()
-		assert.Equal(t, got.Key, seed.Key, "From keeps the member it was given")
-		assert.Equal(t, got.Value, seed.Value, "From keeps the member it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Bucket[string, time.Duration]
+			seed.Key = "Key-a"
+			seed.TTL = time.Duration(1)
+			got := containertest.NewBucketBuilderFrom[string, time.Duration](seed).Build()
+			expect.Equal(t, got.Key, seed.Key, "NewBucketBuilderFrom keeps Key")
+			expect.Equal(t, got.TTL, seed.TTL, "NewBucketBuilderFrom keeps TTL")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewBucketBuilder[string, time.Duration]()
+			want := b.Build()
+			assert.Equal(
+				t,
+				containertest.NewBucketBuilderFrom[string, time.Duration](want).Build(),
+				want,
+				"NewBucketBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithKey", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Key", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Key-a"
+			got := containertest.NewBucketBuilder[string, time.Duration]().WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "WithKey writes its argument to Key")
+		})
+
+		t.Run("replaces the value of Key", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Key-a"
+			want = "Key-b"
+			got := containertest.NewBucketBuilder[string, time.Duration]().WithKey(first).WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "the second call of WithKey replaces the first")
+		})
+	})
+
+	t.Run("WithTTL", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to TTL", func(t *testing.T) {
+			t.Parallel()
+
+			var want time.Duration
+			want = time.Duration(1)
+			got := containertest.NewBucketBuilder[string, time.Duration]().WithTTL(want).Build()
+			assert.Equal(t, got.TTL, want, "WithTTL writes its argument to TTL")
+		})
+
+		t.Run("replaces the value of TTL", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want time.Duration
+			first = time.Duration(1)
+			want = time.Duration(2)
+			got := containertest.NewBucketBuilder[string, time.Duration]().WithTTL(first).WithTTL(want).Build()
+			assert.Equal(t, got.TTL, want, "the second call of WithTTL replaces the first")
+		})
+	})
+
+	t.Run("WithValue", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns its builder", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewBucketBuilder[string, time.Duration]()
+			assert.Equal(t, b.WithValue(b.Build().Value), b, "WithValue returns its builder for the next call",
+				assert.ByIdentity())
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*container.Bucket[string, time.Duration]
+			record := func(v *container.Bucket[string, time.Duration]) { got = append(got, v) }
+			containertest.NewBucketBuilder[string, time.Duration]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := containertest.NewBucketBuilder[string, time.Duration]()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewBucketBuilder[string, time.Duration]()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Bucket[string, time.Duration]
+			seed.Key = "Key-a"
+			seed.TTL = time.Duration(1)
+			b := containertest.NewBucketBuilder[string, time.Duration]()
+			b.Mutate(func(v *container.Bucket[string, time.Duration]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestPairBuilderSetters pins that each setter writes the member it names,
-// and writes nothing else.
-func TestPairBuilderSetters(t *testing.T) {
+// TestTripleBuilder checks the constructors and the methods of
+// TripleBuilder.
+func TestTripleBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithKey writes Key", func(t *testing.T) {
+	t.Run("NewTripleBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 42
-		got := containertest.NewPairBuilder[int, int]().WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the setter writes what it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Triple[string, int, bool]
+			seed.First = "First-a"
+			seed.Second = 42
+			seed.Third = true
+			got := containertest.NewTripleBuilderFrom[string, int, bool](seed).Build()
+			expect.Equal(t, got.First, seed.First, "NewTripleBuilderFrom keeps First")
+			expect.Equal(t, got.Second, seed.Second, "NewTripleBuilderFrom keeps Second")
+			expect.Equal(t, got.Third, seed.Third, "NewTripleBuilderFrom keeps Third")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewTripleBuilder[string, int, bool]()
+			want := b.Build()
+			assert.Equal(
+				t,
+				containertest.NewTripleBuilderFrom[string, int, bool](want).Build(),
+				want,
+				"NewTripleBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("WithKey replaces what was already there", func(t *testing.T) {
+	t.Run("WithFirst", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want int
-		first = 42
-		want = 7
-		got := containertest.NewPairBuilder[int, int]().WithKey(first).WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the later call wins")
+		t.Run("writes its argument to First", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "First-a"
+			got := containertest.NewTripleBuilder[string, int, bool]().WithFirst(want).Build()
+			assert.Equal(t, got.First, want, "WithFirst writes its argument to First")
+		})
+
+		t.Run("replaces the value of First", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "First-a"
+			want = "First-b"
+			got := containertest.NewTripleBuilder[string, int, bool]().WithFirst(first).WithFirst(want).Build()
+			assert.Equal(t, got.First, want, "the second call of WithFirst replaces the first")
+		})
 	})
 
-	t.Run("WithValue writes Value", func(t *testing.T) {
+	t.Run("WithSecond", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 42
-		got := containertest.NewPairBuilder[int, int]().WithValue(want).Build()
-		assert.Equal(t, got.Value, want, "the setter writes what it was given")
+		t.Run("writes its argument to Second", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := containertest.NewTripleBuilder[string, int, bool]().WithSecond(want).Build()
+			assert.Equal(t, got.Second, want, "WithSecond writes its argument to Second")
+		})
+
+		t.Run("replaces the value of Second", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := containertest.NewTripleBuilder[string, int, bool]().WithSecond(first).WithSecond(want).Build()
+			assert.Equal(t, got.Second, want, "the second call of WithSecond replaces the first")
+		})
 	})
 
-	t.Run("WithValue replaces what was already there", func(t *testing.T) {
+	t.Run("WithThird", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want int
-		first = 42
-		want = 7
-		got := containertest.NewPairBuilder[int, int]().WithValue(first).WithValue(want).Build()
-		assert.Equal(t, got.Value, want, "the later call wins")
+		t.Run("writes its argument to Third", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := containertest.NewTripleBuilder[string, int, bool]().WithThird(want).Build()
+			assert.Equal(t, got.Third, want, "WithThird writes its argument to Third")
+		})
+
+		t.Run("replaces the value of Third", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want bool
+			first = true
+			want = false
+			got := containertest.NewTripleBuilder[string, int, bool]().WithThird(first).WithThird(want).Build()
+			assert.Equal(t, got.Third, want, "the second call of WithThird replaces the first")
+		})
 	})
 
-	t.Run("WithIndex writes Index", func(t *testing.T) {
+	t.Run("Mutate", func(t *testing.T) {
 		t.Parallel()
 
-		var want map[int]int
-		want = map[int]int{42: 42}
-		got := containertest.NewPairBuilder[int, int]().WithIndex(want).Build()
-		assert.Length(t, got.Index, 1, "the setter replaces the collection")
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*container.Triple[string, int, bool]
+			record := func(v *container.Triple[string, int, bool]) { got = append(got, v) }
+			containertest.NewTripleBuilder[string, int, bool]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
 	})
 
-	t.Run("WithIndexEntry adds one key to Index", func(t *testing.T) {
+	t.Run("Clone", func(t *testing.T) {
 		t.Parallel()
 
-		got := containertest.NewPairBuilder[int, int]().WithIndex(nil).WithIndexEntry(*new(int), *new(int)).Build()
-		assert.Length(t, got.Index, 1, "the setter adds the key to an empty collection")
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := containertest.NewTripleBuilder[string, int, bool]()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewTripleBuilder[string, int, bool]()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
 	})
 
-	t.Run("WithIndexEntries adds each key to Index", func(t *testing.T) {
+	t.Run("Build", func(t *testing.T) {
 		t.Parallel()
 
-		entries := map[int]int{*new(int): *new(int)}
-		got := containertest.NewPairBuilder[int, int]().WithIndex(nil).WithIndexEntries(entries).Build()
-		assert.Length(t, got.Index, 1, "the setter merges the entries into an empty collection")
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Triple[string, int, bool]
+			seed.First = "First-a"
+			seed.Second = 42
+			seed.Third = true
+			b := containertest.NewTripleBuilder[string, int, bool]()
+			b.Mutate(func(v *container.Triple[string, int, bool]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestPairBuilderClone pins that a clone can be configured without the
-// original seeing it.
-func TestPairBuilderClone(t *testing.T) {
+// TestQuadBuilder checks the constructors and the methods of QuadBuilder.
+func TestQuadBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Index is not shared with a clone", func(t *testing.T) {
+	t.Run("NewQuadBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want, other map[int]int
-		want = map[int]int{42: 42}
-		other = map[int]int{7: 42}
-		original := containertest.NewPairBuilder[int, int]().WithIndex(want)
-		clone := original.Clone()
-		clone.Mutate(func(v *container.Pair[int, int]) { maps.Copy(v.Index, other) })
-		assert.Length(t, original.Build().Index, 1, "writing through a clone must not reach the original")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Quad[string, int, bool, string]
+			seed.First = "First-a"
+			seed.Second = 42
+			seed.Third = true
+			seed.Fourth = "Fourth-a"
+			got := containertest.NewQuadBuilderFrom[string, int, bool, string](seed).Build()
+			expect.Equal(t, got.First, seed.First, "NewQuadBuilderFrom keeps First")
+			expect.Equal(t, got.Second, seed.Second, "NewQuadBuilderFrom keeps Second")
+			expect.Equal(t, got.Third, seed.Third, "NewQuadBuilderFrom keeps Third")
+			expect.Equal(t, got.Fourth, seed.Fourth, "NewQuadBuilderFrom keeps Fourth")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewQuadBuilder[string, int, bool, string]()
+			want := b.Build()
+			assert.Equal(
+				t,
+				containertest.NewQuadBuilderFrom[string, int, bool, string](want).Build(),
+				want,
+				"NewQuadBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithFirst", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to First", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "First-a"
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithFirst(want).Build()
+			assert.Equal(t, got.First, want, "WithFirst writes its argument to First")
+		})
+
+		t.Run("replaces the value of First", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "First-a"
+			want = "First-b"
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithFirst(first).WithFirst(want).Build()
+			assert.Equal(t, got.First, want, "the second call of WithFirst replaces the first")
+		})
+	})
+
+	t.Run("WithSecond", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Second", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithSecond(want).Build()
+			assert.Equal(t, got.Second, want, "WithSecond writes its argument to Second")
+		})
+
+		t.Run("replaces the value of Second", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithSecond(first).WithSecond(want).Build()
+			assert.Equal(t, got.Second, want, "the second call of WithSecond replaces the first")
+		})
+	})
+
+	t.Run("WithThird", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Third", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithThird(want).Build()
+			assert.Equal(t, got.Third, want, "WithThird writes its argument to Third")
+		})
+
+		t.Run("replaces the value of Third", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want bool
+			first = true
+			want = false
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithThird(first).WithThird(want).Build()
+			assert.Equal(t, got.Third, want, "the second call of WithThird replaces the first")
+		})
+	})
+
+	t.Run("WithFourth", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Fourth", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Fourth-a"
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithFourth(want).Build()
+			assert.Equal(t, got.Fourth, want, "WithFourth writes its argument to Fourth")
+		})
+
+		t.Run("replaces the value of Fourth", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Fourth-a"
+			want = "Fourth-b"
+			got := containertest.NewQuadBuilder[string, int, bool, string]().WithFourth(first).WithFourth(want).Build()
+			assert.Equal(t, got.Fourth, want, "the second call of WithFourth replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*container.Quad[string, int, bool, string]
+			record := func(v *container.Quad[string, int, bool, string]) { got = append(got, v) }
+			containertest.NewQuadBuilder[string, int, bool, string]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := containertest.NewQuadBuilder[string, int, bool, string]()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := containertest.NewQuadBuilder[string, int, bool, string]()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed container.Quad[string, int, bool, string]
+			seed.First = "First-a"
+			seed.Second = 42
+			seed.Third = true
+			seed.Fourth = "Fourth-a"
+			b := containertest.NewQuadBuilder[string, int, bool, string]()
+			b.Mutate(func(v *container.Quad[string, int, bool, string]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestPairBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestPairBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*container.Pair[int, int]
-		record := func(v *container.Pair[int, int]) { got = append(got, v) }
-		containertest.NewPairBuilder[int, int]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := containertest.NewPairBuilder[int, int]()
-		original.WithIndex(map[int]int{*new(int): *new(int)})
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, containertest.NewPairBuilderFrom[int, int](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestSoloBuilderConstruction pins what the constructors produce.
-func TestSoloBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed container.Solo[int]
-		seed.Key = 42
-		got := containertest.NewSoloBuilderFrom[int](seed).Build()
-		assert.Equal(t, got.Key, seed.Key, "From keeps the member it was given")
-	})
-}
-
-// TestSoloBuilderSetters pins that each setter writes the member it names,
-// and writes nothing else.
-func TestSoloBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithKey writes Key", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := containertest.NewSoloBuilder[int]().WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithKey replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := containertest.NewSoloBuilder[int]().WithKey(first).WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the later call wins")
-	})
-}
-
-// TestSoloBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestSoloBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*container.Solo[int]
-		record := func(v *container.Solo[int]) { got = append(got, v) }
-		containertest.NewSoloBuilder[int]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := containertest.NewSoloBuilder[int]()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, containertest.NewSoloBuilderFrom[int](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestPartialPairBuilderConstruction pins what the constructors produce.
-func TestPartialPairBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed container.PartialPair[int, time.Duration]
-		seed.Key = 42
-		got := containertest.NewPartialPairBuilderFrom[int, time.Duration](seed).Build()
-		assert.Equal(t, got.Key, seed.Key, "From keeps the member it was given")
-	})
-}
-
-// TestPartialPairBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestPartialPairBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithKey writes Key", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := containertest.NewPartialPairBuilder[int, time.Duration]().WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithKey replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := containertest.NewPartialPairBuilder[int, time.Duration]().WithKey(first).WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the later call wins")
-	})
-
-	t.Run("WithValue returns its builder", func(t *testing.T) {
-		t.Parallel()
-
-		b := containertest.NewPartialPairBuilder[int, time.Duration]()
-		assert.Equal(t, b.WithValue(b.Build().Value), b, "the setter returns its builder for the next call",
-			assert.ByIdentity())
-	})
-}
-
-// TestPartialPairBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestPartialPairBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*container.PartialPair[int, time.Duration]
-		record := func(v *container.PartialPair[int, time.Duration]) { got = append(got, v) }
-		containertest.NewPartialPairBuilder[int, time.Duration]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := containertest.NewPartialPairBuilder[int, time.Duration]()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, containertest.NewPartialPairBuilderFrom[int, time.Duration](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestBucketBuilderConstruction pins what the constructors produce.
-func TestBucketBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed container.Bucket[string, time.Duration]
-		seed.Key = "Key-a"
-		seed.TTL = time.Duration(1)
-		got := containertest.NewBucketBuilderFrom[string, time.Duration](seed).Build()
-		assert.Equal(t, got.Key, seed.Key, "From keeps the member it was given")
-		assert.Equal(t, got.TTL, seed.TTL, "From keeps the member it was given")
-	})
-}
-
-// TestBucketBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestBucketBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithKey writes Key", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Key-a"
-		got := containertest.NewBucketBuilder[string, time.Duration]().WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithKey replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Key-a"
-		want = "Key-b"
-		got := containertest.NewBucketBuilder[string, time.Duration]().WithKey(first).WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the later call wins")
-	})
-
-	t.Run("WithTTL writes TTL", func(t *testing.T) {
-		t.Parallel()
-
-		var want time.Duration
-		want = time.Duration(1)
-		got := containertest.NewBucketBuilder[string, time.Duration]().WithTTL(want).Build()
-		assert.Equal(t, got.TTL, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithTTL replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want time.Duration
-		first = time.Duration(1)
-		want = time.Duration(2)
-		got := containertest.NewBucketBuilder[string, time.Duration]().WithTTL(first).WithTTL(want).Build()
-		assert.Equal(t, got.TTL, want, "the later call wins")
-	})
-
-	t.Run("WithValue returns its builder", func(t *testing.T) {
-		t.Parallel()
-
-		b := containertest.NewBucketBuilder[string, time.Duration]()
-		assert.Equal(t, b.WithValue(b.Build().Value), b, "the setter returns its builder for the next call",
-			assert.ByIdentity())
-	})
-}
-
-// TestBucketBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestBucketBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*container.Bucket[string, time.Duration]
-		record := func(v *container.Bucket[string, time.Duration]) { got = append(got, v) }
-		containertest.NewBucketBuilder[string, time.Duration]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := containertest.NewBucketBuilder[string, time.Duration]()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, containertest.NewBucketBuilderFrom[string, time.Duration](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestTripleBuilderConstruction pins what the constructors produce.
-func TestTripleBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed container.Triple[string, int, bool]
-		seed.First = "First-a"
-		seed.Second = 42
-		seed.Third = true
-		got := containertest.NewTripleBuilderFrom[string, int, bool](seed).Build()
-		assert.Equal(t, got.First, seed.First, "From keeps the member it was given")
-		assert.Equal(t, got.Second, seed.Second, "From keeps the member it was given")
-		assert.Equal(t, got.Third, seed.Third, "From keeps the member it was given")
-	})
-}
-
-// TestTripleBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestTripleBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithFirst writes First", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "First-a"
-		got := containertest.NewTripleBuilder[string, int, bool]().WithFirst(want).Build()
-		assert.Equal(t, got.First, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithFirst replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "First-a"
-		want = "First-b"
-		got := containertest.NewTripleBuilder[string, int, bool]().WithFirst(first).WithFirst(want).Build()
-		assert.Equal(t, got.First, want, "the later call wins")
-	})
-
-	t.Run("WithSecond writes Second", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := containertest.NewTripleBuilder[string, int, bool]().WithSecond(want).Build()
-		assert.Equal(t, got.Second, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithSecond replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := containertest.NewTripleBuilder[string, int, bool]().WithSecond(first).WithSecond(want).Build()
-		assert.Equal(t, got.Second, want, "the later call wins")
-	})
-
-	t.Run("WithThird writes Third", func(t *testing.T) {
-		t.Parallel()
-
-		var want bool
-		want = true
-		got := containertest.NewTripleBuilder[string, int, bool]().WithThird(want).Build()
-		assert.Equal(t, got.Third, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithThird replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want bool
-		first = true
-		want = false
-		got := containertest.NewTripleBuilder[string, int, bool]().WithThird(first).WithThird(want).Build()
-		assert.Equal(t, got.Third, want, "the later call wins")
-	})
-}
-
-// TestTripleBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestTripleBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*container.Triple[string, int, bool]
-		record := func(v *container.Triple[string, int, bool]) { got = append(got, v) }
-		containertest.NewTripleBuilder[string, int, bool]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := containertest.NewTripleBuilder[string, int, bool]()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, containertest.NewTripleBuilderFrom[string, int, bool](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestQuadBuilderConstruction pins what the constructors produce.
-func TestQuadBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed container.Quad[string, int, bool, string]
-		seed.First = "First-a"
-		seed.Second = 42
-		seed.Third = true
-		seed.Fourth = "Fourth-a"
-		got := containertest.NewQuadBuilderFrom[string, int, bool, string](seed).Build()
-		assert.Equal(t, got.First, seed.First, "From keeps the member it was given")
-		assert.Equal(t, got.Second, seed.Second, "From keeps the member it was given")
-		assert.Equal(t, got.Third, seed.Third, "From keeps the member it was given")
-		assert.Equal(t, got.Fourth, seed.Fourth, "From keeps the member it was given")
-	})
-}
-
-// TestQuadBuilderSetters pins that each setter writes the member it names,
-// and writes nothing else.
-func TestQuadBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithFirst writes First", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "First-a"
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithFirst(want).Build()
-		assert.Equal(t, got.First, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithFirst replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "First-a"
-		want = "First-b"
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithFirst(first).WithFirst(want).Build()
-		assert.Equal(t, got.First, want, "the later call wins")
-	})
-
-	t.Run("WithSecond writes Second", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithSecond(want).Build()
-		assert.Equal(t, got.Second, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithSecond replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithSecond(first).WithSecond(want).Build()
-		assert.Equal(t, got.Second, want, "the later call wins")
-	})
-
-	t.Run("WithThird writes Third", func(t *testing.T) {
-		t.Parallel()
-
-		var want bool
-		want = true
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithThird(want).Build()
-		assert.Equal(t, got.Third, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithThird replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want bool
-		first = true
-		want = false
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithThird(first).WithThird(want).Build()
-		assert.Equal(t, got.Third, want, "the later call wins")
-	})
-
-	t.Run("WithFourth writes Fourth", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Fourth-a"
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithFourth(want).Build()
-		assert.Equal(t, got.Fourth, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithFourth replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Fourth-a"
-		want = "Fourth-b"
-		got := containertest.NewQuadBuilder[string, int, bool, string]().WithFourth(first).WithFourth(want).Build()
-		assert.Equal(t, got.Fourth, want, "the later call wins")
-	})
-}
-
-// TestQuadBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestQuadBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*container.Quad[string, int, bool, string]
-		record := func(v *container.Quad[string, int, bool, string]) { got = append(got, v) }
-		containertest.NewQuadBuilder[string, int, bool, string]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := containertest.NewQuadBuilder[string, int, bool, string]()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, containertest.NewQuadBuilderFrom[string, int, bool, string](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:6ba65de2f390aa59105a3e27d98b2e7403623fee20bb66bc2d4cb9d1996e0d35
+// dokimi:provenance sha256:348a73fc41fff2ffb9963220817cd572f40e0203b223c92345e4d7d559721191

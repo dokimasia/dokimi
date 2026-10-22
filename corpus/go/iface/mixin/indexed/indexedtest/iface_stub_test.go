@@ -12,32 +12,95 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed/indexedtest"
+	"go.dokimi.dev/stub"
 )
 
-// rankedStubAddSubject binds Add into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// rankedStubAddArgs returns the samples of the arguments of Add.
+func rankedStubAddArgs(tb assert.TB) (context.Context, indexed.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 indexed.Value
+	a1 = indexed.Value{Key: "Key-a"}
+	return a0, a1
+}
+
+// rankedStubAdd calls Add of s with the samples of its arguments.
+func rankedStubAdd(tb assert.TB, s *indexedtest.RankedStub) error {
+	tb.Helper()
+	a0, a1 := rankedStubAddArgs(tb)
+	return s.Add(a0, a1)
+}
+
+// rankedStubAddPins returns the samples of the results of Add, with a new
+// error as its error result.
+func rankedStubAddPins() error {
+	want0 := errors.New("Add-returns")
+	return want0
+}
+
+// rankedStubLenArgs returns the samples of the arguments of Len.
+func rankedStubLenArgs(tb assert.TB) context.Context {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	return a0
+}
+
+// rankedStubLen calls Len of s with the samples of its arguments.
+func rankedStubLen(tb assert.TB, s *indexedtest.RankedStub) (int, error) {
+	tb.Helper()
+	a0 := rankedStubLenArgs(tb)
+	return s.Len(a0)
+}
+
+// rankedStubLenPins returns the samples of the results of Len, with a new
+// error as its error result.
+func rankedStubLenPins() (int, error) {
+	var want0 int
+	want1 := errors.New("Len-returns")
+	want0 = 42
+	return want0, want1
+}
+
+// rankedStubAtArgs returns the samples of the arguments of At.
+func rankedStubAtArgs(tb assert.TB) (context.Context, int) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 int
+	a1 = 42
+	return a0, a1
+}
+
+// rankedStubAt calls At of s with the samples of its arguments.
+func rankedStubAt(tb assert.TB, s *indexedtest.RankedStub) (indexed.Value, error) {
+	tb.Helper()
+	a0, a1 := rankedStubAtArgs(tb)
+	return s.At(a0, a1)
+}
+
+// rankedStubAtPins returns the samples of the results of At, with a new
+// error as its error result.
+func rankedStubAtPins() (indexed.Value, error) {
+	var want0 indexed.Value
+	want1 := errors.New("At-returns")
+	want0 = indexed.Value{Key: "Key-a"}
+	return want0, want1
+}
+
+// rankedStubAddSubject returns the subject of [stub.Behaviour] for Add.
+// The subject calls a new double that reports to tb.
 func rankedStubAddSubject(tb assert.TB) stub.Subject[indexedtest.RankedAddCall, indexedtest.RankedAddReturn] {
 	tb.Helper()
 	s := indexedtest.NewRankedStub(tb)
 	return stub.Subject[indexedtest.RankedAddCall, indexedtest.RankedAddReturn]{
 		Stub: s.OnAdd.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 indexed.Value
-			a1 = indexed.Value{Key: "Key-a"}
-			_ = s.Add(a0, a1)
+			_ = rankedStubAdd(tb, s)
 		},
 		Result: func() indexedtest.RankedAddReturn {
-			var a0 context.Context
-			var a1 indexed.Value
-			a1 = indexed.Value{Key: "Key-a"}
-			got0 := s.Add(a0, a1)
+			got0 := rankedStubAdd(tb, s)
 			return indexedtest.RankedAddReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -48,110 +111,24 @@ func rankedStubAddSubject(tb assert.TB) stub.Subject[indexedtest.RankedAddCall, 
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 indexed.Value
-			a1 = indexed.Value{Key: "Key-a"}
-			r0 := s.Add(a0, a1)
+			r0 := rankedStubAdd(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestRankedStubAdd pins how Add answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestRankedStubAdd(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Add", rankedStubAddSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var a0 context.Context
-		var a1 indexed.Value
-		a1 = indexed.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		got := s.OnAdd.AssertCalledOnce(t, "Add must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.V, a1, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var seen []indexedtest.RankedAddCall
-		s.OnAdd.OnRecord(func(c indexedtest.RankedAddCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 indexed.Value
-		a1 = indexed.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		_ = s.Add(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Add call")
-	})
-
-	t.Run("wires WithRankedAdd at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := indexedtest.NewRankedStub(t, indexedtest.WithRankedAdd(func(_ context.Context, _ indexed.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 indexed.Value
-		a1 = indexed.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		assert.True(t, called, "WithRankedAdd must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Add-failing")
-		s := indexedtest.NewRankedStubFailing(t, want)
-		var a0 context.Context
-		var a1 indexed.Value
-		a1 = indexed.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var want0 error
-		s.OnAdd.Returns(want0)
-		var a0 context.Context
-		var a1 indexed.Value
-		a1 = indexed.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		s.ResetCalls()
-		_ = s.Add(a0, a1)
-		s.OnAdd.AssertCalledOnce(t, "Add must record the call that followed the reset")
-	})
-}
-
-// rankedStubLenSubject binds Len into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// rankedStubLenSubject returns the subject of [stub.Behaviour] for Len.
+// The subject calls a new double that reports to tb.
 func rankedStubLenSubject(tb assert.TB) stub.Subject[indexedtest.RankedLenCall, indexedtest.RankedLenReturn] {
 	tb.Helper()
 	s := indexedtest.NewRankedStub(tb)
 	return stub.Subject[indexedtest.RankedLenCall, indexedtest.RankedLenReturn]{
 		Stub: s.OnLen.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			_, _ = s.Len(a0)
+			_, _ = rankedStubLen(tb, s)
 		},
 		Result: func() indexedtest.RankedLenReturn {
-			var a0 context.Context
-			got0, got1 := s.Len(a0)
+			got0, got1 := rankedStubLen(tb, s)
 			return indexedtest.RankedLenReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -163,116 +140,24 @@ func rankedStubLenSubject(tb assert.TB) stub.Subject[indexedtest.RankedLenCall, 
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			_, r1 := s.Len(a0)
+			_, r1 := rankedStubLen(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestRankedStubLen pins how Len answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestRankedStubLen(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Len", rankedStubLenSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnLen.Returns(want0, want1)
-		var a0 context.Context
-		got0, _ := s.Len(a0)
-		assert.Equal(t, got0, want0, "Len must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		got := s.OnLen.AssertCalledOnce(t, "Len must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var seen []indexedtest.RankedLenCall
-		s.OnLen.OnRecord(func(c indexedtest.RankedLenCall) { seen = append(seen, c) })
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		_, _ = s.Len(a0)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Len call")
-	})
-
-	t.Run("wires WithRankedLen at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := indexedtest.NewRankedStub(t, indexedtest.WithRankedLen(func(_ context.Context) (int, error) {
-			called = true
-			var z0 int
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		assert.True(t, called, "WithRankedLen must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Len-failing")
-		s := indexedtest.NewRankedStubFailing(t, want)
-		var a0 context.Context
-		_, r1 := s.Len(a0)
-		assert.ErrorIs(t, r1, want, "Len must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var want0 int
-		var want1 error
-		want0 = 42
-		s.OnLen.Returns(want0, want1)
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		s.ResetCalls()
-		got0, _ := s.Len(a0)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// rankedStubAtSubject binds At into the shape [stub.Behaviour] drives: how
-// to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// rankedStubAtSubject returns the subject of [stub.Behaviour] for At. The
+// subject calls a new double that reports to tb.
 func rankedStubAtSubject(tb assert.TB) stub.Subject[indexedtest.RankedAtCall, indexedtest.RankedAtReturn] {
 	tb.Helper()
 	s := indexedtest.NewRankedStub(tb)
 	return stub.Subject[indexedtest.RankedAtCall, indexedtest.RankedAtReturn]{
 		Stub: s.OnAt.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			_, _ = s.At(a0, a1)
+			_, _ = rankedStubAt(tb, s)
 		},
 		Result: func() indexedtest.RankedAtReturn {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			got0, got1 := s.At(a0, a1)
+			got0, got1 := rankedStubAt(tb, s)
 			return indexedtest.RankedAtReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -284,216 +169,540 @@ func rankedStubAtSubject(tb assert.TB) stub.Subject[indexedtest.RankedAtCall, in
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 int
-			a1 = 42
-			_, r1 := s.At(a0, a1)
+			_, r1 := rankedStubAt(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestRankedStubAt pins how At answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestRankedStubAt(t *testing.T) {
-	t.Parallel()
+// rankedStubInstance is the instance of a indexedtest.RankedStub that the
+// checks of the constructors and the options drive.
+type rankedStubInstance = stub.Instance[indexedtest.RankedAddCall]
 
-	stub.Behaviour(t, "At", rankedStubAtSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var want0 indexed.Value
-		var want1 error
-		want0 = indexed.Value{Key: "Key-a"}
-		s.OnAt.Returns(want0, want1)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		got0, _ := s.At(a0, a1)
-		assert.Equal(t, got0, want0, "At must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.At(a0, a1)
-		got := s.OnAt.AssertCalledOnce(t, "At must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.I, a1, "the recorded call carries I")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var seen []indexedtest.RankedAtCall
-		s.OnAt.OnRecord(func(c indexedtest.RankedAtCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.At(a0, a1)
-		_, _ = s.At(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per At call")
-	})
-
-	t.Run("wires WithRankedAt at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := indexedtest.NewRankedStub(t, indexedtest.WithRankedAt(func(_ context.Context, _ int) (indexed.Value, error) {
-			called = true
-			var z0 indexed.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.At(a0, a1)
-		assert.True(t, called, "WithRankedAt must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("At-failing")
-		s := indexedtest.NewRankedStubFailing(t, want)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, r1 := s.At(a0, a1)
-		assert.ErrorIs(t, r1, want, "At must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := indexedtest.NewRankedStub(t)
-		var want0 indexed.Value
-		var want1 error
-		want0 = indexed.Value{Key: "Key-a"}
-		s.OnAt.Returns(want0, want1)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.At(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.At(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// rankedStubDouble describes how to build a RankedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Add stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func rankedStubDouble() stub.Double[indexedtest.RankedAddCall] {
-	instance := func(s *indexedtest.RankedStub) stub.Instance[indexedtest.RankedAddCall] {
-		return stub.Instance[indexedtest.RankedAddCall]{
-			Stub: s.OnAdd.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 indexed.Value
-				a1 = indexed.Value{Key: "Key-a"}
-				_ = s.Add(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[indexedtest.RankedAddCall]{
-		New: func(tb assert.TB) stub.Instance[indexedtest.RankedAddCall] {
-			return instance(indexedtest.NewRankedStub(tb))
+// rankedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Add alone.
+func rankedStubInstanceOf(tb assert.TB, s *indexedtest.RankedStub) rankedStubInstance {
+	tb.Helper()
+	return rankedStubInstance{
+		Stub: s.OnAdd.MethodStub,
+		Call: func() {
+			_ = rankedStubAdd(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[indexedtest.RankedAddCall] {
-			return instance(indexedtest.NewRankedStub(tb, indexedtest.RankedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[indexedtest.RankedAddCall] {
-			return instance(indexedtest.NewRankedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[indexedtest.RankedAddCall] {
-			return instance(indexedtest.NewRankedStub(tb, indexedtest.RankedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[indexedtest.RankedAddCall] {
-			return instance(indexedtest.NewRankedStub(tb, indexedtest.RankedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[indexedtest.RankedAddCall] {
-			return instance(indexedtest.NewRankedStub(tb, indexedtest.RankedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestRankedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestRankedStubOptions(t *testing.T) {
+// TestRankedStub checks the methods, the constructors and the options of
+// the double RankedStub.
+func TestRankedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, rankedStubDouble())
+	t.Run("Add", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Add", rankedStubAddSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			_ = rankedStubAdd(t, s)
+			got := s.OnAdd.AssertCalledOnce(t, "Add records the call")
+			a0, a1 := rankedStubAddArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.V, a1, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			var seen []indexedtest.RankedAddCall
+			s.OnAdd.OnRecord(func(c indexedtest.RankedAddCall) { seen = append(seen, c) })
+			_ = rankedStubAdd(t, s)
+			_ = rankedStubAdd(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Add")
+		})
+	})
+
+	t.Run("Len", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Len", rankedStubLenSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			_, _ = rankedStubLen(t, s)
+			got := s.OnLen.AssertCalledOnce(t, "Len records the call")
+			a0 := rankedStubLenArgs(t)
+			assert.Equal(t, got.Ctx, a0, "the call records Ctx", assert.ByIdentity())
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			var seen []indexedtest.RankedLenCall
+			s.OnLen.OnRecord(func(c indexedtest.RankedLenCall) { seen = append(seen, c) })
+			_, _ = rankedStubLen(t, s)
+			_, _ = rankedStubLen(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Len")
+		})
+	})
+
+	t.Run("At", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "At", rankedStubAtSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			_, _ = rankedStubAt(t, s)
+			got := s.OnAt.AssertCalledOnce(t, "At records the call")
+			a0, a1 := rankedStubAtArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.I, a1, "the call records I")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			var seen []indexedtest.RankedAtCall
+			s.OnAt.OnRecord(func(c indexedtest.RankedAtCall) { seen = append(seen, c) })
+			_, _ = rankedStubAt(t, s)
+			_, _ = rankedStubAt(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of At")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) rankedStubInstance {
+			return rankedStubInstanceOf(tb, indexedtest.NewRankedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Add", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			_ = rankedStubAdd(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAdd.CallCount(), 0, "ResetCalls clears the calls of Add")
+		})
+
+		t.Run("keeps the results of Returns of Add", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			want0 := rankedStubAddPins()
+			s.OnAdd.Returns(want0)
+			s.ResetCalls()
+			got0 := rankedStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Add")
+		})
+
+		t.Run("clears the recorded calls of Len", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			_, _ = rankedStubLen(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnLen.CallCount(), 0, "ResetCalls clears the calls of Len")
+		})
+
+		t.Run("keeps the results of Returns of Len", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			want0, want1 := rankedStubLenPins()
+			s.OnLen.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := rankedStubLen(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Len")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Len")
+		})
+
+		t.Run("clears the recorded calls of At", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			_, _ = rankedStubAt(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAt.CallCount(), 0, "ResetCalls clears the calls of At")
+		})
+
+		t.Run("keeps the results of Returns of At", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			want0, want1 := rankedStubAtPins()
+			s.OnAt.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := rankedStubAt(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of At")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of At")
+		})
+	})
+
+	t.Run("NewRankedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) rankedStubInstance {
+			return rankedStubInstanceOf(tb, indexedtest.NewRankedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewRankedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := indexedtest.NewRankedStubFailing(t, want)
+			r0 := rankedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of NewRankedStubFailing")
+		})
+
+		t.Run("fails Len with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Len-failing")
+			s := indexedtest.NewRankedStubFailing(t, want)
+			_, r1 := rankedStubLen(t, s)
+			assert.ErrorIs(t, r1, want, "Len fails with the error of NewRankedStubFailing")
+		})
+
+		t.Run("fails At with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-failing")
+			s := indexedtest.NewRankedStubFailing(t, want)
+			_, r1 := rankedStubAt(t, s)
+			assert.ErrorIs(t, r1, want, "At fails with the error of NewRankedStubFailing")
+		})
+	})
+
+	t.Run("RankedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) rankedStubInstance {
+			return rankedStubInstanceOf(tb, indexedtest.NewRankedStub(tb, indexedtest.RankedStubStrict()))
+		})
+	})
+
+	t.Run("RankedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Add to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := indexedtest.NewRankedStub(t)
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubDelegateTo(inner))
+			_ = rankedStubAdd(t, s)
+			inner.OnAdd.AssertCalledOnce(t, "Add calls the implementation")
+		})
+
+		t.Run("fails Add with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-delegate")
+			inner := indexedtest.NewRankedStub(t)
+			inner.OnAdd.Faults(want, 1)
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubDelegateTo(inner))
+			r0 := rankedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of the implementation")
+		})
+
+		t.Run("passes Len to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := indexedtest.NewRankedStub(t)
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubDelegateTo(inner))
+			_, _ = rankedStubLen(t, s)
+			inner.OnLen.AssertCalledOnce(t, "Len calls the implementation")
+		})
+
+		t.Run("fails Len with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Len-delegate")
+			inner := indexedtest.NewRankedStub(t)
+			inner.OnLen.Faults(want, 1)
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubDelegateTo(inner))
+			_, r1 := rankedStubLen(t, s)
+			assert.ErrorIs(t, r1, want, "Len fails with the error of the implementation")
+		})
+
+		t.Run("passes At to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := indexedtest.NewRankedStub(t)
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubDelegateTo(inner))
+			_, _ = rankedStubAt(t, s)
+			inner.OnAt.AssertCalledOnce(t, "At calls the implementation")
+		})
+
+		t.Run("fails At with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-delegate")
+			inner := indexedtest.NewRankedStub(t)
+			inner.OnAt.Faults(want, 1)
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubDelegateTo(inner))
+			_, r1 := rankedStubAt(t, s)
+			assert.ErrorIs(t, r1, want, "At fails with the error of the implementation")
+		})
+	})
+
+	t.Run("RankedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) rankedStubInstance {
+			return rankedStubInstanceOf(tb, indexedtest.NewRankedStub(tb, indexedtest.RankedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("RankedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) rankedStubInstance {
+			return rankedStubInstanceOf(tb, indexedtest.NewRankedStub(tb, indexedtest.RankedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("RankedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) rankedStubInstance {
+			return rankedStubInstanceOf(tb, indexedtest.NewRankedStub(tb, indexedtest.RankedStubBenchMode()))
+		})
+	})
+
+	t.Run("RankedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) rankedStubInstance {
+			return rankedStubInstanceOf(
+				tb,
+				indexedtest.NewRankedStub(
+					tb,
+					indexedtest.RankedStubWithClock(clk),
+					indexedtest.RankedStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("RankedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Add with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Add-failing")
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubFailing(want))
+			r0 := rankedStubAdd(t, s)
+			assert.ErrorIs(t, r0, want, "Add fails with the error of RankedStubFailing")
+		})
+
+		t.Run("fails Len with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Len-failing")
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubFailing(want))
+			_, r1 := rankedStubLen(t, s)
+			assert.ErrorIs(t, r1, want, "Len fails with the error of RankedStubFailing")
+		})
+
+		t.Run("fails At with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("At-failing")
+			s := indexedtest.NewRankedStub(t, indexedtest.RankedStubFailing(want))
+			_, r1 := rankedStubAt(t, s)
+			assert.ErrorIs(t, r1, want, "At fails with the error of RankedStubFailing")
+		})
+	})
+
+	t.Run("WithRankedAdd", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Add", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := indexedtest.NewRankedStub(t, indexedtest.WithRankedAdd(func(_ context.Context, _ indexed.Value) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = rankedStubAdd(t, s)
+			assert.True(t, called, "WithRankedAdd sets the function of Add")
+		})
+	})
+
+	t.Run("WithRankedLen", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Len", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := indexedtest.NewRankedStub(t, indexedtest.WithRankedLen(func(_ context.Context) (int, error) {
+				called = true
+				var z0 int
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = rankedStubLen(t, s)
+			assert.True(t, called, "WithRankedLen sets the function of Len")
+		})
+	})
+
+	t.Run("WithRankedAt", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of At", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := indexedtest.NewRankedStub(
+				t,
+				indexedtest.WithRankedAt(func(_ context.Context, _ int) (indexed.Value, error) {
+					called = true
+					var z0 indexed.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = rankedStubAt(t, s)
+			assert.True(t, called, "WithRankedAt sets the function of At")
+		})
+	})
 }
 
-// TestRankedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestRankedStubDelegateTo(t *testing.T) {
+// TestRankedAddStub checks the methods of RankedAddStub, which configures
+// Add.
+func TestRankedAddStub(t *testing.T) {
 	t.Parallel()
 
-	inner := indexedtest.NewRankedStub(t)
-	s := indexedtest.NewRankedStub(t, indexedtest.RankedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Add to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 indexed.Value
-		a1 = indexed.Value{Key: "Key-a"}
-		_ = s.Add(a0, a1)
-		inner.OnAdd.AssertCalledOnce(t, "Add must reach the wrapped implementation")
+		t.Run("sets the results of each call of Add", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			want0 := rankedStubAddPins()
+			s.OnAdd.Returns(want0)
+			got0 := rankedStubAdd(t, s)
+			assert.ErrorIs(t, got0, want0, "Add returns the error that Returns sets")
+		})
+
+		t.Run("configures Add for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := indexedtest.NewRankedStub(r)
+			s.OnAdd.Strict()
+			var want0 error
+			s.OnAdd.Returns(want0)
+			_ = rankedStubAdd(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Add")
+		})
 	})
 
-	t.Run("surfaces what Add answered", func(t *testing.T) {
-		want := errors.New("Add-delegate")
-		inner.OnAdd.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 indexed.Value
-		a1 = indexed.Value{Key: "Key-a"}
-		r0 := s.Add(a0, a1)
-		assert.ErrorIs(t, r0, want, "Add must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Len to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		_, _ = s.Len(a0)
-		inner.OnLen.AssertCalledOnce(t, "Len must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Len answered", func(t *testing.T) {
-		want := errors.New("Len-delegate")
-		inner.OnLen.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		_, r1 := s.Len(a0)
-		assert.ErrorIs(t, r1, want, "Len must surface the wrapped answer")
-	})
-
-	t.Run("forwards At to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, _ = s.At(a0, a1)
-		inner.OnAt.AssertCalledOnce(t, "At must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what At answered", func(t *testing.T) {
-		want := errors.New("At-delegate")
-		inner.OnAt.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 int
-		a1 = 42
-		_, r1 := s.At(a0, a1)
-		assert.ErrorIs(t, r1, want, "At must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Add to the function", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			var got0 context.Context
+			var got1 indexed.Value
+			s.OnAdd.Func(func(p0 context.Context, p1 indexed.Value) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = rankedStubAdd(t, s)
+			a0, a1 := rankedStubAddArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:2feb840e04207bb8c3fa5aa09f395d00ac4519e8c1e9723f07480819584f8658
+// TestRankedLenStub checks the methods of RankedLenStub, which configures
+// Len.
+func TestRankedLenStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Len", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			want0, want1 := rankedStubLenPins()
+			s.OnLen.Returns(want0, want1)
+			got0, got1 := rankedStubLen(t, s)
+			expect.Equal(t, got0, want0, "Len returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Len returns the error that Returns sets")
+		})
+
+		t.Run("configures Len for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := indexedtest.NewRankedStub(r)
+			s.OnLen.Strict()
+			var want0 int
+			var want1 error
+			s.OnLen.Returns(want0, want1)
+			_, _ = rankedStubLen(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Len")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Len to the function", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			var got0 context.Context
+			s.OnLen.Func(func(p0 context.Context) (int, error) {
+				got0 = p0
+				var z0 int
+				var z1 error
+				return z0, z1
+			})
+			_, _ = rankedStubLen(t, s)
+			a0 := rankedStubLenArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Ctx", assert.ByIdentity())
+		})
+	})
+}
+
+// TestRankedAtStub checks the methods of RankedAtStub, which configures
+// At.
+func TestRankedAtStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of At", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			want0, want1 := rankedStubAtPins()
+			s.OnAt.Returns(want0, want1)
+			got0, got1 := rankedStubAt(t, s)
+			expect.Equal(t, got0, want0, "At returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "At returns the error that Returns sets")
+		})
+
+		t.Run("configures At for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := indexedtest.NewRankedStub(r)
+			s.OnAt.Strict()
+			var want0 indexed.Value
+			var want1 error
+			s.OnAt.Returns(want0, want1)
+			_, _ = rankedStubAt(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of At")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of At to the function", func(t *testing.T) {
+			t.Parallel()
+			s := indexedtest.NewRankedStub(t)
+			var got0 context.Context
+			var got1 int
+			s.OnAt.Func(func(p0 context.Context, p1 int) (indexed.Value, error) {
+				got0, got1 = p0, p1
+				var z0 indexed.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = rankedStubAt(t, s)
+			a0, a1 := rankedStubAtArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives I")
+		})
+	})
+}
+
+// dokimi:provenance sha256:533a50932bc1e65a126c141a2671c20460a02c8aa5a1049b81b47e11c95bd023

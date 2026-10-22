@@ -7,7 +7,7 @@ package mutatortest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator"
 )
 
@@ -40,33 +40,22 @@ func MutatorSuite() conform.Suite[mutator.Mutator] {
 	return conform.Suite[mutator.Mutator]{Declaration: "Mutator"}
 }
 
-// RunMutator applies the checks of Mutator, and the checks that opts add,
-// to a fresh subject of newSubject for each check.
-func RunMutator[T mutator.Mutator](t *testing.T, newSubject func() T, opts ...MutatorOption) {
+// RunMutatorSuite applies the checks of Mutator, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunMutatorSuite[T mutator.Mutator](t *testing.T, newSubject func() T, opts ...MutatorOption) {
 	t.Helper()
-	conform.Verify(t, MutatorSuite(), func(*MutatorHandle) mutator.Mutator { return newSubject() }, opts...)
+	RunMutatorSuiteFromHandle(t, func(*MutatorHandle) T { return newSubject() }, opts...)
 }
 
-// RunMutatorOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunMutatorOn[T mutator.Mutator](t *testing.T, newSubject func(h *MutatorHandle) T, opts ...MutatorOption) {
+// RunMutatorSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunMutatorSuiteFromHandle[T mutator.Mutator](
+	t *testing.T,
+	newSubject func(h *MutatorHandle) T,
+	opts ...MutatorOption,
+) {
 	t.Helper()
-	conform.Verify(t, MutatorSuite(), func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+	conform.Run(t, MutatorSuite(), func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
 }
 
-// ControlMutator applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlMutator[T mutator.Mutator](t *testing.T, newControl func() T, opts ...MutatorOption) {
-	t.Helper()
-	conform.Control(t, MutatorSuite(), func(*MutatorHandle) mutator.Mutator { return newControl() }, opts...)
-}
-
-// ControlMutatorOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlMutatorOn[T mutator.Mutator](t *testing.T, newControl func(h *MutatorHandle) T, opts ...MutatorOption) {
-	t.Helper()
-	conform.Control(t, MutatorSuite(), func(h *MutatorHandle) mutator.Mutator { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:9d69e32d4522ea9336f0486af8006d953e66dfedfa1e0840fb26211165ce9677
+// dokimi:provenance sha256:865df80786033d082121accac8d1a7872293efa323a6dad57f70884c1ed0cd49

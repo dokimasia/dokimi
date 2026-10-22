@@ -7,7 +7,7 @@ package paginatedreadertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	paginatedreader "go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader"
 )
 
@@ -48,33 +48,30 @@ func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 	return conform.Suite[paginatedreader.PaginatedReader]{Declaration: "PaginatedReader"}
 }
 
-// RunPaginatedReader applies the checks of PaginatedReader, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunPaginatedReader[T paginatedreader.PaginatedReader](t *testing.T, newSubject func() T, opts ...PaginatedReaderOption) {
+// RunPaginatedReaderSuite applies the checks of PaginatedReader, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunPaginatedReaderSuite[T paginatedreader.PaginatedReader](
+	t *testing.T,
+	newSubject func() T,
+	opts ...PaginatedReaderOption,
+) {
 	t.Helper()
-	conform.Verify(t, PaginatedReaderSuite(), func(*PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject() }, opts...)
+	RunPaginatedReaderSuiteFromHandle(t, func(*PaginatedReaderHandle) T { return newSubject() }, opts...)
 }
 
-// RunPaginatedReaderOn applies the same checks to a subject that
-// newSubject builds on the handle of each check.
-func RunPaginatedReaderOn[T paginatedreader.PaginatedReader](t *testing.T, newSubject func(h *PaginatedReaderHandle) T, opts ...PaginatedReaderOption) {
+// RunPaginatedReaderSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunPaginatedReaderSuiteFromHandle[T paginatedreader.PaginatedReader](
+	t *testing.T,
+	newSubject func(h *PaginatedReaderHandle) T,
+	opts ...PaginatedReaderOption,
+) {
 	t.Helper()
-	conform.Verify(t, PaginatedReaderSuite(), func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		PaginatedReaderSuite(),
+		func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) },
+		opts...)
 }
 
-// ControlPaginatedReader applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlPaginatedReader[T paginatedreader.PaginatedReader](t *testing.T, newControl func() T, opts ...PaginatedReaderOption) {
-	t.Helper()
-	conform.Control(t, PaginatedReaderSuite(), func(*PaginatedReaderHandle) paginatedreader.PaginatedReader { return newControl() }, opts...)
-}
-
-// ControlPaginatedReaderOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlPaginatedReaderOn[T paginatedreader.PaginatedReader](t *testing.T, newControl func(h *PaginatedReaderHandle) T, opts ...PaginatedReaderOption) {
-	t.Helper()
-	conform.Control(t, PaginatedReaderSuite(), func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:db1074f16c559973b6c4592df462006d81d160fcb59ff44b26692094e33a5461
+// dokimi:provenance sha256:cddf51b7869facbd59ca9adde80fbe1d2bebe4a505cc9597e49c39bed155354d

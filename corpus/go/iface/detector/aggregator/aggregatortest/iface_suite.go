@@ -7,7 +7,7 @@ package aggregatortest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator"
 )
 
@@ -40,33 +40,22 @@ func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
 	return conform.Suite[aggregator.Aggregator]{Declaration: "Aggregator"}
 }
 
-// RunAggregator applies the checks of Aggregator, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunAggregator[T aggregator.Aggregator](t *testing.T, newSubject func() T, opts ...AggregatorOption) {
+// RunAggregatorSuite applies the checks of Aggregator, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunAggregatorSuite[T aggregator.Aggregator](t *testing.T, newSubject func() T, opts ...AggregatorOption) {
 	t.Helper()
-	conform.Verify(t, AggregatorSuite(), func(*AggregatorHandle) aggregator.Aggregator { return newSubject() }, opts...)
+	RunAggregatorSuiteFromHandle(t, func(*AggregatorHandle) T { return newSubject() }, opts...)
 }
 
-// RunAggregatorOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunAggregatorOn[T aggregator.Aggregator](t *testing.T, newSubject func(h *AggregatorHandle) T, opts ...AggregatorOption) {
+// RunAggregatorSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunAggregatorSuiteFromHandle[T aggregator.Aggregator](
+	t *testing.T,
+	newSubject func(h *AggregatorHandle) T,
+	opts ...AggregatorOption,
+) {
 	t.Helper()
-	conform.Verify(t, AggregatorSuite(), func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) }, opts...)
+	conform.Run(t, AggregatorSuite(), func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) }, opts...)
 }
 
-// ControlAggregator applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlAggregator[T aggregator.Aggregator](t *testing.T, newControl func() T, opts ...AggregatorOption) {
-	t.Helper()
-	conform.Control(t, AggregatorSuite(), func(*AggregatorHandle) aggregator.Aggregator { return newControl() }, opts...)
-}
-
-// ControlAggregatorOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlAggregatorOn[T aggregator.Aggregator](t *testing.T, newControl func(h *AggregatorHandle) T, opts ...AggregatorOption) {
-	t.Helper()
-	conform.Control(t, AggregatorSuite(), func(h *AggregatorHandle) aggregator.Aggregator { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:51f4b1f7e82dd6fc633822d16d8d80b2ae7ae3fae7575722c05457f46b5915fd
+// dokimi:provenance sha256:763d3d65173800883afba7889217d9c487ad2df34120f783a7a155786c291b46

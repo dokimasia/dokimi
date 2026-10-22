@@ -7,7 +7,7 @@ package ttltest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl"
 )
 
@@ -41,38 +41,36 @@ type mixedRead struct {
 	conform.Callable[ttl.Mixed]
 }
 
+// ExpiresAfterTheLifetime returns the identity of the check that Read
+// reports ErrExpired once the lifetime of the value has passed.
+func (c mixedRead) ExpiresAfterTheLifetime() conform.ID[ttl.Mixed] {
+	return c.Check("expires-after-the-lifetime")
+}
+
 // MixedSuite returns the checks of Mixed.
 func MixedSuite() conform.Suite[ttl.Mixed] {
-	return conform.Suite[ttl.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[ttl.Mixed]{Declaration: "Mixed", Checks: []conform.Check[ttl.Mixed]{
+		{
+			ID:        MixedChecks.Read.ExpiresAfterTheLifetime(),
+			Statement: "Read reports ErrExpired once the lifetime of the value has passed",
+			Apply:     ExpiresAfterTheLifetime,
+			Defect:    keepsForever,
+		},
+	}}
 }
 
-// RunMixed applies the checks of Mixed, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunMixed[T ttl.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
+// RunMixedSuite applies the checks of Mixed, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunMixedSuite[T ttl.Mixed](t *testing.T, newSubject func() T, opts ...MixedOption) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(*MixedHandle) ttl.Mixed { return newSubject() }, opts...)
+	RunMixedSuiteFromHandle(t, func(*MixedHandle) T { return newSubject() }, opts...)
 }
 
-// RunMixedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunMixedOn[T ttl.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+// RunMixedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunMixedSuiteFromHandle[T ttl.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Verify(t, MixedSuite(), func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
 }
 
-// ControlMixed applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlMixed[T ttl.Mixed](t *testing.T, newControl func() T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(*MixedHandle) ttl.Mixed { return newControl() }, opts...)
-}
-
-// ControlMixedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlMixedOn[T ttl.Mixed](t *testing.T, newControl func(h *MixedHandle) T, opts ...MixedOption) {
-	t.Helper()
-	conform.Control(t, MixedSuite(), func(h *MixedHandle) ttl.Mixed { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:3113a11867292d5d893728e0beb067565c825e11f7129ff8cd0730ffdbaea620
+// dokimi:provenance sha256:7f4a877887f2a93eb58b4d6bf084a7dca81e49fac3f406721b6da8f230555c5c

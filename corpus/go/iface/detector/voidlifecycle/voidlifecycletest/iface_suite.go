@@ -7,7 +7,7 @@ package voidlifecycletest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle"
 )
 
@@ -40,33 +40,30 @@ func VoidLifecycleSuite() conform.Suite[voidlifecycle.VoidLifecycle] {
 	return conform.Suite[voidlifecycle.VoidLifecycle]{Declaration: "VoidLifecycle"}
 }
 
-// RunVoidLifecycle applies the checks of VoidLifecycle, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunVoidLifecycle[T voidlifecycle.VoidLifecycle](t *testing.T, newSubject func() T, opts ...VoidLifecycleOption) {
+// RunVoidLifecycleSuite applies the checks of VoidLifecycle, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
+	t *testing.T,
+	newSubject func() T,
+	opts ...VoidLifecycleOption,
+) {
 	t.Helper()
-	conform.Verify(t, VoidLifecycleSuite(), func(*VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject() }, opts...)
+	RunVoidLifecycleSuiteFromHandle(t, func(*VoidLifecycleHandle) T { return newSubject() }, opts...)
 }
 
-// RunVoidLifecycleOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunVoidLifecycleOn[T voidlifecycle.VoidLifecycle](t *testing.T, newSubject func(h *VoidLifecycleHandle) T, opts ...VoidLifecycleOption) {
+// RunVoidLifecycleSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunVoidLifecycleSuiteFromHandle[T voidlifecycle.VoidLifecycle](
+	t *testing.T,
+	newSubject func(h *VoidLifecycleHandle) T,
+	opts ...VoidLifecycleOption,
+) {
 	t.Helper()
-	conform.Verify(t, VoidLifecycleSuite(), func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		VoidLifecycleSuite(),
+		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
+		opts...)
 }
 
-// ControlVoidLifecycle applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlVoidLifecycle[T voidlifecycle.VoidLifecycle](t *testing.T, newControl func() T, opts ...VoidLifecycleOption) {
-	t.Helper()
-	conform.Control(t, VoidLifecycleSuite(), func(*VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newControl() }, opts...)
-}
-
-// ControlVoidLifecycleOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlVoidLifecycleOn[T voidlifecycle.VoidLifecycle](t *testing.T, newControl func(h *VoidLifecycleHandle) T, opts ...VoidLifecycleOption) {
-	t.Helper()
-	conform.Control(t, VoidLifecycleSuite(), func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:09841f559c12f63d66082fe09966b8b048755f02876f9d443b85caed51b28ef9
+// dokimi:provenance sha256:c861c9802aa5a20f6b2ced65b5f4e3f34b6f33c859b7030f19267448a7e7a243

@@ -10,37 +10,25 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose"
+	"go.dokimi.dev/stub"
 )
 
-// CloserCloseCall records one invocation of Closer.Close.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// CloserCloseCall records one call of Closer.Close.
 type CloserCloseCall struct {
 	Ctx context.Context
 	Err error
 }
 
-// CloserStatsCall records one invocation of Closer.Stats.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// CloserStatsCall records one call of Closer.Stats.
 type CloserStatsCall struct {
 	Ctx    context.Context
 	Result int
 	Err    error
 }
 
-// --- Per-method configuration ---
-
-// CloserCloseStub controls how the double answers Close and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// CloserCloseStub configures Close and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type CloserCloseStub struct {
 	*stub.MethodStub[CloserCloseCall]
 
@@ -48,31 +36,27 @@ type CloserCloseStub struct {
 	fallback *CloserCloseReturn
 }
 
-// CloserCloseReturn holds the fixed answer configured through Returns.
+// CloserCloseReturn contains the fixed results of Close.
 type CloserCloseReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Close. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Close. A function and an
+// injected fault take precedence over them.
 func (s *CloserCloseStub) Returns(err error) *CloserCloseStub {
 	s.fallback = &CloserCloseReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Close, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Close from its
+// arguments. An injected fault takes precedence over it.
 func (s *CloserCloseStub) Func(fn func(context.Context) error) *CloserCloseStub {
 	s.fn = fn
 	return s
 }
 
-// CloserStatsStub controls how the double answers Stats and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// CloserStatsStub configures Stats and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type CloserStatsStub struct {
 	*stub.MethodStub[CloserStatsCall]
 
@@ -80,42 +64,41 @@ type CloserStatsStub struct {
 	fallback *CloserStatsReturn
 }
 
-// CloserStatsReturn holds the fixed answer configured through Returns.
+// CloserStatsReturn contains the fixed results of Stats.
 type CloserStatsReturn struct {
 	Result int
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Stats. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Stats. A function and an
+// injected fault take precedence over them.
 func (s *CloserStatsStub) Returns(result int, err error) *CloserStatsStub {
 	s.fallback = &CloserStatsReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Stats, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Stats from its
+// arguments. An injected fault takes precedence over it.
 func (s *CloserStatsStub) Func(fn func(context.Context) (int, error)) *CloserStatsStub {
 	s.fn = fn
 	return s
 }
 
-// --- CloserStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// CloserStubOption configures a [CloserStub] at construction time.
+// CloserStubOption configures a [CloserStub] at its construction.
 type CloserStubOption func(*CloserStub)
 
-// CloserStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// CloserStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func CloserStubStrict() CloserStubOption {
 	return func(s *CloserStub) { s.strict = true }
 }
 
-// CloserStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// CloserStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func CloserStubDelegateTo(impl idempotentclose.Closer) CloserStubOption {
 	return func(s *CloserStub) {
 		s.OnClose.Func(impl.Close)
@@ -123,35 +106,35 @@ func CloserStubDelegateTo(impl idempotentclose.Closer) CloserStubOption {
 	}
 }
 
-// CloserStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// CloserStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func CloserStubWithClock(clk assert.Clock) CloserStubOption {
 	return func(s *CloserStub) { s.group.SetClock(clk) }
 }
 
-// CloserStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// CloserStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func CloserStubWithRandSource(src rand.Source) CloserStubOption {
 	return func(s *CloserStub) { s.group.SetRandSource(src) }
 }
 
-// CloserStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// CloserStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func CloserStubBenchMode() CloserStubOption {
 	return func(s *CloserStub) { s.group.BenchMode() }
 }
 
-// CloserStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with CloserStubWithClock, or d elapses in wall time.
+// CloserStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without CloserStubWithClock, d passes in real time.
 func CloserStubWithLatency(d time.Duration) CloserStubOption {
 	return func(s *CloserStub) { s.group.SetLatency(d) }
 }
 
-// CloserStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// CloserStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func CloserStubFailing(err error) CloserStubOption {
 	return func(s *CloserStub) {
 		s.OnClose.Faults(err, 1)
@@ -159,41 +142,34 @@ func CloserStubFailing(err error) CloserStubOption {
 	}
 }
 
-// WithCloserClose sets Close's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithCloserClose returns the option that sets the function of Close.
 func WithCloserClose(fn func(context.Context) error) CloserStubOption {
 	return func(s *CloserStub) { s.OnClose.Func(fn) }
 }
 
-// WithCloserStats sets Stats's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithCloserStats returns the option that sets the function of Stats.
 func WithCloserStats(fn func(context.Context) (int, error)) CloserStubOption {
 	return func(s *CloserStub) { s.OnStats.Func(fn) }
 }
 
-// CloserStub is a recording test double for Closer.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// CloserStub is a recording test double of Closer. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type CloserStub struct {
 	OnClose *CloserCloseStub
 	OnStats *CloserStatsStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that CloserStub satisfies Closer.
+// The compiler checks that CloserStub implements Closer.
 var _ idempotentclose.Closer = (*CloserStub)(nil)
 
-// NewCloserStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewCloserStub returns a double of Closer that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewCloserStub(tb assert.TB, opts ...CloserStubOption) *CloserStub {
 	s := &CloserStub{
 		OnClose: &CloserCloseStub{MethodStub: stub.NewMethodStub[CloserCloseCall](tb, "Closer.Close")},
@@ -213,11 +189,8 @@ func NewCloserStub(tb assert.TB, opts ...CloserStubOption) *CloserStub {
 	return s
 }
 
-// NewCloserStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewCloserStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewCloserStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...CloserStubOption) *CloserStub {
 	return NewCloserStub(tb, append([]CloserStubOption{
 		CloserStubWithClock(clk),
@@ -225,26 +198,20 @@ func NewCloserStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts 
 	}, opts...)...)
 }
 
-// NewCloserStubFailing returns a double whose every fallible method
-// answers err — [CloserStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewCloserStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewCloserStubFailing(tb assert.TB, err error, opts ...CloserStubOption) *CloserStub {
 	return NewCloserStub(tb, append([]CloserStubOption{CloserStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *CloserStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *CloserCloseStub) invoke(ctx context.Context) func() CloserCloseReturn {
 	if s.fn == nil {
 		return nil
@@ -255,12 +222,8 @@ func (s *CloserCloseStub) invoke(ctx context.Context) func() CloserCloseReturn {
 	}
 }
 
-// Close records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Close records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *CloserStub) Close(ctx context.Context) error {
 	call := CloserCloseCall{Ctx: ctx}
 	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
@@ -274,9 +237,8 @@ func (s *CloserStub) Close(ctx context.Context) error {
 	return r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *CloserStatsStub) invoke(ctx context.Context) func() CloserStatsReturn {
 	if s.fn == nil {
 		return nil
@@ -287,12 +249,8 @@ func (s *CloserStatsStub) invoke(ctx context.Context) func() CloserStatsReturn {
 	}
 }
 
-// Stats records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Stats records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *CloserStub) Stats(ctx context.Context) (int, error) {
 	call := CloserStatsCall{Ctx: ctx}
 	r := stub.Answer(s.OnStats.MethodStub, &call, stub.Arms[CloserStatsCall, CloserStatsReturn]{
@@ -307,4 +265,4 @@ func (s *CloserStub) Stats(ctx context.Context) (int, error) {
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:d81c96de0ca2193e0bd18fe65e54b02b0de6bc7635d14c6825cfe5a9fdc9d981
+// dokimi:provenance sha256:e9f2b4336eed964fef71a1d836dc8e578a6bde5c42afe7f750dcf07bf40910a0

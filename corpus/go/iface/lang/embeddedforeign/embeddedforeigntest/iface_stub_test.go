@@ -12,31 +12,63 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign/embeddedforeigntest"
+	"go.dokimi.dev/stub"
 )
 
-// streamStubReadSubject binds Read into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func streamStubReadSubject(tb assert.TB) stub.Subject[embeddedforeigntest.StreamReadCall, embeddedforeigntest.StreamReadReturn] {
+// streamStubReadArgs returns the samples of the arguments of Read.
+func streamStubReadArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Read-a"
+	return a0, a1
+}
+
+// streamStubRead calls Read of s with the samples of its arguments.
+func streamStubRead(tb assert.TB, s *embeddedforeigntest.StreamStub) (string, error) {
+	tb.Helper()
+	a0, a1 := streamStubReadArgs(tb)
+	return s.Read(a0, a1)
+}
+
+// streamStubReadPins returns the samples of the results of Read, with a
+// new error as its error result.
+func streamStubReadPins() (string, error) {
+	var want0 string
+	want1 := errors.New("Read-returns")
+	want0 = "Read-a"
+	return want0, want1
+}
+
+// streamStubClose calls Close of s with the samples of its arguments.
+func streamStubClose(tb assert.TB, s *embeddedforeigntest.StreamStub) error {
+	tb.Helper()
+	return s.Close()
+}
+
+// streamStubClosePins returns the samples of the results of Close, with a
+// new error as its error result.
+func streamStubClosePins() error {
+	want0 := errors.New("Close-returns")
+	return want0
+}
+
+// streamStubReadSubject returns the subject of [stub.Behaviour] for Read.
+// The subject calls a new double that reports to tb.
+func streamStubReadSubject(
+	tb assert.TB,
+) stub.Subject[embeddedforeigntest.StreamReadCall, embeddedforeigntest.StreamReadReturn] {
 	tb.Helper()
 	s := embeddedforeigntest.NewStreamStub(tb)
 	return stub.Subject[embeddedforeigntest.StreamReadCall, embeddedforeigntest.StreamReadReturn]{
 		Stub: s.OnRead.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Read-a"
-			_, _ = s.Read(a0, a1)
+			_, _ = streamStubRead(tb, s)
 		},
 		Result: func() embeddedforeigntest.StreamReadReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Read-a"
-			got0, got1 := s.Read(a0, a1)
+			got0, got1 := streamStubRead(tb, s)
 			return embeddedforeigntest.StreamReadReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -48,125 +80,26 @@ func streamStubReadSubject(tb assert.TB) stub.Subject[embeddedforeigntest.Stream
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Read-a"
-			_, r1 := s.Read(a0, a1)
+			_, r1 := streamStubRead(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestStreamStubRead pins how Read answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStreamStubRead(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Read", streamStubReadSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := embeddedforeigntest.NewStreamStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Read-a"
-		s.OnRead.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		got0, _ := s.Read(a0, a1)
-		assert.Equal(t, got0, want0, "Read must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := embeddedforeigntest.NewStreamStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		got := s.OnRead.AssertCalledOnce(t, "Read must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := embeddedforeigntest.NewStreamStub(t)
-		var seen []embeddedforeigntest.StreamReadCall
-		s.OnRead.OnRecord(func(c embeddedforeigntest.StreamReadCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		_, _ = s.Read(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Read call")
-	})
-
-	t.Run("wires WithStreamRead at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.WithStreamRead(func(_ context.Context, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		assert.True(t, called, "WithStreamRead must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Read-failing")
-		s := embeddedforeigntest.NewStreamStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, r1 := s.Read(a0, a1)
-		assert.ErrorIs(t, r1, want, "Read must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := embeddedforeigntest.NewStreamStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Read-a"
-		s.OnRead.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Read(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// streamStubCloseSubject binds Close into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func streamStubCloseSubject(tb assert.TB) stub.Subject[embeddedforeigntest.StreamCloseCall, embeddedforeigntest.StreamCloseReturn] {
+// streamStubCloseSubject returns the subject of [stub.Behaviour] for
+// Close. The subject calls a new double that reports to tb.
+func streamStubCloseSubject(
+	tb assert.TB,
+) stub.Subject[embeddedforeigntest.StreamCloseCall, embeddedforeigntest.StreamCloseReturn] {
 	tb.Helper()
 	s := embeddedforeigntest.NewStreamStub(tb)
 	return stub.Subject[embeddedforeigntest.StreamCloseCall, embeddedforeigntest.StreamCloseReturn]{
 		Stub: s.OnClose.MethodStub,
 		Call: func() {
-			_ = s.Close()
+			_ = streamStubClose(tb, s)
 		},
 		Result: func() embeddedforeigntest.StreamCloseReturn {
-			got0 := s.Close()
+			got0 := streamStubClose(tb, s)
 			return embeddedforeigntest.StreamCloseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -177,159 +110,377 @@ func streamStubCloseSubject(tb assert.TB) stub.Subject[embeddedforeigntest.Strea
 			})
 		},
 		Fails: func() error {
-			r0 := s.Close()
+			r0 := streamStubClose(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestStreamStubClose pins how Close answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestStreamStubClose(t *testing.T) {
-	t.Parallel()
+// streamStubInstance is the instance of a embeddedforeigntest.StreamStub
+// that the checks of the constructors and the options drive.
+type streamStubInstance = stub.Instance[embeddedforeigntest.StreamReadCall]
 
-	stub.Behaviour(t, "Close", streamStubCloseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := embeddedforeigntest.NewStreamStub(t)
-		_ = s.Close()
-		s.OnClose.AssertCalledOnce(t, "Close must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := embeddedforeigntest.NewStreamStub(t)
-		var seen []embeddedforeigntest.StreamCloseCall
-		s.OnClose.OnRecord(func(c embeddedforeigntest.StreamCloseCall) { seen = append(seen, c) })
-		_ = s.Close()
-		_ = s.Close()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Close call")
-	})
-
-	t.Run("wires WithStreamClose at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.WithStreamClose(func() error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		_ = s.Close()
-		assert.True(t, called, "WithStreamClose must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Close-failing")
-		s := embeddedforeigntest.NewStreamStubFailing(t, want)
-		r0 := s.Close()
-		assert.ErrorIs(t, r0, want, "Close must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := embeddedforeigntest.NewStreamStub(t)
-		var want0 error
-		s.OnClose.Returns(want0)
-		_ = s.Close()
-		s.ResetCalls()
-		_ = s.Close()
-		s.OnClose.AssertCalledOnce(t, "Close must record the call that followed the reset")
-	})
-}
-
-// streamStubDouble describes how to build a StreamStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Read stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func streamStubDouble() stub.Double[embeddedforeigntest.StreamReadCall] {
-	instance := func(s *embeddedforeigntest.StreamStub) stub.Instance[embeddedforeigntest.StreamReadCall] {
-		return stub.Instance[embeddedforeigntest.StreamReadCall]{
-			Stub: s.OnRead.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Read-a"
-				_, _ = s.Read(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[embeddedforeigntest.StreamReadCall]{
-		New: func(tb assert.TB) stub.Instance[embeddedforeigntest.StreamReadCall] {
-			return instance(embeddedforeigntest.NewStreamStub(tb))
+// streamStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Read alone.
+func streamStubInstanceOf(tb assert.TB, s *embeddedforeigntest.StreamStub) streamStubInstance {
+	tb.Helper()
+	return streamStubInstance{
+		Stub: s.OnRead.MethodStub,
+		Call: func() {
+			_, _ = streamStubRead(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[embeddedforeigntest.StreamReadCall] {
-			return instance(embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[embeddedforeigntest.StreamReadCall] {
-			return instance(embeddedforeigntest.NewStreamStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[embeddedforeigntest.StreamReadCall] {
-			return instance(embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[embeddedforeigntest.StreamReadCall] {
-			return instance(embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[embeddedforeigntest.StreamReadCall] {
-			return instance(embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestStreamStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestStreamStubOptions(t *testing.T) {
+// TestStreamStub checks the methods, the constructors and the options of
+// the double StreamStub.
+func TestStreamStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, streamStubDouble())
+	t.Run("Read", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Read", streamStubReadSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			_, _ = streamStubRead(t, s)
+			got := s.OnRead.AssertCalledOnce(t, "Read records the call")
+			a0, a1 := streamStubReadArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			var seen []embeddedforeigntest.StreamReadCall
+			s.OnRead.OnRecord(func(c embeddedforeigntest.StreamReadCall) { seen = append(seen, c) })
+			_, _ = streamStubRead(t, s)
+			_, _ = streamStubRead(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Read")
+		})
+	})
+
+	t.Run("Close", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Close", streamStubCloseSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			var seen []embeddedforeigntest.StreamCloseCall
+			s.OnClose.OnRecord(func(c embeddedforeigntest.StreamCloseCall) { seen = append(seen, c) })
+			_ = streamStubClose(t, s)
+			_ = streamStubClose(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) streamStubInstance {
+			return streamStubInstanceOf(tb, embeddedforeigntest.NewStreamStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Read", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			_, _ = streamStubRead(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRead.CallCount(), 0, "ResetCalls clears the calls of Read")
+		})
+
+		t.Run("keeps the results of Returns of Read", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			want0, want1 := streamStubReadPins()
+			s.OnRead.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := streamStubRead(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Read")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Read")
+		})
+
+		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			_ = streamStubClose(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
+		})
+
+		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			want0 := streamStubClosePins()
+			s.OnClose.Returns(want0)
+			s.ResetCalls()
+			got0 := streamStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
+		})
+	})
+
+	t.Run("NewStreamStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) streamStubInstance {
+			return streamStubInstanceOf(tb, embeddedforeigntest.NewStreamStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewStreamStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Read with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Read-failing")
+			s := embeddedforeigntest.NewStreamStubFailing(t, want)
+			_, r1 := streamStubRead(t, s)
+			assert.ErrorIs(t, r1, want, "Read fails with the error of NewStreamStubFailing")
+		})
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := embeddedforeigntest.NewStreamStubFailing(t, want)
+			r0 := streamStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of NewStreamStubFailing")
+		})
+	})
+
+	t.Run("StreamStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) streamStubInstance {
+			return streamStubInstanceOf(
+				tb,
+				embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubStrict()),
+			)
+		})
+	})
+
+	t.Run("StreamStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Read to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := embeddedforeigntest.NewStreamStub(t)
+			s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.StreamStubDelegateTo(inner))
+			_, _ = streamStubRead(t, s)
+			inner.OnRead.AssertCalledOnce(t, "Read calls the implementation")
+		})
+
+		t.Run("fails Read with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Read-delegate")
+			inner := embeddedforeigntest.NewStreamStub(t)
+			inner.OnRead.Faults(want, 1)
+			s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.StreamStubDelegateTo(inner))
+			_, r1 := streamStubRead(t, s)
+			assert.ErrorIs(t, r1, want, "Read fails with the error of the implementation")
+		})
+
+		t.Run("passes Close to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := embeddedforeigntest.NewStreamStub(t)
+			s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.StreamStubDelegateTo(inner))
+			_ = streamStubClose(t, s)
+			inner.OnClose.AssertCalledOnce(t, "Close calls the implementation")
+		})
+
+		t.Run("fails Close with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-delegate")
+			inner := embeddedforeigntest.NewStreamStub(t)
+			inner.OnClose.Faults(want, 1)
+			s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.StreamStubDelegateTo(inner))
+			r0 := streamStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of the implementation")
+		})
+	})
+
+	t.Run("StreamStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) streamStubInstance {
+			return streamStubInstanceOf(
+				tb,
+				embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("StreamStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) streamStubInstance {
+			return streamStubInstanceOf(
+				tb,
+				embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("StreamStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) streamStubInstance {
+			return streamStubInstanceOf(
+				tb,
+				embeddedforeigntest.NewStreamStub(tb, embeddedforeigntest.StreamStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("StreamStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) streamStubInstance {
+			return streamStubInstanceOf(
+				tb,
+				embeddedforeigntest.NewStreamStub(
+					tb,
+					embeddedforeigntest.StreamStubWithClock(clk),
+					embeddedforeigntest.StreamStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("StreamStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Read with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Read-failing")
+			s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.StreamStubFailing(want))
+			_, r1 := streamStubRead(t, s)
+			assert.ErrorIs(t, r1, want, "Read fails with the error of StreamStubFailing")
+		})
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.StreamStubFailing(want))
+			r0 := streamStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of StreamStubFailing")
+		})
+	})
+
+	t.Run("WithStreamRead", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Read", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := embeddedforeigntest.NewStreamStub(
+				t,
+				embeddedforeigntest.WithStreamRead(func(_ context.Context, _ string) (string, error) {
+					called = true
+					var z0 string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = streamStubRead(t, s)
+			assert.True(t, called, "WithStreamRead sets the function of Read")
+		})
+	})
+
+	t.Run("WithStreamClose", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Close", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.WithStreamClose(func() error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = streamStubClose(t, s)
+			assert.True(t, called, "WithStreamClose sets the function of Close")
+		})
+	})
 }
 
-// TestStreamStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestStreamStubDelegateTo(t *testing.T) {
+// TestStreamReadStub checks the methods of StreamReadStub, which
+// configures Read.
+func TestStreamReadStub(t *testing.T) {
 	t.Parallel()
 
-	inner := embeddedforeigntest.NewStreamStub(t)
-	s := embeddedforeigntest.NewStreamStub(t, embeddedforeigntest.StreamStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Read to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, _ = s.Read(a0, a1)
-		inner.OnRead.AssertCalledOnce(t, "Read must reach the wrapped implementation")
+		t.Run("sets the results of each call of Read", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			want0, want1 := streamStubReadPins()
+			s.OnRead.Returns(want0, want1)
+			got0, got1 := streamStubRead(t, s)
+			expect.Equal(t, got0, want0, "Read returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Read returns the error that Returns sets")
+		})
+
+		t.Run("configures Read for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := embeddedforeigntest.NewStreamStub(r)
+			s.OnRead.Strict()
+			var want0 string
+			var want1 error
+			s.OnRead.Returns(want0, want1)
+			_, _ = streamStubRead(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Read")
+		})
 	})
 
-	t.Run("surfaces what Read answered", func(t *testing.T) {
-		want := errors.New("Read-delegate")
-		inner.OnRead.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Read-a"
-		_, r1 := s.Read(a0, a1)
-		assert.ErrorIs(t, r1, want, "Read must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Close to the wrapped implementation", func(t *testing.T) {
-		_ = s.Close()
-		inner.OnClose.AssertCalledOnce(t, "Close must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Close answered", func(t *testing.T) {
-		want := errors.New("Close-delegate")
-		inner.OnClose.FaultsFor(time.Hour, want)
-		r0 := s.Close()
-		assert.ErrorIs(t, r0, want, "Close must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Read to the function", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnRead.Func(func(p0 context.Context, p1 string) (string, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = streamStubRead(t, s)
+			a0, a1 := streamStubReadArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:202e79bb2da7bbd4d3ea16d7083b24b75ec8bd1a9b3766fe9eb31b4fa9ac77a5
+// TestStreamCloseStub checks the methods of StreamCloseStub, which
+// configures Close.
+func TestStreamCloseStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Close", func(t *testing.T) {
+			t.Parallel()
+			s := embeddedforeigntest.NewStreamStub(t)
+			want0 := streamStubClosePins()
+			s.OnClose.Returns(want0)
+			got0 := streamStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
+		})
+
+		t.Run("configures Close for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := embeddedforeigntest.NewStreamStub(r)
+			s.OnClose.Strict()
+			var want0 error
+			s.OnClose.Returns(want0)
+			_ = streamStubClose(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
+		})
+	})
+}
+
+// dokimi:provenance sha256:d45eb86e705c6702d1bbcc3c57c047ef826c52e9619b0d4d7157932fbfcccf98

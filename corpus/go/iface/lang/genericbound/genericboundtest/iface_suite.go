@@ -7,7 +7,7 @@ package genericboundtest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound"
 )
 
@@ -48,33 +48,30 @@ func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
 	return conform.Suite[genericbound.Ranked[int, genericbound.Score]]{Declaration: "Ranked"}
 }
 
-// RunRanked applies the checks of Ranked, and the checks that opts add, to
-// a fresh subject of newSubject for each check.
-func RunRanked[T genericbound.Ranked[int, genericbound.Score]](t *testing.T, newSubject func() T, opts ...RankedOption) {
+// RunRankedSuite applies the checks of Ranked, and the checks that opts
+// add, to a fresh subject of newSubject for each check.
+func RunRankedSuite[T genericbound.Ranked[int, genericbound.Score]](
+	t *testing.T,
+	newSubject func() T,
+	opts ...RankedOption,
+) {
 	t.Helper()
-	conform.Verify(t, RankedSuite(), func(*RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject() }, opts...)
+	RunRankedSuiteFromHandle(t, func(*RankedHandle) T { return newSubject() }, opts...)
 }
 
-// RunRankedOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunRankedOn[T genericbound.Ranked[int, genericbound.Score]](t *testing.T, newSubject func(h *RankedHandle) T, opts ...RankedOption) {
+// RunRankedSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunRankedSuiteFromHandle[T genericbound.Ranked[int, genericbound.Score]](
+	t *testing.T,
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
 	t.Helper()
-	conform.Verify(t, RankedSuite(), func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		RankedSuite(),
+		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
+		opts...)
 }
 
-// ControlRanked applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlRanked[T genericbound.Ranked[int, genericbound.Score]](t *testing.T, newControl func() T, opts ...RankedOption) {
-	t.Helper()
-	conform.Control(t, RankedSuite(), func(*RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newControl() }, opts...)
-}
-
-// ControlRankedOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlRankedOn[T genericbound.Ranked[int, genericbound.Score]](t *testing.T, newControl func(h *RankedHandle) T, opts ...RankedOption) {
-	t.Helper()
-	conform.Control(t, RankedSuite(), func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:9cd2ead9bcb1a056d33d6d34989fdc75be439b3261065f7ea8137ff359942ab3
+// dokimi:provenance sha256:c5b9fdb12c78c7cb23d4bb84bdc48fc4f85edea9791afb23a04f62c81f0f6943

@@ -12,31 +12,73 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/lease/leasetest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubAcquireSubject binds Acquire into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubAcquireSubject(tb assert.TB) stub.Subject[leasetest.ContractAcquireCall, leasetest.ContractAcquireReturn] {
+// contractStubAcquireArgs returns the samples of the arguments of Acquire.
+func contractStubAcquireArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Acquire-a"
+	return a0, a1
+}
+
+// contractStubAcquire calls Acquire of s with the samples of its
+// arguments.
+func contractStubAcquire(tb assert.TB, s *leasetest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubAcquireArgs(tb)
+	return s.Acquire(a0, a1)
+}
+
+// contractStubAcquirePins returns the samples of the results of Acquire,
+// with a new error as its error result.
+func contractStubAcquirePins() error {
+	want0 := errors.New("Acquire-returns")
+	return want0
+}
+
+// contractStubReleaseArgs returns the samples of the arguments of Release.
+func contractStubReleaseArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Release-a"
+	return a0, a1
+}
+
+// contractStubRelease calls Release of s with the samples of its
+// arguments.
+func contractStubRelease(tb assert.TB, s *leasetest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubReleaseArgs(tb)
+	return s.Release(a0, a1)
+}
+
+// contractStubReleasePins returns the samples of the results of Release,
+// with a new error as its error result.
+func contractStubReleasePins() error {
+	want0 := errors.New("Release-returns")
+	return want0
+}
+
+// contractStubAcquireSubject returns the subject of [stub.Behaviour] for
+// Acquire. The subject calls a new double that reports to tb.
+func contractStubAcquireSubject(
+	tb assert.TB,
+) stub.Subject[leasetest.ContractAcquireCall, leasetest.ContractAcquireReturn] {
 	tb.Helper()
 	s := leasetest.NewContractStub(tb)
 	return stub.Subject[leasetest.ContractAcquireCall, leasetest.ContractAcquireReturn]{
 		Stub: s.OnAcquire.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Acquire-a"
-			_ = s.Acquire(a0, a1)
+			_ = contractStubAcquire(tb, s)
 		},
 		Result: func() leasetest.ContractAcquireReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Acquire-a"
-			got0 := s.Acquire(a0, a1)
+			got0 := contractStubAcquire(tb, s)
 			return leasetest.ContractAcquireReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,114 +89,26 @@ func contractStubAcquireSubject(tb assert.TB) stub.Subject[leasetest.ContractAcq
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Acquire-a"
-			r0 := s.Acquire(a0, a1)
+			r0 := contractStubAcquire(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubAcquire pins how Acquire answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubAcquire(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Acquire", contractStubAcquireSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := leasetest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		got := s.OnAcquire.AssertCalledOnce(t, "Acquire must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := leasetest.NewContractStub(t)
-		var seen []leasetest.ContractAcquireCall
-		s.OnAcquire.OnRecord(func(c leasetest.ContractAcquireCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		_ = s.Acquire(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Acquire call")
-	})
-
-	t.Run("wires WithContractAcquire at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := leasetest.NewContractStub(t, leasetest.WithContractAcquire(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		assert.True(t, called, "WithContractAcquire must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Acquire-failing")
-		s := leasetest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		r0 := s.Acquire(a0, a1)
-		assert.ErrorIs(t, r0, want, "Acquire must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := leasetest.NewContractStub(t)
-		var want0 error
-		s.OnAcquire.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		s.ResetCalls()
-		_ = s.Acquire(a0, a1)
-		s.OnAcquire.AssertCalledOnce(t, "Acquire must record the call that followed the reset")
-	})
-}
-
-// contractStubReleaseSubject binds Release into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubReleaseSubject(tb assert.TB) stub.Subject[leasetest.ContractReleaseCall, leasetest.ContractReleaseReturn] {
+// contractStubReleaseSubject returns the subject of [stub.Behaviour] for
+// Release. The subject calls a new double that reports to tb.
+func contractStubReleaseSubject(
+	tb assert.TB,
+) stub.Subject[leasetest.ContractReleaseCall, leasetest.ContractReleaseReturn] {
 	tb.Helper()
 	s := leasetest.NewContractStub(tb)
 	return stub.Subject[leasetest.ContractReleaseCall, leasetest.ContractReleaseReturn]{
 		Stub: s.OnRelease.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Release-a"
-			_ = s.Release(a0, a1)
+			_ = contractStubRelease(tb, s)
 		},
 		Result: func() leasetest.ContractReleaseReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Release-a"
-			got0 := s.Release(a0, a1)
+			got0 := contractStubRelease(tb, s)
 			return leasetest.ContractReleaseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -165,185 +119,387 @@ func contractStubReleaseSubject(tb assert.TB) stub.Subject[leasetest.ContractRel
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Release-a"
-			r0 := s.Release(a0, a1)
+			r0 := contractStubRelease(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubRelease pins how Release answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubRelease(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a leasetest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[leasetest.ContractAcquireCall]
 
-	stub.Behaviour(t, "Release", contractStubReleaseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := leasetest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		got := s.OnRelease.AssertCalledOnce(t, "Release must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := leasetest.NewContractStub(t)
-		var seen []leasetest.ContractReleaseCall
-		s.OnRelease.OnRecord(func(c leasetest.ContractReleaseCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		_ = s.Release(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Release call")
-	})
-
-	t.Run("wires WithContractRelease at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := leasetest.NewContractStub(t, leasetest.WithContractRelease(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		assert.True(t, called, "WithContractRelease must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Release-failing")
-		s := leasetest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		r0 := s.Release(a0, a1)
-		assert.ErrorIs(t, r0, want, "Release must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := leasetest.NewContractStub(t)
-		var want0 error
-		s.OnRelease.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		s.ResetCalls()
-		_ = s.Release(a0, a1)
-		s.OnRelease.AssertCalledOnce(t, "Release must record the call that followed the reset")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Acquire stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func contractStubDouble() stub.Double[leasetest.ContractAcquireCall] {
-	instance := func(s *leasetest.ContractStub) stub.Instance[leasetest.ContractAcquireCall] {
-		return stub.Instance[leasetest.ContractAcquireCall]{
-			Stub: s.OnAcquire.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Acquire-a"
-				_ = s.Acquire(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[leasetest.ContractAcquireCall]{
-		New: func(tb assert.TB) stub.Instance[leasetest.ContractAcquireCall] {
-			return instance(leasetest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Acquire alone.
+func contractStubInstanceOf(tb assert.TB, s *leasetest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnAcquire.MethodStub,
+		Call: func() {
+			_ = contractStubAcquire(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[leasetest.ContractAcquireCall] {
-			return instance(leasetest.NewContractStub(tb, leasetest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[leasetest.ContractAcquireCall] {
-			return instance(leasetest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[leasetest.ContractAcquireCall] {
-			return instance(leasetest.NewContractStub(tb, leasetest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[leasetest.ContractAcquireCall] {
-			return instance(leasetest.NewContractStub(tb, leasetest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[leasetest.ContractAcquireCall] {
-			return instance(leasetest.NewContractStub(tb, leasetest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Acquire", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Acquire", contractStubAcquireSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			_ = contractStubAcquire(t, s)
+			got := s.OnAcquire.AssertCalledOnce(t, "Acquire records the call")
+			a0, a1 := contractStubAcquireArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			var seen []leasetest.ContractAcquireCall
+			s.OnAcquire.OnRecord(func(c leasetest.ContractAcquireCall) { seen = append(seen, c) })
+			_ = contractStubAcquire(t, s)
+			_ = contractStubAcquire(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Acquire")
+		})
+	})
+
+	t.Run("Release", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Release", contractStubReleaseSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			_ = contractStubRelease(t, s)
+			got := s.OnRelease.AssertCalledOnce(t, "Release records the call")
+			a0, a1 := contractStubReleaseArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			var seen []leasetest.ContractReleaseCall
+			s.OnRelease.OnRecord(func(c leasetest.ContractReleaseCall) { seen = append(seen, c) })
+			_ = contractStubRelease(t, s)
+			_ = contractStubRelease(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Release")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, leasetest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Acquire", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			_ = contractStubAcquire(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnAcquire.CallCount(), 0, "ResetCalls clears the calls of Acquire")
+		})
+
+		t.Run("keeps the results of Returns of Acquire", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			want0 := contractStubAcquirePins()
+			s.OnAcquire.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubAcquire(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Acquire")
+		})
+
+		t.Run("clears the recorded calls of Release", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			_ = contractStubRelease(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRelease.CallCount(), 0, "ResetCalls clears the calls of Release")
+		})
+
+		t.Run("keeps the results of Returns of Release", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			want0 := contractStubReleasePins()
+			s.OnRelease.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubRelease(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Release")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, leasetest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Acquire with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Acquire-failing")
+			s := leasetest.NewContractStubFailing(t, want)
+			r0 := contractStubAcquire(t, s)
+			assert.ErrorIs(t, r0, want, "Acquire fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Release with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Release-failing")
+			s := leasetest.NewContractStubFailing(t, want)
+			r0 := contractStubRelease(t, s)
+			assert.ErrorIs(t, r0, want, "Release fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, leasetest.NewContractStub(tb, leasetest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Acquire to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := leasetest.NewContractStub(t)
+			s := leasetest.NewContractStub(t, leasetest.ContractStubDelegateTo(inner))
+			_ = contractStubAcquire(t, s)
+			inner.OnAcquire.AssertCalledOnce(t, "Acquire calls the implementation")
+		})
+
+		t.Run("fails Acquire with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Acquire-delegate")
+			inner := leasetest.NewContractStub(t)
+			inner.OnAcquire.Faults(want, 1)
+			s := leasetest.NewContractStub(t, leasetest.ContractStubDelegateTo(inner))
+			r0 := contractStubAcquire(t, s)
+			assert.ErrorIs(t, r0, want, "Acquire fails with the error of the implementation")
+		})
+
+		t.Run("passes Release to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := leasetest.NewContractStub(t)
+			s := leasetest.NewContractStub(t, leasetest.ContractStubDelegateTo(inner))
+			_ = contractStubRelease(t, s)
+			inner.OnRelease.AssertCalledOnce(t, "Release calls the implementation")
+		})
+
+		t.Run("fails Release with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Release-delegate")
+			inner := leasetest.NewContractStub(t)
+			inner.OnRelease.Faults(want, 1)
+			s := leasetest.NewContractStub(t, leasetest.ContractStubDelegateTo(inner))
+			r0 := contractStubRelease(t, s)
+			assert.ErrorIs(t, r0, want, "Release fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, leasetest.NewContractStub(tb, leasetest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(tb, leasetest.NewContractStub(tb, leasetest.ContractStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, leasetest.NewContractStub(tb, leasetest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				leasetest.NewContractStub(
+					tb,
+					leasetest.ContractStubWithClock(clk),
+					leasetest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Acquire with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Acquire-failing")
+			s := leasetest.NewContractStub(t, leasetest.ContractStubFailing(want))
+			r0 := contractStubAcquire(t, s)
+			assert.ErrorIs(t, r0, want, "Acquire fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Release with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Release-failing")
+			s := leasetest.NewContractStub(t, leasetest.ContractStubFailing(want))
+			r0 := contractStubRelease(t, s)
+			assert.ErrorIs(t, r0, want, "Release fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractAcquire", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Acquire", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := leasetest.NewContractStub(t, leasetest.WithContractAcquire(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = contractStubAcquire(t, s)
+			assert.True(t, called, "WithContractAcquire sets the function of Acquire")
+		})
+	})
+
+	t.Run("WithContractRelease", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Release", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := leasetest.NewContractStub(t, leasetest.WithContractRelease(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = contractStubRelease(t, s)
+			assert.True(t, called, "WithContractRelease sets the function of Release")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractAcquireStub checks the methods of ContractAcquireStub, which
+// configures Acquire.
+func TestContractAcquireStub(t *testing.T) {
 	t.Parallel()
 
-	inner := leasetest.NewContractStub(t)
-	s := leasetest.NewContractStub(t, leasetest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Acquire to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		_ = s.Acquire(a0, a1)
-		inner.OnAcquire.AssertCalledOnce(t, "Acquire must reach the wrapped implementation")
+		t.Run("sets the results of each call of Acquire", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			want0 := contractStubAcquirePins()
+			s.OnAcquire.Returns(want0)
+			got0 := contractStubAcquire(t, s)
+			assert.ErrorIs(t, got0, want0, "Acquire returns the error that Returns sets")
+		})
+
+		t.Run("configures Acquire for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := leasetest.NewContractStub(r)
+			s.OnAcquire.Strict()
+			var want0 error
+			s.OnAcquire.Returns(want0)
+			_ = contractStubAcquire(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Acquire")
+		})
 	})
 
-	t.Run("surfaces what Acquire answered", func(t *testing.T) {
-		want := errors.New("Acquire-delegate")
-		inner.OnAcquire.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Acquire-a"
-		r0 := s.Acquire(a0, a1)
-		assert.ErrorIs(t, r0, want, "Acquire must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Release to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		_ = s.Release(a0, a1)
-		inner.OnRelease.AssertCalledOnce(t, "Release must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Release answered", func(t *testing.T) {
-		want := errors.New("Release-delegate")
-		inner.OnRelease.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Release-a"
-		r0 := s.Release(a0, a1)
-		assert.ErrorIs(t, r0, want, "Release must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Acquire to the function", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnAcquire.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubAcquire(t, s)
+			a0, a1 := contractStubAcquireArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:6a55ca5efc940549405cd99c3c59d79970ba526932ef98d48e5b360cde2e31f0
+// TestContractReleaseStub checks the methods of ContractReleaseStub, which
+// configures Release.
+func TestContractReleaseStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Release", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			want0 := contractStubReleasePins()
+			s.OnRelease.Returns(want0)
+			got0 := contractStubRelease(t, s)
+			assert.ErrorIs(t, got0, want0, "Release returns the error that Returns sets")
+		})
+
+		t.Run("configures Release for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := leasetest.NewContractStub(r)
+			s.OnRelease.Strict()
+			var want0 error
+			s.OnRelease.Returns(want0)
+			_ = contractStubRelease(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Release")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Release to the function", func(t *testing.T) {
+			t.Parallel()
+			s := leasetest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnRelease.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubRelease(t, s)
+			a0, a1 := contractStubReleaseArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:d4e2d107a1c3aa376561380203b2b2359fb3acd5c40ae28e4dd1324529df088e

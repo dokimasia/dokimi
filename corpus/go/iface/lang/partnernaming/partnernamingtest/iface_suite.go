@@ -7,7 +7,7 @@ package partnernamingtest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming"
 )
 
@@ -76,33 +76,22 @@ func StoreSuite() conform.Suite[partnernaming.Store] {
 	return conform.Suite[partnernaming.Store]{Declaration: "Store"}
 }
 
-// RunStore applies the checks of Store, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunStore[T partnernaming.Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
+// RunStoreSuite applies the checks of Store, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunStoreSuite[T partnernaming.Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(*StoreHandle) partnernaming.Store { return newSubject() }, opts...)
+	RunStoreSuiteFromHandle(t, func(*StoreHandle) T { return newSubject() }, opts...)
 }
 
-// RunStoreOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunStoreOn[T partnernaming.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+// RunStoreSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStoreSuiteFromHandle[T partnernaming.Store](
+	t *testing.T,
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
 }
 
-// ControlStore applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlStore[T partnernaming.Store](t *testing.T, newControl func() T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(*StoreHandle) partnernaming.Store { return newControl() }, opts...)
-}
-
-// ControlStoreOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlStoreOn[T partnernaming.Store](t *testing.T, newControl func(h *StoreHandle) T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(h *StoreHandle) partnernaming.Store { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:16e8983218c74c22b7f1001803e19278aa3ae56824cee8bf9ebfbd9604664c75
+// dokimi:provenance sha256:ff12ad213cf814a323b58cb47aea122a1181286d362ddc90409af0475a916625

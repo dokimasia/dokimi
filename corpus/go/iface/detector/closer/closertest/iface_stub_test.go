@@ -11,25 +11,35 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/closer/closertest"
+	"go.dokimi.dev/stub"
 )
 
-// closerStubCloseSubject binds Close into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// closerStubClose calls Close of s with the samples of its arguments.
+func closerStubClose(tb assert.TB, s *closertest.CloserStub) error {
+	tb.Helper()
+	return s.Close()
+}
+
+// closerStubClosePins returns the samples of the results of Close, with a
+// new error as its error result.
+func closerStubClosePins() error {
+	want0 := errors.New("Close-returns")
+	return want0
+}
+
+// closerStubCloseSubject returns the subject of [stub.Behaviour] for
+// Close. The subject calls a new double that reports to tb.
 func closerStubCloseSubject(tb assert.TB) stub.Subject[closertest.CloserCloseCall, closertest.CloserCloseReturn] {
 	tb.Helper()
 	s := closertest.NewCloserStub(tb)
 	return stub.Subject[closertest.CloserCloseCall, closertest.CloserCloseReturn]{
 		Stub: s.OnClose.MethodStub,
 		Call: func() {
-			_ = s.Close()
+			_ = closerStubClose(tb, s)
 		},
 		Result: func() closertest.CloserCloseReturn {
-			got0 := s.Close()
+			got0 := closerStubClose(tb, s)
 			return closertest.CloserCloseReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -40,138 +50,210 @@ func closerStubCloseSubject(tb assert.TB) stub.Subject[closertest.CloserCloseCal
 			})
 		},
 		Fails: func() error {
-			r0 := s.Close()
+			r0 := closerStubClose(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestCloserStubClose pins how Close answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestCloserStubClose(t *testing.T) {
-	t.Parallel()
+// closerStubInstance is the instance of a closertest.CloserStub that the
+// checks of the constructors and the options drive.
+type closerStubInstance = stub.Instance[closertest.CloserCloseCall]
 
-	stub.Behaviour(t, "Close", closerStubCloseSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := closertest.NewCloserStub(t)
-		_ = s.Close()
-		s.OnClose.AssertCalledOnce(t, "Close must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := closertest.NewCloserStub(t)
-		var seen []closertest.CloserCloseCall
-		s.OnClose.OnRecord(func(c closertest.CloserCloseCall) { seen = append(seen, c) })
-		_ = s.Close()
-		_ = s.Close()
-		assert.Length(t, seen, 2, "OnRecord must fire once per Close call")
-	})
-
-	t.Run("wires WithCloserClose at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := closertest.NewCloserStub(t, closertest.WithCloserClose(func() error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		_ = s.Close()
-		assert.True(t, called, "WithCloserClose must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Close-failing")
-		s := closertest.NewCloserStubFailing(t, want)
-		r0 := s.Close()
-		assert.ErrorIs(t, r0, want, "Close must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := closertest.NewCloserStub(t)
-		var want0 error
-		s.OnClose.Returns(want0)
-		_ = s.Close()
-		s.ResetCalls()
-		_ = s.Close()
-		s.OnClose.AssertCalledOnce(t, "Close must record the call that followed the reset")
-	})
-}
-
-// closerStubDouble describes how to build a CloserStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Close stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func closerStubDouble() stub.Double[closertest.CloserCloseCall] {
-	instance := func(s *closertest.CloserStub) stub.Instance[closertest.CloserCloseCall] {
-		return stub.Instance[closertest.CloserCloseCall]{
-			Stub: s.OnClose.MethodStub,
-			Call: func() {
-				_ = s.Close()
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[closertest.CloserCloseCall]{
-		New: func(tb assert.TB) stub.Instance[closertest.CloserCloseCall] {
-			return instance(closertest.NewCloserStub(tb))
+// closerStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Close alone.
+func closerStubInstanceOf(tb assert.TB, s *closertest.CloserStub) closerStubInstance {
+	tb.Helper()
+	return closerStubInstance{
+		Stub: s.OnClose.MethodStub,
+		Call: func() {
+			_ = closerStubClose(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[closertest.CloserCloseCall] {
-			return instance(closertest.NewCloserStub(tb, closertest.CloserStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[closertest.CloserCloseCall] {
-			return instance(closertest.NewCloserStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[closertest.CloserCloseCall] {
-			return instance(closertest.NewCloserStub(tb, closertest.CloserStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[closertest.CloserCloseCall] {
-			return instance(closertest.NewCloserStub(tb, closertest.CloserStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[closertest.CloserCloseCall] {
-			return instance(closertest.NewCloserStub(tb, closertest.CloserStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestCloserStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestCloserStubOptions(t *testing.T) {
+// TestCloserStub checks the methods, the constructors and the options of
+// the double CloserStub.
+func TestCloserStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, closerStubDouble())
+	t.Run("Close", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Close", closerStubCloseSubject)
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := closertest.NewCloserStub(t)
+			var seen []closertest.CloserCloseCall
+			s.OnClose.OnRecord(func(c closertest.CloserCloseCall) { seen = append(seen, c) })
+			_ = closerStubClose(t, s)
+			_ = closerStubClose(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Close")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) closerStubInstance {
+			return closerStubInstanceOf(tb, closertest.NewCloserStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Close", func(t *testing.T) {
+			t.Parallel()
+			s := closertest.NewCloserStub(t)
+			_ = closerStubClose(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnClose.CallCount(), 0, "ResetCalls clears the calls of Close")
+		})
+
+		t.Run("keeps the results of Returns of Close", func(t *testing.T) {
+			t.Parallel()
+			s := closertest.NewCloserStub(t)
+			want0 := closerStubClosePins()
+			s.OnClose.Returns(want0)
+			s.ResetCalls()
+			got0 := closerStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Close")
+		})
+	})
+
+	t.Run("NewCloserStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) closerStubInstance {
+			return closerStubInstanceOf(tb, closertest.NewCloserStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewCloserStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := closertest.NewCloserStubFailing(t, want)
+			r0 := closerStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of NewCloserStubFailing")
+		})
+	})
+
+	t.Run("CloserStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) closerStubInstance {
+			return closerStubInstanceOf(tb, closertest.NewCloserStub(tb, closertest.CloserStubStrict()))
+		})
+	})
+
+	t.Run("CloserStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Close to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := closertest.NewCloserStub(t)
+			s := closertest.NewCloserStub(t, closertest.CloserStubDelegateTo(inner))
+			_ = closerStubClose(t, s)
+			inner.OnClose.AssertCalledOnce(t, "Close calls the implementation")
+		})
+
+		t.Run("fails Close with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-delegate")
+			inner := closertest.NewCloserStub(t)
+			inner.OnClose.Faults(want, 1)
+			s := closertest.NewCloserStub(t, closertest.CloserStubDelegateTo(inner))
+			r0 := closerStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of the implementation")
+		})
+	})
+
+	t.Run("CloserStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) closerStubInstance {
+			return closerStubInstanceOf(tb, closertest.NewCloserStub(tb, closertest.CloserStubWithClock(clk)))
+		})
+	})
+
+	t.Run("CloserStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) closerStubInstance {
+			return closerStubInstanceOf(tb, closertest.NewCloserStub(tb, closertest.CloserStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("CloserStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) closerStubInstance {
+			return closerStubInstanceOf(tb, closertest.NewCloserStub(tb, closertest.CloserStubBenchMode()))
+		})
+	})
+
+	t.Run("CloserStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) closerStubInstance {
+			return closerStubInstanceOf(
+				tb,
+				closertest.NewCloserStub(tb, closertest.CloserStubWithClock(clk), closertest.CloserStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("CloserStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Close with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Close-failing")
+			s := closertest.NewCloserStub(t, closertest.CloserStubFailing(want))
+			r0 := closerStubClose(t, s)
+			assert.ErrorIs(t, r0, want, "Close fails with the error of CloserStubFailing")
+		})
+	})
+
+	t.Run("WithCloserClose", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Close", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := closertest.NewCloserStub(t, closertest.WithCloserClose(func() error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = closerStubClose(t, s)
+			assert.True(t, called, "WithCloserClose sets the function of Close")
+		})
+	})
 }
 
-// TestCloserStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestCloserStubDelegateTo(t *testing.T) {
+// TestCloserCloseStub checks the methods of CloserCloseStub, which
+// configures Close.
+func TestCloserCloseStub(t *testing.T) {
 	t.Parallel()
 
-	inner := closertest.NewCloserStub(t)
-	s := closertest.NewCloserStub(t, closertest.CloserStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Close to the wrapped implementation", func(t *testing.T) {
-		_ = s.Close()
-		inner.OnClose.AssertCalledOnce(t, "Close must reach the wrapped implementation")
-	})
+		t.Run("sets the results of each call of Close", func(t *testing.T) {
+			t.Parallel()
+			s := closertest.NewCloserStub(t)
+			want0 := closerStubClosePins()
+			s.OnClose.Returns(want0)
+			got0 := closerStubClose(t, s)
+			assert.ErrorIs(t, got0, want0, "Close returns the error that Returns sets")
+		})
 
-	t.Run("surfaces what Close answered", func(t *testing.T) {
-		want := errors.New("Close-delegate")
-		inner.OnClose.FaultsFor(time.Hour, want)
-		r0 := s.Close()
-		assert.ErrorIs(t, r0, want, "Close must surface the wrapped answer")
+		t.Run("configures Close for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := closertest.NewCloserStub(r)
+			s.OnClose.Strict()
+			var want0 error
+			s.OnClose.Returns(want0)
+			_ = closerStubClose(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Close")
+		})
 	})
 }
 
-// dokimi:provenance sha256:c5b4d0c430e5e1463f05f69f2c971f6fea91c1b14ef31721bb265ce7ca65b1a1
+// dokimi:provenance sha256:7e057d412cfe2a2c31f1078193c71e975962bfa0b34e4c1981573fa2cab53f32

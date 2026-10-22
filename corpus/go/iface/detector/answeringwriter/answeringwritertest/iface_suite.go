@@ -7,7 +7,7 @@ package answeringwritertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/answeringwriter"
 )
 
@@ -40,33 +40,30 @@ func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 	return conform.Suite[answeringwriter.AnsweringWriter]{Declaration: "AnsweringWriter"}
 }
 
-// RunAnsweringWriter applies the checks of AnsweringWriter, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunAnsweringWriter[T answeringwriter.AnsweringWriter](t *testing.T, newSubject func() T, opts ...AnsweringWriterOption) {
+// RunAnsweringWriterSuite applies the checks of AnsweringWriter, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
+	t *testing.T,
+	newSubject func() T,
+	opts ...AnsweringWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, AnsweringWriterSuite(), func(*AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject() }, opts...)
+	RunAnsweringWriterSuiteFromHandle(t, func(*AnsweringWriterHandle) T { return newSubject() }, opts...)
 }
 
-// RunAnsweringWriterOn applies the same checks to a subject that
-// newSubject builds on the handle of each check.
-func RunAnsweringWriterOn[T answeringwriter.AnsweringWriter](t *testing.T, newSubject func(h *AnsweringWriterHandle) T, opts ...AnsweringWriterOption) {
+// RunAnsweringWriterSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunAnsweringWriterSuiteFromHandle[T answeringwriter.AnsweringWriter](
+	t *testing.T,
+	newSubject func(h *AnsweringWriterHandle) T,
+	opts ...AnsweringWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, AnsweringWriterSuite(), func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		AnsweringWriterSuite(),
+		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
+		opts...)
 }
 
-// ControlAnsweringWriter applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlAnsweringWriter[T answeringwriter.AnsweringWriter](t *testing.T, newControl func() T, opts ...AnsweringWriterOption) {
-	t.Helper()
-	conform.Control(t, AnsweringWriterSuite(), func(*AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newControl() }, opts...)
-}
-
-// ControlAnsweringWriterOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlAnsweringWriterOn[T answeringwriter.AnsweringWriter](t *testing.T, newControl func(h *AnsweringWriterHandle) T, opts ...AnsweringWriterOption) {
-	t.Helper()
-	conform.Control(t, AnsweringWriterSuite(), func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:43125a9ba95fa45fb2400de07c39f74ada789f07b1d9c7e0553d852365bcf9b1
+// dokimi:provenance sha256:9c241abf27aeda8f555c74914dbbe7176b69b765cbe765be38d37e03dfa290a5

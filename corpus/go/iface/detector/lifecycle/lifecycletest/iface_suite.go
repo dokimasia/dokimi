@@ -7,7 +7,7 @@ package lifecycletest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lifecycle"
 )
 
@@ -40,33 +40,22 @@ func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
 	return conform.Suite[lifecycle.Lifecycle]{Declaration: "Lifecycle"}
 }
 
-// RunLifecycle applies the checks of Lifecycle, and the checks that opts
-// add, to a fresh subject of newSubject for each check.
-func RunLifecycle[T lifecycle.Lifecycle](t *testing.T, newSubject func() T, opts ...LifecycleOption) {
+// RunLifecycleSuite applies the checks of Lifecycle, and the checks that
+// opts add, to a fresh subject of newSubject for each check.
+func RunLifecycleSuite[T lifecycle.Lifecycle](t *testing.T, newSubject func() T, opts ...LifecycleOption) {
 	t.Helper()
-	conform.Verify(t, LifecycleSuite(), func(*LifecycleHandle) lifecycle.Lifecycle { return newSubject() }, opts...)
+	RunLifecycleSuiteFromHandle(t, func(*LifecycleHandle) T { return newSubject() }, opts...)
 }
 
-// RunLifecycleOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunLifecycleOn[T lifecycle.Lifecycle](t *testing.T, newSubject func(h *LifecycleHandle) T, opts ...LifecycleOption) {
+// RunLifecycleSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunLifecycleSuiteFromHandle[T lifecycle.Lifecycle](
+	t *testing.T,
+	newSubject func(h *LifecycleHandle) T,
+	opts ...LifecycleOption,
+) {
 	t.Helper()
-	conform.Verify(t, LifecycleSuite(), func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) }, opts...)
+	conform.Run(t, LifecycleSuite(), func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) }, opts...)
 }
 
-// ControlLifecycle applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlLifecycle[T lifecycle.Lifecycle](t *testing.T, newControl func() T, opts ...LifecycleOption) {
-	t.Helper()
-	conform.Control(t, LifecycleSuite(), func(*LifecycleHandle) lifecycle.Lifecycle { return newControl() }, opts...)
-}
-
-// ControlLifecycleOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlLifecycleOn[T lifecycle.Lifecycle](t *testing.T, newControl func(h *LifecycleHandle) T, opts ...LifecycleOption) {
-	t.Helper()
-	conform.Control(t, LifecycleSuite(), func(h *LifecycleHandle) lifecycle.Lifecycle { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:84431cedb64a06d5f1d7a3ba414f08aee0c2116d16ff4991274d9aa2b484a011
+// dokimi:provenance sha256:dddd2e93157cfaf649fd146497cb231c1cfabd2686c91426ae14ba47a3f1a10a

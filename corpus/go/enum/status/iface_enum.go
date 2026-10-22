@@ -6,6 +6,7 @@ package status
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -22,10 +23,8 @@ const _Status_name = "DraftPublishedArchived"
 
 var _Status_index = [...]uint8{0, 5, 14, 22}
 
-// String returns Status's textual form.
-//
-// A value outside the declared set renders as itself, so a corrupt value
-// is visible rather than indistinguishable from a declared one.
+// String returns the text of v. A value outside the declared set renders
+// as its underlying value.
 func (v Status) String() string {
 	idx := int(v) - 1
 	if v < 1 || idx >= len(_Status_index)-1 {
@@ -34,14 +33,13 @@ func (v Status) String() string {
 	return _Status_name[_Status_index[idx]:_Status_index[idx+1]]
 }
 
-// ErrUnknownStatus reports text that names no declared variant.
+// ErrUnknownStatus is the error of text that names no declared variant.
+// The error of [ParseStatus] wraps it with the text.
 var ErrUnknownStatus = errors.New("status: unknown Status value")
 
-// ParseStatus maps text back to a Status.
-//
-// The inverse of String for every declared variant, which is what lets a
-// value survive a round trip through anything that carries it as text — a
-// log line, a JSON field, a database column.
+// ParseStatus returns the variant of Status whose text is s. It is the
+// inverse of [Status.String] on the declared variants. It returns an error
+// that wraps [ErrUnknownStatus] for text that names no declared variant.
 func ParseStatus(s string) (Status, error) {
 	switch s {
 	case "Draft":
@@ -52,13 +50,11 @@ func ParseStatus(s string) (Status, error) {
 		return Archived, nil
 	}
 	var zero Status
-	return zero, ErrUnknownStatus
+	return zero, fmt.Errorf("%w %q", ErrUnknownStatus, s)
 }
 
-// StatusValues returns every declared variant in declaration order.
-//
-// A fresh slice per call: a package-level one would let any caller reorder
-// or overwrite the set every other caller reads.
+// StatusValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
 func StatusValues() []Status {
 	return []Status{
 		Draft,
@@ -67,34 +63,25 @@ func StatusValues() []Status {
 	}
 }
 
-// IsValid reports whether v is a declared variant.
-//
-// A conversion admits any value of the underlying type, so this is the
-// only thing standing between an out-of-range value and the rest of the
-// program.
+// IsValid reports whether v is a declared variant. A conversion from the
+// underlying type can make any other value.
 func (v Status) IsValid() bool {
 	switch v {
-	case Draft:
+	case Draft, Published, Archived:
 		return true
-	case Published:
-		return true
-	case Archived:
-		return true
+	default:
+		return false
 	}
-	return false
 }
 
-// MarshalText implements [encoding.TextMarshaler].
-//
-// Text rather than JSON: encoding/json reaches for TextMarshaler on its
-// own and so does YAML, and it is what makes Status legal as a map key —
-// which a JSON marshaller alone does not.
+// MarshalText implements [encoding.TextMarshaler] with the text of v.
+// encoding/json uses it for a value and for a map key.
 func (v Status) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
 
-// UnmarshalText implements [encoding.TextUnmarshaler], refusing text that
-// names no declared variant rather than admitting it as an unnamed value.
+// UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
+// error of [ParseStatus] for text that names no declared variant.
 func (v *Status) UnmarshalText(text []byte) error {
 	parsed, err := ParseStatus(string(text))
 	if err != nil {
@@ -104,4 +91,4 @@ func (v *Status) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:102d3a23bb13383fa31a72eeeca18b48b129d57b2b8f398e4c2f5f2209824a37
+// dokimi:provenance sha256:00b5ee7c0afcf823f2b07f0151727c8c219bd8a1061bafad86e494c864a69a52

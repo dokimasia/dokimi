@@ -12,36 +12,99 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache/cachetest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubStoreSubject binds Store into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// contractStubStoreArgs returns the samples of the arguments of Store.
+func contractStubStoreArgs(tb assert.TB) (context.Context, string, cache.Value) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 cache.Value
+	a1 = "Store-a"
+	a2 = cache.Value{Key: "Key-a"}
+	return a0, a1, a2
+}
+
+// contractStubStore calls Store of s with the samples of its arguments.
+func contractStubStore(tb assert.TB, s *cachetest.ContractStub) error {
+	tb.Helper()
+	a0, a1, a2 := contractStubStoreArgs(tb)
+	return s.Store(a0, a1, a2)
+}
+
+// contractStubStorePins returns the samples of the results of Store, with
+// a new error as its error result.
+func contractStubStorePins() error {
+	want0 := errors.New("Store-returns")
+	return want0
+}
+
+// contractStubLookupArgs returns the samples of the arguments of Lookup.
+func contractStubLookupArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Lookup-a"
+	return a0, a1
+}
+
+// contractStubLookup calls Lookup of s with the samples of its arguments.
+func contractStubLookup(tb assert.TB, s *cachetest.ContractStub) (cache.Value, error) {
+	tb.Helper()
+	a0, a1 := contractStubLookupArgs(tb)
+	return s.Lookup(a0, a1)
+}
+
+// contractStubLookupPins returns the samples of the results of Lookup,
+// with a new error as its error result.
+func contractStubLookupPins() (cache.Value, error) {
+	var want0 cache.Value
+	want1 := errors.New("Lookup-returns")
+	want0 = cache.Value{Key: "Key-a"}
+	return want0, want1
+}
+
+// contractStubFetchArgs returns the samples of the arguments of Fetch.
+func contractStubFetchArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Fetch-a"
+	return a0, a1
+}
+
+// contractStubFetch calls Fetch of s with the samples of its arguments.
+func contractStubFetch(tb assert.TB, s *cachetest.ContractStub) (cache.Value, error) {
+	tb.Helper()
+	a0, a1 := contractStubFetchArgs(tb)
+	return s.Fetch(a0, a1)
+}
+
+// contractStubFetchPins returns the samples of the results of Fetch, with
+// a new error as its error result.
+func contractStubFetchPins() (cache.Value, error) {
+	var want0 cache.Value
+	want1 := errors.New("Fetch-returns")
+	want0 = cache.Value{Key: "Key-a"}
+	return want0, want1
+}
+
+// contractStubStoreSubject returns the subject of [stub.Behaviour] for
+// Store. The subject calls a new double that reports to tb.
 func contractStubStoreSubject(tb assert.TB) stub.Subject[cachetest.ContractStoreCall, cachetest.ContractStoreReturn] {
 	tb.Helper()
 	s := cachetest.NewContractStub(tb)
 	return stub.Subject[cachetest.ContractStoreCall, cachetest.ContractStoreReturn]{
 		Stub: s.OnStore.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 cache.Value
-			a1 = "Store-a"
-			a2 = cache.Value{Key: "Key-a"}
-			_ = s.Store(a0, a1, a2)
+			_ = contractStubStore(tb, s)
 		},
 		Result: func() cachetest.ContractStoreReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 cache.Value
-			a1 = "Store-a"
-			a2 = cache.Value{Key: "Key-a"}
-			got0 := s.Store(a0, a1, a2)
+			got0 := contractStubStore(tb, s)
 			return cachetest.ContractStoreReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -52,127 +115,26 @@ func contractStubStoreSubject(tb assert.TB) stub.Subject[cachetest.ContractStore
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 cache.Value
-			a1 = "Store-a"
-			a2 = cache.Value{Key: "Key-a"}
-			r0 := s.Store(a0, a1, a2)
+			r0 := contractStubStore(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubStore pins how Store answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubStore(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Store", contractStubStoreSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 cache.Value
-		a1 = "Store-a"
-		a2 = cache.Value{Key: "Key-a"}
-		_ = s.Store(a0, a1, a2)
-		got := s.OnStore.AssertCalledOnce(t, "Store must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.V, a2, "the recorded call carries V")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var seen []cachetest.ContractStoreCall
-		s.OnStore.OnRecord(func(c cachetest.ContractStoreCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 cache.Value
-		a1 = "Store-a"
-		a2 = cache.Value{Key: "Key-a"}
-		_ = s.Store(a0, a1, a2)
-		_ = s.Store(a0, a1, a2)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Store call")
-	})
-
-	t.Run("wires WithContractStore at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := cachetest.NewContractStub(t, cachetest.WithContractStore(func(_ context.Context, _ string, _ cache.Value) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 cache.Value
-		a1 = "Store-a"
-		a2 = cache.Value{Key: "Key-a"}
-		_ = s.Store(a0, a1, a2)
-		assert.True(t, called, "WithContractStore must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Store-failing")
-		s := cachetest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 cache.Value
-		a1 = "Store-a"
-		a2 = cache.Value{Key: "Key-a"}
-		r0 := s.Store(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Store must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var want0 error
-		s.OnStore.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 cache.Value
-		a1 = "Store-a"
-		a2 = cache.Value{Key: "Key-a"}
-		_ = s.Store(a0, a1, a2)
-		s.ResetCalls()
-		_ = s.Store(a0, a1, a2)
-		s.OnStore.AssertCalledOnce(t, "Store must record the call that followed the reset")
-	})
-}
-
-// contractStubLookupSubject binds Lookup into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func contractStubLookupSubject(tb assert.TB) stub.Subject[cachetest.ContractLookupCall, cachetest.ContractLookupReturn] {
+// contractStubLookupSubject returns the subject of [stub.Behaviour] for
+// Lookup. The subject calls a new double that reports to tb.
+func contractStubLookupSubject(
+	tb assert.TB,
+) stub.Subject[cachetest.ContractLookupCall, cachetest.ContractLookupReturn] {
 	tb.Helper()
 	s := cachetest.NewContractStub(tb)
 	return stub.Subject[cachetest.ContractLookupCall, cachetest.ContractLookupReturn]{
 		Stub: s.OnLookup.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Lookup-a"
-			_, _ = s.Lookup(a0, a1)
+			_, _ = contractStubLookup(tb, s)
 		},
 		Result: func() cachetest.ContractLookupReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Lookup-a"
-			got0, got1 := s.Lookup(a0, a1)
+			got0, got1 := contractStubLookup(tb, s)
 			return cachetest.ContractLookupReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -184,131 +146,24 @@ func contractStubLookupSubject(tb assert.TB) stub.Subject[cachetest.ContractLook
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Lookup-a"
-			_, r1 := s.Lookup(a0, a1)
+			_, r1 := contractStubLookup(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubLookup pins how Lookup answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubLookup(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Lookup", contractStubLookupSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var want0 cache.Value
-		var want1 error
-		want0 = cache.Value{Key: "Key-a"}
-		s.OnLookup.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		got0, _ := s.Lookup(a0, a1)
-		assert.Equal(t, got0, want0, "Lookup must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_, _ = s.Lookup(a0, a1)
-		got := s.OnLookup.AssertCalledOnce(t, "Lookup must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var seen []cachetest.ContractLookupCall
-		s.OnLookup.OnRecord(func(c cachetest.ContractLookupCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_, _ = s.Lookup(a0, a1)
-		_, _ = s.Lookup(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Lookup call")
-	})
-
-	t.Run("wires WithContractLookup at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := cachetest.NewContractStub(t, cachetest.WithContractLookup(func(_ context.Context, _ string) (cache.Value, error) {
-			called = true
-			var z0 cache.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_, _ = s.Lookup(a0, a1)
-		assert.True(t, called, "WithContractLookup must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Lookup-failing")
-		s := cachetest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_, r1 := s.Lookup(a0, a1)
-		assert.ErrorIs(t, r1, want, "Lookup must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var want0 cache.Value
-		var want1 error
-		want0 = cache.Value{Key: "Key-a"}
-		s.OnLookup.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_, _ = s.Lookup(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Lookup(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubFetchSubject binds Fetch into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// contractStubFetchSubject returns the subject of [stub.Behaviour] for
+// Fetch. The subject calls a new double that reports to tb.
 func contractStubFetchSubject(tb assert.TB) stub.Subject[cachetest.ContractFetchCall, cachetest.ContractFetchReturn] {
 	tb.Helper()
 	s := cachetest.NewContractStub(tb)
 	return stub.Subject[cachetest.ContractFetchCall, cachetest.ContractFetchReturn]{
 		Stub: s.OnFetch.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Fetch-a"
-			_, _ = s.Fetch(a0, a1)
+			_, _ = contractStubFetch(tb, s)
 		},
 		Result: func() cachetest.ContractFetchReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Fetch-a"
-			got0, got1 := s.Fetch(a0, a1)
+			got0, got1 := contractStubFetch(tb, s)
 			return cachetest.ContractFetchReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -320,226 +175,552 @@ func contractStubFetchSubject(tb assert.TB) stub.Subject[cachetest.ContractFetch
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Fetch-a"
-			_, r1 := s.Fetch(a0, a1)
+			_, r1 := contractStubFetch(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestContractStubFetch pins how Fetch answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubFetch(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a cachetest.ContractStub that
+// the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[cachetest.ContractStoreCall]
 
-	stub.Behaviour(t, "Fetch", contractStubFetchSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var want0 cache.Value
-		var want1 error
-		want0 = cache.Value{Key: "Key-a"}
-		s.OnFetch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		got0, _ := s.Fetch(a0, a1)
-		assert.Equal(t, got0, want0, "Fetch must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		_, _ = s.Fetch(a0, a1)
-		got := s.OnFetch.AssertCalledOnce(t, "Fetch must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var seen []cachetest.ContractFetchCall
-		s.OnFetch.OnRecord(func(c cachetest.ContractFetchCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		_, _ = s.Fetch(a0, a1)
-		_, _ = s.Fetch(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Fetch call")
-	})
-
-	t.Run("wires WithContractFetch at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := cachetest.NewContractStub(t, cachetest.WithContractFetch(func(_ context.Context, _ string) (cache.Value, error) {
-			called = true
-			var z0 cache.Value
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		_, _ = s.Fetch(a0, a1)
-		assert.True(t, called, "WithContractFetch must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Fetch-failing")
-		s := cachetest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		_, r1 := s.Fetch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Fetch must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := cachetest.NewContractStub(t)
-		var want0 cache.Value
-		var want1 error
-		want0 = cache.Value{Key: "Key-a"}
-		s.OnFetch.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		_, _ = s.Fetch(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Fetch(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Store stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func contractStubDouble() stub.Double[cachetest.ContractStoreCall] {
-	instance := func(s *cachetest.ContractStub) stub.Instance[cachetest.ContractStoreCall] {
-		return stub.Instance[cachetest.ContractStoreCall]{
-			Stub: s.OnStore.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				var a2 cache.Value
-				a1 = "Store-a"
-				a2 = cache.Value{Key: "Key-a"}
-				_ = s.Store(a0, a1, a2)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[cachetest.ContractStoreCall]{
-		New: func(tb assert.TB) stub.Instance[cachetest.ContractStoreCall] {
-			return instance(cachetest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Store alone.
+func contractStubInstanceOf(tb assert.TB, s *cachetest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnStore.MethodStub,
+		Call: func() {
+			_ = contractStubStore(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[cachetest.ContractStoreCall] {
-			return instance(cachetest.NewContractStub(tb, cachetest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[cachetest.ContractStoreCall] {
-			return instance(cachetest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[cachetest.ContractStoreCall] {
-			return instance(cachetest.NewContractStub(tb, cachetest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[cachetest.ContractStoreCall] {
-			return instance(cachetest.NewContractStub(tb, cachetest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[cachetest.ContractStoreCall] {
-			return instance(cachetest.NewContractStub(tb, cachetest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Store", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Store", contractStubStoreSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			_ = contractStubStore(t, s)
+			got := s.OnStore.AssertCalledOnce(t, "Store records the call")
+			a0, a1, a2 := contractStubStoreArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.V, a2, "the call records V")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			var seen []cachetest.ContractStoreCall
+			s.OnStore.OnRecord(func(c cachetest.ContractStoreCall) { seen = append(seen, c) })
+			_ = contractStubStore(t, s)
+			_ = contractStubStore(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Store")
+		})
+	})
+
+	t.Run("Lookup", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Lookup", contractStubLookupSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			_, _ = contractStubLookup(t, s)
+			got := s.OnLookup.AssertCalledOnce(t, "Lookup records the call")
+			a0, a1 := contractStubLookupArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			var seen []cachetest.ContractLookupCall
+			s.OnLookup.OnRecord(func(c cachetest.ContractLookupCall) { seen = append(seen, c) })
+			_, _ = contractStubLookup(t, s)
+			_, _ = contractStubLookup(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Lookup")
+		})
+	})
+
+	t.Run("Fetch", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Fetch", contractStubFetchSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			_, _ = contractStubFetch(t, s)
+			got := s.OnFetch.AssertCalledOnce(t, "Fetch records the call")
+			a0, a1 := contractStubFetchArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			var seen []cachetest.ContractFetchCall
+			s.OnFetch.OnRecord(func(c cachetest.ContractFetchCall) { seen = append(seen, c) })
+			_, _ = contractStubFetch(t, s)
+			_, _ = contractStubFetch(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Fetch")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, cachetest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Store", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			_ = contractStubStore(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnStore.CallCount(), 0, "ResetCalls clears the calls of Store")
+		})
+
+		t.Run("keeps the results of Returns of Store", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			want0 := contractStubStorePins()
+			s.OnStore.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubStore(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Store")
+		})
+
+		t.Run("clears the recorded calls of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			_, _ = contractStubLookup(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnLookup.CallCount(), 0, "ResetCalls clears the calls of Lookup")
+		})
+
+		t.Run("keeps the results of Returns of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			want0, want1 := contractStubLookupPins()
+			s.OnLookup.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubLookup(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Lookup")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Lookup")
+		})
+
+		t.Run("clears the recorded calls of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			_, _ = contractStubFetch(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnFetch.CallCount(), 0, "ResetCalls clears the calls of Fetch")
+		})
+
+		t.Run("keeps the results of Returns of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			want0, want1 := contractStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := contractStubFetch(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Fetch")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Fetch")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, cachetest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Store with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Store-failing")
+			s := cachetest.NewContractStubFailing(t, want)
+			r0 := contractStubStore(t, s)
+			assert.ErrorIs(t, r0, want, "Store fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Lookup with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Lookup-failing")
+			s := cachetest.NewContractStubFailing(t, want)
+			_, r1 := contractStubLookup(t, s)
+			assert.ErrorIs(t, r1, want, "Lookup fails with the error of NewContractStubFailing")
+		})
+
+		t.Run("fails Fetch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-failing")
+			s := cachetest.NewContractStubFailing(t, want)
+			_, r1 := contractStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, cachetest.NewContractStub(tb, cachetest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Store to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := cachetest.NewContractStub(t)
+			s := cachetest.NewContractStub(t, cachetest.ContractStubDelegateTo(inner))
+			_ = contractStubStore(t, s)
+			inner.OnStore.AssertCalledOnce(t, "Store calls the implementation")
+		})
+
+		t.Run("fails Store with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Store-delegate")
+			inner := cachetest.NewContractStub(t)
+			inner.OnStore.Faults(want, 1)
+			s := cachetest.NewContractStub(t, cachetest.ContractStubDelegateTo(inner))
+			r0 := contractStubStore(t, s)
+			assert.ErrorIs(t, r0, want, "Store fails with the error of the implementation")
+		})
+
+		t.Run("passes Lookup to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := cachetest.NewContractStub(t)
+			s := cachetest.NewContractStub(t, cachetest.ContractStubDelegateTo(inner))
+			_, _ = contractStubLookup(t, s)
+			inner.OnLookup.AssertCalledOnce(t, "Lookup calls the implementation")
+		})
+
+		t.Run("fails Lookup with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Lookup-delegate")
+			inner := cachetest.NewContractStub(t)
+			inner.OnLookup.Faults(want, 1)
+			s := cachetest.NewContractStub(t, cachetest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubLookup(t, s)
+			assert.ErrorIs(t, r1, want, "Lookup fails with the error of the implementation")
+		})
+
+		t.Run("passes Fetch to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := cachetest.NewContractStub(t)
+			s := cachetest.NewContractStub(t, cachetest.ContractStubDelegateTo(inner))
+			_, _ = contractStubFetch(t, s)
+			inner.OnFetch.AssertCalledOnce(t, "Fetch calls the implementation")
+		})
+
+		t.Run("fails Fetch with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-delegate")
+			inner := cachetest.NewContractStub(t)
+			inner.OnFetch.Faults(want, 1)
+			s := cachetest.NewContractStub(t, cachetest.ContractStubDelegateTo(inner))
+			_, r1 := contractStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, cachetest.NewContractStub(tb, cachetest.ContractStubWithClock(clk)))
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(tb, cachetest.NewContractStub(tb, cachetest.ContractStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, cachetest.NewContractStub(tb, cachetest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				cachetest.NewContractStub(
+					tb,
+					cachetest.ContractStubWithClock(clk),
+					cachetest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Store with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Store-failing")
+			s := cachetest.NewContractStub(t, cachetest.ContractStubFailing(want))
+			r0 := contractStubStore(t, s)
+			assert.ErrorIs(t, r0, want, "Store fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Lookup with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Lookup-failing")
+			s := cachetest.NewContractStub(t, cachetest.ContractStubFailing(want))
+			_, r1 := contractStubLookup(t, s)
+			assert.ErrorIs(t, r1, want, "Lookup fails with the error of ContractStubFailing")
+		})
+
+		t.Run("fails Fetch with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Fetch-failing")
+			s := cachetest.NewContractStub(t, cachetest.ContractStubFailing(want))
+			_, r1 := contractStubFetch(t, s)
+			assert.ErrorIs(t, r1, want, "Fetch fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractStore", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Store", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := cachetest.NewContractStub(
+				t,
+				cachetest.WithContractStore(func(_ context.Context, _ string, _ cache.Value) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubStore(t, s)
+			assert.True(t, called, "WithContractStore sets the function of Store")
+		})
+	})
+
+	t.Run("WithContractLookup", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Lookup", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := cachetest.NewContractStub(
+				t,
+				cachetest.WithContractLookup(func(_ context.Context, _ string) (cache.Value, error) {
+					called = true
+					var z0 cache.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubLookup(t, s)
+			assert.True(t, called, "WithContractLookup sets the function of Lookup")
+		})
+	})
+
+	t.Run("WithContractFetch", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Fetch", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := cachetest.NewContractStub(
+				t,
+				cachetest.WithContractFetch(func(_ context.Context, _ string) (cache.Value, error) {
+					called = true
+					var z0 cache.Value
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = contractStubFetch(t, s)
+			assert.True(t, called, "WithContractFetch sets the function of Fetch")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractStoreStub checks the methods of ContractStoreStub, which
+// configures Store.
+func TestContractStoreStub(t *testing.T) {
 	t.Parallel()
 
-	inner := cachetest.NewContractStub(t)
-	s := cachetest.NewContractStub(t, cachetest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Store to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 cache.Value
-		a1 = "Store-a"
-		a2 = cache.Value{Key: "Key-a"}
-		_ = s.Store(a0, a1, a2)
-		inner.OnStore.AssertCalledOnce(t, "Store must reach the wrapped implementation")
+		t.Run("sets the results of each call of Store", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			want0 := contractStubStorePins()
+			s.OnStore.Returns(want0)
+			got0 := contractStubStore(t, s)
+			assert.ErrorIs(t, got0, want0, "Store returns the error that Returns sets")
+		})
+
+		t.Run("configures Store for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := cachetest.NewContractStub(r)
+			s.OnStore.Strict()
+			var want0 error
+			s.OnStore.Returns(want0)
+			_ = contractStubStore(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Store")
+		})
 	})
 
-	t.Run("surfaces what Store answered", func(t *testing.T) {
-		want := errors.New("Store-delegate")
-		inner.OnStore.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 cache.Value
-		a1 = "Store-a"
-		a2 = cache.Value{Key: "Key-a"}
-		r0 := s.Store(a0, a1, a2)
-		assert.ErrorIs(t, r0, want, "Store must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Lookup to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_, _ = s.Lookup(a0, a1)
-		inner.OnLookup.AssertCalledOnce(t, "Lookup must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Lookup answered", func(t *testing.T) {
-		want := errors.New("Lookup-delegate")
-		inner.OnLookup.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Lookup-a"
-		_, r1 := s.Lookup(a0, a1)
-		assert.ErrorIs(t, r1, want, "Lookup must surface the wrapped answer")
-	})
-
-	t.Run("forwards Fetch to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		_, _ = s.Fetch(a0, a1)
-		inner.OnFetch.AssertCalledOnce(t, "Fetch must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Fetch answered", func(t *testing.T) {
-		want := errors.New("Fetch-delegate")
-		inner.OnFetch.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Fetch-a"
-		_, r1 := s.Fetch(a0, a1)
-		assert.ErrorIs(t, r1, want, "Fetch must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Store to the function", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 cache.Value
+			s.OnStore.Func(func(p0 context.Context, p1 string, p2 cache.Value) error {
+				got0, got1, got2 = p0, p1, p2
+				var z0 error
+				return z0
+			})
+			_ = contractStubStore(t, s)
+			a0, a1, a2 := contractStubStoreArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives V")
+		})
 	})
 }
 
-// dokimi:provenance sha256:bcd60b4056b556f065b075204e194b019b9bab43812b108a0ff73a099c30b85b
+// TestContractLookupStub checks the methods of ContractLookupStub, which
+// configures Lookup.
+func TestContractLookupStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Lookup", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			want0, want1 := contractStubLookupPins()
+			s.OnLookup.Returns(want0, want1)
+			got0, got1 := contractStubLookup(t, s)
+			expect.Equal(t, got0, want0, "Lookup returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Lookup returns the error that Returns sets")
+		})
+
+		t.Run("configures Lookup for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := cachetest.NewContractStub(r)
+			s.OnLookup.Strict()
+			var want0 cache.Value
+			var want1 error
+			s.OnLookup.Returns(want0, want1)
+			_, _ = contractStubLookup(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Lookup")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Lookup to the function", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnLookup.Func(func(p0 context.Context, p1 string) (cache.Value, error) {
+				got0, got1 = p0, p1
+				var z0 cache.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubLookup(t, s)
+			a0, a1 := contractStubLookupArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// TestContractFetchStub checks the methods of ContractFetchStub, which
+// configures Fetch.
+func TestContractFetchStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Fetch", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			want0, want1 := contractStubFetchPins()
+			s.OnFetch.Returns(want0, want1)
+			got0, got1 := contractStubFetch(t, s)
+			expect.Equal(t, got0, want0, "Fetch returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Fetch returns the error that Returns sets")
+		})
+
+		t.Run("configures Fetch for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := cachetest.NewContractStub(r)
+			s.OnFetch.Strict()
+			var want0 cache.Value
+			var want1 error
+			s.OnFetch.Returns(want0, want1)
+			_, _ = contractStubFetch(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Fetch")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Fetch to the function", func(t *testing.T) {
+			t.Parallel()
+			s := cachetest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnFetch.Func(func(p0 context.Context, p1 string) (cache.Value, error) {
+				got0, got1 = p0, p1
+				var z0 cache.Value
+				var z1 error
+				return z0, z1
+			})
+			_, _ = contractStubFetch(t, s)
+			a0, a1 := contractStubFetchArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:6b13a82807820851bfec598f1651e4b3a9b0207926940645ee320b88dac33f8a

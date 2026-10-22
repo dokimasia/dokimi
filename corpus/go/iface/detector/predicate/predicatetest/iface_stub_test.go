@@ -10,26 +10,38 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate/predicatetest"
+	"go.dokimi.dev/stub"
 )
 
-// predicateStubIsEmptySubject binds IsEmpty into the shape
-// [stub.Behaviour] drives: how to call it, what it answers with, and how
-// to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func predicateStubIsEmptySubject(tb assert.TB) stub.Subject[predicatetest.PredicateIsEmptyCall, predicatetest.PredicateIsEmptyReturn] {
+// predicateStubIsEmpty calls IsEmpty of s with the samples of its
+// arguments.
+func predicateStubIsEmpty(tb assert.TB, s *predicatetest.PredicateStub) bool {
+	tb.Helper()
+	return s.IsEmpty()
+}
+
+// predicateStubIsEmptyPins returns the samples of the results of IsEmpty.
+func predicateStubIsEmptyPins() bool {
+	var want0 bool
+	want0 = true
+	return want0
+}
+
+// predicateStubIsEmptySubject returns the subject of [stub.Behaviour] for
+// IsEmpty. The subject calls a new double that reports to tb.
+func predicateStubIsEmptySubject(
+	tb assert.TB,
+) stub.Subject[predicatetest.PredicateIsEmptyCall, predicatetest.PredicateIsEmptyReturn] {
 	tb.Helper()
 	s := predicatetest.NewPredicateStub(tb)
 	return stub.Subject[predicatetest.PredicateIsEmptyCall, predicatetest.PredicateIsEmptyReturn]{
 		Stub: s.OnIsEmpty.MethodStub,
 		Call: func() {
-			_ = s.IsEmpty()
+			_ = predicateStubIsEmpty(tb, s)
 		},
 		Result: func() predicatetest.PredicateIsEmptyReturn {
-			got0 := s.IsEmpty()
+			got0 := predicateStubIsEmpty(tb, s)
 			return predicatetest.PredicateIsEmptyReturn{Result: got0}
 		},
 		Override: func(mark func()) {
@@ -42,128 +54,183 @@ func predicateStubIsEmptySubject(tb assert.TB) stub.Subject[predicatetest.Predic
 	}
 }
 
-// TestPredicateStubIsEmpty pins how IsEmpty answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestPredicateStubIsEmpty(t *testing.T) {
-	t.Parallel()
+// predicateStubInstance is the instance of a predicatetest.PredicateStub
+// that the checks of the constructors and the options drive.
+type predicateStubInstance = stub.Instance[predicatetest.PredicateIsEmptyCall]
 
-	stub.Behaviour(t, "IsEmpty", predicateStubIsEmptySubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := predicatetest.NewPredicateStub(t)
-		var want0 bool
-		want0 = true
-		s.OnIsEmpty.Returns(want0)
-		got0 := s.IsEmpty()
-		assert.Equal(t, got0, want0, "IsEmpty must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := predicatetest.NewPredicateStub(t)
-		_ = s.IsEmpty()
-		s.OnIsEmpty.AssertCalledOnce(t, "IsEmpty must record the call")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := predicatetest.NewPredicateStub(t)
-		var seen []predicatetest.PredicateIsEmptyCall
-		s.OnIsEmpty.OnRecord(func(c predicatetest.PredicateIsEmptyCall) { seen = append(seen, c) })
-		_ = s.IsEmpty()
-		_ = s.IsEmpty()
-		assert.Length(t, seen, 2, "OnRecord must fire once per IsEmpty call")
-	})
-
-	t.Run("wires WithPredicateIsEmpty at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := predicatetest.NewPredicateStub(t, predicatetest.WithPredicateIsEmpty(func() bool {
-			called = true
-			var z0 bool
-			return z0
-		}))
-		_ = s.IsEmpty()
-		assert.True(t, called, "WithPredicateIsEmpty must install the override")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := predicatetest.NewPredicateStub(t)
-		var want0 bool
-		want0 = true
-		s.OnIsEmpty.Returns(want0)
-		_ = s.IsEmpty()
-		s.ResetCalls()
-		got0 := s.IsEmpty()
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// predicateStubDouble describes how to build a PredicateStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// IsEmpty stands in for the double as a whole: these checks assert only
-// that an option reached it.
-func predicateStubDouble() stub.Double[predicatetest.PredicateIsEmptyCall] {
-	instance := func(s *predicatetest.PredicateStub) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-		return stub.Instance[predicatetest.PredicateIsEmptyCall]{
-			Stub: s.OnIsEmpty.MethodStub,
-			Call: func() {
-				_ = s.IsEmpty()
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[predicatetest.PredicateIsEmptyCall]{
-		New: func(tb assert.TB) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-			return instance(predicatetest.NewPredicateStub(tb))
+// predicateStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call IsEmpty alone.
+func predicateStubInstanceOf(tb assert.TB, s *predicatetest.PredicateStub) predicateStubInstance {
+	tb.Helper()
+	return predicateStubInstance{
+		Stub: s.OnIsEmpty.MethodStub,
+		Call: func() {
+			_ = predicateStubIsEmpty(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-			return instance(predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-			return instance(predicatetest.NewPredicateStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-			return instance(predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-			return instance(predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[predicatetest.PredicateIsEmptyCall] {
-			return instance(predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestPredicateStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestPredicateStubOptions(t *testing.T) {
+// TestPredicateStub checks the methods, the constructors and the options
+// of the double PredicateStub.
+func TestPredicateStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, predicateStubDouble())
-}
+	t.Run("IsEmpty", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "IsEmpty", predicateStubIsEmptySubject)
 
-// TestPredicateStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestPredicateStubDelegateTo(t *testing.T) {
-	t.Parallel()
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := predicatetest.NewPredicateStub(t)
+			var seen []predicatetest.PredicateIsEmptyCall
+			s.OnIsEmpty.OnRecord(func(c predicatetest.PredicateIsEmptyCall) { seen = append(seen, c) })
+			_ = predicateStubIsEmpty(t, s)
+			_ = predicateStubIsEmpty(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of IsEmpty")
+		})
+	})
 
-	inner := predicatetest.NewPredicateStub(t)
-	s := predicatetest.NewPredicateStub(t, predicatetest.PredicateStubDelegateTo(inner))
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) predicateStubInstance {
+			return predicateStubInstanceOf(tb, predicatetest.NewPredicateStub(tb))
+		})
 
-	t.Run("forwards IsEmpty to the wrapped implementation", func(t *testing.T) {
-		_ = s.IsEmpty()
-		inner.OnIsEmpty.AssertCalledOnce(t, "IsEmpty must reach the wrapped implementation")
+		t.Run("clears the recorded calls of IsEmpty", func(t *testing.T) {
+			t.Parallel()
+			s := predicatetest.NewPredicateStub(t)
+			_ = predicateStubIsEmpty(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnIsEmpty.CallCount(), 0, "ResetCalls clears the calls of IsEmpty")
+		})
+
+		t.Run("keeps the results of Returns of IsEmpty", func(t *testing.T) {
+			t.Parallel()
+			s := predicatetest.NewPredicateStub(t)
+			want0 := predicateStubIsEmptyPins()
+			s.OnIsEmpty.Returns(want0)
+			s.ResetCalls()
+			got0 := predicateStubIsEmpty(t, s)
+			assert.Equal(t, got0, want0, "ResetCalls keeps the Result of IsEmpty")
+		})
+	})
+
+	t.Run("NewPredicateStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) predicateStubInstance {
+			return predicateStubInstanceOf(tb, predicatetest.NewPredicateStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("PredicateStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) predicateStubInstance {
+			return predicateStubInstanceOf(tb, predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubStrict()))
+		})
+	})
+
+	t.Run("PredicateStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes IsEmpty to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := predicatetest.NewPredicateStub(t)
+			s := predicatetest.NewPredicateStub(t, predicatetest.PredicateStubDelegateTo(inner))
+			_ = predicateStubIsEmpty(t, s)
+			inner.OnIsEmpty.AssertCalledOnce(t, "IsEmpty calls the implementation")
+		})
+	})
+
+	t.Run("PredicateStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) predicateStubInstance {
+			return predicateStubInstanceOf(
+				tb,
+				predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("PredicateStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) predicateStubInstance {
+			return predicateStubInstanceOf(
+				tb,
+				predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("PredicateStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) predicateStubInstance {
+			return predicateStubInstanceOf(
+				tb,
+				predicatetest.NewPredicateStub(tb, predicatetest.PredicateStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("PredicateStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) predicateStubInstance {
+			return predicateStubInstanceOf(
+				tb,
+				predicatetest.NewPredicateStub(
+					tb,
+					predicatetest.PredicateStubWithClock(clk),
+					predicatetest.PredicateStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("WithPredicateIsEmpty", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of IsEmpty", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := predicatetest.NewPredicateStub(t, predicatetest.WithPredicateIsEmpty(func() bool {
+				called = true
+				var z0 bool
+				return z0
+			}))
+			_ = predicateStubIsEmpty(t, s)
+			assert.True(t, called, "WithPredicateIsEmpty sets the function of IsEmpty")
+		})
 	})
 }
 
-// dokimi:provenance sha256:9e45ea4c21e1323da2eee06fc24626f276277b0d1b5ef3a41d08c46fb67bc5bb
+// TestPredicateIsEmptyStub checks the methods of PredicateIsEmptyStub,
+// which configures IsEmpty.
+func TestPredicateIsEmptyStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of IsEmpty", func(t *testing.T) {
+			t.Parallel()
+			s := predicatetest.NewPredicateStub(t)
+			want0 := predicateStubIsEmptyPins()
+			s.OnIsEmpty.Returns(want0)
+			got0 := predicateStubIsEmpty(t, s)
+			assert.Equal(t, got0, want0, "IsEmpty returns the Result that Returns sets")
+		})
+
+		t.Run("configures IsEmpty for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := predicatetest.NewPredicateStub(r)
+			s.OnIsEmpty.Strict()
+			var want0 bool
+			s.OnIsEmpty.Returns(want0)
+			_ = predicateStubIsEmpty(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of IsEmpty")
+		})
+	})
+}
+
+// dokimi:provenance sha256:0c9b613e759f54753c4426836381cfdb2ef419d20982f4f68fa9d83152450896

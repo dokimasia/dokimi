@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool"
+	"go.dokimi.dev/stub"
 )
 
-// ReaderWithBoolLoadCall records one invocation of ReaderWithBool.Load.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// ReaderWithBoolLoadCall records one call of ReaderWithBool.Load.
 type ReaderWithBoolLoadCall struct {
 	Ctx     context.Context
 	Key     string
@@ -25,14 +22,8 @@ type ReaderWithBoolLoadCall struct {
 	Result1 bool
 }
 
-// --- Per-method configuration ---
-
-// ReaderWithBoolLoadStub controls how the double answers Load and records
-// what it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// ReaderWithBoolLoadStub configures Load and records its calls. Load
+// returns no error, so a fault armed through it fails the test.
 type ReaderWithBoolLoadStub struct {
 	*stub.MethodStub[ReaderWithBoolLoadCall]
 
@@ -40,114 +31,107 @@ type ReaderWithBoolLoadStub struct {
 	fallback *ReaderWithBoolLoadReturn
 }
 
-// ReaderWithBoolLoadReturn holds the fixed answer configured through
-// Returns.
+// ReaderWithBoolLoadReturn contains the fixed results of Load.
 type ReaderWithBoolLoadReturn struct {
 	Result0 readerwithbool.Value
 	Result1 bool
 }
 
-// Returns pins a fixed result for every call to Load. A Func override
-// takes precedence over it.
-//
-// No fault can take precedence here: Load answers no error, so the double
-// is built with no fault arm and a fault armed through Faults fails the
-// test.
+// Returns sets the results of every call of Load. A function takes
+// precedence over them.
 func (s *ReaderWithBoolLoadStub) Returns(result0 readerwithbool.Value, result1 bool) *ReaderWithBoolLoadStub {
 	s.fallback = &ReaderWithBoolLoadReturn{Result0: result0, Result1: result1}
 	return s
 }
 
-// Func supplies a body for Load, for when the answer depends on the
-// arguments. Nothing takes precedence over it: Load answers no error, so
-// the double carries no fault arm for one to be reported through.
-func (s *ReaderWithBoolLoadStub) Func(fn func(context.Context, string) (readerwithbool.Value, bool)) *ReaderWithBoolLoadStub {
+// Func sets the function that computes the results of Load from its
+// arguments.
+func (s *ReaderWithBoolLoadStub) Func(
+	fn func(context.Context, string) (readerwithbool.Value, bool),
+) *ReaderWithBoolLoadStub {
 	s.fn = fn
 	return s
 }
 
-// --- ReaderWithBoolStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// ReaderWithBoolStubOption configures a [ReaderWithBoolStub] at
-// construction time.
+// ReaderWithBoolStubOption configures a [ReaderWithBoolStub] at its
+// construction.
 type ReaderWithBoolStubOption func(*ReaderWithBoolStub)
 
-// ReaderWithBoolStubStrict makes an unconfigured method fail the test
-// rather than return its zero value.
+// ReaderWithBoolStubStrict returns the option that makes an unconfigured
+// method fail the test instead of returning its zero value.
 func ReaderWithBoolStubStrict() ReaderWithBoolStubOption {
 	return func(s *ReaderWithBoolStub) { s.strict = true }
 }
 
-// ReaderWithBoolStubDelegateTo wraps a real implementation: every method
-// forwards to impl and is recorded on the double on the way through.
+// ReaderWithBoolStubDelegateTo returns the option that passes each call to
+// impl. The double still records the call.
 func ReaderWithBoolStubDelegateTo(impl readerwithbool.ReaderWithBool) ReaderWithBoolStubOption {
 	return func(s *ReaderWithBoolStub) {
 		s.OnLoad.Func(impl.Load)
 	}
 }
 
-// ReaderWithBoolStubWithClock drives latency and time-windowed faults from
-// clk rather than from wall time, so a test asserting on a five-second
-// timeout does not take five seconds.
+// ReaderWithBoolStubWithClock returns the option that sets the clock of
+// the double to clk. The double takes the latency, the windows of the
+// faults and the instants of the calls from clk. A latency on a controlled
+// clock costs no real time.
 func ReaderWithBoolStubWithClock(clk assert.Clock) ReaderWithBoolStubOption {
 	return func(s *ReaderWithBoolStub) { s.group.SetClock(clk) }
 }
 
-// ReaderWithBoolStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// ReaderWithBoolStubWithRandSource returns the option that sets the random
+// source of the probabilistic faults to src. A seeded source repeats the
+// faults of a run.
 func ReaderWithBoolStubWithRandSource(src rand.Source) ReaderWithBoolStubOption {
 	return func(s *ReaderWithBoolStub) { s.group.SetRandSource(src) }
 }
 
-// ReaderWithBoolStubBenchMode disables call recording. Dispatch still
-// works; only the accumulating call log is dropped.
+// ReaderWithBoolStubBenchMode returns the option that turns the recording
+// of calls off. The methods still return their results.
 func ReaderWithBoolStubBenchMode() ReaderWithBoolStubOption {
 	return func(s *ReaderWithBoolStub) { s.group.BenchMode() }
 }
 
-// ReaderWithBoolStubWithLatency makes every method sleep d before
-// answering, for a test standing in for a slow dependency rather than one
-// slow method. Pair it with ReaderWithBoolStubWithClock, or d elapses in
-// wall time.
+// ReaderWithBoolStubWithLatency returns the option that makes every method
+// sleep d before it returns. Without ReaderWithBoolStubWithClock, d passes
+// in real time.
 func ReaderWithBoolStubWithLatency(d time.Duration) ReaderWithBoolStubOption {
 	return func(s *ReaderWithBoolStub) { s.group.SetLatency(d) }
 }
 
-// WithReaderWithBoolLoad sets Load's body at construction time, for the
-// common case of configuring one method and taking the defaults for the
-// rest.
+// WithReaderWithBoolLoad returns the option that sets the function of
+// Load.
 func WithReaderWithBoolLoad(fn func(context.Context, string) (readerwithbool.Value, bool)) ReaderWithBoolStubOption {
 	return func(s *ReaderWithBoolStub) { s.OnLoad.Func(fn) }
 }
 
-// ReaderWithBoolStub is a recording test double for ReaderWithBool.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// ReaderWithBoolStub is a recording test double of ReaderWithBool. Each
+// field On<Method> configures its method. An unconfigured method records
+// the call and returns the zero values of its results.
 type ReaderWithBoolStub struct {
 	OnLoad *ReaderWithBoolLoadStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that ReaderWithBoolStub satisfies ReaderWithBool.
+// The compiler checks that ReaderWithBoolStub implements ReaderWithBool.
 var _ readerwithbool.ReaderWithBool = (*ReaderWithBoolStub)(nil)
 
-// NewReaderWithBoolStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewReaderWithBoolStub returns a double of ReaderWithBool that reports
+// its failures to tb and applies opts. The double checks the expected
+// counts of calls at the end of the test. With a nil tb, the double
+// reports nothing.
 func NewReaderWithBoolStub(tb assert.TB, opts ...ReaderWithBoolStubOption) *ReaderWithBoolStub {
 	s := &ReaderWithBoolStub{
-		OnLoad: &ReaderWithBoolLoadStub{MethodStub: stub.NewMethodStub[ReaderWithBoolLoadCall](tb, "ReaderWithBool.Load")},
+		OnLoad: &ReaderWithBoolLoadStub{
+			MethodStub: stub.NewMethodStub[ReaderWithBoolLoadCall](tb, "ReaderWithBool.Load"),
+		},
 	}
 	s.group = stub.NewGroup(
 		s.OnLoad.MethodStub,
@@ -162,30 +146,28 @@ func NewReaderWithBoolStub(tb assert.TB, opts ...ReaderWithBoolStubOption) *Read
 	return s
 }
 
-// NewReaderWithBoolStubDelayed returns a double whose every method sleeps
-// d against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
-func NewReaderWithBoolStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...ReaderWithBoolStubOption) *ReaderWithBoolStub {
+// NewReaderWithBoolStubDelayed returns a double whose methods sleep d on
+// clk before they return. It applies opts after the clock and the latency.
+func NewReaderWithBoolStubDelayed(
+	tb assert.TB,
+	d time.Duration,
+	clk assert.Clock,
+	opts ...ReaderWithBoolStubOption,
+) *ReaderWithBoolStub {
 	return NewReaderWithBoolStub(tb, append([]ReaderWithBoolStubOption{
 		ReaderWithBoolStubWithClock(clk),
 		ReaderWithBoolStubWithLatency(d),
 	}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *ReaderWithBoolStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *ReaderWithBoolLoadStub) invoke(ctx context.Context, key string) func() ReaderWithBoolLoadReturn {
 	if s.fn == nil {
 		return nil
@@ -196,12 +178,8 @@ func (s *ReaderWithBoolLoadStub) invoke(ctx context.Context, key string) func() 
 	}
 }
 
-// Load records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Load records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *ReaderWithBoolStub) Load(ctx context.Context, key string) (readerwithbool.Value, bool) {
 	call := ReaderWithBoolLoadCall{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnLoad.MethodStub, &call, stub.Arms[ReaderWithBoolLoadCall, ReaderWithBoolLoadReturn]{
@@ -215,4 +193,4 @@ func (s *ReaderWithBoolStub) Load(ctx context.Context, key string) (readerwithbo
 	return r.Result0, r.Result1
 }
 
-// dokimi:provenance sha256:d9f817267392025a2eab9432504a658f58b4f510b1a6f33c420f92cc400f6b91
+// dokimi:provenance sha256:11db339f6b6ec3a26d3f23d8bd5222480836ff684a9df03ee589b91e8afb7668

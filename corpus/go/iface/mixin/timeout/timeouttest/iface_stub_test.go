@@ -12,31 +12,46 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeout/timeouttest"
+	"go.dokimi.dev/stub"
 )
 
-// mixedStubSlowSubject binds Slow into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// mixedStubSlowArgs returns the samples of the arguments of Slow.
+func mixedStubSlowArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Slow-a"
+	return a0, a1
+}
+
+// mixedStubSlow calls Slow of s with the samples of its arguments.
+func mixedStubSlow(tb assert.TB, s *timeouttest.MixedStub) error {
+	tb.Helper()
+	a0, a1 := mixedStubSlowArgs(tb)
+	return s.Slow(a0, a1)
+}
+
+// mixedStubSlowPins returns the samples of the results of Slow, with a new
+// error as its error result.
+func mixedStubSlowPins() error {
+	want0 := errors.New("Slow-returns")
+	return want0
+}
+
+// mixedStubSlowSubject returns the subject of [stub.Behaviour] for Slow.
+// The subject calls a new double that reports to tb.
 func mixedStubSlowSubject(tb assert.TB) stub.Subject[timeouttest.MixedSlowCall, timeouttest.MixedSlowReturn] {
 	tb.Helper()
 	s := timeouttest.NewMixedStub(tb)
 	return stub.Subject[timeouttest.MixedSlowCall, timeouttest.MixedSlowReturn]{
 		Stub: s.OnSlow.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Slow-a"
-			_ = s.Slow(a0, a1)
+			_ = mixedStubSlow(tb, s)
 		},
 		Result: func() timeouttest.MixedSlowReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Slow-a"
-			got0 := s.Slow(a0, a1)
+			got0 := mixedStubSlow(tb, s)
 			return timeouttest.MixedSlowReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,167 +62,240 @@ func mixedStubSlowSubject(tb assert.TB) stub.Subject[timeouttest.MixedSlowCall, 
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Slow-a"
-			r0 := s.Slow(a0, a1)
+			r0 := mixedStubSlow(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMixedStubSlow pins how Slow answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMixedStubSlow(t *testing.T) {
-	t.Parallel()
+// mixedStubInstance is the instance of a timeouttest.MixedStub that the
+// checks of the constructors and the options drive.
+type mixedStubInstance = stub.Instance[timeouttest.MixedSlowCall]
 
-	stub.Behaviour(t, "Slow", mixedStubSlowSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := timeouttest.NewMixedStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Slow-a"
-		_ = s.Slow(a0, a1)
-		got := s.OnSlow.AssertCalledOnce(t, "Slow must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := timeouttest.NewMixedStub(t)
-		var seen []timeouttest.MixedSlowCall
-		s.OnSlow.OnRecord(func(c timeouttest.MixedSlowCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Slow-a"
-		_ = s.Slow(a0, a1)
-		_ = s.Slow(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Slow call")
-	})
-
-	t.Run("wires WithMixedSlow at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := timeouttest.NewMixedStub(t, timeouttest.WithMixedSlow(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Slow-a"
-		_ = s.Slow(a0, a1)
-		assert.True(t, called, "WithMixedSlow must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Slow-failing")
-		s := timeouttest.NewMixedStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Slow-a"
-		r0 := s.Slow(a0, a1)
-		assert.ErrorIs(t, r0, want, "Slow must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := timeouttest.NewMixedStub(t)
-		var want0 error
-		s.OnSlow.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Slow-a"
-		_ = s.Slow(a0, a1)
-		s.ResetCalls()
-		_ = s.Slow(a0, a1)
-		s.OnSlow.AssertCalledOnce(t, "Slow must record the call that followed the reset")
-	})
-}
-
-// mixedStubDouble describes how to build a MixedStub under each option
-// whose effect is the same whatever a method's signature.
-//
-// Slow stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func mixedStubDouble() stub.Double[timeouttest.MixedSlowCall] {
-	instance := func(s *timeouttest.MixedStub) stub.Instance[timeouttest.MixedSlowCall] {
-		return stub.Instance[timeouttest.MixedSlowCall]{
-			Stub: s.OnSlow.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Slow-a"
-				_ = s.Slow(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[timeouttest.MixedSlowCall]{
-		New: func(tb assert.TB) stub.Instance[timeouttest.MixedSlowCall] {
-			return instance(timeouttest.NewMixedStub(tb))
+// mixedStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Slow alone.
+func mixedStubInstanceOf(tb assert.TB, s *timeouttest.MixedStub) mixedStubInstance {
+	tb.Helper()
+	return mixedStubInstance{
+		Stub: s.OnSlow.MethodStub,
+		Call: func() {
+			_ = mixedStubSlow(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[timeouttest.MixedSlowCall] {
-			return instance(timeouttest.NewMixedStub(tb, timeouttest.MixedStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[timeouttest.MixedSlowCall] {
-			return instance(timeouttest.NewMixedStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[timeouttest.MixedSlowCall] {
-			return instance(timeouttest.NewMixedStub(tb, timeouttest.MixedStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[timeouttest.MixedSlowCall] {
-			return instance(timeouttest.NewMixedStub(tb, timeouttest.MixedStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[timeouttest.MixedSlowCall] {
-			return instance(timeouttest.NewMixedStub(tb, timeouttest.MixedStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMixedStubOptions pins the settings that apply to the double rather
-// than to one method: bench mode, the injected clock and random source,
-// and what a reset clears.
-func TestMixedStubOptions(t *testing.T) {
+// TestMixedStub checks the methods, the constructors and the options of
+// the double MixedStub.
+func TestMixedStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, mixedStubDouble())
+	t.Run("Slow", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Slow", mixedStubSlowSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := timeouttest.NewMixedStub(t)
+			_ = mixedStubSlow(t, s)
+			got := s.OnSlow.AssertCalledOnce(t, "Slow records the call")
+			a0, a1 := mixedStubSlowArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := timeouttest.NewMixedStub(t)
+			var seen []timeouttest.MixedSlowCall
+			s.OnSlow.OnRecord(func(c timeouttest.MixedSlowCall) { seen = append(seen, c) })
+			_ = mixedStubSlow(t, s)
+			_ = mixedStubSlow(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Slow")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeouttest.NewMixedStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Slow", func(t *testing.T) {
+			t.Parallel()
+			s := timeouttest.NewMixedStub(t)
+			_ = mixedStubSlow(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSlow.CallCount(), 0, "ResetCalls clears the calls of Slow")
+		})
+
+		t.Run("keeps the results of Returns of Slow", func(t *testing.T) {
+			t.Parallel()
+			s := timeouttest.NewMixedStub(t)
+			want0 := mixedStubSlowPins()
+			s.OnSlow.Returns(want0)
+			s.ResetCalls()
+			got0 := mixedStubSlow(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Slow")
+		})
+	})
+
+	t.Run("NewMixedStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeouttest.NewMixedStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Slow with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Slow-failing")
+			s := timeouttest.NewMixedStubFailing(t, want)
+			r0 := mixedStubSlow(t, s)
+			assert.ErrorIs(t, r0, want, "Slow fails with the error of NewMixedStubFailing")
+		})
+	})
+
+	t.Run("MixedStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeouttest.NewMixedStub(tb, timeouttest.MixedStubStrict()))
+		})
+	})
+
+	t.Run("MixedStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Slow to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := timeouttest.NewMixedStub(t)
+			s := timeouttest.NewMixedStub(t, timeouttest.MixedStubDelegateTo(inner))
+			_ = mixedStubSlow(t, s)
+			inner.OnSlow.AssertCalledOnce(t, "Slow calls the implementation")
+		})
+
+		t.Run("fails Slow with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Slow-delegate")
+			inner := timeouttest.NewMixedStub(t)
+			inner.OnSlow.Faults(want, 1)
+			s := timeouttest.NewMixedStub(t, timeouttest.MixedStubDelegateTo(inner))
+			r0 := mixedStubSlow(t, s)
+			assert.ErrorIs(t, r0, want, "Slow fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MixedStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeouttest.NewMixedStub(tb, timeouttest.MixedStubWithClock(clk)))
+		})
+	})
+
+	t.Run("MixedStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeouttest.NewMixedStub(tb, timeouttest.MixedStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("MixedStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) mixedStubInstance {
+			return mixedStubInstanceOf(tb, timeouttest.NewMixedStub(tb, timeouttest.MixedStubBenchMode()))
+		})
+	})
+
+	t.Run("MixedStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) mixedStubInstance {
+			return mixedStubInstanceOf(
+				tb,
+				timeouttest.NewMixedStub(tb, timeouttest.MixedStubWithClock(clk), timeouttest.MixedStubWithLatency(d)),
+			)
+		})
+	})
+
+	t.Run("MixedStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Slow with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Slow-failing")
+			s := timeouttest.NewMixedStub(t, timeouttest.MixedStubFailing(want))
+			r0 := mixedStubSlow(t, s)
+			assert.ErrorIs(t, r0, want, "Slow fails with the error of MixedStubFailing")
+		})
+	})
+
+	t.Run("WithMixedSlow", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Slow", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := timeouttest.NewMixedStub(t, timeouttest.WithMixedSlow(func(_ context.Context, _ string) error {
+				called = true
+				var z0 error
+				return z0
+			}))
+			_ = mixedStubSlow(t, s)
+			assert.True(t, called, "WithMixedSlow sets the function of Slow")
+		})
+	})
 }
 
-// TestMixedStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestMixedStubDelegateTo(t *testing.T) {
+// TestMixedSlowStub checks the methods of MixedSlowStub, which configures
+// Slow.
+func TestMixedSlowStub(t *testing.T) {
 	t.Parallel()
 
-	inner := timeouttest.NewMixedStub(t)
-	s := timeouttest.NewMixedStub(t, timeouttest.MixedStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Slow to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Slow-a"
-		_ = s.Slow(a0, a1)
-		inner.OnSlow.AssertCalledOnce(t, "Slow must reach the wrapped implementation")
+		t.Run("sets the results of each call of Slow", func(t *testing.T) {
+			t.Parallel()
+			s := timeouttest.NewMixedStub(t)
+			want0 := mixedStubSlowPins()
+			s.OnSlow.Returns(want0)
+			got0 := mixedStubSlow(t, s)
+			assert.ErrorIs(t, got0, want0, "Slow returns the error that Returns sets")
+		})
+
+		t.Run("configures Slow for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := timeouttest.NewMixedStub(r)
+			s.OnSlow.Strict()
+			var want0 error
+			s.OnSlow.Returns(want0)
+			_ = mixedStubSlow(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Slow")
+		})
 	})
 
-	t.Run("surfaces what Slow answered", func(t *testing.T) {
-		want := errors.New("Slow-delegate")
-		inner.OnSlow.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Slow-a"
-		r0 := s.Slow(a0, a1)
-		assert.ErrorIs(t, r0, want, "Slow must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Slow to the function", func(t *testing.T) {
+			t.Parallel()
+			s := timeouttest.NewMixedStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnSlow.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = mixedStubSlow(t, s)
+			a0, a1 := mixedStubSlowArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:fb94a7689bc758d28832d5182691cd5ce9a2d37429f9c7808cdff5845b894a0e
+// dokimi:provenance sha256:f1cdf307d35cabd266fc4084d0c622164cc3010f7856591d85ff9e89a7f95239

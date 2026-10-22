@@ -12,31 +12,46 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/rate-limit/ratelimittest"
+	"go.dokimi.dev/stub"
 )
 
-// contractStubRunSubject binds Run into the shape [stub.Behaviour] drives:
-// how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
+// contractStubRunArgs returns the samples of the arguments of Run.
+func contractStubRunArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Run-a"
+	return a0, a1
+}
+
+// contractStubRun calls Run of s with the samples of its arguments.
+func contractStubRun(tb assert.TB, s *ratelimittest.ContractStub) error {
+	tb.Helper()
+	a0, a1 := contractStubRunArgs(tb)
+	return s.Run(a0, a1)
+}
+
+// contractStubRunPins returns the samples of the results of Run, with a
+// new error as its error result.
+func contractStubRunPins() error {
+	want0 := errors.New("Run-returns")
+	return want0
+}
+
+// contractStubRunSubject returns the subject of [stub.Behaviour] for Run.
+// The subject calls a new double that reports to tb.
 func contractStubRunSubject(tb assert.TB) stub.Subject[ratelimittest.ContractRunCall, ratelimittest.ContractRunReturn] {
 	tb.Helper()
 	s := ratelimittest.NewContractStub(tb)
 	return stub.Subject[ratelimittest.ContractRunCall, ratelimittest.ContractRunReturn]{
 		Stub: s.OnRun.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Run-a"
-			_ = s.Run(a0, a1)
+			_ = contractStubRun(tb, s)
 		},
 		Result: func() ratelimittest.ContractRunReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Run-a"
-			got0 := s.Run(a0, a1)
+			got0 := contractStubRun(tb, s)
 			return ratelimittest.ContractRunReturn{Err: got0}
 		},
 		Override: func(mark func()) {
@@ -47,167 +62,253 @@ func contractStubRunSubject(tb assert.TB) stub.Subject[ratelimittest.ContractRun
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Run-a"
-			r0 := s.Run(a0, a1)
+			r0 := contractStubRun(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestContractStubRun pins how Run answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestContractStubRun(t *testing.T) {
-	t.Parallel()
+// contractStubInstance is the instance of a ratelimittest.ContractStub
+// that the checks of the constructors and the options drive.
+type contractStubInstance = stub.Instance[ratelimittest.ContractRunCall]
 
-	stub.Behaviour(t, "Run", contractStubRunSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := ratelimittest.NewContractStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Run-a"
-		_ = s.Run(a0, a1)
-		got := s.OnRun.AssertCalledOnce(t, "Run must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := ratelimittest.NewContractStub(t)
-		var seen []ratelimittest.ContractRunCall
-		s.OnRun.OnRecord(func(c ratelimittest.ContractRunCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Run-a"
-		_ = s.Run(a0, a1)
-		_ = s.Run(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Run call")
-	})
-
-	t.Run("wires WithContractRun at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := ratelimittest.NewContractStub(t, ratelimittest.WithContractRun(func(_ context.Context, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Run-a"
-		_ = s.Run(a0, a1)
-		assert.True(t, called, "WithContractRun must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Run-failing")
-		s := ratelimittest.NewContractStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Run-a"
-		r0 := s.Run(a0, a1)
-		assert.ErrorIs(t, r0, want, "Run must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := ratelimittest.NewContractStub(t)
-		var want0 error
-		s.OnRun.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		a1 = "Run-a"
-		_ = s.Run(a0, a1)
-		s.ResetCalls()
-		_ = s.Run(a0, a1)
-		s.OnRun.AssertCalledOnce(t, "Run must record the call that followed the reset")
-	})
-}
-
-// contractStubDouble describes how to build a ContractStub under each
-// option whose effect is the same whatever a method's signature.
-//
-// Run stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func contractStubDouble() stub.Double[ratelimittest.ContractRunCall] {
-	instance := func(s *ratelimittest.ContractStub) stub.Instance[ratelimittest.ContractRunCall] {
-		return stub.Instance[ratelimittest.ContractRunCall]{
-			Stub: s.OnRun.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				a1 = "Run-a"
-				_ = s.Run(a0, a1)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[ratelimittest.ContractRunCall]{
-		New: func(tb assert.TB) stub.Instance[ratelimittest.ContractRunCall] {
-			return instance(ratelimittest.NewContractStub(tb))
+// contractStubInstanceOf returns the instance of s. The options apply to
+// the whole double, so the checks call Run alone.
+func contractStubInstanceOf(tb assert.TB, s *ratelimittest.ContractStub) contractStubInstance {
+	tb.Helper()
+	return contractStubInstance{
+		Stub: s.OnRun.MethodStub,
+		Call: func() {
+			_ = contractStubRun(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[ratelimittest.ContractRunCall] {
-			return instance(ratelimittest.NewContractStub(tb, ratelimittest.ContractStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[ratelimittest.ContractRunCall] {
-			return instance(ratelimittest.NewContractStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[ratelimittest.ContractRunCall] {
-			return instance(ratelimittest.NewContractStub(tb, ratelimittest.ContractStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[ratelimittest.ContractRunCall] {
-			return instance(ratelimittest.NewContractStub(tb, ratelimittest.ContractStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[ratelimittest.ContractRunCall] {
-			return instance(ratelimittest.NewContractStub(tb, ratelimittest.ContractStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestContractStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestContractStubOptions(t *testing.T) {
+// TestContractStub checks the methods, the constructors and the options of
+// the double ContractStub.
+func TestContractStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, contractStubDouble())
+	t.Run("Run", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Run", contractStubRunSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := ratelimittest.NewContractStub(t)
+			_ = contractStubRun(t, s)
+			got := s.OnRun.AssertCalledOnce(t, "Run records the call")
+			a0, a1 := contractStubRunArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := ratelimittest.NewContractStub(t)
+			var seen []ratelimittest.ContractRunCall
+			s.OnRun.OnRecord(func(c ratelimittest.ContractRunCall) { seen = append(seen, c) })
+			_ = contractStubRun(t, s)
+			_ = contractStubRun(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Run")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, ratelimittest.NewContractStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Run", func(t *testing.T) {
+			t.Parallel()
+			s := ratelimittest.NewContractStub(t)
+			_ = contractStubRun(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnRun.CallCount(), 0, "ResetCalls clears the calls of Run")
+		})
+
+		t.Run("keeps the results of Returns of Run", func(t *testing.T) {
+			t.Parallel()
+			s := ratelimittest.NewContractStub(t)
+			want0 := contractStubRunPins()
+			s.OnRun.Returns(want0)
+			s.ResetCalls()
+			got0 := contractStubRun(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Run")
+		})
+	})
+
+	t.Run("NewContractStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(tb, ratelimittest.NewContractStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Run with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Run-failing")
+			s := ratelimittest.NewContractStubFailing(t, want)
+			r0 := contractStubRun(t, s)
+			assert.ErrorIs(t, r0, want, "Run fails with the error of NewContractStubFailing")
+		})
+	})
+
+	t.Run("ContractStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, ratelimittest.NewContractStub(tb, ratelimittest.ContractStubStrict()))
+		})
+	})
+
+	t.Run("ContractStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Run to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := ratelimittest.NewContractStub(t)
+			s := ratelimittest.NewContractStub(t, ratelimittest.ContractStubDelegateTo(inner))
+			_ = contractStubRun(t, s)
+			inner.OnRun.AssertCalledOnce(t, "Run calls the implementation")
+		})
+
+		t.Run("fails Run with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Run-delegate")
+			inner := ratelimittest.NewContractStub(t)
+			inner.OnRun.Faults(want, 1)
+			s := ratelimittest.NewContractStub(t, ratelimittest.ContractStubDelegateTo(inner))
+			r0 := contractStubRun(t, s)
+			assert.ErrorIs(t, r0, want, "Run fails with the error of the implementation")
+		})
+	})
+
+	t.Run("ContractStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				ratelimittest.NewContractStub(tb, ratelimittest.ContractStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("ContractStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				ratelimittest.NewContractStub(tb, ratelimittest.ContractStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("ContractStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) contractStubInstance {
+			return contractStubInstanceOf(tb, ratelimittest.NewContractStub(tb, ratelimittest.ContractStubBenchMode()))
+		})
+	})
+
+	t.Run("ContractStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) contractStubInstance {
+			return contractStubInstanceOf(
+				tb,
+				ratelimittest.NewContractStub(
+					tb,
+					ratelimittest.ContractStubWithClock(clk),
+					ratelimittest.ContractStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("ContractStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Run with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Run-failing")
+			s := ratelimittest.NewContractStub(t, ratelimittest.ContractStubFailing(want))
+			r0 := contractStubRun(t, s)
+			assert.ErrorIs(t, r0, want, "Run fails with the error of ContractStubFailing")
+		})
+	})
+
+	t.Run("WithContractRun", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Run", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := ratelimittest.NewContractStub(
+				t,
+				ratelimittest.WithContractRun(func(_ context.Context, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = contractStubRun(t, s)
+			assert.True(t, called, "WithContractRun sets the function of Run")
+		})
+	})
 }
 
-// TestContractStubDelegateTo pins that a wrapped implementation is called
-// through, and recorded on the way past.
-func TestContractStubDelegateTo(t *testing.T) {
+// TestContractRunStub checks the methods of ContractRunStub, which
+// configures Run.
+func TestContractRunStub(t *testing.T) {
 	t.Parallel()
 
-	inner := ratelimittest.NewContractStub(t)
-	s := ratelimittest.NewContractStub(t, ratelimittest.ContractStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Run to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Run-a"
-		_ = s.Run(a0, a1)
-		inner.OnRun.AssertCalledOnce(t, "Run must reach the wrapped implementation")
+		t.Run("sets the results of each call of Run", func(t *testing.T) {
+			t.Parallel()
+			s := ratelimittest.NewContractStub(t)
+			want0 := contractStubRunPins()
+			s.OnRun.Returns(want0)
+			got0 := contractStubRun(t, s)
+			assert.ErrorIs(t, got0, want0, "Run returns the error that Returns sets")
+		})
+
+		t.Run("configures Run for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := ratelimittest.NewContractStub(r)
+			s.OnRun.Strict()
+			var want0 error
+			s.OnRun.Returns(want0)
+			_ = contractStubRun(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Run")
+		})
 	})
 
-	t.Run("surfaces what Run answered", func(t *testing.T) {
-		want := errors.New("Run-delegate")
-		inner.OnRun.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Run-a"
-		r0 := s.Run(a0, a1)
-		assert.ErrorIs(t, r0, want, "Run must surface the wrapped answer")
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Run to the function", func(t *testing.T) {
+			t.Parallel()
+			s := ratelimittest.NewContractStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnRun.Func(func(p0 context.Context, p1 string) error {
+				got0, got1 = p0, p1
+				var z0 error
+				return z0
+			})
+			_ = contractStubRun(t, s)
+			a0, a1 := contractStubRunArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
 	})
 }
 
-// dokimi:provenance sha256:94eac962bfd71abcac871418b553523870aa573eb794bad354d64ea8a313e0d2
+// dokimi:provenance sha256:541f37e7debfb0965944bb2f37156516fdee3e115c9c684c7b68c55622b26c4e

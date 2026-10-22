@@ -7,7 +7,7 @@ package restrictedpooltest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/restrictedpool"
 )
 
@@ -46,33 +46,22 @@ func StoreSuite() conform.Suite[restrictedpool.Store] {
 	return conform.Suite[restrictedpool.Store]{Declaration: "Store"}
 }
 
-// RunStore applies the checks of Store, and the checks that opts add, to a
-// fresh subject of newSubject for each check.
-func RunStore[T restrictedpool.Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
+// RunStoreSuite applies the checks of Store, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunStoreSuite[T restrictedpool.Store](t *testing.T, newSubject func() T, opts ...StoreOption) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(*StoreHandle) restrictedpool.Store { return newSubject() }, opts...)
+	RunStoreSuiteFromHandle(t, func(*StoreHandle) T { return newSubject() }, opts...)
 }
 
-// RunStoreOn applies the same checks to a subject that newSubject builds
-// on the handle of each check.
-func RunStoreOn[T restrictedpool.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+// RunStoreSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunStoreSuiteFromHandle[T restrictedpool.Store](
+	t *testing.T,
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
 	t.Helper()
-	conform.Verify(t, StoreSuite(), func(h *StoreHandle) restrictedpool.Store { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), func(h *StoreHandle) restrictedpool.Store { return newSubject(h) }, opts...)
 }
 
-// ControlStore applies the same checks to a fresh control of newControl
-// for each check. A control is a correct implementation that differs from
-// the subject.
-func ControlStore[T restrictedpool.Store](t *testing.T, newControl func() T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(*StoreHandle) restrictedpool.Store { return newControl() }, opts...)
-}
-
-// ControlStoreOn applies the same checks to a control that newControl
-// builds on the handle of each check.
-func ControlStoreOn[T restrictedpool.Store](t *testing.T, newControl func(h *StoreHandle) T, opts ...StoreOption) {
-	t.Helper()
-	conform.Control(t, StoreSuite(), func(h *StoreHandle) restrictedpool.Store { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:ca34d6b3706ab30d5d7e274eb080dbb44295d4444195777ff8ffd8929a25922a
+// dokimi:provenance sha256:571b5e264f8bf8dc23022055f5f8f2735c08ec7e7350d150f0be6ac491ee4df4

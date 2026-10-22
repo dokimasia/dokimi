@@ -7,7 +7,7 @@ package pointerreadertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader"
 )
 
@@ -40,33 +40,30 @@ func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 	return conform.Suite[pointerreader.PointerReader]{Declaration: "PointerReader"}
 }
 
-// RunPointerReader applies the checks of PointerReader, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunPointerReader[T pointerreader.PointerReader](t *testing.T, newSubject func() T, opts ...PointerReaderOption) {
+// RunPointerReaderSuite applies the checks of PointerReader, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunPointerReaderSuite[T pointerreader.PointerReader](
+	t *testing.T,
+	newSubject func() T,
+	opts ...PointerReaderOption,
+) {
 	t.Helper()
-	conform.Verify(t, PointerReaderSuite(), func(*PointerReaderHandle) pointerreader.PointerReader { return newSubject() }, opts...)
+	RunPointerReaderSuiteFromHandle(t, func(*PointerReaderHandle) T { return newSubject() }, opts...)
 }
 
-// RunPointerReaderOn applies the same checks to a subject that newSubject
-// builds on the handle of each check.
-func RunPointerReaderOn[T pointerreader.PointerReader](t *testing.T, newSubject func(h *PointerReaderHandle) T, opts ...PointerReaderOption) {
+// RunPointerReaderSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunPointerReaderSuiteFromHandle[T pointerreader.PointerReader](
+	t *testing.T,
+	newSubject func(h *PointerReaderHandle) T,
+	opts ...PointerReaderOption,
+) {
 	t.Helper()
-	conform.Verify(t, PointerReaderSuite(), func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		PointerReaderSuite(),
+		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
+		opts...)
 }
 
-// ControlPointerReader applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlPointerReader[T pointerreader.PointerReader](t *testing.T, newControl func() T, opts ...PointerReaderOption) {
-	t.Helper()
-	conform.Control(t, PointerReaderSuite(), func(*PointerReaderHandle) pointerreader.PointerReader { return newControl() }, opts...)
-}
-
-// ControlPointerReaderOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlPointerReaderOn[T pointerreader.PointerReader](t *testing.T, newControl func(h *PointerReaderHandle) T, opts ...PointerReaderOption) {
-	t.Helper()
-	conform.Control(t, PointerReaderSuite(), func(h *PointerReaderHandle) pointerreader.PointerReader { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:cbd238a1238821799c072e0bd4d9bbc4bf33bc3adcb05ec401c6b3cbdedf1ba0
+// dokimi:provenance sha256:e4ec6c19914f0dc0a1dabe87d2268df6a24c50ac8cccf9632a3ee06b66873253

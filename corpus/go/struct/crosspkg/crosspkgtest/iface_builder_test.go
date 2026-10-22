@@ -9,411 +9,561 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/struct/crosspkg"
 	"go.dokimi.dev/dokimi/corpus/go/struct/crosspkg/crosspkgtest"
 	"go.dokimi.dev/dokimi/corpus/go/struct/seed"
 )
 
-// TestSettingsBuilderConstruction pins what the constructors produce.
-func TestSettingsBuilderConstruction(t *testing.T) {
+// TestSettingsBuilder checks the constructors and the methods of
+// SettingsBuilder.
+func TestSettingsBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewSettingsBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var seed crosspkg.Settings
-		seed.Timeout = time.Duration(1)
-		seed.Retries = 42
-		seed.Region = "Region-a"
-		seed.Zone = "Zone-a"
-		seed.Deadline = time.Unix(1700000000, 0)
-		got := crosspkgtest.NewSettingsBuilderFrom(seed).Build()
-		assert.Equal(t, got.Timeout, seed.Timeout, "From keeps the member it was given")
-		assert.Equal(t, got.Retries, seed.Retries, "From keeps the member it was given")
-		assert.Equal(t, got.Region, seed.Region, "From keeps the member it was given")
-		assert.Equal(t, got.Zone, seed.Zone, "From keeps the member it was given")
-		assert.Equal(t, got.Deadline, seed.Deadline, "From keeps the member it was given")
+		t.Run("applies the declared default of Timeout", func(t *testing.T) {
+			t.Parallel()
+
+			var want time.Duration
+			want = time.Second
+			got := crosspkgtest.NewSettingsBuilder().Build()
+			assert.Equal(t, got.Timeout, want, "NewSettingsBuilder applies the declared default of Timeout")
+		})
+
+		t.Run("applies the declared default of Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = seed.Retries
+			got := crosspkgtest.NewSettingsBuilder().Build()
+			assert.Equal(t, got.Retries, want, "NewSettingsBuilder applies the declared default of Retries")
+		})
+
+		t.Run("applies the declared default of Region", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = seed.Region
+			got := crosspkgtest.NewSettingsBuilder().Build()
+			assert.Equal(t, got.Region, want, "NewSettingsBuilder applies the declared default of Region")
+		})
+
+		t.Run("applies the declared default of Zone", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = seed.Region
+			got := crosspkgtest.NewSettingsBuilder().Build()
+			assert.Equal(t, got.Zone, want, "NewSettingsBuilder applies the declared default of Zone")
+		})
 	})
 
-	t.Run("Timeout carries its declared default", func(t *testing.T) {
+	t.Run("NewSettingsBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want time.Duration
-		want = time.Second
-		got := crosspkgtest.NewSettingsBuilder().Build()
-		assert.Equal(t, got.Timeout, want, "the constructor applies the declared default")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed crosspkg.Settings
+			seed.Timeout = time.Duration(1)
+			seed.Retries = 42
+			seed.Region = "Region-a"
+			seed.Zone = "Zone-a"
+			seed.Deadline = time.Unix(1700000000, 0)
+			got := crosspkgtest.NewSettingsBuilderFrom(seed).Build()
+			expect.Equal(t, got.Timeout, seed.Timeout, "NewSettingsBuilderFrom keeps Timeout")
+			expect.Equal(t, got.Retries, seed.Retries, "NewSettingsBuilderFrom keeps Retries")
+			expect.Equal(t, got.Region, seed.Region, "NewSettingsBuilderFrom keeps Region")
+			expect.Equal(t, got.Zone, seed.Zone, "NewSettingsBuilderFrom keeps Zone")
+			expect.Equal(t, got.Deadline, seed.Deadline, "NewSettingsBuilderFrom keeps Deadline")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := crosspkgtest.NewSettingsBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				crosspkgtest.NewSettingsBuilderFrom(want).Build(),
+				want,
+				"NewSettingsBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("Retries carries its declared default", func(t *testing.T) {
+	t.Run("WithTimeout", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = seed.Retries
-		got := crosspkgtest.NewSettingsBuilder().Build()
-		assert.Equal(t, got.Retries, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Timeout", func(t *testing.T) {
+			t.Parallel()
+
+			var want time.Duration
+			want = time.Duration(1)
+			got := crosspkgtest.NewSettingsBuilder().WithTimeout(want).Build()
+			assert.Equal(t, got.Timeout, want, "WithTimeout writes its argument to Timeout")
+		})
+
+		t.Run("replaces the value of Timeout", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want time.Duration
+			first = time.Duration(1)
+			want = time.Duration(2)
+			got := crosspkgtest.NewSettingsBuilder().WithTimeout(first).WithTimeout(want).Build()
+			assert.Equal(t, got.Timeout, want, "the second call of WithTimeout replaces the first")
+		})
 	})
 
-	t.Run("Region carries its declared default", func(t *testing.T) {
+	t.Run("WithRetries", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = seed.Region
-		got := crosspkgtest.NewSettingsBuilder().Build()
-		assert.Equal(t, got.Region, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := crosspkgtest.NewSettingsBuilder().WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "WithRetries writes its argument to Retries")
+		})
+
+		t.Run("replaces the value of Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := crosspkgtest.NewSettingsBuilder().WithRetries(first).WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "the second call of WithRetries replaces the first")
+		})
 	})
 
-	t.Run("Zone carries its declared default", func(t *testing.T) {
+	t.Run("WithRegion", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = seed.Region
-		got := crosspkgtest.NewSettingsBuilder().Build()
-		assert.Equal(t, got.Zone, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Region", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Region-a"
+			got := crosspkgtest.NewSettingsBuilder().WithRegion(want).Build()
+			assert.Equal(t, got.Region, want, "WithRegion writes its argument to Region")
+		})
+
+		t.Run("replaces the value of Region", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Region-a"
+			want = "Region-b"
+			got := crosspkgtest.NewSettingsBuilder().WithRegion(first).WithRegion(want).Build()
+			assert.Equal(t, got.Region, want, "the second call of WithRegion replaces the first")
+		})
+	})
+
+	t.Run("WithZone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Zone", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Zone-a"
+			got := crosspkgtest.NewSettingsBuilder().WithZone(want).Build()
+			assert.Equal(t, got.Zone, want, "WithZone writes its argument to Zone")
+		})
+
+		t.Run("replaces the value of Zone", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Zone-a"
+			want = "Zone-b"
+			got := crosspkgtest.NewSettingsBuilder().WithZone(first).WithZone(want).Build()
+			assert.Equal(t, got.Zone, want, "the second call of WithZone replaces the first")
+		})
+	})
+
+	t.Run("WithDeadline", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Deadline", func(t *testing.T) {
+			t.Parallel()
+
+			var want time.Time
+			want = time.Unix(1700000000, 0)
+			got := crosspkgtest.NewSettingsBuilder().WithDeadline(want).Build()
+			assert.Equal(t, got.Deadline, want, "WithDeadline writes its argument to Deadline")
+		})
+
+		t.Run("replaces the value of Deadline", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want time.Time
+			first = time.Unix(1700000000, 0)
+			want = time.Unix(1700000001, 0)
+			got := crosspkgtest.NewSettingsBuilder().WithDeadline(first).WithDeadline(want).Build()
+			assert.Equal(t, got.Deadline, want, "the second call of WithDeadline replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*crosspkg.Settings
+			record := func(v *crosspkg.Settings) { got = append(got, v) }
+			crosspkgtest.NewSettingsBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := crosspkgtest.NewSettingsBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := crosspkgtest.NewSettingsBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed crosspkg.Settings
+			seed.Timeout = time.Duration(1)
+			seed.Retries = 42
+			seed.Region = "Region-a"
+			seed.Zone = "Zone-a"
+			seed.Deadline = time.Unix(1700000000, 0)
+			b := crosspkgtest.NewSettingsBuilder()
+			b.Mutate(func(v *crosspkg.Settings) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestSettingsBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestSettingsBuilderSetters(t *testing.T) {
+// TestMirroredBuilder checks the constructors and the methods of
+// MirroredBuilder.
+func TestMirroredBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithTimeout writes Timeout", func(t *testing.T) {
+	t.Run("NewMirroredBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want time.Duration
-		want = time.Duration(1)
-		got := crosspkgtest.NewSettingsBuilder().WithTimeout(want).Build()
-		assert.Equal(t, got.Timeout, want, "the setter writes what it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed crosspkg.Mirrored
+			seed.Region = "Region-a"
+			seed.Retries = 42
+			seed.Label = "Label-a"
+			got := crosspkgtest.NewMirroredBuilderFrom(seed).Build()
+			expect.Equal(t, got.Region, seed.Region, "NewMirroredBuilderFrom keeps Region")
+			expect.Equal(t, got.Retries, seed.Retries, "NewMirroredBuilderFrom keeps Retries")
+			expect.Equal(t, got.Label, seed.Label, "NewMirroredBuilderFrom keeps Label")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := crosspkgtest.NewMirroredBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				crosspkgtest.NewMirroredBuilderFrom(want).Build(),
+				want,
+				"NewMirroredBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("WithTimeout replaces what was already there", func(t *testing.T) {
+	t.Run("WithRegion", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want time.Duration
-		first = time.Duration(1)
-		want = time.Duration(2)
-		got := crosspkgtest.NewSettingsBuilder().WithTimeout(first).WithTimeout(want).Build()
-		assert.Equal(t, got.Timeout, want, "the later call wins")
+		t.Run("writes its argument to Region", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Region-a"
+			got := crosspkgtest.NewMirroredBuilder().WithRegion(want).Build()
+			assert.Equal(t, got.Region, want, "WithRegion writes its argument to Region")
+		})
+
+		t.Run("replaces the value of Region", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Region-a"
+			want = "Region-b"
+			got := crosspkgtest.NewMirroredBuilder().WithRegion(first).WithRegion(want).Build()
+			assert.Equal(t, got.Region, want, "the second call of WithRegion replaces the first")
+		})
 	})
 
-	t.Run("WithRetries writes Retries", func(t *testing.T) {
+	t.Run("WithRetries", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 42
-		got := crosspkgtest.NewSettingsBuilder().WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the setter writes what it was given")
+		t.Run("writes its argument to Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := crosspkgtest.NewMirroredBuilder().WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "WithRetries writes its argument to Retries")
+		})
+
+		t.Run("replaces the value of Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := crosspkgtest.NewMirroredBuilder().WithRetries(first).WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "the second call of WithRetries replaces the first")
+		})
 	})
 
-	t.Run("WithRetries replaces what was already there", func(t *testing.T) {
+	t.Run("WithLabel", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want int
-		first = 42
-		want = 7
-		got := crosspkgtest.NewSettingsBuilder().WithRetries(first).WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the later call wins")
+		t.Run("writes its argument to Label", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Label-a"
+			got := crosspkgtest.NewMirroredBuilder().WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "WithLabel writes its argument to Label")
+		})
+
+		t.Run("replaces the value of Label", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Label-a"
+			want = "Label-b"
+			got := crosspkgtest.NewMirroredBuilder().WithLabel(first).WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "the second call of WithLabel replaces the first")
+		})
 	})
 
-	t.Run("WithRegion writes Region", func(t *testing.T) {
+	t.Run("Mutate", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Region-a"
-		got := crosspkgtest.NewSettingsBuilder().WithRegion(want).Build()
-		assert.Equal(t, got.Region, want, "the setter writes what it was given")
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*crosspkg.Mirrored
+			record := func(v *crosspkg.Mirrored) { got = append(got, v) }
+			crosspkgtest.NewMirroredBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
 	})
 
-	t.Run("WithRegion replaces what was already there", func(t *testing.T) {
+	t.Run("Clone", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want string
-		first = "Region-a"
-		want = "Region-b"
-		got := crosspkgtest.NewSettingsBuilder().WithRegion(first).WithRegion(want).Build()
-		assert.Equal(t, got.Region, want, "the later call wins")
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := crosspkgtest.NewMirroredBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := crosspkgtest.NewMirroredBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
 	})
 
-	t.Run("WithZone writes Zone", func(t *testing.T) {
+	t.Run("Build", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Zone-a"
-		got := crosspkgtest.NewSettingsBuilder().WithZone(want).Build()
-		assert.Equal(t, got.Zone, want, "the setter writes what it was given")
-	})
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
 
-	t.Run("WithZone replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Zone-a"
-		want = "Zone-b"
-		got := crosspkgtest.NewSettingsBuilder().WithZone(first).WithZone(want).Build()
-		assert.Equal(t, got.Zone, want, "the later call wins")
-	})
-
-	t.Run("WithDeadline writes Deadline", func(t *testing.T) {
-		t.Parallel()
-
-		var want time.Time
-		want = time.Unix(1700000000, 0)
-		got := crosspkgtest.NewSettingsBuilder().WithDeadline(want).Build()
-		assert.Equal(t, got.Deadline, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithDeadline replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want time.Time
-		first = time.Unix(1700000000, 0)
-		want = time.Unix(1700000001, 0)
-		got := crosspkgtest.NewSettingsBuilder().WithDeadline(first).WithDeadline(want).Build()
-		assert.Equal(t, got.Deadline, want, "the later call wins")
+			var seed crosspkg.Mirrored
+			seed.Region = "Region-a"
+			seed.Retries = 42
+			seed.Label = "Label-a"
+			b := crosspkgtest.NewMirroredBuilder()
+			b.Mutate(func(v *crosspkg.Mirrored) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestSettingsBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestSettingsBuilderMethods(t *testing.T) {
+// TestShorthandBuilder checks the constructors and the methods of
+// ShorthandBuilder.
+func TestShorthandBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
+	t.Run("NewShorthandBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var got []*crosspkg.Settings
-		record := func(v *crosspkg.Settings) { got = append(got, v) }
-		crosspkgtest.NewSettingsBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed crosspkg.Shorthand
+			seed.Region = "Region-a"
+			seed.Retries = 42
+			seed.Label = "Label-a"
+			got := crosspkgtest.NewShorthandBuilderFrom(seed).Build()
+			expect.Equal(t, got.Region, seed.Region, "NewShorthandBuilderFrom keeps Region")
+			expect.Equal(t, got.Retries, seed.Retries, "NewShorthandBuilderFrom keeps Retries")
+			expect.Equal(t, got.Label, seed.Label, "NewShorthandBuilderFrom keeps Label")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := crosspkgtest.NewShorthandBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				crosspkgtest.NewShorthandBuilderFrom(want).Build(),
+				want,
+				"NewShorthandBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
+	t.Run("WithRegion", func(t *testing.T) {
 		t.Parallel()
 
-		original := crosspkgtest.NewSettingsBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, crosspkgtest.NewSettingsBuilderFrom(want).Build(), want, "From keeps the value it was given")
+		t.Run("writes its argument to Region", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Region-a"
+			got := crosspkgtest.NewShorthandBuilder().WithRegion(want).Build()
+			assert.Equal(t, got.Region, want, "WithRegion writes its argument to Region")
+		})
+
+		t.Run("replaces the value of Region", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Region-a"
+			want = "Region-b"
+			got := crosspkgtest.NewShorthandBuilder().WithRegion(first).WithRegion(want).Build()
+			assert.Equal(t, got.Region, want, "the second call of WithRegion replaces the first")
+		})
+	})
+
+	t.Run("WithRetries", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := crosspkgtest.NewShorthandBuilder().WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "WithRetries writes its argument to Retries")
+		})
+
+		t.Run("replaces the value of Retries", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := crosspkgtest.NewShorthandBuilder().WithRetries(first).WithRetries(want).Build()
+			assert.Equal(t, got.Retries, want, "the second call of WithRetries replaces the first")
+		})
+	})
+
+	t.Run("WithLabel", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Label", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Label-a"
+			got := crosspkgtest.NewShorthandBuilder().WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "WithLabel writes its argument to Label")
+		})
+
+		t.Run("replaces the value of Label", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Label-a"
+			want = "Label-b"
+			got := crosspkgtest.NewShorthandBuilder().WithLabel(first).WithLabel(want).Build()
+			assert.Equal(t, got.Label, want, "the second call of WithLabel replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*crosspkg.Shorthand
+			record := func(v *crosspkg.Shorthand) { got = append(got, v) }
+			crosspkgtest.NewShorthandBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := crosspkgtest.NewShorthandBuilder()
+			assert.NotEqual(t, original.Clone(), original, "Clone returns a builder of its own", assert.ByIdentity())
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := crosspkgtest.NewShorthandBuilder()
+			assert.Equal(t, b.Clone().Build(), b.Build(), "the clone builds the value of its original")
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed crosspkg.Shorthand
+			seed.Region = "Region-a"
+			seed.Retries = 42
+			seed.Label = "Label-a"
+			b := crosspkgtest.NewShorthandBuilder()
+			b.Mutate(func(v *crosspkg.Shorthand) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestMirroredBuilderConstruction pins what the constructors produce.
-func TestMirroredBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed crosspkg.Mirrored
-		seed.Region = "Region-a"
-		seed.Retries = 42
-		seed.Label = "Label-a"
-		got := crosspkgtest.NewMirroredBuilderFrom(seed).Build()
-		assert.Equal(t, got.Region, seed.Region, "From keeps the member it was given")
-		assert.Equal(t, got.Retries, seed.Retries, "From keeps the member it was given")
-		assert.Equal(t, got.Label, seed.Label, "From keeps the member it was given")
-	})
-}
-
-// TestMirroredBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestMirroredBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithRegion writes Region", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Region-a"
-		got := crosspkgtest.NewMirroredBuilder().WithRegion(want).Build()
-		assert.Equal(t, got.Region, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithRegion replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Region-a"
-		want = "Region-b"
-		got := crosspkgtest.NewMirroredBuilder().WithRegion(first).WithRegion(want).Build()
-		assert.Equal(t, got.Region, want, "the later call wins")
-	})
-
-	t.Run("WithRetries writes Retries", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := crosspkgtest.NewMirroredBuilder().WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithRetries replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := crosspkgtest.NewMirroredBuilder().WithRetries(first).WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the later call wins")
-	})
-
-	t.Run("WithLabel writes Label", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Label-a"
-		got := crosspkgtest.NewMirroredBuilder().WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithLabel replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Label-a"
-		want = "Label-b"
-		got := crosspkgtest.NewMirroredBuilder().WithLabel(first).WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the later call wins")
-	})
-}
-
-// TestMirroredBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestMirroredBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*crosspkg.Mirrored
-		record := func(v *crosspkg.Mirrored) { got = append(got, v) }
-		crosspkgtest.NewMirroredBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := crosspkgtest.NewMirroredBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, crosspkgtest.NewMirroredBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestShorthandBuilderConstruction pins what the constructors produce.
-func TestShorthandBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed crosspkg.Shorthand
-		seed.Region = "Region-a"
-		seed.Retries = 42
-		seed.Label = "Label-a"
-		got := crosspkgtest.NewShorthandBuilderFrom(seed).Build()
-		assert.Equal(t, got.Region, seed.Region, "From keeps the member it was given")
-		assert.Equal(t, got.Retries, seed.Retries, "From keeps the member it was given")
-		assert.Equal(t, got.Label, seed.Label, "From keeps the member it was given")
-	})
-}
-
-// TestShorthandBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestShorthandBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithRegion writes Region", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Region-a"
-		got := crosspkgtest.NewShorthandBuilder().WithRegion(want).Build()
-		assert.Equal(t, got.Region, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithRegion replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Region-a"
-		want = "Region-b"
-		got := crosspkgtest.NewShorthandBuilder().WithRegion(first).WithRegion(want).Build()
-		assert.Equal(t, got.Region, want, "the later call wins")
-	})
-
-	t.Run("WithRetries writes Retries", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := crosspkgtest.NewShorthandBuilder().WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithRetries replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := crosspkgtest.NewShorthandBuilder().WithRetries(first).WithRetries(want).Build()
-		assert.Equal(t, got.Retries, want, "the later call wins")
-	})
-
-	t.Run("WithLabel writes Label", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Label-a"
-		got := crosspkgtest.NewShorthandBuilder().WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithLabel replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Label-a"
-		want = "Label-b"
-		got := crosspkgtest.NewShorthandBuilder().WithLabel(first).WithLabel(want).Build()
-		assert.Equal(t, got.Label, want, "the later call wins")
-	})
-}
-
-// TestShorthandBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestShorthandBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*crosspkg.Shorthand
-		record := func(v *crosspkg.Shorthand) { got = append(got, v) }
-		crosspkgtest.NewShorthandBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := crosspkgtest.NewShorthandBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, crosspkgtest.NewShorthandBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:0c6abbd4dd7818a070ad6c0c008d8f11afa23b999696355a7a835be76ee582ee
+// dokimi:provenance sha256:2ca1288161932184cf3bbd00985ee9b08e3618331a34a835e69e3bd1f07df6f0

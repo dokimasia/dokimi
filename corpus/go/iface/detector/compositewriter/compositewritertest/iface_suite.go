@@ -7,7 +7,7 @@ package compositewritertest
 import (
 	"testing"
 
-	"go.dokimi.dev/dokimi-go/conform"
+	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter"
 )
 
@@ -40,33 +40,30 @@ func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
 	return conform.Suite[compositewriter.CompositeWriter]{Declaration: "CompositeWriter"}
 }
 
-// RunCompositeWriter applies the checks of CompositeWriter, and the checks
-// that opts add, to a fresh subject of newSubject for each check.
-func RunCompositeWriter[T compositewriter.CompositeWriter](t *testing.T, newSubject func() T, opts ...CompositeWriterOption) {
+// RunCompositeWriterSuite applies the checks of CompositeWriter, and the
+// checks that opts add, to a fresh subject of newSubject for each check.
+func RunCompositeWriterSuite[T compositewriter.CompositeWriter](
+	t *testing.T,
+	newSubject func() T,
+	opts ...CompositeWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, CompositeWriterSuite(), func(*CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject() }, opts...)
+	RunCompositeWriterSuiteFromHandle(t, func(*CompositeWriterHandle) T { return newSubject() }, opts...)
 }
 
-// RunCompositeWriterOn applies the same checks to a subject that
-// newSubject builds on the handle of each check.
-func RunCompositeWriterOn[T compositewriter.CompositeWriter](t *testing.T, newSubject func(h *CompositeWriterHandle) T, opts ...CompositeWriterOption) {
+// RunCompositeWriterSuiteFromHandle applies the same checks to a subject
+// that newSubject builds from the handle of each check.
+func RunCompositeWriterSuiteFromHandle[T compositewriter.CompositeWriter](
+	t *testing.T,
+	newSubject func(h *CompositeWriterHandle) T,
+	opts ...CompositeWriterOption,
+) {
 	t.Helper()
-	conform.Verify(t, CompositeWriterSuite(), func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) }, opts...)
+	conform.Run(
+		t,
+		CompositeWriterSuite(),
+		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
+		opts...)
 }
 
-// ControlCompositeWriter applies the same checks to a fresh control of
-// newControl for each check. A control is a correct implementation that
-// differs from the subject.
-func ControlCompositeWriter[T compositewriter.CompositeWriter](t *testing.T, newControl func() T, opts ...CompositeWriterOption) {
-	t.Helper()
-	conform.Control(t, CompositeWriterSuite(), func(*CompositeWriterHandle) compositewriter.CompositeWriter { return newControl() }, opts...)
-}
-
-// ControlCompositeWriterOn applies the same checks to a control that
-// newControl builds on the handle of each check.
-func ControlCompositeWriterOn[T compositewriter.CompositeWriter](t *testing.T, newControl func(h *CompositeWriterHandle) T, opts ...CompositeWriterOption) {
-	t.Helper()
-	conform.Control(t, CompositeWriterSuite(), func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newControl(h) }, opts...)
-}
-
-// dokimi:provenance sha256:c89454915600d092fe56dd63f25181f578c1e4e68edf33a4ac37637bb1a65360
+// dokimi:provenance sha256:c8807c230202ce6f1a224c145ed1da3e9ac5e0e7f28cf601001d5aab9ea09b08

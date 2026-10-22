@@ -10,14 +10,11 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign"
+	"go.dokimi.dev/stub"
 )
 
-// StreamReadCall records one invocation of Stream.Read.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StreamReadCall records one call of Stream.Read.
 type StreamReadCall struct {
 	Ctx    context.Context
 	Key    string
@@ -25,22 +22,13 @@ type StreamReadCall struct {
 	Err    error
 }
 
-// StreamCloseCall records one invocation of Stream.Close.
-//
-// Fields take their names from the source signature; a slot the source
-// left unnamed or blank falls back to a positional name.
+// StreamCloseCall records one call of Stream.Close.
 type StreamCloseCall struct {
 	Err error
 }
 
-// --- Per-method configuration ---
-
-// StreamReadStub controls how the double answers Read and records what it
-// was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StreamReadStub configures Read and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type StreamReadStub struct {
 	*stub.MethodStub[StreamReadCall]
 
@@ -48,32 +36,28 @@ type StreamReadStub struct {
 	fallback *StreamReadReturn
 }
 
-// StreamReadReturn holds the fixed answer configured through Returns.
+// StreamReadReturn contains the fixed results of Read.
 type StreamReadReturn struct {
 	Result string
 	Err    error
 }
 
-// Returns pins a fixed result for every call to Read. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Read. A function and an
+// injected fault take precedence over them.
 func (s *StreamReadStub) Returns(result string, err error) *StreamReadStub {
 	s.fallback = &StreamReadReturn{Result: result, Err: err}
 	return s
 }
 
-// Func supplies a body for Read, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Read from its
+// arguments. An injected fault takes precedence over it.
 func (s *StreamReadStub) Func(fn func(context.Context, string) (string, error)) *StreamReadStub {
 	s.fn = fn
 	return s
 }
 
-// StreamCloseStub controls how the double answers Close and records what
-// it was asked.
-//
-// The embedded MethodStub supplies the machinery every method shares: call
-// recording, fault injection, latency against a virtual clock, gates,
-// call-count expectations, and strict mode.
+// StreamCloseStub configures Close and records its calls. A fault armed
+// through it takes precedence over the function and the fixed results.
 type StreamCloseStub struct {
 	*stub.MethodStub[StreamCloseCall]
 
@@ -81,41 +65,40 @@ type StreamCloseStub struct {
 	fallback *StreamCloseReturn
 }
 
-// StreamCloseReturn holds the fixed answer configured through Returns.
+// StreamCloseReturn contains the fixed results of Close.
 type StreamCloseReturn struct {
 	Err error
 }
 
-// Returns pins a fixed result for every call to Close. A Func override
-// takes precedence over it, and so does an injected fault.
+// Returns sets the results of every call of Close. A function and an
+// injected fault take precedence over them.
 func (s *StreamCloseStub) Returns(err error) *StreamCloseStub {
 	s.fallback = &StreamCloseReturn{Err: err}
 	return s
 }
 
-// Func supplies a body for Close, for when the answer depends on the
-// arguments. An injected fault still takes precedence.
+// Func sets the function that computes the results of Close from its
+// arguments. An injected fault takes precedence over it.
 func (s *StreamCloseStub) Func(fn func() error) *StreamCloseStub {
 	s.fn = fn
 	return s
 }
 
-// --- StreamStub ---
-
-// The double-runtime witness for the surface this double rides.
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
 var _ = stub.CompatV1
 
-// StreamStubOption configures a [StreamStub] at construction time.
+// StreamStubOption configures a [StreamStub] at its construction.
 type StreamStubOption func(*StreamStub)
 
-// StreamStubStrict makes an unconfigured method fail the test rather than
-// return its zero value.
+// StreamStubStrict returns the option that makes an unconfigured method
+// fail the test instead of returning its zero value.
 func StreamStubStrict() StreamStubOption {
 	return func(s *StreamStub) { s.strict = true }
 }
 
-// StreamStubDelegateTo wraps a real implementation: every method forwards
-// to impl and is recorded on the double on the way through.
+// StreamStubDelegateTo returns the option that passes each call to impl.
+// The double still records the call.
 func StreamStubDelegateTo(impl embeddedforeign.Stream) StreamStubOption {
 	return func(s *StreamStub) {
 		s.OnRead.Func(impl.Read)
@@ -123,35 +106,35 @@ func StreamStubDelegateTo(impl embeddedforeign.Stream) StreamStubOption {
 	}
 }
 
-// StreamStubWithClock drives latency and time-windowed faults from clk
-// rather than from wall time, so a test asserting on a five-second timeout
-// does not take five seconds.
+// StreamStubWithClock returns the option that sets the clock of the double
+// to clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
 func StreamStubWithClock(clk assert.Clock) StreamStubOption {
 	return func(s *StreamStub) { s.group.SetClock(clk) }
 }
 
-// StreamStubWithRandSource makes probabilistic fault injection
-// reproducible. A failure nobody can replay is not a finding.
+// StreamStubWithRandSource returns the option that sets the random source
+// of the probabilistic faults to src. A seeded source repeats the faults
+// of a run.
 func StreamStubWithRandSource(src rand.Source) StreamStubOption {
 	return func(s *StreamStub) { s.group.SetRandSource(src) }
 }
 
-// StreamStubBenchMode disables call recording. Dispatch still works; only
-// the accumulating call log is dropped.
+// StreamStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
 func StreamStubBenchMode() StreamStubOption {
 	return func(s *StreamStub) { s.group.BenchMode() }
 }
 
-// StreamStubWithLatency makes every method sleep d before answering, for a
-// test standing in for a slow dependency rather than one slow method. Pair
-// it with StreamStubWithClock, or d elapses in wall time.
+// StreamStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without StreamStubWithClock, d passes in real time.
 func StreamStubWithLatency(d time.Duration) StreamStubOption {
 	return func(s *StreamStub) { s.group.SetLatency(d) }
 }
 
-// StreamStubFailing arms every method that can fail with err, so a
-// caller's error path is one option rather than one Faults call per
-// method. A method answering no error is left alone.
+// StreamStubFailing returns the option that arms err on each method that
+// can fail. Each call of such a method then fails with err.
 func StreamStubFailing(err error) StreamStubOption {
 	return func(s *StreamStub) {
 		s.OnRead.Faults(err, 1)
@@ -159,42 +142,35 @@ func StreamStubFailing(err error) StreamStubOption {
 	}
 }
 
-// WithStreamRead sets Read's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithStreamRead returns the option that sets the function of Read.
 func WithStreamRead(fn func(context.Context, string) (string, error)) StreamStubOption {
 	return func(s *StreamStub) { s.OnRead.Func(fn) }
 }
 
-// WithStreamClose sets Close's body at construction time, for the common
-// case of configuring one method and taking the defaults for the rest.
+// WithStreamClose returns the option that sets the function of Close.
 func WithStreamClose(fn func() error) StreamStubOption {
 	return func(s *StreamStub) { s.OnClose.Func(fn) }
 }
 
-// StreamStub is a recording test double for Stream.
-//
-// Each On<Method> field is that method's configuration point. Left alone,
-// a method returns its zero value and records the call.
+// StreamStub is a recording test double of Stream. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
 type StreamStub struct {
 	OnRead *StreamReadStub
-	// OnClose configures Close, contributed by Closer.
+	// OnClose configures Close, which Closer declares.
 	OnClose *StreamCloseStub
 
-	// group is every method stub above, viewed through the surface that
-	// does not depend on a signature.
+	// group contains the stub of each method.
 	group  *stub.Group
 	strict bool
 }
 
-// Compile-time proof that StreamStub satisfies Stream.
+// The compiler checks that StreamStub implements Stream.
 var _ embeddedforeign.Stream = (*StreamStub)(nil)
 
-// NewStreamStub returns a double bound to tb.
-//
-// Passing tb registers a cleanup that verifies every method's call-count
-// expectations when the test ends, so an unmet Times is reported without
-// the caller remembering to check. A nil tb skips that, which is what
-// benchmarks and non-test callers want.
+// NewStreamStub returns a double of Stream that reports its failures to tb
+// and applies opts. The double checks the expected counts of calls at the
+// end of the test. With a nil tb, the double reports nothing.
 func NewStreamStub(tb assert.TB, opts ...StreamStubOption) *StreamStub {
 	s := &StreamStub{
 		OnRead:  &StreamReadStub{MethodStub: stub.NewMethodStub[StreamReadCall](tb, "Stream.Read")},
@@ -214,11 +190,8 @@ func NewStreamStub(tb assert.TB, opts ...StreamStubOption) *StreamStub {
 	return s
 }
 
-// NewStreamStubDelayed returns a double whose every method sleeps d
-// against clk before answering — the clock and the latency a
-// slow-dependency test wants, in one call rather than two options. Further
-// options apply after the pair, so a caller can still add Strict or a
-// method override.
+// NewStreamStubDelayed returns a double whose methods sleep d on clk
+// before they return. It applies opts after the clock and the latency.
 func NewStreamStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...StreamStubOption) *StreamStub {
 	return NewStreamStub(tb, append([]StreamStubOption{
 		StreamStubWithClock(clk),
@@ -226,26 +199,20 @@ func NewStreamStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts 
 	}, opts...)...)
 }
 
-// NewStreamStubFailing returns a double whose every fallible method
-// answers err — [StreamStubFailing] applied at construction, for the test
-// whose whole subject is the caller's error path. Further options apply
-// after it.
+// NewStreamStubFailing returns a double on which each call of a method
+// that can fail fails with err. It applies opts after the failure.
 func NewStreamStubFailing(tb assert.TB, err error, opts ...StreamStubOption) *StreamStub {
 	return NewStreamStub(tb, append([]StreamStubOption{StreamStubFailing(err)}, opts...)...)
 }
 
-// ResetCalls clears recorded calls, fault counters, and call-count
-// expectations. Func and Returns configuration is deliberately preserved, so
-// a test can reuse one double across phases without rebuilding it.
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
 func (s *StreamStub) ResetCalls() {
 	s.group.Reset()
 }
 
-// --- Interface methods ---
-
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StreamReadStub) invoke(ctx context.Context, key string) func() StreamReadReturn {
 	if s.fn == nil {
 		return nil
@@ -256,12 +223,8 @@ func (s *StreamReadStub) invoke(ctx context.Context, key string) func() StreamRe
 	}
 }
 
-// Read records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Read records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StreamStub) Read(ctx context.Context, key string) (string, error) {
 	call := StreamReadCall{Ctx: ctx, Key: key}
 	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[StreamReadCall, StreamReadReturn]{
@@ -276,9 +239,8 @@ func (s *StreamStub) Read(ctx context.Context, key string) (string, error) {
 	return r.Result, r.Err
 }
 
-// invoke adapts the Func override to the shape [stub.Answer] consumes, or
-// returns nil when no override is set — which is how Answer tells "no
-// override" from "an override that returns zero".
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
 func (s *StreamCloseStub) invoke() func() StreamCloseReturn {
 	if s.fn == nil {
 		return nil
@@ -289,12 +251,8 @@ func (s *StreamCloseStub) invoke() func() StreamCloseReturn {
 	}
 }
 
-// Close records the call and answers it.
-//
-// Which arm answers — injected fault, Func override, Returns fallback, or
-// the zero value — is [stub.Answer]'s to decide, so every generated double
-// resolves a call the same way and the ordering is tested once rather than
-// restated per method.
+// Close records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
 func (s *StreamStub) Close() error {
 	call := StreamCloseCall{}
 	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[StreamCloseCall, StreamCloseReturn]{
@@ -308,4 +266,4 @@ func (s *StreamStub) Close() error {
 	return r.Err
 }
 
-// dokimi:provenance sha256:8810951a68316ef62c84662e8a331cfcd7a7217b736fa916bf4e70949e1a856b
+// dokimi:provenance sha256:4130e1a7ae2f14068bd767bd114971e6f490c6386130558f36d20af3f9cb60e2

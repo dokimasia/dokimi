@@ -12,183 +12,107 @@ import (
 	"time"
 
 	"go.dokimi.dev/assert"
-	"go.dokimi.dev/dokimi-go/stub"
+	"go.dokimi.dev/assert/expect"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiargwriter/multiargwritertest"
+	"go.dokimi.dev/stub"
 )
 
-// multiArgWriterStubSetSubject binds Set into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func multiArgWriterStubSetSubject(tb assert.TB) stub.Subject[multiargwritertest.MultiArgWriterSetCall, multiargwritertest.MultiArgWriterSetReturn] {
+// multiArgWriterStubSetArgs returns the samples of the arguments of Set.
+func multiArgWriterStubSetArgs(tb assert.TB) (context.Context, string, string, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	var a2 string
+	var a3 string
+	a1 = "Set-a"
+	a2 = "Set-a"
+	a3 = "Set-a"
+	return a0, a1, a2, a3
+}
+
+// multiArgWriterStubSet calls Set of s with the samples of its arguments.
+func multiArgWriterStubSet(tb assert.TB, s *multiargwritertest.MultiArgWriterStub) error {
+	tb.Helper()
+	a0, a1, a2, a3 := multiArgWriterStubSetArgs(tb)
+	return s.Set(a0, a1, a2, a3)
+}
+
+// multiArgWriterStubSetPins returns the samples of the results of Set,
+// with a new error as its error result.
+func multiArgWriterStubSetPins() error {
+	want0 := errors.New("Set-returns")
+	return want0
+}
+
+// multiArgWriterStubGetArgs returns the samples of the arguments of Get.
+func multiArgWriterStubGetArgs(tb assert.TB) (context.Context, string) {
+	tb.Helper()
+	a0 := assert.Context(tb)
+	var a1 string
+	a1 = "Get-a"
+	return a0, a1
+}
+
+// multiArgWriterStubGet calls Get of s with the samples of its arguments.
+func multiArgWriterStubGet(tb assert.TB, s *multiargwritertest.MultiArgWriterStub) (string, error) {
+	tb.Helper()
+	a0, a1 := multiArgWriterStubGetArgs(tb)
+	return s.Get(a0, a1)
+}
+
+// multiArgWriterStubGetPins returns the samples of the results of Get,
+// with a new error as its error result.
+func multiArgWriterStubGetPins() (string, error) {
+	var want0 string
+	want1 := errors.New("Get-returns")
+	want0 = "Get-a"
+	return want0, want1
+}
+
+// multiArgWriterStubSetSubject returns the subject of [stub.Behaviour] for
+// Set. The subject calls a new double that reports to tb.
+func multiArgWriterStubSetSubject(
+	tb assert.TB,
+) stub.Subject[multiargwritertest.MultiArgWriterSetCall, multiargwritertest.MultiArgWriterSetReturn] {
 	tb.Helper()
 	s := multiargwritertest.NewMultiArgWriterStub(tb)
 	return stub.Subject[multiargwritertest.MultiArgWriterSetCall, multiargwritertest.MultiArgWriterSetReturn]{
 		Stub: s.OnSet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			var a3 string
-			a1 = "Set-a"
-			a2 = "Set-a"
-			a3 = "Set-a"
-			_ = s.Set(a0, a1, a2, a3)
+			_ = multiArgWriterStubSet(tb, s)
 		},
 		Result: func() multiargwritertest.MultiArgWriterSetReturn {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			var a3 string
-			a1 = "Set-a"
-			a2 = "Set-a"
-			a3 = "Set-a"
-			got0 := s.Set(a0, a1, a2, a3)
+			got0 := multiArgWriterStubSet(tb, s)
 			return multiargwritertest.MultiArgWriterSetReturn{Err: got0}
 		},
 		Override: func(mark func()) {
-			s.OnSet.Func(func(_ context.Context, _ string, _ string, _ string) error {
+			s.OnSet.Func(func(_ context.Context, _, _, _ string) error {
 				mark()
 				var z0 error
 				return z0
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			var a2 string
-			var a3 string
-			a1 = "Set-a"
-			a2 = "Set-a"
-			a3 = "Set-a"
-			r0 := s.Set(a0, a1, a2, a3)
+			r0 := multiArgWriterStubSet(tb, s)
 			return r0
 		},
 	}
 }
 
-// TestMultiArgWriterStubSet pins how Set answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMultiArgWriterStubSet(t *testing.T) {
-	t.Parallel()
-
-	stub.Behaviour(t, "Set", multiArgWriterStubSetSubject)
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := multiargwritertest.NewMultiArgWriterStub(t)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		got := s.OnSet.AssertCalledOnce(t, "Set must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-		assert.Equal(t, got.Body, a2, "the recorded call carries Body")
-		assert.Equal(t, got.Mime, a3, "the recorded call carries Mime")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := multiargwritertest.NewMultiArgWriterStub(t)
-		var seen []multiargwritertest.MultiArgWriterSetCall
-		s.OnSet.OnRecord(func(c multiargwritertest.MultiArgWriterSetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		_ = s.Set(a0, a1, a2, a3)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Set call")
-	})
-
-	t.Run("wires WithMultiArgWriterSet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.WithMultiArgWriterSet(func(_ context.Context, _ string, _ string, _ string) error {
-			called = true
-			var z0 error
-			return z0
-		}))
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		assert.True(t, called, "WithMultiArgWriterSet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Set-failing")
-		s := multiargwritertest.NewMultiArgWriterStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		r0 := s.Set(a0, a1, a2, a3)
-		assert.ErrorIs(t, r0, want, "Set must answer the armed error")
-	})
-
-	t.Run("keeps recording across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := multiargwritertest.NewMultiArgWriterStub(t)
-		var want0 error
-		s.OnSet.Returns(want0)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		s.ResetCalls()
-		_ = s.Set(a0, a1, a2, a3)
-		s.OnSet.AssertCalledOnce(t, "Set must record the call that followed the reset")
-	})
-}
-
-// multiArgWriterStubGetSubject binds Get into the shape [stub.Behaviour]
-// drives: how to call it, what it answers with, and how to override it.
-//
-// Each call builds a fresh double: several checks assert on failure and
-// need one bound to a failable TB rather than to the running test.
-func multiArgWriterStubGetSubject(tb assert.TB) stub.Subject[multiargwritertest.MultiArgWriterGetCall, multiargwritertest.MultiArgWriterGetReturn] {
+// multiArgWriterStubGetSubject returns the subject of [stub.Behaviour] for
+// Get. The subject calls a new double that reports to tb.
+func multiArgWriterStubGetSubject(
+	tb assert.TB,
+) stub.Subject[multiargwritertest.MultiArgWriterGetCall, multiargwritertest.MultiArgWriterGetReturn] {
 	tb.Helper()
 	s := multiargwritertest.NewMultiArgWriterStub(tb)
 	return stub.Subject[multiargwritertest.MultiArgWriterGetCall, multiargwritertest.MultiArgWriterGetReturn]{
 		Stub: s.OnGet.MethodStub,
 		Call: func() {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			_, _ = s.Get(a0, a1)
+			_, _ = multiArgWriterStubGet(tb, s)
 		},
 		Result: func() multiargwritertest.MultiArgWriterGetReturn {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			got0, got1 := s.Get(a0, a1)
+			got0, got1 := multiArgWriterStubGet(tb, s)
 			return multiargwritertest.MultiArgWriterGetReturn{Result: got0, Err: got1}
 		},
 		Override: func(mark func()) {
@@ -200,215 +124,417 @@ func multiArgWriterStubGetSubject(tb assert.TB) stub.Subject[multiargwritertest.
 			})
 		},
 		Fails: func() error {
-			var a0 context.Context
-			var a1 string
-			a1 = "Get-a"
-			_, r1 := s.Get(a0, a1)
+			_, r1 := multiArgWriterStubGet(tb, s)
 			return r1
 		},
 	}
 }
 
-// TestMultiArgWriterStubGet pins how Get answers.
-//
-// Recording, resetting, call-count expectations, strict mode, fault
-// injection and zero-value dispatch are the same contract for every
-// method, so they are asserted once in [stub.Behaviour] rather than
-// restated here. What remains below needs a value this method's signature
-// can tell apart from a zero one.
-func TestMultiArgWriterStubGet(t *testing.T) {
-	t.Parallel()
+// multiArgWriterStubInstance is the instance of a
+// multiargwritertest.MultiArgWriterStub that the checks of the
+// constructors and the options drive.
+type multiArgWriterStubInstance = stub.Instance[multiargwritertest.MultiArgWriterSetCall]
 
-	stub.Behaviour(t, "Get", multiArgWriterStubGetSubject)
-
-	t.Run("answers with the value pinned by Returns", func(t *testing.T) {
-		t.Parallel()
-		s := multiargwritertest.NewMultiArgWriterStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Get-a"
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		got0, _ := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "Get must answer with what Returns pinned")
-	})
-
-	t.Run("records what it was called with", func(t *testing.T) {
-		t.Parallel()
-		s := multiargwritertest.NewMultiArgWriterStub(t)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		got := s.OnGet.AssertCalledOnce(t, "Get must record the call")
-		assert.Equal(t, got.Ctx, a0, "the recorded call carries Ctx")
-		assert.Equal(t, got.Key, a1, "the recorded call carries Key")
-	})
-
-	t.Run("fires the OnRecord hook for every call", func(t *testing.T) {
-		t.Parallel()
-		s := multiargwritertest.NewMultiArgWriterStub(t)
-		var seen []multiargwritertest.MultiArgWriterGetCall
-		s.OnGet.OnRecord(func(c multiargwritertest.MultiArgWriterGetCall) { seen = append(seen, c) })
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		_, _ = s.Get(a0, a1)
-		assert.Length(t, seen, 2, "OnRecord must fire once per Get call")
-	})
-
-	t.Run("wires WithMultiArgWriterGet at construction", func(t *testing.T) {
-		t.Parallel()
-		called := false
-		s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.WithMultiArgWriterGet(func(_ context.Context, _ string) (string, error) {
-			called = true
-			var z0 string
-			var z1 error
-			return z0, z1
-		}))
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		assert.True(t, called, "WithMultiArgWriterGet must install the override")
-	})
-
-	t.Run("answers the error the Failing preset armed", func(t *testing.T) {
-		t.Parallel()
-		want := errors.New("Get-failing")
-		s := multiargwritertest.NewMultiArgWriterStubFailing(t, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must answer the armed error")
-	})
-
-	t.Run("keeps the Returns configuration across a reset", func(t *testing.T) {
-		t.Parallel()
-		s := multiargwritertest.NewMultiArgWriterStub(t)
-		var want0 string
-		var want1 error
-		want0 = "Get-a"
-		s.OnGet.Returns(want0, want1)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		s.ResetCalls()
-		got0, _ := s.Get(a0, a1)
-		assert.Equal(t, got0, want0, "a reset must keep what Returns pinned")
-	})
-}
-
-// multiArgWriterStubDouble describes how to build a MultiArgWriterStub
-// under each option whose effect is the same whatever a method's
-// signature.
-//
-// Set stands in for the double as a whole: these checks assert only that
-// an option reached it.
-func multiArgWriterStubDouble() stub.Double[multiargwritertest.MultiArgWriterSetCall] {
-	instance := func(s *multiargwritertest.MultiArgWriterStub) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-		return stub.Instance[multiargwritertest.MultiArgWriterSetCall]{
-			Stub: s.OnSet.MethodStub,
-			Call: func() {
-				var a0 context.Context
-				var a1 string
-				var a2 string
-				var a3 string
-				a1 = "Set-a"
-				a2 = "Set-a"
-				a3 = "Set-a"
-				_ = s.Set(a0, a1, a2, a3)
-			},
-			Reset: s.ResetCalls,
-		}
-	}
-	return stub.Double[multiargwritertest.MultiArgWriterSetCall]{
-		New: func(tb assert.TB) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-			return instance(multiargwritertest.NewMultiArgWriterStub(tb))
+// multiArgWriterStubInstanceOf returns the instance of s. The options
+// apply to the whole double, so the checks call Set alone.
+func multiArgWriterStubInstanceOf(tb assert.TB, s *multiargwritertest.MultiArgWriterStub) multiArgWriterStubInstance {
+	tb.Helper()
+	return multiArgWriterStubInstance{
+		Stub: s.OnSet.MethodStub,
+		Call: func() {
+			_ = multiArgWriterStubSet(tb, s)
 		},
-		WithClock: func(tb assert.TB, clk assert.Clock) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-			return instance(multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubWithClock(clk)))
-		},
-		WithLatency: func(tb assert.TB, d time.Duration, clk assert.Clock) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-			return instance(multiargwritertest.NewMultiArgWriterStubDelayed(tb, d, clk))
-		},
-		WithRandSource: func(tb assert.TB, src rand.Source) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-			return instance(multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubWithRandSource(src)))
-		},
-		BenchMode: func(tb assert.TB) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-			return instance(multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubBenchMode()))
-		},
-		Strict: func(tb assert.TB) stub.Instance[multiargwritertest.MultiArgWriterSetCall] {
-			return instance(multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubStrict()))
-		},
+		Reset: s.ResetCalls,
 	}
 }
 
-// TestMultiArgWriterStubOptions pins the settings that apply to the double
-// rather than to one method: bench mode, the injected clock and random
-// source, and what a reset clears.
-func TestMultiArgWriterStubOptions(t *testing.T) {
+// TestMultiArgWriterStub checks the methods, the constructors and the
+// options of the double MultiArgWriterStub.
+func TestMultiArgWriterStub(t *testing.T) {
 	t.Parallel()
 
-	stub.DoubleBehaviour(t, multiArgWriterStubDouble())
+	t.Run("Set", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Set", multiArgWriterStubSetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			_ = multiArgWriterStubSet(t, s)
+			got := s.OnSet.AssertCalledOnce(t, "Set records the call")
+			a0, a1, a2, a3 := multiArgWriterStubSetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+			expect.Equal(t, got.Body, a2, "the call records Body")
+			expect.Equal(t, got.Mime, a3, "the call records Mime")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			var seen []multiargwritertest.MultiArgWriterSetCall
+			s.OnSet.OnRecord(func(c multiargwritertest.MultiArgWriterSetCall) { seen = append(seen, c) })
+			_ = multiArgWriterStubSet(t, s)
+			_ = multiArgWriterStubSet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Set")
+		})
+	})
+
+	t.Run("Get", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Get", multiArgWriterStubGetSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			_, _ = multiArgWriterStubGet(t, s)
+			got := s.OnGet.AssertCalledOnce(t, "Get records the call")
+			a0, a1 := multiArgWriterStubGetArgs(t)
+			expect.Equal(t, got.Ctx, a0, "the call records Ctx", expect.ByIdentity())
+			expect.Equal(t, got.Key, a1, "the call records Key")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			var seen []multiargwritertest.MultiArgWriterGetCall
+			s.OnGet.OnRecord(func(c multiargwritertest.MultiArgWriterGetCall) { seen = append(seen, c) })
+			_, _ = multiArgWriterStubGet(t, s)
+			_, _ = multiArgWriterStubGet(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Get")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) multiArgWriterStubInstance {
+			return multiArgWriterStubInstanceOf(tb, multiargwritertest.NewMultiArgWriterStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Set", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			_ = multiArgWriterStubSet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnSet.CallCount(), 0, "ResetCalls clears the calls of Set")
+		})
+
+		t.Run("keeps the results of Returns of Set", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			want0 := multiArgWriterStubSetPins()
+			s.OnSet.Returns(want0)
+			s.ResetCalls()
+			got0 := multiArgWriterStubSet(t, s)
+			assert.ErrorIs(t, got0, want0, "ResetCalls keeps the error of Set")
+		})
+
+		t.Run("clears the recorded calls of Get", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			_, _ = multiArgWriterStubGet(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnGet.CallCount(), 0, "ResetCalls clears the calls of Get")
+		})
+
+		t.Run("keeps the results of Returns of Get", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			want0, want1 := multiArgWriterStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			s.ResetCalls()
+			got0, got1 := multiArgWriterStubGet(t, s)
+			expect.Equal(t, got0, want0, "ResetCalls keeps the Result of Get")
+			expect.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Get")
+		})
+	})
+
+	t.Run("NewMultiArgWriterStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) multiArgWriterStubInstance {
+			return multiArgWriterStubInstanceOf(tb, multiargwritertest.NewMultiArgWriterStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewMultiArgWriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Set with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-failing")
+			s := multiargwritertest.NewMultiArgWriterStubFailing(t, want)
+			r0 := multiArgWriterStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of NewMultiArgWriterStubFailing")
+		})
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := multiargwritertest.NewMultiArgWriterStubFailing(t, want)
+			_, r1 := multiArgWriterStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of NewMultiArgWriterStubFailing")
+		})
+	})
+
+	t.Run("MultiArgWriterStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) multiArgWriterStubInstance {
+			return multiArgWriterStubInstanceOf(
+				tb,
+				multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubStrict()),
+			)
+		})
+	})
+
+	t.Run("MultiArgWriterStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Set to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := multiargwritertest.NewMultiArgWriterStub(t)
+			s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.MultiArgWriterStubDelegateTo(inner))
+			_ = multiArgWriterStubSet(t, s)
+			inner.OnSet.AssertCalledOnce(t, "Set calls the implementation")
+		})
+
+		t.Run("fails Set with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-delegate")
+			inner := multiargwritertest.NewMultiArgWriterStub(t)
+			inner.OnSet.Faults(want, 1)
+			s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.MultiArgWriterStubDelegateTo(inner))
+			r0 := multiArgWriterStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of the implementation")
+		})
+
+		t.Run("passes Get to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := multiargwritertest.NewMultiArgWriterStub(t)
+			s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.MultiArgWriterStubDelegateTo(inner))
+			_, _ = multiArgWriterStubGet(t, s)
+			inner.OnGet.AssertCalledOnce(t, "Get calls the implementation")
+		})
+
+		t.Run("fails Get with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-delegate")
+			inner := multiargwritertest.NewMultiArgWriterStub(t)
+			inner.OnGet.Faults(want, 1)
+			s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.MultiArgWriterStubDelegateTo(inner))
+			_, r1 := multiArgWriterStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of the implementation")
+		})
+	})
+
+	t.Run("MultiArgWriterStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) multiArgWriterStubInstance {
+			return multiArgWriterStubInstanceOf(
+				tb,
+				multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubWithClock(clk)),
+			)
+		})
+	})
+
+	t.Run("MultiArgWriterStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) multiArgWriterStubInstance {
+			return multiArgWriterStubInstanceOf(
+				tb,
+				multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubWithRandSource(src)),
+			)
+		})
+	})
+
+	t.Run("MultiArgWriterStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) multiArgWriterStubInstance {
+			return multiArgWriterStubInstanceOf(
+				tb,
+				multiargwritertest.NewMultiArgWriterStub(tb, multiargwritertest.MultiArgWriterStubBenchMode()),
+			)
+		})
+	})
+
+	t.Run("MultiArgWriterStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) multiArgWriterStubInstance {
+			return multiArgWriterStubInstanceOf(
+				tb,
+				multiargwritertest.NewMultiArgWriterStub(
+					tb,
+					multiargwritertest.MultiArgWriterStubWithClock(clk),
+					multiargwritertest.MultiArgWriterStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("MultiArgWriterStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Set with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Set-failing")
+			s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.MultiArgWriterStubFailing(want))
+			r0 := multiArgWriterStubSet(t, s)
+			assert.ErrorIs(t, r0, want, "Set fails with the error of MultiArgWriterStubFailing")
+		})
+
+		t.Run("fails Get with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Get-failing")
+			s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.MultiArgWriterStubFailing(want))
+			_, r1 := multiArgWriterStubGet(t, s)
+			assert.ErrorIs(t, r1, want, "Get fails with the error of MultiArgWriterStubFailing")
+		})
+	})
+
+	t.Run("WithMultiArgWriterSet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Set", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := multiargwritertest.NewMultiArgWriterStub(
+				t,
+				multiargwritertest.WithMultiArgWriterSet(func(_ context.Context, _, _, _ string) error {
+					called = true
+					var z0 error
+					return z0
+				}),
+			)
+			_ = multiArgWriterStubSet(t, s)
+			assert.True(t, called, "WithMultiArgWriterSet sets the function of Set")
+		})
+	})
+
+	t.Run("WithMultiArgWriterGet", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Get", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := multiargwritertest.NewMultiArgWriterStub(
+				t,
+				multiargwritertest.WithMultiArgWriterGet(func(_ context.Context, _ string) (string, error) {
+					called = true
+					var z0 string
+					var z1 error
+					return z0, z1
+				}),
+			)
+			_, _ = multiArgWriterStubGet(t, s)
+			assert.True(t, called, "WithMultiArgWriterGet sets the function of Get")
+		})
+	})
 }
 
-// TestMultiArgWriterStubDelegateTo pins that a wrapped implementation is
-// called through, and recorded on the way past.
-func TestMultiArgWriterStubDelegateTo(t *testing.T) {
+// TestMultiArgWriterSetStub checks the methods of MultiArgWriterSetStub,
+// which configures Set.
+func TestMultiArgWriterSetStub(t *testing.T) {
 	t.Parallel()
 
-	inner := multiargwritertest.NewMultiArgWriterStub(t)
-	s := multiargwritertest.NewMultiArgWriterStub(t, multiargwritertest.MultiArgWriterStubDelegateTo(inner))
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Set to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		_ = s.Set(a0, a1, a2, a3)
-		inner.OnSet.AssertCalledOnce(t, "Set must reach the wrapped implementation")
+		t.Run("sets the results of each call of Set", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			want0 := multiArgWriterStubSetPins()
+			s.OnSet.Returns(want0)
+			got0 := multiArgWriterStubSet(t, s)
+			assert.ErrorIs(t, got0, want0, "Set returns the error that Returns sets")
+		})
+
+		t.Run("configures Set for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := multiargwritertest.NewMultiArgWriterStub(r)
+			s.OnSet.Strict()
+			var want0 error
+			s.OnSet.Returns(want0)
+			_ = multiArgWriterStubSet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Set")
+		})
 	})
 
-	t.Run("surfaces what Set answered", func(t *testing.T) {
-		want := errors.New("Set-delegate")
-		inner.OnSet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		var a2 string
-		var a3 string
-		a1 = "Set-a"
-		a2 = "Set-a"
-		a3 = "Set-a"
-		r0 := s.Set(a0, a1, a2, a3)
-		assert.ErrorIs(t, r0, want, "Set must surface the wrapped answer")
-	})
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
 
-	t.Run("forwards Get to the wrapped implementation", func(t *testing.T) {
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, _ = s.Get(a0, a1)
-		inner.OnGet.AssertCalledOnce(t, "Get must reach the wrapped implementation")
-	})
-
-	t.Run("surfaces what Get answered", func(t *testing.T) {
-		want := errors.New("Get-delegate")
-		inner.OnGet.FaultsFor(time.Hour, want)
-		var a0 context.Context
-		var a1 string
-		a1 = "Get-a"
-		_, r1 := s.Get(a0, a1)
-		assert.ErrorIs(t, r1, want, "Get must surface the wrapped answer")
+		t.Run("passes the arguments of each call of Set to the function", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			var got0 context.Context
+			var got1 string
+			var got2 string
+			var got3 string
+			s.OnSet.Func(func(p0 context.Context, p1, p2, p3 string) error {
+				got0, got1, got2, got3 = p0, p1, p2, p3
+				var z0 error
+				return z0
+			})
+			_ = multiArgWriterStubSet(t, s)
+			a0, a1, a2, a3 := multiArgWriterStubSetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+			expect.Equal(t, got2, a2, "the function receives Body")
+			expect.Equal(t, got3, a3, "the function receives Mime")
+		})
 	})
 }
 
-// dokimi:provenance sha256:1ee99b8dd64ac38c98b2103f1cfb0c5e2a06ad587be9638b5727eb97dbd1fcb9
+// TestMultiArgWriterGetStub checks the methods of MultiArgWriterGetStub,
+// which configures Get.
+func TestMultiArgWriterGetStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Get", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			want0, want1 := multiArgWriterStubGetPins()
+			s.OnGet.Returns(want0, want1)
+			got0, got1 := multiArgWriterStubGet(t, s)
+			expect.Equal(t, got0, want0, "Get returns the Result that Returns sets")
+			expect.ErrorIs(t, got1, want1, "Get returns the error that Returns sets")
+		})
+
+		t.Run("configures Get for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := multiargwritertest.NewMultiArgWriterStub(r)
+			s.OnGet.Strict()
+			var want0 string
+			var want1 error
+			s.OnGet.Returns(want0, want1)
+			_, _ = multiArgWriterStubGet(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Get")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Get to the function", func(t *testing.T) {
+			t.Parallel()
+			s := multiargwritertest.NewMultiArgWriterStub(t)
+			var got0 context.Context
+			var got1 string
+			s.OnGet.Func(func(p0 context.Context, p1 string) (string, error) {
+				got0, got1 = p0, p1
+				var z0 string
+				var z1 error
+				return z0, z1
+			})
+			_, _ = multiArgWriterStubGet(t, s)
+			a0, a1 := multiArgWriterStubGetArgs(t)
+			expect.Equal(t, got0, a0, "the function receives Ctx", expect.ByIdentity())
+			expect.Equal(t, got1, a1, "the function receives Key")
+		})
+	})
+}
+
+// dokimi:provenance sha256:152f1bd94cbe790a818ddf9bc7aa789ceb6fe198805ac46a702fdf05239f7d9d

@@ -110,9 +110,11 @@ func New() plugin.Annotator {
 // register claims the namespace of fault and registers [KeyErrors],
 // [KeyRetry] and [KeyPartition].
 //
-// Error modes: the error of the claim, such as a namespace that another
-// registrant claimed, and the errors of the three registrations, such as a
-// key that the registrant registered with another type, joined.
+// # Errors
+//
+// register returns the error of the claim, such as a namespace that another
+// registrant claimed, joined with the errors of the three registrations, such
+// as a key that the registrant registered with another type.
 func (c *conclusion) register(r *meta.Registry) error {
 	errClaim := r.ClaimNamespace(KeyRetry.Namespace())
 	var errValues, errRetry, errPartition error
@@ -144,14 +146,14 @@ func (c *conclusion) declared(m *sdk.MethodMatch, st *sdk.Stamper) error {
 			m.Method.Name)
 		return nil
 	}
-	if listed, held := d.Param(ErrorsParam); held {
+	if listed, stated := d.Param(ErrorsParam); stated {
 		values := make([]symbol.Identity, 0, len(listed.List))
 		for i := range listed.List {
 			values = append(values, listed.List[i].Target)
 		}
 		sdk.Stamp(st, c.values, values)
 	}
-	if retry, held := d.Param(RetryParam); held {
+	if retry, stated := d.Param(RetryParam); stated {
 		if retry.Int < leastRetry {
 			m.ErrorfAt(BadRetry, d.Pos, "retry=%d is below %d, the first attempt that a retry schedule can let succeed",
 				retry.Int, leastRetry)
@@ -159,7 +161,7 @@ func (c *conclusion) declared(m *sdk.MethodMatch, st *sdk.Stamper) error {
 			sdk.Stamp(st, c.retry, retry.Int)
 		}
 	}
-	if partition, held := d.Param(PartitionParam); held {
+	if partition, stated := d.Param(PartitionParam); stated {
 		sdk.Stamp(st, c.partition, partition.Target)
 	}
 	return nil

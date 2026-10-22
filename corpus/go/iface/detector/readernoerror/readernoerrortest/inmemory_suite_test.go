@@ -18,6 +18,20 @@ func TestInMemoryConformsToReaderNoError(t *testing.T) {
 	readernoerrortest.RunReaderNoErrorSuite(t, readernoerrortest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of ReaderNoError
+// on InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Lookup", func(b *testing.B) {
+		readernoerrortest.BenchReaderNoErrorSuite(
+			b,
+			readernoerrortest.ReaderNoErrorChecks.Lookup.Callable,
+			func(*readernoerrortest.ReaderNoErrorHandle) *readernoerrortest.InMemory {
+				return readernoerrortest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryLookup fuzzes the property checks of ReaderNoError.Lookup on
 // InMemory.
 func FuzzInMemoryLookup(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryLookup(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:16ed39fc30985b173c07fd236ff9acaf55abb705aef45f988e94e5c7587641a0
+// dokimi:provenance sha256:45881d6b4f3ff9d1eb50c2d29e28da0cbf987c3a15a70aebd2557336115d5e3c

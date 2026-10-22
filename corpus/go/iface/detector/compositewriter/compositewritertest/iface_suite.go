@@ -5,8 +5,10 @@
 package compositewritertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter"
 )
@@ -35,9 +37,19 @@ type compositeWriterSet struct {
 	conform.Callable[compositewriter.CompositeWriter]
 }
 
-// CompositeWriterSuite returns the checks of CompositeWriter.
+// CompositeWriterSuite returns the checks of CompositeWriter, and the
+// calls and the budgets of its callables.
 func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
-	return conform.Suite[compositewriter.CompositeWriter]{Declaration: "CompositeWriter"}
+	return conform.Suite[compositewriter.CompositeWriter]{
+		Declaration: "CompositeWriter",
+		Calls: []conform.Call[compositewriter.CompositeWriter]{
+			{
+				Calls:    compositeWriterSetCalls,
+				Over:     newCompositeWriterOver,
+				Callable: CompositeWriterChecks.Set.Callable,
+			},
+		},
+	}
 }
 
 // RunCompositeWriterSuite applies the checks of CompositeWriter, and the
@@ -84,4 +96,87 @@ func FuzzCompositeWriterSuite[T compositewriter.CompositeWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:554ce4ac69fa85d02f7ab4d344e8b103f64e8f0abcb4d557d2f4737449ee452d
+// RunCompositeWriterBudgets applies the allocation ceilings of
+// CompositeWriter, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunCompositeWriterBudgets[T compositewriter.CompositeWriter](
+	t *testing.T,
+	newSubject func(h *CompositeWriterHandle) T,
+	opts ...CompositeWriterOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		CompositeWriterSuite(),
+		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchCompositeWriterSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchCompositeWriterSuite[T compositewriter.CompositeWriter](
+	b conform.B,
+	callable conform.Callable[compositewriter.CompositeWriter],
+	newSubject func(h *CompositeWriterHandle) T,
+	opts ...CompositeWriterOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		CompositeWriterSuite(),
+		callable,
+		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchCompositeWriterSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchCompositeWriterSuiteParallel[T compositewriter.CompositeWriter](
+	b *testing.B,
+	callable conform.Callable[compositewriter.CompositeWriter],
+	newSubject func(h *CompositeWriterHandle) T,
+	opts ...CompositeWriterOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		CompositeWriterSuite(),
+		callable,
+		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
+		opts...)
+}
+
+// compositeWriterSetCalls generates the calls of CompositeWriter.Set with
+// the inputs that each case draws.
+var compositeWriterSetCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, compositewriter.CompositeWriter) error {
+		key := c.Draw(prop.Of[string](), "key")
+		v := c.Draw(prop.Of[compositewriter.Value](), "v")
+		return func(ctx context.Context, subject compositewriter.CompositeWriter) error {
+			return subject.Set(ctx, key, v)
+		}
+	},
+)
+
+// compositeWriterOver is a subject of CompositeWriter whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type compositeWriterOver struct {
+	compositewriter.CompositeWriter
+	spend func()
+}
+
+// Set calls spend and returns its zero results.
+func (o compositeWriterOver) Set(context.Context, string, compositewriter.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newCompositeWriterOver returns the planted defect of a ceiling of
+// CompositeWriter, whose callables call spend.
+func newCompositeWriterOver(_ *CompositeWriterHandle, spend func()) compositewriter.CompositeWriter {
+	return compositeWriterOver{spend: spend}
+}
+
+// dokimi:provenance sha256:769f7ee51f2e0687ab1f2c13c45127614bd77836938821fddc6988106cd7da2c

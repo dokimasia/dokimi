@@ -5,8 +5,10 @@
 package readafterwritetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/readafterwrite"
 )
@@ -42,9 +44,24 @@ type mixedWrite struct {
 	conform.Callable[readafterwrite.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[readafterwrite.Mixed] {
-	return conform.Suite[readafterwrite.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[readafterwrite.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[readafterwrite.Mixed]{
+			{
+				Calls:    mixedReadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Read.Callable,
+			},
+			{
+				Calls:    mixedWriteCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Write.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -78,4 +95,91 @@ func FuzzMixedSuite[T readafterwrite.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) readafterwrite.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:3a570881e1c90e9e311f4c756ccb0d7ce19ab8dbd65a7e687b5bf95e9338343c
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T readafterwrite.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) readafterwrite.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T readafterwrite.Mixed](
+	b conform.B,
+	callable conform.Callable[readafterwrite.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) readafterwrite.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T readafterwrite.Mixed](
+	b *testing.B,
+	callable conform.Callable[readafterwrite.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) readafterwrite.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedReadCalls generates the calls of Mixed.Read with the inputs that
+// each case draws.
+var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, readafterwrite.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject readafterwrite.Mixed) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// mixedWriteCalls generates the calls of Mixed.Write with the inputs that
+// each case draws.
+var mixedWriteCalls = prop.Composite(func(c *prop.Case) func(context.Context, readafterwrite.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
+	return func(ctx context.Context, subject readafterwrite.Mixed) error {
+		return subject.Write(ctx, key, value)
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	readafterwrite.Mixed
+	spend func()
+}
+
+// Read calls spend and returns its zero results.
+func (o mixedOver) Read(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Write calls spend and returns its zero results.
+func (o mixedOver) Write(context.Context, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) readafterwrite.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:ce89645f0048184a4f97e60919ab0c254d7ff277094a7e0c4a83e71d03b588f8

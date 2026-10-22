@@ -5,8 +5,10 @@
 package paginationtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination"
 )
@@ -43,9 +45,24 @@ type contractPut struct {
 	conform.Callable[pagination.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[pagination.Contract] {
-	return conform.Suite[pagination.Contract]{Declaration: "Contract"}
+	return conform.Suite[pagination.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[pagination.Contract]{
+			{
+				Calls:    contractFetchCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Fetch.Callable,
+			},
+			{
+				Calls:    contractPutCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Put.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,98 @@ func FuzzContractSuite[T pagination.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:8edceae14cb694b6d0697e8da2f03c1fd4da23950de6133b4421c757b50553b7
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T pagination.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ContractSuite(),
+		func(h *ContractHandle) pagination.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T pagination.Contract](
+	b conform.B,
+	callable conform.Callable[pagination.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) pagination.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T pagination.Contract](
+	b *testing.B,
+	callable conform.Callable[pagination.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) pagination.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractFetchCalls generates the calls of Contract.Fetch with the inputs
+// that each case draws.
+var contractFetchCalls = prop.Composite(func(c *prop.Case) func(context.Context, pagination.Contract) error {
+	cur := c.Draw(prop.Of[pagination.Cursor](), "cur")
+	return func(ctx context.Context, subject pagination.Contract) error {
+		_, err := subject.Fetch(ctx, cur)
+		return err
+	}
+})
+
+// contractPutCalls generates the calls of Contract.Put with the inputs
+// that each case draws.
+var contractPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, pagination.Contract) error {
+	v := c.Draw(prop.Of[pagination.Value](), "v")
+	return func(ctx context.Context, subject pagination.Contract) error {
+		return subject.Put(ctx, v)
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	pagination.Contract
+	spend func()
+}
+
+// Fetch calls spend and returns its zero results.
+func (o contractOver) Fetch(context.Context, pagination.Cursor) (r0 pagination.Page, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Put calls spend and returns its zero results.
+func (o contractOver) Put(context.Context, pagination.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) pagination.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:ed7cb87030dae77ca7363706139212b081df40e0acc1b6e0107b31a537e30938

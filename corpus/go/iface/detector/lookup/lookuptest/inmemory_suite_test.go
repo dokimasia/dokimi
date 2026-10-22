@@ -18,6 +18,18 @@ func TestInMemoryConformsToLookup(t *testing.T) {
 	lookuptest.RunLookupSuite(t, lookuptest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Lookup on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Inspect", func(b *testing.B) {
+		lookuptest.BenchLookupSuite(
+			b,
+			lookuptest.LookupChecks.Inspect.Callable,
+			func(*lookuptest.LookupHandle) *lookuptest.InMemory { return lookuptest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryInspect fuzzes the property checks of Lookup.Inspect on
 // InMemory.
 func FuzzInMemoryInspect(f *testing.F) {
@@ -28,4 +40,4 @@ func FuzzInMemoryInspect(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:fc459be279884e62a1e57db7cfa9ef4cd78db8b855836da856dde6e3ea9804c5
+// dokimi:provenance sha256:a61cb1bc51f1f80827b42d049faa5c699b26c07bad4ca5482d1fbae59bf5f034

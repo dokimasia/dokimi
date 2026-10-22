@@ -18,6 +18,25 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	scopetest.RunMixedSuite(t, scopetest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		scopetest.BenchMixedSuite(
+			b,
+			scopetest.MixedChecks.Set.Callable,
+			func(*scopetest.MixedHandle) *scopetest.InMemory { return scopetest.NewInMemory() },
+		)
+	})
+	b.Run("Get", func(b *testing.B) {
+		scopetest.BenchMixedSuite(
+			b,
+			scopetest.MixedChecks.Get.Callable,
+			func(*scopetest.MixedHandle) *scopetest.InMemory { return scopetest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemorySet fuzzes the property checks of Mixed.Set on InMemory.
 func FuzzInMemorySet(f *testing.F) {
 	scopetest.FuzzMixedSuite(
@@ -36,4 +55,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b85d712b02c1c6eb3b30ec43b36f3f6c98a981cdd2dd5386d85a25dde62d04e4
+// dokimi:provenance sha256:91e3d7ccc72354efcd918a3700643aef66836e86d63f9e9fc153fb43680a21ef

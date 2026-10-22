@@ -5,8 +5,10 @@
 package namedreturnstest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns"
 )
@@ -51,9 +53,29 @@ type servicePartiallyNamed struct {
 	conform.Callable[namedreturns.Service]
 }
 
-// ServiceSuite returns the checks of Service.
+// ServiceSuite returns the checks of Service, and the calls and the
+// budgets of its callables.
 func ServiceSuite() conform.Suite[namedreturns.Service] {
-	return conform.Suite[namedreturns.Service]{Declaration: "Service"}
+	return conform.Suite[namedreturns.Service]{
+		Declaration: "Service",
+		Calls: []conform.Call[namedreturns.Service]{
+			{
+				Calls:    serviceNamedCalls,
+				Over:     newServiceOver,
+				Callable: ServiceChecks.Named.Callable,
+			},
+			{
+				Calls:    serviceUnnamedCalls,
+				Over:     newServiceOver,
+				Callable: ServiceChecks.Unnamed.Callable,
+			},
+			{
+				Calls:    servicePartiallyNamedCalls,
+				Over:     newServiceOver,
+				Callable: ServiceChecks.PartiallyNamed.Callable,
+			},
+		},
+	}
 }
 
 // RunServiceSuite applies the checks of Service, and the checks that opts
@@ -92,4 +114,111 @@ func FuzzServiceSuite[T namedreturns.Service](
 		opts...)
 }
 
-// dokimi:provenance sha256:447aa25a3144c0ea0365740377e94cabb580fc546b01b7b27c4b685004491586
+// RunServiceBudgets applies the allocation ceilings of Service, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunServiceBudgets[T namedreturns.Service](
+	t *testing.T,
+	newSubject func(h *ServiceHandle) T,
+	opts ...ServiceOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ServiceSuite(), func(h *ServiceHandle) namedreturns.Service { return newSubject(h) }, opts...)
+}
+
+// BenchServiceSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchServiceSuite[T namedreturns.Service](
+	b conform.B,
+	callable conform.Callable[namedreturns.Service],
+	newSubject func(h *ServiceHandle) T,
+	opts ...ServiceOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ServiceSuite(),
+		callable,
+		func(h *ServiceHandle) namedreturns.Service { return newSubject(h) },
+		opts...)
+}
+
+// BenchServiceSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchServiceSuiteParallel[T namedreturns.Service](
+	b *testing.B,
+	callable conform.Callable[namedreturns.Service],
+	newSubject func(h *ServiceHandle) T,
+	opts ...ServiceOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ServiceSuite(),
+		callable,
+		func(h *ServiceHandle) namedreturns.Service { return newSubject(h) },
+		opts...)
+}
+
+// serviceNamedCalls generates the calls of Service.Named with the inputs
+// that each case draws.
+var serviceNamedCalls = prop.Composite(func(c *prop.Case) func(context.Context, namedreturns.Service) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject namedreturns.Service) error {
+		_, err := subject.Named(ctx, id)
+		return err
+	}
+})
+
+// serviceUnnamedCalls generates the calls of Service.Unnamed with the
+// inputs that each case draws.
+var serviceUnnamedCalls = prop.Composite(func(c *prop.Case) func(context.Context, namedreturns.Service) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject namedreturns.Service) error {
+		_, err := subject.Unnamed(ctx, id)
+		return err
+	}
+})
+
+// servicePartiallyNamedCalls generates the calls of Service.PartiallyNamed
+// with the inputs that each case draws.
+var servicePartiallyNamedCalls = prop.Composite(func(c *prop.Case) func(context.Context, namedreturns.Service) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject namedreturns.Service) error {
+		_, err := subject.PartiallyNamed(ctx, id)
+		return err
+	}
+})
+
+// serviceOver is a subject of Service whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type serviceOver struct {
+	namedreturns.Service
+	spend func()
+}
+
+// Named calls spend and returns its zero results.
+func (o serviceOver) Named(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Unnamed calls spend and returns its zero results.
+func (o serviceOver) Unnamed(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// PartiallyNamed calls spend and returns its zero results.
+func (o serviceOver) PartiallyNamed(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newServiceOver returns the planted defect of a ceiling of Service, whose
+// callables call spend.
+func newServiceOver(_ *ServiceHandle, spend func()) namedreturns.Service {
+	return serviceOver{spend: spend}
+}
+
+// dokimi:provenance sha256:9ed057ca0a1c8da78a955365c3dde6717efefcea595c84b51b086bb4759b4a91

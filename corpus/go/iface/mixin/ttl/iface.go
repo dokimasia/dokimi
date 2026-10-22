@@ -37,7 +37,9 @@ type Mixed interface {
 	// Put stores a value, starting its lifetime.
 	Put(ctx context.Context, v Value) error
 
-	// Read returns it while the lifetime holds, and the sentinel after.
+	// Read returns the value until its lifetime ends, and the sentinel after
+	// it. A read allocates nothing, and its p99 latency is at most 1ms.
 	//dokimi:mixin ttl duration=1m put=Put read=Read not-found=ErrExpired
+	//dokimi:budget allocs=0 p99=1ms mean=200us
 	Read(ctx context.Context, key string) (Value, error)
 }

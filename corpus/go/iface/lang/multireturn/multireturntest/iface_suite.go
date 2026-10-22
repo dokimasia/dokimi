@@ -5,8 +5,10 @@
 package multireturntest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn"
 )
@@ -50,9 +52,29 @@ type wideNoError struct {
 	conform.Callable[multireturn.Wide]
 }
 
-// WideSuite returns the checks of Wide.
+// WideSuite returns the checks of Wide, and the calls and the budgets of
+// its callables.
 func WideSuite() conform.Suite[multireturn.Wide] {
-	return conform.Suite[multireturn.Wide]{Declaration: "Wide"}
+	return conform.Suite[multireturn.Wide]{
+		Declaration: "Wide",
+		Calls: []conform.Call[multireturn.Wide]{
+			{
+				Calls:    wideQuadCalls,
+				Over:     newWideOver,
+				Callable: WideChecks.Quad.Callable,
+			},
+			{
+				Calls:    wideTripleCalls,
+				Over:     newWideOver,
+				Callable: WideChecks.Triple.Callable,
+			},
+			{
+				Calls:    wideNoErrorCalls,
+				Over:     newWideOver,
+				Callable: WideChecks.NoError.Callable,
+			},
+		},
+	}
 }
 
 // RunWideSuite applies the checks of Wide, and the checks that opts add,
@@ -82,4 +104,102 @@ func FuzzWideSuite[T multireturn.Wide](
 	conform.Fuzz(f, WideSuite(), callable, func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:6413210d8a87d3e31923f7a4b77e8a07bf201f8c76358c7241d306b2b51798fb
+// RunWideBudgets applies the allocation ceilings of Wide, and the ceilings
+// that opts add, to a fresh subject of newSubject for each case.
+func RunWideBudgets[T multireturn.Wide](t *testing.T, newSubject func(h *WideHandle) T, opts ...WideOption) {
+	t.Helper()
+	conform.RunBudgets(t, WideSuite(), func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+}
+
+// BenchWideSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchWideSuite[T multireturn.Wide](
+	b conform.B,
+	callable conform.Callable[multireturn.Wide],
+	newSubject func(h *WideHandle) T,
+	opts ...WideOption,
+) {
+	b.Helper()
+	conform.Bench(b, WideSuite(), callable, func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+}
+
+// BenchWideSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchWideSuiteParallel[T multireturn.Wide](
+	b *testing.B,
+	callable conform.Callable[multireturn.Wide],
+	newSubject func(h *WideHandle) T,
+	opts ...WideOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		WideSuite(),
+		callable,
+		func(h *WideHandle) multireturn.Wide { return newSubject(h) },
+		opts...)
+}
+
+// wideQuadCalls generates the calls of Wide.Quad with the inputs that each
+// case draws.
+var wideQuadCalls = prop.Composite(func(c *prop.Case) func(context.Context, multireturn.Wide) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject multireturn.Wide) error {
+		_, _, _, err := subject.Quad(ctx, id)
+		return err
+	}
+})
+
+// wideTripleCalls generates the calls of Wide.Triple with the inputs that
+// each case draws.
+var wideTripleCalls = prop.Composite(func(c *prop.Case) func(context.Context, multireturn.Wide) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject multireturn.Wide) error {
+		_, _, _ = subject.Triple(ctx, id)
+		return nil
+	}
+})
+
+// wideNoErrorCalls generates the calls of Wide.NoError with the inputs
+// that each case draws.
+var wideNoErrorCalls = prop.Composite(func(c *prop.Case) func(context.Context, multireturn.Wide) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject multireturn.Wide) error {
+		_, _ = subject.NoError(ctx, id)
+		return nil
+	}
+})
+
+// wideOver is a subject of Wide whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type wideOver struct {
+	multireturn.Wide
+	spend func()
+}
+
+// Quad calls spend and returns its zero results.
+func (o wideOver) Quad(context.Context, string) (r0 string, r1 int, r2 bool, r3 error) {
+	o.spend()
+	return r0, r1, r2, r3
+}
+
+// Triple calls spend and returns its zero results.
+func (o wideOver) Triple(context.Context, string) (r0 string, r1 int, r2 bool) {
+	o.spend()
+	return r0, r1, r2
+}
+
+// NoError calls spend and returns its zero results.
+func (o wideOver) NoError(context.Context, string) (r0 string, r1 int) {
+	o.spend()
+	return r0, r1
+}
+
+// newWideOver returns the planted defect of a ceiling of Wide, whose
+// callables call spend.
+func newWideOver(_ *WideHandle, spend func()) multireturn.Wide {
+	return wideOver{spend: spend}
+}
+
+// dokimi:provenance sha256:00f4a7261e6ec5e64dc316381a4a10b9747da9ae0af86e13bb6b603acae0e785

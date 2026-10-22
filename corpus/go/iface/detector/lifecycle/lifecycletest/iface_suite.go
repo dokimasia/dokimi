@@ -5,8 +5,10 @@
 package lifecycletest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lifecycle"
 )
@@ -35,9 +37,19 @@ type lifecycleClose struct {
 	conform.Callable[lifecycle.Lifecycle]
 }
 
-// LifecycleSuite returns the checks of Lifecycle.
+// LifecycleSuite returns the checks of Lifecycle, and the calls and the
+// budgets of its callables.
 func LifecycleSuite() conform.Suite[lifecycle.Lifecycle] {
-	return conform.Suite[lifecycle.Lifecycle]{Declaration: "Lifecycle"}
+	return conform.Suite[lifecycle.Lifecycle]{
+		Declaration: "Lifecycle",
+		Calls: []conform.Call[lifecycle.Lifecycle]{
+			{
+				Calls:    lifecycleCloseCalls,
+				Over:     newLifecycleOver,
+				Callable: LifecycleChecks.Close.Callable,
+			},
+		},
+	}
 }
 
 // RunLifecycleSuite applies the checks of Lifecycle, and the checks that
@@ -76,4 +88,82 @@ func FuzzLifecycleSuite[T lifecycle.Lifecycle](
 		opts...)
 }
 
-// dokimi:provenance sha256:064f0d94ddbd9bdc3cfceb7091d54a5cafb687029dc2cb380dd101bc6441a2b3
+// RunLifecycleBudgets applies the allocation ceilings of Lifecycle, and
+// the ceilings that opts add, to a fresh subject of newSubject for each
+// case.
+func RunLifecycleBudgets[T lifecycle.Lifecycle](
+	t *testing.T,
+	newSubject func(h *LifecycleHandle) T,
+	opts ...LifecycleOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		LifecycleSuite(),
+		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
+		opts...)
+}
+
+// BenchLifecycleSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchLifecycleSuite[T lifecycle.Lifecycle](
+	b conform.B,
+	callable conform.Callable[lifecycle.Lifecycle],
+	newSubject func(h *LifecycleHandle) T,
+	opts ...LifecycleOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		LifecycleSuite(),
+		callable,
+		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
+		opts...)
+}
+
+// BenchLifecycleSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchLifecycleSuiteParallel[T lifecycle.Lifecycle](
+	b *testing.B,
+	callable conform.Callable[lifecycle.Lifecycle],
+	newSubject func(h *LifecycleHandle) T,
+	opts ...LifecycleOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		LifecycleSuite(),
+		callable,
+		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
+		opts...)
+}
+
+// lifecycleCloseCalls generates the calls of Lifecycle.Close with the
+// inputs that each case draws.
+var lifecycleCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, lifecycle.Lifecycle) error {
+	return func(ctx context.Context, subject lifecycle.Lifecycle) error {
+		return subject.Close(ctx)
+	}
+})
+
+// lifecycleOver is a subject of Lifecycle whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type lifecycleOver struct {
+	lifecycle.Lifecycle
+	spend func()
+}
+
+// Close calls spend and returns its zero results.
+func (o lifecycleOver) Close(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newLifecycleOver returns the planted defect of a ceiling of Lifecycle,
+// whose callables call spend.
+func newLifecycleOver(_ *LifecycleHandle, spend func()) lifecycle.Lifecycle {
+	return lifecycleOver{spend: spend}
+}
+
+// dokimi:provenance sha256:13a1c6c0acff7c1aad861579c881438c86eb6c867f7c5fb035038bae50002eb7

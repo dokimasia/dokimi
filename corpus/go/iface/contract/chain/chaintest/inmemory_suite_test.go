@@ -18,6 +18,32 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	chaintest.RunContractSuite(t, chaintest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Append", func(b *testing.B) {
+		chaintest.BenchContractSuite(
+			b,
+			chaintest.ContractChecks.Append.Callable,
+			func(*chaintest.ContractHandle) *chaintest.InMemory { return chaintest.NewInMemory() },
+		)
+	})
+	b.Run("Replay", func(b *testing.B) {
+		chaintest.BenchContractSuite(
+			b,
+			chaintest.ContractChecks.Replay.Callable,
+			func(*chaintest.ContractHandle) *chaintest.InMemory { return chaintest.NewInMemory() },
+		)
+	})
+	b.Run("Verify", func(b *testing.B) {
+		chaintest.BenchContractSuite(
+			b,
+			chaintest.ContractChecks.Verify.Callable,
+			func(*chaintest.ContractHandle) *chaintest.InMemory { return chaintest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryAppend fuzzes the property checks of Contract.Append on
 // InMemory.
 func FuzzInMemoryAppend(f *testing.F) {
@@ -48,4 +74,4 @@ func FuzzInMemoryVerify(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:53ef8577fc5036d3d62389f43074499b633cb24b588a085c7826eadc12d8718c
+// dokimi:provenance sha256:7e5bdb9dae3ec67683e3bd8c652ad83095f9a503e62d67d7fa441ecfd2073cfd

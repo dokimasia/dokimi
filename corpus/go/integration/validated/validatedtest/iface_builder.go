@@ -58,7 +58,7 @@ func (b *AccountBuilder) Clone() *AccountBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [AccountBuilder.Clone] returns a builder that shares none of them.
@@ -66,4 +66,4 @@ func (b *AccountBuilder) Build() validated.Account {
 	return b.v
 }
 
-// dokimi:provenance sha256:e2cb50f95576d25d0d1b3fc3afef38ee6256de6878506e56f34992fd1f8f3eb6
+// dokimi:provenance sha256:0f6b2cb9b415c4e8ab9690be5c45e9f7dfb6ee4e5b47f153d7d821ad5cb53632

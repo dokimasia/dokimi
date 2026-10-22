@@ -5,8 +5,10 @@
 package deprecatedtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deprecated"
 )
@@ -41,9 +43,24 @@ type mixedNew struct {
 	conform.Callable[deprecated.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[deprecated.Mixed] {
-	return conform.Suite[deprecated.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[deprecated.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[deprecated.Mixed]{
+			{
+				Calls:    mixedOldCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Old.Callable,
+			},
+			{
+				Calls:    mixedNewCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.New.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -73,4 +90,86 @@ func FuzzMixedSuite[T deprecated.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:33bd538008f4c53fff1ed3860daab20cf89662e086bf8cd19904e9c46b68a023
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T deprecated.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T deprecated.Mixed](
+	b conform.B,
+	callable conform.Callable[deprecated.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T deprecated.Mixed](
+	b *testing.B,
+	callable conform.Callable[deprecated.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) deprecated.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedOldCalls generates the calls of Mixed.Old with the inputs that each
+// case draws.
+var mixedOldCalls = prop.Composite(func(c *prop.Case) func(context.Context, deprecated.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject deprecated.Mixed) error {
+		_, err := subject.Old(ctx, key)
+		return err
+	}
+})
+
+// mixedNewCalls generates the calls of Mixed.New with the inputs that each
+// case draws.
+var mixedNewCalls = prop.Composite(func(c *prop.Case) func(context.Context, deprecated.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject deprecated.Mixed) error {
+		_, err := subject.New(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	deprecated.Mixed
+	spend func()
+}
+
+// Old calls spend and returns its zero results.
+func (o mixedOver) Old(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// New calls spend and returns its zero results.
+func (o mixedOver) New(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) deprecated.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:6dba41e215bd8d08e25d12188ae472ee7b2bb2b23942a5b7645ff9fdf79d1185

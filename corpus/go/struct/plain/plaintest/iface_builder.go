@@ -70,7 +70,7 @@ func (b *ItemBuilder) Clone() *ItemBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ItemBuilder.Clone] returns a builder that shares none of them.
@@ -78,4 +78,4 @@ func (b *ItemBuilder) Build() plain.Item {
 	return b.v
 }
 
-// dokimi:provenance sha256:b374a164941218ca5adc34170dec59232ddce238cda2efd96bd9a605bb260f69
+// dokimi:provenance sha256:ecfe47f5229d1d103d24686408ac2c09453d2f2979334919de04e7ce9c7a9bc1

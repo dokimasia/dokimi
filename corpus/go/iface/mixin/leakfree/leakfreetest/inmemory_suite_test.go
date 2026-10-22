@@ -18,6 +18,32 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	leakfreetest.RunMixedSuite(t, leakfreetest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Acquire", func(b *testing.B) {
+		leakfreetest.BenchMixedSuite(
+			b,
+			leakfreetest.MixedChecks.Acquire.Callable,
+			func(*leakfreetest.MixedHandle) *leakfreetest.InMemory { return leakfreetest.NewInMemory() },
+		)
+	})
+	b.Run("Release", func(b *testing.B) {
+		leakfreetest.BenchMixedSuite(
+			b,
+			leakfreetest.MixedChecks.Release.Callable,
+			func(*leakfreetest.MixedHandle) *leakfreetest.InMemory { return leakfreetest.NewInMemory() },
+		)
+	})
+	b.Run("Outstanding", func(b *testing.B) {
+		leakfreetest.BenchMixedSuite(
+			b,
+			leakfreetest.MixedChecks.Outstanding.Callable,
+			func(*leakfreetest.MixedHandle) *leakfreetest.InMemory { return leakfreetest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryAcquire fuzzes the property checks of Mixed.Acquire on
 // InMemory.
 func FuzzInMemoryAcquire(f *testing.F) {
@@ -48,4 +74,4 @@ func FuzzInMemoryOutstanding(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:eeb36ee075977c003653c012fb3b8e50755bf2d85ac76d1e19261bcfe8ad3c1e
+// dokimi:provenance sha256:c854b94857e4ba7fc19e99f0b8d5349b56b18c8175b20450438e83eeadcaf7b1

@@ -5,8 +5,10 @@
 package overmatchtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/overmatch"
 )
@@ -42,9 +44,24 @@ type mixedItems struct {
 	conform.Callable[overmatch.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[overmatch.Mixed] {
-	return conform.Suite[overmatch.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[overmatch.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[overmatch.Mixed]{
+			{
+				Calls:    mixedAddCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Add.Callable,
+			},
+			{
+				Calls:    mixedItemsCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Items.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -74,4 +91,84 @@ func FuzzMixedSuite[T overmatch.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) overmatch.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:dd96ee5ee3ce71e67702479810c9c1866d886ef5141cb878d5218c290c8c64bb
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T overmatch.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) overmatch.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T overmatch.Mixed](
+	b conform.B,
+	callable conform.Callable[overmatch.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) overmatch.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T overmatch.Mixed](
+	b *testing.B,
+	callable conform.Callable[overmatch.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) overmatch.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedAddCalls generates the calls of Mixed.Add with the inputs that each
+// case draws.
+var mixedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, overmatch.Mixed) error {
+	v := c.Draw(prop.Of[overmatch.Value](), "v")
+	return func(ctx context.Context, subject overmatch.Mixed) error {
+		return subject.Add(ctx, v)
+	}
+})
+
+// mixedItemsCalls generates the calls of Mixed.Items with the inputs that
+// each case draws.
+var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, overmatch.Mixed) error {
+	return func(ctx context.Context, subject overmatch.Mixed) error {
+		_, err := subject.Items(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	overmatch.Mixed
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o mixedOver) Add(context.Context, overmatch.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Items calls spend and returns its zero results.
+func (o mixedOver) Items(context.Context) (r0 []overmatch.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) overmatch.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:3b10c1b0b14a7702b770044ba5496f3b1e64680ae0cedb8c76f65beb687c3378

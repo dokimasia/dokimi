@@ -5,8 +5,11 @@
 package streamconsumertest
 
 import (
+	"context"
+	"sync/atomic"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer"
 )
@@ -35,9 +38,19 @@ type streamConsumerIngest struct {
 	conform.Callable[streamconsumer.StreamConsumer]
 }
 
-// StreamConsumerSuite returns the checks of StreamConsumer.
+// StreamConsumerSuite returns the checks of StreamConsumer, and the calls
+// and the budgets of its callables.
 func StreamConsumerSuite() conform.Suite[streamconsumer.StreamConsumer] {
-	return conform.Suite[streamconsumer.StreamConsumer]{Declaration: "StreamConsumer"}
+	return conform.Suite[streamconsumer.StreamConsumer]{
+		Declaration: "StreamConsumer",
+		Calls: []conform.Call[streamconsumer.StreamConsumer]{
+			{
+				Calls:    streamConsumerIngestCalls,
+				Over:     newStreamConsumerOver,
+				Callable: StreamConsumerChecks.Ingest.Callable,
+			},
+		},
+	}
 }
 
 // RunStreamConsumerSuite applies the checks of StreamConsumer, and the
@@ -84,4 +97,124 @@ func FuzzStreamConsumerSuite[T streamconsumer.StreamConsumer](
 		opts...)
 }
 
-// dokimi:provenance sha256:3944b719893bd4aacb3ce87e63b9023b3b6e99aed356e66944af296d4a86bba3
+// RunStreamConsumerBudgets applies the allocation ceilings of
+// StreamConsumer, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunStreamConsumerBudgets[T streamconsumer.StreamConsumer](
+	t *testing.T,
+	newSubject func(h *StreamConsumerHandle) T,
+	opts ...StreamConsumerOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		StreamConsumerSuite(),
+		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
+		opts...)
+}
+
+// BenchStreamConsumerSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchStreamConsumerSuite[T streamconsumer.StreamConsumer](
+	b conform.B,
+	callable conform.Callable[streamconsumer.StreamConsumer],
+	newSubject func(h *StreamConsumerHandle) T,
+	opts ...StreamConsumerOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		StreamConsumerSuite(),
+		callable,
+		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
+		opts...)
+}
+
+// BenchStreamConsumerSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchStreamConsumerSuiteParallel[T streamconsumer.StreamConsumer](
+	b *testing.B,
+	callable conform.Callable[streamconsumer.StreamConsumer],
+	newSubject func(h *StreamConsumerHandle) T,
+	opts ...StreamConsumerOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		StreamConsumerSuite(),
+		callable,
+		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
+		opts...)
+}
+
+// streamConsumerIngestCalls generates the calls of StreamConsumer.Ingest
+// with the inputs that each case draws.
+var streamConsumerIngestCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, streamconsumer.StreamConsumer) error {
+		srcNextResults0 := c.Draw(prop.List(prop.Of[streamconsumer.Value]()), "src-next-0")
+		srcNextResults1 := c.Draw(
+			prop.List(prop.Of[bool](), prop.MinSize(len(srcNextResults0)), prop.MaxSize(len(srcNextResults0))),
+			"src-next-1",
+		)
+		srcNextResults2 := c.Draw(
+			prop.List(
+				prop.SampledFrom[error](nil, conform.ErrGenerated),
+				prop.MinSize(len(srcNextResults0)),
+				prop.MaxSize(len(srcNextResults0)),
+			),
+			"src-next-2",
+		)
+		var srcNextAt atomic.Int64
+		src := streamConsumerSourceInput{
+			onNext: func(context.Context) (r0 streamconsumer.Value, r1 bool, r2 error) {
+				i := int(srcNextAt.Add(1) - 1)
+				if i >= len(srcNextResults0) {
+					r2 = conform.ErrGenerated
+					return r0, r1, r2
+				}
+				return srcNextResults0[i],
+					srcNextResults1[i],
+					srcNextResults2[i]
+			},
+		}
+		return func(ctx context.Context, subject streamconsumer.StreamConsumer) error {
+			_, err := subject.Ingest(ctx, src)
+			return err
+		}
+	},
+)
+
+// streamConsumerSourceInput is a Source whose methods return the results
+// that the call generators of StreamConsumer draw for them, in turn.
+type streamConsumerSourceInput struct {
+	streamconsumer.Source
+	onNext func(a0 context.Context) (streamconsumer.Value, bool, error)
+}
+
+// Next calls the function of Next.
+func (in streamConsumerSourceInput) Next(a0 context.Context) (streamconsumer.Value, bool, error) {
+	return in.onNext(a0)
+}
+
+// streamConsumerOver is a subject of StreamConsumer whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type streamConsumerOver struct {
+	streamconsumer.StreamConsumer
+	spend func()
+}
+
+// Ingest calls spend and returns its zero results.
+func (o streamConsumerOver) Ingest(context.Context, streamconsumer.Source) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newStreamConsumerOver returns the planted defect of a ceiling of
+// StreamConsumer, whose callables call spend.
+func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer.StreamConsumer {
+	return streamConsumerOver{spend: spend}
+}
+
+// dokimi:provenance sha256:9285e345908b7dfc9cf27e76ad11428c0ebf7ee605975a76b51091a9946b7826

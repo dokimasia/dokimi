@@ -18,6 +18,38 @@ func TestInMemoryConformsToTxWithRetry(t *testing.T) {
 	txwithretrytest.RunTxWithRetrySuite(t, txwithretrytest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of TxWithRetry on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Begin", func(b *testing.B) {
+		txwithretrytest.BenchTxWithRetrySuite(
+			b,
+			txwithretrytest.TxWithRetryChecks.Begin.Callable,
+			func(*txwithretrytest.TxWithRetryHandle) *txwithretrytest.InMemory {
+				return txwithretrytest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Commit", func(b *testing.B) {
+		txwithretrytest.BenchTxWithRetrySuite(
+			b,
+			txwithretrytest.TxWithRetryChecks.Commit.Callable,
+			func(*txwithretrytest.TxWithRetryHandle) *txwithretrytest.InMemory {
+				return txwithretrytest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Rollback", func(b *testing.B) {
+		txwithretrytest.BenchTxWithRetrySuite(
+			b,
+			txwithretrytest.TxWithRetryChecks.Rollback.Callable,
+			func(*txwithretrytest.TxWithRetryHandle) *txwithretrytest.InMemory {
+				return txwithretrytest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryBegin fuzzes the property checks of TxWithRetry.Begin on
 // InMemory.
 func FuzzInMemoryBegin(f *testing.F) {
@@ -54,4 +86,4 @@ func FuzzInMemoryRollback(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:cdfb8a81388bd165bf0b000f66109f972efe84d5302664c2bff78ea56d7a2b56
+// dokimi:provenance sha256:4686279dc7ac25f9ae7c45426a2d4d48547c0e313e869318e4594302a3e7a4e5

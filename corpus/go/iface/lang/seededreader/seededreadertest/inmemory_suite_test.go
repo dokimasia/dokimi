@@ -18,6 +18,29 @@ func TestInMemoryConformsToCatalog(t *testing.T) {
 	seededreadertest.RunCatalogSuite(t, seededreadertest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Catalog on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Lookup", func(b *testing.B) {
+		seededreadertest.BenchCatalogSuite(
+			b,
+			seededreadertest.CatalogChecks.Lookup.Callable,
+			func(*seededreadertest.CatalogHandle) *seededreadertest.InMemory {
+				return seededreadertest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Len", func(b *testing.B) {
+		seededreadertest.BenchCatalogSuite(
+			b,
+			seededreadertest.CatalogChecks.Len.Callable,
+			func(*seededreadertest.CatalogHandle) *seededreadertest.InMemory {
+				return seededreadertest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryLookup fuzzes the property checks of Catalog.Lookup on
 // InMemory.
 func FuzzInMemoryLookup(f *testing.F) {
@@ -41,4 +64,4 @@ func FuzzInMemoryLen(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:780eeeff2a3ef64c862f592e312486ad5e27123e23dabc6adbac5f4b59078d8e
+// dokimi:provenance sha256:4e2b8bd183725ec3a9dc8d5922e473aa1a6d323bd9f47c52850420a6a32b7a5e

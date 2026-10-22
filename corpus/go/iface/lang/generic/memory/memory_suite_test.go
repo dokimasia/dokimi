@@ -19,6 +19,24 @@ func TestStoreConformsToStore(t *testing.T) {
 	generictest.RunStoreSuite(t, memory.NewInts)
 }
 
+// BenchmarkStore measures each callable of the suite of Store on Store.
+func BenchmarkStore(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		generictest.BenchStoreSuite(
+			b,
+			generictest.StoreChecks.Get.Callable,
+			func(*generictest.StoreHandle) *memory.Store[int, int] { return memory.NewInts() },
+		)
+	})
+	b.Run("Put", func(b *testing.B) {
+		generictest.BenchStoreSuite(
+			b,
+			generictest.StoreChecks.Put.Callable,
+			func(*generictest.StoreHandle) *memory.Store[int, int] { return memory.NewInts() },
+		)
+	})
+}
+
 // FuzzStoreGet fuzzes the property checks of Store.Get on Store.
 func FuzzStoreGet(f *testing.F) {
 	generictest.FuzzStoreSuite(
@@ -37,4 +55,4 @@ func FuzzStorePut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:697a453dd16fbcac0fe64a36ec27d9ac1af250fc2e767d3c1807fc53c5b3419d
+// dokimi:provenance sha256:62e45f2997c4d01f2df633d611fc4831fb44652b6953c8a03b34f37a0dd7ddf1

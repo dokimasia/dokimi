@@ -5,8 +5,10 @@
 package aggregatortest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator"
 )
@@ -35,9 +37,19 @@ type aggregatorCount struct {
 	conform.Callable[aggregator.Aggregator]
 }
 
-// AggregatorSuite returns the checks of Aggregator.
+// AggregatorSuite returns the checks of Aggregator, and the calls and the
+// budgets of its callables.
 func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
-	return conform.Suite[aggregator.Aggregator]{Declaration: "Aggregator"}
+	return conform.Suite[aggregator.Aggregator]{
+		Declaration: "Aggregator",
+		Calls: []conform.Call[aggregator.Aggregator]{
+			{
+				Calls:    aggregatorCountCalls,
+				Over:     newAggregatorOver,
+				Callable: AggregatorChecks.Count.Callable,
+			},
+		},
+	}
 }
 
 // RunAggregatorSuite applies the checks of Aggregator, and the checks that
@@ -76,4 +88,84 @@ func FuzzAggregatorSuite[T aggregator.Aggregator](
 		opts...)
 }
 
-// dokimi:provenance sha256:7896d57a1204591ecf383012ca6f90be26b477aff2e538ed2b3843d7362c0f39
+// RunAggregatorBudgets applies the allocation ceilings of Aggregator, and
+// the ceilings that opts add, to a fresh subject of newSubject for each
+// case.
+func RunAggregatorBudgets[T aggregator.Aggregator](
+	t *testing.T,
+	newSubject func(h *AggregatorHandle) T,
+	opts ...AggregatorOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		AggregatorSuite(),
+		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
+		opts...)
+}
+
+// BenchAggregatorSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchAggregatorSuite[T aggregator.Aggregator](
+	b conform.B,
+	callable conform.Callable[aggregator.Aggregator],
+	newSubject func(h *AggregatorHandle) T,
+	opts ...AggregatorOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		AggregatorSuite(),
+		callable,
+		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
+		opts...)
+}
+
+// BenchAggregatorSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchAggregatorSuiteParallel[T aggregator.Aggregator](
+	b *testing.B,
+	callable conform.Callable[aggregator.Aggregator],
+	newSubject func(h *AggregatorHandle) T,
+	opts ...AggregatorOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		AggregatorSuite(),
+		callable,
+		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
+		opts...)
+}
+
+// aggregatorCountCalls generates the calls of Aggregator.Count with the
+// inputs that each case draws.
+var aggregatorCountCalls = prop.Composite(func(*prop.Case) func(context.Context, aggregator.Aggregator) error {
+	return func(ctx context.Context, subject aggregator.Aggregator) error {
+		_, err := subject.Count(ctx)
+		return err
+	}
+})
+
+// aggregatorOver is a subject of Aggregator whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type aggregatorOver struct {
+	aggregator.Aggregator
+	spend func()
+}
+
+// Count calls spend and returns its zero results.
+func (o aggregatorOver) Count(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newAggregatorOver returns the planted defect of a ceiling of Aggregator,
+// whose callables call spend.
+func newAggregatorOver(_ *AggregatorHandle, spend func()) aggregator.Aggregator {
+	return aggregatorOver{spend: spend}
+}
+
+// dokimi:provenance sha256:f23379dea175b2b5c8919068aa5aa8878b4696ac696366c4f40c811bea8ffd03

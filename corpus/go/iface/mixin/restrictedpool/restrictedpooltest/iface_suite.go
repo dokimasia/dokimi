@@ -5,8 +5,10 @@
 package restrictedpooltest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/restrictedpool"
 )
@@ -41,9 +43,28 @@ type storeGet struct {
 	conform.Callable[restrictedpool.Store]
 }
 
-// StoreSuite returns the checks of Store.
+// StoreSuite returns the checks of Store, and the calls and the budgets of
+// its callables.
 func StoreSuite() conform.Suite[restrictedpool.Store] {
-	return conform.Suite[restrictedpool.Store]{Declaration: "Store"}
+	return conform.Suite[restrictedpool.Store]{
+		Declaration: "Store",
+		Calls: []conform.Call[restrictedpool.Store]{
+			{
+				Calls:    storePutCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Put.Callable,
+			},
+			{
+				Calls:    storeGetCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Get.Callable,
+			},
+		},
+		Using: []prop.Option{
+			prop.Using(storeKeyValues),
+			prop.Using(storeBodyValues),
+		},
+	}
 }
 
 // RunStoreSuite applies the checks of Store, and the checks that opts add,
@@ -77,4 +98,111 @@ func FuzzStoreSuite[T restrictedpool.Store](
 	conform.Fuzz(f, StoreSuite(), callable, func(h *StoreHandle) restrictedpool.Store { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:ab9f3c77e528f1e13ce774683fb0be91048ce14182ffa1b7fa75d290dbed00f8
+// RunStoreBudgets applies the allocation ceilings of Store, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunStoreBudgets[T restrictedpool.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+	t.Helper()
+	conform.RunBudgets(t, StoreSuite(), func(h *StoreHandle) restrictedpool.Store { return newSubject(h) }, opts...)
+}
+
+// BenchStoreSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchStoreSuite[T restrictedpool.Store](
+	b conform.B,
+	callable conform.Callable[restrictedpool.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		StoreSuite(),
+		callable,
+		func(h *StoreHandle) restrictedpool.Store { return newSubject(h) },
+		opts...)
+}
+
+// BenchStoreSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchStoreSuiteParallel[T restrictedpool.Store](
+	b *testing.B,
+	callable conform.Callable[restrictedpool.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		StoreSuite(),
+		callable,
+		func(h *StoreHandle) restrictedpool.Store { return newSubject(h) },
+		opts...)
+}
+
+// storePutCalls generates the calls of Store.Put with the inputs that each
+// case draws.
+var storePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, restrictedpool.Store) error {
+	key := c.Draw(prop.Of[restrictedpool.Key](), "key")
+	body := c.Draw(prop.Of[restrictedpool.Body](), "body")
+	return func(ctx context.Context, subject restrictedpool.Store) error {
+		return subject.Put(ctx, key, body)
+	}
+})
+
+// storeGetCalls generates the calls of Store.Get with the inputs that each
+// case draws.
+var storeGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, restrictedpool.Store) error {
+	key := c.Draw(prop.Of[restrictedpool.Key](), "key")
+	return func(ctx context.Context, subject restrictedpool.Store) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// storeKeyValues generates the values of Key that keep or change its
+// starting value.
+var storeKeyValues = prop.Composite(func(c *prop.Case) restrictedpool.Key {
+	changed := c.Draw(prop.Of[restrictedpool.Key](), "key")
+	if c.Draw(prop.Boolean(), "key.changed") {
+		return changed
+	}
+	return "test-key"
+})
+
+// storeBodyValues generates the values of Body that keep or change its
+// starting value.
+var storeBodyValues = prop.Composite(func(c *prop.Case) restrictedpool.Body {
+	changed := c.Draw(prop.Of[restrictedpool.Body](), "body")
+	if c.Draw(prop.Boolean(), "body.changed") {
+		return changed
+	}
+	return "test-body"
+})
+
+// storeOver is a subject of Store whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type storeOver struct {
+	restrictedpool.Store
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o storeOver) Put(context.Context, restrictedpool.Key, restrictedpool.Body) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o storeOver) Get(context.Context, restrictedpool.Key) (r0 restrictedpool.Body, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newStoreOver returns the planted defect of a ceiling of Store, whose
+// callables call spend.
+func newStoreOver(_ *StoreHandle, spend func()) restrictedpool.Store {
+	return storeOver{spend: spend}
+}
+
+// dokimi:provenance sha256:8c81ad98252ec26b0b07b3f9ce650618cb421e13f0fe9afc13fd0a386d2c561e

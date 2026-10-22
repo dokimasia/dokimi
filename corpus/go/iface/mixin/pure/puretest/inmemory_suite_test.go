@@ -18,6 +18,18 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	puretest.RunMixedSuite(t, puretest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Derive", func(b *testing.B) {
+		puretest.BenchMixedSuite(
+			b,
+			puretest.MixedChecks.Derive.Callable,
+			func(*puretest.MixedHandle) *puretest.InMemory { return puretest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryDerive fuzzes the property checks of Mixed.Derive on
 // InMemory.
 func FuzzInMemoryDerive(f *testing.F) {
@@ -28,4 +40,4 @@ func FuzzInMemoryDerive(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0aa49c8920904df52a8db977aa23ddbf9858bbc070e0cb8ea525ee27b248b320
+// dokimi:provenance sha256:2cca9fa24c4b87a3b4c8be849f9dcacd5cf38ea7ef7e6612152e58dea6f7ac21

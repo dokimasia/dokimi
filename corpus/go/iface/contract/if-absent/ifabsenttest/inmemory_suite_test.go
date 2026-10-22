@@ -18,6 +18,18 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	ifabsenttest.RunContractSuite(t, ifabsenttest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		ifabsenttest.BenchContractSuite(
+			b,
+			ifabsenttest.ContractChecks.Put.Callable,
+			func(*ifabsenttest.ContractHandle) *ifabsenttest.InMemory { return ifabsenttest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryPut fuzzes the property checks of Contract.Put on InMemory.
 func FuzzInMemoryPut(f *testing.F) {
 	ifabsenttest.FuzzContractSuite(
@@ -27,4 +39,4 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3c4119fc3cb689e19eaca8b85a03423e84e224ed2e4df855670de5eb12fa3eb8
+// dokimi:provenance sha256:7e4dc4f2353878821af31a6e38083707a0e828f82370c0cdc7ca8d3282a3677a

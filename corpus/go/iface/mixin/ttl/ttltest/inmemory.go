@@ -22,10 +22,12 @@ const StaleKey = "ttltest-stale"
 // Mixed to it as a control. NewInMemory builds it on a clock of its own. The
 // check of the lifetime advances the clock of its handle, so the control
 // excuses that check. The store of the package memory applies the check on the
-// clock of the handle.
+// clock of the handle. A write of the control allocates nothing after a
+// warm-up of 1000 writes, which a budget of the control alone states.
 //
 //dokimi:subject ttl.Mixed new=NewInMemory
 //dokimi:excuse Mixed.Read/expires-after-the-lifetime reason="the check does not advance the clock that NewInMemory reads"
+//dokimi:budget Mixed.Put allocs=0 p99=1ms warmup=1000
 type InMemory struct {
 	clk    assert.Clock
 	values map[string]entry

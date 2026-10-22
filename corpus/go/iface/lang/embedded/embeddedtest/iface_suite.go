@@ -5,8 +5,10 @@
 package embeddedtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embedded"
 )
@@ -51,9 +53,29 @@ type composedClose struct {
 	conform.Callable[embedded.Composed]
 }
 
-// ComposedSuite returns the checks of Composed.
+// ComposedSuite returns the checks of Composed, and the calls and the
+// budgets of its callables.
 func ComposedSuite() conform.Suite[embedded.Composed] {
-	return conform.Suite[embedded.Composed]{Declaration: "Composed"}
+	return conform.Suite[embedded.Composed]{
+		Declaration: "Composed",
+		Calls: []conform.Call[embedded.Composed]{
+			{
+				Calls:    composedGetCalls,
+				Over:     newComposedOver,
+				Callable: ComposedChecks.Get.Callable,
+			},
+			{
+				Calls:    composedPingCalls,
+				Over:     newComposedOver,
+				Callable: ComposedChecks.Ping.Callable,
+			},
+			{
+				Calls:    composedCloseCalls,
+				Over:     newComposedOver,
+				Callable: ComposedChecks.Close.Callable,
+			},
+		},
+	}
 }
 
 // RunComposedSuite applies the checks of Composed, and the checks that
@@ -92,4 +114,107 @@ func FuzzComposedSuite[T embedded.Composed](
 		opts...)
 }
 
-// dokimi:provenance sha256:73e7e7a2108b2480d25ef8785e212e2d1104539276997cb47481ef2f2cfde315
+// RunComposedBudgets applies the allocation ceilings of Composed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunComposedBudgets[T embedded.Composed](
+	t *testing.T,
+	newSubject func(h *ComposedHandle) T,
+	opts ...ComposedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ComposedSuite(), func(h *ComposedHandle) embedded.Composed { return newSubject(h) }, opts...)
+}
+
+// BenchComposedSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchComposedSuite[T embedded.Composed](
+	b conform.B,
+	callable conform.Callable[embedded.Composed],
+	newSubject func(h *ComposedHandle) T,
+	opts ...ComposedOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ComposedSuite(),
+		callable,
+		func(h *ComposedHandle) embedded.Composed { return newSubject(h) },
+		opts...)
+}
+
+// BenchComposedSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchComposedSuiteParallel[T embedded.Composed](
+	b *testing.B,
+	callable conform.Callable[embedded.Composed],
+	newSubject func(h *ComposedHandle) T,
+	opts ...ComposedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ComposedSuite(),
+		callable,
+		func(h *ComposedHandle) embedded.Composed { return newSubject(h) },
+		opts...)
+}
+
+// composedGetCalls generates the calls of Composed.Get with the inputs
+// that each case draws.
+var composedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, embedded.Composed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject embedded.Composed) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// composedPingCalls generates the calls of Composed.Ping with the inputs
+// that each case draws.
+var composedPingCalls = prop.Composite(func(*prop.Case) func(context.Context, embedded.Composed) error {
+	return func(ctx context.Context, subject embedded.Composed) error {
+		return subject.Ping(ctx)
+	}
+})
+
+// composedCloseCalls generates the calls of Composed.Close with the inputs
+// that each case draws.
+var composedCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, embedded.Composed) error {
+	return func(ctx context.Context, subject embedded.Composed) error {
+		return subject.Close(ctx)
+	}
+})
+
+// composedOver is a subject of Composed whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type composedOver struct {
+	embedded.Composed
+	spend func()
+}
+
+// Get calls spend and returns its zero results.
+func (o composedOver) Get(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Ping calls spend and returns its zero results.
+func (o composedOver) Ping(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Close calls spend and returns its zero results.
+func (o composedOver) Close(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newComposedOver returns the planted defect of a ceiling of Composed,
+// whose callables call spend.
+func newComposedOver(_ *ComposedHandle, spend func()) embedded.Composed {
+	return composedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:b695d8251ee74fcbf725431878f30c7a73553116f9aa76dda63a7f8d7b9f0d49

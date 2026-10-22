@@ -5,8 +5,10 @@
 package stickytest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sticky"
 )
@@ -42,9 +44,24 @@ type mixedGet struct {
 	conform.Callable[sticky.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[sticky.Mixed] {
-	return conform.Suite[sticky.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[sticky.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[sticky.Mixed]{
+			{
+				Calls:    mixedStoreCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Store.Callable,
+			},
+			{
+				Calls:    mixedGetCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -74,4 +91,85 @@ func FuzzMixedSuite[T sticky.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:6c5f8234a724726ffd0477a1ff4820db979df3a36253e9ddd4f9b1063ab6da21
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T sticky.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T sticky.Mixed](
+	b conform.B,
+	callable conform.Callable[sticky.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T sticky.Mixed](
+	b *testing.B,
+	callable conform.Callable[sticky.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) sticky.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedStoreCalls generates the calls of Mixed.Store with the inputs that
+// each case draws.
+var mixedStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, sticky.Mixed) error {
+	v := c.Draw(prop.Of[sticky.Value](), "v")
+	return func(ctx context.Context, subject sticky.Mixed) error {
+		return subject.Store(ctx, v)
+	}
+})
+
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, sticky.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject sticky.Mixed) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	sticky.Mixed
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o mixedOver) Store(context.Context, sticky.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, string) (r0 sticky.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) sticky.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:99d89a158e9e23e7e27bee54edd4c7c27359970bf445652ccb51c9ca32d43d92

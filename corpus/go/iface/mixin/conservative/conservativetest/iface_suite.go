@@ -5,8 +5,10 @@
 package conservativetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/conservative"
 )
@@ -43,9 +45,24 @@ type mixedTotal struct {
 	conform.Callable[conservative.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[conservative.Mixed] {
-	return conform.Suite[conservative.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[conservative.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[conservative.Mixed]{
+			{
+				Calls:    mixedApplyCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Apply.Callable,
+			},
+			{
+				Calls:    mixedTotalCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Total.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -79,4 +96,84 @@ func FuzzMixedSuite[T conservative.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) conservative.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:c11a983e4e8a7791432de5abd59d0d85108c06ec3d530b8a21249cc587a8e581
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T conservative.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) conservative.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T conservative.Mixed](
+	b conform.B,
+	callable conform.Callable[conservative.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) conservative.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T conservative.Mixed](
+	b *testing.B,
+	callable conform.Callable[conservative.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) conservative.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedApplyCalls generates the calls of Mixed.Apply with the inputs that
+// each case draws.
+var mixedApplyCalls = prop.Composite(func(c *prop.Case) func(context.Context, conservative.Mixed) error {
+	d := c.Draw(prop.Of[conservative.Delta](), "d")
+	return func(ctx context.Context, subject conservative.Mixed) error {
+		return subject.Apply(ctx, d)
+	}
+})
+
+// mixedTotalCalls generates the calls of Mixed.Total with the inputs that
+// each case draws.
+var mixedTotalCalls = prop.Composite(func(*prop.Case) func(context.Context, conservative.Mixed) error {
+	return func(ctx context.Context, subject conservative.Mixed) error {
+		_, err := subject.Total(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	conservative.Mixed
+	spend func()
+}
+
+// Apply calls spend and returns its zero results.
+func (o mixedOver) Apply(context.Context, conservative.Delta) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Total calls spend and returns its zero results.
+func (o mixedOver) Total(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) conservative.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:60cc30a94ee1474b21ebd375dbec3ef9ccdb1d012138847361faab3d5ff2eddd

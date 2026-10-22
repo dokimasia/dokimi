@@ -5,8 +5,10 @@
 package cachetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache"
 )
@@ -51,9 +53,29 @@ type contractFetch struct {
 	conform.Callable[cache.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[cache.Contract] {
-	return conform.Suite[cache.Contract]{Declaration: "Contract"}
+	return conform.Suite[cache.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[cache.Contract]{
+			{
+				Calls:    contractStoreCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Store.Callable,
+			},
+			{
+				Calls:    contractLookupCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Lookup.Callable,
+			},
+			{
+				Calls:    contractFetchCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Fetch.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -87,4 +109,107 @@ func FuzzContractSuite[T cache.Contract](
 	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) cache.Contract { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:c80521142b3a019798c0590e46330473ab85658eead2010d8c1720bf877ee7ee
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T cache.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) cache.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T cache.Contract](
+	b conform.B,
+	callable conform.Callable[cache.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) cache.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T cache.Contract](
+	b *testing.B,
+	callable conform.Callable[cache.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) cache.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractStoreCalls generates the calls of Contract.Store with the inputs
+// that each case draws.
+var contractStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, cache.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	v := c.Draw(prop.Of[cache.Value](), "v")
+	return func(ctx context.Context, subject cache.Contract) error {
+		return subject.Store(ctx, key, v)
+	}
+})
+
+// contractLookupCalls generates the calls of Contract.Lookup with the
+// inputs that each case draws.
+var contractLookupCalls = prop.Composite(func(c *prop.Case) func(context.Context, cache.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject cache.Contract) error {
+		_, err := subject.Lookup(ctx, key)
+		return err
+	}
+})
+
+// contractFetchCalls generates the calls of Contract.Fetch with the inputs
+// that each case draws.
+var contractFetchCalls = prop.Composite(func(c *prop.Case) func(context.Context, cache.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject cache.Contract) error {
+		_, err := subject.Fetch(ctx, key)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	cache.Contract
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o contractOver) Store(context.Context, string, cache.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Lookup calls spend and returns its zero results.
+func (o contractOver) Lookup(context.Context, string) (r0 cache.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Fetch calls spend and returns its zero results.
+func (o contractOver) Fetch(context.Context, string) (r0 cache.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) cache.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:25dc65ef3feeed303efeb1b1164af463c3047f1f37dcbd535b618f4c7a231ba4

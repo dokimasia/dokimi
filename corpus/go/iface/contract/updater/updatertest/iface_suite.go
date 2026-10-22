@@ -5,8 +5,10 @@
 package updatertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/updater"
 )
@@ -43,9 +45,24 @@ type contractGet struct {
 	conform.Callable[updater.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[updater.Contract] {
-	return conform.Suite[updater.Contract]{Declaration: "Contract"}
+	return conform.Suite[updater.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[updater.Contract]{
+			{
+				Calls:    contractPutCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Put.Callable,
+			},
+			{
+				Calls:    contractGetCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,94 @@ func FuzzContractSuite[T updater.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:e692a6912379053cdc95b4c7ebf15f14e7291ab790f34d0396a76dcf01324f98
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T updater.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) updater.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T updater.Contract](
+	b conform.B,
+	callable conform.Callable[updater.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) updater.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T updater.Contract](
+	b *testing.B,
+	callable conform.Callable[updater.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) updater.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractPutCalls generates the calls of Contract.Put with the inputs
+// that each case draws.
+var contractPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, updater.Contract) error {
+	v := c.Draw(prop.Of[updater.Value](), "v")
+	return func(ctx context.Context, subject updater.Contract) error {
+		return subject.Put(ctx, v)
+	}
+})
+
+// contractGetCalls generates the calls of Contract.Get with the inputs
+// that each case draws.
+var contractGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, updater.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject updater.Contract) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	updater.Contract
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o contractOver) Put(context.Context, updater.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o contractOver) Get(context.Context, string) (r0 updater.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) updater.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:6bf168c2440d8a26b62ea7991699b3ca2a3d6512ae5537c68172e533e01e7f79

@@ -5,8 +5,10 @@
 package leaderelectiontest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	leaderelection "go.dokimi.dev/dokimi/corpus/go/iface/contract/leader-election"
 )
@@ -51,9 +53,29 @@ type contractIsLeader struct {
 	conform.Callable[leaderelection.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[leaderelection.Contract] {
-	return conform.Suite[leaderelection.Contract]{Declaration: "Contract"}
+	return conform.Suite[leaderelection.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[leaderelection.Contract]{
+			{
+				Calls:    contractCampaignCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Campaign.Callable,
+			},
+			{
+				Calls:    contractResignCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Resign.Callable,
+			},
+			{
+				Calls:    contractIsLeaderCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.IsLeader.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -92,4 +114,110 @@ func FuzzContractSuite[T leaderelection.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:9c95c681e65139a5d16b815acd19b5b3d026fe3dca91886be2d567073d2b6e22
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T leaderelection.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ContractSuite(),
+		func(h *ContractHandle) leaderelection.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T leaderelection.Contract](
+	b conform.B,
+	callable conform.Callable[leaderelection.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) leaderelection.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T leaderelection.Contract](
+	b *testing.B,
+	callable conform.Callable[leaderelection.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) leaderelection.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractCampaignCalls generates the calls of Contract.Campaign with the
+// inputs that each case draws.
+var contractCampaignCalls = prop.Composite(func(*prop.Case) func(context.Context, leaderelection.Contract) error {
+	return func(ctx context.Context, subject leaderelection.Contract) error {
+		return subject.Campaign(ctx)
+	}
+})
+
+// contractResignCalls generates the calls of Contract.Resign with the
+// inputs that each case draws.
+var contractResignCalls = prop.Composite(func(*prop.Case) func(context.Context, leaderelection.Contract) error {
+	return func(ctx context.Context, subject leaderelection.Contract) error {
+		return subject.Resign(ctx)
+	}
+})
+
+// contractIsLeaderCalls generates the calls of Contract.IsLeader with the
+// inputs that each case draws.
+var contractIsLeaderCalls = prop.Composite(func(*prop.Case) func(context.Context, leaderelection.Contract) error {
+	return func(ctx context.Context, subject leaderelection.Contract) error {
+		_ = subject.IsLeader(ctx)
+		return nil
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	leaderelection.Contract
+	spend func()
+}
+
+// Campaign calls spend and returns its zero results.
+func (o contractOver) Campaign(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Resign calls spend and returns its zero results.
+func (o contractOver) Resign(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// IsLeader calls spend and returns its zero results.
+func (o contractOver) IsLeader(context.Context) (r0 bool) {
+	o.spend()
+	return r0
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) leaderelection.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:022f8a5e42f59bf18b3f16a683894e8101103680ee10d1b364f9e15fbfbad255

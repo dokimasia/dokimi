@@ -5,8 +5,10 @@
 package txwithretrytest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	txwithretry "go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry"
 )
@@ -51,9 +53,29 @@ type txWithRetryRollback struct {
 	conform.Callable[txwithretry.TxWithRetry]
 }
 
-// TxWithRetrySuite returns the checks of TxWithRetry.
+// TxWithRetrySuite returns the checks of TxWithRetry, and the calls and
+// the budgets of its callables.
 func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
-	return conform.Suite[txwithretry.TxWithRetry]{Declaration: "TxWithRetry"}
+	return conform.Suite[txwithretry.TxWithRetry]{
+		Declaration: "TxWithRetry",
+		Calls: []conform.Call[txwithretry.TxWithRetry]{
+			{
+				Calls:    txWithRetryBeginCalls,
+				Over:     newTxWithRetryOver,
+				Callable: TxWithRetryChecks.Begin.Callable,
+			},
+			{
+				Calls:    txWithRetryCommitCalls,
+				Over:     newTxWithRetryOver,
+				Callable: TxWithRetryChecks.Commit.Callable,
+			},
+			{
+				Calls:    txWithRetryRollbackCalls,
+				Over:     newTxWithRetryOver,
+				Callable: TxWithRetryChecks.Rollback.Callable,
+			},
+		},
+	}
 }
 
 // RunTxWithRetrySuite applies the checks of TxWithRetry, and the checks
@@ -96,4 +118,111 @@ func FuzzTxWithRetrySuite[T txwithretry.TxWithRetry](
 		opts...)
 }
 
-// dokimi:provenance sha256:6e7c4257c9ec7819d741bdac75288364f869434401da1e2902fc223d3c272dcb
+// RunTxWithRetryBudgets applies the allocation ceilings of TxWithRetry,
+// and the ceilings that opts add, to a fresh subject of newSubject for
+// each case.
+func RunTxWithRetryBudgets[T txwithretry.TxWithRetry](
+	t *testing.T,
+	newSubject func(h *TxWithRetryHandle) T,
+	opts ...TxWithRetryOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		TxWithRetrySuite(),
+		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
+		opts...)
+}
+
+// BenchTxWithRetrySuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchTxWithRetrySuite[T txwithretry.TxWithRetry](
+	b conform.B,
+	callable conform.Callable[txwithretry.TxWithRetry],
+	newSubject func(h *TxWithRetryHandle) T,
+	opts ...TxWithRetryOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		TxWithRetrySuite(),
+		callable,
+		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
+		opts...)
+}
+
+// BenchTxWithRetrySuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchTxWithRetrySuiteParallel[T txwithretry.TxWithRetry](
+	b *testing.B,
+	callable conform.Callable[txwithretry.TxWithRetry],
+	newSubject func(h *TxWithRetryHandle) T,
+	opts ...TxWithRetryOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		TxWithRetrySuite(),
+		callable,
+		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
+		opts...)
+}
+
+// txWithRetryBeginCalls generates the calls of TxWithRetry.Begin with the
+// inputs that each case draws.
+var txWithRetryBeginCalls = prop.Composite(func(*prop.Case) func(context.Context, txwithretry.TxWithRetry) error {
+	return func(ctx context.Context, subject txwithretry.TxWithRetry) error {
+		return subject.Begin(ctx)
+	}
+})
+
+// txWithRetryCommitCalls generates the calls of TxWithRetry.Commit with
+// the inputs that each case draws.
+var txWithRetryCommitCalls = prop.Composite(func(*prop.Case) func(context.Context, txwithretry.TxWithRetry) error {
+	return func(ctx context.Context, subject txwithretry.TxWithRetry) error {
+		return subject.Commit(ctx)
+	}
+})
+
+// txWithRetryRollbackCalls generates the calls of TxWithRetry.Rollback
+// with the inputs that each case draws.
+var txWithRetryRollbackCalls = prop.Composite(func(*prop.Case) func(context.Context, txwithretry.TxWithRetry) error {
+	return func(ctx context.Context, subject txwithretry.TxWithRetry) error {
+		return subject.Rollback(ctx)
+	}
+})
+
+// txWithRetryOver is a subject of TxWithRetry whose callables call spend
+// and return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type txWithRetryOver struct {
+	txwithretry.TxWithRetry
+	spend func()
+}
+
+// Begin calls spend and returns its zero results.
+func (o txWithRetryOver) Begin(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Commit calls spend and returns its zero results.
+func (o txWithRetryOver) Commit(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Rollback calls spend and returns its zero results.
+func (o txWithRetryOver) Rollback(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newTxWithRetryOver returns the planted defect of a ceiling of
+// TxWithRetry, whose callables call spend.
+func newTxWithRetryOver(_ *TxWithRetryHandle, spend func()) txwithretry.TxWithRetry {
+	return txWithRetryOver{spend: spend}
+}
+
+// dokimi:provenance sha256:0ced159cc01af5f7dc16b7ec099c1d9b49d0b5ce7890939e932470953803d1db

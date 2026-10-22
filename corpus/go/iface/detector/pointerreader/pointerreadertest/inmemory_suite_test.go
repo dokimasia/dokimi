@@ -18,6 +18,20 @@ func TestInMemoryConformsToPointerReader(t *testing.T) {
 	pointerreadertest.RunPointerReaderSuite(t, pointerreadertest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of PointerReader
+// on InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Find", func(b *testing.B) {
+		pointerreadertest.BenchPointerReaderSuite(
+			b,
+			pointerreadertest.PointerReaderChecks.Find.Callable,
+			func(*pointerreadertest.PointerReaderHandle) *pointerreadertest.InMemory {
+				return pointerreadertest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryFind fuzzes the property checks of PointerReader.Find on
 // InMemory.
 func FuzzInMemoryFind(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryFind(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:196df8dfdb3443875024ffbf147d6c76310b5f2307f767150b908f45f5464f75
+// dokimi:provenance sha256:50f9e650218cfc523d3248611aedae3a399611f5f2eccb4fd8b40d4eb78343fc

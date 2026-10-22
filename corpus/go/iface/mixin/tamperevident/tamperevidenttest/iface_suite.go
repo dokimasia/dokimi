@@ -5,8 +5,10 @@
 package tamperevidenttest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/tamperevident"
 )
@@ -51,9 +53,29 @@ type mixedVerify struct {
 	conform.Callable[tamperevident.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[tamperevident.Mixed] {
-	return conform.Suite[tamperevident.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[tamperevident.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[tamperevident.Mixed]{
+			{
+				Calls:    mixedStoreCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Store.Callable,
+			},
+			{
+				Calls:    mixedCorruptCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Corrupt.Callable,
+			},
+			{
+				Calls:    mixedVerifyCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Verify.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -87,4 +109,97 @@ func FuzzMixedSuite[T tamperevident.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:c90e59eca867def0919fa24fcb024fa8e5ed6632e276e1649346081b27428477
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T tamperevident.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T tamperevident.Mixed](
+	b conform.B,
+	callable conform.Callable[tamperevident.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T tamperevident.Mixed](
+	b *testing.B,
+	callable conform.Callable[tamperevident.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedStoreCalls generates the calls of Mixed.Store with the inputs that
+// each case draws.
+var mixedStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, tamperevident.Mixed) error {
+	body := c.Draw(prop.Of[string](), "body")
+	return func(ctx context.Context, subject tamperevident.Mixed) error {
+		return subject.Store(ctx, body)
+	}
+})
+
+// mixedCorruptCalls generates the calls of Mixed.Corrupt with the inputs
+// that each case draws.
+var mixedCorruptCalls = prop.Composite(func(*prop.Case) func(context.Context, tamperevident.Mixed) error {
+	return func(ctx context.Context, subject tamperevident.Mixed) error {
+		return subject.Corrupt(ctx)
+	}
+})
+
+// mixedVerifyCalls generates the calls of Mixed.Verify with the inputs
+// that each case draws.
+var mixedVerifyCalls = prop.Composite(func(*prop.Case) func(context.Context, tamperevident.Mixed) error {
+	return func(ctx context.Context, subject tamperevident.Mixed) error {
+		return subject.Verify(ctx)
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	tamperevident.Mixed
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o mixedOver) Store(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Corrupt calls spend and returns its zero results.
+func (o mixedOver) Corrupt(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Verify calls spend and returns its zero results.
+func (o mixedOver) Verify(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) tamperevident.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:7206b4508bbb2e570bb34da3ce66a303fe6aea26fbce5837324cf8d5f1ae85be

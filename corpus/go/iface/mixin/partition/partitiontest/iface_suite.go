@@ -5,8 +5,10 @@
 package partitiontest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/partition"
 )
@@ -41,9 +43,24 @@ type mixedRead struct {
 	conform.Callable[partition.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[partition.Mixed] {
-	return conform.Suite[partition.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[partition.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[partition.Mixed]{
+			{
+				Calls:    mixedPutCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Put.Callable,
+			},
+			{
+				Calls:    mixedReadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Read.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -73,4 +90,88 @@ func FuzzMixedSuite[T partition.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) partition.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:6ef0c89f9f093a294aa4d8d2dd0409f6bc380fd81d30ade75903917c5c3383d9
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T partition.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) partition.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T partition.Mixed](
+	b conform.B,
+	callable conform.Callable[partition.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) partition.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T partition.Mixed](
+	b *testing.B,
+	callable conform.Callable[partition.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) partition.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedPutCalls generates the calls of Mixed.Put with the inputs that each
+// case draws.
+var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, partition.Mixed) error {
+	partition0 := c.Draw(prop.Of[string](), "partition")
+	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
+	return func(ctx context.Context, subject partition.Mixed) error {
+		return subject.Put(ctx, partition0, key, value)
+	}
+})
+
+// mixedReadCalls generates the calls of Mixed.Read with the inputs that
+// each case draws.
+var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, partition.Mixed) error {
+	partition0 := c.Draw(prop.Of[string](), "partition")
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject partition.Mixed) error {
+		_, err := subject.Read(ctx, partition0, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	partition.Mixed
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o mixedOver) Put(context.Context, string, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o mixedOver) Read(context.Context, string, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) partition.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:ab5fead1db97a8a70bece36a3589f69bb9f51f108f22b9a94effac9d40fdd0de

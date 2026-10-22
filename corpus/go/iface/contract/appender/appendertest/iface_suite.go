@@ -5,8 +5,10 @@
 package appendertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/appender"
 )
@@ -35,9 +37,19 @@ type contractRun struct {
 	conform.Callable[appender.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[appender.Contract] {
-	return conform.Suite[appender.Contract]{Declaration: "Contract"}
+	return conform.Suite[appender.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[appender.Contract]{
+			{
+				Calls:    contractRunCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Run.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -76,4 +88,79 @@ func FuzzContractSuite[T appender.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:8de3d481ad24679be76d593a7ea5aec1dec83d5abd055e8d6428b9805be32cc1
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T appender.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) appender.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T appender.Contract](
+	b conform.B,
+	callable conform.Callable[appender.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) appender.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T appender.Contract](
+	b *testing.B,
+	callable conform.Callable[appender.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) appender.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractRunCalls generates the calls of Contract.Run with the inputs
+// that each case draws.
+var contractRunCalls = prop.Composite(func(c *prop.Case) func(context.Context, appender.Contract) error {
+	v := c.Draw(prop.Of[appender.Value](), "v")
+	return func(ctx context.Context, subject appender.Contract) error {
+		_, err := subject.Run(ctx, v)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	appender.Contract
+	spend func()
+}
+
+// Run calls spend and returns its zero results.
+func (o contractOver) Run(context.Context, appender.Value) (r0 int64, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) appender.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:d888303000037a4120a3f32658811148091db564fe41b57262ea061eaf4475b6

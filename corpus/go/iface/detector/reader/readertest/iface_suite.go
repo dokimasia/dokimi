@@ -5,8 +5,10 @@
 package readertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader"
 )
@@ -34,9 +36,19 @@ type readerGet struct {
 	conform.Callable[reader.Reader]
 }
 
-// ReaderSuite returns the checks of Reader.
+// ReaderSuite returns the checks of Reader, and the calls and the budgets
+// of its callables.
 func ReaderSuite() conform.Suite[reader.Reader] {
-	return conform.Suite[reader.Reader]{Declaration: "Reader"}
+	return conform.Suite[reader.Reader]{
+		Declaration: "Reader",
+		Calls: []conform.Call[reader.Reader]{
+			{
+				Calls:    readerGetCalls,
+				Over:     newReaderOver,
+				Callable: ReaderChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunReaderSuite applies the checks of Reader, and the checks that opts
@@ -66,4 +78,70 @@ func FuzzReaderSuite[T reader.Reader](
 	conform.Fuzz(f, ReaderSuite(), callable, func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:1d93aec75423f2909238b97c7b3191882f43c917b6321fb9575f5caa811dcf6f
+// RunReaderBudgets applies the allocation ceilings of Reader, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunReaderBudgets[T reader.Reader](t *testing.T, newSubject func(h *ReaderHandle) T, opts ...ReaderOption) {
+	t.Helper()
+	conform.RunBudgets(t, ReaderSuite(), func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+}
+
+// BenchReaderSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchReaderSuite[T reader.Reader](
+	b conform.B,
+	callable conform.Callable[reader.Reader],
+	newSubject func(h *ReaderHandle) T,
+	opts ...ReaderOption,
+) {
+	b.Helper()
+	conform.Bench(b, ReaderSuite(), callable, func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+}
+
+// BenchReaderSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchReaderSuiteParallel[T reader.Reader](
+	b *testing.B,
+	callable conform.Callable[reader.Reader],
+	newSubject func(h *ReaderHandle) T,
+	opts ...ReaderOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ReaderSuite(),
+		callable,
+		func(h *ReaderHandle) reader.Reader { return newSubject(h) },
+		opts...)
+}
+
+// readerGetCalls generates the calls of Reader.Get with the inputs that
+// each case draws.
+var readerGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, reader.Reader) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject reader.Reader) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// readerOver is a subject of Reader whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type readerOver struct {
+	reader.Reader
+	spend func()
+}
+
+// Get calls spend and returns its zero results.
+func (o readerOver) Get(context.Context, string) (r0 reader.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newReaderOver returns the planted defect of a ceiling of Reader, whose
+// callables call spend.
+func newReaderOver(_ *ReaderHandle, spend func()) reader.Reader {
+	return readerOver{spend: spend}
+}
+
+// dokimi:provenance sha256:5e6584cd68806d42a5264329649ff124d71a58208a30160f3fccf58791d34dd7

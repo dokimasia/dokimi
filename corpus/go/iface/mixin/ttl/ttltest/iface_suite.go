@@ -5,8 +5,11 @@
 package ttltest
 
 import (
+	"context"
 	"testing"
+	"time"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl"
 )
@@ -47,16 +50,55 @@ func (c mixedRead) ExpiresAfterTheLifetime() conform.ID[ttl.Mixed] {
 	return c.Check("expires-after-the-lifetime")
 }
 
-// MixedSuite returns the checks of Mixed.
+// AllocationBudget returns the identity of the check
+// Mixed.Read/allocation-budget.
+func (c mixedRead) AllocationBudget() conform.ID[ttl.Mixed] {
+	return c.Check("allocation-budget")
+}
+
+// LatencyBudget returns the identity of the check
+// Mixed.Read/latency-budget.
+func (c mixedRead) LatencyBudget() conform.ID[ttl.Mixed] {
+	return c.Check("latency-budget")
+}
+
+// MeanLatencyBudget returns the identity of the check
+// Mixed.Read/mean-latency-budget.
+func (c mixedRead) MeanLatencyBudget() conform.ID[ttl.Mixed] {
+	return c.Check("mean-latency-budget")
+}
+
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[ttl.Mixed] {
-	return conform.Suite[ttl.Mixed]{Declaration: "Mixed", Checks: []conform.Check[ttl.Mixed]{
-		{
-			ID:        MixedChecks.Read.ExpiresAfterTheLifetime(),
-			Statement: "Read reports ErrExpired once the lifetime of the value has passed",
-			Apply:     ExpiresAfterTheLifetime,
-			Defect:    keepsForever,
+	return conform.Suite[ttl.Mixed]{
+		Declaration: "Mixed",
+		Checks: []conform.Check[ttl.Mixed]{
+			{
+				ID:        MixedChecks.Read.ExpiresAfterTheLifetime(),
+				Statement: "Read reports ErrExpired once the lifetime of the value has passed",
+				Apply:     ExpiresAfterTheLifetime,
+				Defect:    keepsForever,
+			},
 		},
-	}}
+		Calls: []conform.Call[ttl.Mixed]{
+			{
+				Calls:    mixedPutCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Put.Callable,
+			},
+			{
+				Calls:    mixedReadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Read.Callable,
+				Budget: conform.Budget{
+					Allocs:  new(uint64(0)),
+					Latency: time.Millisecond,
+					Mean:    200 * time.Microsecond,
+				},
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -86,4 +128,80 @@ func FuzzMixedSuite[T ttl.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:f62dd9ed3cee1a7345aca621acf25c2518e6a2d42565d0c03cf2c014bdc8744f
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T ttl.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T ttl.Mixed](
+	b conform.B,
+	callable conform.Callable[ttl.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T ttl.Mixed](
+	b *testing.B,
+	callable conform.Callable[ttl.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(b, MixedSuite(), callable, func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+}
+
+// mixedPutCalls generates the calls of Mixed.Put with the inputs that each
+// case draws.
+var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, ttl.Mixed) error {
+	v := c.Draw(prop.Of[ttl.Value](), "v")
+	return func(ctx context.Context, subject ttl.Mixed) error {
+		return subject.Put(ctx, v)
+	}
+})
+
+// mixedReadCalls generates the calls of Mixed.Read with the inputs that
+// each case draws.
+var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, ttl.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject ttl.Mixed) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	ttl.Mixed
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o mixedOver) Put(context.Context, ttl.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o mixedOver) Read(context.Context, string) (r0 ttl.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) ttl.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:b4d93de7869349313df37e18eca67ac581a69dc7428f4d69206f8f008c23344d

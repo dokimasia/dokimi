@@ -5,8 +5,10 @@
 package ratelimittest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	ratelimit "go.dokimi.dev/dokimi/corpus/go/iface/contract/rate-limit"
 )
@@ -35,9 +37,19 @@ type contractRun struct {
 	conform.Callable[ratelimit.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[ratelimit.Contract] {
-	return conform.Suite[ratelimit.Contract]{Declaration: "Contract"}
+	return conform.Suite[ratelimit.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[ratelimit.Contract]{
+			{
+				Calls:    contractRunCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Run.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -76,4 +88,78 @@ func FuzzContractSuite[T ratelimit.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:f75d6e3ac85bf1a32a369375702d23b1a21166befaa6cd38ce5ced37dfadd2c2
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T ratelimit.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) ratelimit.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T ratelimit.Contract](
+	b conform.B,
+	callable conform.Callable[ratelimit.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) ratelimit.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T ratelimit.Contract](
+	b *testing.B,
+	callable conform.Callable[ratelimit.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) ratelimit.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractRunCalls generates the calls of Contract.Run with the inputs
+// that each case draws.
+var contractRunCalls = prop.Composite(func(c *prop.Case) func(context.Context, ratelimit.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject ratelimit.Contract) error {
+		return subject.Run(ctx, key)
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	ratelimit.Contract
+	spend func()
+}
+
+// Run calls spend and returns its zero results.
+func (o contractOver) Run(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) ratelimit.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:aad833c6d0f5ae06087451bc316097a3d0312b890bb8b1c9149753cda7dc50d7

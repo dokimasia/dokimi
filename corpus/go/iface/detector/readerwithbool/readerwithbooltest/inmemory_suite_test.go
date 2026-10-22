@@ -18,6 +18,20 @@ func TestInMemoryConformsToReaderWithBool(t *testing.T) {
 	readerwithbooltest.RunReaderWithBoolSuite(t, readerwithbooltest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of ReaderWithBool
+// on InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Load", func(b *testing.B) {
+		readerwithbooltest.BenchReaderWithBoolSuite(
+			b,
+			readerwithbooltest.ReaderWithBoolChecks.Load.Callable,
+			func(*readerwithbooltest.ReaderWithBoolHandle) *readerwithbooltest.InMemory {
+				return readerwithbooltest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryLoad fuzzes the property checks of ReaderWithBool.Load on
 // InMemory.
 func FuzzInMemoryLoad(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryLoad(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:028f0c57be57a044b371aef7637a2ed277627835048e646a8033bcea3d323cc3
+// dokimi:provenance sha256:3a6fc11c69f75cff9cbf45055e85e887504ace1b56759a1d2f3d4cc68fd48d90

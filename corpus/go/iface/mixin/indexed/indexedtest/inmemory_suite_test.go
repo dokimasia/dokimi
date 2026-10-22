@@ -18,6 +18,32 @@ func TestInMemoryConformsToRanked(t *testing.T) {
 	indexedtest.RunRankedSuite(t, indexedtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Ranked on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		indexedtest.BenchRankedSuite(
+			b,
+			indexedtest.RankedChecks.Add.Callable,
+			func(*indexedtest.RankedHandle) *indexedtest.InMemory { return indexedtest.NewInMemory() },
+		)
+	})
+	b.Run("Len", func(b *testing.B) {
+		indexedtest.BenchRankedSuite(
+			b,
+			indexedtest.RankedChecks.Len.Callable,
+			func(*indexedtest.RankedHandle) *indexedtest.InMemory { return indexedtest.NewInMemory() },
+		)
+	})
+	b.Run("At", func(b *testing.B) {
+		indexedtest.BenchRankedSuite(
+			b,
+			indexedtest.RankedChecks.At.Callable,
+			func(*indexedtest.RankedHandle) *indexedtest.InMemory { return indexedtest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryAdd fuzzes the property checks of Ranked.Add on InMemory.
 func FuzzInMemoryAdd(f *testing.F) {
 	indexedtest.FuzzRankedSuite(
@@ -45,4 +71,4 @@ func FuzzInMemoryAt(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5e905fc045194aa07685e711b7f7bfa73f1f8a1d124c352884627db30810be0e
+// dokimi:provenance sha256:40658b753713a51dfcb048a592526ba6b755fc7bd092f567423c9f3b5787ef38

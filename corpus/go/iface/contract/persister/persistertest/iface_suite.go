@@ -5,8 +5,10 @@
 package persistertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/persister"
 )
@@ -43,9 +45,27 @@ type contractGet struct {
 	conform.Callable[persister.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[persister.Contract] {
-	return conform.Suite[persister.Contract]{Declaration: "Contract"}
+	return conform.Suite[persister.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[persister.Contract]{
+			{
+				Calls:    contractPutCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Put.Callable,
+			},
+			{
+				Calls:    contractGetCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Get.Callable,
+			},
+		},
+		Using: []prop.Option{
+			prop.Using(contractValueValues),
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +104,109 @@ func FuzzContractSuite[T persister.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:a0b42b4ac7ce2b87d5b6b17edf27d6073f019af4ef1cc28096a5f25f7b680952
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T persister.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) persister.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T persister.Contract](
+	b conform.B,
+	callable conform.Callable[persister.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) persister.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T persister.Contract](
+	b *testing.B,
+	callable conform.Callable[persister.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) persister.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractPutCalls generates the calls of Contract.Put with the inputs
+// that each case draws.
+var contractPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, persister.Contract) error {
+	v := c.Draw(prop.Of[persister.Value](), "v")
+	return func(ctx context.Context, subject persister.Contract) error {
+		_, err := subject.Put(ctx, v)
+		return err
+	}
+})
+
+// contractGetCalls generates the calls of Contract.Get with the inputs
+// that each case draws.
+var contractGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, persister.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject persister.Contract) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// contractValueValues generates the values of Value that keep or change
+// each field of its starting value.
+var contractValueValues = prop.Composite(func(c *prop.Case) persister.Value {
+	changed := c.Draw(prop.Of[persister.Value](), "value")
+	value := NewValueBuilder().Build()
+	if c.Draw(prop.Boolean(), "value.key") {
+		value.Key = changed.Key
+	}
+	if c.Draw(prop.Boolean(), "value.body") {
+		value.Body = changed.Body
+	}
+	return value
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	persister.Contract
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o contractOver) Put(context.Context, persister.Value) (r0 persister.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Get calls spend and returns its zero results.
+func (o contractOver) Get(context.Context, string) (r0 persister.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) persister.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:385b4c5e414a3519acf22450e7054824d241302aaa285696d1fdec3c37ecd49a

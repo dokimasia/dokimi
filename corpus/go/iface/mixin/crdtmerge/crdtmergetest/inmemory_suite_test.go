@@ -18,6 +18,32 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	crdtmergetest.RunMixedSuite(t, crdtmergetest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Merge", func(b *testing.B) {
+		crdtmergetest.BenchMixedSuite(
+			b,
+			crdtmergetest.MixedChecks.Merge.Callable,
+			func(*crdtmergetest.MixedHandle) *crdtmergetest.InMemory { return crdtmergetest.NewInMemory() },
+		)
+	})
+	b.Run("Add", func(b *testing.B) {
+		crdtmergetest.BenchMixedSuite(
+			b,
+			crdtmergetest.MixedChecks.Add.Callable,
+			func(*crdtmergetest.MixedHandle) *crdtmergetest.InMemory { return crdtmergetest.NewInMemory() },
+		)
+	})
+	b.Run("Items", func(b *testing.B) {
+		crdtmergetest.BenchMixedSuite(
+			b,
+			crdtmergetest.MixedChecks.Items.Callable,
+			func(*crdtmergetest.MixedHandle) *crdtmergetest.InMemory { return crdtmergetest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryMerge fuzzes the property checks of Mixed.Merge on InMemory.
 func FuzzInMemoryMerge(f *testing.F) {
 	crdtmergetest.FuzzMixedSuite(
@@ -45,4 +71,4 @@ func FuzzInMemoryItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:85af2b891ac1fb82fcc498b511d3c3db4c588115e46a36e7b92c0a46d5101b28
+// dokimi:provenance sha256:0b7def8b7aacc3a96320871ee826f47f6dcd431d4817ea6103c529ff1f07c44a

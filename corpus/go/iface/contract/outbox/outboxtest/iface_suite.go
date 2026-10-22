@@ -5,8 +5,10 @@
 package outboxtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/outbox"
 )
@@ -43,9 +45,24 @@ type contractSubscribe struct {
 	conform.Callable[outbox.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[outbox.Contract] {
-	return conform.Suite[outbox.Contract]{Declaration: "Contract"}
+	return conform.Suite[outbox.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[outbox.Contract]{
+			{
+				Calls:    contractAppendCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Append.Callable,
+			},
+			{
+				Calls:    contractSubscribeCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Subscribe.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,89 @@ func FuzzContractSuite[T outbox.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:567a26686feddbd3872d91c1b7cc60300c3da8b94d26f872e17f1df7b088fdc9
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T outbox.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) outbox.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T outbox.Contract](
+	b conform.B,
+	callable conform.Callable[outbox.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) outbox.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T outbox.Contract](
+	b *testing.B,
+	callable conform.Callable[outbox.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) outbox.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractAppendCalls generates the calls of Contract.Append with the
+// inputs that each case draws.
+var contractAppendCalls = prop.Composite(func(c *prop.Case) func(context.Context, outbox.Contract) error {
+	v := c.Draw(prop.Of[outbox.Value](), "v")
+	return func(ctx context.Context, subject outbox.Contract) error {
+		return subject.Append(ctx, v)
+	}
+})
+
+// contractSubscribeCalls generates the calls of Contract.Subscribe with
+// the inputs that each case draws.
+var contractSubscribeCalls = prop.Composite(func(*prop.Case) func(context.Context, outbox.Contract) error {
+	return func(ctx context.Context, subject outbox.Contract) error {
+		_, err := subject.Subscribe(ctx)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	outbox.Contract
+	spend func()
+}
+
+// Append calls spend and returns its zero results.
+func (o contractOver) Append(context.Context, outbox.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Subscribe calls spend and returns its zero results.
+func (o contractOver) Subscribe(context.Context) (r0 <-chan outbox.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) outbox.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:ad871380ede3852f6e2e1927fbdd859cdcbf090f9d4fd8a830dee9e7fb57bd70

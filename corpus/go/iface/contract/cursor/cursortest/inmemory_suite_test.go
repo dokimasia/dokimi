@@ -18,6 +18,25 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	cursortest.RunContractSuite(t, cursortest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Next", func(b *testing.B) {
+		cursortest.BenchContractSuite(
+			b,
+			cursortest.ContractChecks.Next.Callable,
+			func(*cursortest.ContractHandle) *cursortest.InMemory { return cursortest.NewInMemory() },
+		)
+	})
+	b.Run("Close", func(b *testing.B) {
+		cursortest.BenchContractSuite(
+			b,
+			cursortest.ContractChecks.Close.Callable,
+			func(*cursortest.ContractHandle) *cursortest.InMemory { return cursortest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryNext fuzzes the property checks of Contract.Next on
 // InMemory.
 func FuzzInMemoryNext(f *testing.F) {
@@ -38,4 +57,4 @@ func FuzzInMemoryClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:18533a3692666e978906bc3c677b9e7af2edb5637931e09310420fc5894a4d18
+// dokimi:provenance sha256:5b409d017e921ad475a89bb45f19ac4127eb9efcfcddf2345641b7998c7770b7

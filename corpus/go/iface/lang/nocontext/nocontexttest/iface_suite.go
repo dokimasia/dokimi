@@ -5,8 +5,10 @@
 package nocontexttest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext"
 )
@@ -51,9 +53,29 @@ type calculatorReset struct {
 	conform.Callable[nocontext.Calculator]
 }
 
-// CalculatorSuite returns the checks of Calculator.
+// CalculatorSuite returns the checks of Calculator, and the calls and the
+// budgets of its callables.
 func CalculatorSuite() conform.Suite[nocontext.Calculator] {
-	return conform.Suite[nocontext.Calculator]{Declaration: "Calculator"}
+	return conform.Suite[nocontext.Calculator]{
+		Declaration: "Calculator",
+		Calls: []conform.Call[nocontext.Calculator]{
+			{
+				Calls:    calculatorAddCalls,
+				Over:     newCalculatorOver,
+				Callable: CalculatorChecks.Add.Callable,
+			},
+			{
+				Calls:    calculatorDivideCalls,
+				Over:     newCalculatorOver,
+				Callable: CalculatorChecks.Divide.Callable,
+			},
+			{
+				Calls:    calculatorResetCalls,
+				Over:     newCalculatorOver,
+				Callable: CalculatorChecks.Reset.Callable,
+			},
+		},
+	}
 }
 
 // RunCalculatorSuite applies the checks of Calculator, and the checks that
@@ -92,4 +114,117 @@ func FuzzCalculatorSuite[T nocontext.Calculator](
 		opts...)
 }
 
-// dokimi:provenance sha256:715944b05abcaf234b0002b87a1f7f3d00bd93350ada3b777c4cc6550da7edd6
+// RunCalculatorBudgets applies the allocation ceilings of Calculator, and
+// the ceilings that opts add, to a fresh subject of newSubject for each
+// case.
+func RunCalculatorBudgets[T nocontext.Calculator](
+	t *testing.T,
+	newSubject func(h *CalculatorHandle) T,
+	opts ...CalculatorOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		CalculatorSuite(),
+		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
+		opts...)
+}
+
+// BenchCalculatorSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchCalculatorSuite[T nocontext.Calculator](
+	b conform.B,
+	callable conform.Callable[nocontext.Calculator],
+	newSubject func(h *CalculatorHandle) T,
+	opts ...CalculatorOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		CalculatorSuite(),
+		callable,
+		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
+		opts...)
+}
+
+// BenchCalculatorSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchCalculatorSuiteParallel[T nocontext.Calculator](
+	b *testing.B,
+	callable conform.Callable[nocontext.Calculator],
+	newSubject func(h *CalculatorHandle) T,
+	opts ...CalculatorOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		CalculatorSuite(),
+		callable,
+		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
+		opts...)
+}
+
+// calculatorAddCalls generates the calls of Calculator.Add with the inputs
+// that each case draws.
+var calculatorAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, nocontext.Calculator) error {
+	a := c.Draw(prop.Of[int](), "a")
+	b := c.Draw(prop.Of[int](), "b")
+	return func(_ context.Context, subject nocontext.Calculator) error {
+		_ = subject.Add(a, b)
+		return nil
+	}
+})
+
+// calculatorDivideCalls generates the calls of Calculator.Divide with the
+// inputs that each case draws.
+var calculatorDivideCalls = prop.Composite(func(c *prop.Case) func(context.Context, nocontext.Calculator) error {
+	a := c.Draw(prop.Of[int](), "a")
+	b := c.Draw(prop.Of[int](), "b")
+	return func(_ context.Context, subject nocontext.Calculator) error {
+		_, err := subject.Divide(a, b)
+		return err
+	}
+})
+
+// calculatorResetCalls generates the calls of Calculator.Reset with the
+// inputs that each case draws.
+var calculatorResetCalls = prop.Composite(func(*prop.Case) func(context.Context, nocontext.Calculator) error {
+	return func(_ context.Context, subject nocontext.Calculator) error {
+		subject.Reset()
+		return nil
+	}
+})
+
+// calculatorOver is a subject of Calculator whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type calculatorOver struct {
+	nocontext.Calculator
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o calculatorOver) Add(int, int) (r0 int) {
+	o.spend()
+	return r0
+}
+
+// Divide calls spend and returns its zero results.
+func (o calculatorOver) Divide(int, int) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Reset calls spend and returns its zero results.
+func (o calculatorOver) Reset() {
+	o.spend()
+}
+
+// newCalculatorOver returns the planted defect of a ceiling of Calculator,
+// whose callables call spend.
+func newCalculatorOver(_ *CalculatorHandle, spend func()) nocontext.Calculator {
+	return calculatorOver{spend: spend}
+}
+
+// dokimi:provenance sha256:ebaf78eb49e66978a4b4dec9264c406b7f60b0b4014934ecad49ba91b314db5b

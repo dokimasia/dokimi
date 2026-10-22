@@ -5,8 +5,10 @@
 package roledtypestest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/roledtypes"
 )
@@ -41,9 +43,28 @@ type storeGet struct {
 	conform.Callable[roledtypes.Store]
 }
 
-// StoreSuite returns the checks of Store.
+// StoreSuite returns the checks of Store, and the calls and the budgets of
+// its callables.
 func StoreSuite() conform.Suite[roledtypes.Store] {
-	return conform.Suite[roledtypes.Store]{Declaration: "Store"}
+	return conform.Suite[roledtypes.Store]{
+		Declaration: "Store",
+		Calls: []conform.Call[roledtypes.Store]{
+			{
+				Calls:    storePutCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Put.Callable,
+			},
+			{
+				Calls:    storeGetCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Get.Callable,
+			},
+		},
+		Using: []prop.Option{
+			prop.Using(storeKeyValues),
+			prop.Using(storePayloadValues),
+		},
+	}
 }
 
 // RunStoreSuite applies the checks of Store, and the checks that opts add,
@@ -73,4 +94,107 @@ func FuzzStoreSuite[T roledtypes.Store](
 	conform.Fuzz(f, StoreSuite(), callable, func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:811ee183e260d4afd839b65db93dd5acf7d9a38b718a198ad6b43c45d0abe999
+// RunStoreBudgets applies the allocation ceilings of Store, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunStoreBudgets[T roledtypes.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+	t.Helper()
+	conform.RunBudgets(t, StoreSuite(), func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
+}
+
+// BenchStoreSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchStoreSuite[T roledtypes.Store](
+	b conform.B,
+	callable conform.Callable[roledtypes.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.Bench(b, StoreSuite(), callable, func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
+}
+
+// BenchStoreSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchStoreSuiteParallel[T roledtypes.Store](
+	b *testing.B,
+	callable conform.Callable[roledtypes.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		StoreSuite(),
+		callable,
+		func(h *StoreHandle) roledtypes.Store { return newSubject(h) },
+		opts...)
+}
+
+// storePutCalls generates the calls of Store.Put with the inputs that each
+// case draws.
+var storePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, roledtypes.Store) error {
+	key := c.Draw(prop.Of[roledtypes.Key](), "key")
+	payload := c.Draw(prop.Of[roledtypes.Payload](), "payload")
+	return func(ctx context.Context, subject roledtypes.Store) error {
+		return subject.Put(ctx, key, payload)
+	}
+})
+
+// storeGetCalls generates the calls of Store.Get with the inputs that each
+// case draws.
+var storeGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, roledtypes.Store) error {
+	key := c.Draw(prop.Of[roledtypes.Key](), "key")
+	return func(ctx context.Context, subject roledtypes.Store) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// storeKeyValues generates the values of Key that keep or change its
+// starting value.
+var storeKeyValues = prop.Composite(func(c *prop.Case) roledtypes.Key {
+	changed := c.Draw(prop.Of[roledtypes.Key](), "key")
+	if c.Draw(prop.Boolean(), "key.changed") {
+		return changed
+	}
+	return "test-key"
+})
+
+// storePayloadValues generates the values of Payload that keep or change
+// each field of its starting value.
+var storePayloadValues = prop.Composite(func(c *prop.Case) roledtypes.Payload {
+	changed := c.Draw(prop.Of[roledtypes.Payload](), "payload")
+	value := roledtypes.Payload{Body: "test-body"}
+	if c.Draw(prop.Boolean(), "payload.body") {
+		value.Body = changed.Body
+	}
+	return value
+})
+
+// storeOver is a subject of Store whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type storeOver struct {
+	roledtypes.Store
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o storeOver) Put(context.Context, roledtypes.Key, roledtypes.Payload) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o storeOver) Get(context.Context, roledtypes.Key) (r0 roledtypes.Payload, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newStoreOver returns the planted defect of a ceiling of Store, whose
+// callables call spend.
+func newStoreOver(_ *StoreHandle, spend func()) roledtypes.Store {
+	return storeOver{spend: spend}
+}
+
+// dokimi:provenance sha256:80c21b2c30b5902b9b405b5f3cd8ce38d8a05c06b1bd7d9f17e565bb715313af

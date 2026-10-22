@@ -5,8 +5,10 @@
 package multireadertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multireader"
 )
@@ -35,9 +37,19 @@ type multiReaderGetWithMeta struct {
 	conform.Callable[multireader.MultiReader]
 }
 
-// MultiReaderSuite returns the checks of MultiReader.
+// MultiReaderSuite returns the checks of MultiReader, and the calls and
+// the budgets of its callables.
 func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
-	return conform.Suite[multireader.MultiReader]{Declaration: "MultiReader"}
+	return conform.Suite[multireader.MultiReader]{
+		Declaration: "MultiReader",
+		Calls: []conform.Call[multireader.MultiReader]{
+			{
+				Calls:    multiReaderGetWithMetaCalls,
+				Over:     newMultiReaderOver,
+				Callable: MultiReaderChecks.GetWithMeta.Callable,
+			},
+		},
+	}
 }
 
 // RunMultiReaderSuite applies the checks of MultiReader, and the checks
@@ -80,4 +92,87 @@ func FuzzMultiReaderSuite[T multireader.MultiReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:da798dc99eb11bb6de1401cc72022bcca2ab38ef56914c5db1ed7b2dc0fa6f54
+// RunMultiReaderBudgets applies the allocation ceilings of MultiReader,
+// and the ceilings that opts add, to a fresh subject of newSubject for
+// each case.
+func RunMultiReaderBudgets[T multireader.MultiReader](
+	t *testing.T,
+	newSubject func(h *MultiReaderHandle) T,
+	opts ...MultiReaderOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		MultiReaderSuite(),
+		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchMultiReaderSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchMultiReaderSuite[T multireader.MultiReader](
+	b conform.B,
+	callable conform.Callable[multireader.MultiReader],
+	newSubject func(h *MultiReaderHandle) T,
+	opts ...MultiReaderOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		MultiReaderSuite(),
+		callable,
+		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchMultiReaderSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchMultiReaderSuiteParallel[T multireader.MultiReader](
+	b *testing.B,
+	callable conform.Callable[multireader.MultiReader],
+	newSubject func(h *MultiReaderHandle) T,
+	opts ...MultiReaderOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MultiReaderSuite(),
+		callable,
+		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
+		opts...)
+}
+
+// multiReaderGetWithMetaCalls generates the calls of
+// MultiReader.GetWithMeta with the inputs that each case draws.
+var multiReaderGetWithMetaCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, multireader.MultiReader) error {
+		key := c.Draw(prop.Of[string](), "key")
+		return func(ctx context.Context, subject multireader.MultiReader) error {
+			_, _, err := subject.GetWithMeta(ctx, key)
+			return err
+		}
+	},
+)
+
+// multiReaderOver is a subject of MultiReader whose callables call spend
+// and return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type multiReaderOver struct {
+	multireader.MultiReader
+	spend func()
+}
+
+// GetWithMeta calls spend and returns its zero results.
+func (o multiReaderOver) GetWithMeta(context.Context, string) (r0 multireader.Value, r1 multireader.Meta, r2 error) {
+	o.spend()
+	return r0, r1, r2
+}
+
+// newMultiReaderOver returns the planted defect of a ceiling of
+// MultiReader, whose callables call spend.
+func newMultiReaderOver(_ *MultiReaderHandle, spend func()) multireader.MultiReader {
+	return multiReaderOver{spend: spend}
+}
+
+// dokimi:provenance sha256:30018f73bfb077d771ca7581f3914e9760e657eb139a26a04a87cc896b0cde87

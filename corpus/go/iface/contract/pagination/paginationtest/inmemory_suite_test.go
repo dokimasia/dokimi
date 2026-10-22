@@ -18,6 +18,25 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	paginationtest.RunContractSuite(t, paginationtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Fetch", func(b *testing.B) {
+		paginationtest.BenchContractSuite(
+			b,
+			paginationtest.ContractChecks.Fetch.Callable,
+			func(*paginationtest.ContractHandle) *paginationtest.InMemory { return paginationtest.NewInMemory() },
+		)
+	})
+	b.Run("Put", func(b *testing.B) {
+		paginationtest.BenchContractSuite(
+			b,
+			paginationtest.ContractChecks.Put.Callable,
+			func(*paginationtest.ContractHandle) *paginationtest.InMemory { return paginationtest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryFetch fuzzes the property checks of Contract.Fetch on
 // InMemory.
 func FuzzInMemoryFetch(f *testing.F) {
@@ -37,4 +56,4 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:2909051955676aa927ba2fe730596dbb1662509a04b68dcf985f0a84436069a0
+// dokimi:provenance sha256:2fafff561b63c61bb6ddf9302377c3e7122ad497e63ca146a8eb83fb3bd62e91

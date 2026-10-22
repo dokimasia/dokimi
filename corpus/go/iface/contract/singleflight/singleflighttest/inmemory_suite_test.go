@@ -18,6 +18,29 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	singleflighttest.RunContractSuite(t, singleflighttest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Run", func(b *testing.B) {
+		singleflighttest.BenchContractSuite(
+			b,
+			singleflighttest.ContractChecks.Run.Callable,
+			func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
+				return singleflighttest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Flights", func(b *testing.B) {
+		singleflighttest.BenchContractSuite(
+			b,
+			singleflighttest.ContractChecks.Flights.Callable,
+			func(*singleflighttest.ContractHandle) *singleflighttest.InMemory {
+				return singleflighttest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryRun fuzzes the property checks of Contract.Run on InMemory.
 func FuzzInMemoryRun(f *testing.F) {
 	singleflighttest.FuzzContractSuite(
@@ -41,4 +64,4 @@ func FuzzInMemoryFlights(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:d39a234504712fd4d880ae6a8f365061ca161739c79c1ef34fdc2a0293aadf6e
+// dokimi:provenance sha256:187c7c3954fb9236d92306567cc0273ddd6588054150791ed4268ae746679257

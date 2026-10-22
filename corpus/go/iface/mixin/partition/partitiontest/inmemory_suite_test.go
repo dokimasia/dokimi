@@ -18,6 +18,25 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	partitiontest.RunMixedSuite(t, partitiontest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		partitiontest.BenchMixedSuite(
+			b,
+			partitiontest.MixedChecks.Put.Callable,
+			func(*partitiontest.MixedHandle) *partitiontest.InMemory { return partitiontest.NewInMemory() },
+		)
+	})
+	b.Run("Read", func(b *testing.B) {
+		partitiontest.BenchMixedSuite(
+			b,
+			partitiontest.MixedChecks.Read.Callable,
+			func(*partitiontest.MixedHandle) *partitiontest.InMemory { return partitiontest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
 func FuzzInMemoryPut(f *testing.F) {
 	partitiontest.FuzzMixedSuite(
@@ -36,4 +55,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:282b3d341f9b4e33fd6a89dba027ad6d90f243f9ef80ff3572b01dbf9699a356
+// dokimi:provenance sha256:e8b8e8c457a9a76f61f576bad3061d168c471c0c2659553e486ba37feeec3b80

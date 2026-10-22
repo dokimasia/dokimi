@@ -5,8 +5,10 @@
 package errorstest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/errors"
 )
@@ -34,9 +36,19 @@ type mixedGet struct {
 	conform.Callable[errors.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[errors.Mixed] {
-	return conform.Suite[errors.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[errors.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[errors.Mixed]{
+			{
+				Calls:    mixedGetCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -66,4 +78,70 @@ func FuzzMixedSuite[T errors.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) errors.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:8b321112ba63ada328ba82a1942d5415a56607a7c51ac8b6637f35ab5f0a72cc
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T errors.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) errors.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T errors.Mixed](
+	b conform.B,
+	callable conform.Callable[errors.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) errors.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T errors.Mixed](
+	b *testing.B,
+	callable conform.Callable[errors.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) errors.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, errors.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject errors.Mixed) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	errors.Mixed
+	spend func()
+}
+
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) errors.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:a3c5d6c55c89470a852ba2c8eafd9dee29ff024969e12386e231584e5eadda66

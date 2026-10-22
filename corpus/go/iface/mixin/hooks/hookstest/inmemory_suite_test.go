@@ -18,6 +18,25 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	hookstest.RunMixedSuite(t, hookstest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Fire", func(b *testing.B) {
+		hookstest.BenchMixedSuite(
+			b,
+			hookstest.MixedChecks.Fire.Callable,
+			func(*hookstest.MixedHandle) *hookstest.InMemory { return hookstest.NewInMemory() },
+		)
+	})
+	b.Run("OnEvent", func(b *testing.B) {
+		hookstest.BenchMixedSuite(
+			b,
+			hookstest.MixedChecks.OnEvent.Callable,
+			func(*hookstest.MixedHandle) *hookstest.InMemory { return hookstest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryFire fuzzes the property checks of Mixed.Fire on InMemory.
 func FuzzInMemoryFire(f *testing.F) {
 	hookstest.FuzzMixedSuite(
@@ -37,4 +56,4 @@ func FuzzInMemoryOnEvent(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:755e66d92ec0f20756b1e5ca70a965beb84aaae32cc1edd4cf1d2f228db77ca3
+// dokimi:provenance sha256:cc71847bfe65594f35a6bf5aeb8361fb9ffd669535190a23c51daddde50df667

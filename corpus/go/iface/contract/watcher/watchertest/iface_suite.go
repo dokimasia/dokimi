@@ -5,8 +5,10 @@
 package watchertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher"
 )
@@ -43,9 +45,24 @@ type contractTrigger struct {
 	conform.Callable[watcher.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[watcher.Contract] {
-	return conform.Suite[watcher.Contract]{Declaration: "Contract"}
+	return conform.Suite[watcher.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[watcher.Contract]{
+			{
+				Calls:    contractWatchCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Watch.Callable,
+			},
+			{
+				Calls:    contractTriggerCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Trigger.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,95 @@ func FuzzContractSuite[T watcher.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:9528bb922c56f33562915dccbd44fae0d7aa81d027140aa96894e4e37ec0d9bf
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T watcher.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) watcher.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T watcher.Contract](
+	b conform.B,
+	callable conform.Callable[watcher.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) watcher.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T watcher.Contract](
+	b *testing.B,
+	callable conform.Callable[watcher.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) watcher.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractWatchCalls generates the calls of Contract.Watch with the inputs
+// that each case draws.
+var contractWatchCalls = prop.Composite(func(c *prop.Case) func(context.Context, watcher.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject watcher.Contract) error {
+		_, err := subject.Watch(ctx, key)
+		return err
+	}
+})
+
+// contractTriggerCalls generates the calls of Contract.Trigger with the
+// inputs that each case draws.
+var contractTriggerCalls = prop.Composite(func(c *prop.Case) func(context.Context, watcher.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	v := c.Draw(prop.Of[watcher.Value](), "v")
+	return func(ctx context.Context, subject watcher.Contract) error {
+		return subject.Trigger(ctx, key, v)
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	watcher.Contract
+	spend func()
+}
+
+// Watch calls spend and returns its zero results.
+func (o contractOver) Watch(context.Context, string) (r0 watcher.Subscription, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Trigger calls spend and returns its zero results.
+func (o contractOver) Trigger(context.Context, string, watcher.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) watcher.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:6ee0692517b8421b7ad44da1d4a94438a6b758874e4edfb41203359d351ec39d

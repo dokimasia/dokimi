@@ -18,6 +18,53 @@ func TestInMemoryConformsToBatched(t *testing.T) {
 	batchedmixinstest.RunBatchedSuite(t, batchedmixinstest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Batched on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuite(
+			b,
+			batchedmixinstest.BatchedChecks.Put.Callable,
+			func(*batchedmixinstest.BatchedHandle) *batchedmixinstest.InMemory {
+				return batchedmixinstest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Read", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuite(
+			b,
+			batchedmixinstest.BatchedChecks.Read.Callable,
+			func(*batchedmixinstest.BatchedHandle) *batchedmixinstest.InMemory {
+				return batchedmixinstest.NewInMemory()
+			},
+		)
+	})
+	b.Run("List", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuite(
+			b,
+			batchedmixinstest.BatchedChecks.List.Callable,
+			func(*batchedmixinstest.BatchedHandle) *batchedmixinstest.InMemory {
+				return batchedmixinstest.NewInMemory()
+			},
+		)
+	})
+}
+
+// BenchmarkInMemoryParallel measures each callable of the suite of Batched
+// that admits concurrent calls on InMemory, on GOMAXPROCS goroutines at
+// once.
+func BenchmarkInMemoryParallel(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuiteParallel(
+			b,
+			batchedmixinstest.BatchedChecks.Put.Callable,
+			func(*batchedmixinstest.BatchedHandle) *batchedmixinstest.InMemory {
+				return batchedmixinstest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryPut fuzzes the property checks of Batched.Put on InMemory.
 func FuzzInMemoryPut(f *testing.F) {
 	batchedmixinstest.FuzzBatchedSuite(
@@ -51,4 +98,4 @@ func FuzzInMemoryList(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:44f79666427443c6934e5f1137deea43e9cb7a82a27e65151d9a16a54d52a8fe
+// dokimi:provenance sha256:213327e3bd7ea61632267b9c8765d64dcaefb80a62b7cf5369feb5fb4dbff143

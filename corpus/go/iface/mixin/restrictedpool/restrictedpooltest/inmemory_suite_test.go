@@ -18,6 +18,29 @@ func TestInMemoryConformsToStore(t *testing.T) {
 	restrictedpooltest.RunStoreSuite(t, restrictedpooltest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Store on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		restrictedpooltest.BenchStoreSuite(
+			b,
+			restrictedpooltest.StoreChecks.Put.Callable,
+			func(*restrictedpooltest.StoreHandle) *restrictedpooltest.InMemory {
+				return restrictedpooltest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Get", func(b *testing.B) {
+		restrictedpooltest.BenchStoreSuite(
+			b,
+			restrictedpooltest.StoreChecks.Get.Callable,
+			func(*restrictedpooltest.StoreHandle) *restrictedpooltest.InMemory {
+				return restrictedpooltest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryPut fuzzes the property checks of Store.Put on InMemory.
 func FuzzInMemoryPut(f *testing.F) {
 	restrictedpooltest.FuzzStoreSuite(
@@ -40,4 +63,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:653bf28cd64cc3c7afbd25bc497df66ccd1bb90ac16eebf53c5cc1ffc416a7bc
+// dokimi:provenance sha256:080f7a4ba2d4b184c6c4fcfe80de3af69a22005a5f215450fb78599c48fdcdac

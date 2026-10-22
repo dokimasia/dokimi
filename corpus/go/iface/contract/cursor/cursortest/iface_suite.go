@@ -5,8 +5,10 @@
 package cursortest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor"
 )
@@ -43,9 +45,24 @@ type contractClose struct {
 	conform.Callable[cursor.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[cursor.Contract] {
-	return conform.Suite[cursor.Contract]{Declaration: "Contract"}
+	return conform.Suite[cursor.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[cursor.Contract]{
+			{
+				Calls:    contractNextCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Next.Callable,
+			},
+			{
+				Calls:    contractCloseCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Close.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,88 @@ func FuzzContractSuite[T cursor.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:a1564ad3e2c55ca316e3daf4c81b7e890ffc7ba2f35654aea079d7a90d36ce0c
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T cursor.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) cursor.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T cursor.Contract](
+	b conform.B,
+	callable conform.Callable[cursor.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) cursor.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T cursor.Contract](
+	b *testing.B,
+	callable conform.Callable[cursor.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) cursor.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractNextCalls generates the calls of Contract.Next with the inputs
+// that each case draws.
+var contractNextCalls = prop.Composite(func(*prop.Case) func(context.Context, cursor.Contract) error {
+	return func(ctx context.Context, subject cursor.Contract) error {
+		_, _, err := subject.Next(ctx)
+		return err
+	}
+})
+
+// contractCloseCalls generates the calls of Contract.Close with the inputs
+// that each case draws.
+var contractCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, cursor.Contract) error {
+	return func(ctx context.Context, subject cursor.Contract) error {
+		return subject.Close(ctx)
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	cursor.Contract
+	spend func()
+}
+
+// Next calls spend and returns its zero results.
+func (o contractOver) Next(context.Context) (r0 cursor.Value, r1 bool, r2 error) {
+	o.spend()
+	return r0, r1, r2
+}
+
+// Close calls spend and returns its zero results.
+func (o contractOver) Close(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) cursor.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:5a1a8be0bbd4c74579eb802150a275944414ef1dd80ccbc0eac3a3a9a5363256

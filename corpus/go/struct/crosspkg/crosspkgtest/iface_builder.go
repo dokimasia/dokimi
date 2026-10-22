@@ -82,7 +82,7 @@ func (b *SettingsBuilder) Clone() *SettingsBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [SettingsBuilder.Clone] returns a builder that shares none of them.
@@ -146,7 +146,7 @@ func (b *MirroredBuilder) Clone() *MirroredBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [MirroredBuilder.Clone] returns a builder that shares none of them.
@@ -210,7 +210,7 @@ func (b *ShorthandBuilder) Clone() *ShorthandBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ShorthandBuilder.Clone] returns a builder that shares none of them.
@@ -218,4 +218,4 @@ func (b *ShorthandBuilder) Build() crosspkg.Shorthand {
 	return b.v
 }
 
-// dokimi:provenance sha256:baf63174accc4912979a183ee3efa544eddfac631e63745dc722c373447bd5a4
+// dokimi:provenance sha256:7455c21c7d467fd4a04ec1a60192cfe07d6237fa5b3a47e11a81152025a86506

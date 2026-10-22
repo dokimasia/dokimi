@@ -18,6 +18,39 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	eventuallytest.RunMixedSuite(t, eventuallytest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Publish", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(
+			b,
+			eventuallytest.MixedChecks.Publish.Callable,
+			func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+		)
+	})
+	b.Run("Settle", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(
+			b,
+			eventuallytest.MixedChecks.Settle.Callable,
+			func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+		)
+	})
+	b.Run("Sync", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(
+			b,
+			eventuallytest.MixedChecks.Sync.Callable,
+			func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+		)
+	})
+	b.Run("Items", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(
+			b,
+			eventuallytest.MixedChecks.Items.Callable,
+			func(*eventuallytest.MixedHandle) *eventuallytest.InMemory { return eventuallytest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryPublish fuzzes the property checks of Mixed.Publish on
 // InMemory.
 func FuzzInMemoryPublish(f *testing.F) {
@@ -56,4 +89,4 @@ func FuzzInMemoryItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:652388b60bc87aeed7c9e09c554a59afdcc2782326cb333ad46d06c648adda30
+// dokimi:provenance sha256:cd0503faa047a14038cdda685da878223d6e9c2179ecf767f6397703e937d389

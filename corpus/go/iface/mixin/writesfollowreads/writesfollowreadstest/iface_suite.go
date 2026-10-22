@@ -5,8 +5,10 @@
 package writesfollowreadstest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/writesfollowreads"
 )
@@ -42,9 +44,24 @@ type mixedGet struct {
 	conform.Callable[writesfollowreads.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[writesfollowreads.Mixed] {
-	return conform.Suite[writesfollowreads.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[writesfollowreads.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[writesfollowreads.Mixed]{
+			{
+				Calls:    mixedStoreCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Store.Callable,
+			},
+			{
+				Calls:    mixedGetCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -83,4 +100,91 @@ func FuzzMixedSuite[T writesfollowreads.Mixed](
 		opts...)
 }
 
-// dokimi:provenance sha256:8fefbaaeb3f5dca5f4305103204ea279cbf167d4f6b2652df3a0d284e5a1c0e4
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T writesfollowreads.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) writesfollowreads.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T writesfollowreads.Mixed](
+	b conform.B,
+	callable conform.Callable[writesfollowreads.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) writesfollowreads.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T writesfollowreads.Mixed](
+	b *testing.B,
+	callable conform.Callable[writesfollowreads.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) writesfollowreads.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedStoreCalls generates the calls of Mixed.Store with the inputs that
+// each case draws.
+var mixedStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, writesfollowreads.Mixed) error {
+	v := c.Draw(prop.Of[writesfollowreads.Value](), "v")
+	return func(ctx context.Context, subject writesfollowreads.Mixed) error {
+		_, err := subject.Store(ctx, v)
+		return err
+	}
+})
+
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, writesfollowreads.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject writesfollowreads.Mixed) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	writesfollowreads.Mixed
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o mixedOver) Store(context.Context, writesfollowreads.Value) (r0 writesfollowreads.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, string) (r0 writesfollowreads.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) writesfollowreads.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:1c184b8e5609a9d7df4223ca5174a4bd5559ad228094dac774883013b5b0b797

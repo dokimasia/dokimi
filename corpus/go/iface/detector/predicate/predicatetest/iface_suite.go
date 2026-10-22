@@ -5,8 +5,10 @@
 package predicatetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate"
 )
@@ -35,9 +37,19 @@ type predicateIsEmpty struct {
 	conform.Callable[predicate.Predicate]
 }
 
-// PredicateSuite returns the checks of Predicate.
+// PredicateSuite returns the checks of Predicate, and the calls and the
+// budgets of its callables.
 func PredicateSuite() conform.Suite[predicate.Predicate] {
-	return conform.Suite[predicate.Predicate]{Declaration: "Predicate"}
+	return conform.Suite[predicate.Predicate]{
+		Declaration: "Predicate",
+		Calls: []conform.Call[predicate.Predicate]{
+			{
+				Calls:    predicateIsEmptyCalls,
+				Over:     newPredicateOver,
+				Callable: PredicateChecks.IsEmpty.Callable,
+			},
+		},
+	}
 }
 
 // RunPredicateSuite applies the checks of Predicate, and the checks that
@@ -76,4 +88,83 @@ func FuzzPredicateSuite[T predicate.Predicate](
 		opts...)
 }
 
-// dokimi:provenance sha256:aeeeb078b4088cbb8bb2f5662bc1f11897f009d49d57c40fdbcd577f3c941a5e
+// RunPredicateBudgets applies the allocation ceilings of Predicate, and
+// the ceilings that opts add, to a fresh subject of newSubject for each
+// case.
+func RunPredicateBudgets[T predicate.Predicate](
+	t *testing.T,
+	newSubject func(h *PredicateHandle) T,
+	opts ...PredicateOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		PredicateSuite(),
+		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
+		opts...)
+}
+
+// BenchPredicateSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchPredicateSuite[T predicate.Predicate](
+	b conform.B,
+	callable conform.Callable[predicate.Predicate],
+	newSubject func(h *PredicateHandle) T,
+	opts ...PredicateOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		PredicateSuite(),
+		callable,
+		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
+		opts...)
+}
+
+// BenchPredicateSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchPredicateSuiteParallel[T predicate.Predicate](
+	b *testing.B,
+	callable conform.Callable[predicate.Predicate],
+	newSubject func(h *PredicateHandle) T,
+	opts ...PredicateOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		PredicateSuite(),
+		callable,
+		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
+		opts...)
+}
+
+// predicateIsEmptyCalls generates the calls of Predicate.IsEmpty with the
+// inputs that each case draws.
+var predicateIsEmptyCalls = prop.Composite(func(*prop.Case) func(context.Context, predicate.Predicate) error {
+	return func(_ context.Context, subject predicate.Predicate) error {
+		_ = subject.IsEmpty()
+		return nil
+	}
+})
+
+// predicateOver is a subject of Predicate whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type predicateOver struct {
+	predicate.Predicate
+	spend func()
+}
+
+// IsEmpty calls spend and returns its zero results.
+func (o predicateOver) IsEmpty() (r0 bool) {
+	o.spend()
+	return r0
+}
+
+// newPredicateOver returns the planted defect of a ceiling of Predicate,
+// whose callables call spend.
+func newPredicateOver(_ *PredicateHandle, spend func()) predicate.Predicate {
+	return predicateOver{spend: spend}
+}
+
+// dokimi:provenance sha256:c9cdbeec68d569887df2efa2cbe1fe0db8b9eaf498286a45c8885aca24b0d694

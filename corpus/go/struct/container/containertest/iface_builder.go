@@ -73,7 +73,7 @@ func (b *ContainerBuilder[T]) Clone() *ContainerBuilder[T] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ContainerBuilder.Clone] returns a builder that shares none of them.
@@ -155,7 +155,7 @@ func (b *PairBuilder[K, V]) Clone() *PairBuilder[K, V] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [PairBuilder.Clone] returns a builder that shares none of them.
@@ -203,7 +203,7 @@ func (b *SoloBuilder[K]) Clone() *SoloBuilder[K] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [SoloBuilder.Clone] returns a builder that shares none of them.
@@ -258,7 +258,7 @@ func (b *PartialPairBuilder[K, V]) Clone() *PartialPairBuilder[K, V] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [PartialPairBuilder.Clone] returns a builder that shares none of them.
@@ -318,7 +318,7 @@ func (b *BucketBuilder[K, V]) Clone() *BucketBuilder[K, V] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [BucketBuilder.Clone] returns a builder that shares none of them.
@@ -380,7 +380,7 @@ func (b *TripleBuilder[A, B, C]) Clone() *TripleBuilder[A, B, C] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [TripleBuilder.Clone] returns a builder that shares none of them.
@@ -448,7 +448,7 @@ func (b *QuadBuilder[A, B, C, D]) Clone() *QuadBuilder[A, B, C, D] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [QuadBuilder.Clone] returns a builder that shares none of them.
@@ -456,4 +456,4 @@ func (b *QuadBuilder[A, B, C, D]) Build() container.Quad[A, B, C, D] {
 	return b.v
 }
 
-// dokimi:provenance sha256:a6daf7d8342215c25e31de9182bedbe6cf76a9c5189935f5f6ab3ccbe2002b48
+// dokimi:provenance sha256:9a0923e1b8f8ad303df47611e54ced4ddcb6a8594df585664c23ae916db7b055

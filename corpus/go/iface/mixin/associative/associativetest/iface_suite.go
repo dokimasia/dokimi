@@ -5,8 +5,10 @@
 package associativetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/associative"
 )
@@ -43,9 +45,24 @@ type mixedTotal struct {
 	conform.Callable[associative.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[associative.Mixed] {
-	return conform.Suite[associative.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[associative.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[associative.Mixed]{
+			{
+				Calls:    mixedApplyCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Apply.Callable,
+			},
+			{
+				Calls:    mixedTotalCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Total.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -79,4 +96,84 @@ func FuzzMixedSuite[T associative.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) associative.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:d67211a43216f6f248b8cb19d9629be17126dc0c646bfb29e3bedd12c463ae3a
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T associative.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) associative.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T associative.Mixed](
+	b conform.B,
+	callable conform.Callable[associative.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) associative.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T associative.Mixed](
+	b *testing.B,
+	callable conform.Callable[associative.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) associative.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedApplyCalls generates the calls of Mixed.Apply with the inputs that
+// each case draws.
+var mixedApplyCalls = prop.Composite(func(c *prop.Case) func(context.Context, associative.Mixed) error {
+	ds := c.Draw(prop.Of[[]associative.Delta](), "ds")
+	return func(ctx context.Context, subject associative.Mixed) error {
+		return subject.Apply(ctx, ds)
+	}
+})
+
+// mixedTotalCalls generates the calls of Mixed.Total with the inputs that
+// each case draws.
+var mixedTotalCalls = prop.Composite(func(*prop.Case) func(context.Context, associative.Mixed) error {
+	return func(ctx context.Context, subject associative.Mixed) error {
+		_, err := subject.Total(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	associative.Mixed
+	spend func()
+}
+
+// Apply calls spend and returns its zero results.
+func (o mixedOver) Apply(context.Context, []associative.Delta) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Total calls spend and returns its zero results.
+func (o mixedOver) Total(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) associative.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:e01c2ead2fabd6d3aa157b499d5f0561597b11aa148243d3f14afcfeb5396acd

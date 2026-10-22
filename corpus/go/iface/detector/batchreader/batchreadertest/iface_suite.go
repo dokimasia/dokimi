@@ -5,8 +5,10 @@
 package batchreadertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader"
 )
@@ -35,9 +37,19 @@ type batchReaderGetAll struct {
 	conform.Callable[batchreader.BatchReader]
 }
 
-// BatchReaderSuite returns the checks of BatchReader.
+// BatchReaderSuite returns the checks of BatchReader, and the calls and
+// the budgets of its callables.
 func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
-	return conform.Suite[batchreader.BatchReader]{Declaration: "BatchReader"}
+	return conform.Suite[batchreader.BatchReader]{
+		Declaration: "BatchReader",
+		Calls: []conform.Call[batchreader.BatchReader]{
+			{
+				Calls:    batchReaderGetAllCalls,
+				Over:     newBatchReaderOver,
+				Callable: BatchReaderChecks.GetAll.Callable,
+			},
+		},
+	}
 }
 
 // RunBatchReaderSuite applies the checks of BatchReader, and the checks
@@ -80,4 +92,85 @@ func FuzzBatchReaderSuite[T batchreader.BatchReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:11b8598e43fa95755089633df12ab7140c7a73834c3e096265cc175ea964f38f
+// RunBatchReaderBudgets applies the allocation ceilings of BatchReader,
+// and the ceilings that opts add, to a fresh subject of newSubject for
+// each case.
+func RunBatchReaderBudgets[T batchreader.BatchReader](
+	t *testing.T,
+	newSubject func(h *BatchReaderHandle) T,
+	opts ...BatchReaderOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		BatchReaderSuite(),
+		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchBatchReaderSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchBatchReaderSuite[T batchreader.BatchReader](
+	b conform.B,
+	callable conform.Callable[batchreader.BatchReader],
+	newSubject func(h *BatchReaderHandle) T,
+	opts ...BatchReaderOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		BatchReaderSuite(),
+		callable,
+		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchBatchReaderSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchBatchReaderSuiteParallel[T batchreader.BatchReader](
+	b *testing.B,
+	callable conform.Callable[batchreader.BatchReader],
+	newSubject func(h *BatchReaderHandle) T,
+	opts ...BatchReaderOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		BatchReaderSuite(),
+		callable,
+		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
+		opts...)
+}
+
+// batchReaderGetAllCalls generates the calls of BatchReader.GetAll with
+// the inputs that each case draws.
+var batchReaderGetAllCalls = prop.Composite(func(c *prop.Case) func(context.Context, batchreader.BatchReader) error {
+	keys := c.Draw(prop.List(prop.Of[string]()), "keys")
+	return func(ctx context.Context, subject batchreader.BatchReader) error {
+		_, err := subject.GetAll(ctx, keys...)
+		return err
+	}
+})
+
+// batchReaderOver is a subject of BatchReader whose callables call spend
+// and return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type batchReaderOver struct {
+	batchreader.BatchReader
+	spend func()
+}
+
+// GetAll calls spend and returns its zero results.
+func (o batchReaderOver) GetAll(context.Context, ...string) (r0 []batchreader.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newBatchReaderOver returns the planted defect of a ceiling of
+// BatchReader, whose callables call spend.
+func newBatchReaderOver(_ *BatchReaderHandle, spend func()) batchreader.BatchReader {
+	return batchReaderOver{spend: spend}
+}
+
+// dokimi:provenance sha256:3b4337de92e7c2dea0ccaee193a2a6d5bd3e59f305d41daf46e1c11f47457ba0

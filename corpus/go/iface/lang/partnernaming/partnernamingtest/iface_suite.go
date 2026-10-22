@@ -5,8 +5,10 @@
 package partnernamingtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming"
 )
@@ -71,9 +73,44 @@ type storeCount struct {
 	conform.Callable[partnernaming.Store]
 }
 
-// StoreSuite returns the checks of Store.
+// StoreSuite returns the checks of Store, and the calls and the budgets of
+// its callables.
 func StoreSuite() conform.Suite[partnernaming.Store] {
-	return conform.Suite[partnernaming.Store]{Declaration: "Store"}
+	return conform.Suite[partnernaming.Store]{
+		Declaration: "Store",
+		Calls: []conform.Call[partnernaming.Store]{
+			{
+				Calls:    storeTouchCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Touch.Callable,
+			},
+			{
+				Calls:    storeSeenCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Seen.Callable,
+			},
+			{
+				Calls:    storeMoveCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Move.Callable,
+			},
+			{
+				Calls:    storeAtCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.At.Callable,
+			},
+			{
+				Calls:    storeEmitCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Emit.Callable,
+			},
+			{
+				Calls:    storeCountCalls,
+				Over:     newStoreOver,
+				Callable: StoreChecks.Count.Callable,
+			},
+		},
+	}
 }
 
 // RunStoreSuite applies the checks of Store, and the checks that opts add,
@@ -107,4 +144,149 @@ func FuzzStoreSuite[T partnernaming.Store](
 	conform.Fuzz(f, StoreSuite(), callable, func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:fe4a0620e15129f5dab8499acf25167d64c2ffe030bb59734bd87d370cffaac2
+// RunStoreBudgets applies the allocation ceilings of Store, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunStoreBudgets[T partnernaming.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
+	t.Helper()
+	conform.RunBudgets(t, StoreSuite(), func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+}
+
+// BenchStoreSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchStoreSuite[T partnernaming.Store](
+	b conform.B,
+	callable conform.Callable[partnernaming.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.Bench(b, StoreSuite(), callable, func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+}
+
+// BenchStoreSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchStoreSuiteParallel[T partnernaming.Store](
+	b *testing.B,
+	callable conform.Callable[partnernaming.Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		StoreSuite(),
+		callable,
+		func(h *StoreHandle) partnernaming.Store { return newSubject(h) },
+		opts...)
+}
+
+// storeTouchCalls generates the calls of Store.Touch with the inputs that
+// each case draws.
+var storeTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	key := c.Draw(prop.Of[string](), "key")
+	weight := c.Draw(prop.Of[int](), "weight")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		return subject.Touch(ctx, key, weight)
+	}
+})
+
+// storeSeenCalls generates the calls of Store.Seen with the inputs that
+// each case draws.
+var storeSeenCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	k := c.Draw(prop.Of[string](), "k")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		_, err := subject.Seen(ctx, k)
+		return err
+	}
+})
+
+// storeMoveCalls generates the calls of Store.Move with the inputs that
+// each case draws.
+var storeMoveCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	from := c.Draw(prop.Of[string](), "from")
+	to := c.Draw(prop.Of[string](), "to")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		return subject.Move(ctx, from, to)
+	}
+})
+
+// storeAtCalls generates the calls of Store.At with the inputs that each
+// case draws.
+var storeAtCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	where := c.Draw(prop.Of[string](), "where")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		_, err := subject.At(ctx, where)
+		return err
+	}
+})
+
+// storeEmitCalls generates the calls of Store.Emit with the inputs that
+// each case draws.
+var storeEmitCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	id := c.Draw(prop.Of[string](), "id")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		return subject.Emit(ctx, id)
+	}
+})
+
+// storeCountCalls generates the calls of Store.Count with the inputs that
+// each case draws.
+var storeCountCalls = prop.Composite(func(c *prop.Case) func(context.Context, partnernaming.Store) error {
+	bucket := c.Draw(prop.Of[int](), "bucket")
+	return func(ctx context.Context, subject partnernaming.Store) error {
+		_, err := subject.Count(ctx, bucket)
+		return err
+	}
+})
+
+// storeOver is a subject of Store whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type storeOver struct {
+	partnernaming.Store
+	spend func()
+}
+
+// Touch calls spend and returns its zero results.
+func (o storeOver) Touch(context.Context, string, int) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Seen calls spend and returns its zero results.
+func (o storeOver) Seen(context.Context, string) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Move calls spend and returns its zero results.
+func (o storeOver) Move(context.Context, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// At calls spend and returns its zero results.
+func (o storeOver) At(context.Context, string) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Emit calls spend and returns its zero results.
+func (o storeOver) Emit(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Count calls spend and returns its zero results.
+func (o storeOver) Count(context.Context, int) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newStoreOver returns the planted defect of a ceiling of Store, whose
+// callables call spend.
+func newStoreOver(_ *StoreHandle, spend func()) partnernaming.Store {
+	return storeOver{spend: spend}
+}
+
+// dokimi:provenance sha256:4518a645e417525f74fb459e537bea917ef911128cb7a91c0fad104127b60935

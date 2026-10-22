@@ -181,7 +181,7 @@ func (b *PrimitivesBuilder) Clone() *PrimitivesBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [PrimitivesBuilder.Clone] returns a builder that shares none of them.
@@ -407,7 +407,7 @@ func (b *ContainersBuilder) Clone() *ContainersBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ContainersBuilder.Clone] returns a builder that shares none of them.
@@ -471,7 +471,7 @@ func (b *AddressBuilder) Clone() *AddressBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [AddressBuilder.Clone] returns a builder that shares none of them.
@@ -525,7 +525,7 @@ func (b *RoleBuilder) Clone() *RoleBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [RoleBuilder.Clone] returns a builder that shares none of them.
@@ -579,7 +579,7 @@ func (b *AuditBuilder) Clone() *AuditBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [AuditBuilder.Clone] returns a builder that shares none of them.
@@ -694,7 +694,7 @@ func (b *UserBuilder) Clone() *UserBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [UserBuilder.Clone] returns a builder that shares none of them.
@@ -702,4 +702,4 @@ func (b *UserBuilder) Build() domain.User {
 	return b.v
 }
 
-// dokimi:provenance sha256:bc7ce0d4a4594a138a90d7c64ad626b5d890ac5d2df80912e2d0e10edde93551
+// dokimi:provenance sha256:eb31e15565a641d3fb1453b3e8e97bbb1495c795df6f3597d549961940c06326

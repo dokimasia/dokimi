@@ -60,7 +60,7 @@ func (b *AccountBuilder) Clone() *AccountBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [AccountBuilder.Clone] returns a builder that shares none of them.
@@ -122,7 +122,7 @@ func (b *PageBuilder[T]) Clone() *PageBuilder[T] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [PageBuilder.Clone] returns a builder that shares none of them.
@@ -130,4 +130,4 @@ func (b *PageBuilder[T]) Build() built.Page[T] {
 	return b.v
 }
 
-// dokimi:provenance sha256:bf22e0899541fc1788a506fcd355ce951d871fb0890fffdca057d8867f6ea7d6
+// dokimi:provenance sha256:ad026ec187e2cba9c3bbaeb4ed7774de9e86eb9cd07cb96511b0d224945d3eff

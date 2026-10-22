@@ -5,8 +5,10 @@
 package mutatortest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator"
 )
@@ -35,9 +37,19 @@ type mutatorTouch struct {
 	conform.Callable[mutator.Mutator]
 }
 
-// MutatorSuite returns the checks of Mutator.
+// MutatorSuite returns the checks of Mutator, and the calls and the
+// budgets of its callables.
 func MutatorSuite() conform.Suite[mutator.Mutator] {
-	return conform.Suite[mutator.Mutator]{Declaration: "Mutator"}
+	return conform.Suite[mutator.Mutator]{
+		Declaration: "Mutator",
+		Calls: []conform.Call[mutator.Mutator]{
+			{
+				Calls:    mutatorTouchCalls,
+				Over:     newMutatorOver,
+				Callable: MutatorChecks.Touch.Callable,
+			},
+		},
+	}
 }
 
 // RunMutatorSuite applies the checks of Mutator, and the checks that opts
@@ -71,4 +83,69 @@ func FuzzMutatorSuite[T mutator.Mutator](
 	conform.Fuzz(f, MutatorSuite(), callable, func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:c25ba53d92e5b2e295535708a09a292cd0cc93e4dd8d92cb903441976da0fb49
+// RunMutatorBudgets applies the allocation ceilings of Mutator, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMutatorBudgets[T mutator.Mutator](t *testing.T, newSubject func(h *MutatorHandle) T, opts ...MutatorOption) {
+	t.Helper()
+	conform.RunBudgets(t, MutatorSuite(), func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+}
+
+// BenchMutatorSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchMutatorSuite[T mutator.Mutator](
+	b conform.B,
+	callable conform.Callable[mutator.Mutator],
+	newSubject func(h *MutatorHandle) T,
+	opts ...MutatorOption,
+) {
+	b.Helper()
+	conform.Bench(b, MutatorSuite(), callable, func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+}
+
+// BenchMutatorSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMutatorSuiteParallel[T mutator.Mutator](
+	b *testing.B,
+	callable conform.Callable[mutator.Mutator],
+	newSubject func(h *MutatorHandle) T,
+	opts ...MutatorOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MutatorSuite(),
+		callable,
+		func(h *MutatorHandle) mutator.Mutator { return newSubject(h) },
+		opts...)
+}
+
+// mutatorTouchCalls generates the calls of Mutator.Touch with the inputs
+// that each case draws.
+var mutatorTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, mutator.Mutator) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject mutator.Mutator) error {
+		subject.Touch(ctx, key)
+		return nil
+	}
+})
+
+// mutatorOver is a subject of Mutator whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type mutatorOver struct {
+	mutator.Mutator
+	spend func()
+}
+
+// Touch calls spend and returns its zero results.
+func (o mutatorOver) Touch(context.Context, string) {
+	o.spend()
+}
+
+// newMutatorOver returns the planted defect of a ceiling of Mutator, whose
+// callables call spend.
+func newMutatorOver(_ *MutatorHandle, spend func()) mutator.Mutator {
+	return mutatorOver{spend: spend}
+}
+
+// dokimi:provenance sha256:4a5c5a5b368d350b3d2b898fc506f2ea481d1eec78af0035988785c5db5be914

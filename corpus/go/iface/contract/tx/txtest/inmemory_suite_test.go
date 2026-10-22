@@ -18,6 +18,46 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	txtest.RunContractSuite(t, txtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Begin", func(b *testing.B) {
+		txtest.BenchContractSuite(
+			b,
+			txtest.ContractChecks.Begin.Callable,
+			func(*txtest.ContractHandle) *txtest.InMemory { return txtest.NewInMemory() },
+		)
+	})
+	b.Run("Commit", func(b *testing.B) {
+		txtest.BenchContractSuite(
+			b,
+			txtest.ContractChecks.Commit.Callable,
+			func(*txtest.ContractHandle) *txtest.InMemory { return txtest.NewInMemory() },
+		)
+	})
+	b.Run("Rollback", func(b *testing.B) {
+		txtest.BenchContractSuite(
+			b,
+			txtest.ContractChecks.Rollback.Callable,
+			func(*txtest.ContractHandle) *txtest.InMemory { return txtest.NewInMemory() },
+		)
+	})
+	b.Run("Put", func(b *testing.B) {
+		txtest.BenchContractSuite(
+			b,
+			txtest.ContractChecks.Put.Callable,
+			func(*txtest.ContractHandle) *txtest.InMemory { return txtest.NewInMemory() },
+		)
+	})
+	b.Run("Get", func(b *testing.B) {
+		txtest.BenchContractSuite(
+			b,
+			txtest.ContractChecks.Get.Callable,
+			func(*txtest.ContractHandle) *txtest.InMemory { return txtest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryBegin fuzzes the property checks of Contract.Begin on
 // InMemory.
 func FuzzInMemoryBegin(f *testing.F) {
@@ -66,4 +106,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:78a594194b233d778c7970841dc1a9a62c72ed6a199bcb5b9b4588e88a44f8f2
+// dokimi:provenance sha256:17aa1604e7a83f59ada726769a4dbda51c42791920336da44d79093d45ad6717

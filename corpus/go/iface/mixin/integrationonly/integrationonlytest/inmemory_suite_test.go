@@ -18,6 +18,20 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	integrationonlytest.RunMixedSuite(t, integrationonlytest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Connect", func(b *testing.B) {
+		integrationonlytest.BenchMixedSuite(
+			b,
+			integrationonlytest.MixedChecks.Connect.Callable,
+			func(*integrationonlytest.MixedHandle) *integrationonlytest.InMemory {
+				return integrationonlytest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryConnect fuzzes the property checks of Mixed.Connect on
 // InMemory.
 func FuzzInMemoryConnect(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryConnect(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:843ab423b1ab44748c35ffbdf603fa65e1cf8ded4b3bf6bb7c96ea520cc92858
+// dokimi:provenance sha256:dc526f5d2d4c76a1f19b54f10d5d58c5b63927bc45cb3598df1718b282c83fa8

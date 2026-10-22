@@ -19,6 +19,29 @@ func TestInMemoryConformsToRanked(t *testing.T) {
 	genericboundtest.RunRankedSuite(t, genericboundtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Ranked on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Rank", func(b *testing.B) {
+		genericboundtest.BenchRankedSuite(
+			b,
+			genericboundtest.RankedChecks.Rank.Callable,
+			func(*genericboundtest.RankedHandle) *genericboundtest.InMemory[int, genericbound.Score] {
+				return genericboundtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Reset", func(b *testing.B) {
+		genericboundtest.BenchRankedSuite(
+			b,
+			genericboundtest.RankedChecks.Reset.Callable,
+			func(*genericboundtest.RankedHandle) *genericboundtest.InMemory[int, genericbound.Score] {
+				return genericboundtest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryRank fuzzes the property checks of Ranked.Rank on InMemory.
 func FuzzInMemoryRank(f *testing.F) {
 	genericboundtest.FuzzRankedSuite(
@@ -42,4 +65,4 @@ func FuzzInMemoryReset(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9d64220adee6e648d40546e4bba94a43e145a6b1c3c44199765cd0590c98a64a
+// dokimi:provenance sha256:ecaf9516b8697663c64983e78c5609d75ed2e2b4f3120cbd6b859e43320d2089

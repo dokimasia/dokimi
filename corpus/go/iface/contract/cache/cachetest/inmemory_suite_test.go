@@ -18,6 +18,32 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	cachetest.RunContractSuite(t, cachetest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		cachetest.BenchContractSuite(
+			b,
+			cachetest.ContractChecks.Store.Callable,
+			func(*cachetest.ContractHandle) *cachetest.InMemory { return cachetest.NewInMemory() },
+		)
+	})
+	b.Run("Lookup", func(b *testing.B) {
+		cachetest.BenchContractSuite(
+			b,
+			cachetest.ContractChecks.Lookup.Callable,
+			func(*cachetest.ContractHandle) *cachetest.InMemory { return cachetest.NewInMemory() },
+		)
+	})
+	b.Run("Fetch", func(b *testing.B) {
+		cachetest.BenchContractSuite(
+			b,
+			cachetest.ContractChecks.Fetch.Callable,
+			func(*cachetest.ContractHandle) *cachetest.InMemory { return cachetest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryStore fuzzes the property checks of Contract.Store on
 // InMemory.
 func FuzzInMemoryStore(f *testing.F) {
@@ -48,4 +74,4 @@ func FuzzInMemoryFetch(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c88b2cdb1fbf4bd1a0a159f717541dcbf8cf49ba43120913f04d013c742d0764
+// dokimi:provenance sha256:ab4aae0c4c905142cf6a66ee0843d57486cdd9cce981f5519a2912610e00c7ed

@@ -5,8 +5,10 @@
 package voidlifecycletest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle"
 )
@@ -35,9 +37,19 @@ type voidLifecycleStop struct {
 	conform.Callable[voidlifecycle.VoidLifecycle]
 }
 
-// VoidLifecycleSuite returns the checks of VoidLifecycle.
+// VoidLifecycleSuite returns the checks of VoidLifecycle, and the calls
+// and the budgets of its callables.
 func VoidLifecycleSuite() conform.Suite[voidlifecycle.VoidLifecycle] {
-	return conform.Suite[voidlifecycle.VoidLifecycle]{Declaration: "VoidLifecycle"}
+	return conform.Suite[voidlifecycle.VoidLifecycle]{
+		Declaration: "VoidLifecycle",
+		Calls: []conform.Call[voidlifecycle.VoidLifecycle]{
+			{
+				Calls:    voidLifecycleStopCalls,
+				Over:     newVoidLifecycleOver,
+				Callable: VoidLifecycleChecks.Stop.Callable,
+			},
+		},
+	}
 }
 
 // RunVoidLifecycleSuite applies the checks of VoidLifecycle, and the
@@ -84,4 +96,83 @@ func FuzzVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
 		opts...)
 }
 
-// dokimi:provenance sha256:a9881a4ac8193385ac9dc49f768e11790e713018f337ba61c19d5142374dad34
+// RunVoidLifecycleBudgets applies the allocation ceilings of
+// VoidLifecycle, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunVoidLifecycleBudgets[T voidlifecycle.VoidLifecycle](
+	t *testing.T,
+	newSubject func(h *VoidLifecycleHandle) T,
+	opts ...VoidLifecycleOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		VoidLifecycleSuite(),
+		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
+		opts...)
+}
+
+// BenchVoidLifecycleSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
+	b conform.B,
+	callable conform.Callable[voidlifecycle.VoidLifecycle],
+	newSubject func(h *VoidLifecycleHandle) T,
+	opts ...VoidLifecycleOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		VoidLifecycleSuite(),
+		callable,
+		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
+		opts...)
+}
+
+// BenchVoidLifecycleSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchVoidLifecycleSuiteParallel[T voidlifecycle.VoidLifecycle](
+	b *testing.B,
+	callable conform.Callable[voidlifecycle.VoidLifecycle],
+	newSubject func(h *VoidLifecycleHandle) T,
+	opts ...VoidLifecycleOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		VoidLifecycleSuite(),
+		callable,
+		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
+		opts...)
+}
+
+// voidLifecycleStopCalls generates the calls of VoidLifecycle.Stop with
+// the inputs that each case draws.
+var voidLifecycleStopCalls = prop.Composite(func(*prop.Case) func(context.Context, voidlifecycle.VoidLifecycle) error {
+	return func(_ context.Context, subject voidlifecycle.VoidLifecycle) error {
+		subject.Stop()
+		return nil
+	}
+})
+
+// voidLifecycleOver is a subject of VoidLifecycle whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type voidLifecycleOver struct {
+	voidlifecycle.VoidLifecycle
+	spend func()
+}
+
+// Stop calls spend and returns its zero results.
+func (o voidLifecycleOver) Stop() {
+	o.spend()
+}
+
+// newVoidLifecycleOver returns the planted defect of a ceiling of
+// VoidLifecycle, whose callables call spend.
+func newVoidLifecycleOver(_ *VoidLifecycleHandle, spend func()) voidlifecycle.VoidLifecycle {
+	return voidLifecycleOver{spend: spend}
+}
+
+// dokimi:provenance sha256:7dc9f893de26cfec5f39769495173ae395aac6bc887f73c6ff85a01392a59afe

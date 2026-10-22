@@ -5,8 +5,10 @@
 package boundedcachetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/boundedcache"
 )
@@ -48,9 +50,33 @@ type mixedLen struct {
 	conform.Callable[boundedcache.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[boundedcache.Mixed] {
-	return conform.Suite[boundedcache.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[boundedcache.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[boundedcache.Mixed]{
+			{
+				Calls:    mixedPutCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Put.Callable,
+			},
+			{
+				Calls:    mixedGetCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Get.Callable,
+			},
+			{
+				Calls:    mixedLenCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Len.Callable,
+			},
+		},
+		Using: []prop.Option{
+			prop.Using(mixedKeyValues),
+			prop.Using(mixedValueValues),
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -84,4 +110,122 @@ func FuzzMixedSuite[T boundedcache.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:32903f2aa6e9f70b5d6b6f69fe06fa8ae8600abe0191e78db392e5efa0e03c1d
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T boundedcache.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T boundedcache.Mixed](
+	b conform.B,
+	callable conform.Callable[boundedcache.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T boundedcache.Mixed](
+	b *testing.B,
+	callable conform.Callable[boundedcache.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedPutCalls generates the calls of Mixed.Put with the inputs that each
+// case draws.
+var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, boundedcache.Mixed) error {
+	key := c.Draw(prop.Of[boundedcache.Key](), "key")
+	value := c.Draw(prop.Of[boundedcache.Value](), "value")
+	return func(ctx context.Context, subject boundedcache.Mixed) error {
+		return subject.Put(ctx, key, value)
+	}
+})
+
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, boundedcache.Mixed) error {
+	key := c.Draw(prop.Of[boundedcache.Key](), "key")
+	return func(ctx context.Context, subject boundedcache.Mixed) error {
+		_, _ = subject.Get(ctx, key)
+		return nil
+	}
+})
+
+// mixedLenCalls generates the calls of Mixed.Len with the inputs that each
+// case draws.
+var mixedLenCalls = prop.Composite(func(*prop.Case) func(context.Context, boundedcache.Mixed) error {
+	return func(ctx context.Context, subject boundedcache.Mixed) error {
+		_, err := subject.Len(ctx)
+		return err
+	}
+})
+
+// mixedKeyValues generates the values of Key that keep or change its
+// starting value.
+var mixedKeyValues = prop.Composite(func(c *prop.Case) boundedcache.Key {
+	changed := c.Draw(prop.Of[boundedcache.Key](), "key")
+	if c.Draw(prop.Boolean(), "key.changed") {
+		return changed
+	}
+	return "test-key"
+})
+
+// mixedValueValues generates the values of Value that keep or change each
+// field of its starting value.
+var mixedValueValues = prop.Composite(func(c *prop.Case) boundedcache.Value {
+	changed := c.Draw(prop.Of[boundedcache.Value](), "value")
+	value := boundedcache.Value{Body: "test-value"}
+	if c.Draw(prop.Boolean(), "value.body") {
+		value.Body = changed.Body
+	}
+	return value
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	boundedcache.Mixed
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o mixedOver) Put(context.Context, boundedcache.Key, boundedcache.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, boundedcache.Key) (r0 boundedcache.Value, r1 bool) {
+	o.spend()
+	return r0, r1
+}
+
+// Len calls spend and returns its zero results.
+func (o mixedOver) Len(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) boundedcache.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:9cde684670472d6fa96ff2505bdea90b71970fd9fb6139d1d9e31fe9f0abb0ef

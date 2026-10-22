@@ -5,8 +5,10 @@
 package idempotentclosetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose"
 )
@@ -43,9 +45,24 @@ type closerStats struct {
 	conform.Callable[idempotentclose.Closer]
 }
 
-// CloserSuite returns the checks of Closer.
+// CloserSuite returns the checks of Closer, and the calls and the budgets
+// of its callables.
 func CloserSuite() conform.Suite[idempotentclose.Closer] {
-	return conform.Suite[idempotentclose.Closer]{Declaration: "Closer"}
+	return conform.Suite[idempotentclose.Closer]{
+		Declaration: "Closer",
+		Calls: []conform.Call[idempotentclose.Closer]{
+			{
+				Calls:    closerCloseCalls,
+				Over:     newCloserOver,
+				Callable: CloserChecks.Close.Callable,
+			},
+			{
+				Calls:    closerStatsCalls,
+				Over:     newCloserOver,
+				Callable: CloserChecks.Stats.Callable,
+			},
+		},
+	}
 }
 
 // RunCloserSuite applies the checks of Closer, and the checks that opts
@@ -84,4 +101,92 @@ func FuzzCloserSuite[T idempotentclose.Closer](
 		opts...)
 }
 
-// dokimi:provenance sha256:504e0c295578d845445b502bca8e8f751a3b770671c0fc5e740c88ee9d063689
+// RunCloserBudgets applies the allocation ceilings of Closer, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunCloserBudgets[T idempotentclose.Closer](
+	t *testing.T,
+	newSubject func(h *CloserHandle) T,
+	opts ...CloserOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, CloserSuite(), func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) }, opts...)
+}
+
+// BenchCloserSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchCloserSuite[T idempotentclose.Closer](
+	b conform.B,
+	callable conform.Callable[idempotentclose.Closer],
+	newSubject func(h *CloserHandle) T,
+	opts ...CloserOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		CloserSuite(),
+		callable,
+		func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) },
+		opts...)
+}
+
+// BenchCloserSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchCloserSuiteParallel[T idempotentclose.Closer](
+	b *testing.B,
+	callable conform.Callable[idempotentclose.Closer],
+	newSubject func(h *CloserHandle) T,
+	opts ...CloserOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		CloserSuite(),
+		callable,
+		func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) },
+		opts...)
+}
+
+// closerCloseCalls generates the calls of Closer.Close with the inputs
+// that each case draws.
+var closerCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, idempotentclose.Closer) error {
+	return func(ctx context.Context, subject idempotentclose.Closer) error {
+		return subject.Close(ctx)
+	}
+})
+
+// closerStatsCalls generates the calls of Closer.Stats with the inputs
+// that each case draws.
+var closerStatsCalls = prop.Composite(func(*prop.Case) func(context.Context, idempotentclose.Closer) error {
+	return func(ctx context.Context, subject idempotentclose.Closer) error {
+		_, err := subject.Stats(ctx)
+		return err
+	}
+})
+
+// closerOver is a subject of Closer whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type closerOver struct {
+	idempotentclose.Closer
+	spend func()
+}
+
+// Close calls spend and returns its zero results.
+func (o closerOver) Close(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Stats calls spend and returns its zero results.
+func (o closerOver) Stats(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newCloserOver returns the planted defect of a ceiling of Closer, whose
+// callables call spend.
+func newCloserOver(_ *CloserHandle, spend func()) idempotentclose.Closer {
+	return closerOver{spend: spend}
+}
+
+// dokimi:provenance sha256:725de36283c9a737243edc49784e4a7521f85552fd038a0f5f2c1a57079dfafc

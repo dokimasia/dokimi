@@ -5,8 +5,10 @@
 package sagatest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/saga"
 )
@@ -67,9 +69,39 @@ type contractState struct {
 	conform.Callable[saga.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[saga.Contract] {
-	return conform.Suite[saga.Contract]{Declaration: "Contract"}
+	return conform.Suite[saga.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[saga.Contract]{
+			{
+				Calls:    contractStepCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Step.Callable,
+			},
+			{
+				Calls:    contractCompensateCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Compensate.Callable,
+			},
+			{
+				Calls:    contractShipCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Ship.Callable,
+			},
+			{
+				Calls:    contractUndoShipCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.UndoShip.Callable,
+			},
+			{
+				Calls:    contractStateCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.State.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -103,4 +135,129 @@ func FuzzContractSuite[T saga.Contract](
 	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) saga.Contract { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:67fb6efb670d1a2009434ecc59e95ccd4ae5c92178b2fbfe79ffefba5f9189f7
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T saga.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) saga.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T saga.Contract](
+	b conform.B,
+	callable conform.Callable[saga.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(b, ContractSuite(), callable, func(h *ContractHandle) saga.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T saga.Contract](
+	b *testing.B,
+	callable conform.Callable[saga.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) saga.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractStepCalls generates the calls of Contract.Step with the inputs
+// that each case draws.
+var contractStepCalls = prop.Composite(func(c *prop.Case) func(context.Context, saga.Contract) error {
+	v := c.Draw(prop.Of[saga.Value](), "v")
+	return func(ctx context.Context, subject saga.Contract) error {
+		return subject.Step(ctx, v)
+	}
+})
+
+// contractCompensateCalls generates the calls of Contract.Compensate with
+// the inputs that each case draws.
+var contractCompensateCalls = prop.Composite(func(c *prop.Case) func(context.Context, saga.Contract) error {
+	v := c.Draw(prop.Of[saga.Value](), "v")
+	return func(ctx context.Context, subject saga.Contract) error {
+		return subject.Compensate(ctx, v)
+	}
+})
+
+// contractShipCalls generates the calls of Contract.Ship with the inputs
+// that each case draws.
+var contractShipCalls = prop.Composite(func(c *prop.Case) func(context.Context, saga.Contract) error {
+	v := c.Draw(prop.Of[saga.Value](), "v")
+	return func(ctx context.Context, subject saga.Contract) error {
+		return subject.Ship(ctx, v)
+	}
+})
+
+// contractUndoShipCalls generates the calls of Contract.UndoShip with the
+// inputs that each case draws.
+var contractUndoShipCalls = prop.Composite(func(c *prop.Case) func(context.Context, saga.Contract) error {
+	v := c.Draw(prop.Of[saga.Value](), "v")
+	return func(ctx context.Context, subject saga.Contract) error {
+		return subject.UndoShip(ctx, v)
+	}
+})
+
+// contractStateCalls generates the calls of Contract.State with the inputs
+// that each case draws.
+var contractStateCalls = prop.Composite(func(*prop.Case) func(context.Context, saga.Contract) error {
+	return func(ctx context.Context, subject saga.Contract) error {
+		_, err := subject.State(ctx)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	saga.Contract
+	spend func()
+}
+
+// Step calls spend and returns its zero results.
+func (o contractOver) Step(context.Context, saga.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Compensate calls spend and returns its zero results.
+func (o contractOver) Compensate(context.Context, saga.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Ship calls spend and returns its zero results.
+func (o contractOver) Ship(context.Context, saga.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// UndoShip calls spend and returns its zero results.
+func (o contractOver) UndoShip(context.Context, saga.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// State calls spend and returns its zero results.
+func (o contractOver) State(context.Context) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) saga.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:881f12a7baae71427d079fa34f43b9c775fd967dceee15df51049b7d1533817d

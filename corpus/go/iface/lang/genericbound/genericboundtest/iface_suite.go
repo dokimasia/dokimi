@@ -5,8 +5,10 @@
 package genericboundtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound"
 )
@@ -43,9 +45,24 @@ type rankedReset struct {
 	conform.Callable[genericbound.Ranked[int, genericbound.Score]]
 }
 
-// RankedSuite returns the checks of Ranked.
+// RankedSuite returns the checks of Ranked, and the calls and the budgets
+// of its callables.
 func RankedSuite() conform.Suite[genericbound.Ranked[int, genericbound.Score]] {
-	return conform.Suite[genericbound.Ranked[int, genericbound.Score]]{Declaration: "Ranked"}
+	return conform.Suite[genericbound.Ranked[int, genericbound.Score]]{
+		Declaration: "Ranked",
+		Calls: []conform.Call[genericbound.Ranked[int, genericbound.Score]]{
+			{
+				Calls:    rankedRankCalls,
+				Over:     newRankedOver,
+				Callable: RankedChecks.Rank.Callable,
+			},
+			{
+				Calls:    rankedResetCalls,
+				Over:     newRankedOver,
+				Callable: RankedChecks.Reset.Callable,
+			},
+		},
+	}
 }
 
 // RunRankedSuite applies the checks of Ranked, and the checks that opts
@@ -92,4 +109,101 @@ func FuzzRankedSuite[T genericbound.Ranked[int, genericbound.Score]](
 		opts...)
 }
 
-// dokimi:provenance sha256:da12f63cbbc6bcf50ab40440f4e55b74edd9069f0894a4c020f9f36e5a0feafc
+// RunRankedBudgets applies the allocation ceilings of Ranked, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunRankedBudgets[T genericbound.Ranked[int, genericbound.Score]](
+	t *testing.T,
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		RankedSuite(),
+		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
+		opts...)
+}
+
+// BenchRankedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchRankedSuite[T genericbound.Ranked[int, genericbound.Score]](
+	b conform.B,
+	callable conform.Callable[genericbound.Ranked[int, genericbound.Score]],
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		RankedSuite(),
+		callable,
+		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
+		opts...)
+}
+
+// BenchRankedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchRankedSuiteParallel[T genericbound.Ranked[int, genericbound.Score]](
+	b *testing.B,
+	callable conform.Callable[genericbound.Ranked[int, genericbound.Score]],
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		RankedSuite(),
+		callable,
+		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
+		opts...)
+}
+
+// rankedRankCalls generates the calls of Ranked.Rank with the inputs that
+// each case draws.
+var rankedRankCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, genericbound.Ranked[int, genericbound.Score]) error {
+		key := c.Draw(prop.Of[int](), "key")
+		return func(ctx context.Context, subject genericbound.Ranked[int, genericbound.Score]) error {
+			_, err := subject.Rank(ctx, key)
+			return err
+		}
+	},
+)
+
+// rankedResetCalls generates the calls of Ranked.Reset with the inputs
+// that each case draws.
+var rankedResetCalls = prop.Composite(
+	func(*prop.Case) func(context.Context, genericbound.Ranked[int, genericbound.Score]) error {
+		return func(ctx context.Context, subject genericbound.Ranked[int, genericbound.Score]) error {
+			return subject.Reset(ctx)
+		}
+	},
+)
+
+// rankedOver is a subject of Ranked whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type rankedOver struct {
+	genericbound.Ranked[int, genericbound.Score]
+	spend func()
+}
+
+// Rank calls spend and returns its zero results.
+func (o rankedOver) Rank(context.Context, int) (r0 genericbound.Score, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Reset calls spend and returns its zero results.
+func (o rankedOver) Reset(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newRankedOver returns the planted defect of a ceiling of Ranked, whose
+// callables call spend.
+func newRankedOver(_ *RankedHandle, spend func()) genericbound.Ranked[int, genericbound.Score] {
+	return rankedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:dea8a43a4f0e740605469d3ec246d2e2a6ee28011a960e8a5eb9f11ccc489740

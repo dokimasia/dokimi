@@ -5,8 +5,11 @@
 package eventuallytest
 
 import (
+	"context"
+	"sync/atomic"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually"
 )
@@ -58,9 +61,34 @@ type mixedItems struct {
 	conform.Callable[eventually.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[eventually.Mixed] {
-	return conform.Suite[eventually.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[eventually.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[eventually.Mixed]{
+			{
+				Calls:    mixedPublishCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Publish.Callable,
+			},
+			{
+				Calls:    mixedSettleCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Settle.Callable,
+			},
+			{
+				Calls:    mixedSyncCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Sync.Callable,
+			},
+			{
+				Calls:    mixedItemsCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Items.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -90,4 +118,193 @@ func FuzzMixedSuite[T eventually.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) eventually.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:4e9111524d2326050ab9a2c1360b31a1da218144b15c417681aea73768c1dbe7
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T eventually.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) eventually.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T eventually.Mixed](
+	b conform.B,
+	callable conform.Callable[eventually.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) eventually.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T eventually.Mixed](
+	b *testing.B,
+	callable conform.Callable[eventually.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) eventually.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedPublishCalls generates the calls of Mixed.Publish with the inputs
+// that each case draws.
+var mixedPublishCalls = prop.Composite(func(c *prop.Case) func(context.Context, eventually.Mixed) error {
+	item := c.Draw(prop.Of[string](), "item")
+	return func(ctx context.Context, subject eventually.Mixed) error {
+		return subject.Publish(ctx, item)
+	}
+})
+
+// mixedSettleCalls generates the calls of Mixed.Settle with the inputs
+// that each case draws.
+var mixedSettleCalls = prop.Composite(func(*prop.Case) func(context.Context, eventually.Mixed) error {
+	return func(ctx context.Context, subject eventually.Mixed) error {
+		return subject.Settle(ctx)
+	}
+})
+
+// mixedSyncCalls generates the calls of Mixed.Sync with the inputs that
+// each case draws.
+var mixedSyncCalls = prop.Composite(func(c *prop.Case) func(context.Context, eventually.Mixed) error {
+	peerPublishResults := c.Draw(prop.List(prop.SampledFrom[error](nil, conform.ErrGenerated)), "peer-publish")
+	var peerPublishAt atomic.Int64
+	peerSettleResults := c.Draw(prop.List(prop.SampledFrom[error](nil, conform.ErrGenerated)), "peer-settle")
+	var peerSettleAt atomic.Int64
+	peerSyncResults := c.Draw(prop.List(prop.SampledFrom[error](nil, conform.ErrGenerated)), "peer-sync")
+	var peerSyncAt atomic.Int64
+	peerItemsResults0 := c.Draw(prop.List(prop.Of[[]string]()), "peer-items-0")
+	peerItemsResults1 := c.Draw(
+		prop.List(
+			prop.SampledFrom[error](nil, conform.ErrGenerated),
+			prop.MinSize(len(peerItemsResults0)),
+			prop.MaxSize(len(peerItemsResults0)),
+		),
+		"peer-items-1",
+	)
+	var peerItemsAt atomic.Int64
+	peer := mixedMixedInput{
+		onPublish: func(context.Context, string) (r0 error) {
+			i := int(peerPublishAt.Add(1) - 1)
+			if i >= len(peerPublishResults) {
+				r0 = conform.ErrGenerated
+				return r0
+			}
+			return peerPublishResults[i]
+		},
+		onSettle: func(context.Context) (r0 error) {
+			i := int(peerSettleAt.Add(1) - 1)
+			if i >= len(peerSettleResults) {
+				r0 = conform.ErrGenerated
+				return r0
+			}
+			return peerSettleResults[i]
+		},
+		onSync: func(context.Context, eventually.Mixed) (r0 error) {
+			i := int(peerSyncAt.Add(1) - 1)
+			if i >= len(peerSyncResults) {
+				r0 = conform.ErrGenerated
+				return r0
+			}
+			return peerSyncResults[i]
+		},
+		onItems: func(context.Context) (r0 []string, r1 error) {
+			i := int(peerItemsAt.Add(1) - 1)
+			if i >= len(peerItemsResults0) {
+				r1 = conform.ErrGenerated
+				return r0, r1
+			}
+			return peerItemsResults0[i],
+				peerItemsResults1[i]
+		},
+	}
+	return func(ctx context.Context, subject eventually.Mixed) error {
+		return subject.Sync(ctx, peer)
+	}
+})
+
+// mixedItemsCalls generates the calls of Mixed.Items with the inputs that
+// each case draws.
+var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, eventually.Mixed) error {
+	return func(ctx context.Context, subject eventually.Mixed) error {
+		_, err := subject.Items(ctx)
+		return err
+	}
+})
+
+// mixedMixedInput is a Mixed whose methods return the results that the
+// call generators of Mixed draw for them, in turn.
+type mixedMixedInput struct {
+	eventually.Mixed
+	onPublish func(a0 context.Context, a1 string) error
+	onSettle  func(a0 context.Context) error
+	onSync    func(a0 context.Context, a1 eventually.Mixed) error
+	onItems   func(a0 context.Context) ([]string, error)
+}
+
+// Publish calls the function of Publish.
+func (in mixedMixedInput) Publish(a0 context.Context, a1 string) error {
+	return in.onPublish(a0, a1)
+}
+
+// Settle calls the function of Settle.
+func (in mixedMixedInput) Settle(a0 context.Context) error {
+	return in.onSettle(a0)
+}
+
+// Sync calls the function of Sync.
+func (in mixedMixedInput) Sync(a0 context.Context, a1 eventually.Mixed) error {
+	return in.onSync(a0, a1)
+}
+
+// Items calls the function of Items.
+func (in mixedMixedInput) Items(a0 context.Context) ([]string, error) {
+	return in.onItems(a0)
+}
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	eventually.Mixed
+	spend func()
+}
+
+// Publish calls spend and returns its zero results.
+func (o mixedOver) Publish(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Settle calls spend and returns its zero results.
+func (o mixedOver) Settle(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Sync calls spend and returns its zero results.
+func (o mixedOver) Sync(context.Context, eventually.Mixed) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Items calls spend and returns its zero results.
+func (o mixedOver) Items(context.Context) (r0 []string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) eventually.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:fffbe38b1054fcb097a6c6d6d970785d8984324d9158e45ed7fdc86c81b63d96

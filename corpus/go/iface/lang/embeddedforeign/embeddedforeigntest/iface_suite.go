@@ -5,8 +5,10 @@
 package embeddedforeigntest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign"
 )
@@ -43,9 +45,24 @@ type streamClose struct {
 	conform.Callable[embeddedforeign.Stream]
 }
 
-// StreamSuite returns the checks of Stream.
+// StreamSuite returns the checks of Stream, and the calls and the budgets
+// of its callables.
 func StreamSuite() conform.Suite[embeddedforeign.Stream] {
-	return conform.Suite[embeddedforeign.Stream]{Declaration: "Stream"}
+	return conform.Suite[embeddedforeign.Stream]{
+		Declaration: "Stream",
+		Calls: []conform.Call[embeddedforeign.Stream]{
+			{
+				Calls:    streamReadCalls,
+				Over:     newStreamOver,
+				Callable: StreamChecks.Read.Callable,
+			},
+			{
+				Calls:    streamCloseCalls,
+				Over:     newStreamOver,
+				Callable: StreamChecks.Close.Callable,
+			},
+		},
+	}
 }
 
 // RunStreamSuite applies the checks of Stream, and the checks that opts
@@ -84,4 +101,93 @@ func FuzzStreamSuite[T embeddedforeign.Stream](
 		opts...)
 }
 
-// dokimi:provenance sha256:744eb363629d043b8a0665134c09c91a8170b7ac405a7988830ec9dc0c355299
+// RunStreamBudgets applies the allocation ceilings of Stream, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunStreamBudgets[T embeddedforeign.Stream](
+	t *testing.T,
+	newSubject func(h *StreamHandle) T,
+	opts ...StreamOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, StreamSuite(), func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) }, opts...)
+}
+
+// BenchStreamSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchStreamSuite[T embeddedforeign.Stream](
+	b conform.B,
+	callable conform.Callable[embeddedforeign.Stream],
+	newSubject func(h *StreamHandle) T,
+	opts ...StreamOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		StreamSuite(),
+		callable,
+		func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) },
+		opts...)
+}
+
+// BenchStreamSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchStreamSuiteParallel[T embeddedforeign.Stream](
+	b *testing.B,
+	callable conform.Callable[embeddedforeign.Stream],
+	newSubject func(h *StreamHandle) T,
+	opts ...StreamOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		StreamSuite(),
+		callable,
+		func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) },
+		opts...)
+}
+
+// streamReadCalls generates the calls of Stream.Read with the inputs that
+// each case draws.
+var streamReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, embeddedforeign.Stream) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject embeddedforeign.Stream) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// streamCloseCalls generates the calls of Stream.Close with the inputs
+// that each case draws.
+var streamCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, embeddedforeign.Stream) error {
+	return func(_ context.Context, subject embeddedforeign.Stream) error {
+		return subject.Close()
+	}
+})
+
+// streamOver is a subject of Stream whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type streamOver struct {
+	embeddedforeign.Stream
+	spend func()
+}
+
+// Read calls spend and returns its zero results.
+func (o streamOver) Read(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Close calls spend and returns its zero results.
+func (o streamOver) Close() (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newStreamOver returns the planted defect of a ceiling of Stream, whose
+// callables call spend.
+func newStreamOver(_ *StreamHandle, spend func()) embeddedforeign.Stream {
+	return streamOver{spend: spend}
+}
+
+// dokimi:provenance sha256:5c9bcb923e6d6dc9a3cfbd6bf0776633fa796832ac21ca0d46bae8e8df0ead22

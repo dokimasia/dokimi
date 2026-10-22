@@ -18,6 +18,32 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	transactiontest.RunContractSuite(t, transactiontest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Run", func(b *testing.B) {
+		transactiontest.BenchContractSuite(
+			b,
+			transactiontest.ContractChecks.Run.Callable,
+			func(*transactiontest.ContractHandle) *transactiontest.InMemory { return transactiontest.NewInMemory() },
+		)
+	})
+	b.Run("Put", func(b *testing.B) {
+		transactiontest.BenchContractSuite(
+			b,
+			transactiontest.ContractChecks.Put.Callable,
+			func(*transactiontest.ContractHandle) *transactiontest.InMemory { return transactiontest.NewInMemory() },
+		)
+	})
+	b.Run("Get", func(b *testing.B) {
+		transactiontest.BenchContractSuite(
+			b,
+			transactiontest.ContractChecks.Get.Callable,
+			func(*transactiontest.ContractHandle) *transactiontest.InMemory { return transactiontest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryRun fuzzes the property checks of Contract.Run on InMemory.
 func FuzzInMemoryRun(f *testing.F) {
 	transactiontest.FuzzContractSuite(
@@ -45,4 +71,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:61b466caa644e6bd2102262bf6397f5eeacf4eb0776c3c7ef91b83fcdedeb3a7
+// dokimi:provenance sha256:2903dea8ba11f8cdd2d70bd3e96da004a4274a21541fed4cf651796ad2b9c92d

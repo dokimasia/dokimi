@@ -5,8 +5,10 @@
 package codeclossytest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	codeclossy "go.dokimi.dev/dokimi/corpus/go/iface/contract/codec-lossy"
 )
@@ -43,9 +45,24 @@ type contractDecode struct {
 	conform.Callable[codeclossy.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[codeclossy.Contract] {
-	return conform.Suite[codeclossy.Contract]{Declaration: "Contract"}
+	return conform.Suite[codeclossy.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[codeclossy.Contract]{
+			{
+				Calls:    contractEncodeCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Encode.Callable,
+			},
+			{
+				Calls:    contractDecodeCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Decode.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,99 @@ func FuzzContractSuite[T codeclossy.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:d66a86449eda916f106a7aca8591efd865f5257fc7410b19f17b78225fb13810
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T codeclossy.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ContractSuite(),
+		func(h *ContractHandle) codeclossy.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T codeclossy.Contract](
+	b conform.B,
+	callable conform.Callable[codeclossy.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) codeclossy.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T codeclossy.Contract](
+	b *testing.B,
+	callable conform.Callable[codeclossy.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) codeclossy.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractEncodeCalls generates the calls of Contract.Encode with the
+// inputs that each case draws.
+var contractEncodeCalls = prop.Composite(func(c *prop.Case) func(context.Context, codeclossy.Contract) error {
+	in := c.Draw(prop.Of[string](), "in")
+	return func(ctx context.Context, subject codeclossy.Contract) error {
+		_, err := subject.Encode(ctx, in)
+		return err
+	}
+})
+
+// contractDecodeCalls generates the calls of Contract.Decode with the
+// inputs that each case draws.
+var contractDecodeCalls = prop.Composite(func(c *prop.Case) func(context.Context, codeclossy.Contract) error {
+	in := c.Draw(prop.Of[string](), "in")
+	return func(ctx context.Context, subject codeclossy.Contract) error {
+		_, err := subject.Decode(ctx, in)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	codeclossy.Contract
+	spend func()
+}
+
+// Encode calls spend and returns its zero results.
+func (o contractOver) Encode(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Decode calls spend and returns its zero results.
+func (o contractOver) Decode(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) codeclossy.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:3b653eec8bf208867f7a79ea6de177ec73797ba9a1e3ce580c4a0387ad1c953c

@@ -5,8 +5,10 @@
 package answeringwritertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/answeringwriter"
 )
@@ -35,9 +37,19 @@ type answeringWriterPut struct {
 	conform.Callable[answeringwriter.AnsweringWriter]
 }
 
-// AnsweringWriterSuite returns the checks of AnsweringWriter.
+// AnsweringWriterSuite returns the checks of AnsweringWriter, and the
+// calls and the budgets of its callables.
 func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
-	return conform.Suite[answeringwriter.AnsweringWriter]{Declaration: "AnsweringWriter"}
+	return conform.Suite[answeringwriter.AnsweringWriter]{
+		Declaration: "AnsweringWriter",
+		Calls: []conform.Call[answeringwriter.AnsweringWriter]{
+			{
+				Calls:    answeringWriterPutCalls,
+				Over:     newAnsweringWriterOver,
+				Callable: AnsweringWriterChecks.Put.Callable,
+			},
+		},
+	}
 }
 
 // RunAnsweringWriterSuite applies the checks of AnsweringWriter, and the
@@ -84,4 +96,87 @@ func FuzzAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:7214368d7370e7ab0cc0a3ae77395e88aacff6fe89aeed97ae141ea73518a320
+// RunAnsweringWriterBudgets applies the allocation ceilings of
+// AnsweringWriter, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunAnsweringWriterBudgets[T answeringwriter.AnsweringWriter](
+	t *testing.T,
+	newSubject func(h *AnsweringWriterHandle) T,
+	opts ...AnsweringWriterOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		AnsweringWriterSuite(),
+		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchAnsweringWriterSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
+	b conform.B,
+	callable conform.Callable[answeringwriter.AnsweringWriter],
+	newSubject func(h *AnsweringWriterHandle) T,
+	opts ...AnsweringWriterOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		AnsweringWriterSuite(),
+		callable,
+		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchAnsweringWriterSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchAnsweringWriterSuiteParallel[T answeringwriter.AnsweringWriter](
+	b *testing.B,
+	callable conform.Callable[answeringwriter.AnsweringWriter],
+	newSubject func(h *AnsweringWriterHandle) T,
+	opts ...AnsweringWriterOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		AnsweringWriterSuite(),
+		callable,
+		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
+		opts...)
+}
+
+// answeringWriterPutCalls generates the calls of AnsweringWriter.Put with
+// the inputs that each case draws.
+var answeringWriterPutCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, answeringwriter.AnsweringWriter) error {
+		v := c.Draw(prop.Of[answeringwriter.Value](), "v")
+		return func(ctx context.Context, subject answeringwriter.AnsweringWriter) error {
+			_, err := subject.Put(ctx, v)
+			return err
+		}
+	},
+)
+
+// answeringWriterOver is a subject of AnsweringWriter whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type answeringWriterOver struct {
+	answeringwriter.AnsweringWriter
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o answeringWriterOver) Put(context.Context, answeringwriter.Value) (r0 answeringwriter.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newAnsweringWriterOver returns the planted defect of a ceiling of
+// AnsweringWriter, whose callables call spend.
+func newAnsweringWriterOver(_ *AnsweringWriterHandle, spend func()) answeringwriter.AnsweringWriter {
+	return answeringWriterOver{spend: spend}
+}
+
+// dokimi:provenance sha256:9718361511fdfef1bb0f11f3b633378347d345f27900018b4b36fc2de1eadccb

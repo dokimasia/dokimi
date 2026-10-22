@@ -5,8 +5,10 @@
 package puretest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pure"
 )
@@ -35,9 +37,19 @@ type pureDescribe struct {
 	conform.Callable[pure.Pure]
 }
 
-// PureSuite returns the checks of Pure.
+// PureSuite returns the checks of Pure, and the calls and the budgets of
+// its callables.
 func PureSuite() conform.Suite[pure.Pure] {
-	return conform.Suite[pure.Pure]{Declaration: "Pure"}
+	return conform.Suite[pure.Pure]{
+		Declaration: "Pure",
+		Calls: []conform.Call[pure.Pure]{
+			{
+				Calls:    pureDescribeCalls,
+				Over:     newPureOver,
+				Callable: PureChecks.Describe.Callable,
+			},
+		},
+	}
 }
 
 // RunPureSuite applies the checks of Pure, and the checks that opts add,
@@ -67,4 +79,64 @@ func FuzzPureSuite[T pure.Pure](
 	conform.Fuzz(f, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:b1c8566f1dc1302e5d8bf198963bd52af6cfdd55e3eb4157304954cfc7c3acd6
+// RunPureBudgets applies the allocation ceilings of Pure, and the ceilings
+// that opts add, to a fresh subject of newSubject for each case.
+func RunPureBudgets[T pure.Pure](t *testing.T, newSubject func(h *PureHandle) T, opts ...PureOption) {
+	t.Helper()
+	conform.RunBudgets(t, PureSuite(), func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+}
+
+// BenchPureSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchPureSuite[T pure.Pure](
+	b conform.B,
+	callable conform.Callable[pure.Pure],
+	newSubject func(h *PureHandle) T,
+	opts ...PureOption,
+) {
+	b.Helper()
+	conform.Bench(b, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+}
+
+// BenchPureSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchPureSuiteParallel[T pure.Pure](
+	b *testing.B,
+	callable conform.Callable[pure.Pure],
+	newSubject func(h *PureHandle) T,
+	opts ...PureOption,
+) {
+	b.Helper()
+	conform.BenchParallel(b, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+}
+
+// pureDescribeCalls generates the calls of Pure.Describe with the inputs
+// that each case draws.
+var pureDescribeCalls = prop.Composite(func(*prop.Case) func(context.Context, pure.Pure) error {
+	return func(_ context.Context, subject pure.Pure) error {
+		_ = subject.Describe()
+		return nil
+	}
+})
+
+// pureOver is a subject of Pure whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type pureOver struct {
+	pure.Pure
+	spend func()
+}
+
+// Describe calls spend and returns its zero results.
+func (o pureOver) Describe() (r0 string) {
+	o.spend()
+	return r0
+}
+
+// newPureOver returns the planted defect of a ceiling of Pure, whose
+// callables call spend.
+func newPureOver(_ *PureHandle, spend func()) pure.Pure {
+	return pureOver{spend: spend}
+}
+
+// dokimi:provenance sha256:0c1e4d2a02cf49c08f4b7722a68eef62d6d6528e7ca69ecf4d73111049403a0e

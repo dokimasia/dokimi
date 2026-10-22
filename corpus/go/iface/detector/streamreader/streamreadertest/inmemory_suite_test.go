@@ -18,6 +18,29 @@ func TestInMemoryConformsToStreamReader(t *testing.T) {
 	streamreadertest.RunStreamReaderSuite(t, streamreadertest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of StreamReader on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		streamreadertest.BenchStreamReaderSuite(
+			b,
+			streamreadertest.StreamReaderChecks.Add.Callable,
+			func(*streamreadertest.StreamReaderHandle) *streamreadertest.InMemory {
+				return streamreadertest.NewInMemory()
+			},
+		)
+	})
+	b.Run("List", func(b *testing.B) {
+		streamreadertest.BenchStreamReaderSuite(
+			b,
+			streamreadertest.StreamReaderChecks.List.Callable,
+			func(*streamreadertest.StreamReaderHandle) *streamreadertest.InMemory {
+				return streamreadertest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryAdd fuzzes the property checks of StreamReader.Add on
 // InMemory.
 func FuzzInMemoryAdd(f *testing.F) {
@@ -42,4 +65,4 @@ func FuzzInMemoryList(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:92c7c8296616cc4bfb70a7301464cb6c6471dd76afeb5e2eb23d7434790cbc9a
+// dokimi:provenance sha256:861b07ac3249cd781527123c1150c181f8a4d35cfae4b27448955abbc42bc614

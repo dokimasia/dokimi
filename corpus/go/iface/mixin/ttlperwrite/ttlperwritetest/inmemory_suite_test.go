@@ -18,6 +18,25 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	ttlperwritetest.RunMixedSuite(t, ttlperwritetest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		ttlperwritetest.BenchMixedSuite(
+			b,
+			ttlperwritetest.MixedChecks.Put.Callable,
+			func(*ttlperwritetest.MixedHandle) *ttlperwritetest.InMemory { return ttlperwritetest.NewInMemory() },
+		)
+	})
+	b.Run("Read", func(b *testing.B) {
+		ttlperwritetest.BenchMixedSuite(
+			b,
+			ttlperwritetest.MixedChecks.Read.Callable,
+			func(*ttlperwritetest.MixedHandle) *ttlperwritetest.InMemory { return ttlperwritetest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
 func FuzzInMemoryPut(f *testing.F) {
 	ttlperwritetest.FuzzMixedSuite(
@@ -36,4 +55,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3f23968500234e02256e7cfef6877f177abec820126f9c5fd2d1ff82acec8b58
+// dokimi:provenance sha256:02346d0bc4d931cccde8eec04301909b29b86b88fa144be9e9d2e5bbed270741

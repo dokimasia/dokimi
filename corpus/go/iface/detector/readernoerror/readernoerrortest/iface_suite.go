@@ -5,8 +5,10 @@
 package readernoerrortest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror"
 )
@@ -35,9 +37,19 @@ type readerNoErrorLookup struct {
 	conform.Callable[readernoerror.ReaderNoError]
 }
 
-// ReaderNoErrorSuite returns the checks of ReaderNoError.
+// ReaderNoErrorSuite returns the checks of ReaderNoError, and the calls
+// and the budgets of its callables.
 func ReaderNoErrorSuite() conform.Suite[readernoerror.ReaderNoError] {
-	return conform.Suite[readernoerror.ReaderNoError]{Declaration: "ReaderNoError"}
+	return conform.Suite[readernoerror.ReaderNoError]{
+		Declaration: "ReaderNoError",
+		Calls: []conform.Call[readernoerror.ReaderNoError]{
+			{
+				Calls:    readerNoErrorLookupCalls,
+				Over:     newReaderNoErrorOver,
+				Callable: ReaderNoErrorChecks.Lookup.Callable,
+			},
+		},
+	}
 }
 
 // RunReaderNoErrorSuite applies the checks of ReaderNoError, and the
@@ -84,4 +96,87 @@ func FuzzReaderNoErrorSuite[T readernoerror.ReaderNoError](
 		opts...)
 }
 
-// dokimi:provenance sha256:87ba9fd4fa3610637612127085c78390c68c13abf216db630084b485682796f5
+// RunReaderNoErrorBudgets applies the allocation ceilings of
+// ReaderNoError, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunReaderNoErrorBudgets[T readernoerror.ReaderNoError](
+	t *testing.T,
+	newSubject func(h *ReaderNoErrorHandle) T,
+	opts ...ReaderNoErrorOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ReaderNoErrorSuite(),
+		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
+		opts...)
+}
+
+// BenchReaderNoErrorSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchReaderNoErrorSuite[T readernoerror.ReaderNoError](
+	b conform.B,
+	callable conform.Callable[readernoerror.ReaderNoError],
+	newSubject func(h *ReaderNoErrorHandle) T,
+	opts ...ReaderNoErrorOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ReaderNoErrorSuite(),
+		callable,
+		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
+		opts...)
+}
+
+// BenchReaderNoErrorSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchReaderNoErrorSuiteParallel[T readernoerror.ReaderNoError](
+	b *testing.B,
+	callable conform.Callable[readernoerror.ReaderNoError],
+	newSubject func(h *ReaderNoErrorHandle) T,
+	opts ...ReaderNoErrorOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ReaderNoErrorSuite(),
+		callable,
+		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
+		opts...)
+}
+
+// readerNoErrorLookupCalls generates the calls of ReaderNoError.Lookup
+// with the inputs that each case draws.
+var readerNoErrorLookupCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, readernoerror.ReaderNoError) error {
+		key := c.Draw(prop.Of[string](), "key")
+		return func(ctx context.Context, subject readernoerror.ReaderNoError) error {
+			_ = subject.Lookup(ctx, key)
+			return nil
+		}
+	},
+)
+
+// readerNoErrorOver is a subject of ReaderNoError whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type readerNoErrorOver struct {
+	readernoerror.ReaderNoError
+	spend func()
+}
+
+// Lookup calls spend and returns its zero results.
+func (o readerNoErrorOver) Lookup(context.Context, string) (r0 readernoerror.Value) {
+	o.spend()
+	return r0
+}
+
+// newReaderNoErrorOver returns the planted defect of a ceiling of
+// ReaderNoError, whose callables call spend.
+func newReaderNoErrorOver(_ *ReaderNoErrorHandle, spend func()) readernoerror.ReaderNoError {
+	return readerNoErrorOver{spend: spend}
+}
+
+// dokimi:provenance sha256:77c5bddf4cb887c31f571c596c673c5d10e37ddbf48014b13a6138a16caeff65

@@ -18,6 +18,20 @@ func TestInMemoryConformsToVoidLifecycle(t *testing.T) {
 	voidlifecycletest.RunVoidLifecycleSuite(t, voidlifecycletest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of VoidLifecycle
+// on InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Stop", func(b *testing.B) {
+		voidlifecycletest.BenchVoidLifecycleSuite(
+			b,
+			voidlifecycletest.VoidLifecycleChecks.Stop.Callable,
+			func(*voidlifecycletest.VoidLifecycleHandle) *voidlifecycletest.InMemory {
+				return voidlifecycletest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryStop fuzzes the property checks of VoidLifecycle.Stop on
 // InMemory.
 func FuzzInMemoryStop(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryStop(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0ba99ac283d8e182bc167ef928e9a883035ebf52872114412f8b497d754bdd71
+// dokimi:provenance sha256:0a26fad744bb16f7d56418fbbfb3c07d2501f46bfdd522a29d0c698f65eaecf3

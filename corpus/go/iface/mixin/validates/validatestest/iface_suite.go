@@ -5,8 +5,10 @@
 package validatestest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/validates"
 )
@@ -50,9 +52,29 @@ type mixedRead struct {
 	conform.Callable[validates.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[validates.Mixed] {
-	return conform.Suite[validates.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[validates.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[validates.Mixed]{
+			{
+				Calls:    mixedStoreCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Store.Callable,
+			},
+			{
+				Calls:    mixedValidateCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Validate.Callable,
+			},
+			{
+				Calls:    mixedReadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Read.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -82,4 +104,100 @@ func FuzzMixedSuite[T validates.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) validates.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:a3537eb639f86c0fb851e2ecbe7830d936b8abb2a07f29a3718ddb9b8b3e7995
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T validates.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) validates.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T validates.Mixed](
+	b conform.B,
+	callable conform.Callable[validates.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) validates.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T validates.Mixed](
+	b *testing.B,
+	callable conform.Callable[validates.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) validates.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedStoreCalls generates the calls of Mixed.Store with the inputs that
+// each case draws.
+var mixedStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, validates.Mixed) error {
+	v := c.Draw(prop.Of[validates.Payload](), "v")
+	return func(ctx context.Context, subject validates.Mixed) error {
+		return subject.Store(ctx, v)
+	}
+})
+
+// mixedValidateCalls generates the calls of Mixed.Validate with the inputs
+// that each case draws.
+var mixedValidateCalls = prop.Composite(func(c *prop.Case) func(context.Context, validates.Mixed) error {
+	v := c.Draw(prop.Of[validates.Payload](), "v")
+	return func(_ context.Context, subject validates.Mixed) error {
+		return subject.Validate(v)
+	}
+})
+
+// mixedReadCalls generates the calls of Mixed.Read with the inputs that
+// each case draws.
+var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, validates.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject validates.Mixed) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	validates.Mixed
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o mixedOver) Store(context.Context, validates.Payload) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Validate calls spend and returns its zero results.
+func (o mixedOver) Validate(validates.Payload) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o mixedOver) Read(context.Context, string) (r0 validates.Payload, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) validates.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:d82bd7a97f372cf96b24aff7be0a65f8b68a671529fc3fcfded47e79a5e81958

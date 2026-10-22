@@ -5,8 +5,10 @@
 package pointerreadertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader"
 )
@@ -35,9 +37,19 @@ type pointerReaderFind struct {
 	conform.Callable[pointerreader.PointerReader]
 }
 
-// PointerReaderSuite returns the checks of PointerReader.
+// PointerReaderSuite returns the checks of PointerReader, and the calls
+// and the budgets of its callables.
 func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
-	return conform.Suite[pointerreader.PointerReader]{Declaration: "PointerReader"}
+	return conform.Suite[pointerreader.PointerReader]{
+		Declaration: "PointerReader",
+		Calls: []conform.Call[pointerreader.PointerReader]{
+			{
+				Calls:    pointerReaderFindCalls,
+				Over:     newPointerReaderOver,
+				Callable: PointerReaderChecks.Find.Callable,
+			},
+		},
+	}
 }
 
 // RunPointerReaderSuite applies the checks of PointerReader, and the
@@ -84,4 +96,87 @@ func FuzzPointerReaderSuite[T pointerreader.PointerReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:900942c4bda828e82c010d907d83e7f5fbdc1e1ed4ca338fd659799180bd4f5d
+// RunPointerReaderBudgets applies the allocation ceilings of
+// PointerReader, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunPointerReaderBudgets[T pointerreader.PointerReader](
+	t *testing.T,
+	newSubject func(h *PointerReaderHandle) T,
+	opts ...PointerReaderOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		PointerReaderSuite(),
+		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchPointerReaderSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchPointerReaderSuite[T pointerreader.PointerReader](
+	b conform.B,
+	callable conform.Callable[pointerreader.PointerReader],
+	newSubject func(h *PointerReaderHandle) T,
+	opts ...PointerReaderOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		PointerReaderSuite(),
+		callable,
+		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchPointerReaderSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchPointerReaderSuiteParallel[T pointerreader.PointerReader](
+	b *testing.B,
+	callable conform.Callable[pointerreader.PointerReader],
+	newSubject func(h *PointerReaderHandle) T,
+	opts ...PointerReaderOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		PointerReaderSuite(),
+		callable,
+		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
+		opts...)
+}
+
+// pointerReaderFindCalls generates the calls of PointerReader.Find with
+// the inputs that each case draws.
+var pointerReaderFindCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, pointerreader.PointerReader) error {
+		key := c.Draw(prop.Of[string](), "key")
+		return func(ctx context.Context, subject pointerreader.PointerReader) error {
+			_ = subject.Find(ctx, key)
+			return nil
+		}
+	},
+)
+
+// pointerReaderOver is a subject of PointerReader whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type pointerReaderOver struct {
+	pointerreader.PointerReader
+	spend func()
+}
+
+// Find calls spend and returns its zero results.
+func (o pointerReaderOver) Find(context.Context, string) (r0 *pointerreader.Value) {
+	o.spend()
+	return r0
+}
+
+// newPointerReaderOver returns the planted defect of a ceiling of
+// PointerReader, whose callables call spend.
+func newPointerReaderOver(_ *PointerReaderHandle, spend func()) pointerreader.PointerReader {
+	return pointerReaderOver{spend: spend}
+}
+
+// dokimi:provenance sha256:28c77c206fa02e33ece0621a96e18dc93df6445710f8b48a05cb9e402f1f4ad5

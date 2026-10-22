@@ -5,8 +5,11 @@
 package crdtmergetest
 
 import (
+	"context"
+	"sync/atomic"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge"
 )
@@ -50,9 +53,29 @@ type mixedItems struct {
 	conform.Callable[crdtmerge.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[crdtmerge.Mixed] {
-	return conform.Suite[crdtmerge.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[crdtmerge.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[crdtmerge.Mixed]{
+			{
+				Calls:    mixedMergeCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Merge.Callable,
+			},
+			{
+				Calls:    mixedAddCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Add.Callable,
+			},
+			{
+				Calls:    mixedItemsCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Items.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -82,4 +105,131 @@ func FuzzMixedSuite[T crdtmerge.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:efada87c93d499beee846ba1531a73588d9ad3577ccd5b0fecef7bcf9c5310a6
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T crdtmerge.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T crdtmerge.Mixed](
+	b conform.B,
+	callable conform.Callable[crdtmerge.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T crdtmerge.Mixed](
+	b *testing.B,
+	callable conform.Callable[crdtmerge.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedMergeCalls generates the calls of Mixed.Merge with the inputs that
+// each case draws.
+var mixedMergeCalls = prop.Composite(func(c *prop.Case) func(context.Context, crdtmerge.Mixed) error {
+	peerItemsResults0 := c.Draw(prop.List(prop.Of[[]string]()), "peer-items-0")
+	peerItemsResults1 := c.Draw(
+		prop.List(
+			prop.SampledFrom[error](nil, conform.ErrGenerated),
+			prop.MinSize(len(peerItemsResults0)),
+			prop.MaxSize(len(peerItemsResults0)),
+		),
+		"peer-items-1",
+	)
+	var peerItemsAt atomic.Int64
+	peer := mixedReplicaInput{
+		onItems: func(context.Context) (r0 []string, r1 error) {
+			i := int(peerItemsAt.Add(1) - 1)
+			if i >= len(peerItemsResults0) {
+				r1 = conform.ErrGenerated
+				return r0, r1
+			}
+			return peerItemsResults0[i],
+				peerItemsResults1[i]
+		},
+	}
+	return func(ctx context.Context, subject crdtmerge.Mixed) error {
+		return subject.Merge(ctx, peer)
+	}
+})
+
+// mixedAddCalls generates the calls of Mixed.Add with the inputs that each
+// case draws.
+var mixedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, crdtmerge.Mixed) error {
+	item := c.Draw(prop.Of[string](), "item")
+	return func(ctx context.Context, subject crdtmerge.Mixed) error {
+		return subject.Add(ctx, item)
+	}
+})
+
+// mixedItemsCalls generates the calls of Mixed.Items with the inputs that
+// each case draws.
+var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, crdtmerge.Mixed) error {
+	return func(ctx context.Context, subject crdtmerge.Mixed) error {
+		_, err := subject.Items(ctx)
+		return err
+	}
+})
+
+// mixedReplicaInput is a Replica whose methods return the results that the
+// call generators of Mixed draw for them, in turn.
+type mixedReplicaInput struct {
+	crdtmerge.Replica
+	onItems func(a0 context.Context) ([]string, error)
+}
+
+// Items calls the function of Items.
+func (in mixedReplicaInput) Items(a0 context.Context) ([]string, error) {
+	return in.onItems(a0)
+}
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	crdtmerge.Mixed
+	spend func()
+}
+
+// Merge calls spend and returns its zero results.
+func (o mixedOver) Merge(context.Context, crdtmerge.Replica) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Add calls spend and returns its zero results.
+func (o mixedOver) Add(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Items calls spend and returns its zero results.
+func (o mixedOver) Items(context.Context) (r0 []string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) crdtmerge.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:fe97a7366c7551d86d2bc23c9daab4d515b0aea5dd329a805bf4e8aea6af328d

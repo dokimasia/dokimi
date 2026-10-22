@@ -18,6 +18,44 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	concurrentreaderstest.RunMixedSuite(t, concurrentreaderstest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		concurrentreaderstest.BenchMixedSuite(
+			b,
+			concurrentreaderstest.MixedChecks.Get.Callable,
+			func(*concurrentreaderstest.MixedHandle) *concurrentreaderstest.InMemory {
+				return concurrentreaderstest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Put", func(b *testing.B) {
+		concurrentreaderstest.BenchMixedSuite(
+			b,
+			concurrentreaderstest.MixedChecks.Put.Callable,
+			func(*concurrentreaderstest.MixedHandle) *concurrentreaderstest.InMemory {
+				return concurrentreaderstest.NewInMemory()
+			},
+		)
+	})
+}
+
+// BenchmarkInMemoryParallel measures each callable of the suite of Mixed
+// that admits concurrent calls on InMemory, on GOMAXPROCS goroutines at
+// once.
+func BenchmarkInMemoryParallel(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		concurrentreaderstest.BenchMixedSuiteParallel(
+			b,
+			concurrentreaderstest.MixedChecks.Get.Callable,
+			func(*concurrentreaderstest.MixedHandle) *concurrentreaderstest.InMemory {
+				return concurrentreaderstest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
 func FuzzInMemoryGet(f *testing.F) {
 	concurrentreaderstest.FuzzMixedSuite(
@@ -40,4 +78,4 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:89e24737883cef01ddbc830b0b5b81e0c456278966afe1f1fd2aef8333342e01
+// dokimi:provenance sha256:c079cf37ede73a6180421981c8d690fffdbedf228020500b037be89d5fcd3482

@@ -18,6 +18,25 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	deprecatedtest.RunMixedSuite(t, deprecatedtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Old", func(b *testing.B) {
+		deprecatedtest.BenchMixedSuite(
+			b,
+			deprecatedtest.MixedChecks.Old.Callable,
+			func(*deprecatedtest.MixedHandle) *deprecatedtest.InMemory { return deprecatedtest.NewInMemory() },
+		)
+	})
+	b.Run("New", func(b *testing.B) {
+		deprecatedtest.BenchMixedSuite(
+			b,
+			deprecatedtest.MixedChecks.New.Callable,
+			func(*deprecatedtest.MixedHandle) *deprecatedtest.InMemory { return deprecatedtest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryOld fuzzes the property checks of Mixed.Old on InMemory.
 func FuzzInMemoryOld(f *testing.F) {
 	deprecatedtest.FuzzMixedSuite(
@@ -36,4 +55,4 @@ func FuzzInMemoryNew(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ce2831bb167daf40b7b59924fb57b05189860a51b58287dc9ad653f5dd367043
+// dokimi:provenance sha256:34cadef431e7d21b2db1ca84b9e8286aced9d07353962ccd23c1752da4f31ce1

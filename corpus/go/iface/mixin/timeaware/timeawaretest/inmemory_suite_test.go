@@ -18,6 +18,25 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	timeawaretest.RunMixedSuite(t, timeawaretest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Touch", func(b *testing.B) {
+		timeawaretest.BenchMixedSuite(
+			b,
+			timeawaretest.MixedChecks.Touch.Callable,
+			func(*timeawaretest.MixedHandle) *timeawaretest.InMemory { return timeawaretest.NewInMemory() },
+		)
+	})
+	b.Run("AgeOf", func(b *testing.B) {
+		timeawaretest.BenchMixedSuite(
+			b,
+			timeawaretest.MixedChecks.AgeOf.Callable,
+			func(*timeawaretest.MixedHandle) *timeawaretest.InMemory { return timeawaretest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryTouch fuzzes the property checks of Mixed.Touch on InMemory.
 func FuzzInMemoryTouch(f *testing.F) {
 	timeawaretest.FuzzMixedSuite(
@@ -36,4 +55,4 @@ func FuzzInMemoryAgeOf(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:70af6ab4263204062db650b96c5c08fcfab78862f506fb6364652b983f9b1565
+// dokimi:provenance sha256:f132e9d9c612f02e4feb120752afa4417a76a77948f608fb67137cdd5a24acfa

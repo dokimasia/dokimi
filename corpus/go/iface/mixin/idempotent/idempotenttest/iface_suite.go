@@ -5,8 +5,10 @@
 package idempotenttest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotent"
 )
@@ -41,9 +43,24 @@ type mixedRead struct {
 	conform.Callable[idempotent.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[idempotent.Mixed] {
-	return conform.Suite[idempotent.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[idempotent.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[idempotent.Mixed]{
+			{
+				Calls:    mixedPutCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Put.Callable,
+			},
+			{
+				Calls:    mixedReadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Read.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -73,4 +90,86 @@ func FuzzMixedSuite[T idempotent.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:df3d6637d9ed9e5eeec5685b7f2eb6110f7cb7fb87532cc05b0f4fb234d2436f
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T idempotent.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T idempotent.Mixed](
+	b conform.B,
+	callable conform.Callable[idempotent.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T idempotent.Mixed](
+	b *testing.B,
+	callable conform.Callable[idempotent.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) idempotent.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedPutCalls generates the calls of Mixed.Put with the inputs that each
+// case draws.
+var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, idempotent.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
+	return func(ctx context.Context, subject idempotent.Mixed) error {
+		return subject.Put(ctx, key, value)
+	}
+})
+
+// mixedReadCalls generates the calls of Mixed.Read with the inputs that
+// each case draws.
+var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, idempotent.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject idempotent.Mixed) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	idempotent.Mixed
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o mixedOver) Put(context.Context, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o mixedOver) Read(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) idempotent.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:93aaf4cc4781045ef6b387d28affe07e979be7ac8fc9976c1b9fe453fc089160

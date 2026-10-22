@@ -5,8 +5,10 @@
 package timeawaretest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeaware"
 )
@@ -43,9 +45,24 @@ type mixedAgeOf struct {
 	conform.Callable[timeaware.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[timeaware.Mixed] {
-	return conform.Suite[timeaware.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[timeaware.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[timeaware.Mixed]{
+			{
+				Calls:    mixedTouchCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Touch.Callable,
+			},
+			{
+				Calls:    mixedAgeOfCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.AgeOf.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -75,4 +92,85 @@ func FuzzMixedSuite[T timeaware.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:1c76f2d6497f76fd4784865539ae564474381ae78295c578707177fa27119e51
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T timeaware.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T timeaware.Mixed](
+	b conform.B,
+	callable conform.Callable[timeaware.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T timeaware.Mixed](
+	b *testing.B,
+	callable conform.Callable[timeaware.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) timeaware.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedTouchCalls generates the calls of Mixed.Touch with the inputs that
+// each case draws.
+var mixedTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, timeaware.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject timeaware.Mixed) error {
+		return subject.Touch(ctx, key)
+	}
+})
+
+// mixedAgeOfCalls generates the calls of Mixed.AgeOf with the inputs that
+// each case draws.
+var mixedAgeOfCalls = prop.Composite(func(c *prop.Case) func(context.Context, timeaware.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject timeaware.Mixed) error {
+		_, err := subject.AgeOf(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	timeaware.Mixed
+	spend func()
+}
+
+// Touch calls spend and returns its zero results.
+func (o mixedOver) Touch(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// AgeOf calls spend and returns its zero results.
+func (o mixedOver) AgeOf(context.Context, string) (r0 int64, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) timeaware.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:625d8ccc2406d5136d1a0e01d1c2c80bbfcd9158beef81e184339b485829ec33

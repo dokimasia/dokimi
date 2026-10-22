@@ -5,8 +5,10 @@
 package stableordertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/stableorder"
 )
@@ -42,9 +44,24 @@ type mixedItems struct {
 	conform.Callable[stableorder.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[stableorder.Mixed] {
-	return conform.Suite[stableorder.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[stableorder.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[stableorder.Mixed]{
+			{
+				Calls:    mixedAddCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Add.Callable,
+			},
+			{
+				Calls:    mixedItemsCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Items.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -78,4 +95,84 @@ func FuzzMixedSuite[T stableorder.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) stableorder.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:a2d2942db757a2bb6a4c329edede806da934e20b72ed06cc382501fcfb0a0ebe
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T stableorder.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) stableorder.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T stableorder.Mixed](
+	b conform.B,
+	callable conform.Callable[stableorder.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) stableorder.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T stableorder.Mixed](
+	b *testing.B,
+	callable conform.Callable[stableorder.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) stableorder.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedAddCalls generates the calls of Mixed.Add with the inputs that each
+// case draws.
+var mixedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, stableorder.Mixed) error {
+	v := c.Draw(prop.Of[stableorder.Value](), "v")
+	return func(ctx context.Context, subject stableorder.Mixed) error {
+		return subject.Add(ctx, v)
+	}
+})
+
+// mixedItemsCalls generates the calls of Mixed.Items with the inputs that
+// each case draws.
+var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, stableorder.Mixed) error {
+	return func(ctx context.Context, subject stableorder.Mixed) error {
+		_, err := subject.Items(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	stableorder.Mixed
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o mixedOver) Add(context.Context, stableorder.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Items calls spend and returns its zero results.
+func (o mixedOver) Items(context.Context) (r0 []stableorder.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) stableorder.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:2725672ef0c41549cebb7992f2fbe4c755d7e61793f1bbc593bb97ac47e91ded

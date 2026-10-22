@@ -5,8 +5,11 @@
 package streamreadertest
 
 import (
+	"context"
+	"iter"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader"
 )
@@ -43,9 +46,24 @@ type streamReaderList struct {
 	conform.Callable[streamreader.StreamReader]
 }
 
-// StreamReaderSuite returns the checks of StreamReader.
+// StreamReaderSuite returns the checks of StreamReader, and the calls and
+// the budgets of its callables.
 func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
-	return conform.Suite[streamreader.StreamReader]{Declaration: "StreamReader"}
+	return conform.Suite[streamreader.StreamReader]{
+		Declaration: "StreamReader",
+		Calls: []conform.Call[streamreader.StreamReader]{
+			{
+				Calls:    streamReaderAddCalls,
+				Over:     newStreamReaderOver,
+				Callable: StreamReaderChecks.Add.Callable,
+			},
+			{
+				Calls:    streamReaderListCalls,
+				Over:     newStreamReaderOver,
+				Callable: StreamReaderChecks.List.Callable,
+			},
+		},
+	}
 }
 
 // RunStreamReaderSuite applies the checks of StreamReader, and the checks
@@ -88,4 +106,99 @@ func FuzzStreamReaderSuite[T streamreader.StreamReader](
 		opts...)
 }
 
-// dokimi:provenance sha256:86cfface0df4c935c2887d0fb898f2f48b3bb4bbe92283f13ea29ee057772e41
+// RunStreamReaderBudgets applies the allocation ceilings of StreamReader,
+// and the ceilings that opts add, to a fresh subject of newSubject for
+// each case.
+func RunStreamReaderBudgets[T streamreader.StreamReader](
+	t *testing.T,
+	newSubject func(h *StreamReaderHandle) T,
+	opts ...StreamReaderOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		StreamReaderSuite(),
+		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchStreamReaderSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchStreamReaderSuite[T streamreader.StreamReader](
+	b conform.B,
+	callable conform.Callable[streamreader.StreamReader],
+	newSubject func(h *StreamReaderHandle) T,
+	opts ...StreamReaderOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		StreamReaderSuite(),
+		callable,
+		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
+		opts...)
+}
+
+// BenchStreamReaderSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchStreamReaderSuiteParallel[T streamreader.StreamReader](
+	b *testing.B,
+	callable conform.Callable[streamreader.StreamReader],
+	newSubject func(h *StreamReaderHandle) T,
+	opts ...StreamReaderOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		StreamReaderSuite(),
+		callable,
+		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
+		opts...)
+}
+
+// streamReaderAddCalls generates the calls of StreamReader.Add with the
+// inputs that each case draws.
+var streamReaderAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, streamreader.StreamReader) error {
+	v := c.Draw(prop.Of[streamreader.Value](), "v")
+	return func(ctx context.Context, subject streamreader.StreamReader) error {
+		return subject.Add(ctx, v)
+	}
+})
+
+// streamReaderListCalls generates the calls of StreamReader.List with the
+// inputs that each case draws.
+var streamReaderListCalls = prop.Composite(func(*prop.Case) func(context.Context, streamreader.StreamReader) error {
+	return func(ctx context.Context, subject streamreader.StreamReader) error {
+		_ = subject.List(ctx)
+		return nil
+	}
+})
+
+// streamReaderOver is a subject of StreamReader whose callables call spend
+// and return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type streamReaderOver struct {
+	streamreader.StreamReader
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o streamReaderOver) Add(context.Context, streamreader.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// List calls spend and returns its zero results.
+func (o streamReaderOver) List(context.Context) (r0 iter.Seq2[streamreader.Value, error]) {
+	o.spend()
+	return r0
+}
+
+// newStreamReaderOver returns the planted defect of a ceiling of
+// StreamReader, whose callables call spend.
+func newStreamReaderOver(_ *StreamReaderHandle, spend func()) streamreader.StreamReader {
+	return streamReaderOver{spend: spend}
+}
+
+// dokimi:provenance sha256:22998056387969580d9f2ecd7eb4d157b8df588240a720e23f825a99fabd74bd

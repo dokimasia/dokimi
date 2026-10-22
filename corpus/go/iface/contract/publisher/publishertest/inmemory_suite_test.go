@@ -18,6 +18,25 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	publishertest.RunContractSuite(t, publishertest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Publish", func(b *testing.B) {
+		publishertest.BenchContractSuite(
+			b,
+			publishertest.ContractChecks.Publish.Callable,
+			func(*publishertest.ContractHandle) *publishertest.InMemory { return publishertest.NewInMemory() },
+		)
+	})
+	b.Run("Subscribe", func(b *testing.B) {
+		publishertest.BenchContractSuite(
+			b,
+			publishertest.ContractChecks.Subscribe.Callable,
+			func(*publishertest.ContractHandle) *publishertest.InMemory { return publishertest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryPublish fuzzes the property checks of Contract.Publish on
 // InMemory.
 func FuzzInMemoryPublish(f *testing.F) {
@@ -38,4 +57,4 @@ func FuzzInMemorySubscribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:1653ccbe6b34e1d1adb9d8c88e62981efc896fa2e6b5eea845bd38100185319c
+// dokimi:provenance sha256:26c240c47757060e6593e5e01698a13e99f60f9979490d6144763f8f3af81948

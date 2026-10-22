@@ -5,8 +5,10 @@
 package nilsafetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe"
 )
@@ -35,9 +37,19 @@ type mixedStore struct {
 	conform.Callable[nilsafe.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[nilsafe.Mixed] {
-	return conform.Suite[nilsafe.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[nilsafe.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[nilsafe.Mixed]{
+			{
+				Calls:    mixedStoreCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Store.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -67,4 +79,69 @@ func FuzzMixedSuite[T nilsafe.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) nilsafe.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:0a71d739532c6c3732030c0f52a66361026f88fdd374e94f303913f2bd7e6808
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T nilsafe.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) nilsafe.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T nilsafe.Mixed](
+	b conform.B,
+	callable conform.Callable[nilsafe.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) nilsafe.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T nilsafe.Mixed](
+	b *testing.B,
+	callable conform.Callable[nilsafe.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) nilsafe.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedStoreCalls generates the calls of Mixed.Store with the inputs that
+// each case draws.
+var mixedStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, nilsafe.Mixed) error {
+	v := c.Draw(prop.Of[*nilsafe.Payload](), "v")
+	return func(ctx context.Context, subject nilsafe.Mixed) error {
+		return subject.Store(ctx, v)
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	nilsafe.Mixed
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o mixedOver) Store(context.Context, *nilsafe.Payload) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) nilsafe.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:93b1346db1d42d777b4d6beb6847c89272a6d57299d3dd8438e025aa0f1158df

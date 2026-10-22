@@ -18,6 +18,20 @@ func TestInMemoryConformsToCompositeWriter(t *testing.T) {
 	compositewritertest.RunCompositeWriterSuite(t, compositewritertest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of CompositeWriter
+// on InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		compositewritertest.BenchCompositeWriterSuite(
+			b,
+			compositewritertest.CompositeWriterChecks.Set.Callable,
+			func(*compositewritertest.CompositeWriterHandle) *compositewritertest.InMemory {
+				return compositewritertest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemorySet fuzzes the property checks of CompositeWriter.Set on
 // InMemory.
 func FuzzInMemorySet(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemorySet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:477c1b866de7713cda4cabb8858eef2228fc2883fbfe90026f3d551219bd5186
+// dokimi:provenance sha256:b37ad860b269e989244f77ed1ec280eaeb972c5ae9be86d55a050ce4ca3047ca

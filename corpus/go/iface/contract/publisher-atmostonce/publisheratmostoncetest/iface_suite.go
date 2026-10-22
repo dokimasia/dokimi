@@ -5,8 +5,10 @@
 package publisheratmostoncetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	publisheratmostonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atmostonce"
 )
@@ -43,9 +45,24 @@ type contractSubscribe struct {
 	conform.Callable[publisheratmostonce.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[publisheratmostonce.Contract] {
-	return conform.Suite[publisheratmostonce.Contract]{Declaration: "Contract"}
+	return conform.Suite[publisheratmostonce.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[publisheratmostonce.Contract]{
+			{
+				Calls:    contractPublishCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Publish.Callable,
+			},
+			{
+				Calls:    contractSubscribeCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Subscribe.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -88,4 +105,97 @@ func FuzzContractSuite[T publisheratmostonce.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:d57776526da321ad044a8dea66c9c84eaa29304e15b917c1a99b4bdb5295aaf4
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T publisheratmostonce.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ContractSuite(),
+		func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T publisheratmostonce.Contract](
+	b conform.B,
+	callable conform.Callable[publisheratmostonce.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T publisheratmostonce.Contract](
+	b *testing.B,
+	callable conform.Callable[publisheratmostonce.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractPublishCalls generates the calls of Contract.Publish with the
+// inputs that each case draws.
+var contractPublishCalls = prop.Composite(func(c *prop.Case) func(context.Context, publisheratmostonce.Contract) error {
+	v := c.Draw(prop.Of[publisheratmostonce.Value](), "v")
+	return func(ctx context.Context, subject publisheratmostonce.Contract) error {
+		return subject.Publish(ctx, v)
+	}
+})
+
+// contractSubscribeCalls generates the calls of Contract.Subscribe with
+// the inputs that each case draws.
+var contractSubscribeCalls = prop.Composite(func(*prop.Case) func(context.Context, publisheratmostonce.Contract) error {
+	return func(ctx context.Context, subject publisheratmostonce.Contract) error {
+		_, err := subject.Subscribe(ctx)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	publisheratmostonce.Contract
+	spend func()
+}
+
+// Publish calls spend and returns its zero results.
+func (o contractOver) Publish(context.Context, publisheratmostonce.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Subscribe calls spend and returns its zero results.
+func (o contractOver) Subscribe(context.Context) (r0 <-chan publisheratmostonce.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) publisheratmostonce.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:fcdd870fa0309d785463bfd5f9d43047508070e1f27bffe4023995c1b1ef722d

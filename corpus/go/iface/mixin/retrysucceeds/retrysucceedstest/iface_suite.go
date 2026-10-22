@@ -5,8 +5,10 @@
 package retrysucceedstest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/retrysucceeds"
 )
@@ -42,9 +44,24 @@ type mixedAttempts struct {
 	conform.Callable[retrysucceeds.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[retrysucceeds.Mixed] {
-	return conform.Suite[retrysucceeds.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[retrysucceeds.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[retrysucceeds.Mixed]{
+			{
+				Calls:    mixedCallCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Call.Callable,
+			},
+			{
+				Calls:    mixedAttemptsCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Attempts.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -78,4 +95,84 @@ func FuzzMixedSuite[T retrysucceeds.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) retrysucceeds.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:de3dd7ec8af9f9794765a3fab694f352ec3803fd0dee077b5c0ca6b801d1b55d
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T retrysucceeds.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) retrysucceeds.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T retrysucceeds.Mixed](
+	b conform.B,
+	callable conform.Callable[retrysucceeds.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) retrysucceeds.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T retrysucceeds.Mixed](
+	b *testing.B,
+	callable conform.Callable[retrysucceeds.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) retrysucceeds.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedCallCalls generates the calls of Mixed.Call with the inputs that
+// each case draws.
+var mixedCallCalls = prop.Composite(func(c *prop.Case) func(context.Context, retrysucceeds.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject retrysucceeds.Mixed) error {
+		return subject.Call(ctx, key)
+	}
+})
+
+// mixedAttemptsCalls generates the calls of Mixed.Attempts with the inputs
+// that each case draws.
+var mixedAttemptsCalls = prop.Composite(func(*prop.Case) func(context.Context, retrysucceeds.Mixed) error {
+	return func(ctx context.Context, subject retrysucceeds.Mixed) error {
+		_, err := subject.Attempts(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	retrysucceeds.Mixed
+	spend func()
+}
+
+// Call calls spend and returns its zero results.
+func (o mixedOver) Call(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Attempts calls spend and returns its zero results.
+func (o mixedOver) Attempts(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) retrysucceeds.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:caec6842f51ff354967e518c69649d6ea0db9e701ea116605d8fca59207f7213

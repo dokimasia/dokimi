@@ -5,8 +5,10 @@
 package deleteremovestest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deleteremoves"
 )
@@ -49,9 +51,29 @@ type mixedRead struct {
 	conform.Callable[deleteremoves.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[deleteremoves.Mixed] {
-	return conform.Suite[deleteremoves.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[deleteremoves.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[deleteremoves.Mixed]{
+			{
+				Calls:    mixedDeleteCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Delete.Callable,
+			},
+			{
+				Calls:    mixedPutCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Put.Callable,
+			},
+			{
+				Calls:    mixedReadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Read.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -85,4 +107,101 @@ func FuzzMixedSuite[T deleteremoves.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) deleteremoves.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:ffc7b7df0b0c63bde95a20b71e06df3400fe023bd154ad3e578a2d09cf1c762d
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T deleteremoves.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) deleteremoves.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T deleteremoves.Mixed](
+	b conform.B,
+	callable conform.Callable[deleteremoves.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) deleteremoves.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T deleteremoves.Mixed](
+	b *testing.B,
+	callable conform.Callable[deleteremoves.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) deleteremoves.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedDeleteCalls generates the calls of Mixed.Delete with the inputs
+// that each case draws.
+var mixedDeleteCalls = prop.Composite(func(c *prop.Case) func(context.Context, deleteremoves.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject deleteremoves.Mixed) error {
+		return subject.Delete(ctx, key)
+	}
+})
+
+// mixedPutCalls generates the calls of Mixed.Put with the inputs that each
+// case draws.
+var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, deleteremoves.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
+	return func(ctx context.Context, subject deleteremoves.Mixed) error {
+		return subject.Put(ctx, key, value)
+	}
+})
+
+// mixedReadCalls generates the calls of Mixed.Read with the inputs that
+// each case draws.
+var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, deleteremoves.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject deleteremoves.Mixed) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	deleteremoves.Mixed
+	spend func()
+}
+
+// Delete calls spend and returns its zero results.
+func (o mixedOver) Delete(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Put calls spend and returns its zero results.
+func (o mixedOver) Put(context.Context, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o mixedOver) Read(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) deleteremoves.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:c8bb9567a40124a7335cbc0ed6ae6546cd97fa291256d0469ebb505504e6ae96

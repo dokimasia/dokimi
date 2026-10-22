@@ -18,6 +18,20 @@ func TestInMemoryConformsToBatchReader(t *testing.T) {
 	batchreadertest.RunBatchReaderSuite(t, batchreadertest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of BatchReader on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("GetAll", func(b *testing.B) {
+		batchreadertest.BenchBatchReaderSuite(
+			b,
+			batchreadertest.BatchReaderChecks.GetAll.Callable,
+			func(*batchreadertest.BatchReaderHandle) *batchreadertest.InMemory {
+				return batchreadertest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryGetAll fuzzes the property checks of BatchReader.GetAll on
 // InMemory.
 func FuzzInMemoryGetAll(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryGetAll(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:66b6e95de308a4910aedfd7ff64d81b4cc6973ee1bfea022ca89769545a07001
+// dokimi:provenance sha256:27dbe45623447b1cb9cb6335417758c134675be5249980ad4ce93c1ef172a8ba

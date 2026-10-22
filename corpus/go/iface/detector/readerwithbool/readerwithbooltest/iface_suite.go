@@ -5,8 +5,10 @@
 package readerwithbooltest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool"
 )
@@ -35,9 +37,19 @@ type readerWithBoolLoad struct {
 	conform.Callable[readerwithbool.ReaderWithBool]
 }
 
-// ReaderWithBoolSuite returns the checks of ReaderWithBool.
+// ReaderWithBoolSuite returns the checks of ReaderWithBool, and the calls
+// and the budgets of its callables.
 func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
-	return conform.Suite[readerwithbool.ReaderWithBool]{Declaration: "ReaderWithBool"}
+	return conform.Suite[readerwithbool.ReaderWithBool]{
+		Declaration: "ReaderWithBool",
+		Calls: []conform.Call[readerwithbool.ReaderWithBool]{
+			{
+				Calls:    readerWithBoolLoadCalls,
+				Over:     newReaderWithBoolOver,
+				Callable: ReaderWithBoolChecks.Load.Callable,
+			},
+		},
+	}
 }
 
 // RunReaderWithBoolSuite applies the checks of ReaderWithBool, and the
@@ -84,4 +96,87 @@ func FuzzReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
 		opts...)
 }
 
-// dokimi:provenance sha256:9e38fe1e5830c371546cce759f887c56d294ff97d087397ad2724844c912d956
+// RunReaderWithBoolBudgets applies the allocation ceilings of
+// ReaderWithBool, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunReaderWithBoolBudgets[T readerwithbool.ReaderWithBool](
+	t *testing.T,
+	newSubject func(h *ReaderWithBoolHandle) T,
+	opts ...ReaderWithBoolOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ReaderWithBoolSuite(),
+		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
+		opts...)
+}
+
+// BenchReaderWithBoolSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
+	b conform.B,
+	callable conform.Callable[readerwithbool.ReaderWithBool],
+	newSubject func(h *ReaderWithBoolHandle) T,
+	opts ...ReaderWithBoolOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ReaderWithBoolSuite(),
+		callable,
+		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
+		opts...)
+}
+
+// BenchReaderWithBoolSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchReaderWithBoolSuiteParallel[T readerwithbool.ReaderWithBool](
+	b *testing.B,
+	callable conform.Callable[readerwithbool.ReaderWithBool],
+	newSubject func(h *ReaderWithBoolHandle) T,
+	opts ...ReaderWithBoolOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ReaderWithBoolSuite(),
+		callable,
+		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
+		opts...)
+}
+
+// readerWithBoolLoadCalls generates the calls of ReaderWithBool.Load with
+// the inputs that each case draws.
+var readerWithBoolLoadCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, readerwithbool.ReaderWithBool) error {
+		key := c.Draw(prop.Of[string](), "key")
+		return func(ctx context.Context, subject readerwithbool.ReaderWithBool) error {
+			_, _ = subject.Load(ctx, key)
+			return nil
+		}
+	},
+)
+
+// readerWithBoolOver is a subject of ReaderWithBool whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type readerWithBoolOver struct {
+	readerwithbool.ReaderWithBool
+	spend func()
+}
+
+// Load calls spend and returns its zero results.
+func (o readerWithBoolOver) Load(context.Context, string) (r0 readerwithbool.Value, r1 bool) {
+	o.spend()
+	return r0, r1
+}
+
+// newReaderWithBoolOver returns the planted defect of a ceiling of
+// ReaderWithBool, whose callables call spend.
+func newReaderWithBoolOver(_ *ReaderWithBoolHandle, spend func()) readerwithbool.ReaderWithBool {
+	return readerWithBoolOver{spend: spend}
+}
+
+// dokimi:provenance sha256:fb36c9e0fb4f1999921faf85fb9d3761ddc566466c678dc81880dcbac0bbaa09

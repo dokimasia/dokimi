@@ -5,8 +5,10 @@
 package deletertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter"
 )
@@ -35,9 +37,19 @@ type deleterDelete struct {
 	conform.Callable[deleter.Deleter]
 }
 
-// DeleterSuite returns the checks of Deleter.
+// DeleterSuite returns the checks of Deleter, and the calls and the
+// budgets of its callables.
 func DeleterSuite() conform.Suite[deleter.Deleter] {
-	return conform.Suite[deleter.Deleter]{Declaration: "Deleter"}
+	return conform.Suite[deleter.Deleter]{
+		Declaration: "Deleter",
+		Calls: []conform.Call[deleter.Deleter]{
+			{
+				Calls:    deleterDeleteCalls,
+				Over:     newDeleterOver,
+				Callable: DeleterChecks.Delete.Callable,
+			},
+		},
+	}
 }
 
 // RunDeleterSuite applies the checks of Deleter, and the checks that opts
@@ -71,4 +83,69 @@ func FuzzDeleterSuite[T deleter.Deleter](
 	conform.Fuzz(f, DeleterSuite(), callable, func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:9118360b8decafd992607a75ff82686a7e15d6ccd533d9be6acb9aea352b04f0
+// RunDeleterBudgets applies the allocation ceilings of Deleter, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunDeleterBudgets[T deleter.Deleter](t *testing.T, newSubject func(h *DeleterHandle) T, opts ...DeleterOption) {
+	t.Helper()
+	conform.RunBudgets(t, DeleterSuite(), func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+}
+
+// BenchDeleterSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchDeleterSuite[T deleter.Deleter](
+	b conform.B,
+	callable conform.Callable[deleter.Deleter],
+	newSubject func(h *DeleterHandle) T,
+	opts ...DeleterOption,
+) {
+	b.Helper()
+	conform.Bench(b, DeleterSuite(), callable, func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+}
+
+// BenchDeleterSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchDeleterSuiteParallel[T deleter.Deleter](
+	b *testing.B,
+	callable conform.Callable[deleter.Deleter],
+	newSubject func(h *DeleterHandle) T,
+	opts ...DeleterOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		DeleterSuite(),
+		callable,
+		func(h *DeleterHandle) deleter.Deleter { return newSubject(h) },
+		opts...)
+}
+
+// deleterDeleteCalls generates the calls of Deleter.Delete with the inputs
+// that each case draws.
+var deleterDeleteCalls = prop.Composite(func(c *prop.Case) func(context.Context, deleter.Deleter) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject deleter.Deleter) error {
+		return subject.Delete(ctx, key)
+	}
+})
+
+// deleterOver is a subject of Deleter whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type deleterOver struct {
+	deleter.Deleter
+	spend func()
+}
+
+// Delete calls spend and returns its zero results.
+func (o deleterOver) Delete(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newDeleterOver returns the planted defect of a ceiling of Deleter, whose
+// callables call spend.
+func newDeleterOver(_ *DeleterHandle, spend func()) deleter.Deleter {
+	return deleterOver{spend: spend}
+}
+
+// dokimi:provenance sha256:d3c77eef02d2fcfef42175803eb8925735cd80e07544a8b4bc63cd93b909ada6

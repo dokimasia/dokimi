@@ -5,8 +5,10 @@
 package scopetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scope"
 )
@@ -41,9 +43,24 @@ type mixedGet struct {
 	conform.Callable[scope.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[scope.Mixed] {
-	return conform.Suite[scope.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[scope.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[scope.Mixed]{
+			{
+				Calls:    mixedSetCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Set.Callable,
+			},
+			{
+				Calls:    mixedGetCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -73,4 +90,83 @@ func FuzzMixedSuite[T scope.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:3ba633250fb34494ab7f32417f4ff9a89d2ee086a3884247571d5d40dcb1fba9
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T scope.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T scope.Mixed](
+	b conform.B,
+	callable conform.Callable[scope.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T scope.Mixed](
+	b *testing.B,
+	callable conform.Callable[scope.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(b, MixedSuite(), callable, func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
+}
+
+// mixedSetCalls generates the calls of Mixed.Set with the inputs that each
+// case draws.
+var mixedSetCalls = prop.Composite(func(c *prop.Case) func(context.Context, scope.Mixed) error {
+	scope0 := c.Draw(prop.Of[string](), "scope")
+	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
+	return func(ctx context.Context, subject scope.Mixed) error {
+		return subject.Set(ctx, scope0, key, value)
+	}
+})
+
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, scope.Mixed) error {
+	scope0 := c.Draw(prop.Of[string](), "scope")
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject scope.Mixed) error {
+		_, err := subject.Get(ctx, scope0, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	scope.Mixed
+	spend func()
+}
+
+// Set calls spend and returns its zero results.
+func (o mixedOver) Set(context.Context, string, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, string, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) scope.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:170a0983ca3356c608dfb225e6e1a36cf09521103f0db7350711a49a722061a0

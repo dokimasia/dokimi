@@ -18,6 +18,32 @@ func TestInMemoryConformsToComposed(t *testing.T) {
 	embeddedtest.RunComposedSuite(t, embeddedtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Composed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		embeddedtest.BenchComposedSuite(
+			b,
+			embeddedtest.ComposedChecks.Get.Callable,
+			func(*embeddedtest.ComposedHandle) *embeddedtest.InMemory { return embeddedtest.NewInMemory() },
+		)
+	})
+	b.Run("Ping", func(b *testing.B) {
+		embeddedtest.BenchComposedSuite(
+			b,
+			embeddedtest.ComposedChecks.Ping.Callable,
+			func(*embeddedtest.ComposedHandle) *embeddedtest.InMemory { return embeddedtest.NewInMemory() },
+		)
+	})
+	b.Run("Close", func(b *testing.B) {
+		embeddedtest.BenchComposedSuite(
+			b,
+			embeddedtest.ComposedChecks.Close.Callable,
+			func(*embeddedtest.ComposedHandle) *embeddedtest.InMemory { return embeddedtest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryGet fuzzes the property checks of Composed.Get on InMemory.
 func FuzzInMemoryGet(f *testing.F) {
 	embeddedtest.FuzzComposedSuite(
@@ -47,4 +73,4 @@ func FuzzInMemoryClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:428cbfdabe8ca7ceaf6f84aeab6987f89684c43e2f1036eab5d31f4c3f9cdc6e
+// dokimi:provenance sha256:5d99f15463ee244db79a04f59e1e1667bbc0e214e9576f4d6c1b03651be16955

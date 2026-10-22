@@ -5,8 +5,10 @@
 package causalchaintest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	causalchain "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain"
 )
@@ -53,22 +55,41 @@ func (c logReplay) KeepsTheBody() conform.ID[causalchain.Log] {
 	return c.Check("keeps-the-body")
 }
 
-// LogSuite returns the checks of Log.
+// LogSuite returns the checks of Log, and the calls and the budgets of its
+// callables.
 func LogSuite() conform.Suite[causalchain.Log] {
-	return conform.Suite[causalchain.Log]{Declaration: "Log", Checks: []conform.Check[causalchain.Log]{
-		{
-			ID:        LogChecks.Replay.KeepsEveryBody(),
-			Statement: "Replay returns each body that Append admitted in a root entry",
-			Property:  KeepsEveryBody,
-			Defect:    losesBodies,
+	return conform.Suite[causalchain.Log]{
+		Declaration: "Log",
+		Checks: []conform.Check[causalchain.Log]{
+			{
+				ID:        LogChecks.Replay.KeepsEveryBody(),
+				Statement: "Replay returns each body that Append admitted in a root entry",
+				Property:  KeepsEveryBody,
+				Defect:    losesBodies,
+			},
+			{
+				ID:        LogChecks.Replay.KeepsTheBody(),
+				Statement: "Replay returns the body that Append admitted",
+				Apply:     KeepsTheBody,
+				Defect:    losesBodies,
+			},
 		},
-		{
-			ID:        LogChecks.Replay.KeepsTheBody(),
-			Statement: "Replay returns the body that Append admitted",
-			Apply:     KeepsTheBody,
-			Defect:    losesBodies,
+		Calls: []conform.Call[causalchain.Log]{
+			{
+				Calls:    logAppendCalls,
+				Over:     newLogOver,
+				Callable: LogChecks.Append.Callable,
+			},
+			{
+				Calls:    logReplayCalls,
+				Over:     newLogOver,
+				Callable: LogChecks.Replay.Callable,
+			},
 		},
-	}}
+		Using: []prop.Option{
+			prop.Using(logEntryValues),
+		},
+	}
 }
 
 // RunLogSuite applies the checks of Log, and the checks that opts add, to
@@ -98,4 +119,99 @@ func FuzzLogSuite[T causalchain.Log](
 	conform.Fuzz(f, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:3946d1caea69a39122ba44e0610611b4d0cb6d5e7511dae2343141cff9d48af5
+// RunLogBudgets applies the allocation ceilings of Log, and the ceilings
+// that opts add, to a fresh subject of newSubject for each case.
+func RunLogBudgets[T causalchain.Log](t *testing.T, newSubject func(h *LogHandle) T, opts ...LogOption) {
+	t.Helper()
+	conform.RunBudgets(t, LogSuite(), func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+}
+
+// BenchLogSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchLogSuite[T causalchain.Log](
+	b conform.B,
+	callable conform.Callable[causalchain.Log],
+	newSubject func(h *LogHandle) T,
+	opts ...LogOption,
+) {
+	b.Helper()
+	conform.Bench(b, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+}
+
+// BenchLogSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchLogSuiteParallel[T causalchain.Log](
+	b *testing.B,
+	callable conform.Callable[causalchain.Log],
+	newSubject func(h *LogHandle) T,
+	opts ...LogOption,
+) {
+	b.Helper()
+	conform.BenchParallel(b, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+}
+
+// logAppendCalls generates the calls of Log.Append with the inputs that
+// each case draws.
+var logAppendCalls = prop.Composite(func(c *prop.Case) func(context.Context, causalchain.Log) error {
+	e := c.Draw(prop.Of[causalchain.Entry](), "e")
+	return func(ctx context.Context, subject causalchain.Log) error {
+		return subject.Append(ctx, e)
+	}
+})
+
+// logReplayCalls generates the calls of Log.Replay with the inputs that
+// each case draws.
+var logReplayCalls = prop.Composite(func(*prop.Case) func(context.Context, causalchain.Log) error {
+	return func(ctx context.Context, subject causalchain.Log) error {
+		_, err := subject.Replay(ctx)
+		return err
+	}
+})
+
+// logEntryValues generates the values of Entry that keep or change each
+// field of its starting value.
+var logEntryValues = prop.Composite(func(c *prop.Case) causalchain.Entry {
+	changed := c.Draw(prop.Of[causalchain.Entry](), "entry")
+	value := causalchain.RootEntry()
+	if c.Draw(prop.Boolean(), "entry.id") {
+		value.ID = changed.ID
+	}
+	if c.Draw(prop.Boolean(), "entry.body") {
+		value.Body = changed.Body
+	}
+	if c.Draw(prop.Boolean(), "entry.depends-on") {
+		value.DependsOn = changed.DependsOn
+	}
+	if c.Draw(prop.Boolean(), "entry.seq") {
+		value.Seq = changed.Seq
+	}
+	return value
+})
+
+// logOver is a subject of Log whose callables call spend and return their
+// zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type logOver struct {
+	causalchain.Log
+	spend func()
+}
+
+// Append calls spend and returns its zero results.
+func (o logOver) Append(context.Context, causalchain.Entry) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Replay calls spend and returns its zero results.
+func (o logOver) Replay(context.Context) (r0 []causalchain.Entry, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newLogOver returns the planted defect of a ceiling of Log, whose
+// callables call spend.
+func newLogOver(_ *LogHandle, spend func()) causalchain.Log {
+	return logOver{spend: spend}
+}
+
+// dokimi:provenance sha256:56b78471f531c7fe8c3a8be8fd44ad94cf52f101da77b69907400c225de459a2

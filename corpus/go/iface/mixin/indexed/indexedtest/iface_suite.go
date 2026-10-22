@@ -5,8 +5,10 @@
 package indexedtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed"
 )
@@ -48,9 +50,29 @@ type rankedAt struct {
 	conform.Callable[indexed.Ranked]
 }
 
-// RankedSuite returns the checks of Ranked.
+// RankedSuite returns the checks of Ranked, and the calls and the budgets
+// of its callables.
 func RankedSuite() conform.Suite[indexed.Ranked] {
-	return conform.Suite[indexed.Ranked]{Declaration: "Ranked"}
+	return conform.Suite[indexed.Ranked]{
+		Declaration: "Ranked",
+		Calls: []conform.Call[indexed.Ranked]{
+			{
+				Calls:    rankedAddCalls,
+				Over:     newRankedOver,
+				Callable: RankedChecks.Add.Callable,
+			},
+			{
+				Calls:    rankedLenCalls,
+				Over:     newRankedOver,
+				Callable: RankedChecks.Len.Callable,
+			},
+			{
+				Calls:    rankedAtCalls,
+				Over:     newRankedOver,
+				Callable: RankedChecks.At.Callable,
+			},
+		},
+	}
 }
 
 // RunRankedSuite applies the checks of Ranked, and the checks that opts
@@ -84,4 +106,100 @@ func FuzzRankedSuite[T indexed.Ranked](
 	conform.Fuzz(f, RankedSuite(), callable, func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:85d6a90eed9779639fd96c36f2fc536a07a5dfc9ed1f72302722d07fbfdf226d
+// RunRankedBudgets applies the allocation ceilings of Ranked, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunRankedBudgets[T indexed.Ranked](t *testing.T, newSubject func(h *RankedHandle) T, opts ...RankedOption) {
+	t.Helper()
+	conform.RunBudgets(t, RankedSuite(), func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
+}
+
+// BenchRankedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchRankedSuite[T indexed.Ranked](
+	b conform.B,
+	callable conform.Callable[indexed.Ranked],
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
+	b.Helper()
+	conform.Bench(b, RankedSuite(), callable, func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
+}
+
+// BenchRankedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchRankedSuiteParallel[T indexed.Ranked](
+	b *testing.B,
+	callable conform.Callable[indexed.Ranked],
+	newSubject func(h *RankedHandle) T,
+	opts ...RankedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		RankedSuite(),
+		callable,
+		func(h *RankedHandle) indexed.Ranked { return newSubject(h) },
+		opts...)
+}
+
+// rankedAddCalls generates the calls of Ranked.Add with the inputs that
+// each case draws.
+var rankedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, indexed.Ranked) error {
+	v := c.Draw(prop.Of[indexed.Value](), "v")
+	return func(ctx context.Context, subject indexed.Ranked) error {
+		return subject.Add(ctx, v)
+	}
+})
+
+// rankedLenCalls generates the calls of Ranked.Len with the inputs that
+// each case draws.
+var rankedLenCalls = prop.Composite(func(*prop.Case) func(context.Context, indexed.Ranked) error {
+	return func(ctx context.Context, subject indexed.Ranked) error {
+		_, err := subject.Len(ctx)
+		return err
+	}
+})
+
+// rankedAtCalls generates the calls of Ranked.At with the inputs that each
+// case draws.
+var rankedAtCalls = prop.Composite(func(c *prop.Case) func(context.Context, indexed.Ranked) error {
+	i := c.Draw(prop.Of[int](), "i")
+	return func(ctx context.Context, subject indexed.Ranked) error {
+		_, err := subject.At(ctx, i)
+		return err
+	}
+})
+
+// rankedOver is a subject of Ranked whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type rankedOver struct {
+	indexed.Ranked
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o rankedOver) Add(context.Context, indexed.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Len calls spend and returns its zero results.
+func (o rankedOver) Len(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// At calls spend and returns its zero results.
+func (o rankedOver) At(context.Context, int) (r0 indexed.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newRankedOver returns the planted defect of a ceiling of Ranked, whose
+// callables call spend.
+func newRankedOver(_ *RankedHandle, spend func()) indexed.Ranked {
+	return rankedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:f3513cd141fe9c4e3588676665a6aeb994601b317bfbbf5229342ec3f2b944d6

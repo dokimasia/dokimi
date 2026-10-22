@@ -5,8 +5,10 @@
 package codectest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/codec"
 )
@@ -43,9 +45,24 @@ type contractDecode struct {
 	conform.Callable[codec.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[codec.Contract] {
-	return conform.Suite[codec.Contract]{Declaration: "Contract"}
+	return conform.Suite[codec.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[codec.Contract]{
+			{
+				Calls:    contractEncodeCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Encode.Callable,
+			},
+			{
+				Calls:    contractDecodeCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Decode.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -79,4 +96,91 @@ func FuzzContractSuite[T codec.Contract](
 	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) codec.Contract { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:1b7e29d6fd216751b06e3e171248d1c96e550b22cbc2cf25320119fec35af8d0
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T codec.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) codec.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T codec.Contract](
+	b conform.B,
+	callable conform.Callable[codec.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) codec.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T codec.Contract](
+	b *testing.B,
+	callable conform.Callable[codec.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) codec.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractEncodeCalls generates the calls of Contract.Encode with the
+// inputs that each case draws.
+var contractEncodeCalls = prop.Composite(func(c *prop.Case) func(context.Context, codec.Contract) error {
+	in := c.Draw(prop.Of[string](), "in")
+	return func(ctx context.Context, subject codec.Contract) error {
+		_, err := subject.Encode(ctx, in)
+		return err
+	}
+})
+
+// contractDecodeCalls generates the calls of Contract.Decode with the
+// inputs that each case draws.
+var contractDecodeCalls = prop.Composite(func(c *prop.Case) func(context.Context, codec.Contract) error {
+	in := c.Draw(prop.Of[string](), "in")
+	return func(ctx context.Context, subject codec.Contract) error {
+		_, err := subject.Decode(ctx, in)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	codec.Contract
+	spend func()
+}
+
+// Encode calls spend and returns its zero results.
+func (o contractOver) Encode(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Decode calls spend and returns its zero results.
+func (o contractOver) Decode(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) codec.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:4b9cb23d335fd58bd3cb7283eff5c7f253dfd42392edde28304e06b965a1c4d3

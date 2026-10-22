@@ -5,8 +5,10 @@
 package sampledtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled"
 )
@@ -35,9 +37,23 @@ type labellerApply struct {
 	conform.Callable[sampled.Labeller]
 }
 
-// LabellerSuite returns the checks of Labeller.
+// LabellerSuite returns the checks of Labeller, and the calls and the
+// budgets of its callables.
 func LabellerSuite() conform.Suite[sampled.Labeller] {
-	return conform.Suite[sampled.Labeller]{Declaration: "Labeller"}
+	return conform.Suite[sampled.Labeller]{
+		Declaration: "Labeller",
+		Calls: []conform.Call[sampled.Labeller]{
+			{
+				Calls:    labellerApplyCalls,
+				Over:     newLabellerOver,
+				Callable: LabellerChecks.Apply.Callable,
+			},
+		},
+		Using: []prop.Option{
+			prop.Using(labellerTagValues),
+			prop.Using(labellerLevelValues),
+		},
+	}
 }
 
 // RunLabellerSuite applies the checks of Labeller, and the checks that
@@ -76,4 +92,99 @@ func FuzzLabellerSuite[T sampled.Labeller](
 		opts...)
 }
 
-// dokimi:provenance sha256:0fd6b006211e7fe6f82f0cf165d3f7f91cec4e1e6f59ba12c809dc238e892590
+// RunLabellerBudgets applies the allocation ceilings of Labeller, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunLabellerBudgets[T sampled.Labeller](
+	t *testing.T,
+	newSubject func(h *LabellerHandle) T,
+	opts ...LabellerOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, LabellerSuite(), func(h *LabellerHandle) sampled.Labeller { return newSubject(h) }, opts...)
+}
+
+// BenchLabellerSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchLabellerSuite[T sampled.Labeller](
+	b conform.B,
+	callable conform.Callable[sampled.Labeller],
+	newSubject func(h *LabellerHandle) T,
+	opts ...LabellerOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		LabellerSuite(),
+		callable,
+		func(h *LabellerHandle) sampled.Labeller { return newSubject(h) },
+		opts...)
+}
+
+// BenchLabellerSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchLabellerSuiteParallel[T sampled.Labeller](
+	b *testing.B,
+	callable conform.Callable[sampled.Labeller],
+	newSubject func(h *LabellerHandle) T,
+	opts ...LabellerOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		LabellerSuite(),
+		callable,
+		func(h *LabellerHandle) sampled.Labeller { return newSubject(h) },
+		opts...)
+}
+
+// labellerApplyCalls generates the calls of Labeller.Apply with the inputs
+// that each case draws.
+var labellerApplyCalls = prop.Composite(func(c *prop.Case) func(context.Context, sampled.Labeller) error {
+	tag := c.Draw(prop.Of[sampled.Tag](), "tag")
+	level := c.Draw(prop.Of[sampled.Level](), "level")
+	return func(ctx context.Context, subject sampled.Labeller) error {
+		return subject.Apply(ctx, tag, level)
+	}
+})
+
+// labellerTagValues generates the values of Tag that keep or change its
+// starting value.
+var labellerTagValues = prop.Composite(func(c *prop.Case) sampled.Tag {
+	changed := c.Draw(prop.Of[sampled.Tag](), "tag")
+	if c.Draw(prop.Boolean(), "tag.changed") {
+		return changed
+	}
+	return sampled.NewTestTag()
+})
+
+// labellerLevelValues generates the values of Level that keep or change
+// its starting value.
+var labellerLevelValues = prop.Composite(func(c *prop.Case) sampled.Level {
+	changed := c.Draw(prop.Of[sampled.Level](), "level")
+	if c.Draw(prop.Boolean(), "level.changed") {
+		return changed
+	}
+	return sampled.NewTestLevel()
+})
+
+// labellerOver is a subject of Labeller whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type labellerOver struct {
+	sampled.Labeller
+	spend func()
+}
+
+// Apply calls spend and returns its zero results.
+func (o labellerOver) Apply(context.Context, sampled.Tag, sampled.Level) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newLabellerOver returns the planted defect of a ceiling of Labeller,
+// whose callables call spend.
+func newLabellerOver(_ *LabellerHandle, spend func()) sampled.Labeller {
+	return labellerOver{spend: spend}
+}
+
+// dokimi:provenance sha256:6829879191dd82ed190ae24eb5b306919688f1dcaa599e902fddc75db0a2639b

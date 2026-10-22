@@ -5,8 +5,10 @@
 package lifecycleafterclosetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/lifecycleafterclose"
 )
@@ -42,9 +44,24 @@ type mixedWork struct {
 	conform.Callable[lifecycleafterclose.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
-	return conform.Suite[lifecycleafterclose.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[lifecycleafterclose.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[lifecycleafterclose.Mixed]{
+			{
+				Calls:    mixedCloseCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Close.Callable,
+			},
+			{
+				Calls:    mixedWorkCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Work.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -83,4 +100,95 @@ func FuzzMixedSuite[T lifecycleafterclose.Mixed](
 		opts...)
 }
 
-// dokimi:provenance sha256:e6f8e575f75f4bd8bd19f85a1ffd7ac70a21381b4548fd8c3c1b806571807396
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T lifecycleafterclose.Mixed](
+	t *testing.T,
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		MixedSuite(),
+		func(h *MixedHandle) lifecycleafterclose.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T lifecycleafterclose.Mixed](
+	b conform.B,
+	callable conform.Callable[lifecycleafterclose.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) lifecycleafterclose.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T lifecycleafterclose.Mixed](
+	b *testing.B,
+	callable conform.Callable[lifecycleafterclose.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) lifecycleafterclose.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedCloseCalls generates the calls of Mixed.Close with the inputs that
+// each case draws.
+var mixedCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, lifecycleafterclose.Mixed) error {
+	return func(ctx context.Context, subject lifecycleafterclose.Mixed) error {
+		return subject.Close(ctx)
+	}
+})
+
+// mixedWorkCalls generates the calls of Mixed.Work with the inputs that
+// each case draws.
+var mixedWorkCalls = prop.Composite(func(*prop.Case) func(context.Context, lifecycleafterclose.Mixed) error {
+	return func(ctx context.Context, subject lifecycleafterclose.Mixed) error {
+		return subject.Work(ctx)
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	lifecycleafterclose.Mixed
+	spend func()
+}
+
+// Close calls spend and returns its zero results.
+func (o mixedOver) Close(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Work calls spend and returns its zero results.
+func (o mixedOver) Work(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) lifecycleafterclose.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:3a4484bc10e56a66cc8d9c7c37a487b9e5cab5e9221872beb912eee3b51f3308

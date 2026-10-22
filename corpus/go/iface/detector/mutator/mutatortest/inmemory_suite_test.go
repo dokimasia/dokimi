@@ -18,6 +18,18 @@ func TestInMemoryConformsToMutator(t *testing.T) {
 	mutatortest.RunMutatorSuite(t, mutatortest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mutator on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Touch", func(b *testing.B) {
+		mutatortest.BenchMutatorSuite(
+			b,
+			mutatortest.MutatorChecks.Touch.Callable,
+			func(*mutatortest.MutatorHandle) *mutatortest.InMemory { return mutatortest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryTouch fuzzes the property checks of Mutator.Touch on
 // InMemory.
 func FuzzInMemoryTouch(f *testing.F) {
@@ -28,4 +40,4 @@ func FuzzInMemoryTouch(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b88d90d5c5db79786bd9b50f4cc55ae13bc0093418d05646aa959772d56b6b05
+// dokimi:provenance sha256:a4fb52a38849a947bd118bd28a30a8bdfeea9a1e43710dc3114734eb77d3fc52

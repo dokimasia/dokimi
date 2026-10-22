@@ -58,7 +58,7 @@ func (b *ValueBuilder) Clone() *ValueBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ValueBuilder.Clone] returns a builder that shares none of them.
@@ -66,4 +66,4 @@ func (b *ValueBuilder) Build() persister.Value {
 	return b.v
 }
 
-// dokimi:provenance sha256:215c3e5142b85ca04e6311ecfc9f9841e6cb77dc9a1b860f91200aadaac0e7ad
+// dokimi:provenance sha256:32737b99bddd2a32a72904fb9e2088137297006a1760217a57b21a7fb09f58a9

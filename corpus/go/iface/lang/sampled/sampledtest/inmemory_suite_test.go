@@ -18,6 +18,18 @@ func TestInMemoryConformsToLabeller(t *testing.T) {
 	sampledtest.RunLabellerSuite(t, sampledtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Labeller on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Apply", func(b *testing.B) {
+		sampledtest.BenchLabellerSuite(
+			b,
+			sampledtest.LabellerChecks.Apply.Callable,
+			func(*sampledtest.LabellerHandle) *sampledtest.InMemory { return sampledtest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryApply fuzzes the property checks of Labeller.Apply on
 // InMemory.
 func FuzzInMemoryApply(f *testing.F) {
@@ -28,4 +40,4 @@ func FuzzInMemoryApply(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:8a049d3f30b7aedf5ebd484b74fd1d98db65e1f7d1e4d943ca0cb91bb99bf3f8
+// dokimi:provenance sha256:83cc265faec9f4e755e952de6cf3754170ea247f665b1eb920bb65960e6f994f

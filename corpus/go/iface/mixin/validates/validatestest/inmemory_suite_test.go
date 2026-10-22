@@ -18,6 +18,32 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	validatestest.RunMixedSuite(t, validatestest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		validatestest.BenchMixedSuite(
+			b,
+			validatestest.MixedChecks.Store.Callable,
+			func(*validatestest.MixedHandle) *validatestest.InMemory { return validatestest.NewInMemory() },
+		)
+	})
+	b.Run("Validate", func(b *testing.B) {
+		validatestest.BenchMixedSuite(
+			b,
+			validatestest.MixedChecks.Validate.Callable,
+			func(*validatestest.MixedHandle) *validatestest.InMemory { return validatestest.NewInMemory() },
+		)
+	})
+	b.Run("Read", func(b *testing.B) {
+		validatestest.BenchMixedSuite(
+			b,
+			validatestest.MixedChecks.Read.Callable,
+			func(*validatestest.MixedHandle) *validatestest.InMemory { return validatestest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryStore fuzzes the property checks of Mixed.Store on InMemory.
 func FuzzInMemoryStore(f *testing.F) {
 	validatestest.FuzzMixedSuite(
@@ -46,4 +72,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:9750b62b87797a1b14f37ce00fdc60a56c949af42e22515e06a1b440930edb22
+// dokimi:provenance sha256:321a46e0da0fe0c3df05f9a0ef5f0e130e0e9629bd00e636aa33a510e0d4c7cb

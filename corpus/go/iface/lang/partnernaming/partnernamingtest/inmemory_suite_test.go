@@ -18,6 +18,65 @@ func TestInMemoryConformsToStore(t *testing.T) {
 	partnernamingtest.RunStoreSuite(t, partnernamingtest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Store on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Touch", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Touch.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Seen", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Seen.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Move", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Move.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("At", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.At.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Emit", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Emit.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Count", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(
+			b,
+			partnernamingtest.StoreChecks.Count.Callable,
+			func(*partnernamingtest.StoreHandle) *partnernamingtest.InMemory {
+				return partnernamingtest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryTouch fuzzes the property checks of Store.Touch on InMemory.
 func FuzzInMemoryTouch(f *testing.F) {
 	partnernamingtest.FuzzStoreSuite(
@@ -84,4 +143,4 @@ func FuzzInMemoryCount(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3ea19ac5dc5270f141e94359afb0f37eaea73d5af46fe341a46e8c7d63bd14a3
+// dokimi:provenance sha256:b81acc0f8ee3c3940622dd44382c1fc4ece193b8c9b52f5e5b9f4d32a5fcaa26

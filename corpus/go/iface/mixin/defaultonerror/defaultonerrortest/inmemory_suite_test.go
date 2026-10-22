@@ -18,6 +18,29 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	defaultonerrortest.RunMixedSuite(t, defaultonerrortest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		defaultonerrortest.BenchMixedSuite(
+			b,
+			defaultonerrortest.MixedChecks.Store.Callable,
+			func(*defaultonerrortest.MixedHandle) *defaultonerrortest.InMemory {
+				return defaultonerrortest.NewInMemory()
+			},
+		)
+	})
+	b.Run("Get", func(b *testing.B) {
+		defaultonerrortest.BenchMixedSuite(
+			b,
+			defaultonerrortest.MixedChecks.Get.Callable,
+			func(*defaultonerrortest.MixedHandle) *defaultonerrortest.InMemory {
+				return defaultonerrortest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryStore fuzzes the property checks of Mixed.Store on InMemory.
 func FuzzInMemoryStore(f *testing.F) {
 	defaultonerrortest.FuzzMixedSuite(
@@ -40,4 +63,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:451f65716f19c910679289b4d43b93f73dc883722fe0db524c9d34b90e8a0ad2
+// dokimi:provenance sha256:d3e36bf7a12231917cfd9d86ffdf4207313be53e31c87707285fde9024b3573a

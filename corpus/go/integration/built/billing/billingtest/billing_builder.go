@@ -49,7 +49,7 @@ func (b *InvoiceBuilder) Clone() *InvoiceBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [InvoiceBuilder.Clone] returns a builder that shares none of them.
@@ -57,4 +57,4 @@ func (b *InvoiceBuilder) Build() billing.Invoice {
 	return b.v
 }
 
-// dokimi:provenance sha256:b7fb3755c5b4b01d4b07fdc4611239e323155b2166d23a1abb00d938d17d037c
+// dokimi:provenance sha256:77056fca30cf91332c10824f57e4f5cc2ca989a300d11324207a0c090dd37dbb

@@ -5,8 +5,10 @@
 package noduplicatestest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/noduplicates"
 )
@@ -42,9 +44,24 @@ type mixedItems struct {
 	conform.Callable[noduplicates.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[noduplicates.Mixed] {
-	return conform.Suite[noduplicates.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[noduplicates.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[noduplicates.Mixed]{
+			{
+				Calls:    mixedAddCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Add.Callable,
+			},
+			{
+				Calls:    mixedItemsCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Items.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -78,4 +95,84 @@ func FuzzMixedSuite[T noduplicates.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) noduplicates.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:3ec548e239ff804449034286bb3ba682c2579687ded4ef24e5daf0d25a327d82
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T noduplicates.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) noduplicates.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T noduplicates.Mixed](
+	b conform.B,
+	callable conform.Callable[noduplicates.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) noduplicates.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T noduplicates.Mixed](
+	b *testing.B,
+	callable conform.Callable[noduplicates.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) noduplicates.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedAddCalls generates the calls of Mixed.Add with the inputs that each
+// case draws.
+var mixedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, noduplicates.Mixed) error {
+	v := c.Draw(prop.Of[noduplicates.Value](), "v")
+	return func(ctx context.Context, subject noduplicates.Mixed) error {
+		return subject.Add(ctx, v)
+	}
+})
+
+// mixedItemsCalls generates the calls of Mixed.Items with the inputs that
+// each case draws.
+var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, noduplicates.Mixed) error {
+	return func(ctx context.Context, subject noduplicates.Mixed) error {
+		_, err := subject.Items(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	noduplicates.Mixed
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o mixedOver) Add(context.Context, noduplicates.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Items calls spend and returns its zero results.
+func (o mixedOver) Items(context.Context) (r0 []noduplicates.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) noduplicates.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:65c8ac3171bb6048050a5fcaa04e6d2428209758617deff5efb40a5b8e2f5c6a

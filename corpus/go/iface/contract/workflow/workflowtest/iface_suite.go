@@ -5,8 +5,10 @@
 package workflowtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/workflow"
 )
@@ -43,9 +45,24 @@ type contractState struct {
 	conform.Callable[workflow.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[workflow.Contract] {
-	return conform.Suite[workflow.Contract]{Declaration: "Contract"}
+	return conform.Suite[workflow.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[workflow.Contract]{
+			{
+				Calls:    contractRunCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Run.Callable,
+			},
+			{
+				Calls:    contractStateCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.State.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,94 @@ func FuzzContractSuite[T workflow.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:65d7466dbacb8f24061e6ae06275429b135b21edd6f801615301f9f61007d873
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T workflow.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) workflow.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T workflow.Contract](
+	b conform.B,
+	callable conform.Callable[workflow.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) workflow.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T workflow.Contract](
+	b *testing.B,
+	callable conform.Callable[workflow.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) workflow.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractRunCalls generates the calls of Contract.Run with the inputs
+// that each case draws.
+var contractRunCalls = prop.Composite(func(c *prop.Case) func(context.Context, workflow.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject workflow.Contract) error {
+		return subject.Run(ctx, key)
+	}
+})
+
+// contractStateCalls generates the calls of Contract.State with the inputs
+// that each case draws.
+var contractStateCalls = prop.Composite(func(c *prop.Case) func(context.Context, workflow.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject workflow.Contract) error {
+		_, err := subject.State(ctx, key)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	workflow.Contract
+	spend func()
+}
+
+// Run calls spend and returns its zero results.
+func (o contractOver) Run(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// State calls spend and returns its zero results.
+func (o contractOver) State(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) workflow.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:20630c41e67316eae3cfda3b91b143986e442f32913b97823189f6dfea7d3314

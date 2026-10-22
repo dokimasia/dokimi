@@ -5,8 +5,10 @@
 package variadictest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/variadic"
 )
@@ -43,9 +45,24 @@ type finderFindWithLimit struct {
 	conform.Callable[variadic.Finder]
 }
 
-// FinderSuite returns the checks of Finder.
+// FinderSuite returns the checks of Finder, and the calls and the budgets
+// of its callables.
 func FinderSuite() conform.Suite[variadic.Finder] {
-	return conform.Suite[variadic.Finder]{Declaration: "Finder"}
+	return conform.Suite[variadic.Finder]{
+		Declaration: "Finder",
+		Calls: []conform.Call[variadic.Finder]{
+			{
+				Calls:    finderFindCalls,
+				Over:     newFinderOver,
+				Callable: FinderChecks.Find.Callable,
+			},
+			{
+				Calls:    finderFindWithLimitCalls,
+				Over:     newFinderOver,
+				Callable: FinderChecks.FindWithLimit.Callable,
+			},
+		},
+	}
 }
 
 // RunFinderSuite applies the checks of Finder, and the checks that opts
@@ -79,4 +96,87 @@ func FuzzFinderSuite[T variadic.Finder](
 	conform.Fuzz(f, FinderSuite(), callable, func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:d44e681162ed761dab50e939936125ac63c9bc344cabf400aaf0cf6eac1c46da
+// RunFinderBudgets applies the allocation ceilings of Finder, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunFinderBudgets[T variadic.Finder](t *testing.T, newSubject func(h *FinderHandle) T, opts ...FinderOption) {
+	t.Helper()
+	conform.RunBudgets(t, FinderSuite(), func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+}
+
+// BenchFinderSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchFinderSuite[T variadic.Finder](
+	b conform.B,
+	callable conform.Callable[variadic.Finder],
+	newSubject func(h *FinderHandle) T,
+	opts ...FinderOption,
+) {
+	b.Helper()
+	conform.Bench(b, FinderSuite(), callable, func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+}
+
+// BenchFinderSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchFinderSuiteParallel[T variadic.Finder](
+	b *testing.B,
+	callable conform.Callable[variadic.Finder],
+	newSubject func(h *FinderHandle) T,
+	opts ...FinderOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		FinderSuite(),
+		callable,
+		func(h *FinderHandle) variadic.Finder { return newSubject(h) },
+		opts...)
+}
+
+// finderFindCalls generates the calls of Finder.Find with the inputs that
+// each case draws.
+var finderFindCalls = prop.Composite(func(c *prop.Case) func(context.Context, variadic.Finder) error {
+	keys := c.Draw(prop.List(prop.Of[string]()), "keys")
+	return func(ctx context.Context, subject variadic.Finder) error {
+		_, err := subject.Find(ctx, keys...)
+		return err
+	}
+})
+
+// finderFindWithLimitCalls generates the calls of Finder.FindWithLimit
+// with the inputs that each case draws.
+var finderFindWithLimitCalls = prop.Composite(func(c *prop.Case) func(context.Context, variadic.Finder) error {
+	limit := c.Draw(prop.Of[int](), "limit")
+	keys := c.Draw(prop.List(prop.Of[string]()), "keys")
+	return func(ctx context.Context, subject variadic.Finder) error {
+		_, err := subject.FindWithLimit(ctx, limit, keys...)
+		return err
+	}
+})
+
+// finderOver is a subject of Finder whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type finderOver struct {
+	variadic.Finder
+	spend func()
+}
+
+// Find calls spend and returns its zero results.
+func (o finderOver) Find(context.Context, ...string) (r0 []string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// FindWithLimit calls spend and returns its zero results.
+func (o finderOver) FindWithLimit(context.Context, int, ...string) (r0 []string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newFinderOver returns the planted defect of a ceiling of Finder, whose
+// callables call spend.
+func newFinderOver(_ *FinderHandle, spend func()) variadic.Finder {
+	return finderOver{spend: spend}
+}
+
+// dokimi:provenance sha256:88cec9ec74af7a16e8e8a2c5af30f2fa78d8ee964aa1e3c3f280aefaa42225e3

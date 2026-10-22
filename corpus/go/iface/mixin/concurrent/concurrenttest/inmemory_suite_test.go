@@ -18,6 +18,38 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	concurrenttest.RunMixedSuite(t, concurrenttest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Bump", func(b *testing.B) {
+		concurrenttest.BenchMixedSuite(
+			b,
+			concurrenttest.MixedChecks.Bump.Callable,
+			func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
+		)
+	})
+	b.Run("Count", func(b *testing.B) {
+		concurrenttest.BenchMixedSuite(
+			b,
+			concurrenttest.MixedChecks.Count.Callable,
+			func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
+		)
+	})
+}
+
+// BenchmarkInMemoryParallel measures each callable of the suite of Mixed
+// that admits concurrent calls on InMemory, on GOMAXPROCS goroutines at
+// once.
+func BenchmarkInMemoryParallel(b *testing.B) {
+	b.Run("Bump", func(b *testing.B) {
+		concurrenttest.BenchMixedSuiteParallel(
+			b,
+			concurrenttest.MixedChecks.Bump.Callable,
+			func(*concurrenttest.MixedHandle) *concurrenttest.InMemory { return concurrenttest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryBump fuzzes the property checks of Mixed.Bump on InMemory.
 func FuzzInMemoryBump(f *testing.F) {
 	concurrenttest.FuzzMixedSuite(
@@ -36,4 +68,4 @@ func FuzzInMemoryCount(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0ebd30fb7e0e66f672ea287b3861d6135a81da3f08971c4f69d99293c87ba25d
+// dokimi:provenance sha256:2dd807cc199ffa579fa086c1681d3f9aa44772c5528ba9a45a1b34ac7c31a616

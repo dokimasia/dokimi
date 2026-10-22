@@ -5,8 +5,10 @@
 package poisonaccessortest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/poisonaccessor"
 )
@@ -35,9 +37,19 @@ type poisonAccessorErr struct {
 	conform.Callable[poisonaccessor.PoisonAccessor]
 }
 
-// PoisonAccessorSuite returns the checks of PoisonAccessor.
+// PoisonAccessorSuite returns the checks of PoisonAccessor, and the calls
+// and the budgets of its callables.
 func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
-	return conform.Suite[poisonaccessor.PoisonAccessor]{Declaration: "PoisonAccessor"}
+	return conform.Suite[poisonaccessor.PoisonAccessor]{
+		Declaration: "PoisonAccessor",
+		Calls: []conform.Call[poisonaccessor.PoisonAccessor]{
+			{
+				Calls:    poisonAccessorErrCalls,
+				Over:     newPoisonAccessorOver,
+				Callable: PoisonAccessorChecks.Err.Callable,
+			},
+		},
+	}
 }
 
 // RunPoisonAccessorSuite applies the checks of PoisonAccessor, and the
@@ -84,4 +96,85 @@ func FuzzPoisonAccessorSuite[T poisonaccessor.PoisonAccessor](
 		opts...)
 }
 
-// dokimi:provenance sha256:7f542d420a371b319e7e54ddf09870ed34b1cccff280c97f99bd3df3042234be
+// RunPoisonAccessorBudgets applies the allocation ceilings of
+// PoisonAccessor, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunPoisonAccessorBudgets[T poisonaccessor.PoisonAccessor](
+	t *testing.T,
+	newSubject func(h *PoisonAccessorHandle) T,
+	opts ...PoisonAccessorOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		PoisonAccessorSuite(),
+		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
+		opts...)
+}
+
+// BenchPoisonAccessorSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchPoisonAccessorSuite[T poisonaccessor.PoisonAccessor](
+	b conform.B,
+	callable conform.Callable[poisonaccessor.PoisonAccessor],
+	newSubject func(h *PoisonAccessorHandle) T,
+	opts ...PoisonAccessorOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		PoisonAccessorSuite(),
+		callable,
+		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
+		opts...)
+}
+
+// BenchPoisonAccessorSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchPoisonAccessorSuiteParallel[T poisonaccessor.PoisonAccessor](
+	b *testing.B,
+	callable conform.Callable[poisonaccessor.PoisonAccessor],
+	newSubject func(h *PoisonAccessorHandle) T,
+	opts ...PoisonAccessorOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		PoisonAccessorSuite(),
+		callable,
+		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
+		opts...)
+}
+
+// poisonAccessorErrCalls generates the calls of PoisonAccessor.Err with
+// the inputs that each case draws.
+var poisonAccessorErrCalls = prop.Composite(
+	func(*prop.Case) func(context.Context, poisonaccessor.PoisonAccessor) error {
+		return func(_ context.Context, subject poisonaccessor.PoisonAccessor) error {
+			return subject.Err()
+		}
+	},
+)
+
+// poisonAccessorOver is a subject of PoisonAccessor whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type poisonAccessorOver struct {
+	poisonaccessor.PoisonAccessor
+	spend func()
+}
+
+// Err calls spend and returns its zero results.
+func (o poisonAccessorOver) Err() (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newPoisonAccessorOver returns the planted defect of a ceiling of
+// PoisonAccessor, whose callables call spend.
+func newPoisonAccessorOver(_ *PoisonAccessorHandle, spend func()) poisonaccessor.PoisonAccessor {
+	return poisonAccessorOver{spend: spend}
+}
+
+// dokimi:provenance sha256:c9b989a45c9827fb909a01575458331fa03cae18815c0d1896299c7bda2db260

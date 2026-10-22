@@ -5,8 +5,11 @@
 package singleflighttest
 
 import (
+	"context"
+	"sync/atomic"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/singleflight"
 )
@@ -43,9 +46,24 @@ type contractFlights struct {
 	conform.Callable[singleflight.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[singleflight.Contract] {
-	return conform.Suite[singleflight.Contract]{Declaration: "Contract"}
+	return conform.Suite[singleflight.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[singleflight.Contract]{
+			{
+				Calls:    contractRunCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Run.Callable,
+			},
+			{
+				Calls:    contractFlightsCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Flights.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +102,107 @@ func FuzzContractSuite[T singleflight.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:e7b596cc08d2fe193d35c8359d985e0dda817a889ce333f95bca96438f84a2b0
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T singleflight.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ContractSuite(),
+		func(h *ContractHandle) singleflight.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T singleflight.Contract](
+	b conform.B,
+	callable conform.Callable[singleflight.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) singleflight.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T singleflight.Contract](
+	b *testing.B,
+	callable conform.Callable[singleflight.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) singleflight.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractRunCalls generates the calls of Contract.Run with the inputs
+// that each case draws.
+var contractRunCalls = prop.Composite(func(c *prop.Case) func(context.Context, singleflight.Contract) error {
+	key := c.Draw(prop.Of[string](), "key")
+	computeResults := c.Draw(prop.List(prop.Of[string]()), "compute")
+	var computeAt atomic.Int64
+	compute := func() (r0 string) {
+		i := int(computeAt.Add(1) - 1)
+		if i >= len(computeResults) {
+			return r0
+		}
+		return computeResults[i]
+	}
+	return func(ctx context.Context, subject singleflight.Contract) error {
+		_, err := subject.Run(ctx, key, compute)
+		return err
+	}
+})
+
+// contractFlightsCalls generates the calls of Contract.Flights with the
+// inputs that each case draws.
+var contractFlightsCalls = prop.Composite(func(*prop.Case) func(context.Context, singleflight.Contract) error {
+	return func(ctx context.Context, subject singleflight.Contract) error {
+		_, err := subject.Flights(ctx)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	singleflight.Contract
+	spend func()
+}
+
+// Run calls spend and returns its zero results.
+func (o contractOver) Run(context.Context, string, func() string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Flights calls spend and returns its zero results.
+func (o contractOver) Flights(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) singleflight.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:3ad45ab7616288257e4f7d3a8aee1f9b0ab47d778399235594b73563cba4c1e0

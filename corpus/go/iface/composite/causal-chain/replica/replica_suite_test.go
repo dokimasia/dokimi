@@ -30,6 +30,34 @@ func TestLogConformsToLog(t *testing.T) {
 	)
 }
 
+// BenchmarkLog measures each callable of the suite of Log on Log.
+func BenchmarkLog(b *testing.B) {
+	opts := []causalchaintest.LogOption{
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsTheBody(),
+			"a replica refuses each append, so no body reaches its replay",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+			"a replica refuses each append, so no body reaches its replay",
+		),
+	}
+	b.Run("Append", func(b *testing.B) {
+		causalchaintest.BenchLogSuite(
+			b,
+			causalchaintest.LogChecks.Append.Callable,
+			func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
+			opts...)
+	})
+	b.Run("Replay", func(b *testing.B) {
+		causalchaintest.BenchLogSuite(
+			b,
+			causalchaintest.LogChecks.Replay.Callable,
+			func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
+			opts...)
+	})
+}
+
 // FuzzLogAppend fuzzes the property checks of Log.Append on Log.
 func FuzzLogAppend(f *testing.F) {
 	causalchaintest.FuzzLogSuite(
@@ -64,4 +92,4 @@ func FuzzLogReplay(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:2495cc42ff9809b9a8bcfa9945cc2f117293062c95b59a4daa14f1d2bd9dcdad
+// dokimi:provenance sha256:2080d2b71f97a6efde52839b061e6835c4c9edd6efde6f479f90e76aafdbb41b

@@ -5,8 +5,10 @@
 package ifmatchtest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	ifmatch "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-match"
 )
@@ -43,9 +45,24 @@ type contractMatch struct {
 	conform.Callable[ifmatch.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[ifmatch.Contract] {
-	return conform.Suite[ifmatch.Contract]{Declaration: "Contract"}
+	return conform.Suite[ifmatch.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[ifmatch.Contract]{
+			{
+				Calls:    contractPutCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Put.Callable,
+			},
+			{
+				Calls:    contractMatchCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Match.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -84,4 +101,94 @@ func FuzzContractSuite[T ifmatch.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:f1cee9305cd70ea4541c07af182762687210abf39ee370de8c90e6e11e3321d9
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T ifmatch.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) ifmatch.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T ifmatch.Contract](
+	b conform.B,
+	callable conform.Callable[ifmatch.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) ifmatch.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T ifmatch.Contract](
+	b *testing.B,
+	callable conform.Callable[ifmatch.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) ifmatch.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractPutCalls generates the calls of Contract.Put with the inputs
+// that each case draws.
+var contractPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, ifmatch.Contract) error {
+	v := c.Draw(prop.Of[ifmatch.Value](), "v")
+	return func(ctx context.Context, subject ifmatch.Contract) error {
+		return subject.Put(ctx, v)
+	}
+})
+
+// contractMatchCalls generates the calls of Contract.Match with the inputs
+// that each case draws.
+var contractMatchCalls = prop.Composite(func(c *prop.Case) func(context.Context, ifmatch.Contract) error {
+	v := c.Draw(prop.Of[ifmatch.Value](), "v")
+	return func(ctx context.Context, subject ifmatch.Contract) error {
+		_, err := subject.Match(ctx, v)
+		return err
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	ifmatch.Contract
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o contractOver) Put(context.Context, ifmatch.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Match calls spend and returns its zero results.
+func (o contractOver) Match(context.Context, ifmatch.Value) (r0 bool, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) ifmatch.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:20d8762e819cb39c91c8de3f4dbfbf8252b74e3a357e3f615b8d2017ec24590e

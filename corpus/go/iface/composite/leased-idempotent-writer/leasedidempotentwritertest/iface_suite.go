@@ -5,8 +5,10 @@
 package leasedidempotentwritertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	leasedidempotentwriter "go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer"
 )
@@ -43,9 +45,24 @@ type leasedWriterRelease struct {
 	conform.Callable[leasedidempotentwriter.LeasedWriter]
 }
 
-// LeasedWriterSuite returns the checks of LeasedWriter.
+// LeasedWriterSuite returns the checks of LeasedWriter, and the calls and
+// the budgets of its callables.
 func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
-	return conform.Suite[leasedidempotentwriter.LeasedWriter]{Declaration: "LeasedWriter"}
+	return conform.Suite[leasedidempotentwriter.LeasedWriter]{
+		Declaration: "LeasedWriter",
+		Calls: []conform.Call[leasedidempotentwriter.LeasedWriter]{
+			{
+				Calls:    leasedWriterAcquireCalls,
+				Over:     newLeasedWriterOver,
+				Callable: LeasedWriterChecks.Acquire.Callable,
+			},
+			{
+				Calls:    leasedWriterReleaseCalls,
+				Over:     newLeasedWriterOver,
+				Callable: LeasedWriterChecks.Release.Callable,
+			},
+		},
+	}
 }
 
 // RunLeasedWriterSuite applies the checks of LeasedWriter, and the checks
@@ -92,4 +109,103 @@ func FuzzLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:432412e3c61e157dd33ef55f678b2eab06cd8755e22e1fac9152595f1005d2eb
+// RunLeasedWriterBudgets applies the allocation ceilings of LeasedWriter,
+// and the ceilings that opts add, to a fresh subject of newSubject for
+// each case.
+func RunLeasedWriterBudgets[T leasedidempotentwriter.LeasedWriter](
+	t *testing.T,
+	newSubject func(h *LeasedWriterHandle) T,
+	opts ...LeasedWriterOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		LeasedWriterSuite(),
+		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchLeasedWriterSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
+	b conform.B,
+	callable conform.Callable[leasedidempotentwriter.LeasedWriter],
+	newSubject func(h *LeasedWriterHandle) T,
+	opts ...LeasedWriterOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		LeasedWriterSuite(),
+		callable,
+		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchLeasedWriterSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchLeasedWriterSuiteParallel[T leasedidempotentwriter.LeasedWriter](
+	b *testing.B,
+	callable conform.Callable[leasedidempotentwriter.LeasedWriter],
+	newSubject func(h *LeasedWriterHandle) T,
+	opts ...LeasedWriterOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		LeasedWriterSuite(),
+		callable,
+		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
+		opts...)
+}
+
+// leasedWriterAcquireCalls generates the calls of LeasedWriter.Acquire
+// with the inputs that each case draws.
+var leasedWriterAcquireCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, leasedidempotentwriter.LeasedWriter) error {
+		key := c.Draw(prop.Of[string](), "key")
+		return func(ctx context.Context, subject leasedidempotentwriter.LeasedWriter) error {
+			return subject.Acquire(ctx, key)
+		}
+	},
+)
+
+// leasedWriterReleaseCalls generates the calls of LeasedWriter.Release
+// with the inputs that each case draws.
+var leasedWriterReleaseCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, leasedidempotentwriter.LeasedWriter) error {
+		key := c.Draw(prop.Of[string](), "key")
+		return func(ctx context.Context, subject leasedidempotentwriter.LeasedWriter) error {
+			return subject.Release(ctx, key)
+		}
+	},
+)
+
+// leasedWriterOver is a subject of LeasedWriter whose callables call spend
+// and return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type leasedWriterOver struct {
+	leasedidempotentwriter.LeasedWriter
+	spend func()
+}
+
+// Acquire calls spend and returns its zero results.
+func (o leasedWriterOver) Acquire(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Release calls spend and returns its zero results.
+func (o leasedWriterOver) Release(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newLeasedWriterOver returns the planted defect of a ceiling of
+// LeasedWriter, whose callables call spend.
+func newLeasedWriterOver(_ *LeasedWriterHandle, spend func()) leasedidempotentwriter.LeasedWriter {
+	return leasedWriterOver{spend: spend}
+}
+
+// dokimi:provenance sha256:4c368aa98cc1b1915a1f7030a4c87919bd67210f2336f08a4a2cd562d08ab029

@@ -93,7 +93,7 @@ func (b *ConfigBuilder) Clone() *ConfigBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ConfigBuilder.Clone] returns a builder that shares none of them.
@@ -187,7 +187,7 @@ func (b *TagConfigBuilder) Clone() *TagConfigBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [TagConfigBuilder.Clone] returns a builder that shares none of them.
@@ -239,7 +239,7 @@ func (b *MixedConfigBuilder) Clone() *MixedConfigBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [MixedConfigBuilder.Clone] returns a builder that shares none of them.
@@ -247,4 +247,4 @@ func (b *MixedConfigBuilder) Build() config.MixedConfig {
 	return b.v
 }
 
-// dokimi:provenance sha256:a2b3cfa0f9eba43a6a67769fba31346a37fde091b7161d866ef8bd7389ef0a6b
+// dokimi:provenance sha256:60129614b1e19453f38ce9b88fc45ed40331dbe01030aaa2f4b61c2fe2ae3166

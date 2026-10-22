@@ -5,8 +5,10 @@
 package lookuptest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup"
 )
@@ -35,9 +37,19 @@ type lookupInspect struct {
 	conform.Callable[lookup.Lookup]
 }
 
-// LookupSuite returns the checks of Lookup.
+// LookupSuite returns the checks of Lookup, and the calls and the budgets
+// of its callables.
 func LookupSuite() conform.Suite[lookup.Lookup] {
-	return conform.Suite[lookup.Lookup]{Declaration: "Lookup"}
+	return conform.Suite[lookup.Lookup]{
+		Declaration: "Lookup",
+		Calls: []conform.Call[lookup.Lookup]{
+			{
+				Calls:    lookupInspectCalls,
+				Over:     newLookupOver,
+				Callable: LookupChecks.Inspect.Callable,
+			},
+		},
+	}
 }
 
 // RunLookupSuite applies the checks of Lookup, and the checks that opts
@@ -67,4 +79,70 @@ func FuzzLookupSuite[T lookup.Lookup](
 	conform.Fuzz(f, LookupSuite(), callable, func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:b15d7ae6e11ec188df95d73608a0e8838d338569e5e046a24e419691c4e301e4
+// RunLookupBudgets applies the allocation ceilings of Lookup, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunLookupBudgets[T lookup.Lookup](t *testing.T, newSubject func(h *LookupHandle) T, opts ...LookupOption) {
+	t.Helper()
+	conform.RunBudgets(t, LookupSuite(), func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+}
+
+// BenchLookupSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchLookupSuite[T lookup.Lookup](
+	b conform.B,
+	callable conform.Callable[lookup.Lookup],
+	newSubject func(h *LookupHandle) T,
+	opts ...LookupOption,
+) {
+	b.Helper()
+	conform.Bench(b, LookupSuite(), callable, func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+}
+
+// BenchLookupSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchLookupSuiteParallel[T lookup.Lookup](
+	b *testing.B,
+	callable conform.Callable[lookup.Lookup],
+	newSubject func(h *LookupHandle) T,
+	opts ...LookupOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		LookupSuite(),
+		callable,
+		func(h *LookupHandle) lookup.Lookup { return newSubject(h) },
+		opts...)
+}
+
+// lookupInspectCalls generates the calls of Lookup.Inspect with the inputs
+// that each case draws.
+var lookupInspectCalls = prop.Composite(func(c *prop.Case) func(context.Context, lookup.Lookup) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(_ context.Context, subject lookup.Lookup) error {
+		_, _, _ = subject.Inspect(key)
+		return nil
+	}
+})
+
+// lookupOver is a subject of Lookup whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type lookupOver struct {
+	lookup.Lookup
+	spend func()
+}
+
+// Inspect calls spend and returns its zero results.
+func (o lookupOver) Inspect(string) (r0 lookup.Value, r1 lookup.Meta, r2 bool) {
+	o.spend()
+	return r0, r1, r2
+}
+
+// newLookupOver returns the planted defect of a ceiling of Lookup, whose
+// callables call spend.
+func newLookupOver(_ *LookupHandle, spend func()) lookup.Lookup {
+	return lookupOver{spend: spend}
+}
+
+// dokimi:provenance sha256:8ef06a41d3c690fe11c28356643371f893fedf102396ae9c7b1f463d17a4e741

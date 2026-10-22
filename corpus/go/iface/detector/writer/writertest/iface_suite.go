@@ -5,8 +5,10 @@
 package writertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer"
 )
@@ -34,9 +36,19 @@ type writerPut struct {
 	conform.Callable[writer.Writer]
 }
 
-// WriterSuite returns the checks of Writer.
+// WriterSuite returns the checks of Writer, and the calls and the budgets
+// of its callables.
 func WriterSuite() conform.Suite[writer.Writer] {
-	return conform.Suite[writer.Writer]{Declaration: "Writer"}
+	return conform.Suite[writer.Writer]{
+		Declaration: "Writer",
+		Calls: []conform.Call[writer.Writer]{
+			{
+				Calls:    writerPutCalls,
+				Over:     newWriterOver,
+				Callable: WriterChecks.Put.Callable,
+			},
+		},
+	}
 }
 
 // RunWriterSuite applies the checks of Writer, and the checks that opts
@@ -66,4 +78,69 @@ func FuzzWriterSuite[T writer.Writer](
 	conform.Fuzz(f, WriterSuite(), callable, func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:c8a3444eaa4f27f863df6c4a399663f5db3670515dfeeaee04842be6ded1d6b3
+// RunWriterBudgets applies the allocation ceilings of Writer, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunWriterBudgets[T writer.Writer](t *testing.T, newSubject func(h *WriterHandle) T, opts ...WriterOption) {
+	t.Helper()
+	conform.RunBudgets(t, WriterSuite(), func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+}
+
+// BenchWriterSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchWriterSuite[T writer.Writer](
+	b conform.B,
+	callable conform.Callable[writer.Writer],
+	newSubject func(h *WriterHandle) T,
+	opts ...WriterOption,
+) {
+	b.Helper()
+	conform.Bench(b, WriterSuite(), callable, func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+}
+
+// BenchWriterSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchWriterSuiteParallel[T writer.Writer](
+	b *testing.B,
+	callable conform.Callable[writer.Writer],
+	newSubject func(h *WriterHandle) T,
+	opts ...WriterOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		WriterSuite(),
+		callable,
+		func(h *WriterHandle) writer.Writer { return newSubject(h) },
+		opts...)
+}
+
+// writerPutCalls generates the calls of Writer.Put with the inputs that
+// each case draws.
+var writerPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, writer.Writer) error {
+	v := c.Draw(prop.Of[writer.Value](), "v")
+	return func(ctx context.Context, subject writer.Writer) error {
+		return subject.Put(ctx, v)
+	}
+})
+
+// writerOver is a subject of Writer whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type writerOver struct {
+	writer.Writer
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o writerOver) Put(context.Context, writer.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newWriterOver returns the planted defect of a ceiling of Writer, whose
+// callables call spend.
+func newWriterOver(_ *WriterHandle, spend func()) writer.Writer {
+	return writerOver{spend: spend}
+}
+
+// dokimi:provenance sha256:9e171126fd50ca94e2c73411115558626a93a1b975c89e45104f99a4065b88c4

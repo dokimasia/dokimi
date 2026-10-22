@@ -5,8 +5,10 @@
 package batchedmixinstest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	batchedmixins "go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins"
 )
@@ -57,16 +59,38 @@ func (c batchedList) ListsAtMostTheLimit() conform.ID[batchedmixins.Batched] {
 	return c.Check("lists-at-most-the-limit")
 }
 
-// BatchedSuite returns the checks of Batched.
+// BatchedSuite returns the checks of Batched, and the calls and the
+// budgets of its callables.
 func BatchedSuite() conform.Suite[batchedmixins.Batched] {
-	return conform.Suite[batchedmixins.Batched]{Declaration: "Batched", Checks: []conform.Check[batchedmixins.Batched]{
-		{
-			ID:        BatchedChecks.List.ListsAtMostTheLimit(),
-			Statement: "List returns at most 50 keys after 51 writes",
-			Apply:     ListsAtMostTheLimit,
-			Defect:    unbounded,
+	return conform.Suite[batchedmixins.Batched]{
+		Declaration: "Batched",
+		Checks: []conform.Check[batchedmixins.Batched]{
+			{
+				ID:        BatchedChecks.List.ListsAtMostTheLimit(),
+				Statement: "List returns at most 50 keys after 51 writes",
+				Apply:     ListsAtMostTheLimit,
+				Defect:    unbounded,
+			},
 		},
-	}}
+		Calls: []conform.Call[batchedmixins.Batched]{
+			{
+				Calls:      batchedPutCalls,
+				Over:       newBatchedOver,
+				Callable:   BatchedChecks.Put.Callable,
+				Concurrent: true,
+			},
+			{
+				Calls:    batchedReadCalls,
+				Over:     newBatchedOver,
+				Callable: BatchedChecks.Read.Callable,
+			},
+			{
+				Calls:    batchedListCalls,
+				Over:     newBatchedOver,
+				Callable: BatchedChecks.List.Callable,
+			},
+		},
+	}
 }
 
 // RunBatchedSuite applies the checks of Batched, and the checks that opts
@@ -105,4 +129,114 @@ func FuzzBatchedSuite[T batchedmixins.Batched](
 		opts...)
 }
 
-// dokimi:provenance sha256:d09b502c1e5ca6eb068a0979dd4bc25d7ce0d6431e82b17d4b7524b413f94fe9
+// RunBatchedBudgets applies the allocation ceilings of Batched, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunBatchedBudgets[T batchedmixins.Batched](
+	t *testing.T,
+	newSubject func(h *BatchedHandle) T,
+	opts ...BatchedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		BatchedSuite(),
+		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
+		opts...)
+}
+
+// BenchBatchedSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchBatchedSuite[T batchedmixins.Batched](
+	b conform.B,
+	callable conform.Callable[batchedmixins.Batched],
+	newSubject func(h *BatchedHandle) T,
+	opts ...BatchedOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		BatchedSuite(),
+		callable,
+		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
+		opts...)
+}
+
+// BenchBatchedSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchBatchedSuiteParallel[T batchedmixins.Batched](
+	b *testing.B,
+	callable conform.Callable[batchedmixins.Batched],
+	newSubject func(h *BatchedHandle) T,
+	opts ...BatchedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		BatchedSuite(),
+		callable,
+		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
+		opts...)
+}
+
+// batchedPutCalls generates the calls of Batched.Put with the inputs that
+// each case draws.
+var batchedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, batchedmixins.Batched) error {
+	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
+	return func(ctx context.Context, subject batchedmixins.Batched) error {
+		return subject.Put(ctx, key, value)
+	}
+})
+
+// batchedReadCalls generates the calls of Batched.Read with the inputs
+// that each case draws.
+var batchedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, batchedmixins.Batched) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject batchedmixins.Batched) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// batchedListCalls generates the calls of Batched.List with the inputs
+// that each case draws.
+var batchedListCalls = prop.Composite(func(*prop.Case) func(context.Context, batchedmixins.Batched) error {
+	return func(ctx context.Context, subject batchedmixins.Batched) error {
+		_, err := subject.List(ctx)
+		return err
+	}
+})
+
+// batchedOver is a subject of Batched whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type batchedOver struct {
+	batchedmixins.Batched
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o batchedOver) Put(context.Context, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o batchedOver) Read(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// List calls spend and returns its zero results.
+func (o batchedOver) List(context.Context) (r0 []string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newBatchedOver returns the planted defect of a ceiling of Batched, whose
+// callables call spend.
+func newBatchedOver(_ *BatchedHandle, spend func()) batchedmixins.Batched {
+	return batchedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:39b1e2758491793bd827a261ac72d015a09aa6d2a48acb8b534ef6102cdfad04

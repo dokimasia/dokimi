@@ -5,8 +5,10 @@
 package ttlperwritetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttlperwrite"
 )
@@ -41,9 +43,24 @@ type mixedRead struct {
 	conform.Callable[ttlperwrite.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[ttlperwrite.Mixed] {
-	return conform.Suite[ttlperwrite.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[ttlperwrite.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[ttlperwrite.Mixed]{
+			{
+				Calls:    mixedPutCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Put.Callable,
+			},
+			{
+				Calls:    mixedReadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Read.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -77,4 +94,85 @@ func FuzzMixedSuite[T ttlperwrite.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) ttlperwrite.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:55b4a60049fa9866bc8ece888741bd318bc232008e210a08e290e9ec6fe7979b
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T ttlperwrite.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) ttlperwrite.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T ttlperwrite.Mixed](
+	b conform.B,
+	callable conform.Callable[ttlperwrite.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) ttlperwrite.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T ttlperwrite.Mixed](
+	b *testing.B,
+	callable conform.Callable[ttlperwrite.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) ttlperwrite.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedPutCalls generates the calls of Mixed.Put with the inputs that each
+// case draws.
+var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, ttlperwrite.Mixed) error {
+	e := c.Draw(prop.Of[ttlperwrite.Entry](), "e")
+	return func(ctx context.Context, subject ttlperwrite.Mixed) error {
+		return subject.Put(ctx, e)
+	}
+})
+
+// mixedReadCalls generates the calls of Mixed.Read with the inputs that
+// each case draws.
+var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, ttlperwrite.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject ttlperwrite.Mixed) error {
+		_, err := subject.Read(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	ttlperwrite.Mixed
+	spend func()
+}
+
+// Put calls spend and returns its zero results.
+func (o mixedOver) Put(context.Context, ttlperwrite.Entry) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Read calls spend and returns its zero results.
+func (o mixedOver) Read(context.Context, string) (r0 ttlperwrite.Entry, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) ttlperwrite.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:05052a3b99e0d082c7fb74c170b5ecc377361e83b9f06def6b33a87bf519c965

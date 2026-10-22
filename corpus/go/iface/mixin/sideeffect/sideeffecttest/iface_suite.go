@@ -5,8 +5,10 @@
 package sideeffecttest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sideeffect"
 )
@@ -43,9 +45,24 @@ type mixedObserved struct {
 	conform.Callable[sideeffect.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[sideeffect.Mixed] {
-	return conform.Suite[sideeffect.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[sideeffect.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[sideeffect.Mixed]{
+			{
+				Calls:    mixedTouchCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Touch.Callable,
+			},
+			{
+				Calls:    mixedObservedCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Observed.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -75,4 +92,85 @@ func FuzzMixedSuite[T sideeffect.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:ba28596c740c9702ac8d060b687db25f468cdb46970ba65e454c875fe8b5786e
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T sideeffect.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T sideeffect.Mixed](
+	b conform.B,
+	callable conform.Callable[sideeffect.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T sideeffect.Mixed](
+	b *testing.B,
+	callable conform.Callable[sideeffect.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedTouchCalls generates the calls of Mixed.Touch with the inputs that
+// each case draws.
+var mixedTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, sideeffect.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject sideeffect.Mixed) error {
+		return subject.Touch(ctx, key)
+	}
+})
+
+// mixedObservedCalls generates the calls of Mixed.Observed with the inputs
+// that each case draws.
+var mixedObservedCalls = prop.Composite(func(c *prop.Case) func(context.Context, sideeffect.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject sideeffect.Mixed) error {
+		_, err := subject.Observed(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	sideeffect.Mixed
+	spend func()
+}
+
+// Touch calls spend and returns its zero results.
+func (o mixedOver) Touch(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Observed calls spend and returns its zero results.
+func (o mixedOver) Observed(context.Context, string) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) sideeffect.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:903ab073c639628de4e0e9d72f083a4dd85999182a5276341a5780ba6115b70d

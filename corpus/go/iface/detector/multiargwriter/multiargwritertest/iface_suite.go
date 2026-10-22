@@ -5,8 +5,10 @@
 package multiargwritertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiargwriter"
 )
@@ -43,9 +45,24 @@ type multiArgWriterGet struct {
 	conform.Callable[multiargwriter.MultiArgWriter]
 }
 
-// MultiArgWriterSuite returns the checks of MultiArgWriter.
+// MultiArgWriterSuite returns the checks of MultiArgWriter, and the calls
+// and the budgets of its callables.
 func MultiArgWriterSuite() conform.Suite[multiargwriter.MultiArgWriter] {
-	return conform.Suite[multiargwriter.MultiArgWriter]{Declaration: "MultiArgWriter"}
+	return conform.Suite[multiargwriter.MultiArgWriter]{
+		Declaration: "MultiArgWriter",
+		Calls: []conform.Call[multiargwriter.MultiArgWriter]{
+			{
+				Calls:    multiArgWriterSetCalls,
+				Over:     newMultiArgWriterOver,
+				Callable: MultiArgWriterChecks.Set.Callable,
+			},
+			{
+				Calls:    multiArgWriterGetCalls,
+				Over:     newMultiArgWriterOver,
+				Callable: MultiArgWriterChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunMultiArgWriterSuite applies the checks of MultiArgWriter, and the
@@ -92,4 +109,106 @@ func FuzzMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
 		opts...)
 }
 
-// dokimi:provenance sha256:9139ac829e90791c28d1202729b80d4ce04de5c50e78e0d434940206d4fa225a
+// RunMultiArgWriterBudgets applies the allocation ceilings of
+// MultiArgWriter, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunMultiArgWriterBudgets[T multiargwriter.MultiArgWriter](
+	t *testing.T,
+	newSubject func(h *MultiArgWriterHandle) T,
+	opts ...MultiArgWriterOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		MultiArgWriterSuite(),
+		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchMultiArgWriterSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
+	b conform.B,
+	callable conform.Callable[multiargwriter.MultiArgWriter],
+	newSubject func(h *MultiArgWriterHandle) T,
+	opts ...MultiArgWriterOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		MultiArgWriterSuite(),
+		callable,
+		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
+		opts...)
+}
+
+// BenchMultiArgWriterSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchMultiArgWriterSuiteParallel[T multiargwriter.MultiArgWriter](
+	b *testing.B,
+	callable conform.Callable[multiargwriter.MultiArgWriter],
+	newSubject func(h *MultiArgWriterHandle) T,
+	opts ...MultiArgWriterOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MultiArgWriterSuite(),
+		callable,
+		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
+		opts...)
+}
+
+// multiArgWriterSetCalls generates the calls of MultiArgWriter.Set with
+// the inputs that each case draws.
+var multiArgWriterSetCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, multiargwriter.MultiArgWriter) error {
+		key := c.Draw(prop.Of[string](), "key")
+		body := c.Draw(prop.Of[string](), "body")
+		mime := c.Draw(prop.Of[string](), "mime")
+		return func(ctx context.Context, subject multiargwriter.MultiArgWriter) error {
+			return subject.Set(ctx, key, body, mime)
+		}
+	},
+)
+
+// multiArgWriterGetCalls generates the calls of MultiArgWriter.Get with
+// the inputs that each case draws.
+var multiArgWriterGetCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, multiargwriter.MultiArgWriter) error {
+		key := c.Draw(prop.Of[string](), "key")
+		return func(ctx context.Context, subject multiargwriter.MultiArgWriter) error {
+			_, err := subject.Get(ctx, key)
+			return err
+		}
+	},
+)
+
+// multiArgWriterOver is a subject of MultiArgWriter whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type multiArgWriterOver struct {
+	multiargwriter.MultiArgWriter
+	spend func()
+}
+
+// Set calls spend and returns its zero results.
+func (o multiArgWriterOver) Set(context.Context, string, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Get calls spend and returns its zero results.
+func (o multiArgWriterOver) Get(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMultiArgWriterOver returns the planted defect of a ceiling of
+// MultiArgWriter, whose callables call spend.
+func newMultiArgWriterOver(_ *MultiArgWriterHandle, spend func()) multiargwriter.MultiArgWriter {
+	return multiArgWriterOver{spend: spend}
+}
+
+// dokimi:provenance sha256:5111acc65cbf014ff992c18afa81e8094629accea97ab408f0b838d734cb32fa

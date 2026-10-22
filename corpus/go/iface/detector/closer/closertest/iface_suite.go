@@ -5,8 +5,10 @@
 package closertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/closer"
 )
@@ -35,9 +37,19 @@ type closerClose struct {
 	conform.Callable[closer.Closer]
 }
 
-// CloserSuite returns the checks of Closer.
+// CloserSuite returns the checks of Closer, and the calls and the budgets
+// of its callables.
 func CloserSuite() conform.Suite[closer.Closer] {
-	return conform.Suite[closer.Closer]{Declaration: "Closer"}
+	return conform.Suite[closer.Closer]{
+		Declaration: "Closer",
+		Calls: []conform.Call[closer.Closer]{
+			{
+				Calls:    closerCloseCalls,
+				Over:     newCloserOver,
+				Callable: CloserChecks.Close.Callable,
+			},
+		},
+	}
 }
 
 // RunCloserSuite applies the checks of Closer, and the checks that opts
@@ -67,4 +79,68 @@ func FuzzCloserSuite[T closer.Closer](
 	conform.Fuzz(f, CloserSuite(), callable, func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:9247fac56bae968598c49d37f5d35957e0b9bb082148363f6b66b18620a98070
+// RunCloserBudgets applies the allocation ceilings of Closer, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunCloserBudgets[T closer.Closer](t *testing.T, newSubject func(h *CloserHandle) T, opts ...CloserOption) {
+	t.Helper()
+	conform.RunBudgets(t, CloserSuite(), func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+}
+
+// BenchCloserSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchCloserSuite[T closer.Closer](
+	b conform.B,
+	callable conform.Callable[closer.Closer],
+	newSubject func(h *CloserHandle) T,
+	opts ...CloserOption,
+) {
+	b.Helper()
+	conform.Bench(b, CloserSuite(), callable, func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+}
+
+// BenchCloserSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchCloserSuiteParallel[T closer.Closer](
+	b *testing.B,
+	callable conform.Callable[closer.Closer],
+	newSubject func(h *CloserHandle) T,
+	opts ...CloserOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		CloserSuite(),
+		callable,
+		func(h *CloserHandle) closer.Closer { return newSubject(h) },
+		opts...)
+}
+
+// closerCloseCalls generates the calls of Closer.Close with the inputs
+// that each case draws.
+var closerCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, closer.Closer) error {
+	return func(_ context.Context, subject closer.Closer) error {
+		return subject.Close()
+	}
+})
+
+// closerOver is a subject of Closer whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type closerOver struct {
+	closer.Closer
+	spend func()
+}
+
+// Close calls spend and returns its zero results.
+func (o closerOver) Close() (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newCloserOver returns the planted defect of a ceiling of Closer, whose
+// callables call spend.
+func newCloserOver(_ *CloserHandle, spend func()) closer.Closer {
+	return closerOver{spend: spend}
+}
+
+// dokimi:provenance sha256:5f0137ccf99fa5dca4db65250c410bc1c6c46b271e16e1e9fe014f0fb52d8b89

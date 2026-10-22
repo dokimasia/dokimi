@@ -5,8 +5,10 @@
 package serializabletest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable"
 )
@@ -50,9 +52,29 @@ type mixedGet struct {
 	conform.Callable[serializable.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[serializable.Mixed] {
-	return conform.Suite[serializable.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[serializable.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[serializable.Mixed]{
+			{
+				Calls:    mixedRecordCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Record.Callable,
+			},
+			{
+				Calls:    mixedHistoryCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.History.Callable,
+			},
+			{
+				Calls:    mixedGetCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Get.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -86,4 +108,100 @@ func FuzzMixedSuite[T serializable.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) serializable.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:f0dbefc1e7ac92844d9dea7d95925cea54fe67c4bf52551468244dd98aa1304e
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T serializable.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) serializable.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T serializable.Mixed](
+	b conform.B,
+	callable conform.Callable[serializable.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) serializable.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T serializable.Mixed](
+	b *testing.B,
+	callable conform.Callable[serializable.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) serializable.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedRecordCalls generates the calls of Mixed.Record with the inputs
+// that each case draws.
+var mixedRecordCalls = prop.Composite(func(c *prop.Case) func(context.Context, serializable.Mixed) error {
+	e := c.Draw(prop.Of[serializable.Entry](), "e")
+	return func(ctx context.Context, subject serializable.Mixed) error {
+		return subject.Record(ctx, e)
+	}
+})
+
+// mixedHistoryCalls generates the calls of Mixed.History with the inputs
+// that each case draws.
+var mixedHistoryCalls = prop.Composite(func(*prop.Case) func(context.Context, serializable.Mixed) error {
+	return func(ctx context.Context, subject serializable.Mixed) error {
+		_, err := subject.History(ctx)
+		return err
+	}
+})
+
+// mixedGetCalls generates the calls of Mixed.Get with the inputs that each
+// case draws.
+var mixedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, serializable.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject serializable.Mixed) error {
+		_, err := subject.Get(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	serializable.Mixed
+	spend func()
+}
+
+// Record calls spend and returns its zero results.
+func (o mixedOver) Record(context.Context, serializable.Entry) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// History calls spend and returns its zero results.
+func (o mixedOver) History(context.Context) (r0 []serializable.Entry, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Get calls spend and returns its zero results.
+func (o mixedOver) Get(context.Context, string) (r0 serializable.Entry, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) serializable.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:2b17b14862c7c56c07b8cf5c57c48f2371b9acb8ffdbc31b510b7b15198addf8

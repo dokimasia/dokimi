@@ -5,8 +5,10 @@
 package accumulatestest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/accumulates"
 )
@@ -42,9 +44,24 @@ type mixedTotal struct {
 	conform.Callable[accumulates.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[accumulates.Mixed] {
-	return conform.Suite[accumulates.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[accumulates.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[accumulates.Mixed]{
+			{
+				Calls:    mixedAddCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Add.Callable,
+			},
+			{
+				Calls:    mixedTotalCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Total.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -78,4 +95,86 @@ func FuzzMixedSuite[T accumulates.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) accumulates.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:96e9af7998165a85de808e960967bea79bc55aae27f11435540d28475eb37311
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T accumulates.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) accumulates.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T accumulates.Mixed](
+	b conform.B,
+	callable conform.Callable[accumulates.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) accumulates.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T accumulates.Mixed](
+	b *testing.B,
+	callable conform.Callable[accumulates.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) accumulates.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedAddCalls generates the calls of Mixed.Add with the inputs that each
+// case draws.
+var mixedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, accumulates.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	amount := c.Draw(prop.Of[int](), "amount")
+	return func(ctx context.Context, subject accumulates.Mixed) error {
+		return subject.Add(ctx, key, amount)
+	}
+})
+
+// mixedTotalCalls generates the calls of Mixed.Total with the inputs that
+// each case draws.
+var mixedTotalCalls = prop.Composite(func(c *prop.Case) func(context.Context, accumulates.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject accumulates.Mixed) error {
+		_, err := subject.Total(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	accumulates.Mixed
+	spend func()
+}
+
+// Add calls spend and returns its zero results.
+func (o mixedOver) Add(context.Context, string, int) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Total calls spend and returns its zero results.
+func (o mixedOver) Total(context.Context, string) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) accumulates.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:490bfb904ee302bd2beb05a222b2bc424183f3bba83577de23a27c1c23fcd23e

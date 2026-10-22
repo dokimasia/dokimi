@@ -18,6 +18,20 @@ func TestInMemoryConformsToMultiAggregator(t *testing.T) {
 	multiaggregatortest.RunMultiAggregatorSuite(t, multiaggregatortest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of MultiAggregator
+// on InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Stats", func(b *testing.B) {
+		multiaggregatortest.BenchMultiAggregatorSuite(
+			b,
+			multiaggregatortest.MultiAggregatorChecks.Stats.Callable,
+			func(*multiaggregatortest.MultiAggregatorHandle) *multiaggregatortest.InMemory {
+				return multiaggregatortest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryStats fuzzes the property checks of MultiAggregator.Stats on
 // InMemory.
 func FuzzInMemoryStats(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryStats(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:bb475903294a7699268a3315e8831e377d58e03a282cefb6bfa24e2d28fb3366
+// dokimi:provenance sha256:e98b979f941e9b42825c895e3d993b19c384ab41496e988401e4b239e55c0e87

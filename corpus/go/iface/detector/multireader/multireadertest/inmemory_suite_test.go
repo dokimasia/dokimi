@@ -18,6 +18,20 @@ func TestInMemoryConformsToMultiReader(t *testing.T) {
 	multireadertest.RunMultiReaderSuite(t, multireadertest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of MultiReader on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("GetWithMeta", func(b *testing.B) {
+		multireadertest.BenchMultiReaderSuite(
+			b,
+			multireadertest.MultiReaderChecks.GetWithMeta.Callable,
+			func(*multireadertest.MultiReaderHandle) *multireadertest.InMemory {
+				return multireadertest.NewInMemory()
+			},
+		)
+	})
+}
+
 // FuzzInMemoryGetWithMeta fuzzes the property checks of
 // MultiReader.GetWithMeta on InMemory.
 func FuzzInMemoryGetWithMeta(f *testing.F) {
@@ -30,4 +44,4 @@ func FuzzInMemoryGetWithMeta(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:963517c366aa08b94d464da47bd18d90a24731eabed55777520fd876f09f14a7
+// dokimi:provenance sha256:b357d70978221528faea80780a7a1c679a9aabcb1c12679ebdd2685916ab4ae5

@@ -6,6 +6,7 @@ package ttltest_test
 
 import (
 	"testing"
+	"time"
 
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl/ttltest"
@@ -24,6 +25,60 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 			"the check does not advance the clock that NewInMemory reads",
 		),
 	)
+}
+
+// TestInMemoryAllocs applies the allocation ceilings of the suite of Mixed
+// to InMemory.
+func TestInMemoryAllocs(t *testing.T) {
+	ttltest.RunMixedBudgets(
+		t,
+		func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
+		conform.Ceilings(
+			ttltest.MixedChecks.Put.Callable,
+			conform.Budget{
+				Allocs:  new(uint64(0)),
+				Latency: time.Millisecond,
+				Warmup:  new(1000),
+			},
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			"the check does not advance the clock that NewInMemory reads",
+		),
+	)
+}
+
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	opts := []ttltest.MixedOption{
+		conform.Ceilings(
+			ttltest.MixedChecks.Put.Callable,
+			conform.Budget{
+				Allocs:  new(uint64(0)),
+				Latency: time.Millisecond,
+				Warmup:  new(1000),
+			},
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			"the check does not advance the clock that NewInMemory reads",
+		),
+	}
+	b.Run("Put", func(b *testing.B) {
+		ttltest.BenchMixedSuite(
+			b,
+			ttltest.MixedChecks.Put.Callable,
+			func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
+			opts...)
+	})
+	b.Run("Read", func(b *testing.B) {
+		ttltest.BenchMixedSuite(
+			b,
+			ttltest.MixedChecks.Read.Callable,
+			func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
+			opts...)
+	})
 }
 
 // FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
@@ -52,4 +107,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:7c5b8a3cd0f477349ca563fe3e5e4b3202e114e3461b396b0bdb1e3668662a8c
+// dokimi:provenance sha256:e5efde5901c5c8668e0c9cb47e5e0e7d9222b9a2ba994797877d81f42a1f85f6

@@ -77,4 +77,12 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b1b89cbc7639e49e6eac7a62558c5cc2214f6fc06971a6480362c2d156e6692e
+// TestMixedSuiteAllocs falsifies the allocation ceilings of the suite of
+// Mixed.
+func TestMixedSuiteAllocs(t *testing.T) {
+	t.Run("MixedSuite", func(t *testing.T) {
+		conform.FalsifyAllocs(t, ttltest.MixedSuite())
+	})
+}
+
+// dokimi:provenance sha256:068e1c157de632280c9de1b464609964ec6c84d6fb68cce87b74098dfe467f41

@@ -5,8 +5,10 @@
 package chaintest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain"
 )
@@ -51,9 +53,29 @@ type contractVerify struct {
 	conform.Callable[chain.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[chain.Contract] {
-	return conform.Suite[chain.Contract]{Declaration: "Contract"}
+	return conform.Suite[chain.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[chain.Contract]{
+			{
+				Calls:    contractAppendCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Append.Callable,
+			},
+			{
+				Calls:    contractReplayCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Replay.Callable,
+			},
+			{
+				Calls:    contractVerifyCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Verify.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -87,4 +109,103 @@ func FuzzContractSuite[T chain.Contract](
 	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) chain.Contract { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:1301ac79a45fe595695a7625fca2682bc212515fea2e29407f76b4ac1c31cd47
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T chain.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
+	t.Helper()
+	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) chain.Contract { return newSubject(h) }, opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T chain.Contract](
+	b conform.B,
+	callable conform.Callable[chain.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) chain.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T chain.Contract](
+	b *testing.B,
+	callable conform.Callable[chain.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) chain.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractAppendCalls generates the calls of Contract.Append with the
+// inputs that each case draws.
+var contractAppendCalls = prop.Composite(func(c *prop.Case) func(context.Context, chain.Contract) error {
+	e := c.Draw(prop.Of[chain.Entry](), "e")
+	return func(ctx context.Context, subject chain.Contract) error {
+		return subject.Append(ctx, e)
+	}
+})
+
+// contractReplayCalls generates the calls of Contract.Replay with the
+// inputs that each case draws.
+var contractReplayCalls = prop.Composite(func(*prop.Case) func(context.Context, chain.Contract) error {
+	return func(ctx context.Context, subject chain.Contract) error {
+		_, err := subject.Replay(ctx)
+		return err
+	}
+})
+
+// contractVerifyCalls generates the calls of Contract.Verify with the
+// inputs that each case draws.
+var contractVerifyCalls = prop.Composite(func(*prop.Case) func(context.Context, chain.Contract) error {
+	return func(ctx context.Context, subject chain.Contract) error {
+		return subject.Verify(ctx)
+	}
+})
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	chain.Contract
+	spend func()
+}
+
+// Append calls spend and returns its zero results.
+func (o contractOver) Append(context.Context, chain.Entry) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Replay calls spend and returns its zero results.
+func (o contractOver) Replay(context.Context) (r0 []chain.Entry, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Verify calls spend and returns its zero results.
+func (o contractOver) Verify(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) chain.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:104e9f36ce1e1df7a4590c1bc339d75ef325851098089b625d7c93926b9946ca

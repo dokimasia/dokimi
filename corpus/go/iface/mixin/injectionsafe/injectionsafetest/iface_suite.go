@@ -5,8 +5,10 @@
 package injectionsafetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/injectionsafe"
 )
@@ -42,9 +44,24 @@ type mixedLoad struct {
 	conform.Callable[injectionsafe.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[injectionsafe.Mixed] {
-	return conform.Suite[injectionsafe.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[injectionsafe.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[injectionsafe.Mixed]{
+			{
+				Calls:    mixedStoreCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Store.Callable,
+			},
+			{
+				Calls:    mixedLoadCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Load.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -78,4 +95,86 @@ func FuzzMixedSuite[T injectionsafe.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) injectionsafe.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:10286755f5945425ef272a64363053595bb7995f02f54b849f5777f39e8ee120
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T injectionsafe.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) injectionsafe.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T injectionsafe.Mixed](
+	b conform.B,
+	callable conform.Callable[injectionsafe.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) injectionsafe.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T injectionsafe.Mixed](
+	b *testing.B,
+	callable conform.Callable[injectionsafe.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) injectionsafe.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedStoreCalls generates the calls of Mixed.Store with the inputs that
+// each case draws.
+var mixedStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, injectionsafe.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	value := c.Draw(prop.Of[string](), "value")
+	return func(ctx context.Context, subject injectionsafe.Mixed) error {
+		return subject.Store(ctx, key, value)
+	}
+})
+
+// mixedLoadCalls generates the calls of Mixed.Load with the inputs that
+// each case draws.
+var mixedLoadCalls = prop.Composite(func(c *prop.Case) func(context.Context, injectionsafe.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject injectionsafe.Mixed) error {
+		_, err := subject.Load(ctx, key)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	injectionsafe.Mixed
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o mixedOver) Store(context.Context, string, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Load calls spend and returns its zero results.
+func (o mixedOver) Load(context.Context, string) (r0 string, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) injectionsafe.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:be96374f19d9dcfdd66d953daf9a429cbfb9c90e6913bed0dfed088282c355f2

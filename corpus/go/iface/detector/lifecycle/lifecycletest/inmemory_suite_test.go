@@ -18,6 +18,18 @@ func TestInMemoryConformsToLifecycle(t *testing.T) {
 	lifecycletest.RunLifecycleSuite(t, lifecycletest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Lifecycle on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Close", func(b *testing.B) {
+		lifecycletest.BenchLifecycleSuite(
+			b,
+			lifecycletest.LifecycleChecks.Close.Callable,
+			func(*lifecycletest.LifecycleHandle) *lifecycletest.InMemory { return lifecycletest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryClose fuzzes the property checks of Lifecycle.Close on
 // InMemory.
 func FuzzInMemoryClose(f *testing.F) {
@@ -28,4 +40,4 @@ func FuzzInMemoryClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:963f371973233ea133c5d1c51921bf2e25339f547c61992d0574c47e26b40b65
+// dokimi:provenance sha256:9979c1cb66db59cc663a1baa15ef9126626555a936f72d8c7aa1474b46ba1411

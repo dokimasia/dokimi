@@ -5,8 +5,10 @@
 package seededreadertest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/seededreader"
 )
@@ -43,9 +45,27 @@ type catalogLen struct {
 	conform.Callable[seededreader.Catalog]
 }
 
-// CatalogSuite returns the checks of Catalog.
+// CatalogSuite returns the checks of Catalog, and the calls and the
+// budgets of its callables.
 func CatalogSuite() conform.Suite[seededreader.Catalog] {
-	return conform.Suite[seededreader.Catalog]{Declaration: "Catalog"}
+	return conform.Suite[seededreader.Catalog]{
+		Declaration: "Catalog",
+		Calls: []conform.Call[seededreader.Catalog]{
+			{
+				Calls:    catalogLookupCalls,
+				Over:     newCatalogOver,
+				Callable: CatalogChecks.Lookup.Callable,
+			},
+			{
+				Calls:    catalogLenCalls,
+				Over:     newCatalogOver,
+				Callable: CatalogChecks.Len.Callable,
+			},
+		},
+		Using: []prop.Option{
+			prop.Using(catalogKeyValues),
+		},
+	}
 }
 
 // RunCatalogSuite applies the checks of Catalog, and the checks that opts
@@ -84,4 +104,104 @@ func FuzzCatalogSuite[T seededreader.Catalog](
 		opts...)
 }
 
-// dokimi:provenance sha256:2cb3fc4401e82ae3e6adddd33b4442015274a52d91b60f006576b5e553c30478
+// RunCatalogBudgets applies the allocation ceilings of Catalog, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunCatalogBudgets[T seededreader.Catalog](
+	t *testing.T,
+	newSubject func(h *CatalogHandle) T,
+	opts ...CatalogOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, CatalogSuite(), func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) }, opts...)
+}
+
+// BenchCatalogSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchCatalogSuite[T seededreader.Catalog](
+	b conform.B,
+	callable conform.Callable[seededreader.Catalog],
+	newSubject func(h *CatalogHandle) T,
+	opts ...CatalogOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		CatalogSuite(),
+		callable,
+		func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) },
+		opts...)
+}
+
+// BenchCatalogSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchCatalogSuiteParallel[T seededreader.Catalog](
+	b *testing.B,
+	callable conform.Callable[seededreader.Catalog],
+	newSubject func(h *CatalogHandle) T,
+	opts ...CatalogOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		CatalogSuite(),
+		callable,
+		func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) },
+		opts...)
+}
+
+// catalogLookupCalls generates the calls of Catalog.Lookup with the inputs
+// that each case draws.
+var catalogLookupCalls = prop.Composite(func(c *prop.Case) func(context.Context, seededreader.Catalog) error {
+	key := c.Draw(prop.Of[seededreader.Key](), "key")
+	return func(ctx context.Context, subject seededreader.Catalog) error {
+		_, err := subject.Lookup(ctx, key)
+		return err
+	}
+})
+
+// catalogLenCalls generates the calls of Catalog.Len with the inputs that
+// each case draws.
+var catalogLenCalls = prop.Composite(func(*prop.Case) func(context.Context, seededreader.Catalog) error {
+	return func(ctx context.Context, subject seededreader.Catalog) error {
+		_, err := subject.Len(ctx)
+		return err
+	}
+})
+
+// catalogKeyValues generates the values of Key that keep or change its
+// starting value.
+var catalogKeyValues = prop.Composite(func(c *prop.Case) seededreader.Key {
+	changed := c.Draw(prop.Of[seededreader.Key](), "key")
+	if c.Draw(prop.Boolean(), "key.changed") {
+		return changed
+	}
+	return "test-doc"
+})
+
+// catalogOver is a subject of Catalog whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type catalogOver struct {
+	seededreader.Catalog
+	spend func()
+}
+
+// Lookup calls spend and returns its zero results.
+func (o catalogOver) Lookup(context.Context, seededreader.Key) (r0 seededreader.Body, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Len calls spend and returns its zero results.
+func (o catalogOver) Len(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newCatalogOver returns the planted defect of a ceiling of Catalog, whose
+// callables call spend.
+func newCatalogOver(_ *CatalogHandle, spend func()) seededreader.Catalog {
+	return catalogOver{spend: spend}
+}
+
+// dokimi:provenance sha256:8abcd58737d891e861e0cc186cd259e1805ae51c2d5a64ba35803798d36cc1c6

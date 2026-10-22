@@ -5,8 +5,10 @@
 package multiaggregatortest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator"
 )
@@ -35,9 +37,19 @@ type multiAggregatorStats struct {
 	conform.Callable[multiaggregator.MultiAggregator]
 }
 
-// MultiAggregatorSuite returns the checks of MultiAggregator.
+// MultiAggregatorSuite returns the checks of MultiAggregator, and the
+// calls and the budgets of its callables.
 func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
-	return conform.Suite[multiaggregator.MultiAggregator]{Declaration: "MultiAggregator"}
+	return conform.Suite[multiaggregator.MultiAggregator]{
+		Declaration: "MultiAggregator",
+		Calls: []conform.Call[multiaggregator.MultiAggregator]{
+			{
+				Calls:    multiAggregatorStatsCalls,
+				Over:     newMultiAggregatorOver,
+				Callable: MultiAggregatorChecks.Stats.Callable,
+			},
+		},
+	}
 }
 
 // RunMultiAggregatorSuite applies the checks of MultiAggregator, and the
@@ -84,4 +96,86 @@ func FuzzMultiAggregatorSuite[T multiaggregator.MultiAggregator](
 		opts...)
 }
 
-// dokimi:provenance sha256:654295c00fc309452755cee32740ca87138485694a6b751a0b37cf4fbf9ff590
+// RunMultiAggregatorBudgets applies the allocation ceilings of
+// MultiAggregator, and the ceilings that opts add, to a fresh subject of
+// newSubject for each case.
+func RunMultiAggregatorBudgets[T multiaggregator.MultiAggregator](
+	t *testing.T,
+	newSubject func(h *MultiAggregatorHandle) T,
+	opts ...MultiAggregatorOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		MultiAggregatorSuite(),
+		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
+		opts...)
+}
+
+// BenchMultiAggregatorSuite measures callable on a subject of newSubject,
+// under the ceilings of its budget.
+func BenchMultiAggregatorSuite[T multiaggregator.MultiAggregator](
+	b conform.B,
+	callable conform.Callable[multiaggregator.MultiAggregator],
+	newSubject func(h *MultiAggregatorHandle) T,
+	opts ...MultiAggregatorOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		MultiAggregatorSuite(),
+		callable,
+		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
+		opts...)
+}
+
+// BenchMultiAggregatorSuiteParallel measures callable on a subject of
+// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
+// budget.
+func BenchMultiAggregatorSuiteParallel[T multiaggregator.MultiAggregator](
+	b *testing.B,
+	callable conform.Callable[multiaggregator.MultiAggregator],
+	newSubject func(h *MultiAggregatorHandle) T,
+	opts ...MultiAggregatorOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MultiAggregatorSuite(),
+		callable,
+		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
+		opts...)
+}
+
+// multiAggregatorStatsCalls generates the calls of MultiAggregator.Stats
+// with the inputs that each case draws.
+var multiAggregatorStatsCalls = prop.Composite(
+	func(*prop.Case) func(context.Context, multiaggregator.MultiAggregator) error {
+		return func(ctx context.Context, subject multiaggregator.MultiAggregator) error {
+			_, _, err := subject.Stats(ctx)
+			return err
+		}
+	},
+)
+
+// multiAggregatorOver is a subject of MultiAggregator whose callables call
+// spend and return their zero results. The planted defect of a ceiling
+// passes a spend that exceeds the ceiling.
+type multiAggregatorOver struct {
+	multiaggregator.MultiAggregator
+	spend func()
+}
+
+// Stats calls spend and returns its zero results.
+func (o multiAggregatorOver) Stats(context.Context) (r0, r1 int, r2 error) {
+	o.spend()
+	return r0, r1, r2
+}
+
+// newMultiAggregatorOver returns the planted defect of a ceiling of
+// MultiAggregator, whose callables call spend.
+func newMultiAggregatorOver(_ *MultiAggregatorHandle, spend func()) multiaggregator.MultiAggregator {
+	return multiAggregatorOver{spend: spend}
+}
+
+// dokimi:provenance sha256:753915c9ea673c14537304f71a407df0c5e717ae381bb211b5397e19c3d93502

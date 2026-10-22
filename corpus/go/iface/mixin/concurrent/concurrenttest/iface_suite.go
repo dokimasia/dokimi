@@ -5,8 +5,10 @@
 package concurrenttest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrent"
 )
@@ -42,9 +44,25 @@ type mixedCount struct {
 	conform.Callable[concurrent.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[concurrent.Mixed] {
-	return conform.Suite[concurrent.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[concurrent.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[concurrent.Mixed]{
+			{
+				Calls:      mixedBumpCalls,
+				Over:       newMixedOver,
+				Callable:   MixedChecks.Bump.Callable,
+				Concurrent: true,
+			},
+			{
+				Calls:    mixedCountCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Count.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -74,4 +92,84 @@ func FuzzMixedSuite[T concurrent.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:4e7b5a10feaddb9e931995b4953f0bb35cc0699d9cff90aa7f47ed550d96a846
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T concurrent.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T concurrent.Mixed](
+	b conform.B,
+	callable conform.Callable[concurrent.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T concurrent.Mixed](
+	b *testing.B,
+	callable conform.Callable[concurrent.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) concurrent.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedBumpCalls generates the calls of Mixed.Bump with the inputs that
+// each case draws.
+var mixedBumpCalls = prop.Composite(func(c *prop.Case) func(context.Context, concurrent.Mixed) error {
+	key := c.Draw(prop.Of[string](), "key")
+	return func(ctx context.Context, subject concurrent.Mixed) error {
+		return subject.Bump(ctx, key)
+	}
+})
+
+// mixedCountCalls generates the calls of Mixed.Count with the inputs that
+// each case draws.
+var mixedCountCalls = prop.Composite(func(*prop.Case) func(context.Context, concurrent.Mixed) error {
+	return func(ctx context.Context, subject concurrent.Mixed) error {
+		_, err := subject.Count(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	concurrent.Mixed
+	spend func()
+}
+
+// Bump calls spend and returns its zero results.
+func (o mixedOver) Bump(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Count calls spend and returns its zero results.
+func (o mixedOver) Count(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) concurrent.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:b79ea87372030f50df52b652a8e8ceea7fdbb42971d755900604937f01f25cb9

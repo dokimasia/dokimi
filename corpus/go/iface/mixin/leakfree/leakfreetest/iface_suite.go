@@ -5,8 +5,10 @@
 package leakfreetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/leakfree"
 )
@@ -51,9 +53,29 @@ type mixedOutstanding struct {
 	conform.Callable[leakfree.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[leakfree.Mixed] {
-	return conform.Suite[leakfree.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[leakfree.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[leakfree.Mixed]{
+			{
+				Calls:    mixedAcquireCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Acquire.Callable,
+			},
+			{
+				Calls:    mixedReleaseCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Release.Callable,
+			},
+			{
+				Calls:    mixedOutstandingCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Outstanding.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -83,4 +105,97 @@ func FuzzMixedSuite[T leakfree.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) leakfree.Mixed { return newSubject(h) }, opts...)
 }
 
-// dokimi:provenance sha256:feadc5a6adff9a057d1eefc8717055dc240e5e857562cc04abb9e47d6170d0fd
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T leakfree.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
+	t.Helper()
+	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) leakfree.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T leakfree.Mixed](
+	b conform.B,
+	callable conform.Callable[leakfree.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) leakfree.Mixed { return newSubject(h) }, opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T leakfree.Mixed](
+	b *testing.B,
+	callable conform.Callable[leakfree.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) leakfree.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedAcquireCalls generates the calls of Mixed.Acquire with the inputs
+// that each case draws.
+var mixedAcquireCalls = prop.Composite(func(*prop.Case) func(context.Context, leakfree.Mixed) error {
+	return func(ctx context.Context, subject leakfree.Mixed) error {
+		return subject.Acquire(ctx)
+	}
+})
+
+// mixedReleaseCalls generates the calls of Mixed.Release with the inputs
+// that each case draws.
+var mixedReleaseCalls = prop.Composite(func(*prop.Case) func(context.Context, leakfree.Mixed) error {
+	return func(ctx context.Context, subject leakfree.Mixed) error {
+		return subject.Release(ctx)
+	}
+})
+
+// mixedOutstandingCalls generates the calls of Mixed.Outstanding with the
+// inputs that each case draws.
+var mixedOutstandingCalls = prop.Composite(func(*prop.Case) func(context.Context, leakfree.Mixed) error {
+	return func(ctx context.Context, subject leakfree.Mixed) error {
+		_, err := subject.Outstanding(ctx)
+		return err
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	leakfree.Mixed
+	spend func()
+}
+
+// Acquire calls spend and returns its zero results.
+func (o mixedOver) Acquire(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Release calls spend and returns its zero results.
+func (o mixedOver) Release(context.Context) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Outstanding calls spend and returns its zero results.
+func (o mixedOver) Outstanding(context.Context) (r0 int, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) leakfree.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:c196bdd63483d79002172ba3353436358f09aea550bcf6dc486b7e3c7293548b

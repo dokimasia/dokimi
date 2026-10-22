@@ -5,8 +5,11 @@
 package streamreflectsmutationstest
 
 import (
+	"context"
+	"iter"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations"
 )
@@ -50,9 +53,29 @@ type mixedRemove struct {
 	conform.Callable[streamreflectsmutations.Mixed]
 }
 
-// MixedSuite returns the checks of Mixed.
+// MixedSuite returns the checks of Mixed, and the calls and the budgets of
+// its callables.
 func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
-	return conform.Suite[streamreflectsmutations.Mixed]{Declaration: "Mixed"}
+	return conform.Suite[streamreflectsmutations.Mixed]{
+		Declaration: "Mixed",
+		Calls: []conform.Call[streamreflectsmutations.Mixed]{
+			{
+				Calls:    mixedStreamCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Stream.Callable,
+			},
+			{
+				Calls:    mixedAddCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Add.Callable,
+			},
+			{
+				Calls:    mixedRemoveCalls,
+				Over:     newMixedOver,
+				Callable: MixedChecks.Remove.Callable,
+			},
+		},
+	}
 }
 
 // RunMixedSuite applies the checks of Mixed, and the checks that opts add,
@@ -91,4 +114,112 @@ func FuzzMixedSuite[T streamreflectsmutations.Mixed](
 		opts...)
 }
 
-// dokimi:provenance sha256:55610e189ab193bc4d311bc1774c62009e8bf5169d18b192aaee942ca75de36c
+// RunMixedBudgets applies the allocation ceilings of Mixed, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunMixedBudgets[T streamreflectsmutations.Mixed](
+	t *testing.T,
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		MixedSuite(),
+		func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// BenchMixedSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchMixedSuite[T streamreflectsmutations.Mixed](
+	b conform.B,
+	callable conform.Callable[streamreflectsmutations.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// BenchMixedSuiteParallel measures callable on a subject of newSubject on
+// GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchMixedSuiteParallel[T streamreflectsmutations.Mixed](
+	b *testing.B,
+	callable conform.Callable[streamreflectsmutations.Mixed],
+	newSubject func(h *MixedHandle) T,
+	opts ...MixedOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		MixedSuite(),
+		callable,
+		func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) },
+		opts...)
+}
+
+// mixedStreamCalls generates the calls of Mixed.Stream with the inputs
+// that each case draws.
+var mixedStreamCalls = prop.Composite(func(*prop.Case) func(context.Context, streamreflectsmutations.Mixed) error {
+	return func(ctx context.Context, subject streamreflectsmutations.Mixed) error {
+		_ = subject.Stream(ctx)
+		return nil
+	}
+})
+
+// mixedAddCalls generates the calls of Mixed.Add with the inputs that each
+// case draws.
+var mixedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, streamreflectsmutations.Mixed) error {
+	item := c.Draw(prop.Of[string](), "item")
+	return func(ctx context.Context, subject streamreflectsmutations.Mixed) error {
+		return subject.Add(ctx, item)
+	}
+})
+
+// mixedRemoveCalls generates the calls of Mixed.Remove with the inputs
+// that each case draws.
+var mixedRemoveCalls = prop.Composite(func(c *prop.Case) func(context.Context, streamreflectsmutations.Mixed) error {
+	item := c.Draw(prop.Of[string](), "item")
+	return func(ctx context.Context, subject streamreflectsmutations.Mixed) error {
+		return subject.Remove(ctx, item)
+	}
+})
+
+// mixedOver is a subject of Mixed whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type mixedOver struct {
+	streamreflectsmutations.Mixed
+	spend func()
+}
+
+// Stream calls spend and returns its zero results.
+func (o mixedOver) Stream(context.Context) (r0 iter.Seq2[string, error]) {
+	o.spend()
+	return r0
+}
+
+// Add calls spend and returns its zero results.
+func (o mixedOver) Add(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Remove calls spend and returns its zero results.
+func (o mixedOver) Remove(context.Context, string) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// newMixedOver returns the planted defect of a ceiling of Mixed, whose
+// callables call spend.
+func newMixedOver(_ *MixedHandle, spend func()) streamreflectsmutations.Mixed {
+	return mixedOver{spend: spend}
+}
+
+// dokimi:provenance sha256:bc738b0ce7f685d8dc3b1a90937efd35370de5cab38f70c62cab9a1a6be5f6a2

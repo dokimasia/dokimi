@@ -5,8 +5,10 @@
 package publisherexactlyoncetest
 
 import (
+	"context"
 	"testing"
 
+	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
 	publisherexactlyonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-exactlyonce"
 )
@@ -51,9 +53,29 @@ type contractSubscribe struct {
 	conform.Callable[publisherexactlyonce.Contract]
 }
 
-// ContractSuite returns the checks of Contract.
+// ContractSuite returns the checks of Contract, and the calls and the
+// budgets of its callables.
 func ContractSuite() conform.Suite[publisherexactlyonce.Contract] {
-	return conform.Suite[publisherexactlyonce.Contract]{Declaration: "Contract"}
+	return conform.Suite[publisherexactlyonce.Contract]{
+		Declaration: "Contract",
+		Calls: []conform.Call[publisherexactlyonce.Contract]{
+			{
+				Calls:    contractPublishCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Publish.Callable,
+			},
+			{
+				Calls:    contractReplayCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Replay.Callable,
+			},
+			{
+				Calls:    contractSubscribeCalls,
+				Over:     newContractOver,
+				Callable: ContractChecks.Subscribe.Callable,
+			},
+		},
+	}
 }
 
 // RunContractSuite applies the checks of Contract, and the checks that
@@ -96,4 +118,116 @@ func FuzzContractSuite[T publisherexactlyonce.Contract](
 		opts...)
 }
 
-// dokimi:provenance sha256:3b01ea7f76a8544f8e2e72dda0545d0f7327a555bd7e0aebe927cd9904ce75a3
+// RunContractBudgets applies the allocation ceilings of Contract, and the
+// ceilings that opts add, to a fresh subject of newSubject for each case.
+func RunContractBudgets[T publisherexactlyonce.Contract](
+	t *testing.T,
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	t.Helper()
+	conform.RunBudgets(
+		t,
+		ContractSuite(),
+		func(h *ContractHandle) publisherexactlyonce.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuite measures callable on a subject of newSubject, under
+// the ceilings of its budget.
+func BenchContractSuite[T publisherexactlyonce.Contract](
+	b conform.B,
+	callable conform.Callable[publisherexactlyonce.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.Bench(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) publisherexactlyonce.Contract { return newSubject(h) },
+		opts...)
+}
+
+// BenchContractSuiteParallel measures callable on a subject of newSubject
+// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
+func BenchContractSuiteParallel[T publisherexactlyonce.Contract](
+	b *testing.B,
+	callable conform.Callable[publisherexactlyonce.Contract],
+	newSubject func(h *ContractHandle) T,
+	opts ...ContractOption,
+) {
+	b.Helper()
+	conform.BenchParallel(
+		b,
+		ContractSuite(),
+		callable,
+		func(h *ContractHandle) publisherexactlyonce.Contract { return newSubject(h) },
+		opts...)
+}
+
+// contractPublishCalls generates the calls of Contract.Publish with the
+// inputs that each case draws.
+var contractPublishCalls = prop.Composite(
+	func(c *prop.Case) func(context.Context, publisherexactlyonce.Contract) error {
+		v := c.Draw(prop.Of[publisherexactlyonce.Value](), "v")
+		return func(ctx context.Context, subject publisherexactlyonce.Contract) error {
+			return subject.Publish(ctx, v)
+		}
+	},
+)
+
+// contractReplayCalls generates the calls of Contract.Replay with the
+// inputs that each case draws.
+var contractReplayCalls = prop.Composite(func(c *prop.Case) func(context.Context, publisherexactlyonce.Contract) error {
+	v := c.Draw(prop.Of[publisherexactlyonce.Value](), "v")
+	return func(ctx context.Context, subject publisherexactlyonce.Contract) error {
+		return subject.Replay(ctx, v)
+	}
+})
+
+// contractSubscribeCalls generates the calls of Contract.Subscribe with
+// the inputs that each case draws.
+var contractSubscribeCalls = prop.Composite(
+	func(*prop.Case) func(context.Context, publisherexactlyonce.Contract) error {
+		return func(ctx context.Context, subject publisherexactlyonce.Contract) error {
+			_, err := subject.Subscribe(ctx)
+			return err
+		}
+	},
+)
+
+// contractOver is a subject of Contract whose callables call spend and
+// return their zero results. The planted defect of a ceiling passes a
+// spend that exceeds the ceiling.
+type contractOver struct {
+	publisherexactlyonce.Contract
+	spend func()
+}
+
+// Publish calls spend and returns its zero results.
+func (o contractOver) Publish(context.Context, publisherexactlyonce.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Replay calls spend and returns its zero results.
+func (o contractOver) Replay(context.Context, publisherexactlyonce.Value) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Subscribe calls spend and returns its zero results.
+func (o contractOver) Subscribe(context.Context) (r0 <-chan publisherexactlyonce.Value, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newContractOver returns the planted defect of a ceiling of Contract,
+// whose callables call spend.
+func newContractOver(_ *ContractHandle, spend func()) publisherexactlyonce.Contract {
+	return contractOver{spend: spend}
+}
+
+// dokimi:provenance sha256:14c2a5ad7351f07f6f17b72a0adb30b4878890e0719b4de1072e83cc10b6a374

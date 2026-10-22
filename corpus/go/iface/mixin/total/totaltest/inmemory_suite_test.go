@@ -18,6 +18,25 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	totaltest.RunMixedSuite(t, totaltest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Mixed on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Classify", func(b *testing.B) {
+		totaltest.BenchMixedSuite(
+			b,
+			totaltest.MixedChecks.Classify.Callable,
+			func(*totaltest.MixedHandle) *totaltest.InMemory { return totaltest.NewInMemory() },
+		)
+	})
+	b.Run("Normalize", func(b *testing.B) {
+		totaltest.BenchMixedSuite(
+			b,
+			totaltest.MixedChecks.Normalize.Callable,
+			func(*totaltest.MixedHandle) *totaltest.InMemory { return totaltest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryClassify fuzzes the property checks of Mixed.Classify on
 // InMemory.
 func FuzzInMemoryClassify(f *testing.F) {
@@ -38,4 +57,4 @@ func FuzzInMemoryNormalize(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:8cce951b87332768ddc1c6165d32bf1c394e36e973dd98863613ca9d196d4b63
+// dokimi:provenance sha256:9846785db911935761419204628ff5b75b172c7e3c3c83f3c7fd02f8daea37de

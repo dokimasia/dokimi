@@ -18,6 +18,32 @@ func TestInMemoryConformsToWide(t *testing.T) {
 	multireturntest.RunWideSuite(t, multireturntest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Wide on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Quad", func(b *testing.B) {
+		multireturntest.BenchWideSuite(
+			b,
+			multireturntest.WideChecks.Quad.Callable,
+			func(*multireturntest.WideHandle) *multireturntest.InMemory { return multireturntest.NewInMemory() },
+		)
+	})
+	b.Run("Triple", func(b *testing.B) {
+		multireturntest.BenchWideSuite(
+			b,
+			multireturntest.WideChecks.Triple.Callable,
+			func(*multireturntest.WideHandle) *multireturntest.InMemory { return multireturntest.NewInMemory() },
+		)
+	})
+	b.Run("NoError", func(b *testing.B) {
+		multireturntest.BenchWideSuite(
+			b,
+			multireturntest.WideChecks.NoError.Callable,
+			func(*multireturntest.WideHandle) *multireturntest.InMemory { return multireturntest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryQuad fuzzes the property checks of Wide.Quad on InMemory.
 func FuzzInMemoryQuad(f *testing.F) {
 	multireturntest.FuzzWideSuite(
@@ -47,4 +73,4 @@ func FuzzInMemoryNoError(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:2fa07e6e6fa68fd443142d8f8a3e151fc91e245e6fd49e4e62ac9360900b11d8
+// dokimi:provenance sha256:476a6e35c884c6a5205d997e57884303a68e547032387b017044a073483c4a71

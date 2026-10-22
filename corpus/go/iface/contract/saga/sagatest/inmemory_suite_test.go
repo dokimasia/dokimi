@@ -18,6 +18,46 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	sagatest.RunContractSuite(t, sagatest.NewInMemory)
 }
 
+// BenchmarkInMemory measures each callable of the suite of Contract on
+// InMemory.
+func BenchmarkInMemory(b *testing.B) {
+	b.Run("Step", func(b *testing.B) {
+		sagatest.BenchContractSuite(
+			b,
+			sagatest.ContractChecks.Step.Callable,
+			func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+		)
+	})
+	b.Run("Compensate", func(b *testing.B) {
+		sagatest.BenchContractSuite(
+			b,
+			sagatest.ContractChecks.Compensate.Callable,
+			func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+		)
+	})
+	b.Run("Ship", func(b *testing.B) {
+		sagatest.BenchContractSuite(
+			b,
+			sagatest.ContractChecks.Ship.Callable,
+			func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+		)
+	})
+	b.Run("UndoShip", func(b *testing.B) {
+		sagatest.BenchContractSuite(
+			b,
+			sagatest.ContractChecks.UndoShip.Callable,
+			func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+		)
+	})
+	b.Run("State", func(b *testing.B) {
+		sagatest.BenchContractSuite(
+			b,
+			sagatest.ContractChecks.State.Callable,
+			func(*sagatest.ContractHandle) *sagatest.InMemory { return sagatest.NewInMemory() },
+		)
+	})
+}
+
 // FuzzInMemoryStep fuzzes the property checks of Contract.Step on
 // InMemory.
 func FuzzInMemoryStep(f *testing.F) {
@@ -68,4 +108,4 @@ func FuzzInMemoryState(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5e6f2fe8b0b4d3264a66b83ee51a996c139b4e2e3aa88c1f00bead88cbe9a8f2
+// dokimi:provenance sha256:b0eec7e44069546951e290bd42306f6d310474e1a6173e83e55a52e21d046273

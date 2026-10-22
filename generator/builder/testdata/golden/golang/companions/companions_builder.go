@@ -40,7 +40,7 @@ func (b *TakenBuilder) Clone() *TakenBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [TakenBuilder.Clone] returns a builder that shares none of them.
@@ -88,7 +88,7 @@ func (b *PairedBuilder) Clone() *PairedBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [PairedBuilder.Clone] returns a builder that shares none of them.
@@ -136,7 +136,7 @@ func (b *BareBuilder) Clone() *BareBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [BareBuilder.Clone] returns a builder that shares none of them.
@@ -184,7 +184,7 @@ func (b *OtherBuilder) Clone() *OtherBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [OtherBuilder.Clone] returns a builder that shares none of them.

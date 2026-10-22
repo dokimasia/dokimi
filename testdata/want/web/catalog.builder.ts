@@ -134,7 +134,7 @@ export class AddressBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -204,7 +204,7 @@ export class AccountBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -273,7 +273,7 @@ export class PageBuilder<T> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -332,7 +332,7 @@ export class CounterBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -341,4 +341,4 @@ export class CounterBuilder {
   }
 }
 
-// dokimi:provenance sha256:459377c59a82ba0fc1176662b460cd397a798be0dcb54b6985b4d3d1779c051c
+// dokimi:provenance sha256:033b20064ba55335b84a7bf04b3cf2c4036c31c4f7ebd031dc585c5baffc2951

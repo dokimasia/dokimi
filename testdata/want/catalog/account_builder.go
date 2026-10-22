@@ -55,7 +55,7 @@ func (b *AccountBuilder) Clone() *AccountBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [AccountBuilder.Clone] returns a builder that shares none of them.
@@ -106,7 +106,7 @@ func (b *PolicyBuilder) Clone() *PolicyBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [PolicyBuilder.Clone] returns a builder that shares none of them.
@@ -154,7 +154,7 @@ func (b *TagBuilder[K]) Clone() *TagBuilder[K] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [TagBuilder.Clone] returns a builder that shares none of them.
@@ -211,7 +211,7 @@ func (b *BoxBuilder[T]) Clone() *BoxBuilder[T] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [BoxBuilder.Clone] returns a builder that shares none of them.
@@ -219,4 +219,4 @@ func (b *BoxBuilder[T]) Build() Box[T] {
 	return b.v
 }
 
-// dokimi:provenance sha256:3630fa046b32032af28712232feeae01a7261868f6f2c769a1d5619a166aa873
+// dokimi:provenance sha256:d002cf2345ca8f92878127c7b3be08187fe9bf30cd1c2ebff3ca3e00414acf53

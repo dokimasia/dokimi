@@ -52,7 +52,7 @@ var Collision = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // BadTag reports a field whose tag builder has another value than -, the
 // one value that leaves the field out of the builder. A typo in the tag would
 // otherwise keep the setter without a word, so the finding is an Error at the
-// field, and the field stays in the builder.
+// field. The builder keeps the field.
 var BadTag = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  5,
 	Meaning: "the tag builder of a field has another value than -",

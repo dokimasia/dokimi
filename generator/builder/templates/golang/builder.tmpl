@@ -166,7 +166,7 @@ func (b *{{$b.Name}}{{$ta}}) Clone() *{{$b.Name}}{{$ta}} {
 	return out
 }
 
-{{docs (wrapdocs (printf `Build returns the value under construction. The builder stays usable,
+{{docs (wrapdocs (printf `Build returns the value under construction. The builder remains usable,
 and a later call returns the value with the changes since. The value shares
 its lists, maps, sets and bytes with the builder, and [%s.Clone] returns a
 builder that shares none of them.` $b.Name))}}

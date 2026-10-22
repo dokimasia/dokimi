@@ -63,7 +63,7 @@ func TestTypeScript(t *testing.T) {
 		gentest.Templates(t, builder.New(), typescript.Target, builderTemplate, testTemplate)
 	})
 
-	t.Run("writes the builders and the checks of the golden tree typescript", func(t *testing.T) {
+	t.Run("writes the golden tree typescript", func(t *testing.T) {
 		t.Parallel()
 
 		golden.MatchTree(t, "typescript", renderedTypeScript(t), golden.ShouldUpdate())
@@ -78,7 +78,7 @@ func TestTypeScript(t *testing.T) {
 		expect.True(t, got.Copied, "a clone copies a set")
 	})
 
-	t.Run("names the static constructors create and from", func(t *testing.T) {
+	t.Run("names the two static constructors", func(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, typescript.Target, tsTree, catalogModule).models[addressName]
@@ -151,15 +151,15 @@ func TestTypeScript(t *testing.T) {
 			want: builder.Names{With: "withStreet"},
 		},
 		{
-			name: "names the setter and the appender of a list", decl: addressName, give: "lines",
+			name: "names the methods of a list", decl: addressName, give: "lines",
 			want: builder.Names{With: "withLines", Append: "appendLines"},
 		},
 		{
-			name: "names the setters of a map and of its entries", decl: addressName, give: "labels",
+			name: "names the setters of a map", decl: addressName, give: "labels",
 			want: builder.Names{With: "withLabels", Entry: "withLabelsEntry", Entries: "withLabelsEntries"},
 		},
 		{
-			name: "names the setters of a set and of its keys", decl: addressName, give: "tags",
+			name: "names the setters of a set", decl: addressName, give: "tags",
 			want: builder.Names{With: "withTags", Entry: "withTagsEntry", Entries: "withTagsEntries"},
 		},
 		{
@@ -231,7 +231,7 @@ func TestTypeScript(t *testing.T) {
 		})
 	}
 
-	t.Run("trims the suffix of the name of a test file", func(t *testing.T) {
+	t.Run("trims the suffix of the name of a spec", func(t *testing.T) {
 		t.Parallel()
 
 		trimSuffix, declared := funcs["trimSuffix"].(func(string, string) string)

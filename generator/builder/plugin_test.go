@@ -102,7 +102,7 @@ func TestBuilder(t *testing.T) {
 			})
 		})
 
-		t.Run("tests each builder from outside its package", func(t *testing.T) {
+		t.Run("checks each builder from outside its package", func(t *testing.T) {
 			t.Parallel()
 
 			gentest.External(t, builder.New(), builder.TestTag)
@@ -119,7 +119,7 @@ func TestBuilder(t *testing.T) {
 				want       facts
 			}{
 				{
-					name:       "stamps the names of the builder and of its constructor from the seed on a struct",
+					name:       "stamps the names that the seed gives a struct",
 					giveTarget: golang.Target, giveTree: goTree, givePkgs: []string{catalogPackage},
 					giveKind: symbol.KindStruct, give: addressName,
 					want: facts{name: "AddressBuilder", seed: "NewAddressBuilder", stamped: true},
@@ -256,13 +256,13 @@ func TestBuilder(t *testing.T) {
 				msg: "the static, the readonly, the private and the hard private fields are no members of Address",
 			},
 			{
-				name: "records each embedded field and no field that an embed promotes", target: golang.Target,
+				name: "records each embedded field without the fields that an embed promotes", target: golang.Target,
 				tree: goTree, decl: profileName, want: "Role Audit Active",
 				msg: "Profile has the embeds Role and Audit and its field in the order of the source, and none of " +
 					"the fields that the embeds promote",
 			},
 			{
-				name: "records an embedded interface and an embedded defined type", target: golang.Target,
+				name: "records an embedded interface beside an embedded defined type", target: golang.Target,
 				tree: goTree, decl: envelopeName, want: "Notifier Codes",
 				msg: "the embed of the interface error, which the workspace does not declare, is no member",
 			},
@@ -320,7 +320,7 @@ func TestBuilder(t *testing.T) {
 				wantTypes: []string{"string"}, wantCopy: true,
 			},
 			{
-				name: "records a map as a map of its key and its value", target: golang.Target, tree: goTree,
+				name: "records a map as a map of its key type to its value type", target: golang.Target, tree: goTree,
 				pkg: catalogPackage, decl: addressName, give: "Labels", wantForm: builder.FormMap,
 				wantTypes: []string{"string", "string"}, wantCopy: true,
 			},
@@ -360,7 +360,8 @@ func TestBuilder(t *testing.T) {
 				wantTypes: []string{"string"}, wantCopy: true,
 			},
 			{
-				name: "records a Map as a map of its key and its value", target: typescript.Target, tree: tsTree,
+				name:   "records a Map as a map of its key type to its value type",
+				target: typescript.Target, tree: tsTree,
 				pkg: catalogModule, decl: addressName, give: "labels", wantForm: builder.FormMap,
 				wantTypes: []string{"string", "string"}, wantCopy: true,
 			},
@@ -442,7 +443,7 @@ func TestBuilder(t *testing.T) {
 				wantSeed: builder.SeedDefaults, wantStart: "v.Active",
 			},
 			{
-				name: "seeds a struct without a seed or a default with the zero value", pkg: catalogPackage,
+				name: "seeds a struct with the zero value where nothing seeds it", pkg: catalogPackage,
 				give: orderName, wantSeed: builder.SeedZero, wantStart: "",
 			},
 			{
@@ -536,11 +537,11 @@ func TestBuilder(t *testing.T) {
 				target: typescript.Target, tree: tsTree, pkg: catalogModule, give: counterName,
 			},
 			{
-				name:   "seeds nothing through a function whose name joins the struct and another word",
+				name:   "seeds nothing through a function whose name adds another word to the struct",
 				target: golang.Target, tree: goTree, pkg: seededPackage, give: tierName,
 			},
 			{
-				name:   "seeds nothing through a function whose name joins the class and another word",
+				name:   "seeds nothing through a function whose name adds another word to the class",
 				target: typescript.Target, tree: tsTree, pkg: catalogModule, give: tierName,
 			},
 		}
@@ -566,7 +567,7 @@ func TestBuilder(t *testing.T) {
 			wantClones   string
 		}{
 			{
-				name:         "records the checks of the constructors, of the setters and of the clones",
+				name:         "records the checks of each method of a builder",
 				target:       golang.Target,
 				tree:         goTree,
 				pkg:          catalogPackage,
@@ -577,7 +578,7 @@ func TestBuilder(t *testing.T) {
 				wantClones:   "Lines Labels Tags Raw",
 			},
 			{
-				name:         "records the checks of the constructors, of the setters and of the clones of the class Address",
+				name:         "records the checks of each method of the builder of the class Address",
 				target:       typescript.Target,
 				tree:         tsTree,
 				pkg:          catalogModule,
@@ -705,7 +706,7 @@ func TestBuilder(t *testing.T) {
 				"a probe of a member without a sample binds nothing")
 		})
 
-		t.Run("binds the sample and the alternate of the setter of a member to each of its probes", func(t *testing.T) {
+		t.Run("binds both values of the setter of a member to each of its probes", func(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, catalogPackage)
@@ -729,7 +730,7 @@ func TestBuilder(t *testing.T) {
 					want: builder.Zeros{Elem: emit.Literal(emit.LiteralNil, "")},
 				},
 				{
-					name:     "records the zero values of the key and the value of a map",
+					name:     "records the zero values of the entries of a map",
 					giveDecl: looseName,
 					give:     "WithIndexEntry",
 					want: builder.Zeros{
@@ -763,7 +764,7 @@ func TestBuilder(t *testing.T) {
 			expect.Equal(t, got.Fills[0].Elem.Spelling, "int", "the fill spells the element at the witness int")
 		})
 
-		t.Run("records the key and the value of a probe of a map", func(t *testing.T) {
+		t.Run("records the entry of a probe of a map", func(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, catalogPackage).checks[looseName]
@@ -836,7 +837,7 @@ func TestBuilder(t *testing.T) {
 			}
 		})
 
-		t.Run("binds the sample and the alternate of each setter to first and want", func(t *testing.T) {
+		t.Run("binds the sample of each setter to first with the alternate to want", func(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, catalogPackage)
@@ -851,7 +852,7 @@ func TestBuilder(t *testing.T) {
 			}
 		})
 
-		t.Run("binds the sample and the alternate of each copied member to want and other", func(t *testing.T) {
+		t.Run("binds the sample of each copied member to want with the alternate to other", func(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, catalogPackage)
@@ -864,7 +865,7 @@ func TestBuilder(t *testing.T) {
 			}
 		})
 
-		t.Run("records no check of a replacement or of a clone of a member without an alternate", func(t *testing.T) {
+		t.Run("records no check that needs the alternate of a member without one", func(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, catalogPackage)
@@ -989,11 +990,11 @@ func TestBuilder(t *testing.T) {
 			want   string
 		}{
 			{
-				name:   "seeds a struct through the function whose name joins the struct and the option companion-word",
+				name:   "seeds a struct through the function that the option companion-word names",
 				target: golang.Target, tree: goTree, pkg: seededPackage, want: "TierSeed",
 			},
 			{
-				name:   "seeds a class through the function whose name joins the class and the option companion-word",
+				name:   "seeds a class through the function that the option companion-word names",
 				target: typescript.Target, tree: tsTree, pkg: catalogModule, want: "tierSeed",
 			},
 		}
@@ -1032,17 +1033,25 @@ func TestBuilder(t *testing.T) {
 			expect.Empty(t, got.checks, "builder records no checks")
 		})
 
-		t.Run("reports BadTag at a field whose tag has another value, and keeps its setter", func(t *testing.T) {
+		t.Run("reports BadTag at a field whose tag has another value", func(t *testing.T) {
 			t.Parallel()
 
 			p := builder.New()
 			f := fixture(t, golang.Target, goTree, p, badPackage)
-			stamps, res := phases(t, f, p)
+			stamps, _ := phases(t, f, p)
 			got := gentest.Finding(t, stamps, f.Find(t, symbol.KindField, typoName, nameField))
 			expect.Equal(t, got.Code, builder.BadTag, "the finding has the code BadTag")
 			expect.Equal(t, got.Msg,
 				`the tag builder of Name has the value "skip", and only "-" leaves a field out of the builder`,
 				"the message contains the field and the value of its tag")
+		})
+
+		t.Run("keeps the setter of a field whose tag has another value", func(t *testing.T) {
+			t.Parallel()
+
+			p := builder.New()
+			f := fixture(t, golang.Target, goTree, p, badPackage)
+			_, res := phases(t, f, p)
 			subject := func(m builder.Model) string { return m.Subject }
 			models := gentest.Records(t, res, builderTemplate, "", subject)
 			assert.Contains(t, models, typoName, "builder records the model of Typo")
@@ -1178,9 +1187,9 @@ func stamped(t *testing.T, f *gentest.Fixture, p plugin.Plugin, kind symbol.Kind
 	seedKey, registered := meta.Lookup[string](f.Keys, builder.KeySeed)
 	assert.True(t, registered, "builder registers the key of the seed")
 	id := f.Find(t, kind, "", name).Identity()
-	got, held := meta.Get(f.Facts, id, nameKey)
+	got, stamped := meta.Get(f.Facts, id, nameKey)
 	seed, _ := meta.Get(f.Facts, id, seedKey)
-	return facts{name: got, seed: seed, stamped: held}
+	return facts{name: got, seed: seed, stamped: stamped}
 }
 
 // seed returns the function of the record of the checks that seeds each

@@ -161,7 +161,7 @@ func (b *AddressBuilder) Clone() *AddressBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [AddressBuilder.Clone] returns a builder that shares none of them.
@@ -225,7 +225,7 @@ func (b *ProfileBuilder) Clone() *ProfileBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ProfileBuilder.Clone] returns a builder that shares none of them.
@@ -280,7 +280,7 @@ func (b *EnvelopeBuilder) Clone() *EnvelopeBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [EnvelopeBuilder.Clone] returns a builder that shares none of them.
@@ -328,7 +328,7 @@ func (b *HiddenBuilder) Clone() *HiddenBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [HiddenBuilder.Clone] returns a builder that shares none of them.
@@ -439,7 +439,7 @@ func (b *OrderBuilder) Clone() *OrderBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [OrderBuilder.Clone] returns a builder that shares none of them.
@@ -565,7 +565,7 @@ func (b *LooseBuilder) Clone() *LooseBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [LooseBuilder.Clone] returns a builder that shares none of them.

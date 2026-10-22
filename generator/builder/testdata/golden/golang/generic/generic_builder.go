@@ -61,7 +61,7 @@ func (b *PageBuilder[T]) Clone() *PageBuilder[T] {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [PageBuilder.Clone] returns a builder that shares none of them.

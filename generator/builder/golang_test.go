@@ -13,6 +13,8 @@ import (
 	golang "go.dokimi.dev/eidos/lang/go"
 	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	gotesting "go.dokimi.dev/eidos/lang/go/testing"
+	"go.dokimi.dev/eidos/sdk/emit"
+	"go.dokimi.dev/eidos/sdk/symbol"
 	"go.dokimi.dev/eidos/sdk/toolchain"
 
 	"go.dokimi.dev/dokimi/generator/builder"
@@ -36,13 +38,13 @@ func TestGolang(t *testing.T) {
 		gentest.Templates(t, builder.New(), golang.Target, builderTemplate, testTemplate)
 	})
 
-	t.Run("writes the builders and the checks of the golden tree golang", func(t *testing.T) {
+	t.Run("writes the golden tree golang", func(t *testing.T) {
 		t.Parallel()
 
 		golden.MatchTree(t, "golang", rendered(t), golden.ShouldUpdate())
 	})
 
-	t.Run("writes Go that vets and whose tests pass", func(t *testing.T) {
+	t.Run("writes Go that passes go vet then go test", func(t *testing.T) {
 		t.Parallel()
 
 		a := gotesting.New()
@@ -86,9 +88,17 @@ func TestGolang(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, golang.Target, goTree, catalogPackage)
-		assert.Equal(t, gentest.Referents(got.tests[addressName]),
-			[]string{"NewAddressBuilder", "NewAddressBuilderFrom"},
-			"the fields of the record of the checks refer to the constructor from the seed and then to the other")
+		address := fixture(t, golang.Target, goTree, builder.New(), catalogPackage).
+			Find(t, symbol.KindStruct, "", addressName).Identity()
+		refs := make([]emit.TypeRef, 0, got.tests[addressName].Fields.Len())
+		for _, f := range got.tests[addressName].Fields.Items() {
+			refs = append(refs, *f.Type)
+		}
+		assert.Equal(t, refs, []emit.TypeRef{
+			{Spelling: "NewAddressBuilder", Target: address, Emitted: true},
+			{Spelling: "NewAddressBuilderFrom", Target: address, Emitted: true},
+		}, "the record of the checks refers to the constructor from the seed and then to the other, which the "+
+			"record of the builder of Address declares")
 	})
 
 	t.Run("writes a map whose empty struct has a space as a set of its key", func(t *testing.T) {
@@ -113,19 +123,19 @@ func TestGolang(t *testing.T) {
 	}{
 		{name: "names the setter of a scalar after its field", give: "Street", want: builder.Names{With: "WithStreet"}},
 		{
-			name: "names the setter and the appender of a list", give: "Lines",
+			name: "names the methods of a list", give: "Lines",
 			want: builder.Names{With: "WithLines", Append: "AppendLines"},
 		},
 		{
-			name: "names the setters of a map and of its entries", give: "Labels",
+			name: "names the setters of a map", give: "Labels",
 			want: builder.Names{With: "WithLabels", Entry: "WithLabelsEntry", Entries: "WithLabelsEntries"},
 		},
 		{
-			name: "names the setters of a set and of its keys", give: "Tags",
+			name: "names the setters of a set", give: "Tags",
 			want: builder.Names{With: "WithTags", Entry: "WithTagsEntry", Entries: "WithTagsEntries"},
 		},
 		{
-			name: "names the setters of bytes and of their text", give: "Raw",
+			name: "names the setters of bytes", give: "Raw",
 			want: builder.Names{With: "WithRaw", Text: "WithRawString"},
 		},
 	}
@@ -138,7 +148,7 @@ func TestGolang(t *testing.T) {
 		})
 	}
 
-	t.Run("seeds a struct through the companion whose name joins its name and Defaults", func(t *testing.T) {
+	t.Run("seeds a struct through its companion with the suffix Defaults", func(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, golang.Target, goTree, seededPackage)

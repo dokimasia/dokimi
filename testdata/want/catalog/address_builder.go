@@ -165,7 +165,7 @@ func (b *AddressBuilder) Clone() *AddressBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [AddressBuilder.Clone] returns a builder that shares none of them.
@@ -226,7 +226,7 @@ func (b *ProfileBuilder) Clone() *ProfileBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [ProfileBuilder.Clone] returns a builder that shares none of them.
@@ -274,7 +274,7 @@ func (b *MirrorBuilder) Clone() *MirrorBuilder {
 	return out
 }
 
-// Build returns the value under construction. The builder stays usable,
+// Build returns the value under construction. The builder remains usable,
 // and a later call returns the value with the changes since. The value
 // shares its lists, maps, sets and bytes with the builder, and
 // [MirrorBuilder.Clone] returns a builder that shares none of them.
@@ -282,4 +282,4 @@ func (b *MirrorBuilder) Build() Mirror {
 	return b.v
 }
 
-// dokimi:provenance sha256:bca9356d82ff4ee6668a4d72904d5cf326a259b3e247c042b51279e3fde2592c
+// dokimi:provenance sha256:f3dceb8ac0588d91620b65daf94e008db9bc08204297044c565f9664296ecfa5

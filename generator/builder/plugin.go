@@ -470,9 +470,11 @@ func New() sdk.Dual {
 // register claims the namespace of builder and registers [KeyName] and
 // [KeySeed].
 //
-// Error modes: the error of the claim, such as a namespace that another
-// registrant claimed, and the errors of the two registrations, such as a key
-// that the registrant registered with another type, joined.
+// # Errors
+//
+// register returns the error of the claim, such as a namespace that another
+// registrant claimed, joined with the errors of the two registrations, such as
+// a key that the registrant registered with another type.
 func (g *generator) register(r *meta.Registry) error {
 	errClaim := r.ClaimNamespace(KeyName.Namespace())
 	kinds := []symbol.Kind{symbol.KindStruct, symbol.KindAlias}
@@ -612,7 +614,7 @@ func (g *generator) write(m sdk.SubjectMatch, p part, e *sdk.Emitter, sub *subje
 	}
 	test, checks := in.tests(builder.Name, members, &model, values)
 	if p.functions() {
-		test.Fields.Append(referent(fromSeed), referent(fromValue))
+		test.Fields.Append(in.referent(fromSeed), in.referent(fromValue))
 	}
 	e.File(TestTag).Record(checks, test)
 }
@@ -626,9 +628,12 @@ func (in *invocation) function(name string) *emit.Function {
 }
 
 // referent returns a field of the record of the checks whose type refers to
-// the function named name, which the record of the builder declares.
-func referent(name string) *emit.Field {
-	return &emit.Field{Name: name, Type: &emit.TypeRef{Spelling: name}}
+// the function named name, which the record of the builder declares. The
+// reference is an emitted reference to the record of the subject, so the
+// layout of eidos qualifies it where the checks are in another package than
+// the builder.
+func (in *invocation) referent(name string) *emit.Field {
+	return &emit.Field{Name: name, Type: &emit.TypeRef{Spelling: name, Target: in.sub.origin, Emitted: true}}
 }
 
 // start returns the start body of the record of a builder, the seed of the
@@ -663,8 +668,8 @@ func (in *invocation) start(members []member) (*emit.Method, Seed, map[string]em
 				f.Name, text)
 			return nil, "", nil, false
 		}
-		value, lifted := in.lift(&scope, f.Type, text)
-		if !lifted {
+		value, read := defaults.Value(&in.b, &scope, f.Type, text)
+		if !read {
 			in.m.ErrorfAt(BadDefault, f.Pos, "the default %q of %s is no value of its type %s",
 				text, f.Name, f.Type.Spelling)
 			return nil, "", nil, false
@@ -1093,37 +1098,6 @@ func (in *invocation) argumentOf(form Form, f *node.Field, ref *node.TypeRef) *n
 		return childrenOf(rules.Unaliased(ref, in.b.View()))[0]
 	}
 	return ref
-}
-
-// lift returns the value of the text of the default of a field of the type
-// ref. The rules read the text as a value in the language of the field, in
-// the scope of the declaration. Such a value is a literal, or the name of a
-// declaration or a call in a language that reads them. For a field of text,
-// a text that the rules do not read is the content of the string, as the
-// text of an authored sample is. lift reports false for a text that is no
-// value of the type.
-func (in *invocation) lift(scope *rules.Scope, ref *node.TypeRef, text string) (emit.Value, bool) {
-	value, read := in.b.LiteralFor(*scope, ref, text)
-	if read || !in.textual(ref) {
-		return value, read
-	}
-	return emit.Literal(emit.LiteralString, text), true
-}
-
-// textual reports whether the type ref is text. A type that refers to a
-// declared type, such as type Code string of Go, is text where the target
-// of that declaration is text.
-func (in *invocation) textual(ref *node.TypeRef) bool {
-	shape := in.b.TypeOf(ref)
-	for shape.Form == symbol.FormReference {
-		decl, _ := in.m.Reader().Lookup(shape.Ref)
-		alias, declared := decl.(*node.Alias)
-		if !declared {
-			return false
-		}
-		shape = in.b.TypeOf(alias.Target)
-	}
-	return shape.Form == symbol.FormText
 }
 
 // valueOf returns the type of the value of the builder with the type

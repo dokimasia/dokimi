@@ -53,23 +53,32 @@ const (
 	ReasonParam      directive.ParamKey = "reason"
 )
 
-// KeyDeclaration, KeyCallable, KeySegment, KeyStatement and KeyDefect are the
-// keys of the facts that the annotate half stamps on the function of each
-// check that it binds. The facts contain the identity of the declaration under
-// [SuiteDirective], the name of the callable such as Store.Get, the segment
-// and the statement of the check, and the identity of the function of its
-// planted defect.
+// KeyDeclaration, KeyCallable, KeySegment, KeyStatement, KeyDefect and
+// KeyProperty are the keys of the facts that the annotate half stamps on the
+// function of each check that it binds. The facts contain the identity of the
+// declaration under [SuiteDirective], the name of the callable such as
+// Store.Get, the segment and the statement of the check, the identity of the
+// function of its planted defect, and whether the check is a property check.
 const (
 	KeyDeclaration meta.KeyName = "suite.declaration"
 	KeyCallable    meta.KeyName = "suite.callable"
 	KeySegment     meta.KeyName = "suite.segment"
 	KeyStatement   meta.KeyName = "suite.statement"
 	KeyDefect      meta.KeyName = "suite.defect"
+	KeyProperty    meta.KeyName = "suite.property"
 )
 
 // checksThat contains the words after the name of a check that open its doc
 // comment, as in "KeepsTheItem checks that Get returns the item".
 const checksThat = " checks that"
+
+// propPackage is the import path of the property engine of the assert
+// library. A property check takes a pointer to its type caseType after the
+// handle of its check.
+const (
+	propPackage = "go.dokimi.dev/assert/prop"
+	caseType    = "Case"
+)
 
 // Word is the word of the family of the suites and of the family of their
 // tests, so the test of a suite is the spec of its file. TestTag is the tag of
@@ -96,6 +105,7 @@ const (
 	checksWord     = "Checks"
 	suiteWord      = "Suite"
 	runWord        = "Run"
+	fuzzWord       = "Fuzz"
 	fromHandleWord = "FromHandle"
 	handleWord     = "Handle"
 	checkWord      = "Check"
@@ -136,15 +146,17 @@ type Suite struct {
 // Names are the names of the declarations of the suite of a declaration such
 // as Store: the variable of the names of its callables StoreChecks, the
 // function of its checks StoreSuite, the two forms RunStoreSuite and
-// RunStoreSuiteFromHandle of its application, and the aliases StoreHandle,
-// StoreCheck and StoreOption. Methods is the interface of the methods of a
-// struct, as CatalogMethods, and Func the function type of a function, as
-// SlugFunc. Each is empty for another declaration.
+// RunStoreSuiteFromHandle of its application, its fuzz form FuzzStoreSuite,
+// and the aliases StoreHandle, StoreCheck and StoreOption. Methods is the
+// interface of the methods of a struct, as CatalogMethods, and Func the
+// function type of a function, as SlugFunc. Each is empty for another
+// declaration.
 type Names struct {
 	Checks        string
 	Suite         string
 	Run           string
 	RunFromHandle string
+	Fuzz          string
 	Handle        string
 	Check         string
 	Option        string
@@ -172,7 +184,9 @@ type Callable struct {
 // check under that name. Segment is the name of the function in kebab case,
 // and the last part of the identity of the check. Statement is the rest of
 // the first sentence of the doc comment of the function after the words
-// "checks that".
+// "checks that". Property reports that the function takes a case of the
+// property engine after the handle, so the suite passes it as the property of
+// the check.
 type Check struct {
 	Apply     *emit.TypeRef
 	Defect    *emit.TypeRef
@@ -181,6 +195,7 @@ type Check struct {
 	Method    string
 	Segment   string
 	Statement string
+	Property  bool
 }
 
 // Conformance is the data of the record of one test of the family of the
@@ -194,19 +209,24 @@ type Check struct {
 // takes the subject itself. Builds and Receives are the segments of the
 // checks that the test of a suite adds. The check of the form Run of the
 // suite of a function has the segment Receives, and each other check has
-// the segment Builds. Both are empty for a conformance test.
+// the segment Builds. Both are empty for a conformance test. Targets are the
+// fuzz targets of the test: one for each callable in the conformance test of
+// a subject, and one for the function in the test of the suite of a function.
+// FromHandle reports that the factory of a subject takes the handle of a
+// check.
 //
-// The record of a conformance test is a struct with two fields. The type of
-// the first refers to the form of the application, as RunStoreSuite, and the
-// type of the second to the factory of the subjects. The record of a subject
-// with excusals has a third field, whose type refers to the names of the
-// callables of the suite, as StoreChecks. The record of the test of a suite
-// is a struct whose fields refer, in this order, to the function of the suite
-// as StoreSuite, to the two forms of the application, to the aliases of the
-// handle and the check, to the type of the subjects and to the names of the
-// callables. The record of the suite of a function has a last field, which
-// refers to the function. The layout of eidos qualifies each reference to the
-// suite by the package of the file of the suite.
+// The record of a conformance test is a struct with six fields. Their types
+// refer, in this order, to the form of the application, as RunStoreSuite, to
+// the factory of the subjects, to the names of the callables of the suite, as
+// StoreChecks, to its fuzz form, as FuzzStoreSuite, to its alias of the
+// handle, and to the type of the subjects that the factory returns. The record
+// of the test of a suite is a struct whose fields refer, in this order, to the
+// function of the suite as StoreSuite, to the two forms of the application, to
+// the aliases of the handle and the check, to the type of the subjects and to
+// the names of the callables. The record of the suite of a function has two
+// last fields, which refer to the function and to its fuzz form. The layout of
+// eidos qualifies each reference to the suite by the package of the file of
+// the suite.
 type Conformance struct {
 	Test        string
 	Subject     string
@@ -214,7 +234,18 @@ type Conformance struct {
 	Builds      string
 	Receives    string
 	Excusals    []Excusal
+	Targets     []Target
 	Function    bool
+	FromHandle  bool
+}
+
+// Target is one fuzz target of a test. Name is the name of the fuzz function,
+// as FuzzStoreGet, and Field the field of its callable in the names of the
+// callables, as Get. The target of the suite of a function has no field,
+// because the function is the one callable of its suite.
+type Target struct {
+	Name  string
+	Field string
 }
 
 // Excusal is one excusal of a check in the conformance test of a subject.
@@ -304,6 +335,7 @@ type generator struct {
 	callable    meta.Key[string]
 	segment     meta.Key[string]
 	statement   meta.Key[string]
+	property    meta.Key[bool]
 }
 
 // New returns suite, a plugin with an annotate half and a generate half. The
@@ -368,7 +400,7 @@ func (g *generator) register(r *meta.Registry) error {
 	spec := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindFunction}, Doc: doc}
 	}
-	var errs [6]error
+	var errs [7]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
@@ -380,6 +412,8 @@ func (g *generator) register(r *meta.Registry) error {
 		"contains the sentence that the check proves of a subject"))
 	g.defect, errs[5] = meta.Register[symbol.Identity](r, spec(KeyDefect,
 		"contains the identity of the function that returns the planted defect of the check"))
+	g.property, errs[6] = meta.Register[bool](r, spec(KeyProperty,
+		"reports that the check takes a case of the property engine after the handle of its check"))
 	return errors.Join(errs[:]...)
 }
 
@@ -403,7 +437,8 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ lang.Part, st *sdk.Sta
 			fn.Name, fn.Name+checksThat)
 		return nil
 	}
-	if !signed(m, d, fn) {
+	property, ok := signed(m, d, fn)
+	if !ok {
 		return nil
 	}
 	segment := naming.Kebab(fn.Name)
@@ -417,6 +452,9 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ lang.Part, st *sdk.Sta
 	sdk.Stamp(st, g.segment, segment)
 	sdk.Stamp(st, g.statement, statement)
 	sdk.Stamp(st, g.defect, d.Params[DefectParam].Target)
+	if property {
+		sdk.Stamp(st, g.property, true)
+	}
 	return nil
 }
 
@@ -507,19 +545,24 @@ func statementOf(fn *node.Function) (string, bool) {
 }
 
 // signed reports whether the check fn and the defect of its directive d have
-// the signatures of a check. A check takes the handle of its check and returns
-// nothing, and its defect returns the planted defect from the same handle.
-// signed reports [BadCheck] at d where a signature differs.
-func signed(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) bool {
+// the signatures of a check, and whether fn is a property check. A check takes
+// the handle of its check and returns nothing. A property check also takes a
+// *prop.Case after the handle. The defect returns the planted defect from the
+// handle of its check. signed reports [BadCheck] at d where a signature
+// differs.
+func signed(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) (property, ok bool) {
 	defect := d.Params[DefectParam].Target
 	b := m.Rules()
 	check, _ := b.CallableOf(fn)
 	found, _ := m.Reader().Lookup(defect)
 	planted, _ := b.CallableOf(found)
 	switch {
-	case len(check.Params) != 1:
-		m.ErrorfAt(BadCheck, d.Pos, "the check %s takes %d parameters, and a check takes the handle of its check "+
-			"alone", fn.Name, len(check.Params))
+	case len(check.Params) == 2 && !takesCase(check.Params[1].Ref):
+		m.ErrorfAt(BadCheck, d.Pos, "the second parameter of the check %s has the type %s, and a property check "+
+			"takes a *prop.Case after the handle of its check", fn.Name, check.Params[1].Ref.Spelling)
+	case len(check.Params) != 1 && len(check.Params) != 2:
+		m.ErrorfAt(BadCheck, d.Pos, "the check %s takes %d parameters, and a check takes the handle of its check, "+
+			"with a *prop.Case after it for a property check", fn.Name, len(check.Params))
 	case len(check.Returns) > 0:
 		m.ErrorfAt(BadCheck, d.Pos, "the check %s returns a result, and a check returns nothing", fn.Name)
 	case len(planted.Params) != 1:
@@ -529,9 +572,20 @@ func signed(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) boo
 		m.ErrorfAt(BadCheck, d.Pos, "the defect %s of %s returns %d results, and a defect returns the planted "+
 			"defect alone", defect.Name, fn.Name, len(planted.Returns))
 	default:
-		return true
+		return len(check.Params) == 2, true
 	}
-	return false
+	return false, false
+}
+
+// takesCase reports whether ref is a pointer to the case of the property
+// engine, whatever name the file gives the package of the engine. Go spells a
+// pointer in the optional form, which has one child.
+func takesCase(ref *node.TypeRef) bool {
+	if ref.Form != symbol.FormOptional {
+		return false
+	}
+	elem := ref.Elems[0]
+	return elem.Package == propPackage && elem.Spelling[strings.LastIndex(elem.Spelling, ".")+1:] == caseType
 }
 
 // bound is a check that the annotate half binds to a declaration: the
@@ -542,6 +596,7 @@ type bound struct {
 	segment   string
 	statement string
 	defect    symbol.Identity
+	property  bool
 }
 
 // boundTo returns the checks that the annotate half binds to the declaration
@@ -557,6 +612,7 @@ func (g *generator) boundTo(m sdk.Matcher, origin *symbol.Identity) []bound {
 		b.segment, _ = sdk.FactOf(m, id, g.segment)
 		b.statement, _ = sdk.FactOf(m, id, g.statement)
 		b.defect, _ = sdk.FactOf(m, id, g.defect)
+		b.property, _ = sdk.FactOf(m, id, g.property)
 		out = append(out, b)
 	}
 	return out
@@ -573,7 +629,7 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 		byCallable[b.callable] = append(byCallable[b.callable], Check{
 			Apply:  &emit.TypeRef{Spelling: b.fn.Name, Target: b.fn},
 			Defect: &emit.TypeRef{Spelling: b.defect.Name, Target: b.defect},
-			Method: b.fn.Name, Segment: b.segment, Statement: b.statement,
+			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Property: b.property,
 		})
 	}
 	var out []Check
@@ -728,7 +784,7 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	for _, c := range s.Callables {
 		decls = append(decls, &emit.Struct{Origin: *origin, Name: c.Type, Visibility: symbol.VisibilityPackage})
 	}
-	decls = append(decls, public(n.Suite), public(n.Run), public(n.RunFromHandle),
+	decls = append(decls, public(n.Suite), public(n.Run), public(n.RunFromHandle), public(n.Fuzz),
 		alias(n.Handle), alias(n.Check), alias(n.Option))
 	e.File().Record(*s, decls...)
 	record := &emit.Struct{
@@ -748,8 +804,13 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		&emit.Field{Name: subjectWord, Type: subject},
 		&emit.Field{Name: checksWord, Type: emitted(n.Checks)},
 	)
+	var targets []Target
 	if s.Func != nil {
-		record.Fields.Append(&emit.Field{Name: funcWord, Type: &emit.TypeRef{Spelling: s.Declaration, Target: *origin}})
+		record.Fields.Append(
+			&emit.Field{Name: funcWord, Type: &emit.TypeRef{Spelling: s.Declaration, Target: *origin}},
+			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
+		)
+		targets = []Target{{Name: e.JoinName(s.Declaration, fuzzWord)}}
 	}
 	excused := make([]Excusal, 0, len(s.Checks))
 	for _, c := range s.Checks {
@@ -757,7 +818,7 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	}
 	e.File(TestTag).Record(Conformance{
 		Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration, Builds: buildsSegment,
-		Receives: receivesSegment, Excusals: excused, Function: s.Func != nil,
+		Receives: receivesSegment, Excusals: excused, Targets: targets, Function: s.Func != nil,
 	}, record)
 }
 
@@ -790,7 +851,8 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 	}
 	factory := d.Params[NewParam].Target
 	found, _ := m.Reader().Lookup(factory)
-	view, _ := m.Rules().CallableOf(found)
+	b := m.Rules()
+	view, _ := b.CallableOf(found)
 	if len(view.Params) > 1 {
 		m.Errorf(BadFactory, "the factory %s takes %d parameters, so %s has no conformance test",
 			factory.Name, len(view.Params), st.Name)
@@ -815,14 +877,20 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 		Name:       e.JoinName(conformanceWd, st.Name),
 		Visibility: symbol.VisibilityPackage,
 	}
+	emitted := func(name string) *emit.TypeRef { return &emit.TypeRef{Spelling: name, Target: declared, Emitted: true} }
 	record.Fields.Append(
-		&emit.Field{Name: runWord, Type: &emit.TypeRef{Spelling: run, Target: declared, Emitted: true}},
+		&emit.Field{Name: runWord, Type: emitted(run)},
 		&emit.Field{Name: newWord, Type: &emit.TypeRef{Spelling: factory.Name, Target: factory}},
+		&emit.Field{Name: checksWord, Type: emitted(names.Checks)},
+		&emit.Field{Name: fuzzWord, Type: emitted(names.Fuzz)},
+		&emit.Field{Name: handleWord, Type: emitted(names.Handle)},
+		&emit.Field{Name: subjectWord, Type: rules.EmitRef(view.Returns[0].Ref)},
 	)
-	if len(excusals) > 0 {
-		record.Fields.Append(&emit.Field{
-			Name: checksWord, Type: &emit.TypeRef{Spelling: names.Checks, Target: declared, Emitted: true},
-		})
+	decl, _ := m.Reader().Lookup(declared)
+	var targets []Target
+	fuzz := e.JoinName(st.Name, fuzzWord)
+	for _, method := range methodsOf(&b, decl) {
+		targets = append(targets, Target{Name: e.JoinName(method.Name, fuzz), Field: method.Name})
 	}
 	out := e.File(TestTag)
 	// The directive subject is on a struct, so its factory is a function in
@@ -832,7 +900,8 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 	}
 	out.Record(Conformance{
 		Test:    e.JoinName(declared.Name, e.JoinName(conformsWord, e.JoinName(st.Name, testWord))),
-		Subject: st.Name, Declaration: declared.Name, Excusals: excusals,
+		Subject: st.Name, Declaration: declared.Name, Excusals: excusals, Targets: targets,
+		FromHandle: len(view.Params) == 1,
 	}, record)
 	return nil
 }
@@ -884,7 +953,8 @@ func namesOf(e *sdk.Emitter, decl string) Names {
 	run := e.JoinName(suite, runWord)
 	return Names{
 		Checks: e.JoinName(checksWord, decl), Suite: suite, Run: run, RunFromHandle: e.JoinName(fromHandleWord, run),
-		Handle: e.JoinName(handleWord, decl), Check: e.JoinName(checkWord, decl), Option: e.JoinName(optionWord, decl),
+		Fuzz: e.JoinName(suite, fuzzWord), Handle: e.JoinName(handleWord, decl), Check: e.JoinName(checkWord, decl),
+		Option: e.JoinName(optionWord, decl),
 	}
 }
 

@@ -1,32 +1,49 @@
 {{- use "testing"}}
 {{- range .Records}}
+{{- $r := .}}
 {{- $c := .Data}}
 {{- $refs := .Decl.Fields.Items}}
 {{- $test := suitePascal $c.Test}}
 {{- if $c.Subject}}
 {{- if $c.Excusals}}{{use "go.dokimi.dev/conform"}}{{end}}
+{{- $checks := spell (index $refs 2).Type}}
+{{- $factory := spell (index $refs 1).Type}}
+{{- if not $c.FromHandle}}
+{{- $factory = printf "func(*%s) %s { return %s() }" (spell (index $refs 4).Type) (spell (index $refs 5).Type) $factory}}
+{{- end}}
 
 {{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $test $c.Declaration $c.Subject))}}
 {{- ""}}func {{$test}}(t *testing.T) {
 	t.Parallel()
 {{- if $c.Excusals}}
-{{- $checks := spell (index $refs 2).Type}}
 
 	{{spell (index $refs 0).Type}}(
 		t,
 		{{spell (index $refs 1).Type}},
-{{- range $c.Excusals}}
-		conform.Excuse(
-			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
-			{{printf "%q" .Reason}},
-		),
-{{- end}}
+{{- template "suite.excusals" $r}}
 	)
 {{- else}}
 
 	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}})
 {{- end}}
 }
+{{- range $c.Targets}}
+{{- $target := suitePascal .Name}}
+
+{{docs (wrapdocs (printf `%s fuzzes the property checks of %s.%s on %s.` $target $c.Declaration .Field $c.Subject))}}
+{{- ""}}func {{$target}}(f *testing.F) {
+{{- if $c.Excusals}}
+	{{spell (index $refs 3).Type}}(
+		f,
+		{{$checks}}.{{.Field}}.Callable,
+		{{$factory}},
+{{- template "suite.excusals" $r}}
+	)
+{{- else}}
+	{{spell (index $refs 3).Type}}(f, {{$checks}}.{{.Field}}.Callable, {{$factory}})
+{{- end}}
+}
+{{- end}}
 {{- else}}{{use "go.dokimi.dev/conform"}}{{use "go.dokimi.dev/assert"}}
 {{- $suite := index $refs 0}}
 {{- $run := index $refs 1}}
@@ -49,6 +66,13 @@
 		t.Parallel()
 		conform.Falsify(t, {{spell $suite.Type}}())
 	})
+{{- if $c.Function}}
+
+	t.Run("{{$c.Declaration}}", func(t *testing.T) {
+		t.Parallel()
+		{{spell $run.Type}}(t, {{spell (index $refs 7).Type}})
+	})
+{{- end}}
 
 	t.Run("{{suitePascal $run.Type.Spelling}}", func(t *testing.T) {
 		t.Parallel()
@@ -112,6 +136,29 @@
 {{- end}}
 	})
 }
+{{- range $c.Targets}}
+{{- $target := suitePascal .Name}}
+
+{{docs (wrapdocs (printf `%s fuzzes the property checks of %s.` $target $c.Declaration))}}
+{{- ""}}func {{$target}}(f *testing.F) {
+	{{spell (index $refs 8).Type}}(f, {{spell (index $refs 7).Type}})
+}
+{{- end}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.excusals writes each excusal of the conformance test of a subject as an
+option of a call, with the names of the callables that the record of the test
+refers to.
+*/}}
+{{- define "suite.excusals"}}
+{{- $checks := spell (index .Decl.Fields.Items 2).Type}}
+{{- range .Data.Excusals}}
+		conform.Excuse(
+			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+			{{printf "%q" .Reason}},
+		),
 {{- end}}
 {{- end}}
 

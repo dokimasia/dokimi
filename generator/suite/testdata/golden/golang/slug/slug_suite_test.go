@@ -17,6 +17,11 @@ func TestSlugSuite(t *testing.T) {
 		conform.Falsify(t, SlugSuite())
 	})
 
+	t.Run("Slug", func(t *testing.T) {
+		t.Parallel()
+		RunSlugSuite(t, Slug)
+	})
+
 	t.Run("RunSlugSuite", func(t *testing.T) {
 		t.Parallel()
 		RunSlugSuite(
@@ -66,4 +71,9 @@ func TestSlugSuite(t *testing.T) {
 			),
 		)
 	})
+}
+
+// FuzzSlug fuzzes the property checks of Slug.
+func FuzzSlug(f *testing.F) {
+	FuzzSlugSuite(f, Slug)
 }

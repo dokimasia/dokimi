@@ -62,3 +62,21 @@ func RunCacheSuiteFromHandle[T Cache[int, int]](
 		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
 		opts...)
 }
+
+// FuzzCacheSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzCacheSuite[T Cache[int, int]](
+	f *testing.F,
+	callable conform.Callable[Cache[int, int]],
+	newSubject func(h *CacheHandle) T,
+	opts ...CacheOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		CacheSuite(),
+		callable,
+		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
+		opts...)
+}

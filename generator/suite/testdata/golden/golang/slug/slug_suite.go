@@ -76,3 +76,15 @@ func RunSlugSuiteFromHandle(
 	t.Helper()
 	conform.Run(t, SlugSuite(), newSubject, opts...)
 }
+
+// FuzzSlugSuite registers on f the fuzz target of the property checks of
+// Slug on subject.
+func FuzzSlugSuite(f *testing.F, subject SlugFunc, opts ...SlugOption) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		SlugSuite(),
+		SlugChecks.Callable,
+		func(*SlugHandle) SlugFunc { return subject },
+		opts...)
+}

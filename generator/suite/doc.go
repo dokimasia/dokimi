@@ -36,6 +36,16 @@
 // The annotate half of suite stamps the facts of each check that it binds, and
 // the generate half reads them into the suite of the declaration.
 //
+// A function that takes a *prop.Case after the handle is a property check.
+// The runtime runs it once for each case of the property engine, and the fuzz
+// target of its callable runs it under the fuzzer:
+//
+//	// KeepsTheLastPut checks that Get returns the session of the last Put of
+//	// its ID.
+//	//
+//	//dokimi:check Sessions.Get defect=keepsTheFirstPut
+//	func KeepsTheLastPut(h *SessionsHandle, c *prop.Case) { … }
+//
 // # Subjects
 //
 // A consumer applies the suite to a subject, and adds checks of its own:
@@ -49,6 +59,11 @@
 //
 //	//dokimi:subject store.Store new=New
 //	type Store struct{ … }
+//
+// The test of a subject also declares a fuzz target of each callable, such as
+// FuzzStoreGet, which calls the fuzz form FuzzStoreSuite of the suite. The
+// test of the suite of a function applies the suite to the function itself,
+// and declares its fuzz target, such as FuzzSlug.
 //
 // # Excusals
 //

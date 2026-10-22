@@ -29,6 +29,7 @@ const (
 	slugPackage     = "example.com/shop/slug"
 	memoryPackage   = "example.com/shop/memory"
 	cachedPackage   = "example.com/shop/cached"
+	sessionPackage  = "example.com/shop/session"
 	suiteTemplate   = "suite.tmpl"
 	conformTemplate = "conform.test.tmpl"
 )

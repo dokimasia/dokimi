@@ -169,7 +169,7 @@ func TestSuite(t *testing.T) {
 				{
 					name:    "records the function type of a function as the subject type of its test",
 					givePkg: slugPackage, giveKind: symbol.KindFunction, give: "Slug",
-					wantSubject: "SlugFunc", wantFields: 8, wantFunction: true,
+					wantSubject: "SlugFunc", wantFields: 9, wantFunction: true,
 				},
 			}
 			for _, tt := range tests {
@@ -200,10 +200,35 @@ func TestSuite(t *testing.T) {
 			assert.True(t, found, "suite records the test of the suite of Slug")
 			assert.NotNil(t, got.Decl, "the record of the test is a struct")
 			refs := got.Decl.Fields.Items()
-			assert.Length(t, refs, 8, "the record has a field of each name of the test")
+			assert.Length(t, refs, 9, "the record has a field of each name of the test")
 			slug := f.Find(t, symbol.KindFunction, "", "Slug").Identity()
 			expect.Equal(t, *refs[7].Type, emit.TypeRef{Spelling: "Slug", Target: slug},
 				"the record refers to the function that the form Run applies")
+		})
+
+		t.Run("records the fuzz target of the suite of a function", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, slugPackage)
+			got, found := recorded(t, f, p).tests["TestSlugSuite"]
+			assert.True(t, found, "suite records the test of the suite of Slug")
+			expect.Equal(t, got.Data.Targets, []suite.Target{{Name: "FuzzSlug"}},
+				"the function is the one callable of its suite and the one subject of its fuzz target")
+			assert.NotNil(t, got.Decl, "the record of the test is a struct")
+			refs := got.Decl.Fields.Items()
+			assert.Length(t, refs, 9, "the record has a field of each name of the test")
+			slug := f.Find(t, symbol.KindFunction, "", "Slug").Identity()
+			expect.Equal(t, *refs[8].Type, emit.TypeRef{Spelling: "FuzzSlugSuite", Target: slug, Emitted: true},
+				"the record refers to the fuzz form that the suite of Slug emits")
+		})
+
+		t.Run("records no fuzz target in the test of the suite of an interface", func(t *testing.T) {
+			t.Parallel()
+
+			got, found := generate(t, goTree, storePackage).tests["TestStoreSuite"]
+			assert.True(t, found, "suite records the test of the suite of Store")
+			expect.Empty(t, got.Data.Targets, "the suite of an interface has no subject of its own to fuzz")
 		})
 
 		t.Run("records the subject type and the callables of an interface", func(t *testing.T) {
@@ -230,8 +255,8 @@ func TestSuite(t *testing.T) {
 			got := generate(t, goTree, storePackage).suites["Store"]
 			expect.Equal(t, got.Names, suite.Names{
 				Checks: "StoreChecks", Suite: "StoreSuite", Run: "RunStoreSuite",
-				RunFromHandle: "RunStoreSuiteFromHandle", Handle: "StoreHandle", Check: "StoreCheck",
-				Option: "StoreOption",
+				RunFromHandle: "RunStoreSuiteFromHandle", Fuzz: "FuzzStoreSuite", Handle: "StoreHandle",
+				Check: "StoreCheck", Option: "StoreOption",
 			}, "each name joins the name of the declaration to the word of its part")
 		})
 
@@ -292,21 +317,22 @@ func TestSuite(t *testing.T) {
 					name: "declares each name of the suite of an interface", givePkg: storePackage, give: "Store",
 					wantDecl: []string{
 						"StoreGet", "StorePut", "StoreSuite", "RunStoreSuite", "RunStoreSuiteFromHandle",
-						"StoreHandle", "StoreCheck", "StoreOption",
+						"FuzzStoreSuite", "StoreHandle", "StoreCheck", "StoreOption",
 					},
 				},
 				{
 					name: "declares the interface of the methods of a struct", givePkg: catalogPackage, give: "Catalog",
 					wantDecl: []string{
 						"CatalogMethods", "CatalogFind", "CatalogAdd", "CatalogSuite", "RunCatalogSuite",
-						"RunCatalogSuiteFromHandle", "CatalogHandle", "CatalogCheck", "CatalogOption",
+						"RunCatalogSuiteFromHandle", "FuzzCatalogSuite", "CatalogHandle", "CatalogCheck",
+						"CatalogOption",
 					},
 				},
 				{
 					name: "declares the function type of a function", givePkg: slugPackage, give: "Slug",
 					wantDecl: []string{
 						"SlugFunc", "SlugCallable", "SlugSuite", "RunSlugSuite", "RunSlugSuiteFromHandle",
-						"SlugHandle", "SlugCheck", "SlugOption",
+						"FuzzSlugSuite", "SlugHandle", "SlugCheck", "SlugOption",
 					},
 				},
 			}
@@ -322,11 +348,12 @@ func TestSuite(t *testing.T) {
 
 		{
 			tests := []struct {
-				name     string
-				give     string
-				wantTest string
-				wantRun  string
-				wantNew  string
+				name           string
+				give           string
+				wantTest       string
+				wantRun        string
+				wantNew        string
+				wantFromHandle bool
 			}{
 				{
 					name: "records the conformance test of a subject whose factory takes nothing", give: "Store",
@@ -335,6 +362,7 @@ func TestSuite(t *testing.T) {
 				{
 					name: "records the conformance test of a subject whose factory takes the handle", give: "Clocked",
 					wantTest: "TestClockedConformsToStore", wantRun: "RunStoreSuiteFromHandle", wantNew: "NewClocked",
+					wantFromHandle: true,
 				},
 			}
 			for _, tt := range tests {
@@ -347,9 +375,11 @@ func TestSuite(t *testing.T) {
 					assert.True(t, found, "suite records the conformance test of "+tt.give)
 					expect.Equal(t, got.Data.Subject, tt.give, "the test applies the suite to the subject")
 					expect.Equal(t, got.Data.Declaration, "Store", "the test applies the suite of Store")
+					expect.Equal(t, got.Data.FromHandle, tt.wantFromHandle, "the factory takes the handle of a check")
 					assert.NotNil(t, got.Decl, "the record of the test is a struct")
 					refs := got.Decl.Fields.Items()
-					assert.Length(t, refs, 2, "the record refers to the application and to the factory")
+					assert.Length(t, refs, 6, "the record refers to the application, the factory, the names of the "+
+						"callables, the fuzz form, the handle and the subject type of the factory")
 					store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
 					expect.Equal(t, *refs[0].Type, emit.TypeRef{Spelling: tt.wantRun, Target: store, Emitted: true},
 						"the record refers to the application that the suite of Store emits")
@@ -456,6 +486,35 @@ func TestSuite(t *testing.T) {
 			}
 		}
 
+		t.Run("records a fuzz target of each callable of a subject", func(t *testing.T) {
+			t.Parallel()
+
+			got, found := generate(t, goTree, storePackage, memoryPackage).tests["TestStoreConformsToStore"]
+			assert.True(t, found, "suite records the conformance test of Store")
+			expect.Equal(t, got.Data.Targets, []suite.Target{
+				{Name: "FuzzStoreGet", Field: "Get"},
+				{Name: "FuzzStorePut", Field: "Put"},
+			}, "each target joins the subject and the callable, in the order of the callables")
+		})
+
+		t.Run("records the references of the fuzz targets of a subject", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, storePackage, memoryPackage)
+			got, found := recorded(t, f, p).tests["TestStoreConformsToStore"]
+			assert.True(t, found, "suite records the conformance test of Store")
+			assert.NotNil(t, got.Decl, "the record of the test is a struct")
+			refs := got.Decl.Fields.Items()
+			assert.Length(t, refs, 6, "the record has a field of each name of the test")
+			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
+			emitted := func(name string) emit.TypeRef { return emit.TypeRef{Spelling: name, Target: store, Emitted: true} }
+			expect.Equal(t, []emit.TypeRef{*refs[2].Type, *refs[3].Type, *refs[4].Type},
+				[]emit.TypeRef{emitted("StoreChecks"), emitted("FuzzStoreSuite"), emitted("StoreHandle")},
+				"the record refers to the names of the callables, the fuzz form and the handle of the suite")
+			expect.Equal(t, refs[5].Type.Spelling, "*Store", "the record refers to the subject type of the factory")
+		})
+
 		t.Run("records each excusal of a subject in the order of its directives", func(t *testing.T) {
 			t.Parallel()
 
@@ -472,7 +531,7 @@ func TestSuite(t *testing.T) {
 			}, "each excusal names the callable and the method of the identity of its check")
 			assert.NotNil(t, got.Decl, "the record of the test is a struct")
 			refs := got.Decl.Fields.Items()
-			assert.Length(t, refs, 3, "the record refers to the application, the factory and the names of the checks")
+			assert.Length(t, refs, 6, "the record has a field of each name of the test")
 			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
 			expect.Equal(t, *refs[2].Type, emit.TypeRef{Spelling: "StoreChecks", Target: store, Emitted: true},
 				"the record refers to the names of the checks that the suite of Store emits")
@@ -543,6 +602,19 @@ func TestSuite(t *testing.T) {
 					Statement: "Put reports a cancelled context",
 				},
 			}, "each check binds to its callable, in the order of the callables")
+		})
+
+		t.Run("binds a property check of a consumer to the callable of its directive", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, sessionPackage)
+			got := recorded(t, f, p).suites["Sessions"]
+			expect.Equal(t, got.Checks, []suite.Check{{
+				Apply: ref(t, f, "KeepsTheLastPut"), Defect: ref(t, f, "keepsTheFirstPut"), Field: "Get",
+				Type: "SessionsGet", Method: "KeepsTheLastPut", Segment: "keeps-the-last-put",
+				Statement: "Get returns the session of the last Put of its ID", Property: true,
+			}}, "a check that takes a case of the property engine is a property check")
 		})
 
 		t.Run("binds a check of a consumer to a function", func(t *testing.T) {
@@ -678,8 +750,34 @@ func TestSuite(t *testing.T) {
 						"so the check has no statement",
 				},
 				{
-					name: "reports BadCheck at a check of two parameters", give: "TakesTwo", wantCode: suite.BadCheck,
-					wantMsg: "the check TakesTwo takes 2 parameters, and a check takes the handle of its check alone",
+					name: "reports BadCheck at a check whose second parameter is not a case", give: "TakesTwo",
+					wantCode: suite.BadCheck,
+					wantMsg: "the second parameter of the check TakesTwo has the type any, and a property check " +
+						"takes a *prop.Case after the handle of its check",
+				},
+				{
+					name: "reports BadCheck at a check of three parameters", give: "TakesThree",
+					wantCode: suite.BadCheck,
+					wantMsg: "the check TakesThree takes 3 parameters, and a check takes the handle of its check, " +
+						"with a *prop.Case after it for a property check",
+				},
+				{
+					name: "reports BadCheck at a check whose second parameter is a list of cases", give: "TakesCases",
+					wantCode: suite.BadCheck,
+					wantMsg: "the second parameter of the check TakesCases has the type []prop.Case, and a property " +
+						"check takes a *prop.Case after the handle of its check",
+				},
+				{
+					name: "reports BadCheck at a check whose second parameter is a case of another package",
+					give: "TakesAnotherCase", wantCode: suite.BadCheck,
+					wantMsg: "the second parameter of the check TakesAnotherCase has the type *Case, and a property " +
+						"check takes a *prop.Case after the handle of its check",
+				},
+				{
+					name: "reports BadCheck at a check whose second parameter is another type of the property engine",
+					give: "TakesAnOption", wantCode: suite.BadCheck,
+					wantMsg: "the second parameter of the check TakesAnOption has the type *prop.Option, and a " +
+						"property check takes a *prop.Case after the handle of its check",
 				},
 				{
 					name: "reports BadCheck at a check with a result", give: "ReturnsOne", wantCode: suite.BadCheck,

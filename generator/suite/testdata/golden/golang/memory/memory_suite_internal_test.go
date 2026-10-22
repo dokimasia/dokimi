@@ -11,3 +11,13 @@ func TestHiddenConformsToStore(t *testing.T) {
 
 	RunStoreSuite(t, newHidden)
 }
+
+// FuzzHiddenGet fuzzes the property checks of Store.Get on Hidden.
+func FuzzHiddenGet(f *testing.F) {
+	FuzzStoreSuite(f, StoreChecks.Get.Callable, func(*StoreHandle) *Hidden { return newHidden() })
+}
+
+// FuzzHiddenPut fuzzes the property checks of Store.Put on Hidden.
+func FuzzHiddenPut(f *testing.F) {
+	FuzzStoreSuite(f, StoreChecks.Put.Callable, func(*StoreHandle) *Hidden { return newHidden() })
+}

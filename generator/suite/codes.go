@@ -47,8 +47,9 @@ var UnknownCallable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 
 // BadCheck reports a function under the directive check whose doc comment
 // states no statement, or whose signature or the signature of its defect is
-// not the signature of a check. A check takes the handle of its check alone,
-// and its defect takes the handle and returns the planted defect alone.
+// not the signature of a check. A check takes the handle of its check, and a
+// property check also a *prop.Case after it. Its defect takes the handle and
+// returns the planted defect alone.
 // BadCheck also reports a check of a function with the identity of a check
 // that the test of the suite adds to the forms of its application. The
 // finding is an Error at the function, and no suite binds the check.

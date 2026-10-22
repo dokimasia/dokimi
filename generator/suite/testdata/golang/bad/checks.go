@@ -1,6 +1,10 @@
 package bad
 
-import "example.com/shop/store"
+import (
+	"go.dokimi.dev/assert/prop"
+
+	"example.com/shop/store"
+)
 
 // Empty is a declaration under the directive suite without callables.
 //
@@ -64,6 +68,29 @@ func Undocumented(h any) {}
 //
 //dokimi:check store.Store.Get defect=broken
 func TakesTwo(h, other any) {}
+
+// TakesThree checks that Get takes a handle and two cases.
+//
+//dokimi:check store.Store.Get defect=broken
+func TakesThree(h, c, d any) {}
+
+// TakesCases checks that Get takes a list of cases.
+//
+//dokimi:check store.Store.Get defect=broken
+func TakesCases(h any, c []prop.Case) {}
+
+// TakesAnotherCase checks that Get takes a case of another package.
+//
+//dokimi:check store.Store.Get defect=broken
+func TakesAnotherCase(h any, c *Case) {}
+
+// TakesAnOption checks that Get takes an option of the property engine.
+//
+//dokimi:check store.Store.Get defect=broken
+func TakesAnOption(h any, c *prop.Option) {}
+
+// Case is a type with the name of the case of the property engine.
+type Case struct{}
 
 // ReturnsOne checks that Get returns a result.
 //

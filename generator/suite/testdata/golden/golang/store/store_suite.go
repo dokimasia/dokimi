@@ -83,3 +83,21 @@ func RunStoreSuiteFromHandle[T Store](
 	t.Helper()
 	conform.Run(t, StoreSuite(), func(h *StoreHandle) Store { return newSubject(h) }, opts...)
 }
+
+// FuzzStoreSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzStoreSuite[T Store](
+	f *testing.F,
+	callable conform.Callable[Store],
+	newSubject func(h *StoreHandle) T,
+	opts ...StoreOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		StoreSuite(),
+		callable,
+		func(h *StoreHandle) Store { return newSubject(h) },
+		opts...)
+}

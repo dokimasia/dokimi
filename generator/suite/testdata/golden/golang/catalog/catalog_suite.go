@@ -87,3 +87,21 @@ func RunCatalogSuiteFromHandle[T CatalogMethods](
 		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
 		opts...)
 }
+
+// FuzzCatalogSuite registers on f the fuzz target of the property checks
+// of callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzCatalogSuite[T CatalogMethods](
+	f *testing.F,
+	callable conform.Callable[CatalogMethods],
+	newSubject func(h *CatalogHandle) T,
+	opts ...CatalogOption,
+) {
+	f.Helper()
+	conform.Fuzz(
+		f,
+		CatalogSuite(),
+		callable,
+		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
+		opts...)
+}

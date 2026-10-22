@@ -11,6 +11,7 @@
 {{- $suite := suitePascal $n.Suite}}
 {{- $run := suitePascal $n.Run}}
 {{- $fromHandle := suitePascal $n.RunFromHandle}}
+{{- $fuzz := suitePascal $n.Fuzz}}
 {{- $handle := suitePascal $n.Handle}}
 {{- $check := suitePascal $n.Check}}
 {{- $option := suitePascal $n.Option}}
@@ -83,7 +84,11 @@ var _ = conform.CompatV1
 		{
 			ID:        {{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
 			Statement: {{printf "%q" .Statement}},
+{{- if .Property}}
+			Property:  {{spell .Apply}},
+{{- else}}
 			Apply:     {{spell .Apply}},
+{{- end}}
 			Defect:    {{spell .Defect}},
 		},
 {{- end}}
@@ -102,6 +107,12 @@ var _ = conform.CompatV1
 	t.Helper()
 	conform.Run(t, {{$suite}}(), newSubject, opts...)
 }
+
+{{docs (wrapdocs (printf `%s registers on f the fuzz target of the property checks of %s on subject.` $fuzz $c.Declaration))}}
+{{- ""}}func {{$fuzz}}(f *testing.F, subject {{$s}}, opts ...{{$option}}) {
+	f.Helper()
+	conform.Fuzz(f, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
+}
 {{- else}}
 
 {{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to a fresh subject of newSubject for each check.` $run $c.Declaration))}}
@@ -114,6 +125,12 @@ var _ = conform.CompatV1
 {{- ""}}func {{$fromHandle}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	t.Helper()
 	conform.Run(t, {{$suite}}(), func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+}
+
+{{docs (wrapdocs (printf `%s registers on f the fuzz target of the property checks of callable, on a subject that newSubject builds from the handle of each case.` $fuzz))}}
+{{- ""}}func {{$fuzz}}[T {{$s}}](f *testing.F, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
+	f.Helper()
+	conform.Fuzz(f, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
 }
 {{- end}}
 {{- end}}

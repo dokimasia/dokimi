@@ -250,6 +250,8 @@ A property check runs under the settings of the property engine. The runtime add
 - A run tries 100 valid cases. The option `conform.Cases(n)` and the param `cases` of the directive `subject` set another number for one application.
 - The engine stores the smallest case of each failure under `testdata/prop/<test name>`, and the next run tries it first. A team commits the case of a real defect as a regression case.
 
+An application with an invalid setting reports it as a problem of its options and does not run a check. The invalid settings are a `DOKIMI_SEED` that is not a decimal number below 2^64, and the option `Cases` with fewer than one case. `Check.Run` ends with a fault that wraps `conform.ErrConfig` for such a setting.
+
 The profile `campaign` turns each run into a search for the seconds of `DOKIMI_ASSERT_PROP_BUDGET`. The labels, the fingerprints and the scores of its cases guide the search:
 
 ```sh
@@ -261,7 +263,7 @@ Falsification runs a property hermetically with a seed from the key of the check
 
 ### Fuzz targets
 
-Each callable of each application has a fuzz target. For each input of the fuzzer, its body generates the identity of one property check of the callable and runs the body of that check on a handle of the case. It chooses among the checks that the application does not excuse. One target for each callable gives each target one entry point, so `go test -fuzz` selects each one alone.
+Each callable of each application has a fuzz target. For each input of the fuzzer, its body generates the identity of one property check of the callable under the label `check`, and runs the body of that check on a handle of the case. It chooses among the checks that the application does not excuse. A ceiling of a budget is not among them, because the instrumentation of a fuzzer changes the allocations and the latency of a call. One target for each callable gives each target one entry point, so `go test -fuzz` selects each one alone.
 
 In Go the conformance test of a subject declares `Fuzz<Subject><Callable>`, and the test of the suite of a function declares `Fuzz<Function>`. A subject of two declarations with one callable name gets `Fuzz<Subject><Declaration><Callable>`. Each target calls the generated function `FuzzStoreSuite`, which calls `prop.Fuzz`:
 
@@ -325,6 +327,8 @@ Each ceiling has a planted defect whose callable returns its zero results and ex
 
 A defect only adds allocations, bytes and time to a call, and a count or a clock does not go back. So each defect fails its check in every run. RFC-0001 reverses its verdict on benchmarks when a budget check cannot fail on its planted defect without flaking. These defects fail without flaking.
 
+In Go the call of each callable has a function `Over`. It returns a subject whose callable spends a cost and returns its zero results. The runtime passes the cost of the defect form of the ceiling. Other checks of the suite can fail on a defect that returns zero results, so the falsification of a ceiling does not apply another check to its defect.
+
 ### Benchmarks
 
 Each callable of each application has a benchmark:
@@ -382,7 +386,7 @@ Each takes the factory of the handle alone, because a subject that reads the clo
 | Part | Go: `go.dokimi.dev/conform` | TypeScript: `@dokimi/runtime` |
 |---|---|---|
 | A property check | The field `Property func(h *Handle[S], c *prop.Case)` of `Check[S]`, in place of `Apply` | The field `property` of `Check<S>` |
-| The call generator of a callable | `Call[S]`: the callable, its call generator, its budget, and the planted defect of each kind of ceiling | `Call<S>` |
+| The call generator of a callable | `Call[S]`: the callable, its call generator, its budget, whether it admits concurrent calls, and `Over`, which builds the planted defect of each kind of ceiling | `Call<S>` |
 | A budget | `Budget`, with the optional fields `Allocs`, `Bytes`, `Latency` and `Mean` | `Budget`, with the optional fields `latency` and `mean` |
 | The calls of a suite | The field `Calls` of `Suite[S]` | The field `calls` of `Suite<S>` |
 | The handle of a case | `Handle[S]`, whose `Unwrap` returns the case | `Handle<S>`, on the case |
@@ -476,7 +480,7 @@ func BenchmarkStore(b *testing.B) {
 			return postgres.NewTestStore()
 		},
 		conform.Ceilings(
-			sessiontest.StoreChecks.Get,
+			sessiontest.StoreChecks.Get.Callable,
 			conform.Budget{Latency: 3 * time.Millisecond, Mean: time.Millisecond},
 		),
 	)
@@ -486,7 +490,7 @@ func BenchmarkStore(b *testing.B) {
 func FuzzStoreGet(f *testing.F) {
 	sessiontest.FuzzStoreSuite(
 		f,
-		sessiontest.StoreChecks.Get,
+		sessiontest.StoreChecks.Get.Callable,
 		func(*sessiontest.StoreHandle) *postgres.Store {
 			return postgres.NewTestStore()
 		},
@@ -539,8 +543,9 @@ func FuzzSlug(f *testing.F) {
 | assert-spec | The values that a generator yields for a seed, outside a property ([dokimasia/assert-spec#16](https://github.com/dokimasia/assert-spec/issues/16)) | A benchmark measures a fixed set of generated calls in every run |
 | assert-spec | A query of whether a run checks allocation ceilings, with the reason when it does not ([dokimasia/assert-spec#17](https://github.com/dokimasia/assert-spec/issues/17)) | Without it, an allocation ceiling passes in a build that does not count, and its falsification fails |
 | assert-spec | The option `Using` for `ForAll` and `Fuzz` ([dokimasia/assert-spec#18](https://github.com/dokimasia/assert-spec/issues/18)) | A property run overrides the generator of an enumeration or of a type with a builder at every depth, without a registration of the test process |
+| assert-spec | The generators of `using` for `values` ([dokimasia/assert-spec#19](https://github.com/dokimasia/assert-spec/issues/19)) | A benchmark takes its calls from the same domain as a property run of the suite, with the overrides of its enumerations and builders |
 
-The benchmarks, the allocation ceilings and the property checks each wait for one of these requests. The fuzz targets run the property checks, so they wait as well.
+The benchmarks, the allocation ceilings and the property checks each need one of these requests. The fuzz targets run the property checks and need `Using` as well. #19 requests the overrides of the suite for the calls that a benchmark takes from `values`.
 
 ### Invariants
 
@@ -550,7 +555,7 @@ The benchmarks, the allocation ceilings and the property checks each wait for on
 | A property check takes its inputs from the shapes of their types, the registrations of the test and the case, and never from the subject | The call generators that the suite generator writes |
 | The calls of one case share the value of each parameter with the same key and type | The call generators that the suite generator writes |
 | A generated value starts from the starting value of its type, and a failure shrinks back to it | The generators that the suite generator writes for each type with a starting value |
-| An enumeration generates its members alone, at every depth of a value | The overrides of each property run |
+| An enumeration generates its members alone, at every depth of a value | The overrides of each property run and of the calls of each benchmark |
 | Each double of a property check takes its random numbers from the case | The call generators that the suite generator writes |
 | Each case of a property check runs on a fresh subject and a fresh clock | The handle of a case |
 | The falsification of a property check does not write into `testdata/prop` | The runtime, which falsifies hermetically without the store |

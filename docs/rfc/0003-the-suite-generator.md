@@ -490,13 +490,14 @@ The suite has one application for the consumer. It applies every check to a fres
 
 The corpus applies each suite to a control through the same application. A control is a correct implementation that differs from the subject, so a check that fails on the control has a defect of its own.
 
-Each planted defect is the typed double of the declaration, with the callables that the defect form names replaced. The double is not a correct implementation of the declaration. A planted defect is correct for the calls that its check makes, and wrong at the claim of that check. Each defect form has one template in each template tree.
+Each planted defect is the typed double of the declaration, with the callables that the defect form names replaced. The double is not a correct implementation of the declaration. A planted defect is wrong at the claim of its check and correct for the calls of every other check of the suite. Each defect form has one template in each template tree.
 
 The falsification test runs in the package of the generated suite and does not need a subject of the consumer:
 
 1. It checks that every check has a planted defect, and that every planted defect belongs to a check.
 2. It runs each check against its planted defect. A derived check must fail with the reason code of its claim. A check of the consumer must fail at the assertion whose message is its statement.
-3. It runs each edge in both directions. The deeper check must fail on the defect of the shallower check, and the shallower check must pass on the defect of the deeper check.
+3. It runs every other check of the suite against that defect, and each of them must pass. The checks that share the defect are exempt, and so is each deeper check of an edge of the check. A check that ends with a fault on the defect, such as a check that calls a door without its option, has no verdict on it. The failure lists the defect and each other check that fails on it, with its first failing assertion or the value of its panic.
+4. It runs each edge in both directions. The deeper check must fail on the defect of the shallower check, and the shallower check must pass on the defect of the deeper check.
 
 The test of the two forms of the application applies a check of its own through each form. The factory of the test builds a value of a type that only the test declares, and the check compares the subject of the check with that value by identity. The test excuses each check of the suite, so the check of the test runs alone. The form `Run` of the suite of a function takes the function itself, so its check compares the subject with the function. The identity of a check of the consumer of a function has no callable, so the generator refuses the segments `builds-the-subject` and `receives-the-function` of the checks of the test on it.
 
@@ -625,9 +626,9 @@ A check takes a handle. The handle implements the seat of the assert library: `a
 | `Clock()` and `Advance(d)` | The controlled clock of the check, and its advance | `a-clock-the-run-advances` |
 | `Statement()` | The statement of the check | Every check |
 
-Under falsification `Subject()` and `New()` return the planted defect of the check. The consumer supplies the reference, the second subject and the restart through the options. A check that calls a door without its option fails, and its failure message contains the option to pass.
+Under falsification `Subject()` and `New()` return the planted defect of the check. The consumer supplies the reference, the second subject and the restart through the options. A check that calls a door without its option ends with a fault that wraps `conform.ErrOption`. The message of the fault contains the option to pass.
 
-A check that advances the clock fails when no factory of its subjects read the clock of the handle. Its failure message contains the call of `RunStoreSuiteFromHandle` that builds the subject on the clock.
+A check that advances the clock ends with a fault that wraps `conform.ErrClock` when no factory of its subjects read the clock of the handle. The message of the fault contains the call of `RunStoreSuiteFromHandle` that builds the subject on the clock.
 
 #### The checks of a consumer
 
@@ -666,9 +667,9 @@ The suite generator binds a check in its two steps:
 
 `sdk.Subjects` records a read of the set of functions with the key of the fact. eidos then runs the generate step of each suite again when a function gains or loses the fact. A change of any other declaration does not run it again.
 
-A check in a test file cannot be bound, because the generated suite cannot refer to a test file. `conform.With` adds such a check to one application, and the application falsifies the check before it applies the check to the subject.
+A check in a test file cannot be bound, because the generated suite cannot refer to a test file. `conform.With` adds such a check to one application. The application falsifies the check against every check that it does not excuse before it applies the check to the subject.
 
-The decisive assertion of a check passes `h.Statement()` as its message. Falsification passes when the first failure record on the planted defect has the statement as its contract. A failure of another assertion, such as a guard, fails the falsification.
+The decisive assertion of a check passes `h.Statement()` as its message. Falsification passes when the first failure record on the planted defect has the statement as its contract. A failure of another assertion, such as a guard, fails the falsification. Falsification also fails when another check of the suite fails on the defect.
 
 A run fails when two of its checks have one identity, and the failure message contains both identities. The same failure occurs when a release derives a check with the identity of a check of the consumer.
 
@@ -855,11 +856,12 @@ package sessiontest
 
 import (
 	"context"
-	"slices"
+	"math"
 
 	"go.dokimi.dev/assert"
 
 	"example.com/shop/session"
+	"example.com/shop/session/memory"
 )
 
 // ReturnsACopyOfTheRoles checks that a change of the roles that Get returns
@@ -879,27 +881,31 @@ func ReturnsACopyOfTheRoles(h *StoreHandle) {
 	assert.Equal(h, second.Roles, []string{"admin"}, h.Statement())
 }
 
-// sharesTheRoles returns a Store whose Get returns the roles that the store
-// keeps instead of a copy of them.
+// sharesTheRoles returns a Store whose Get returns one slice of roles for an
+// ID until the next Put of the ID.
 func sharesTheRoles(h *StoreHandle) session.Store {
-	kept := map[string]session.Session{}
-	return NewStoreStub(h,
-		WithStorePut(func(_ context.Context, s session.Session) error {
-			s.Roles = slices.Clone(s.Roles)
-			kept[s.ID] = s
-			return nil
+	fake := memory.New(h.Clock(), math.MaxInt)
+	shared := map[string][]string{}
+	return NewStoreStub(h, StoreStubDelegateTo(fake),
+		WithStorePut(func(ctx context.Context, s session.Session) error {
+			delete(shared, s.ID)
+			return fake.Put(ctx, s)
 		}),
-		WithStoreGet(func(_ context.Context, id string) (session.Session, error) {
-			s, ok := kept[id]
-			if !ok {
-				return session.Session{}, session.ErrNotFound
+		WithStoreGet(func(ctx context.Context, id string) (session.Session, error) {
+			s, err := fake.Get(ctx, id)
+			if err != nil {
+				return s, err
 			}
+			if roles, ok := shared[id]; ok {
+				s.Roles = roles
+			}
+			shared[id] = s.Roles
 			return s, nil
 		}))
 }
 ```
 
-The planted defect passes each guard of the check and fails its last assertion, whose message is the statement. The suite generator adds the check to the suite:
+The planted defect passes each guard of the check and fails its last assertion, whose message is the statement. It forwards every other call to the store in memory, so it passes every other check of the suite. The suite generator adds the check to the suite:
 
 ```go
 // ReturnsACopyOfTheRoles returns the identity of the check that a change of
@@ -940,8 +946,8 @@ func TestStore(t *testing.T) {
 }
 
 // evictsTheFirstSession returns the check that Put evicts the session that it
-// stored first once the store has two sessions. Its planted defect keeps
-// every session.
+// stored first once the store has two sessions. Its planted defect is the
+// store in memory without a limit, which keeps every session.
 func evictsTheFirstSession() sessiontest.StoreCheck {
 	return sessiontest.StoreCheck{
 		ID:        sessiontest.StoreChecks.Put.Check("evicts-the-first-session"),
@@ -955,15 +961,7 @@ func evictsTheFirstSession() sessiontest.StoreCheck {
 			assert.ErrorIs(h, err, session.ErrNotFound, h.Statement())
 		},
 		Defect: func(h *sessiontest.StoreHandle) session.Store {
-			kept := map[string]session.Session{}
-			return sessiontest.NewStoreStub(h,
-				sessiontest.WithStorePut(func(_ context.Context, s session.Session) error {
-					kept[s.ID] = s
-					return nil
-				}),
-				sessiontest.WithStoreGet(func(_ context.Context, id string) (session.Session, error) {
-					return kept[id], nil
-				}))
+			return memory.New(h.Clock(), math.MaxInt)
 		},
 	}
 }
@@ -1086,6 +1084,7 @@ FAIL
 | Every claim refers to an existing law, gate, probe, reason code, machinery and classification | The test of the package spec |
 | Every gate of the spec has a condition in the derivation | A test of the derivation |
 | A check of a consumer fails on its planted defect at the assertion of its statement before it runs on a subject | The generated falsification test, and the application for a check that `conform.With` adds |
+| A planted defect passes every other check of its suite, except the checks that share it and the deeper checks of its edges | The generated falsification test, and the application for a check that `conform.With` adds |
 | The subject of a check is the value that the factory of each form of the application builds | The generated test of the two forms of the application |
 | Every excusal names a check of its run | The generator for the directive `excuse`, and the application |
 | The checks of a run have distinct identities | The generator for the directive `check`, and the application |
@@ -1107,14 +1106,15 @@ FAIL
 | A planted defect passes its check | The falsification test fails and names the check | Fix the probe, the defect form or the claim |
 | The committed lock differs from a fresh run | The generation gate fails | Run `dokimi run`, review the lock and commit |
 | The planted defect of a check of a consumer passes the check, or fails an assertion of another contract than its statement | The falsification of the check fails and names the contract | Fix the check or its defect, or pass the statement to the decisive assertion |
+| A planted defect fails another check of its suite | The falsification of its check fails, and lists the defect with each other check that fails on it | Change the defect so that it passes the other checks, or give each check that fails on it the same defect |
 | The directive `check` names a declaration without the directive `suite`, an unknown callable, a taken segment or a missing defect | Generation reports it at the position of the directive | Correct the directive |
 | The directive `check` names a declaration that two declarations with the directive `suite` have | Generation reports it at the position of the directive, with the package of each declaration | Qualify the name with the name of its package |
 | A check of a function has the segment `builds-the-subject` or `receives-the-function` | Generation reports it at the position of the directive, with the identity of the check of the test of the two forms | Rename the function of the check |
 | The directive `excuse` names no check of the suite | Generation reports it at the position of the directive, with the identities of the checks of the callable | Correct or remove the excusal |
 | An excusal of `conform.Excuse` names no check of the run | The run fails and names the identity | Remove the excusal |
 | Two checks of a run have one identity | The run fails and names both checks | Rename the check of the consumer |
-| A check advances the clock of a subject that never read it | The check fails, and the message contains the call of `RunStoreSuiteFromHandle` that builds the subject on the clock | Build the subject on the clock of the handle |
-| A check calls a door without its option | The check fails and names the option | Pass the option |
+| A check advances the clock of a subject that never read it | The check ends with a fault that wraps `conform.ErrClock`, and the message contains the call of `RunStoreSuiteFromHandle` that builds the subject on the clock | Build the subject on the clock of the handle |
+| A check calls a door without its option | The check ends with a fault that wraps `conform.ErrOption` and names the option | Pass the option |
 
 ## Alternatives considered
 
@@ -1204,6 +1204,7 @@ The generated file declares `ControlStore` and `ControlStoreFromHandle`, which a
 - **Structural equality.** Probes compare results by structure. A type that its language compares by identity, such as a class in TypeScript, compares by structure in a check.
 - **Claims that need parameters.** A partner claim refuses until its directive sets the partner, so a mixin without its parameters adds refusals to the header.
 - **A check of a consumer runs twice.** It runs on its planted defect and then on the subject.
+- **Falsification grows with the square of the checks.** Each check of a suite runs on the planted defect of every other check, so a suite of 40 checks makes 1,600 applications.
 - **A guard can reuse the statement.** A guard that passes `h.Statement()` as its message turns its own failure into proof. eidos does not model the bodies of functions, so the generator cannot detect it.
 - **Bound checks are outside test files.** The functions of the directive `check` are in the package of the generated suite, beside the doubles. A production package that imports that package compiles test code.
 - **Long names.** The longest declaration of the corpus gives `RunLeasedIdempotentWriterSuiteFromHandle`, a name of 40 characters.

@@ -38,12 +38,17 @@ const (
 )
 
 // The helpers that the templates of the target typescript call: whether a
-// map is an instance of the class Map rather than an object, and the removal
-// of a suffix from the name of a file.
+// map is an instance of the class Map rather than an object, the removal of a
+// suffix from the name of a file, and the name of a function of cases.
 const (
 	mapClassHelper   = "mapclass"
 	trimSuffixHelper = "trimSuffix"
+	casesHelper      = "builderCases"
 )
+
+// typescriptCases ends the name of a function that declares the cases of one
+// function of a builder.
+const typescriptCases = "Cases"
 
 // typescriptTemplates contains the file templates of the target typescript.
 //
@@ -70,8 +75,17 @@ func (typescriptPart) Target() plugin.Target { return typescript.Target }
 func (typescriptPart) Options() []sdk.TargetOption {
 	return []sdk.TargetOption{
 		sdk.TemplatesOf(typescriptTemplates, typescript.Target),
-		sdk.Funcs(template.FuncMap{mapClassHelper: mapClass, trimSuffixHelper: strings.TrimSuffix}),
+		sdk.Funcs(template.FuncMap{
+			mapClassHelper: mapClass, trimSuffixHelper: strings.TrimSuffix, casesHelper: casesOf,
+		}),
 	}
+}
+
+// casesOf returns the name of the function that declares the cases of the
+// function named function of the builder class named builder, such as
+// addressBuilderWithStreetCases for withStreet of AddressBuilder.
+func casesOf(builder, function string) string {
+	return typescriptCaser.Camel(builder) + typescriptCaser.Pascal(function) + typescriptCases
 }
 
 // builder returns the name of the builder class of the class named name, such

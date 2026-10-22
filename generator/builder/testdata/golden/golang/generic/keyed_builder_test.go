@@ -1,6 +1,5 @@
 package generic
 
-// TestKeyedBuilder is not generated: [Keyed] is parameterised and its
-// constraints admit no concrete type to instantiate at, so there is
-// nothing a check could name. Write one by hand at the types your own code
-// uses.
+// [Keyed] is generic, and its type parameters have no witnesses, so the
+// file has no checks of KeyedBuilder. A test in the package of a consumer
+// instantiates it.

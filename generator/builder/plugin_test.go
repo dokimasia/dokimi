@@ -675,9 +675,8 @@ func TestBuilder(t *testing.T) {
 				wantProbes: "with withCount",
 			},
 			{
-				name:   "records a probe of the setter of a property of a class that shadows a global class",
+				name:   "records no probe of the setter of a property of a class that shadows a global class",
 				target: typescript.Target, tree: tsTree, pkg: shadowModule, decl: shadowedName,
-				wantProbes: "with withTags",
 			},
 		}
 		for _, tt := range probes {
@@ -697,14 +696,60 @@ func TestBuilder(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, catalogPackage)
-			expect.Equal(t, sampled(got.tests[addressName], got.checks[addressName].Probes),
+			expect.Equal(t, probeMethods(got.tests[addressName], got.checks[addressName].Probes, sample),
 				[]string{"setterLines", "setterLabels", "setterLabels", "setterTags", "setterTags", "setterRaw"},
 				"a probe of a member with a sample binds the sample of the check of its setter")
-			expect.Equal(t, sampled(got.tests[addressName], got.checks[addressName].Fills),
+			expect.Equal(t, probeMethods(got.tests[addressName], got.checks[addressName].Fills, sample),
 				[]string{"setterLines", "setterLabels", "setterTags", "setterRaw"}, "a fill binds the same sample")
-			expect.Equal(t, sampled(got.tests[looseName], got.checks[looseName].Probes), []string{},
+			expect.Equal(t, probeMethods(got.tests[looseName], got.checks[looseName].Probes, sample), []string{},
 				"a probe of a member without a sample binds nothing")
 		})
+
+		t.Run("binds the sample and the alternate of the setter of a member to each of its probes", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, catalogPackage)
+			expect.Equal(t, probeMethods(got.tests[addressName], got.checks[addressName].Probes, pair),
+				[]string{"replaceLines", "replaceLabels", "replaceLabels", "replaceTags", "replaceTags", "replaceRaw"},
+				"a probe of a member with an alternate binds the check of the replacement of its member")
+			expect.Equal(t, probeMethods(got.tests[orderName], got.checks[orderName].Probes, pair),
+				[]string{"replaceRemarks", "replaceFlags", "replaceFlags"},
+				"the probe of AppendMarks binds no pair, because Marks has no alternate")
+		})
+
+		{
+			tests := []struct {
+				name     string
+				giveDecl string
+				give     string
+				want     builder.Zeros
+			}{
+				{
+					name: "records the zero value of the element of a list", giveDecl: looseName, give: "AppendItems",
+					want: builder.Zeros{Elem: emit.Literal(emit.LiteralNil, "")},
+				},
+				{
+					name:     "records the zero values of the key and the value of a map",
+					giveDecl: looseName,
+					give:     "WithIndexEntry",
+					want: builder.Zeros{
+						Key:   emit.Literal(emit.LiteralString, ""),
+						Value: emit.Literal(emit.LiteralNil, ""),
+					},
+				},
+				{name: "records no zero value of an embedded field", giveDecl: profileName, give: "WithRole"},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got := generate(t, golang.Target, goTree, catalogPackage).checks[tt.giveDecl]
+					at := slices.IndexFunc(got.Probes, func(p builder.Probe) bool { return p.Method == tt.give })
+					assert.NotEqual(t, at, -1, tt.giveDecl+" has the probe of "+tt.give)
+					expect.Equal(t, got.Probes[at].Zeros, tt.want, "the probe writes these values without a sample")
+				})
+			}
+		}
 
 		t.Run("records the types of a probe at the witnesses of the type parameters", func(t *testing.T) {
 			t.Parallel()
@@ -791,13 +836,15 @@ func TestBuilder(t *testing.T) {
 			}
 		})
 
-		t.Run("binds the sample and the alternate of each scalar setter to first and want", func(t *testing.T) {
+		t.Run("binds the sample and the alternate of each setter to first and want", func(t *testing.T) {
 			t.Parallel()
 
 			got := generate(t, golang.Target, goTree, catalogPackage)
 			methods := bound(got.tests[addressName], got.checks[addressName].Setters, replacement)
-			assert.Equal(t, names(methods), "replaceStreet replaceCity replaceGrid replaceTimeout",
-				"each scalar setter has the check of a replacement, and the optional Floor has none")
+			assert.Equal(t, names(methods),
+				"replaceStreet replaceCity replaceFloor replaceLines replaceLabels replaceTags replaceRaw replaceGrid "+
+					"replaceTimeout",
+				"each setter of a member with an alternate has the check of a replacement")
 			for _, m := range methods {
 				expect.Equal(t, gentest.Assigned(m.Body.Stmts), "first want",
 					"the check of a replacement binds the sample to first and the alternate to want")
@@ -824,8 +871,9 @@ func TestBuilder(t *testing.T) {
 			checks := got.checks[orderName]
 			expect.Equal(t, checked(checks.Setters), "Remarks Codes Flags Marker Marks",
 				"each member with a sample has the check of its setter")
-			expect.Equal(t, names(bound(got.tests[orderName], checks.Setters, replacement)), "replaceCodes",
-				"the scalar Marker has no alternate, so it has no check of a replacement")
+			expect.Equal(t, names(bound(got.tests[orderName], checks.Setters, replacement)),
+				"replaceRemarks replaceCodes replaceFlags",
+				"Marker and Marks have no alternate, so they have no check of a replacement")
 			expect.Equal(t, checked(checks.Clones), "Remarks Flags",
 				"the sequence Marks has no alternate, so it has no check of a clone")
 		})
@@ -1172,18 +1220,26 @@ func checkedFields(ps []builder.Probe) string {
 	return strings.Join(out, " ")
 }
 
-// sampled returns the name of the method of the record test that binds the
-// sample of each probe. It skips a probe without a sample.
-func sampled(test *emit.Struct, ps []builder.Probe) []string {
+// probeMethods returns the names of the methods of the record test at the
+// indexes that at returns for the probes, in the order of the probes. It
+// skips a negative index, which a probe without such a method has.
+func probeMethods(test *emit.Struct, ps []builder.Probe, at func(*builder.Probe) int) []string {
 	methods := test.Methods.Items()
 	out := make([]string, 0, len(ps))
-	for _, p := range ps {
-		if p.Sample >= 0 {
-			out = append(out, methods[p.Sample].Name)
+	for i := range ps {
+		if j := at(&ps[i]); j >= 0 {
+			out = append(out, methods[j].Name)
 		}
 	}
 	return out
 }
+
+// sample returns the index of the method of the probe p that binds want.
+func sample(p *builder.Probe) int { return p.Sample }
+
+// pair returns the index of the method of the probe p that binds first and
+// want.
+func pair(p *builder.Probe) int { return p.Pair }
 
 // setters returns the setters that the checks call, joined by spaces.
 func setters(cs []builder.Check) string {

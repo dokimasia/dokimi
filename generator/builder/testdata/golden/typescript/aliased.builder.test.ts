@@ -1,79 +1,117 @@
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import type { Mirror } from './aliased';
-import { MirrorBuilder } from './aliased.builder';
-import { Account } from './catalog';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import type { Mirror } from "./aliased";
+import { MirrorBuilder } from "./aliased.builder";
+import { Account } from "./catalog";
 
-describe("MirrorBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
-    const seed = new Account();
-    seed.owner = 'owner-a';
-    seed.plan = 'plan-a';
-    const got = MirrorBuilder.from(seed).build();
-    check.equal(seat, got.owner, seed.owner, "from keeps the member it was given");
-    check.equal(seat, got.plan, seed.plan, "from keeps the member it was given");
-  });
-
-  test("owner carries its declared default", ({ seat }) => {
+function mirrorBuilderCreateCases(): void {
+  it("applies the declared default of owner", () => {
     let want: string;
-    want = 'owner';
+    want = "owner";
     const got = MirrorBuilder.create().build();
-    check.equal(seat, got.owner, want, "the constructor applies the declared default");
+    expect(got.owner).isEqualTo(want, "create applies the declared default of owner");
   });
-});
+}
 
-describe("MirrorBuilder setters", () => {
-  test("withOwner writes owner", ({ seat }) => {
+function mirrorBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
+    const seed = new Account();
+    seed.owner = "owner-a";
+    seed.plan = "plan-a";
+    const got = MirrorBuilder.from(seed).build();
+    expect.soft(got.owner).isEqualTo(seed.owner, "from keeps owner");
+    expect.soft(got.plan).isEqualTo(seed.plan, "from keeps plan");
+  });
+
+  it("keeps the value of its argument", () => {
+    const want = MirrorBuilder.create().build();
+    expect(MirrorBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function mirrorBuilderWithOwnerCases(): void {
+  it("writes its argument to owner", () => {
     let want: string;
-    want = 'owner-a';
+    want = "owner-a";
     const got = MirrorBuilder.create().withOwner(want).build();
-    check.equal(seat, got.owner, want, "the setter writes what it was given");
+    expect(got.owner).isEqualTo(want, "withOwner writes its argument to owner");
   });
 
-  test("withOwner replaces what was already there", ({ seat }) => {
+  it("replaces the value of owner", () => {
     let first: string;
     let want: string;
-    first = 'owner-a';
-    want = 'owner-b';
+    first = "owner-a";
+    want = "owner-b";
     const got = MirrorBuilder.create().withOwner(first).withOwner(want).build();
-    check.equal(seat, got.owner, want, "the later call wins");
+    expect(got.owner).isEqualTo(want, "the second call of withOwner replaces the first");
   });
+}
 
-  test("withPlan writes plan", ({ seat }) => {
+function mirrorBuilderWithPlanCases(): void {
+  it("writes its argument to plan", () => {
     let want: string;
-    want = 'plan-a';
+    want = "plan-a";
     const got = MirrorBuilder.create().withPlan(want).build();
-    check.equal(seat, got.plan, want, "the setter writes what it was given");
+    expect(got.plan).isEqualTo(want, "withPlan writes its argument to plan");
   });
 
-  test("withPlan replaces what was already there", ({ seat }) => {
+  it("replaces the value of plan", () => {
     let first: string;
     let want: string;
-    first = 'plan-a';
-    want = 'plan-b';
+    first = "plan-a";
+    want = "plan-b";
     const got = MirrorBuilder.create().withPlan(first).withPlan(want).build();
-    check.equal(seat, got.plan, want, "the later call wins");
+    expect(got.plan).isEqualTo(want, "the second call of withPlan replaces the first");
   });
-});
+}
 
-describe("MirrorBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function mirrorBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Mirror[] = [];
     const record = (value: Mirror): void => {
       seen.push(value);
     };
     MirrorBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function mirrorBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = MirrorBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = MirrorBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, MirrorBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function mirrorBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = MirrorBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Account();
+    seed.owner = "owner-a";
+    seed.plan = "plan-a";
+    const builder = MirrorBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("MirrorBuilder", () => {
+  describe("create", mirrorBuilderCreateCases);
+  describe("from", mirrorBuilderFromCases);
+  describe("withOwner", mirrorBuilderWithOwnerCases);
+  describe("withPlan", mirrorBuilderWithPlanCases);
+  describe("mutate", mirrorBuilderMutateCases);
+  describe("clone", mirrorBuilderCloneCases);
+  describe("build", mirrorBuilderBuildCases);
 });

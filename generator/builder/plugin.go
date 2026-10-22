@@ -261,23 +261,40 @@ const (
 //
 // Type is the type of the member at the witnesses of the type parameters of
 // the subject, and Elem, Key and Value are its parts, as a [Member] records
-// them. Field is the name of the member and Form is its form. Kind is the
-// kind of the method, Method is its name and With is the name of the setter
-// that replaces the member. Sample is the index of the method of the record
-// that binds a sample of the argument of the setter to want, and -1 where the
-// member has no sample. The template of each language writes a probe with
-// the sample, or with a value that the language spells without one.
+// them. Zeros are the zero values of those parts. Field is the name of the
+// member and Form is its form. Kind is the kind of the method, Method is its
+// name and With is the name of the setter that replaces the member. Sample is
+// the index of the method of the record that binds a sample of the argument
+// of the setter to want, and -1 where the member has no sample. Pair is the
+// index of the method that binds the sample to first and its alternate to
+// want, and -1 where the member has no alternate. The template of each
+// language writes a probe with the samples, or with values that the language
+// spells without them.
 type Probe struct {
 	Type   *emit.TypeRef
 	Elem   *emit.TypeRef
 	Key    *emit.TypeRef
 	Value  *emit.TypeRef
+	Zeros  Zeros
 	Field  string
 	Form   Form
 	Kind   Kind
 	Method string
 	With   string
 	Sample int
+	Pair   int
+}
+
+// Zeros are the zero values of the parts of a member, which a probe writes
+// where the member has no sample. Elem is the zero value of the element of a
+// list, of the type that an optional contains and of the key of a set. Key
+// and Value are the zero values of the key and the value of a map. A part
+// that the form of the member does not have, and a part without a zero
+// value, has the zero value of emit.
+type Zeros struct {
+	Elem  emit.Value
+	Key   emit.Value
+	Value emit.Value
 }
 
 // Check is one check of a member. Type is the type of the value that the
@@ -671,7 +688,7 @@ func (in *invocation) start(members []member) (*emit.Method, Seed, map[string]em
 //
 // A check writes a sample of the argument of the setter of its member: the
 // whole list for a list, and the value that the optional contains for an
-// optional. A scalar member with an alternate sample also has the check of a
+// optional. A member with an alternate sample also has the check of a
 // replacement, which writes the sample and then the alternate. A member that
 // a clone copies has the check of the clone where it has an alternate
 // sample. That check sets the sample on the original, writes the alternate
@@ -681,9 +698,11 @@ func (in *invocation) start(members []member) (*emit.Method, Seed, map[string]em
 // Each member has a probe of each method that these checks leave out, and
 // each member that a clone copies is a fill of the check of a clone. A probe
 // and a fill of a member with a sample bind the method of the check of its
-// setter. tests checks a generic declaration at the witnesses of its type
-// parameters. For a declaration whose type parameters have no witnesses, it
-// returns checks without a check of a member, and Instantiable is false.
+// setter, and the method of the check of its replacement where the member
+// has an alternate. tests checks a generic declaration at the witnesses of
+// its type parameters. For a declaration whose type parameters have no
+// witnesses, it returns checks without a check of a member, and Instantiable
+// is false.
 func (in *invocation) tests(
 	name string, members []member, model *Model, values map[string]emit.Value,
 ) (*emit.Struct, Checks) {
@@ -705,28 +724,33 @@ func (in *invocation) tests(
 	for i := range members {
 		mem := &members[i]
 		ref := rules.Substitute(mem.ref, sub.params, witnesses)
-		at := in.memberOf(mem, ref)
-		sampled := -1
-		if mem.field != nil {
-			sampled = in.checkField(test, seed, &checks, mem, &at, ref, values)
+		at, comps := in.memberOf(mem, ref)
+		base := Probe{
+			Type: at.Type, Elem: at.Elem, Key: at.Key, Value: at.Value, Zeros: in.zerosOf(&comps),
+			Field: at.Field, Form: at.Form, With: at.Names.With, Sample: -1, Pair: -1,
 		}
-		checks.Probes = append(checks.Probes, probes(&at, sampled)...)
+		if mem.field != nil {
+			base.Sample, base.Pair = in.checkField(test, seed, &checks, mem, &at, ref, values)
+		}
+		checks.Probes = append(checks.Probes, probes(&base, &at.Names)...)
 		if at.Copied {
-			checks.Fills = append(checks.Fills, probe(&at, KindWith, at.Names.With, sampled))
+			checks.Fills = append(checks.Fills, base.of(KindWith, at.Names.With))
 		}
 	}
 	return test, checks
 }
 
 // checkField appends the checks of the field of mem to the record test and
-// to checks, and returns the index of the method that binds the sample of the
-// check of its setter, or -1 where the field has no sample. at is the member
-// at the witnesses, and ref is its type there. seed is the first function of
-// the record, and values are the declared defaults by field.
+// to checks. It returns the index of the method that binds the sample of the
+// check of its setter, and the index of the method that binds the sample and
+// the alternate of the check of its replacement. Each index is -1 where the
+// field has no such method. at is the member at the witnesses, and ref is its
+// type there. seed is the first function of the record, and values are the
+// declared defaults by field.
 func (in *invocation) checkField(
 	test *emit.Struct, seed *emit.Method, checks *Checks, mem *member, at *Member, ref *node.TypeRef,
 	values map[string]emit.Value,
-) int {
+) (setter, replace int) {
 	if value, declared := values[mem.name]; declared {
 		// ZeroValue returns the zero value of emit for a type without a
 		// zero value, and no default equals it.
@@ -740,7 +764,7 @@ func (in *invocation) checkField(
 	argument := in.argumentOf(at.Form, mem.field, ref)
 	sample, alternate := in.b.SamplesOf(mem.id, argument, mem.name)
 	if !sample.OK() {
-		return -1
+		return -1, -1
 	}
 	if at.Form == FormScalar {
 		seed.Body.Stmts = append(seed.Body.Stmts, assigned(seedLocal+selector+mem.name, &sample.Value))
@@ -753,7 +777,7 @@ func (in *invocation) checkField(
 	}
 	test.Methods.Append(in.bind(in.method(in.e.JoinName(mem.name, setterCheck), wantLocal), typ,
 		assigned(wantLocal, &sample.Value)))
-	if at.Form == FormScalar && alternate.OK() {
+	if alternate.OK() {
 		check.Replace = test.Methods.Len()
 		test.Methods.Append(in.bind(in.method(in.e.JoinName(mem.name, replaceCheck), firstLocal, wantLocal), typ,
 			assigned(firstLocal, &sample.Value), assigned(wantLocal, &alternate.Value)))
@@ -766,30 +790,29 @@ func (in *invocation) checkField(
 			assigned(wantLocal, &sample.Value), assigned(otherLocal, &alternate.Value)))
 		checks.Clones = append(checks.Clones, clone)
 	}
-	return check.Method
+	return check.Method, check.Replace
 }
 
-// probes returns the probes of the methods of the member at that the checks
-// of the setters leave out. sampled is the index of the method that binds the
-// sample of the check of its setter, and -1 where the member has none. A
-// member without a sample has the probe of its setter. A list has the probe
-// of its appender, a map and a set have the probes of the setters of their
-// entries or keys, and bytes have the probe of the setter from text where
-// the language declares one.
-func probes(at *Member, sampled int) []Probe {
+// probes returns the probes of the methods of a member that the checks of
+// the setters leave out. base is the probe of the member without a kind and a
+// method, and names are the names of the methods of the member. A member
+// without a sample has the probe of its setter. A list has the probe of its
+// appender, a map and a set have the probes of the setters of their entries
+// or keys, and bytes have the probe of the setter from text where the
+// language declares one.
+func probes(base *Probe, names *Names) []Probe {
 	var out []Probe
-	if sampled < 0 {
-		out = append(out, probe(at, KindWith, at.Names.With, sampled))
+	if base.Sample < 0 {
+		out = append(out, base.of(KindWith, names.With))
 	}
-	switch at.Form {
+	switch base.Form {
 	case FormList:
-		out = append(out, probe(at, KindAppend, at.Names.Append, sampled))
+		out = append(out, base.of(KindAppend, names.Append))
 	case FormMap, FormSet:
-		out = append(out, probe(at, KindEntry, at.Names.Entry, sampled),
-			probe(at, KindEntries, at.Names.Entries, sampled))
+		out = append(out, base.of(KindEntry, names.Entry), base.of(KindEntries, names.Entries))
 	case FormBytes:
-		if at.Names.Text != "" {
-			out = append(out, probe(at, KindText, at.Names.Text, sampled))
+		if names.Text != "" {
+			out = append(out, base.of(KindText, names.Text))
 		}
 	default:
 		// A scalar and an optional have the setter alone.
@@ -797,14 +820,20 @@ func probes(at *Member, sampled int) []Probe {
 	return out
 }
 
-// probe returns the probe of the method named method of the member at. kind
-// is the kind of that method. sampled is the index of the method that binds
-// the sample of the check of its setter, and -1 where the member has none.
-func probe(at *Member, kind Kind, method string, sampled int) Probe {
-	return Probe{
-		Type: at.Type, Elem: at.Elem, Key: at.Key, Value: at.Value, Field: at.Field, Form: at.Form,
-		Kind: kind, Method: method, With: at.Names.With, Sample: sampled,
-	}
+// of returns a copy of the probe p for the method named method, whose kind
+// is kind.
+func (p *Probe) of(kind Kind, method string) Probe {
+	out := *p
+	out.Kind, out.Method = kind, method
+	return out
+}
+
+// zerosOf returns the zero values of the components c of a member.
+func (in *invocation) zerosOf(c *components) Zeros {
+	elem, _ := in.b.ZeroValue(c.elem)
+	key, _ := in.b.ZeroValue(c.key)
+	value, _ := in.b.ZeroValue(c.value)
+	return Zeros{Elem: elem, Key: key, Value: value}
 }
 
 // method returns a method of the record of the checks named name, with a
@@ -976,23 +1005,32 @@ func assignable(f *node.Field) bool {
 // modelOf returns the model of the member mem at the type that its source
 // declares.
 func (in *invocation) modelOf(mem *member) Member {
-	return in.memberOf(mem, mem.ref)
+	out, _ := in.memberOf(mem, mem.ref)
+	return out
+}
+
+// components are the parts of the type of a member, which [Member] records
+// as Elem, Key and Value. A part that the form of the member does not have is
+// nil.
+type components struct {
+	elem, key, value *node.TypeRef
 }
 
 // memberOf returns the model of the member mem whose type is typ, such as
 // the type that its source declares or that type at the witnesses of the type
-// parameters of the subject. An embedded field is a scalar, which the builder
-// sets whole. A field that may be absent, such as a TypeScript property with
-// a question mark, is an optional of its type. For any other field, the part
-// of the language reports whether the type is a set. Otherwise the form of
-// the member is the form of the canonical shape of the type: a list, a map,
-// bytes, an optional or a scalar. The type follows each transparent alias,
-// so an alias of a list is a list. A Go defined type is a reference to its
-// declaration, and so a scalar. A clone copies each list, map, set and bytes
-// value that is not immutable. The part of the language names the methods
-// of the member from its field and its form.
-func (in *invocation) memberOf(mem *member, typ *node.TypeRef) Member {
+// parameters of the subject, and the components of typ. An embedded field is
+// a scalar, which the builder sets whole. A field that may be absent, such as
+// a TypeScript property with a question mark, is an optional of its type. For
+// any other field, the part of the language reports whether the type is a
+// set. Otherwise the form of the member is the form of the canonical shape of
+// the type: a list, a map, bytes, an optional or a scalar. The type follows
+// each transparent alias, so an alias of a list is a list. A Go defined type
+// is a reference to its declaration, and so a scalar. A clone copies each
+// list, map, set and bytes value that is not immutable. The part of the
+// language names the methods of the member from its field and its form.
+func (in *invocation) memberOf(mem *member, typ *node.TypeRef) (Member, components) {
 	out := Member{Field: mem.name, Form: FormScalar, Type: rules.EmitRef(typ)}
+	var c components
 	if f := mem.field; f != nil {
 		ref := rules.Unaliased(typ, in.b.View())
 		shape := in.b.TypeOf(ref)
@@ -1000,18 +1038,19 @@ func (in *invocation) memberOf(mem *member, typ *node.TypeRef) Member {
 		key, isSet := in.p.set(ref)
 		switch {
 		case f.Optional:
-			out.Form, out.Elem = FormOptional, rules.EmitRef(typ)
+			out.Form, c.elem = FormOptional, typ
 		case isSet:
-			out.Form, out.Elem = FormSet, rules.EmitRef(key)
+			out.Form, c.elem = FormSet, key
 		case shape.Form == symbol.FormBytes:
 			out.Form = FormBytes
 		case shape.Form == symbol.FormList:
-			out.Form, out.Elem = FormList, rules.EmitRef(children[0])
+			out.Form, c.elem = FormList, children[0]
 		case shape.Form == symbol.FormMap:
-			out.Form, out.Key, out.Value = FormMap, rules.EmitRef(children[0]), rules.EmitRef(children[1])
+			out.Form, c.key, c.value = FormMap, children[0], children[1]
 		case shape.Form == symbol.FormOptional:
-			out.Form, out.Elem = FormOptional, rules.EmitRef(children[0])
+			out.Form, c.elem = FormOptional, children[0]
 		}
+		out.Elem, out.Key, out.Value = rules.EmitRef(c.elem), rules.EmitRef(c.key), rules.EmitRef(c.value)
 		switch out.Form {
 		case FormList, FormMap, FormSet, FormBytes:
 			out.Copied = shape.Mutability != symbol.MutabilityImmutable
@@ -1020,7 +1059,7 @@ func (in *invocation) memberOf(mem *member, typ *node.TypeRef) Member {
 		}
 	}
 	out.Names = in.p.names(mem.name, out.Form)
-	return out
+	return out, c
 }
 
 // collision returns the first name that two methods of the members share,

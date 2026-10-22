@@ -21,9 +21,9 @@ var ErrClosed = errors.New("cursor: closed")
 // Value is the payload the contract's roles carry.
 type Value struct{ Key, Body string }
 
-// Contract is the fixture interface.
+// Contract is the fixture interface. The directive suite alone gives it its
+// double.
 //
-//dokimi:stub
 //dokimi:suite
 //dokimi:out path=cursortest/
 type Contract interface {

@@ -91,7 +91,7 @@ export class PrimitivesBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -311,7 +311,7 @@ export class ContainersBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -386,7 +386,7 @@ export class AddressBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -451,7 +451,7 @@ export class RoleBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -516,7 +516,7 @@ export class AuditBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -650,7 +650,7 @@ export class UserBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -659,4 +659,4 @@ export class UserBuilder {
   }
 }
 
-// dokimi:provenance sha256:861106b9a5997e9c5b1649cdca349209723937a0016c42bb56eedf88a2ddd9d1
+// dokimi:provenance sha256:b74d9c33f7bb5b342f90543bf1231bdecf8feb06fc68a335289f3a23f30dfce9

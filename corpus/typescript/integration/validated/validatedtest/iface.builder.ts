@@ -64,7 +64,7 @@ export class AccountBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -73,4 +73,4 @@ export class AccountBuilder {
   }
 }
 
-// dokimi:provenance sha256:ebd9322044a80299990f2f099c8ba84353b313a7249b1be057e76f571616cf9d
+// dokimi:provenance sha256:65882b4d2d250dd7fbceccc8131ab0475e00cb54857a82a84a8bbe61f8e5ecbe

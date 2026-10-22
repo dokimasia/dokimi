@@ -80,7 +80,7 @@ export class SettingsBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -155,7 +155,7 @@ export class MirroredBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -231,7 +231,7 @@ export class ShorthandBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -240,4 +240,4 @@ export class ShorthandBuilder {
   }
 }
 
-// dokimi:provenance sha256:2c2b2babe1dfdd0244a34dfbe6debbb3db9f11386021389b13662a2a603e65fe
+// dokimi:provenance sha256:d826d7aea79b2e915d6961015ea493a0499100c714bbc13e612164dcb7585d9f

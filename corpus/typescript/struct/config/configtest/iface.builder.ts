@@ -100,7 +100,7 @@ export class ConfigBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -109,4 +109,4 @@ export class ConfigBuilder {
   }
 }
 
-// dokimi:provenance sha256:8abcbabefd22cb60f29b69def58c6ff25d09569a408e3f37b909fce2e809f379
+// dokimi:provenance sha256:2b66056440f4f10f9f23797cb3364bbf5ff2268154fce58f16bf6a183fd6bbfd

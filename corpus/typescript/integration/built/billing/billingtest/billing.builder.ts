@@ -54,7 +54,7 @@ export class InvoiceBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -63,4 +63,4 @@ export class InvoiceBuilder {
   }
 }
 
-// dokimi:provenance sha256:28bd0357c113d947c3d2130b43ab466ea6e1b72bb7675808693090cf4217ae44
+// dokimi:provenance sha256:8b62284cb63cf3380972e8515f9b40735c613c36c3992a31213f5854acbcb4ea

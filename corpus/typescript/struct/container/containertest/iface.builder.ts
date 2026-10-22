@@ -77,7 +77,7 @@ export class ContainerBuilder<T> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -167,7 +167,7 @@ export class PairBuilder<K, V> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -226,7 +226,7 @@ export class SoloBuilder<K extends Keyable> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -292,7 +292,7 @@ export class PartialPairBuilder<K extends Keyable, V> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -363,7 +363,7 @@ export class BucketBuilder<K extends Keyable, V> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -434,7 +434,7 @@ export class TripleBuilder<A extends Keyable, B, C> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -511,7 +511,7 @@ export class QuadBuilder<A extends Keyable, B, C, D extends Keyable> {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -520,4 +520,4 @@ export class QuadBuilder<A extends Keyable, B, C, D extends Keyable> {
   }
 }
 
-// dokimi:provenance sha256:4399ef1597694f34dfa0c5b73be7758b47bd0b53b16bd78c2e36794d64c2f875
+// dokimi:provenance sha256:02a8d0bb446ffaddbf17047581d295bebc716f99cb6974b3bc47a2eb0ea4a7bb

@@ -66,7 +66,7 @@ export class ValueBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -75,4 +75,4 @@ export class ValueBuilder {
   }
 }
 
-// dokimi:provenance sha256:6babd868417d76ccc944f8556049e0d38f9742a3fdcba02ae1839487a9c328ec
+// dokimi:provenance sha256:56aa0824bbe8284d696ae1d5bda318a258179c1b6ae9f18e11c955180f1076e5

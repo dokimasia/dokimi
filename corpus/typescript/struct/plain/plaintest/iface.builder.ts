@@ -76,7 +76,7 @@ export class ItemBuilder {
 
   /**
    * build returns a shallow copy of the value under construction. The builder
-   * stays usable, and a later call returns the value with the changes since.
+   * remains usable, and a later call returns the value with the changes since.
    * The copy shares its arrays, maps and sets with the builder, and clone
    * returns a builder that shares none of them.
    */
@@ -85,4 +85,4 @@ export class ItemBuilder {
   }
 }
 
-// dokimi:provenance sha256:ef460acc131416aac9e419e9765e5ff1aa974e12c8942ca0493daa047598cadd
+// dokimi:provenance sha256:f3a4c6c7cc7c94725c5dbea91f0b40aeed2d4ee7f2f8f2784b99b3dedefa77db

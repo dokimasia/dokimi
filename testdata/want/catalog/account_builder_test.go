@@ -9,330 +9,565 @@ import (
 
 	"example.com/shop/catalog"
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 )
 
-// TestAccountBuilderConstruction pins what the constructors produce.
-func TestAccountBuilderConstruction(t *testing.T) {
+// TestAccountBuilder checks the constructors and the methods of
+// AccountBuilder.
+func TestAccountBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewAccountBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var seed catalog.Account
-		seed.Owner = "Owner-a"
-		seed.Plan = "Plan-a"
-		got := catalog.NewAccountBuilderFrom(seed).Build()
-		assert.Equal(t, got.Owner, seed.Owner, "From keeps the member it was given")
-		assert.Equal(t, got.Plan, seed.Plan, "From keeps the member it was given")
+		t.Run("applies the declared default of Owner", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "owner"
+			got := catalog.NewAccountBuilder().Build()
+			assert.Equal(
+				t,
+				got.Owner,
+				want,
+				"NewAccountBuilder applies the declared default of Owner",
+			)
+		})
 	})
 
-	t.Run("Owner carries its declared default", func(t *testing.T) {
+	t.Run("NewAccountBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "owner"
-		got := catalog.NewAccountBuilder().Build()
-		assert.Equal(t, got.Owner, want, "the constructor applies the declared default")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Account
+			seed.Owner = "Owner-a"
+			seed.Plan = "Plan-a"
+			got := catalog.NewAccountBuilderFrom(seed).Build()
+			expect.Equal(t, got.Owner, seed.Owner, "NewAccountBuilderFrom keeps Owner")
+			expect.Equal(t, got.Plan, seed.Plan, "NewAccountBuilderFrom keeps Plan")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewAccountBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				catalog.NewAccountBuilderFrom(want).Build(),
+				want,
+				"NewAccountBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithOwner", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Owner", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Owner-a"
+			got := catalog.NewAccountBuilder().WithOwner(want).Build()
+			assert.Equal(t, got.Owner, want, "WithOwner writes its argument to Owner")
+		})
+
+		t.Run("replaces the value of Owner", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Owner-a"
+			want = "Owner-b"
+			got := catalog.NewAccountBuilder().WithOwner(first).WithOwner(want).Build()
+			assert.Equal(t, got.Owner, want, "the second call of WithOwner replaces the first")
+		})
+	})
+
+	t.Run("WithPlan", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Plan", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Plan-a"
+			got := catalog.NewAccountBuilder().WithPlan(want).Build()
+			assert.Equal(t, got.Plan, want, "WithPlan writes its argument to Plan")
+		})
+
+		t.Run("replaces the value of Plan", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Plan-a"
+			want = "Plan-b"
+			got := catalog.NewAccountBuilder().WithPlan(first).WithPlan(want).Build()
+			assert.Equal(t, got.Plan, want, "the second call of WithPlan replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*catalog.Account
+			record := func(v *catalog.Account) { got = append(got, v) }
+			catalog.NewAccountBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(
+				t,
+				got[0],
+				got[1],
+				"the two functions get the same value",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := catalog.NewAccountBuilder()
+			assert.NotEqual(
+				t,
+				original.Clone(),
+				original,
+				"Clone returns a builder of its own",
+				assert.ByIdentity(),
+			)
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewAccountBuilder()
+			assert.Equal(
+				t,
+				b.Clone().Build(),
+				b.Build(),
+				"the clone builds the value of its original",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Account
+			seed.Owner = "Owner-a"
+			seed.Plan = "Plan-a"
+			b := catalog.NewAccountBuilder()
+			b.Mutate(func(v *catalog.Account) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestAccountBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestAccountBuilderSetters(t *testing.T) {
+// TestPolicyBuilder checks the constructors and the methods of
+// PolicyBuilder.
+func TestPolicyBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithOwner writes Owner", func(t *testing.T) {
+	t.Run("NewPolicyBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Owner-a"
-		got := catalog.NewAccountBuilder().WithOwner(want).Build()
-		assert.Equal(t, got.Owner, want, "the setter writes what it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Policy
+			seed.Attempts = 42
+			got := catalog.NewPolicyBuilderFrom(seed).Build()
+			assert.Equal(t, got.Attempts, seed.Attempts, "NewPolicyBuilderFrom keeps Attempts")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewPolicyBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				catalog.NewPolicyBuilderFrom(want).Build(),
+				want,
+				"NewPolicyBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("WithOwner replaces what was already there", func(t *testing.T) {
+	t.Run("WithAttempts", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want string
-		first = "Owner-a"
-		want = "Owner-b"
-		got := catalog.NewAccountBuilder().WithOwner(first).WithOwner(want).Build()
-		assert.Equal(t, got.Owner, want, "the later call wins")
+		t.Run("writes its argument to Attempts", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := catalog.NewPolicyBuilder().WithAttempts(want).Build()
+			assert.Equal(t, got.Attempts, want, "WithAttempts writes its argument to Attempts")
+		})
+
+		t.Run("replaces the value of Attempts", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := catalog.NewPolicyBuilder().WithAttempts(first).WithAttempts(want).Build()
+			assert.Equal(
+				t,
+				got.Attempts,
+				want,
+				"the second call of WithAttempts replaces the first",
+			)
+		})
 	})
 
-	t.Run("WithPlan writes Plan", func(t *testing.T) {
+	t.Run("Mutate", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Plan-a"
-		got := catalog.NewAccountBuilder().WithPlan(want).Build()
-		assert.Equal(t, got.Plan, want, "the setter writes what it was given")
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*catalog.Policy
+			record := func(v *catalog.Policy) { got = append(got, v) }
+			catalog.NewPolicyBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(
+				t,
+				got[0],
+				got[1],
+				"the two functions get the same value",
+				assert.ByIdentity(),
+			)
+		})
 	})
 
-	t.Run("WithPlan replaces what was already there", func(t *testing.T) {
+	t.Run("Clone", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want string
-		first = "Plan-a"
-		want = "Plan-b"
-		got := catalog.NewAccountBuilder().WithPlan(first).WithPlan(want).Build()
-		assert.Equal(t, got.Plan, want, "the later call wins")
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := catalog.NewPolicyBuilder()
+			assert.NotEqual(
+				t,
+				original.Clone(),
+				original,
+				"Clone returns a builder of its own",
+				assert.ByIdentity(),
+			)
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewPolicyBuilder()
+			assert.Equal(
+				t,
+				b.Clone().Build(),
+				b.Build(),
+				"the clone builds the value of its original",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Policy
+			seed.Attempts = 42
+			b := catalog.NewPolicyBuilder()
+			b.Mutate(func(v *catalog.Policy) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestAccountBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestAccountBuilderMethods(t *testing.T) {
+// TestTagBuilder checks the constructors and the methods of TagBuilder.
+func TestTagBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
+	t.Run("NewTagBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var got []*catalog.Account
-		record := func(v *catalog.Account) { got = append(got, v) }
-		catalog.NewAccountBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Tag[string]
+			seed.Key = "Key-a"
+			got := catalog.NewTagBuilderFrom[string](seed).Build()
+			assert.Equal(t, got.Key, seed.Key, "NewTagBuilderFrom keeps Key")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewTagBuilder[string]()
+			want := b.Build()
+			assert.Equal(
+				t,
+				catalog.NewTagBuilderFrom[string](want).Build(),
+				want,
+				"NewTagBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
+	t.Run("WithKey", func(t *testing.T) {
 		t.Parallel()
 
-		original := catalog.NewAccountBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, catalog.NewAccountBuilderFrom(want).Build(), want, "From keeps the value it was given")
+		t.Run("writes its argument to Key", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Key-a"
+			got := catalog.NewTagBuilder[string]().WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "WithKey writes its argument to Key")
+		})
+
+		t.Run("replaces the value of Key", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Key-a"
+			want = "Key-b"
+			got := catalog.NewTagBuilder[string]().WithKey(first).WithKey(want).Build()
+			assert.Equal(t, got.Key, want, "the second call of WithKey replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*catalog.Tag[string]
+			record := func(v *catalog.Tag[string]) { got = append(got, v) }
+			catalog.NewTagBuilder[string]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(
+				t,
+				got[0],
+				got[1],
+				"the two functions get the same value",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := catalog.NewTagBuilder[string]()
+			assert.NotEqual(
+				t,
+				original.Clone(),
+				original,
+				"Clone returns a builder of its own",
+				assert.ByIdentity(),
+			)
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewTagBuilder[string]()
+			assert.Equal(
+				t,
+				b.Clone().Build(),
+				b.Build(),
+				"the clone builds the value of its original",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Tag[string]
+			seed.Key = "Key-a"
+			b := catalog.NewTagBuilder[string]()
+			b.Mutate(func(v *catalog.Tag[string]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestPolicyBuilderConstruction pins what the constructors produce.
-func TestPolicyBuilderConstruction(t *testing.T) {
+// TestBoxBuilder checks the constructors and the methods of BoxBuilder.
+func TestBoxBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewBoxBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var seed catalog.Policy
-		seed.Attempts = 42
-		got := catalog.NewPolicyBuilderFrom(seed).Build()
-		assert.Equal(t, got.Attempts, seed.Attempts, "From keeps the member it was given")
+		t.Run("applies the declared default of Size", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 1
+			got := catalog.NewBoxBuilder[int]().Build()
+			assert.Equal(t, got.Size, want, "NewBoxBuilder applies the declared default of Size")
+		})
+	})
+
+	t.Run("NewBoxBuilderFrom", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Box[int]
+			seed.Value = 42
+			seed.Size = 42
+			got := catalog.NewBoxBuilderFrom[int](seed).Build()
+			expect.Equal(t, got.Value, seed.Value, "NewBoxBuilderFrom keeps Value")
+			expect.Equal(t, got.Size, seed.Size, "NewBoxBuilderFrom keeps Size")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewBoxBuilder[int]()
+			want := b.Build()
+			assert.Equal(
+				t,
+				catalog.NewBoxBuilderFrom[int](want).Build(),
+				want,
+				"NewBoxBuilderFrom keeps the value of its argument",
+			)
+		})
+	})
+
+	t.Run("WithValue", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Value", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := catalog.NewBoxBuilder[int]().WithValue(want).Build()
+			assert.Equal(t, got.Value, want, "WithValue writes its argument to Value")
+		})
+
+		t.Run("replaces the value of Value", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := catalog.NewBoxBuilder[int]().WithValue(first).WithValue(want).Build()
+			assert.Equal(t, got.Value, want, "the second call of WithValue replaces the first")
+		})
+	})
+
+	t.Run("WithSize", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Size", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := catalog.NewBoxBuilder[int]().WithSize(want).Build()
+			assert.Equal(t, got.Size, want, "WithSize writes its argument to Size")
+		})
+
+		t.Run("replaces the value of Size", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := catalog.NewBoxBuilder[int]().WithSize(first).WithSize(want).Build()
+			assert.Equal(t, got.Size, want, "the second call of WithSize replaces the first")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*catalog.Box[int]
+			record := func(v *catalog.Box[int]) { got = append(got, v) }
+			catalog.NewBoxBuilder[int]().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(
+				t,
+				got[0],
+				got[1],
+				"the two functions get the same value",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := catalog.NewBoxBuilder[int]()
+			assert.NotEqual(
+				t,
+				original.Clone(),
+				original,
+				"Clone returns a builder of its own",
+				assert.ByIdentity(),
+			)
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewBoxBuilder[int]()
+			assert.Equal(
+				t,
+				b.Clone().Build(),
+				b.Build(),
+				"the clone builds the value of its original",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Box[int]
+			seed.Value = 42
+			seed.Size = 42
+			b := catalog.NewBoxBuilder[int]()
+			b.Mutate(func(v *catalog.Box[int]) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestPolicyBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestPolicyBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithAttempts writes Attempts", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := catalog.NewPolicyBuilder().WithAttempts(want).Build()
-		assert.Equal(t, got.Attempts, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithAttempts replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := catalog.NewPolicyBuilder().WithAttempts(first).WithAttempts(want).Build()
-		assert.Equal(t, got.Attempts, want, "the later call wins")
-	})
-}
-
-// TestPolicyBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestPolicyBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*catalog.Policy
-		record := func(v *catalog.Policy) { got = append(got, v) }
-		catalog.NewPolicyBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := catalog.NewPolicyBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, catalog.NewPolicyBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestTagBuilderConstruction pins what the constructors produce.
-func TestTagBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed catalog.Tag[string]
-		seed.Key = "Key-a"
-		got := catalog.NewTagBuilderFrom[string](seed).Build()
-		assert.Equal(t, got.Key, seed.Key, "From keeps the member it was given")
-	})
-}
-
-// TestTagBuilderSetters pins that each setter writes the member it names,
-// and writes nothing else.
-func TestTagBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithKey writes Key", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Key-a"
-		got := catalog.NewTagBuilder[string]().WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithKey replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Key-a"
-		want = "Key-b"
-		got := catalog.NewTagBuilder[string]().WithKey(first).WithKey(want).Build()
-		assert.Equal(t, got.Key, want, "the later call wins")
-	})
-}
-
-// TestTagBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestTagBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*catalog.Tag[string]
-		record := func(v *catalog.Tag[string]) { got = append(got, v) }
-		catalog.NewTagBuilder[string]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := catalog.NewTagBuilder[string]()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, catalog.NewTagBuilderFrom[string](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestBoxBuilderConstruction pins what the constructors produce.
-func TestBoxBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed catalog.Box[int]
-		seed.Value = 42
-		seed.Size = 42
-		got := catalog.NewBoxBuilderFrom[int](seed).Build()
-		assert.Equal(t, got.Value, seed.Value, "From keeps the member it was given")
-		assert.Equal(t, got.Size, seed.Size, "From keeps the member it was given")
-	})
-
-	t.Run("Size carries its declared default", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 1
-		got := catalog.NewBoxBuilder[int]().Build()
-		assert.Equal(t, got.Size, want, "the constructor applies the declared default")
-	})
-}
-
-// TestBoxBuilderSetters pins that each setter writes the member it names,
-// and writes nothing else.
-func TestBoxBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithValue writes Value", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := catalog.NewBoxBuilder[int]().WithValue(want).Build()
-		assert.Equal(t, got.Value, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithValue replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := catalog.NewBoxBuilder[int]().WithValue(first).WithValue(want).Build()
-		assert.Equal(t, got.Value, want, "the later call wins")
-	})
-
-	t.Run("WithSize writes Size", func(t *testing.T) {
-		t.Parallel()
-
-		var want int
-		want = 42
-		got := catalog.NewBoxBuilder[int]().WithSize(want).Build()
-		assert.Equal(t, got.Size, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithSize replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want int
-		first = 42
-		want = 7
-		got := catalog.NewBoxBuilder[int]().WithSize(first).WithSize(want).Build()
-		assert.Equal(t, got.Size, want, "the later call wins")
-	})
-}
-
-// TestBoxBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestBoxBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*catalog.Box[int]
-		record := func(v *catalog.Box[int]) { got = append(got, v) }
-		catalog.NewBoxBuilder[int]().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := catalog.NewBoxBuilder[int]()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, catalog.NewBoxBuilderFrom[int](want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:9850809a6f492ecb341fd51117ca89b5a0bae9c7b531c3a5c550c4dbeb16b937
+// dokimi:provenance sha256:56ba028cd5bcb4f3ae9e4f714a7565926e2e9249a810bafe5f48128f9912732a

@@ -11,118 +11,216 @@ import (
 	"go.dokimi.dev/assert"
 )
 
-// TestStatusVariants pins the declared set itself, which every other check
-// here takes as given.
-func TestStatusVariants(t *testing.T) {
+// TestStatus checks the functions and the methods of the enumeration
+// Status.
+func TestStatus(t *testing.T) {
 	t.Parallel()
 
-	all := catalog.StatusValues()
-
-	t.Run("declares exactly 3 variants", func(t *testing.T) {
-		t.Parallel()
-		assert.Length(t, all, 3, "the declared set must not change unnoticed")
-	})
-
-	t.Run("no two variants share a value", func(t *testing.T) {
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
 		t.Parallel()
 		seen := map[catalog.Status]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v], "each variant must hold a distinct value")
+		for _, v := range []catalog.Status{
+			catalog.Active,
+			catalog.Suspended,
+			catalog.Closed,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
 	})
 
-	t.Run("no two variants share a textual form", func(t *testing.T) {
+	t.Run("StatusValues", func(t *testing.T) {
 		t.Parallel()
-		seen := map[string]bool{}
-		for _, v := range all {
-			assert.False(t, seen[v.String()], "each variant must render distinctly")
-			seen[v.String()] = true
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []catalog.Status{
+					catalog.Active,
+					catalog.Suspended,
+					catalog.Closed,
+				}
+				assert.Equal(
+					t,
+					catalog.StatusValues(),
+					want,
+					"StatusValues returns the declared variants",
+				)
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := catalog.StatusValues(), catalog.StatusValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("String", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a text of its own for each variant", func(t *testing.T) {
+			t.Parallel()
+			seen := map[string]bool{}
+			for _, v := range []catalog.Status{
+				catalog.Active,
+				catalog.Suspended,
+				catalog.Closed,
+			} {
+				assert.False(t, seen[v.String()], "each variant has a text of its own")
+				seen[v.String()] = true
+			}
+		})
+
+		t.Run(
+			"renders a value outside the declared set with a text of its own",
+			func(t *testing.T) {
+				t.Parallel()
+				out := catalog.Status(4)
+				for _, v := range []catalog.Status{
+					catalog.Active,
+					catalog.Suspended,
+					catalog.Closed,
+				} {
+					assert.NotEqual(
+						t,
+						out.String(),
+						v.String(),
+						"an undeclared value has a text of its own",
+					)
+				}
+			},
+		)
+	})
+
+	t.Run("IsValid", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give catalog.Status
+		}{
+			{name: "accepts Active", give: catalog.Active},
+			{name: "accepts Suspended", give: catalog.Suspended},
+			{name: "accepts Closed", give: catalog.Closed},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				assert.True(t, tt.give.IsValid(), "IsValid accepts each declared variant")
+			})
+		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			assert.False(t, catalog.Status(4).IsValid(), "IsValid refuses an undeclared value")
+		})
+
+		t.Run("refuses the zero value", func(t *testing.T) {
+			t.Parallel()
+			var zero catalog.Status
+			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
+		})
+	})
+
+	t.Run("ParseStatus", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give catalog.Status
+		}{
+			{name: "returns Active for its text", give: catalog.Active},
+			{name: "returns Suspended for its text", give: catalog.Suspended},
+			{name: "returns Closed for its text", give: catalog.Closed},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := catalog.ParseStatus(tt.give.String())
+				assert.NoError(t, err, "ParseStatus accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseStatus returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := catalog.ParseStatus("??????????")
+			assert.ErrorIs(
+				t,
+				err,
+				catalog.ErrUnknownStatus,
+				"ParseStatus refuses the text with ErrUnknownStatus",
+			)
+			assert.Contains(t, err.Error(), "??????????", "the error contains the refused text")
+		})
+	})
+
+	t.Run("MarshalText", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give catalog.Status
+		}{
+			{name: "encodes Active as its text", give: catalog.Active},
+			{name: "encodes Suspended as its text", give: catalog.Suspended},
+			{name: "encodes Closed as its text", give: catalog.Closed},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				assert.Equal(
+					t,
+					string(text),
+					tt.give.String(),
+					"the encoding of the variant is its text",
+				)
+			})
 		}
 	})
 
-	t.Run("a value outside the set is not valid", func(t *testing.T) {
+	t.Run("UnmarshalText", func(t *testing.T) {
 		t.Parallel()
-		assert.False(t, catalog.Status(4).IsValid(), "an undeclared value must not be valid")
-	})
 
-	t.Run("every declared variant is valid", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			assert.True(t, v.IsValid(), "a declared variant must be valid")
+		tests := []struct {
+			name string
+			give catalog.Status
+		}{
+			{name: "decodes Active from its encoding", give: catalog.Active},
+			{name: "decodes Suspended from its encoding", give: catalog.Suspended},
+			{name: "decodes Closed from its encoding", give: catalog.Closed},
 		}
-	})
-
-	t.Run("the zero value is not a declared variant", func(t *testing.T) {
-		t.Parallel()
-		var zero catalog.Status
-		assert.False(t, zero.IsValid(), "the zero value must not be a variant")
-	})
-}
-
-// TestStatusText pins the round trip a value makes through anything that
-// carries it as text — a log line, a JSON field, a database column.
-func TestStatusText(t *testing.T) {
-	t.Parallel()
-
-	all := catalog.StatusValues()
-
-	t.Run("every variant survives a text round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			got, err := catalog.ParseStatus(v.String())
-			assert.NoError(t, err, "a declared variant must parse back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				text, err := tt.give.MarshalText()
+				assert.NoError(t, err, "MarshalText encodes the variant")
+				var got catalog.Status
+				assert.NoError(t, got.UnmarshalText(text), "UnmarshalText decodes the encoding")
+				assert.Equal(t, got, tt.give, "UnmarshalText returns the encoded variant")
+			})
 		}
-	})
 
-	t.Run("text naming no variant is refused", func(t *testing.T) {
-		t.Parallel()
-		_, err := catalog.ParseStatus("??????????")
-		assert.ErrorIs(t, err, catalog.ErrUnknownStatus, "unknown text must be refused with the declared refusal")
-	})
-
-	t.Run("a value outside the set does not render as one inside it", func(t *testing.T) {
-		t.Parallel()
-		out := catalog.Status(4)
-		for _, v := range all {
-			assert.NotEqual(t, out.String(), v.String(), "an undeclared value must render distinctly")
-		}
-	})
-}
-
-// TestStatusEncoding pins the boundary where a value most often crosses
-// out of the program's control.
-func TestStatusEncoding(t *testing.T) {
-	t.Parallel()
-
-	all := catalog.StatusValues()
-
-	t.Run("every variant encodes to its textual form", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
-			assert.Equal(t, string(text), v.String(), "the encoding must match the textual form")
-		}
-	})
-
-	t.Run("every variant survives an encoding round trip", func(t *testing.T) {
-		t.Parallel()
-		for _, v := range all {
-			text, err := v.MarshalText()
-			assert.NoError(t, err, "a declared variant must encode")
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
 			var got catalog.Status
-			assert.NoError(t, got.UnmarshalText(text), "and decode back")
-			assert.Equal(t, got, v, "the round trip must be lossless")
-		}
-	})
-
-	t.Run("text naming no variant is refused on decode", func(t *testing.T) {
-		t.Parallel()
-		var got catalog.Status
-		assert.HasError(t, got.UnmarshalText([]byte("??????????")), "unknown text must not decode")
+			assert.HasError(
+				t,
+				got.UnmarshalText([]byte("??????????")),
+				"UnmarshalText refuses the text",
+			)
+		})
 	})
 }
 
-// dokimi:provenance sha256:481b8ca148c232dab75edef6d86222db32454072a105f4dc0c8186fed6164a00
+// dokimi:provenance sha256:b2111868d20a4defb56319b9857ffbb21c83b416c2373a0dd6b56f679b99674a

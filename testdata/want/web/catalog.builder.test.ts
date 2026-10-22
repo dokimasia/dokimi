@@ -2,386 +2,587 @@
 // dokimi:plugin builder
 // dokimi:source web/catalog.ts
 
-import { byIdentity, check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Account, Address, type Counter, type Page } from './catalog';
-import { AccountBuilder, AddressBuilder, CounterBuilder, PageBuilder } from './catalog.builder';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Account, Address, type Counter, type Page } from "./catalog";
+import { AccountBuilder, AddressBuilder, CounterBuilder, PageBuilder } from "./catalog.builder";
 
-describe("AddressBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
-    const seed = new Address();
-    seed.street = 'street-a';
-    seed.city = 'city-a';
-    const got = AddressBuilder.from(seed).build();
-    check.equal(seat, got.street, seed.street, "from keeps the member it was given");
-    check.equal(seat, got.city, seed.city, "from keeps the member it was given");
-  });
-
-  test("street carries its declared default", ({ seat }) => {
+function addressBuilderCreateCases(): void {
+  it("applies the declared default of street", () => {
     let want: string;
-    want = 'Dam 1';
+    want = "Dam 1";
     const got = AddressBuilder.create().build();
-    check.equal(seat, got.street, want, "the constructor applies the declared default");
+    expect(got.street).isEqualTo(want, "create applies the declared default of street");
   });
-});
+}
 
-describe("AddressBuilder setters", () => {
-  test("withStreet writes street", ({ seat }) => {
+function addressBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
+    const seed = new Address();
+    seed.street = "street-a";
+    seed.city = "city-a";
+    const got = AddressBuilder.from(seed).build();
+    expect.soft(got.street).isEqualTo(seed.street, "from keeps street");
+    expect.soft(got.city).isEqualTo(seed.city, "from keeps city");
+  });
+
+  it("keeps the value of its argument", () => {
+    const want = AddressBuilder.create().build();
+    expect(AddressBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function addressBuilderWithStreetCases(): void {
+  it("writes its argument to street", () => {
     let want: string;
-    want = 'street-a';
+    want = "street-a";
     const got = AddressBuilder.create().withStreet(want).build();
-    check.equal(seat, got.street, want, "the setter writes what it was given");
+    expect(got.street).isEqualTo(want, "withStreet writes its argument to street");
   });
 
-  test("withStreet replaces what was already there", ({ seat }) => {
+  it("replaces the value of street", () => {
     let first: string;
     let want: string;
-    first = 'street-a';
-    want = 'street-b';
+    first = "street-a";
+    want = "street-b";
     const got = AddressBuilder.create().withStreet(first).withStreet(want).build();
-    check.equal(seat, got.street, want, "the later call wins");
+    expect(got.street).isEqualTo(want, "the second call of withStreet replaces the first");
   });
+}
 
-  test("withCity writes city", ({ seat }) => {
+function addressBuilderWithCityCases(): void {
+  it("writes its argument to city", () => {
     let want: string;
-    want = 'city-a';
+    want = "city-a";
     const got = AddressBuilder.create().withCity(want).build();
-    check.equal(seat, got.city, want, "the setter writes what it was given");
+    expect(got.city).isEqualTo(want, "withCity writes its argument to city");
   });
 
-  test("withCity replaces what was already there", ({ seat }) => {
+  it("replaces the value of city", () => {
     let first: string;
     let want: string;
-    first = 'city-a';
-    want = 'city-b';
+    first = "city-a";
+    want = "city-b";
     const got = AddressBuilder.create().withCity(first).withCity(want).build();
-    check.equal(seat, got.city, want, "the later call wins");
+    expect(got.city).isEqualTo(want, "the second call of withCity replaces the first");
   });
+}
 
-  test("withFloor writes floor", ({ seat }) => {
+function addressBuilderWithFloorCases(): void {
+  it("writes its argument to floor", () => {
     let want: number;
     want = 1.5;
     const got = AddressBuilder.create().withFloor(want).build();
-    check.isNotNil(seat, got.floor, "the setter writes the value it was given");
+    expect(got.floor).isEqualTo(want, "withFloor writes its argument to floor");
   });
 
-  test("withLines writes lines", ({ seat }) => {
+  it("replaces the value of floor", () => {
+    let first: number;
+    let want: number;
+    first = 1.5;
+    want = 2.5;
+    const got = AddressBuilder.create().withFloor(first).withFloor(want).build();
+    expect(got.floor).isEqualTo(want, "the second call of withFloor replaces the first");
+  });
+}
+
+function addressBuilderWithLinesCases(): void {
+  it("writes its argument to lines", () => {
     let want: string[];
-    want = ['lines-a'];
+    want = ["lines-a"];
     const got = AddressBuilder.create().withLines(...want).build();
-    check.length(seat, got.lines, 1, "the setter replaces the sequence");
+    expect(got.lines).isEqualTo(want, "withLines writes its argument to lines");
   });
 
-  test("withLabels writes labels", ({ seat }) => {
-    let want: Map<string, string>;
-    want = new Map<string, string>([['labels-a', 'labels-a']]);
-    const got = AddressBuilder.create().withLabels(want).build();
-    check.length(seat, got.labels, 1, "the setter replaces the collection");
-  });
-
-  test("withTags writes tags", ({ seat }) => {
-    let want: Set<string>;
-    want = new Set<string>(['tags-a']);
-    const got = AddressBuilder.create().withTags(want).build();
-    check.length(seat, got.tags, 1, "the setter replaces the collection");
-  });
-
-  test("appendLines keeps what lines holds", ({ seat }) => {
+  it("replaces the value of lines", () => {
+    let first: string[];
     let want: string[];
-    want = ['lines-a'];
-    const got = AddressBuilder.create().withLines(...want).appendLines(...want).build();
-    check.length(seat, got.lines, 2, "the appender adds to the sequence");
+    first = ["lines-a"];
+    want = ["lines-b"];
+    const got = AddressBuilder.create().withLines(...first).withLines(...want).build();
+    expect(got.lines).isEqualTo(want, "the second call of withLines replaces the first");
+  });
+}
+
+function addressBuilderWithLabelsCases(): void {
+  it("writes its argument to labels", () => {
+    let want: Map<string, string>;
+    want = new Map<string, string>([["labels-a", "labels-a"]]);
+    const got = AddressBuilder.create().withLabels(want).build();
+    expect(got.labels).isEqualTo(want, "withLabels writes its argument to labels");
   });
 
-  test("withLabelsEntry adds one key to labels", ({ seat }) => {
+  it("replaces the value of labels", () => {
+    let first: Map<string, string>;
     let want: Map<string, string>;
-    want = new Map<string, string>([['labels-a', 'labels-a']]);
+    first = new Map<string, string>([["labels-a", "labels-a"]]);
+    want = new Map<string, string>([["labels-b", "labels-a"]]);
+    const got = AddressBuilder.create().withLabels(first).withLabels(want).build();
+    expect(got.labels).isEqualTo(want, "the second call of withLabels replaces the first");
+  });
+}
+
+function addressBuilderWithTagsCases(): void {
+  it("writes its argument to tags", () => {
+    let want: Set<string>;
+    want = new Set<string>(["tags-a"]);
+    const got = AddressBuilder.create().withTags(want).build();
+    expect(got.tags).isEqualTo(want, "withTags writes its argument to tags");
+  });
+
+  it("replaces the value of tags", () => {
+    let first: Set<string>;
+    let want: Set<string>;
+    first = new Set<string>(["tags-a"]);
+    want = new Set<string>(["tags-b"]);
+    const got = AddressBuilder.create().withTags(first).withTags(want).build();
+    expect(got.tags).isEqualTo(want, "the second call of withTags replaces the first");
+  });
+}
+
+function addressBuilderAppendLinesCases(): void {
+  it("appends to the elements of lines", () => {
+    let first: string[];
+    let want: string[];
+    first = ["lines-a"];
+    want = ["lines-b"];
+    const got = AddressBuilder.create().withLines(...first).appendLines(...want).build();
+    expect(got.lines).isEqualTo([...first, ...want], "appendLines appends its elements after those of withLines");
+  });
+}
+
+function addressBuilderWithLabelsEntryCases(): void {
+  it("adds one key to labels", () => {
+    let want: Map<string, string>;
+    want = new Map<string, string>([["labels-a", "labels-a"]]);
     const builder = AddressBuilder.create();
     for (const [key, item] of want) {
-      check.equal(seat, builder.withLabelsEntry(key, item).build().labels.get(key), item, "the setter sets the key");
+      expect(builder.withLabelsEntry(key, item).build().labels.get(key)).isEqualTo(item, "withLabelsEntry sets the key");
     }
   });
+}
 
-  test("withLabelsEntries adds each key to labels", ({ seat }) => {
+function addressBuilderWithLabelsEntriesCases(): void {
+  it("adds each key to labels", () => {
     let want: Map<string, string>;
-    want = new Map<string, string>([['labels-a', 'labels-a']]);
+    want = new Map<string, string>([["labels-a", "labels-a"]]);
     const got = AddressBuilder.create().withLabelsEntries(want).build();
     for (const [key, item] of want) {
-      check.equal(seat, got.labels.get(key), item, "the setter merges each entry");
+      expect(got.labels.get(key)).isEqualTo(item, "withLabelsEntries copies each entry");
     }
   });
+}
 
-  test("withTagsEntry adds one key to tags", ({ seat }) => {
+function addressBuilderWithTagsEntryCases(): void {
+  it("adds one key to tags", () => {
     let want: Set<string>;
-    want = new Set<string>(['tags-a']);
+    want = new Set<string>(["tags-a"]);
     const builder = AddressBuilder.create();
     for (const key of want) {
-      check.isTrue(seat, builder.withTagsEntry(key).build().tags.has(key), "the setter adds the key");
+      expect(builder.withTagsEntry(key).build().tags.has(key)).isTrue("withTagsEntry adds the key");
     }
   });
+}
 
-  test("withTagsEntries adds each key to tags", ({ seat }) => {
+function addressBuilderWithTagsEntriesCases(): void {
+  it("adds each key to tags", () => {
     let want: Set<string>;
-    want = new Set<string>(['tags-a']);
+    want = new Set<string>(["tags-a"]);
     const got = AddressBuilder.create().withTagsEntries(...want).build();
     for (const key of want) {
-      check.isTrue(seat, got.tags.has(key), "the setter adds each key");
+      expect(got.tags.has(key)).isTrue("withTagsEntries adds each key");
     }
   });
-});
+}
 
-describe("AddressBuilder clone", () => {
-  test("lines is not shared with a clone", ({ seat }) => {
-    let want: string[];
-    let other: string[];
-    want = ['lines-a'];
-    other = ['lines-b'];
-    const original = AddressBuilder.create().withLines(...want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      value.lines.splice(0, other.length, ...other);
-    });
-    check.notEqual(seat, original.build().lines, other, "writing through a clone must not reach the original");
-  });
-
-  test("labels is not shared with a clone", ({ seat }) => {
-    let want: Map<string, string>;
-    let other: Map<string, string>;
-    want = new Map<string, string>([['labels-a', 'labels-a']]);
-    other = new Map<string, string>([['labels-b', 'labels-a']]);
-    const original = AddressBuilder.create().withLabels(want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      for (const [key, item] of other) {
-        value.labels.set(key, item);
-      }
-    });
-    check.length(seat, original.build().labels, 1, "writing through a clone must not reach the original");
-  });
-
-  test("tags is not shared with a clone", ({ seat }) => {
-    let want: Set<string>;
-    let other: Set<string>;
-    want = new Set<string>(['tags-a']);
-    other = new Set<string>(['tags-b']);
-    const original = AddressBuilder.create().withTags(want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      for (const key of other) {
-        value.tags.add(key);
-      }
-    });
-    check.length(seat, original.build().tags, 1, "writing through a clone must not reach the original");
-  });
-
-  test("clone copies lines", ({ seat }) => {
-    let want: string[];
-    want = ['lines-a'];
-    const original = AddressBuilder.create().withLines(...want);
-    check.equal(seat, original.clone().build().lines, want, "a clone builds the same member as its original");
-  });
-
-  test("clone copies labels", ({ seat }) => {
-    let want: Map<string, string>;
-    want = new Map<string, string>([['labels-a', 'labels-a']]);
-    const original = AddressBuilder.create().withLabels(want);
-    check.equal(seat, original.clone().build().labels, want, "a clone builds the same member as its original");
-  });
-
-  test("clone copies tags", ({ seat }) => {
-    let want: Set<string>;
-    want = new Set<string>(['tags-a']);
-    const original = AddressBuilder.create().withTags(want);
-    check.equal(seat, original.clone().build().tags, want, "a clone builds the same member as its original");
-  });
-});
-
-describe("AddressBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function addressBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Address[] = [];
     const record = (value: Address): void => {
       seen.push(value);
     };
     AddressBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function addressBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = AddressBuilder.create();
-    const want = original.build();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
+  });
+
+  it("builds the value of its original", () => {
+    const original = AddressBuilder.create();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+
+  it("copies lines into the clone", () => {
+    let want: string[];
+    let other: string[];
+    want = ["lines-a"];
+    other = ["lines-b"];
+    const original = AddressBuilder.create().withLines(...want);
     const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, AddressBuilder.from(want).build(), want, "from keeps the value it was given");
+    const message = "a change of lines in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      value.lines.splice(0, other.length, ...other);
+    });
+    expect(original.build().lines).isNotEqualTo(other, message);
   });
+
+  it("copies labels into the clone", () => {
+    let want: Map<string, string>;
+    let other: Map<string, string>;
+    want = new Map<string, string>([["labels-a", "labels-a"]]);
+    other = new Map<string, string>([["labels-b", "labels-a"]]);
+    const original = AddressBuilder.create().withLabels(want);
+    const clone = original.clone();
+    const message = "a change of labels in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      for (const [key, item] of other) {
+        value.labels.set(key, item);
+      }
+    });
+    expect(original.build().labels).hasLength(1, message);
+  });
+
+  it("copies tags into the clone", () => {
+    let want: Set<string>;
+    let other: Set<string>;
+    want = new Set<string>(["tags-a"]);
+    other = new Set<string>(["tags-b"]);
+    const original = AddressBuilder.create().withTags(want);
+    const clone = original.clone();
+    const message = "a change of tags in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      for (const key of other) {
+        value.tags.add(key);
+      }
+    });
+    expect(original.build().tags).hasLength(1, message);
+  });
+
+  it("builds the lines of its original", () => {
+    let want: string[];
+    want = ["lines-a"];
+    const original = AddressBuilder.create().withLines(...want);
+    expect(original.clone().build().lines).isEqualTo(want, "the clone builds the lines of its original");
+  });
+
+  it("builds the labels of its original", () => {
+    let want: Map<string, string>;
+    want = new Map<string, string>([["labels-a", "labels-a"]]);
+    const original = AddressBuilder.create().withLabels(want);
+    expect(original.clone().build().labels).isEqualTo(want, "the clone builds the labels of its original");
+  });
+
+  it("builds the tags of its original", () => {
+    let want: Set<string>;
+    want = new Set<string>(["tags-a"]);
+    const original = AddressBuilder.create().withTags(want);
+    expect(original.clone().build().tags).isEqualTo(want, "the clone builds the tags of its original");
+  });
+}
+
+function addressBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = AddressBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Address();
+    seed.street = "street-a";
+    seed.city = "city-a";
+    const builder = AddressBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
+    });
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
+  });
+}
+
+describe("AddressBuilder", () => {
+  describe("create", addressBuilderCreateCases);
+  describe("from", addressBuilderFromCases);
+  describe("withStreet", addressBuilderWithStreetCases);
+  describe("withCity", addressBuilderWithCityCases);
+  describe("withFloor", addressBuilderWithFloorCases);
+  describe("withLines", addressBuilderWithLinesCases);
+  describe("withLabels", addressBuilderWithLabelsCases);
+  describe("withTags", addressBuilderWithTagsCases);
+  describe("appendLines", addressBuilderAppendLinesCases);
+  describe("withLabelsEntry", addressBuilderWithLabelsEntryCases);
+  describe("withLabelsEntries", addressBuilderWithLabelsEntriesCases);
+  describe("withTagsEntry", addressBuilderWithTagsEntryCases);
+  describe("withTagsEntries", addressBuilderWithTagsEntriesCases);
+  describe("mutate", addressBuilderMutateCases);
+  describe("clone", addressBuilderCloneCases);
+  describe("build", addressBuilderBuildCases);
 });
 
-describe("AccountBuilder construction", () => {
-  test("from round-trips what it was seeded with", ({ seat }) => {
-    const seed = new Account();
-    seed.owner = 'owner-a';
-    seed.plan = 'plan-a';
-    const got = AccountBuilder.from(seed).build();
-    check.equal(seat, got.owner, seed.owner, "from keeps the member it was given");
-    check.equal(seat, got.plan, seed.plan, "from keeps the member it was given");
-  });
-
-  test("owner carries its declared default", ({ seat }) => {
+function accountBuilderCreateCases(): void {
+  it("applies the declared default of owner", () => {
     let want: string;
-    want = 'owner';
+    want = "owner";
     const got = AccountBuilder.create().build();
-    check.equal(seat, got.owner, want, "the constructor applies the declared default");
+    expect(got.owner).isEqualTo(want, "create applies the declared default of owner");
   });
-});
+}
 
-describe("AccountBuilder setters", () => {
-  test("withOwner writes owner", ({ seat }) => {
+function accountBuilderFromCases(): void {
+  it("keeps each member of its value", () => {
+    const seed = new Account();
+    seed.owner = "owner-a";
+    seed.plan = "plan-a";
+    const got = AccountBuilder.from(seed).build();
+    expect.soft(got.owner).isEqualTo(seed.owner, "from keeps owner");
+    expect.soft(got.plan).isEqualTo(seed.plan, "from keeps plan");
+  });
+
+  it("keeps the value of its argument", () => {
+    const want = AccountBuilder.create().build();
+    expect(AccountBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function accountBuilderWithOwnerCases(): void {
+  it("writes its argument to owner", () => {
     let want: string;
-    want = 'owner-a';
+    want = "owner-a";
     const got = AccountBuilder.create().withOwner(want).build();
-    check.equal(seat, got.owner, want, "the setter writes what it was given");
+    expect(got.owner).isEqualTo(want, "withOwner writes its argument to owner");
   });
 
-  test("withOwner replaces what was already there", ({ seat }) => {
+  it("replaces the value of owner", () => {
     let first: string;
     let want: string;
-    first = 'owner-a';
-    want = 'owner-b';
+    first = "owner-a";
+    want = "owner-b";
     const got = AccountBuilder.create().withOwner(first).withOwner(want).build();
-    check.equal(seat, got.owner, want, "the later call wins");
+    expect(got.owner).isEqualTo(want, "the second call of withOwner replaces the first");
   });
+}
 
-  test("withPlan writes plan", ({ seat }) => {
+function accountBuilderWithPlanCases(): void {
+  it("writes its argument to plan", () => {
     let want: string;
-    want = 'plan-a';
+    want = "plan-a";
     const got = AccountBuilder.create().withPlan(want).build();
-    check.equal(seat, got.plan, want, "the setter writes what it was given");
+    expect(got.plan).isEqualTo(want, "withPlan writes its argument to plan");
   });
 
-  test("withPlan replaces what was already there", ({ seat }) => {
+  it("replaces the value of plan", () => {
     let first: string;
     let want: string;
-    first = 'plan-a';
-    want = 'plan-b';
+    first = "plan-a";
+    want = "plan-b";
     const got = AccountBuilder.create().withPlan(first).withPlan(want).build();
-    check.equal(seat, got.plan, want, "the later call wins");
+    expect(got.plan).isEqualTo(want, "the second call of withPlan replaces the first");
   });
-});
+}
 
-describe("AccountBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function accountBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Account[] = [];
     const record = (value: Account): void => {
       seen.push(value);
     };
     AccountBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function accountBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = AccountBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, AccountBuilder.from(want).build(), want, "from keeps the value it was given");
-  });
-});
-
-describe("PageBuilder setters", () => {
-  test("withItems writes items", ({ seat }) => {
-    let want: unknown[];
-    want = ['items-a'];
-    const got = PageBuilder.create<unknown>().withItems(...want).build();
-    check.length(seat, got.items, 1, "the setter replaces the sequence");
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("appendItems keeps what items holds", ({ seat }) => {
-    let want: unknown[];
-    want = ['items-a'];
-    const got = PageBuilder.create<unknown>().withItems(...want).appendItems(...want).build();
-    check.length(seat, got.items, 2, "the appender adds to the sequence");
+  it("builds the value of its original", () => {
+    const original = AccountBuilder.create();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
-});
+}
 
-describe("PageBuilder clone", () => {
-  test("items is not shared with a clone", ({ seat }) => {
-    let want: unknown[];
-    let other: unknown[];
-    want = ['items-a'];
-    other = ['items-b'];
-    const original = PageBuilder.create<unknown>().withItems(...want);
-    const clone = original.clone();
-    clone.mutate((value) => {
-      value.items.splice(0, other.length, ...other);
+function accountBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = AccountBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+
+  it("returns the value under construction", () => {
+    const seed = new Account();
+    seed.owner = "owner-a";
+    seed.plan = "plan-a";
+    const builder = AccountBuilder.create().mutate((value) => {
+      Object.assign(value, seed);
     });
-    check.notEqual(seat, original.build().items, other, "writing through a clone must not reach the original");
+    expect(builder.build()).isEqualTo(seed, "build returns the value that mutate sets");
   });
+}
 
-  test("clone copies items", ({ seat }) => {
-    let want: unknown[];
-    want = ['items-a'];
-    const original = PageBuilder.create<unknown>().withItems(...want);
-    check.equal(seat, original.clone().build().items, want, "a clone builds the same member as its original");
-  });
+describe("AccountBuilder", () => {
+  describe("create", accountBuilderCreateCases);
+  describe("from", accountBuilderFromCases);
+  describe("withOwner", accountBuilderWithOwnerCases);
+  describe("withPlan", accountBuilderWithPlanCases);
+  describe("mutate", accountBuilderMutateCases);
+  describe("clone", accountBuilderCloneCases);
+  describe("build", accountBuilderBuildCases);
 });
 
-describe("PageBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function pageBuilderFromCases(): void {
+  it("keeps the value of its argument", () => {
+    const want = PageBuilder.create<unknown>().build();
+    expect(PageBuilder.from<unknown>(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function pageBuilderWithItemsCases(): void {
+  it("writes its argument to items", () => {
+    let want: unknown[];
+    want = ["items-a"];
+    const got = PageBuilder.create<unknown>().withItems(...want).build();
+    expect(got.items).isEqualTo(want, "withItems writes its argument to items");
+  });
+
+  it("replaces the value of items", () => {
+    let first: unknown[];
+    let want: unknown[];
+    first = ["items-a"];
+    want = ["items-b"];
+    const got = PageBuilder.create<unknown>().withItems(...first).withItems(...want).build();
+    expect(got.items).isEqualTo(want, "the second call of withItems replaces the first");
+  });
+}
+
+function pageBuilderAppendItemsCases(): void {
+  it("appends to the elements of items", () => {
+    let first: unknown[];
+    let want: unknown[];
+    first = ["items-a"];
+    want = ["items-b"];
+    const got = PageBuilder.create<unknown>().withItems(...first).appendItems(...want).build();
+    expect(got.items).isEqualTo([...first, ...want], "appendItems appends its elements after those of withItems");
+  });
+}
+
+function pageBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Page<unknown>[] = [];
     const record = (value: Page<unknown>): void => {
       seen.push(value);
     };
     PageBuilder.create<unknown>().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
   });
+}
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+function pageBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
     const original = PageBuilder.create<unknown>();
-    const want = original.build();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
+  });
+
+  it("builds the value of its original", () => {
+    const original = PageBuilder.create<unknown>();
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
+  });
+
+  it("copies items into the clone", () => {
+    let want: unknown[];
+    let other: unknown[];
+    want = ["items-a"];
+    other = ["items-b"];
+    const original = PageBuilder.create<unknown>().withItems(...want);
     const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, PageBuilder.from<unknown>(want).build(), want, "from keeps the value it was given");
+    const message = "a change of items in the clone leaves the original unchanged";
+    clone.mutate((value) => {
+      value.items.splice(0, other.length, ...other);
+    });
+    expect(original.build().items).isNotEqualTo(other, message);
   });
+
+  it("builds the items of its original", () => {
+    let want: unknown[];
+    want = ["items-a"];
+    const original = PageBuilder.create<unknown>().withItems(...want);
+    expect(original.clone().build().items).isEqualTo(want, "the clone builds the items of its original");
+  });
+}
+
+function pageBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = PageBuilder.create<unknown>();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+}
+
+describe("PageBuilder", () => {
+  describe("from", pageBuilderFromCases);
+  describe("withItems", pageBuilderWithItemsCases);
+  describe("appendItems", pageBuilderAppendItemsCases);
+  describe("mutate", pageBuilderMutateCases);
+  describe("clone", pageBuilderCloneCases);
+  describe("build", pageBuilderBuildCases);
 });
 
-describe("CounterBuilder setters", () => {
-  test("withCount returns its builder", ({ seat }) => {
+function counterBuilderFromCases(): void {
+  it("keeps the value of its argument", () => {
+    const want = CounterBuilder.create().build();
+    expect(CounterBuilder.from(want).build()).isEqualTo(want, "from keeps the value of its argument");
+  });
+}
+
+function counterBuilderWithCountCases(): void {
+  it("returns its builder", () => {
     const builder = CounterBuilder.create();
-    check.equal(
-      seat,
-      builder.withCount(builder.build().count),
-      builder,
-      "the setter returns its builder for the next call",
-      byIdentity(),
-    );
+    const got = builder.withCount(builder.build().count);
+    expect(got).isEqualTo(builder, "withCount returns its builder for the next call", byIdentity());
   });
-});
+}
 
-describe("CounterBuilder methods", () => {
-  test("mutate passes the value under construction", ({ seat }) => {
+function counterBuilderMutateCases(): void {
+  it("passes the value under construction", () => {
     const seen: Counter[] = [];
     const record = (value: Counter): void => {
       seen.push(value);
     };
     CounterBuilder.create().mutate(record).mutate(record);
-    check.length(seat, seen, 2, "mutate calls each function once");
-    check.equal(seat, seen[0], seen[1], "the two functions get the same value", byIdentity());
+    expect(seen).hasLength(2, "mutate calls each function once");
+    expect(seen[0]).isEqualTo(seen[1], "the two functions get the same value", byIdentity());
+  });
+}
+
+function counterBuilderCloneCases(): void {
+  it("returns a builder of its own", () => {
+    const original = CounterBuilder.create();
+    expect(original.clone()).isNotEqualTo(original, "clone returns a builder of its own", byIdentity());
   });
 
-  test("clone and from keep the value under construction", ({ seat }) => {
+  it("builds the value of its original", () => {
     const original = CounterBuilder.create();
-    const want = original.build();
-    const clone = original.clone();
-    check.notEqual(seat, clone, original, "clone returns a builder of its own", byIdentity());
-    check.equal(seat, clone.build(), want, "a clone builds the value of its original");
-    check.equal(seat, CounterBuilder.from(want).build(), want, "from keeps the value it was given");
+    expect(original.clone().build()).isEqualTo(original.build(), "the clone builds the value of its original");
   });
+}
+
+function counterBuilderBuildCases(): void {
+  it("returns a new object for each call", () => {
+    const builder = CounterBuilder.create();
+    expect(builder.build()).isNotEqualTo(builder.build(), "build returns a new object", byIdentity());
+  });
+}
+
+describe("CounterBuilder", () => {
+  describe("from", counterBuilderFromCases);
+  describe("withCount", counterBuilderWithCountCases);
+  describe("mutate", counterBuilderMutateCases);
+  describe("clone", counterBuilderCloneCases);
+  describe("build", counterBuilderBuildCases);
 });
 
-// dokimi:provenance sha256:feed67b43c344b3cb707a6c4afeece8be8ec17942ce00118a473f6abac52b595
+// dokimi:provenance sha256:bbcb392bc147aca97879d95050c4c99e94836e08910b32182d1b210cb61d966e

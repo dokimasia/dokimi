@@ -2,50 +2,59 @@
 // dokimi:plugin sentinel
 // dokimi:source web/errors.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { MissingAccountError, RequestError } from './errors';
+import { describe, expect, it } from "vitest";
+import { MissingAccountError, RequestError } from "./errors";
 
-describe("MissingAccountError contract", () => {
-  test("reports a message", ({ seat }) => {
-    const got = new MissingAccountError('owner-a');
-    check.notEqual(seat, got.message, "", "an error must report a message");
+function missingAccountErrorMessageCases(): void {
+  it("is not empty", () => {
+    const got = new MissingAccountError("owner-a");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 
-  test("does not match the other error classes of its module", ({ seat }) => {
-    const got = new MissingAccountError('owner-a');
-    const others = [new RequestError('cause-a')];
+  it("contains each text member", () => {
+    const got = new MissingAccountError("owner-a");
+    expect(got.message).doesContain(got.owner, "the message contains owner");
+  });
+}
+
+describe("MissingAccountError", () => {
+  it("matches no other error class of its module", () => {
+    const got = new MissingAccountError("owner-a");
+    const others = [new RequestError("cause-a")];
     for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
     }
   });
 
-  test("puts every member it carries into its message", ({ seat }) => {
-    const got = new MissingAccountError('owner-a');
-    check.isTrue(seat, got.message.includes(got.owner), "owner must reach the message");
-  });
+  describe("message", missingAccountErrorMessageCases);
 });
 
-describe("RequestError contract", () => {
-  test("reports a message", ({ seat }) => {
-    const got = new RequestError('cause-a');
-    check.notEqual(seat, got.message, "", "an error must report a message");
+function requestErrorMessageCases(): void {
+  it("is not empty", () => {
+    const got = new RequestError("cause-a");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
+}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
-    const got = new RequestError('cause-a');
-    const others = [new MissingAccountError('owner-a')];
-    for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
-    }
-  });
-
-  test("exposes the cause it was given", ({ seat }) => {
+function requestErrorCauseCases(): void {
+  it("is the cause of the construction", () => {
     const cause = new Error("cause");
     const got = new RequestError(cause);
-    check.equal(seat, got.cause, cause, "an error naming a cause must expose it");
+    expect(got.cause).isEqualTo(cause, "the error keeps its cause");
   });
+}
+
+describe("RequestError", () => {
+  it("matches no other error class of its module", () => {
+    const got = new RequestError("cause-a");
+    const others = [new MissingAccountError("owner-a")];
+    for (const other of others) {
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
+    }
+  });
+
+  describe("message", requestErrorMessageCases);
+  describe("cause", requestErrorCauseCases);
 });
 
-// dokimi:provenance sha256:6374210af080132ae9e68977158f1e3c11f373adcec10917b8be667145d2d81a
+// dokimi:provenance sha256:eae3587dc2855e23206bd4419f0663dde3708c50ece81031a71f7327b6bb9da2

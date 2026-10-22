@@ -6,461 +6,825 @@ package catalog_test
 
 import (
 	"maps"
+	"slices"
 	"testing"
 	"time"
 
 	"example.com/shop/catalog"
 	"go.dokimi.dev/assert"
+	"go.dokimi.dev/assert/expect"
 )
 
-// TestAddressBuilderConstruction pins what the constructors produce.
-func TestAddressBuilderConstruction(t *testing.T) {
+// TestAddressBuilder checks the constructors and the methods of
+// AddressBuilder.
+func TestAddressBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
+	t.Run("NewAddressBuilder", func(t *testing.T) {
 		t.Parallel()
 
-		var seed catalog.Address
-		seed.Street = "Street-a"
-		seed.City = "Utrecht"
-		seed.Grid = [2]int{42}
-		seed.Timeout = time.Duration(1)
-		got := catalog.NewAddressBuilderFrom(seed).Build()
-		assert.Equal(t, got.Street, seed.Street, "From keeps the member it was given")
-		assert.Equal(t, got.City, seed.City, "From keeps the member it was given")
-		assert.Equal(t, got.Grid, seed.Grid, "From keeps the member it was given")
-		assert.Equal(t, got.Timeout, seed.Timeout, "From keeps the member it was given")
+		t.Run("applies the declared default of Street", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Dam 1"
+			got := catalog.NewAddressBuilder().Build()
+			assert.Equal(
+				t,
+				got.Street,
+				want,
+				"NewAddressBuilder applies the declared default of Street",
+			)
+		})
+
+		t.Run("applies the declared default of City", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Amsterdam"
+			got := catalog.NewAddressBuilder().Build()
+			assert.Equal(
+				t,
+				got.City,
+				want,
+				"NewAddressBuilder applies the declared default of City",
+			)
+		})
+
+		t.Run("applies the declared default of Timeout", func(t *testing.T) {
+			t.Parallel()
+
+			var want time.Duration
+			want = time.Second
+			got := catalog.NewAddressBuilder().Build()
+			assert.Equal(
+				t,
+				got.Timeout,
+				want,
+				"NewAddressBuilder applies the declared default of Timeout",
+			)
+		})
 	})
 
-	t.Run("Street carries its declared default", func(t *testing.T) {
+	t.Run("NewAddressBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Dam 1"
-		got := catalog.NewAddressBuilder().Build()
-		assert.Equal(t, got.Street, want, "the constructor applies the declared default")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Address
+			seed.Street = "Street-a"
+			seed.City = "Utrecht"
+			seed.Grid = [2]int{42}
+			seed.Timeout = time.Duration(1)
+			got := catalog.NewAddressBuilderFrom(seed).Build()
+			expect.Equal(t, got.Street, seed.Street, "NewAddressBuilderFrom keeps Street")
+			expect.Equal(t, got.City, seed.City, "NewAddressBuilderFrom keeps City")
+			expect.Equal(t, got.Grid, seed.Grid, "NewAddressBuilderFrom keeps Grid")
+			expect.Equal(t, got.Timeout, seed.Timeout, "NewAddressBuilderFrom keeps Timeout")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewAddressBuilder()
+			b.WithLines("")
+			b.WithLabels(map[string]string{"": ""})
+			b.WithTags(map[string]struct{}{"": {}})
+			b.WithRaw([]byte{0})
+			want := b.Build()
+			assert.Equal(
+				t,
+				catalog.NewAddressBuilderFrom(want).Build(),
+				want,
+				"NewAddressBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("City carries its declared default", func(t *testing.T) {
+	t.Run("WithStreet", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Amsterdam"
-		got := catalog.NewAddressBuilder().Build()
-		assert.Equal(t, got.City, want, "the constructor applies the declared default")
+		t.Run("writes its argument to Street", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Street-a"
+			got := catalog.NewAddressBuilder().WithStreet(want).Build()
+			assert.Equal(t, got.Street, want, "WithStreet writes its argument to Street")
+		})
+
+		t.Run("replaces the value of Street", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Street-a"
+			want = "Street-b"
+			got := catalog.NewAddressBuilder().WithStreet(first).WithStreet(want).Build()
+			assert.Equal(t, got.Street, want, "the second call of WithStreet replaces the first")
+		})
 	})
 
-	t.Run("Timeout carries its declared default", func(t *testing.T) {
+	t.Run("WithCity", func(t *testing.T) {
 		t.Parallel()
 
-		var want time.Duration
-		want = time.Second
-		got := catalog.NewAddressBuilder().Build()
-		assert.Equal(t, got.Timeout, want, "the constructor applies the declared default")
+		t.Run("writes its argument to City", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Utrecht"
+			got := catalog.NewAddressBuilder().WithCity(want).Build()
+			assert.Equal(t, got.City, want, "WithCity writes its argument to City")
+		})
+
+		t.Run("replaces the value of City", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Utrecht"
+			want = "Leiden"
+			got := catalog.NewAddressBuilder().WithCity(first).WithCity(want).Build()
+			assert.Equal(t, got.City, want, "the second call of WithCity replaces the first")
+		})
+	})
+
+	t.Run("WithFloor", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("points Floor at its argument", func(t *testing.T) {
+			t.Parallel()
+
+			var want int
+			want = 42
+			got := catalog.NewAddressBuilder().WithFloor(want).Build()
+			assert.NotNil(t, got.Floor, "WithFloor points Floor at a value")
+			assert.Equal(t, *got.Floor, want, "WithFloor points Floor at its argument")
+		})
+
+		t.Run("replaces the value of Floor", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want int
+			first = 42
+			want = 7
+			got := catalog.NewAddressBuilder().WithFloor(first).WithFloor(want).Build()
+			assert.NotNil(t, got.Floor, "WithFloor points Floor at a value")
+			assert.Equal(t, *got.Floor, want, "the second call of WithFloor replaces the first")
+		})
+	})
+
+	t.Run("WithLines", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Lines", func(t *testing.T) {
+			t.Parallel()
+
+			var want []string
+			want = []string{"Lines-a"}
+			got := catalog.NewAddressBuilder().WithLines(want...).Build()
+			assert.Equal(t, got.Lines, want, "WithLines writes its argument to Lines")
+		})
+
+		t.Run("replaces the value of Lines", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []string
+			first = []string{"Lines-a"}
+			want = []string{"Lines-b"}
+			got := catalog.NewAddressBuilder().WithLines(first...).WithLines(want...).Build()
+			assert.Equal(t, got.Lines, want, "the second call of WithLines replaces the first")
+		})
+	})
+
+	t.Run("WithLabels", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Labels", func(t *testing.T) {
+			t.Parallel()
+
+			var want map[string]string
+			want = map[string]string{"Labels-a": "Labels-a"}
+			got := catalog.NewAddressBuilder().WithLabels(want).Build()
+			assert.Equal(t, got.Labels, want, "WithLabels writes its argument to Labels")
+		})
+
+		t.Run("replaces the value of Labels", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want map[string]string
+			first = map[string]string{"Labels-a": "Labels-a"}
+			want = map[string]string{"Labels-b": "Labels-a"}
+			got := catalog.NewAddressBuilder().WithLabels(first).WithLabels(want).Build()
+			assert.Equal(t, got.Labels, want, "the second call of WithLabels replaces the first")
+		})
+	})
+
+	t.Run("WithTags", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Tags", func(t *testing.T) {
+			t.Parallel()
+
+			var want map[string]struct{}
+			want = map[string]struct{}{"Tags-a": {}}
+			got := catalog.NewAddressBuilder().WithTags(want).Build()
+			assert.Equal(t, got.Tags, want, "WithTags writes its argument to Tags")
+		})
+
+		t.Run("replaces the value of Tags", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want map[string]struct{}
+			first = map[string]struct{}{"Tags-a": {}}
+			want = map[string]struct{}{"Tags-b": {}}
+			got := catalog.NewAddressBuilder().WithTags(first).WithTags(want).Build()
+			assert.Equal(t, got.Tags, want, "the second call of WithTags replaces the first")
+		})
+	})
+
+	t.Run("WithRaw", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Raw", func(t *testing.T) {
+			t.Parallel()
+
+			var want []byte
+			want = []byte{1}
+			got := catalog.NewAddressBuilder().WithRaw(want).Build()
+			assert.Equal(t, got.Raw, want, "WithRaw writes its argument to Raw")
+		})
+
+		t.Run("replaces the value of Raw", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []byte
+			first = []byte{1}
+			want = []byte{2}
+			got := catalog.NewAddressBuilder().WithRaw(first).WithRaw(want).Build()
+			assert.Equal(t, got.Raw, want, "the second call of WithRaw replaces the first")
+		})
+	})
+
+	t.Run("WithGrid", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Grid", func(t *testing.T) {
+			t.Parallel()
+
+			var want [2]int
+			want = [2]int{42}
+			got := catalog.NewAddressBuilder().WithGrid(want).Build()
+			assert.Equal(t, got.Grid, want, "WithGrid writes its argument to Grid")
+		})
+
+		t.Run("replaces the value of Grid", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want [2]int
+			first = [2]int{42}
+			want = [2]int{7}
+			got := catalog.NewAddressBuilder().WithGrid(first).WithGrid(want).Build()
+			assert.Equal(t, got.Grid, want, "the second call of WithGrid replaces the first")
+		})
+	})
+
+	t.Run("WithTimeout", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes its argument to Timeout", func(t *testing.T) {
+			t.Parallel()
+
+			var want time.Duration
+			want = time.Duration(1)
+			got := catalog.NewAddressBuilder().WithTimeout(want).Build()
+			assert.Equal(t, got.Timeout, want, "WithTimeout writes its argument to Timeout")
+		})
+
+		t.Run("replaces the value of Timeout", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want time.Duration
+			first = time.Duration(1)
+			want = time.Duration(2)
+			got := catalog.NewAddressBuilder().WithTimeout(first).WithTimeout(want).Build()
+			assert.Equal(t, got.Timeout, want, "the second call of WithTimeout replaces the first")
+		})
+	})
+
+	t.Run("AppendLines", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("appends to the elements of Lines", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want []string
+			first = []string{"Lines-a"}
+			want = []string{"Lines-b"}
+			got := catalog.NewAddressBuilder().WithLines(first...).AppendLines(want...).Build()
+			assert.Equal(
+				t,
+				got.Lines,
+				slices.Concat(first, want),
+				"AppendLines appends its elements after those of WithLines",
+			)
+		})
+	})
+
+	t.Run("WithLabelsEntry", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("adds one key to Labels", func(t *testing.T) {
+			t.Parallel()
+
+			got := catalog.NewAddressBuilder().WithLabels(nil).WithLabelsEntry("", "").Build()
+			assert.Equal(
+				t,
+				got.Labels,
+				map[string]string{"": ""},
+				"WithLabelsEntry adds the key to a nil map",
+			)
+		})
+	})
+
+	t.Run("WithLabelsEntries", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("adds each key to Labels", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want map[string]string
+			first = map[string]string{"Labels-a": "Labels-a"}
+			want = map[string]string{"Labels-b": "Labels-a"}
+			merged := maps.Clone(first)
+			maps.Copy(merged, want)
+			got := catalog.NewAddressBuilder().
+				WithLabels(nil).
+				WithLabelsEntries(first).
+				WithLabelsEntries(want).
+				Build()
+			assert.Equal(
+				t,
+				got.Labels,
+				merged,
+				"WithLabelsEntries keeps the entries of its earlier call",
+			)
+		})
+	})
+
+	t.Run("WithTagsEntry", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("adds one key to Tags", func(t *testing.T) {
+			t.Parallel()
+
+			got := catalog.NewAddressBuilder().WithTags(nil).WithTagsEntry("").Build()
+			assert.Equal(
+				t,
+				got.Tags,
+				map[string]struct{}{"": {}},
+				"WithTagsEntry adds the key to a nil set",
+			)
+		})
+	})
+
+	t.Run("WithTagsEntries", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("adds each key to Tags", func(t *testing.T) {
+			t.Parallel()
+
+			got := catalog.NewAddressBuilder().WithTags(nil).WithTagsEntries("", "").Build()
+			assert.Equal(
+				t,
+				got.Tags,
+				map[string]struct{}{"": {}},
+				"WithTagsEntries adds two equal keys as one key",
+			)
+		})
+	})
+
+	t.Run("WithRawString", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("writes the bytes of the text to Raw", func(t *testing.T) {
+			t.Parallel()
+
+			got := catalog.NewAddressBuilder().WithRawString("a").Build()
+			assert.Equal(t, got.Raw, []byte("a"), "WithRawString writes the bytes of the text")
+		})
+	})
+
+	t.Run("Mutate", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*catalog.Address
+			record := func(v *catalog.Address) { got = append(got, v) }
+			catalog.NewAddressBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(
+				t,
+				got[0],
+				got[1],
+				"the two functions get the same value",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
+	t.Run("Clone", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := catalog.NewAddressBuilder()
+			assert.NotEqual(
+				t,
+				original.Clone(),
+				original,
+				"Clone returns a builder of its own",
+				assert.ByIdentity(),
+			)
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewAddressBuilder()
+			b.WithLines("")
+			b.WithLabels(map[string]string{"": ""})
+			b.WithTags(map[string]struct{}{"": {}})
+			b.WithRaw([]byte{0})
+			assert.Equal(
+				t,
+				b.Clone().Build(),
+				b.Build(),
+				"the clone builds the value of its original",
+			)
+		})
+
+		t.Run("copies Lines into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other []string
+			want = []string{"Lines-a"}
+			other = []string{"Lines-b"}
+			original := catalog.NewAddressBuilder().WithLines(want...)
+			before := slices.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *catalog.Address) { copy(v.Lines, other) })
+			assert.Equal(
+				t,
+				original.Build().Lines,
+				before,
+				"a change of Lines in the clone leaves the original unchanged",
+			)
+		})
+
+		t.Run("copies Labels into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other map[string]string
+			want = map[string]string{"Labels-a": "Labels-a"}
+			other = map[string]string{"Labels-b": "Labels-a"}
+			original := catalog.NewAddressBuilder().WithLabels(want)
+			before := maps.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *catalog.Address) { maps.Copy(v.Labels, other) })
+			assert.Equal(
+				t,
+				original.Build().Labels,
+				before,
+				"a change of Labels in the clone leaves the original unchanged",
+			)
+		})
+
+		t.Run("copies Tags into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other map[string]struct{}
+			want = map[string]struct{}{"Tags-a": {}}
+			other = map[string]struct{}{"Tags-b": {}}
+			original := catalog.NewAddressBuilder().WithTags(want)
+			before := maps.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *catalog.Address) { maps.Copy(v.Tags, other) })
+			assert.Equal(
+				t,
+				original.Build().Tags,
+				before,
+				"a change of Tags in the clone leaves the original unchanged",
+			)
+		})
+
+		t.Run("copies Raw into the clone", func(t *testing.T) {
+			t.Parallel()
+
+			var want, other []byte
+			want = []byte{1}
+			other = []byte{2}
+			original := catalog.NewAddressBuilder().WithRaw(want)
+			before := slices.Clone(want)
+			clone := original.Clone()
+			clone.Mutate(func(v *catalog.Address) { copy(v.Raw, other) })
+			assert.Equal(
+				t,
+				original.Build().Raw,
+				before,
+				"a change of Raw in the clone leaves the original unchanged",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Address
+			seed.Street = "Street-a"
+			seed.City = "Utrecht"
+			seed.Grid = [2]int{42}
+			seed.Timeout = time.Duration(1)
+			b := catalog.NewAddressBuilder()
+			b.Mutate(func(v *catalog.Address) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestAddressBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestAddressBuilderSetters(t *testing.T) {
+// TestProfileBuilder checks the constructors and the methods of
+// ProfileBuilder.
+func TestProfileBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("WithStreet writes Street", func(t *testing.T) {
+	t.Run("NewProfileBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Street-a"
-		got := catalog.NewAddressBuilder().WithStreet(want).Build()
-		assert.Equal(t, got.Street, want, "the setter writes what it was given")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Profile
+			seed.Active = true
+			got := catalog.NewProfileBuilderFrom(seed).Build()
+			assert.Equal(t, got.Active, seed.Active, "NewProfileBuilderFrom keeps Active")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewProfileBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				catalog.NewProfileBuilderFrom(want).Build(),
+				want,
+				"NewProfileBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("WithStreet replaces what was already there", func(t *testing.T) {
+	t.Run("WithActive", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want string
-		first = "Street-a"
-		want = "Street-b"
-		got := catalog.NewAddressBuilder().WithStreet(first).WithStreet(want).Build()
-		assert.Equal(t, got.Street, want, "the later call wins")
+		t.Run("writes its argument to Active", func(t *testing.T) {
+			t.Parallel()
+
+			var want bool
+			want = true
+			got := catalog.NewProfileBuilder().WithActive(want).Build()
+			assert.Equal(t, got.Active, want, "WithActive writes its argument to Active")
+		})
+
+		t.Run("replaces the value of Active", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want bool
+			first = true
+			want = false
+			got := catalog.NewProfileBuilder().WithActive(first).WithActive(want).Build()
+			assert.Equal(t, got.Active, want, "the second call of WithActive replaces the first")
+		})
 	})
 
-	t.Run("WithCity writes City", func(t *testing.T) {
+	t.Run("WithRole", func(t *testing.T) {
 		t.Parallel()
 
-		var want string
-		want = "Utrecht"
-		got := catalog.NewAddressBuilder().WithCity(want).Build()
-		assert.Equal(t, got.City, want, "the setter writes what it was given")
+		t.Run("returns its builder", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewProfileBuilder()
+			assert.Equal(
+				t,
+				b.WithRole(b.Build().Role),
+				b,
+				"WithRole returns its builder for the next call",
+				assert.ByIdentity(),
+			)
+		})
 	})
 
-	t.Run("WithCity replaces what was already there", func(t *testing.T) {
+	t.Run("WithAudit", func(t *testing.T) {
 		t.Parallel()
 
-		var first, want string
-		first = "Utrecht"
-		want = "Leiden"
-		got := catalog.NewAddressBuilder().WithCity(first).WithCity(want).Build()
-		assert.Equal(t, got.City, want, "the later call wins")
+		t.Run("returns its builder", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewProfileBuilder()
+			assert.Equal(
+				t,
+				b.WithAudit(b.Build().Audit),
+				b,
+				"WithAudit returns its builder for the next call",
+				assert.ByIdentity(),
+			)
+		})
 	})
 
-	t.Run("WithFloor writes Floor", func(t *testing.T) {
+	t.Run("Mutate", func(t *testing.T) {
 		t.Parallel()
 
-		var want int
-		want = 42
-		got := catalog.NewAddressBuilder().WithFloor(want).Build()
-		assert.NotNil(t, got.Floor, "the setter addresses the value it was given")
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*catalog.Profile
+			record := func(v *catalog.Profile) { got = append(got, v) }
+			catalog.NewProfileBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(
+				t,
+				got[0],
+				got[1],
+				"the two functions get the same value",
+				assert.ByIdentity(),
+			)
+		})
 	})
 
-	t.Run("WithLines writes Lines", func(t *testing.T) {
+	t.Run("Clone", func(t *testing.T) {
 		t.Parallel()
 
-		var want []string
-		want = []string{"Lines-a"}
-		got := catalog.NewAddressBuilder().WithLines(want...).Build()
-		assert.Length(t, got.Lines, 1, "the setter replaces the sequence")
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := catalog.NewProfileBuilder()
+			assert.NotEqual(
+				t,
+				original.Clone(),
+				original,
+				"Clone returns a builder of its own",
+				assert.ByIdentity(),
+			)
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewProfileBuilder()
+			assert.Equal(
+				t,
+				b.Clone().Build(),
+				b.Build(),
+				"the clone builds the value of its original",
+			)
+		})
 	})
 
-	t.Run("WithLabels writes Labels", func(t *testing.T) {
+	t.Run("Build", func(t *testing.T) {
 		t.Parallel()
 
-		var want map[string]string
-		want = map[string]string{"Labels-a": "Labels-a"}
-		got := catalog.NewAddressBuilder().WithLabels(want).Build()
-		assert.Length(t, got.Labels, 1, "the setter replaces the collection")
-	})
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
 
-	t.Run("WithTags writes Tags", func(t *testing.T) {
-		t.Parallel()
-
-		var want map[string]struct{}
-		want = map[string]struct{}{"Tags-a": struct{}{}}
-		got := catalog.NewAddressBuilder().WithTags(want).Build()
-		assert.Length(t, got.Tags, 1, "the setter replaces the collection")
-	})
-
-	t.Run("WithRaw writes Raw", func(t *testing.T) {
-		t.Parallel()
-
-		var want []byte
-		want = []byte{1}
-		got := catalog.NewAddressBuilder().WithRaw(want).Build()
-		assert.Length(t, got.Raw, 1, "the setter replaces the sequence")
-	})
-
-	t.Run("WithGrid writes Grid", func(t *testing.T) {
-		t.Parallel()
-
-		var want [2]int
-		want = [2]int{42}
-		got := catalog.NewAddressBuilder().WithGrid(want).Build()
-		assert.Equal(t, got.Grid, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithGrid replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want [2]int
-		first = [2]int{42}
-		want = [2]int{7}
-		got := catalog.NewAddressBuilder().WithGrid(first).WithGrid(want).Build()
-		assert.Equal(t, got.Grid, want, "the later call wins")
-	})
-
-	t.Run("WithTimeout writes Timeout", func(t *testing.T) {
-		t.Parallel()
-
-		var want time.Duration
-		want = time.Duration(1)
-		got := catalog.NewAddressBuilder().WithTimeout(want).Build()
-		assert.Equal(t, got.Timeout, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithTimeout replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want time.Duration
-		first = time.Duration(1)
-		want = time.Duration(2)
-		got := catalog.NewAddressBuilder().WithTimeout(first).WithTimeout(want).Build()
-		assert.Equal(t, got.Timeout, want, "the later call wins")
-	})
-
-	t.Run("AppendLines keeps what Lines holds", func(t *testing.T) {
-		t.Parallel()
-
-		got := catalog.NewAddressBuilder().WithLines(*new(string)).AppendLines(*new(string)).Build()
-		assert.Length(t, got.Lines, 2, "the appender adds to the sequence")
-	})
-
-	t.Run("WithLabelsEntry adds one key to Labels", func(t *testing.T) {
-		t.Parallel()
-
-		got := catalog.NewAddressBuilder().WithLabels(nil).WithLabelsEntry(*new(string), *new(string)).Build()
-		assert.Length(t, got.Labels, 1, "the setter adds the key to an empty collection")
-	})
-
-	t.Run("WithLabelsEntries adds each key to Labels", func(t *testing.T) {
-		t.Parallel()
-
-		entries := map[string]string{*new(string): *new(string)}
-		got := catalog.NewAddressBuilder().WithLabels(nil).WithLabelsEntries(entries).Build()
-		assert.Length(t, got.Labels, 1, "the setter merges the entries into an empty collection")
-	})
-
-	t.Run("WithTagsEntry adds one key to Tags", func(t *testing.T) {
-		t.Parallel()
-
-		got := catalog.NewAddressBuilder().WithTags(nil).WithTagsEntry(*new(string)).Build()
-		assert.Length(t, got.Tags, 1, "the setter adds the key to an empty collection")
-	})
-
-	t.Run("WithTagsEntries adds each key to Tags", func(t *testing.T) {
-		t.Parallel()
-
-		got := catalog.NewAddressBuilder().WithTags(nil).WithTagsEntries(*new(string), *new(string)).Build()
-		assert.Length(t, got.Tags, 1, "the setter adds two equal keys as one entry")
-	})
-
-	t.Run("WithRawString writes the bytes of the text to Raw", func(t *testing.T) {
-		t.Parallel()
-
-		got := catalog.NewAddressBuilder().WithRawString("a").Build()
-		assert.Equal(t, got.Raw, []byte("a"), "the setter writes the bytes of the text")
+			var seed catalog.Profile
+			seed.Active = true
+			b := catalog.NewProfileBuilder()
+			b.Mutate(func(v *catalog.Profile) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestAddressBuilderClone pins that a clone can be configured without the
-// original seeing it.
-func TestAddressBuilderClone(t *testing.T) {
+// TestMirrorBuilder checks the constructors and the methods of
+// MirrorBuilder.
+func TestMirrorBuilder(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Lines is not shared with a clone", func(t *testing.T) {
+	t.Run("NewMirrorBuilderFrom", func(t *testing.T) {
 		t.Parallel()
 
-		var want, other []string
-		want = []string{"Lines-a"}
-		other = []string{"Lines-b"}
-		original := catalog.NewAddressBuilder().WithLines(want...)
-		clone := original.Clone()
-		clone.Mutate(func(v *catalog.Address) { copy(v.Lines, other) })
-		assert.NotEqual(t, original.Build().Lines, other, "writing through a clone must not reach the original")
+		t.Run("keeps each member of its value", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Mirror
+			seed.Name = "Name-a"
+			got := catalog.NewMirrorBuilderFrom(seed).Build()
+			assert.Equal(t, got.Name, seed.Name, "NewMirrorBuilderFrom keeps Name")
+		})
+
+		t.Run("keeps the value of its argument", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewMirrorBuilder()
+			want := b.Build()
+			assert.Equal(
+				t,
+				catalog.NewMirrorBuilderFrom(want).Build(),
+				want,
+				"NewMirrorBuilderFrom keeps the value of its argument",
+			)
+		})
 	})
 
-	t.Run("Labels is not shared with a clone", func(t *testing.T) {
+	t.Run("WithName", func(t *testing.T) {
 		t.Parallel()
 
-		var want, other map[string]string
-		want = map[string]string{"Labels-a": "Labels-a"}
-		other = map[string]string{"Labels-b": "Labels-a"}
-		original := catalog.NewAddressBuilder().WithLabels(want)
-		clone := original.Clone()
-		clone.Mutate(func(v *catalog.Address) { maps.Copy(v.Labels, other) })
-		assert.Length(t, original.Build().Labels, 1, "writing through a clone must not reach the original")
+		t.Run("writes its argument to Name", func(t *testing.T) {
+			t.Parallel()
+
+			var want string
+			want = "Name-a"
+			got := catalog.NewMirrorBuilder().WithName(want).Build()
+			assert.Equal(t, got.Name, want, "WithName writes its argument to Name")
+		})
+
+		t.Run("replaces the value of Name", func(t *testing.T) {
+			t.Parallel()
+
+			var first, want string
+			first = "Name-a"
+			want = "Name-b"
+			got := catalog.NewMirrorBuilder().WithName(first).WithName(want).Build()
+			assert.Equal(t, got.Name, want, "the second call of WithName replaces the first")
+		})
 	})
 
-	t.Run("Tags is not shared with a clone", func(t *testing.T) {
+	t.Run("Mutate", func(t *testing.T) {
 		t.Parallel()
 
-		var want, other map[string]struct{}
-		want = map[string]struct{}{"Tags-a": struct{}{}}
-		other = map[string]struct{}{"Tags-b": struct{}{}}
-		original := catalog.NewAddressBuilder().WithTags(want)
-		clone := original.Clone()
-		clone.Mutate(func(v *catalog.Address) { maps.Copy(v.Tags, other) })
-		assert.Length(t, original.Build().Tags, 1, "writing through a clone must not reach the original")
+		t.Run("passes the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var got []*catalog.Mirror
+			record := func(v *catalog.Mirror) { got = append(got, v) }
+			catalog.NewMirrorBuilder().Mutate(record).Mutate(record)
+			assert.Length(t, got, 2, "Mutate calls each function once")
+			assert.Equal(
+				t,
+				got[0],
+				got[1],
+				"the two functions get the same value",
+				assert.ByIdentity(),
+			)
+		})
 	})
 
-	t.Run("Raw is not shared with a clone", func(t *testing.T) {
+	t.Run("Clone", func(t *testing.T) {
 		t.Parallel()
 
-		var want, other []byte
-		want = []byte{1}
-		other = []byte{2}
-		original := catalog.NewAddressBuilder().WithRaw(want)
-		clone := original.Clone()
-		clone.Mutate(func(v *catalog.Address) { copy(v.Raw, other) })
-		assert.NotEqual(t, original.Build().Raw, other, "writing through a clone must not reach the original")
+		t.Run("returns a builder of its own", func(t *testing.T) {
+			t.Parallel()
+
+			original := catalog.NewMirrorBuilder()
+			assert.NotEqual(
+				t,
+				original.Clone(),
+				original,
+				"Clone returns a builder of its own",
+				assert.ByIdentity(),
+			)
+		})
+
+		t.Run("builds the value of its original", func(t *testing.T) {
+			t.Parallel()
+
+			b := catalog.NewMirrorBuilder()
+			assert.Equal(
+				t,
+				b.Clone().Build(),
+				b.Build(),
+				"the clone builds the value of its original",
+			)
+		})
+	})
+
+	t.Run("Build", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("returns the value under construction", func(t *testing.T) {
+			t.Parallel()
+
+			var seed catalog.Mirror
+			seed.Name = "Name-a"
+			b := catalog.NewMirrorBuilder()
+			b.Mutate(func(v *catalog.Mirror) { *v = seed })
+			assert.Equal(t, b.Build(), seed, "Build returns the value that Mutate sets")
+		})
 	})
 }
 
-// TestAddressBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestAddressBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*catalog.Address
-		record := func(v *catalog.Address) { got = append(got, v) }
-		catalog.NewAddressBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := catalog.NewAddressBuilder()
-		original.WithLines(*new(string))
-		original.WithLabels(map[string]string{*new(string): *new(string)})
-		original.WithTags(map[string]struct{}{*new(string): {}})
-		original.WithRaw([]byte{0})
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, catalog.NewAddressBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestProfileBuilderConstruction pins what the constructors produce.
-func TestProfileBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed catalog.Profile
-		seed.Active = true
-		got := catalog.NewProfileBuilderFrom(seed).Build()
-		assert.Equal(t, got.Active, seed.Active, "From keeps the member it was given")
-	})
-}
-
-// TestProfileBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestProfileBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithActive writes Active", func(t *testing.T) {
-		t.Parallel()
-
-		var want bool
-		want = true
-		got := catalog.NewProfileBuilder().WithActive(want).Build()
-		assert.Equal(t, got.Active, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithActive replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want bool
-		first = true
-		want = false
-		got := catalog.NewProfileBuilder().WithActive(first).WithActive(want).Build()
-		assert.Equal(t, got.Active, want, "the later call wins")
-	})
-
-	t.Run("WithRole returns its builder", func(t *testing.T) {
-		t.Parallel()
-
-		b := catalog.NewProfileBuilder()
-		assert.Equal(t, b.WithRole(b.Build().Role), b, "the setter returns its builder for the next call",
-			assert.ByIdentity())
-	})
-
-	t.Run("WithAudit returns its builder", func(t *testing.T) {
-		t.Parallel()
-
-		b := catalog.NewProfileBuilder()
-		assert.Equal(t, b.WithAudit(b.Build().Audit), b, "the setter returns its builder for the next call",
-			assert.ByIdentity())
-	})
-}
-
-// TestProfileBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestProfileBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*catalog.Profile
-		record := func(v *catalog.Profile) { got = append(got, v) }
-		catalog.NewProfileBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := catalog.NewProfileBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, catalog.NewProfileBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// TestMirrorBuilderConstruction pins what the constructors produce.
-func TestMirrorBuilderConstruction(t *testing.T) {
-	t.Parallel()
-
-	t.Run("From round-trips what it was seeded with", func(t *testing.T) {
-		t.Parallel()
-
-		var seed catalog.Mirror
-		seed.Name = "Name-a"
-		got := catalog.NewMirrorBuilderFrom(seed).Build()
-		assert.Equal(t, got.Name, seed.Name, "From keeps the member it was given")
-	})
-}
-
-// TestMirrorBuilderSetters pins that each setter writes the member it
-// names, and writes nothing else.
-func TestMirrorBuilderSetters(t *testing.T) {
-	t.Parallel()
-
-	t.Run("WithName writes Name", func(t *testing.T) {
-		t.Parallel()
-
-		var want string
-		want = "Name-a"
-		got := catalog.NewMirrorBuilder().WithName(want).Build()
-		assert.Equal(t, got.Name, want, "the setter writes what it was given")
-	})
-
-	t.Run("WithName replaces what was already there", func(t *testing.T) {
-		t.Parallel()
-
-		var first, want string
-		first = "Name-a"
-		want = "Name-b"
-		got := catalog.NewMirrorBuilder().WithName(first).WithName(want).Build()
-		assert.Equal(t, got.Name, want, "the later call wins")
-	})
-}
-
-// TestMirrorBuilderMethods pins that Mutate edits the value under
-// construction, and that Clone and From keep that value.
-func TestMirrorBuilderMethods(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Mutate passes the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		var got []*catalog.Mirror
-		record := func(v *catalog.Mirror) { got = append(got, v) }
-		catalog.NewMirrorBuilder().Mutate(record).Mutate(record)
-		assert.Length(t, got, 2, "Mutate calls each function once")
-		assert.Equal(t, got[0], got[1], "the two functions get the same value", assert.ByIdentity())
-	})
-
-	t.Run("Clone and From keep the value under construction", func(t *testing.T) {
-		t.Parallel()
-
-		original := catalog.NewMirrorBuilder()
-		want := original.Build()
-		clone := original.Clone()
-		assert.NotEqual(t, clone, original, "Clone returns a builder of its own", assert.ByIdentity())
-		assert.Equal(t, clone.Build(), want, "a clone builds the value of its original")
-		assert.Equal(t, catalog.NewMirrorBuilderFrom(want).Build(), want, "From keeps the value it was given")
-	})
-}
-
-// dokimi:provenance sha256:1464694a2edd7d0a061f3aa1e9ececbe41a820046463646b4c56fc29d615d417
+// dokimi:provenance sha256:567a595f4516eb01bab37938e9c122937b5ba54c7ea831228b308dc83c77e27e

@@ -2,71 +2,88 @@
 // dokimi:plugin enum
 // dokimi:source web/catalog.ts
 
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { Tier } from './catalog';
-import { UnknownTierError, isTier, parseTier, tierToString, tierValues } from './catalog.enum';
+import { byIdentity } from "@dokimi/assert";
+import { describe, expect, it } from "vitest";
+import { Tier } from "./catalog";
+import { UnknownTierError, isTier, parseTier, tierToString, tierValues } from "./catalog.enum";
 
-describe("Tier variants", () => {
-  const all = tierValues();
-
-  test("declares exactly 2 variants", ({ seat }) => {
-    check.length(seat, all, 2, "the declared set must not change unnoticed");
+describe("Tier", () => {
+  it("gives each variant a value of its own", () => {
+    const values = [Tier.Free, Tier.Pro];
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
   });
 
-  test("no two variants share a value", ({ seat }) => {
-    const seen = new Set<Tier>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(value), "each variant must hold a distinct value");
-      seen.add(value);
+  describe("tierValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Tier.Free, Tier.Pro];
+      expect(tierValues()).isEqualTo(want, "tierValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(tierValues()).isNotEqualTo(tierValues(), "the two calls return two arrays", byIdentity());
+    });
+  });
+
+  describe("tierToString", () => {
+    const tests = [
+      { name: "returns the declared text of Free", give: Tier.Free, want: "free" },
+      { name: "returns the declared text of Pro", give: Tier.Pro, want: "pro" },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(tierToString(tt.give)).isEqualTo(tt.want, "tierToString returns the declared text of the variant");
+      });
     }
+
+    it("returns a text of its own for each variant", () => {
+      const texts = [Tier.Free, Tier.Pro].map((value) => tierToString(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+
+    it("renders a value outside the declared set with a text of its own", () => {
+      const out = "" as unknown as Tier;
+      const texts = [Tier.Free, Tier.Pro].map((value) => tierToString(value));
+      expect(texts).doesNotContain(tierToString(out), "an undeclared value has a text of its own");
+    });
   });
 
-  test("every variant renders the value it declares", ({ seat }) => {
-    check.equal(seat, tierToString(Tier.Free), "free", "the declared value is the textual form");
-    check.equal(seat, tierToString(Tier.Pro), "pro", "the declared value is the textual form");
-  });
-
-  test("no two variants share a textual form", ({ seat }) => {
-    const seen = new Set<string>();
-    for (const value of all) {
-      check.isFalse(seat, seen.has(tierToString(value)), "each variant must render distinctly");
-      seen.add(tierToString(value));
+  describe("isTier", () => {
+    const tests = [
+      { name: "accepts Free", give: Tier.Free },
+      { name: "accepts Pro", give: Tier.Pro },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(isTier(tt.give)).isTrue("isTier accepts each declared variant");
+      });
     }
+
+    it("refuses a value outside the declared set", () => {
+      expect(isTier("")).isFalse("isTier refuses an undeclared value");
+    });
   });
 
-  test("a value outside the set is not valid", ({ seat }) => {
-    check.isFalse(seat, isTier(""), "an undeclared value must not be valid");
-  });
-
-  test("every declared variant is valid", ({ seat }) => {
-    for (const value of all) {
-      check.isTrue(seat, isTier(value), "a declared variant must be valid");
+  describe("parseTier", () => {
+    const tests = [
+      { name: "returns Free for its text", give: Tier.Free },
+      { name: "returns Pro for its text", give: Tier.Pro },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(parseTier(tierToString(tt.give))).isEqualTo(tt.give, "parseTier returns the variant of the text");
+      });
     }
+
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        parseTier("?????");
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).errorAs(UnknownTierError, "parseTier refuses the text with UnknownTierError");
+    });
   });
 });
 
-describe("Tier text", () => {
-  const all = tierValues();
-
-  test("every variant survives a text round trip", ({ seat }) => {
-    for (const value of all) {
-      check.equal(seat, parseTier(tierToString(value)), value, "the round trip must be lossless");
-    }
-  });
-
-  test("text naming no variant is refused", ({ seat }) => {
-    const err = check.throws(seat, () => parseTier("?????"), "unknown text must be refused");
-    check.errorAs(seat, err, UnknownTierError, "unknown text must be refused with the declared refusal");
-  });
-
-  test("a value outside the set does not render as one inside it", ({ seat }) => {
-    const out = "" as unknown as Tier;
-    for (const value of all) {
-      check.notEqual(seat, tierToString(out), tierToString(value), "an undeclared value must render distinctly");
-    }
-  });
-});
-
-// dokimi:provenance sha256:2a0c5152ee725691a6515bde454f89889844fb5c3ca7820e37b088539b02289c
+// dokimi:provenance sha256:f1d3ebb043fb6639efcbae3aa99cb5ce82e463aaa81eadb9c0e87652d9a9e9a3

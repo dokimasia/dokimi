@@ -2,13 +2,11 @@
 // dokimi:plugin enum
 // dokimi:source web/catalog.ts
 
-import { Tier } from './catalog';
+import { Tier } from "./catalog";
 
 /**
- * tierToString returns the textual form of a Tier.
- *
- * A value outside the declared set renders as itself, so a corrupt value is
- * visible rather than indistinguishable from a declared one.
+ * tierToString returns the text of value. A value outside the declared set
+ * renders as its own value.
  */
 export function tierToString(value: Tier): string {
   switch (value) {
@@ -20,7 +18,7 @@ export function tierToString(value: Tier): string {
   return String(value);
 }
 
-/** UnknownTierError reports text that names no declared variant of Tier. */
+/** UnknownTierError is the error of text that names no declared variant of Tier. */
 export class UnknownTierError extends Error {
   /** text is the text that names no declared variant. */
   readonly text: string;
@@ -34,11 +32,8 @@ export class UnknownTierError extends Error {
 }
 
 /**
- * parseTier maps text back to a Tier.
- *
- * The inverse of tierToString for every declared variant, which is what
- * lets a value survive a round trip through anything that carries it as
- * text — a log line, a JSON field, a database column.
+ * parseTier returns the variant of Tier whose text is text. It is the
+ * inverse of tierToString on the declared variants.
  *
  * @throws UnknownTierError for text that names no declared variant.
  */
@@ -53,10 +48,8 @@ export function parseTier(text: string): Tier {
 }
 
 /**
- * tierValues returns every declared variant in declaration order.
- *
- * A fresh array per call: a module-level one would let any caller reorder or
- * overwrite the set every other caller reads.
+ * tierValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
  */
 export function tierValues(): Tier[] {
   return [
@@ -67,9 +60,7 @@ export function tierValues(): Tier[] {
 
 /**
  * isTier reports whether value is a declared variant of Tier.
- *
- * A cast admits any value, so this is the only thing standing between an
- * out-of-range value and the rest of the program.
+ * A cast can make any other value.
  */
 export function isTier(value: unknown): value is Tier {
   switch (value) {
@@ -80,4 +71,4 @@ export function isTier(value: unknown): value is Tier {
   return false;
 }
 
-// dokimi:provenance sha256:6dec022914f19b69880740407d4bf9b829b50afff4002214860177436b1e447b
+// dokimi:provenance sha256:46caf4d208bd331d1d5b3bdf36a6e65839bfc349697d0f8abd8f14f2f4849a8f

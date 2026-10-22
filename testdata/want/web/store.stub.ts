@@ -2,13 +2,13 @@
 // dokimi:plugin stub
 // dokimi:source web/store.ts
 
-import type { Clock, Seat } from '@dokimi/assert';
-import type { RandomSource } from '@dokimi/runtime/fault';
-import { type Arms, answer, answerAsync } from '@dokimi/runtime/stub/answer';
-import { compatV1 } from '@dokimi/runtime/stub/compat';
-import { Group } from '@dokimi/runtime/stub/group';
-import { MethodStub } from '@dokimi/runtime/stub/method-stub';
-import type { Item, Store } from './store';
+import type { Clock, Seat } from "@dokimi/assert";
+import type { RandomSource } from "@dokimi/runtime/fault";
+import { type Arms, answer, answerAsync } from "@dokimi/runtime/stub/answer";
+import { compatV1 } from "@dokimi/runtime/stub/compat";
+import { Group } from "@dokimi/runtime/stub/group";
+import { MethodStub } from "@dokimi/runtime/stub/method-stub";
+import type { Item, Store } from "./store";
 
 /** StoreGetCall records one call of Store.get. */
 export interface StoreGetCall {
@@ -41,7 +41,7 @@ export interface StoreLogCall {
 }
 
 /**
- * StoreGetStub configures get, and records its calls. A fault armed
+ * StoreGetStub configures get and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreGetStub extends MethodStub<StoreGetCall> {
@@ -61,7 +61,7 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
   }
 
   /**
-   * Sets the function of get, for a result that depends on the
+   * Sets the function that computes the result of get from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -91,14 +91,14 @@ export class StoreGetStub extends MethodStub<StoreGetCall> {
 }
 
 /**
- * StorePutStub configures put, and records its calls. A fault armed
+ * StorePutStub configures put and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StorePutStub extends MethodStub<StorePutCall> {
   #fn: ((item: Item, note?: string) => void) | undefined;
 
   /**
-   * Sets the function of put, for a result that depends on the
+   * Sets the function that computes the result of put from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -124,14 +124,14 @@ export class StorePutStub extends MethodStub<StorePutCall> {
 }
 
 /**
- * StoreLogStub configures log, and records its calls. A fault armed
+ * StoreLogStub configures log and records its calls. A fault armed
  * through it takes precedence over the function and the fixed result.
  */
 export class StoreLogStub extends MethodStub<StoreLogCall> {
   #fn: ((format: string, ...args: string[]) => void) | undefined;
 
   /**
-   * Sets the function of log, for a result that depends on the
+   * Sets the function that computes the result of log from its
    * arguments. An injected fault takes precedence over it.
    *
    * @param fn - The function.
@@ -156,13 +156,13 @@ export class StoreLogStub extends MethodStub<StoreLogCall> {
   }
 }
 
-/** An option of a StoreStub, which its constructor applies. */
+/** Configures a StoreStub at its construction. */
 export type StoreStubOption = (double: StoreStub) => void;
 
 /**
  * StoreStub is a recording test double of Store. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class StoreStub implements Store {
   /** The property zone, which a test assigns. */
@@ -177,9 +177,9 @@ export class StoreStub implements Store {
   #strict = false;
 
   /**
-   * Returns a double of Store that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Store that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -210,7 +210,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that passes each call to impl, and records the call.
+   * Returns the option that passes each call to impl. The double still records
+   * the call.
    *
    * @param impl - The implementation.
    * @returns The option.
@@ -224,8 +225,9 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -237,8 +239,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -275,7 +277,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns the option that arms every method with error, so each call fails.
+   * Returns the option that arms error on each method that can fail. Each call
+   * of such a method then fails with error.
    *
    * @param error - The error.
    * @returns The option.
@@ -325,8 +328,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -349,8 +352,8 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Returns a double whose every method fails with error, with the options
-   * after it.
+   * Returns a double on which each call of a method that can fail fails with
+   * error. It applies options after the failure.
    *
    * @param seat - The seat of the test.
    * @param error - The error.
@@ -374,7 +377,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of get, and returns its result.
+   * Records the call of get and returns its result.
    */
   get(id: string): Promise<Item> {
     const call: StoreGetCall = { id };
@@ -382,7 +385,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of put, and returns its result.
+   * Records the call of put and returns its result.
    */
   put(item: Item, note?: string): void {
     const call: StorePutCall = { item, note };
@@ -390,7 +393,7 @@ export class StoreStub implements Store {
   }
 
   /**
-   * Records the call of log, and returns its result.
+   * Records the call of log and returns its result.
    */
   log(format: string, ...args: string[]): void {
     const call: StoreLogCall = { format, args };
@@ -400,13 +403,13 @@ export class StoreStub implements Store {
 
 // Item is a handle that a method of Store returns.
 
-/** An option of a ItemStub, which its constructor applies. */
+/** Configures a ItemStub at its construction. */
 export type ItemStubOption = (double: ItemStub) => void;
 
 /**
  * ItemStub is a recording test double of Item. Each property
- * on<Method> configures its method. Left alone, a method returns undefined
- * and records the call.
+ * on<Method> configures its method. An unconfigured method records the call
+ * and returns undefined.
  */
 export class ItemStub implements Item {
   /** The property id, which a test assigns. */
@@ -415,9 +418,9 @@ export class ItemStub implements Item {
   #strict = false;
 
   /**
-   * Returns a double of Item that reports to seat, with the options.
-   * The double registers the check of the expected counts of calls for the
-   * end of the test. An undefined seat reports nothing.
+   * Creates a double of Item that reports its failures to seat and
+   * applies options. The double checks the expected counts of calls at the end
+   * of the test. With an undefined seat, the double reports nothing.
    *
    * @param seat - The seat of the test.
    * @param options - The options.
@@ -445,8 +448,9 @@ export class ItemStub implements Item {
   }
 
   /**
-   * Returns the option that reads the latency, the windows of faults and the
-   * instants of the calls from clock.
+   * Returns the option that sets the clock of the double to clock. The double
+   * takes the latency, the windows of the faults and the instants of the calls
+   * from clock.
    *
    * @param clock - The clock.
    * @returns The option.
@@ -458,8 +462,8 @@ export class ItemStub implements Item {
   }
 
   /**
-   * Returns the option that takes the numbers of probabilistic faults from
-   * random, so a seeded source repeats the faults of a run.
+   * Returns the option that sets the random source of the probabilistic faults
+   * to random. A seeded source repeats the faults of a run.
    *
    * @param random - The source.
    * @returns The option.
@@ -496,8 +500,8 @@ export class ItemStub implements Item {
   }
 
   /**
-   * Returns a double whose every asynchronous method waits duration on clock
-   * before it returns, with the options after the pair.
+   * Returns a double whose asynchronous methods wait duration on clock before
+   * they return. It applies options after the clock and the latency.
    *
    * @param seat - The seat of the test.
    * @param duration - The latency, in milliseconds.
@@ -530,4 +534,4 @@ export class ItemStub implements Item {
 
 void compatV1;
 
-// dokimi:provenance sha256:c88a95556c7e77a7fc62a858705e52cad1ad7d977bd7656c93c588735a1377a2
+// dokimi:provenance sha256:b78dcd41cad9fc650234168e9a9c4a6c8f02d742d337d9ff228d2da2bcdc7796

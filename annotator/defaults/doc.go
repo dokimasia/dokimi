@@ -31,13 +31,13 @@
 //
 // defaults stamps the text of a default under [KeyValue], as the kernel's
 // sample annotator stamps the text of a sample. A reader turns the text into
-// a value through the rules of the language of the declaration. [KeySource]
-// contains the form that declares the value, [SourceDirective] or
-// [SourceTag]. defaults provides the capability [Capability], so a plugin
-// that reads the facts requires it and runs after it.
+// a value of the type of the declaration with [Value]. [KeySource] contains
+// the form that declares the value, [SourceDirective] or [SourceTag].
+// defaults provides the capability [Capability], so a plugin that reads the
+// facts requires it and runs after it.
 //
 // # Dependency position
 //
-// The package imports the root, directive, meta, plugin and symbol packages
-// of the SDK facade of eidos, and the Go stdlib.
+// The package imports the root, directive, emit, meta, node, plugin, rules
+// and symbol packages of the SDK facade of eidos, and the Go stdlib.
 package defaults

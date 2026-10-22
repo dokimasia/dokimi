@@ -274,7 +274,7 @@ func stamped(t *testing.T, f *gentest.Fixture, p plugin.Plugin, kind symbol.Kind
 	sourceKey, registered := meta.Lookup[string](f.Keys, defaults.KeySource)
 	assert.True(t, registered, "defaults registers the key of the source")
 	id := f.Find(t, kind, owner, name).Identity()
-	value, held := meta.Get(f.Facts, id, valueKey)
+	value, stamped := meta.Get(f.Facts, id, valueKey)
 	source, _ := meta.Get(f.Facts, id, sourceKey)
-	return stamp{value: value, source: source, stamped: held}
+	return stamp{value: value, source: source, stamped: stamped}
 }

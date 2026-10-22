@@ -93,9 +93,8 @@ type conclusion struct {
 // rules state tags, unless the option no-tags is set. Within one plugin, the
 // first claim in rule order takes precedence, and the directive rule comes
 // first. So on a field with both forms, the value of the directive becomes
-// the fact. A reader turns the text into a value through the rules of the
-// language of the declaration. Each call returns a new plugin, because a
-// plugin instance belongs to one workspace.
+// the fact. A reader turns the text into a value with [Value]. Each call
+// returns a new plugin, because a plugin instance belongs to one workspace.
 func New() plugin.Annotator {
 	c := &conclusion{options: &Options{TagKey: DefaultTag}}
 	return sdk.NewPlugin(ID).
@@ -113,9 +112,11 @@ func New() plugin.Annotator {
 // register claims the namespace of defaults and registers [KeyValue] and
 // [KeySource].
 //
-// Error modes: the error of the claim, such as a namespace that another
-// registrant claimed, and the errors of the two registrations, such as a key
-// that the registrant registered with another type, joined.
+// # Errors
+//
+// register returns the error of the claim, such as a namespace that another
+// registrant claimed, joined with the errors of the two registrations, such as
+// a key that the registrant registered with another type.
 func (c *conclusion) register(r *meta.Registry) error {
 	errClaim := r.ClaimNamespace(KeyValue.Namespace())
 	var errValue, errSource error

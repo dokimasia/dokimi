@@ -47,16 +47,54 @@ func TestTypeScript(t *testing.T) {
 		}, "the surface of Status has the names of TypeScript, and no pair of text")
 	})
 
-	t.Run("names the parse function and the error after the options", func(t *testing.T) {
-		t.Parallel()
+	templates := []struct {
+		name string
+		give func(*enum.Options)
+		want enum.Names
+	}{
+		{
+			name: "names the parse function in camelCase after the option parse-function",
+			give: func(o *enum.Options) { o.ParseFunction = "Decode{{.Enum}}" },
+			want: enum.Names{
+				Render: "statusToString", Parse: "decodeStatus", Values: "statusValues", Valid: "isStatus",
+				Sentinel: "UnknownStatusError",
+			},
+		},
+		{
+			name: "names the function that lists the variants in camelCase after the option values-function",
+			give: func(o *enum.Options) { o.ValuesFunction = "every {{.Enum}}" },
+			want: enum.Names{
+				Render: "statusToString", Parse: "parseStatus", Values: "everyStatus", Valid: "isStatus",
+				Sentinel: "UnknownStatusError",
+			},
+		},
+		{
+			name: "names the error class with the suffix Error after the option parse-error",
+			give: func(o *enum.Options) { o.ParseError = "unrecognised {{.Enum}}" },
+			want: enum.Names{
+				Render: "statusToString", Parse: "parseStatus", Values: "statusValues", Valid: "isStatus",
+				Sentinel: "UnrecognisedStatusError",
+			},
+		},
+		{
+			name: "names the type guard after the enum under the option valid-method",
+			give: func(o *enum.Options) { o.ValidMethod = "Valid" },
+			want: enum.Names{
+				Render: "statusToString", Parse: "parseStatus", Values: "statusValues", Valid: "isStatus",
+				Sentinel: "UnknownStatusError",
+			},
+		},
+	}
+	for _, tt := range templates {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-		p := enum.New()
-		options := p.(plugin.OptionsProvider).Options().(*enum.Options)
-		options.ParseWord, options.SentinelWord = "decode", "unrecognised"
-		got := run(t, p, typescript.Target, tsTree, statusModule).models[statusName].Names
-		expect.Equal(t, got.Parse, "decodeStatus", "the parse function opens with the word decode")
-		expect.Equal(t, got.Sentinel, "UnrecognisedStatusError", "the error opens with the word unrecognised")
-	})
+			p := enum.New()
+			tt.give(p.(plugin.OptionsProvider).Options().(*enum.Options))
+			got := run(t, p, typescript.Target, tsTree, statusModule).models[statusName].Names
+			assert.Equal(t, got, tt.want, "the surface of Status has the names that the options render")
+		})
+	}
 
 	t.Run("reaches a member through a dot or through brackets", func(t *testing.T) {
 		t.Parallel()

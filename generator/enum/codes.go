@@ -25,3 +25,13 @@ var Duplicate = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  2,
 	Meaning: "two variants of an enumeration under the directive enum have one value or one text",
 })
+
+// Conflict reports a declaration of the package of an enumeration under the
+// directive enum that has the name of a member of its surface and another
+// form, such as a parse function of bytes. A member of the surface or a check
+// would call the declaration in the form of the member, so the finding is an
+// Error at the declaration, and enum writes nothing for the enumeration.
+var Conflict = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  3,
+	Meaning: "a declaration of the package of an enumeration under the directive enum has the name of a member of its surface and another form",
+})

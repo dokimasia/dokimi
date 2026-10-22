@@ -24,7 +24,7 @@
 		}
 	})
 {{- if $c.Calls.Values}}
-{{- $values := spell (index $d.Fields.Items 1).Type}}
+{{- $values := spell (fieldType $d "values")}}
 
 	t.Run("{{$n.Values}}", func(t *testing.T) {
 		t.Parallel()
@@ -132,8 +132,7 @@
 	})
 {{- end}}
 {{- if $c.Calls.Parse}}
-{{- $parse := spell (index $d.Fields.Items 0).Type}}
-{{- $sentinel := spell (index $d.Fields.Items 2).Type}}
+{{- $parse := spell (fieldType $d "parse")}}
 
 	t.Run("{{$n.Parse}}", func(t *testing.T) {
 		t.Parallel()
@@ -158,8 +157,14 @@
 		t.Run("refuses a text that no variant has", func(t *testing.T) {
 			t.Parallel()
 			_, err := {{$parse}}({{$c.Unknown}})
-			assert.ErrorIs(t, err, {{$sentinel}}, "{{$n.Parse}} refuses the text with {{$n.Sentinel}}")
+{{- if $c.Calls.Error}}
+			assert.ErrorIs(t, err, {{spell (fieldType $d "error")}}, "{{$n.Parse}} refuses the text with {{$n.Sentinel}}")
+{{- else}}
+			assert.HasError(t, err, "{{$n.Parse}} refuses the text")
+{{- end}}
+{{- if $c.Generate.Parse}}
 			assert.Contains(t, err.Error(), {{$c.Unknown}}, "the error contains the refused text")
+{{- end}}
 		})
 	})
 {{- end}}

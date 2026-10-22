@@ -5,10 +5,12 @@ package enum
 
 import (
 	"embed"
+	"fmt"
 	"math/big"
 	"slices"
 	"strconv"
 	"strings"
+	"text/template"
 
 	golang "go.dokimi.dev/eidos/lang/go"
 	"go.dokimi.dev/eidos/lang/naming"
@@ -48,17 +50,48 @@ type golangValue struct {
 	entry Entry
 }
 
-// The names of the members of the surface of Go that do not depend on the
-// enumeration: the method String of fmt.Stringer, the method IsValid, and the
-// two methods of encoding.TextMarshaler and encoding.TextUnmarshaler. The
-// name of the list of the variants ends with golangValues.
+// The names of the members of the surface of Go that the language fixes: the
+// method String of fmt.Stringer, and the two methods of
+// encoding.TextMarshaler and encoding.TextUnmarshaler.
 const (
 	golangRender = "String"
-	golangValid  = "IsValid"
 	golangEncode = "MarshalText"
 	golangDecode = "UnmarshalText"
-	golangValues = "Values"
 )
+
+// golangFieldHelper is the helper that the template of the checks calls with
+// the record of the checks and the name of a field.
+const golangFieldHelper = "fieldType"
+
+// golangForms are the forms of the members of the surface of Go, which a
+// declaration under the name of a member has.
+var golangForms = map[member]form{
+	memberRender: {
+		kind: kindMethod, values: []shape{shapeText},
+		text: "a method of the enumeration without a parameter that returns a text",
+	},
+	memberParse: {
+		kind: kindFunction, inputs: []shape{shapeText}, values: []shape{shapeVariant}, fails: true,
+		text: "a function of a text that returns a variant and an error",
+	},
+	memberError: {kind: kindVariable, text: "a variable"},
+	memberValues: {
+		kind: kindFunction, values: []shape{shapeVariants},
+		text: "a function without a parameter that returns a list of the enumeration",
+	},
+	memberValid: {
+		kind: kindMethod, values: []shape{shapeBool},
+		text: "a method of the enumeration without a parameter that returns a truth value",
+	},
+	memberEncode: {
+		kind: kindMethod, values: []shape{shapeBytes}, fails: true,
+		text: "a method of the enumeration without a parameter that returns bytes and an error",
+	},
+	memberDecode: {
+		kind: kindMethod, inputs: []shape{shapeBytes}, fails: true,
+		text: "a method of the enumeration of bytes that returns an error",
+	},
+}
 
 // The verbs of fmt that print a value outside the variants after its
 // conversion to the underlying type: a float, a truth value, and any other
@@ -83,21 +116,44 @@ func (golangPart) Lang() symbol.Lang { return golang.Lang }
 // Target returns the target golang.
 func (golangPart) Target() plugin.Target { return golang.Target }
 
-// Options returns the template tree of the target golang.
+// Options returns the template tree and the helper of the target golang.
 func (golangPart) Options() []sdk.TargetOption {
-	return []sdk.TargetOption{sdk.TemplatesOf(golangTemplates, golang.Target)}
-}
-
-// names returns the names of the members of the surface of the enumeration
-// named subject, such as ParseStatus, StatusValues and ErrUnknownStatus for
-// Status and the words parse and unknown. The rules of Go name the error.
-func (golangPart) names(b *rules.Bound, subject, parse, sentinel string) Names {
-	unknown, _ := b.SentinelName(naming.Pascal(sentinel) + subject)
-	return Names{
-		Render: golangRender, Parse: naming.Pascal(parse) + subject, Values: subject + golangValues,
-		Valid: golangValid, Encode: golangEncode, Decode: golangDecode, Sentinel: unknown,
+	return []sdk.TargetOption{
+		sdk.TemplatesOf(golangTemplates, golang.Target),
+		sdk.Funcs(template.FuncMap{golangFieldHelper: fieldType}),
 	}
 }
+
+// fieldType returns the type of the field named name of the record d of the
+// checks, and an error where d has no such field. A check spells the type to
+// call the parse function or the list of the variants, or to match the error.
+// The layout of eidos respells the name of a field in the case of its
+// language, such as Values for values, so fieldType compares names without
+// their case.
+func fieldType(d *emit.Struct, name string) (*emit.TypeRef, error) {
+	for _, f := range d.Fields.Items() {
+		if strings.EqualFold(f.Name, name) {
+			return f.Type, nil
+		}
+	}
+	return nil, fmt.Errorf("enum: the record of the checks of %s has no field %q", d.Name, name)
+}
+
+// names returns the names of the members of the surface of an enumeration in
+// PascalCase, such as ParseStatus, StatusValues, IsValid and ErrUnknownStatus
+// for Status and the default templates. The rules of Go name the error with
+// the prefix Err.
+func (golangPart) names(b *rules.Bound, _ string, n baseNames) Names {
+	unknown, _ := b.SentinelName(n.err)
+	return Names{
+		Render: golangRender, Parse: naming.Pascal(n.parse), Values: naming.Pascal(n.values),
+		Valid: naming.Pascal(n.valid), Encode: golangEncode, Decode: golangDecode, Sentinel: unknown,
+	}
+}
+
+// form returns the form of a member of the surface of Go, which has every
+// member.
+func (golangPart) form(x member) form { return golangForms[x] }
 
 // fallback returns the type that the enumeration e of Go declares under it,
 // and the verb that prints a value of that type. It returns nil for an

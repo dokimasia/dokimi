@@ -24,6 +24,7 @@ import (
 const (
 	priorityPackage = "example.com/shop/priority"
 	splitPackage    = "example.com/shop/split"
+	customPackage   = "example.com/shop/custom"
 	badPackage      = "example.com/shop/bad"
 	badModule       = "bad"
 )
@@ -233,14 +234,56 @@ func TestEnum(t *testing.T) {
 			{
 				name: "records each member of the surface of an enumeration without one", target: golang.Target,
 				tree: goTree, pkg: statusPackage, give: statusName,
-				want:  enum.Members{Render: true, Parse: true, Values: true, Valid: true, Encode: true, Decode: true},
+				want: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+				calls: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+			},
+			{
+				name:   "leaves out each member that the package declares",
+				target: golang.Target, tree: goTree, pkg: handwrittenPackage, give: weekdayName,
+				want: enum.Members{Values: true, Valid: true, Encode: true, Decode: true},
+				calls: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+			},
+			{
+				name:   "wraps the error that the package declares in the parse function",
+				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Level",
+				want: enum.Members{Render: true, Parse: true, Values: true, Valid: true, Encode: true, Decode: true},
+				calls: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+			},
+			{
+				name:   "leaves out the list of the variants that the package declares",
+				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Color",
+				want: enum.Members{Render: true, Parse: true, Error: true, Valid: true, Encode: true, Decode: true},
+				calls: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+			},
+			{
+				name:   "keeps the render beside a parse function that the package declares",
+				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Lane",
+				want:  enum.Members{Render: true, Values: true, Valid: true, Encode: true, Decode: true},
 				calls: enum.Members{Render: true, Parse: true, Values: true, Valid: true, Encode: true, Decode: true},
 			},
 			{
-				name:   "leaves out the render, the parse function and the list where the type renders itself",
-				target: golang.Target, tree: goTree, pkg: handwrittenPackage, give: weekdayName,
-				want:  enum.Members{Valid: true, Encode: true, Decode: true},
-				calls: enum.Members{Render: true, Valid: true, Encode: true, Decode: true},
+				name:   "writes the parse function beside a method of its name on another type",
+				target: golang.Target, tree: goTree, pkg: declaredPackage, give: "Coil",
+				want: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+				calls: enum.Members{
+					Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+				},
+			},
+			{
+				name:   "checks no parse function without a render",
+				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Gauge",
 			},
 			{
 				name:   "leaves out the surface under methods=off and checks the members of the type",
@@ -254,32 +297,44 @@ func TestEnum(t *testing.T) {
 			{
 				name:   "keeps the decode where the type declares the encode, and checks no round trip",
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Tone",
-				want:  enum.Members{Render: true, Parse: true, Values: true, Valid: true, Decode: true},
-				calls: enum.Members{Render: true, Parse: true, Values: true, Valid: true, Encode: true},
+				want:  enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Decode: true},
+				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
 			},
 			{
 				name:   "leaves out the encode where neither the surface nor the package declares a parse function",
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Phase",
-				want:  enum.Members{Valid: true},
-				calls: enum.Members{Render: true, Valid: true},
+				want:  enum.Members{Values: true, Valid: true},
+				calls: enum.Members{Render: true, Values: true, Valid: true},
 			},
 			{
 				name:   "leaves out the decode that the type declares, and keeps the encode",
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Speed",
-				want:  enum.Members{Render: true, Parse: true, Values: true, Valid: true, Encode: true},
-				calls: enum.Members{Render: true, Parse: true, Values: true, Valid: true, Encode: true},
+				want:  enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
+				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
 			},
 			{
 				name:   "records the functions of the surface of a TypeScript enum",
 				target: typescript.Target, tree: tsTree, pkg: statusModule, give: statusName,
-				want:  enum.Members{Render: true, Parse: true, Values: true, Valid: true},
-				calls: enum.Members{Render: true, Parse: true, Values: true, Valid: true},
+				want:  enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true},
+				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true},
 			},
 			{
-				name:   "leaves out the functions that go with a render that the module declares",
+				name:   "leaves out the parse function beside a render that the module declares",
 				target: typescript.Target, tree: tsTree, pkg: statusModule, give: modeName,
-				want:  enum.Members{Valid: true},
-				calls: enum.Members{Render: true, Valid: true},
+				want:  enum.Members{Values: true, Valid: true},
+				calls: enum.Members{Render: true, Values: true, Valid: true},
+			},
+			{
+				name:   "throws the error class that the module declares from the parse function",
+				target: typescript.Target, tree: tsTree, pkg: statusModule, give: "Level",
+				want:  enum.Members{Render: true, Parse: true, Values: true, Valid: true},
+				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true},
+			},
+			{
+				name:   "leaves out the type guard that the module declares",
+				target: typescript.Target, tree: tsTree, pkg: statusModule, give: "Phase",
+				want:  enum.Members{Render: true, Parse: true, Error: true, Values: true},
+				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true},
 			},
 		}
 		for _, tt := range surfaces {
@@ -393,55 +448,156 @@ func TestEnum(t *testing.T) {
 			expect.Equal(t, got.Package, "status", "the message of ErrUnknownStatus opens with status")
 		})
 
-		t.Run("names the parse function after the option parse-word", func(t *testing.T) {
+		t.Run("starts from the default template of each name", func(t *testing.T) {
 			t.Parallel()
 
-			p := enum.New()
-			p.(plugin.OptionsProvider).Options().(*enum.Options).ParseWord = "decode"
-			got := run(t, p, golang.Target, goTree, statusPackage)
-			expect.Equal(t, got.models[statusName].Names.Parse, "DecodeStatus", "the parse function is DecodeStatus")
+			got := enum.New().(plugin.OptionsProvider).Options().(*enum.Options)
+			assert.Equal(t, *got, enum.Options{
+				ParseFunction: enum.DefaultParseFunction, ValuesFunction: enum.DefaultValuesFunction,
+				ParseError: enum.DefaultParseError, ValidMethod: enum.DefaultValidMethod,
+			}, "the options have the default templates")
 		})
 
-		t.Run("names the error of the parse function after the option sentinel-word", func(t *testing.T) {
-			t.Parallel()
-
-			p := enum.New()
-			p.(plugin.OptionsProvider).Options().(*enum.Options).SentinelWord = "unrecognised"
-			got := run(t, p, golang.Target, goTree, statusPackage)
-			expect.Equal(t, got.models[statusName].Names.Sentinel, "ErrUnrecognisedStatus",
-				"the error is ErrUnrecognisedStatus")
-		})
-
-		words := []struct {
-			name         string
-			give         func(*enum.Options)
-			wantParse    string
-			wantSentinel string
+		templates := []struct {
+			name string
+			give func(*enum.Options)
+			want enum.Names
 		}{
 			{
-				name: "names the parse function after the word parse where the option is empty",
-				give: func(o *enum.Options) { o.ParseWord = "" }, wantParse: "ParseStatus",
-				wantSentinel: "ErrUnknownStatus",
+				name: "names the parse function after the option parse-function",
+				give: func(o *enum.Options) { o.ParseFunction = "Decode{{.Enum}}" },
+				want: enum.Names{
+					Render: "String", Parse: "DecodeStatus", Values: "StatusValues", Valid: "IsValid",
+					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+				},
 			},
 			{
-				name: "names the error after the word unknown where the option is empty",
-				give: func(o *enum.Options) { o.SentinelWord = "" }, wantParse: "ParseStatus",
-				wantSentinel: "ErrUnknownStatus",
+				name: "names the function that lists the variants after the option values-function",
+				give: func(o *enum.Options) { o.ValuesFunction = "Every{{.Enum}}" },
+				want: enum.Names{
+					Render: "String", Parse: "ParseStatus", Values: "EveryStatus", Valid: "IsValid",
+					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+				},
+			},
+			{
+				name: "names the error of the parse function after the option parse-error",
+				give: func(o *enum.Options) { o.ParseError = "Unrecognised{{.Enum}}" },
+				want: enum.Names{
+					Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "IsValid",
+					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnrecognisedStatus",
+				},
+			},
+			{
+				name: "names the validity method after the option valid-method",
+				give: func(o *enum.Options) { o.ValidMethod = "Valid" },
+				want: enum.Names{
+					Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "Valid",
+					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+				},
+			},
+			{
+				name: "writes the words of a template in PascalCase",
+				give: func(o *enum.Options) { o.ParseFunction = "parse {{.Enum}} text"; o.ValidMethod = "is_known" },
+				want: enum.Names{
+					Render: "String", Parse: "ParseStatusText", Values: "StatusValues", Valid: "IsKnown",
+					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+				},
+			},
+			{
+				name: "names each member after its default template where each option is empty",
+				give: func(o *enum.Options) { *o = enum.Options{} },
+				want: enum.Names{
+					Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "IsValid",
+					Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
+				},
 			},
 		}
-		for _, tt := range words {
+		for _, tt := range templates {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
 				p := enum.New()
-				options := p.(plugin.OptionsProvider).Options().(*enum.Options)
-				expect.Equal(t, *options, enum.Options{ParseWord: enum.ParseWord, SentinelWord: enum.SentinelWord},
-					"the options have the default words")
-				tt.give(options)
+				tt.give(p.(plugin.OptionsProvider).Options().(*enum.Options))
 				got := run(t, p, golang.Target, goTree, statusPackage).models[statusName].Names
-				expect.Equal(t, got.Parse, tt.wantParse, "the parse function has the default word")
-				expect.Equal(t, got.Sentinel, tt.wantSentinel, "the error has the default word")
+				assert.Equal(t, got, tt.want, "the surface of Status has the names that the options render")
 			})
+		}
+
+		faults := []struct {
+			name    string
+			give    func(*enum.Options)
+			wantErr string
+		}{
+			{
+				name:    "returns the error of an option parse-function that does not render",
+				give:    func(o *enum.Options) { o.ParseFunction = "Parse{{.Name}}" },
+				wantErr: `enum: the name template "Parse{{.Name}}" has an action other than {{.Enum}}`,
+			},
+			{
+				name:    "returns the error of an option values-function that does not render",
+				give:    func(o *enum.Options) { o.ValuesFunction = "{{.Enum}}!" },
+				wantErr: `enum: the name template "{{.Enum}}!" contains the character '!'`,
+			},
+			{
+				name:    "returns the error of an option parse-error that does not render",
+				give:    func(o *enum.Options) { o.ParseError = "{{" },
+				wantErr: `enum: the name template "{{" does not parse`,
+			},
+			{
+				name:    "returns the error of an option valid-method that does not render",
+				give:    func(o *enum.Options) { o.ValidMethod = "2valid" },
+				wantErr: `enum: the name template "2valid" starts with '2' instead of a letter`,
+			},
+		}
+		for _, tt := range faults {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				p := enum.New()
+				tt.give(p.(plugin.OptionsProvider).Options().(*enum.Options))
+				res := fixture(t, golang.Target, goTree, p, statusPackage).Generate(t, p)
+				assert.HasError(t, res.Err, "the generator stops at the template")
+				expect.Contains(t, res.Err.Error(), tt.wantErr, "the error contains the template and the rule")
+			})
+		}
+
+		{
+			tests := []struct {
+				name       string
+				giveMethod enum.MethodTemplate
+				want       enum.Members
+				wantValid  string
+			}{
+				{
+					name:       "writes a second validity method beside a method of another name",
+					giveMethod: enum.DefaultValidMethod,
+					want: enum.Members{
+						Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true, Decode: true,
+					},
+					wantValid: "IsValid",
+				},
+				{
+					name:       "takes the validity method that the type declares under the option valid-method",
+					giveMethod: "Valid",
+					want: enum.Members{
+						Render: true, Parse: true, Error: true, Values: true, Encode: true, Decode: true,
+					},
+					wantValid: "Valid",
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					p := enum.New()
+					p.(plugin.OptionsProvider).Options().(*enum.Options).ValidMethod = tt.giveMethod
+					got := run(t, p, golang.Target, goTree, customPackage)
+					expect.Equal(t, got.models["Gear"].Generate, tt.want, "the surface declares what is missing")
+					expect.True(t, got.checks["Gear"].Calls.Valid, "the checks call the validity method")
+					expect.Equal(t, got.checks["Gear"].Names.Valid, tt.wantValid,
+						"the checks call the method that the option names")
+				})
+			}
 		}
 
 		t.Run("records no checks under the option no-tests", func(t *testing.T) {
@@ -502,6 +658,134 @@ func TestEnum(t *testing.T) {
 				expect.Equal(t, got.Code, tt.wantCode, "the finding has the code of its case")
 				expect.Equal(t, got.Msg, tt.wantMsg, "the message contains the enumeration and the reason")
 				gentest.Unrecorded(t, res, at)
+			})
+		}
+
+		conflicts := []struct {
+			name    string
+			target  plugin.Target
+			tree    string
+			pkg     string
+			give    string
+			atKind  symbol.Kind
+			atOwner string
+			at      string
+			wantMsg string
+		}{
+			{
+				name: "reports Conflict at a parse function of bytes", target: golang.Target, tree: goTree,
+				pkg: badPackage, give: "Tint", atKind: symbol.KindFunction, at: "ParseTint",
+				wantMsg: "ParseTint has the name of the parse function of Tint and another form, so Tint has no " +
+					"surface. The parse function is a function of a text that returns a variant and an error",
+			},
+			{
+				name:   "reports Conflict at a constant under the name of the error of the parse function",
+				target: golang.Target, tree: goTree, pkg: badPackage, give: "Hue", atKind: symbol.KindConstant,
+				at: "ErrUnknownHue",
+				wantMsg: "ErrUnknownHue has the name of the error of the parse function of Hue and another form, " +
+					"so Hue has no surface. The error of the parse function is a variable",
+			},
+			{
+				name: "reports Conflict at a render with a parameter", target: golang.Target, tree: goTree,
+				pkg: badPackage, give: "Beam", atKind: symbol.KindMethod, atOwner: "Beam", at: "String",
+				wantMsg: "String has the name of the render of Beam and another form, so Beam has no surface. " +
+					"The render is a method of the enumeration without a parameter that returns a text",
+			},
+			{
+				name: "reports Conflict at a parse function that returns another type", target: golang.Target,
+				tree: goTree, pkg: badPackage, give: "Knot", atKind: symbol.KindFunction, at: "ParseKnot",
+				wantMsg: "ParseKnot has the name of the parse function of Knot and another form, so Knot has no " +
+					"surface. The parse function is a function of a text that returns a variant and an error",
+			},
+			{
+				name:   "reports Conflict at a type under the name of the error of the parse function",
+				target: golang.Target, tree: goTree, pkg: badPackage, give: "Knot", atKind: symbol.KindStruct,
+				at: "ErrUnknownKnot",
+				wantMsg: "ErrUnknownKnot has the name of the error of the parse function of Knot and another form, " +
+					"so Knot has no surface. The error of the parse function is a variable",
+			},
+			{
+				name:   "reports Conflict at a list of texts under the name of the list of the variants",
+				target: golang.Target, tree: goTree, pkg: badPackage, give: "Knot", atKind: symbol.KindFunction,
+				at: "KnotValues",
+				wantMsg: "KnotValues has the name of the list of the variants of Knot and another form, so Knot has " +
+					"no surface. The list of the variants is a function without a parameter that returns a list of " +
+					"the enumeration",
+			},
+			{
+				name: "reports Conflict at an encode that returns a text", target: golang.Target, tree: goTree,
+				pkg: badPackage, give: "Knot", atKind: symbol.KindMethod, atOwner: "Knot", at: "MarshalText",
+				wantMsg: "MarshalText has the name of the encode of Knot and another form, so Knot has no surface. " +
+					"The encode is a method of the enumeration without a parameter that returns bytes and an error",
+			},
+			{
+				name: "reports Conflict at a parse function without an error", target: golang.Target, tree: goTree,
+				pkg: badPackage, give: "Loop", atKind: symbol.KindFunction, at: "ParseLoop",
+				wantMsg: "ParseLoop has the name of the parse function of Loop and another form, so Loop has no " +
+					"surface. The parse function is a function of a text that returns a variant and an error",
+			},
+			{
+				name:   "reports Conflict at a function under the name of the error of the parse function",
+				target: golang.Target, tree: goTree, pkg: badPackage, give: "Loop", atKind: symbol.KindFunction,
+				at: "ErrUnknownLoop",
+				wantMsg: "ErrUnknownLoop has the name of the error of the parse function of Loop and another form, " +
+					"so Loop has no surface. The error of the parse function is a variable",
+			},
+			{
+				name:   "reports Conflict at an array under the name of the list of the variants",
+				target: golang.Target, tree: goTree, pkg: badPackage, give: "Loop", atKind: symbol.KindFunction,
+				at: "LoopValues",
+				wantMsg: "LoopValues has the name of the list of the variants of Loop and another form, so Loop has " +
+					"no surface. The list of the variants is a function without a parameter that returns a list of " +
+					"the enumeration",
+			},
+			{
+				name: "reports Conflict at a parse function that takes a context", target: golang.Target,
+				tree: goTree, pkg: badPackage, give: "Mesh", atKind: symbol.KindFunction, at: "ParseMesh",
+				wantMsg: "ParseMesh has the name of the parse function of Mesh and another form, so Mesh has no " +
+					"surface. The parse function is a function of a text that returns a variant and an error",
+			},
+			{
+				name:   "reports Conflict at a variable under the name of the list of the variants",
+				target: golang.Target, tree: goTree, pkg: badPackage, give: "Mesh", atKind: symbol.KindVariable,
+				at: "MeshValues",
+				wantMsg: "MeshValues has the name of the list of the variants of Mesh and another form, so Mesh has " +
+					"no surface. The list of the variants is a function without a parameter that returns a list of " +
+					"the enumeration",
+			},
+			{
+				name: "reports Conflict at a validity method that returns a text", target: golang.Target,
+				tree: goTree, pkg: badPackage, give: "Glow", atKind: symbol.KindMethod, atOwner: "Glow", at: "IsValid",
+				wantMsg: "IsValid has the name of the validity method of Glow and another form, so Glow has no " +
+					"surface. The validity method is a method of the enumeration without a parameter that returns " +
+					"a truth value",
+			},
+			{
+				name: "reports Conflict at a TypeScript parse function of a number", target: typescript.Target,
+				tree: tsTree, pkg: badModule, give: "Tint", atKind: symbol.KindFunction, at: "parseTint",
+				wantMsg: "parseTint has the name of the parse function of Tint and another form, so Tint has no " +
+					"surface. The parse function is a function of a text that returns a variant",
+			},
+			{
+				name:   "reports Conflict at a TypeScript function under the name of the error of the parse function",
+				target: typescript.Target, tree: tsTree, pkg: badModule, give: "Hue", atKind: symbol.KindFunction,
+				at: "UnknownHueError",
+				wantMsg: "UnknownHueError has the name of the error of the parse function of Hue and another form, " +
+					"so Hue has no surface. The error of the parse function is a class",
+			},
+		}
+		for _, tt := range conflicts {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				p := enum.New()
+				f := fixture(t, tt.target, tt.tree, p, tt.pkg)
+				res := f.Generate(t, p)
+				assert.NoError(t, res.Err, "the generator runs whole")
+				got := gentest.Finding(t, res, f.Find(t, tt.atKind, tt.atOwner, tt.at))
+				expect.Equal(t, got.Code, enum.Conflict, "the finding has the code Conflict")
+				expect.Equal(t, got.Msg, tt.wantMsg, "the message contains the declaration, the member and its form")
+				gentest.Unrecorded(t, res, f.Find(t, symbol.KindEnum, "", tt.give))
 			})
 		}
 	})

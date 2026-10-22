@@ -1,7 +1,7 @@
 import { byIdentity } from "@dokimi/assert";
 import { describe, expect, it } from "vitest";
-import { Grade, Header, Mode, Region, Status, modeToString } from "./status";
-import { UnknownGradeError, UnknownHeaderError, UnknownRegionError, UnknownStatusError, gradeToString, gradeValues, headerToString, headerValues, isGrade, isHeader, isMode, isRegion, isStatus, parseGrade, parseHeader, parseRegion, parseStatus, regionToString, regionValues, statusToString, statusValues } from "./status.enum";
+import { Grade, Header, Level, Mode, Phase, Region, Status, UnknownLevelError, isPhase, modeToString } from "./status";
+import { UnknownGradeError, UnknownHeaderError, UnknownPhaseError, UnknownRegionError, UnknownStatusError, gradeToString, gradeValues, headerToString, headerValues, isGrade, isHeader, isLevel, isMode, isRegion, isStatus, levelToString, levelValues, modeValues, parseGrade, parseHeader, parseLevel, parsePhase, parseRegion, parseStatus, phaseToString, phaseValues, regionToString, regionValues, statusToString, statusValues } from "./status.enum";
 
 describe("Status", () => {
   it("gives each variant a value of its own", () => {
@@ -328,6 +328,17 @@ describe("Mode", () => {
     expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
   });
 
+  describe("modeValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Mode.Off, Mode.On];
+      expect(modeValues()).isEqualTo(want, "modeValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(modeValues()).isNotEqualTo(modeValues(), "the two calls return two arrays", byIdentity());
+    });
+  });
+
   describe("modeToString", () => {
     it("returns a text of its own for each variant", () => {
       const texts = [Mode.Off, Mode.On].map((value) => modeToString(value));
@@ -348,6 +359,146 @@ describe("Mode", () => {
 
     it("refuses a value outside the declared set", () => {
       expect(isMode(2)).isFalse("isMode refuses an undeclared value");
+    });
+  });
+});
+
+describe("Level", () => {
+  it("gives each variant a value of its own", () => {
+    const values = [Level.Debug, Level.Info, Level.Warn];
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
+  });
+
+  describe("levelValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Level.Debug, Level.Info, Level.Warn];
+      expect(levelValues()).isEqualTo(want, "levelValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(levelValues()).isNotEqualTo(levelValues(), "the two calls return two arrays", byIdentity());
+    });
+  });
+
+  describe("levelToString", () => {
+    it("returns a text of its own for each variant", () => {
+      const texts = [Level.Debug, Level.Info, Level.Warn].map((value) => levelToString(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+
+    it("renders a value outside the declared set with a text of its own", () => {
+      const out = 4 as unknown as Level;
+      const texts = [Level.Debug, Level.Info, Level.Warn].map((value) => levelToString(value));
+      expect(texts).doesNotContain(levelToString(out), "an undeclared value has a text of its own");
+    });
+  });
+
+  describe("isLevel", () => {
+    const tests = [
+      { name: "accepts Debug", give: Level.Debug },
+      { name: "accepts Info", give: Level.Info },
+      { name: "accepts Warn", give: Level.Warn },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(isLevel(tt.give)).isTrue("isLevel accepts each declared variant");
+      });
+    }
+
+    it("refuses a value outside the declared set", () => {
+      expect(isLevel(4)).isFalse("isLevel refuses an undeclared value");
+    });
+  });
+
+  describe("parseLevel", () => {
+    const tests = [
+      { name: "returns Debug for its text", give: Level.Debug },
+      { name: "returns Info for its text", give: Level.Info },
+      { name: "returns Warn for its text", give: Level.Warn },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(parseLevel(levelToString(tt.give))).isEqualTo(tt.give, "parseLevel returns the variant of the text");
+      });
+    }
+
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        parseLevel("??????");
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).errorAs(UnknownLevelError, "parseLevel refuses the text with UnknownLevelError");
+    });
+  });
+});
+
+describe("Phase", () => {
+  it("gives each variant a value of its own", () => {
+    const values = [Phase.Queued, Phase.Running];
+    expect(new Set(values)).hasLength(values.length, "each variant has a value of its own");
+  });
+
+  describe("phaseValues", () => {
+    it("returns the declared variants in the order of their declaration", () => {
+      const want = [Phase.Queued, Phase.Running];
+      expect(phaseValues()).isEqualTo(want, "phaseValues returns the declared variants");
+    });
+
+    it("returns a new array for each call", () => {
+      expect(phaseValues()).isNotEqualTo(phaseValues(), "the two calls return two arrays", byIdentity());
+    });
+  });
+
+  describe("phaseToString", () => {
+    it("returns a text of its own for each variant", () => {
+      const texts = [Phase.Queued, Phase.Running].map((value) => phaseToString(value));
+      expect(new Set(texts)).hasLength(texts.length, "each variant has a text of its own");
+    });
+
+    it("renders a value outside the declared set with a text of its own", () => {
+      const out = 2 as unknown as Phase;
+      const texts = [Phase.Queued, Phase.Running].map((value) => phaseToString(value));
+      expect(texts).doesNotContain(phaseToString(out), "an undeclared value has a text of its own");
+    });
+  });
+
+  describe("isPhase", () => {
+    const tests = [
+      { name: "accepts Queued", give: Phase.Queued },
+      { name: "accepts Running", give: Phase.Running },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(isPhase(tt.give)).isTrue("isPhase accepts each declared variant");
+      });
+    }
+
+    it("refuses a value outside the declared set", () => {
+      expect(isPhase(2)).isFalse("isPhase refuses an undeclared value");
+    });
+  });
+
+  describe("parsePhase", () => {
+    const tests = [
+      { name: "returns Queued for its text", give: Phase.Queued },
+      { name: "returns Running for its text", give: Phase.Running },
+    ];
+    for (const tt of tests) {
+      it(tt.name, () => {
+        expect(parsePhase(phaseToString(tt.give))).isEqualTo(tt.give, "parsePhase returns the variant of the text");
+      });
+    }
+
+    it("refuses a text that no variant has", () => {
+      let thrown: unknown;
+      try {
+        parsePhase("????????");
+      } catch (error) {
+        thrown = error;
+      }
+      expect(thrown).errorAs(UnknownPhaseError, "parsePhase refuses the text with UnknownPhaseError");
     });
   });
 });

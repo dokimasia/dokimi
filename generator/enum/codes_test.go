@@ -23,6 +23,11 @@ func TestCodes(t *testing.T) {
 			Name: "Duplicate", Give: enum.Duplicate, WantCode: "DOKIMIENUM-0002",
 			WantMeaning: "two variants of an enumeration under the directive enum have one value or one text",
 		},
+		{
+			Name: "Conflict", Give: enum.Conflict, WantCode: "DOKIMIENUM-0003",
+			WantMeaning: "a declaration of the package of an enumeration under the directive enum has the name " +
+				"of a member of its surface and another form",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

@@ -114,11 +114,13 @@ var (
 }
 {{- end}}
 {{- end}}
-{{- if $m.Generate.Parse}}{{use "errors"}}{{use "fmt"}}
+{{- if $m.Generate.Error}}{{use "errors"}}
 
 {{docs (wrapdocs (printf `%s is the error of text that names no declared variant. The error of
 [%s] wraps it with the text.` $n.Sentinel $n.Parse))}}
 {{- ""}}var {{$n.Sentinel}} = errors.New("{{$m.Package}}: unknown {{$m.Subject}} value")
+{{- end}}
+{{- if $m.Generate.Parse}}{{use "fmt"}}
 
 {{docs (wrapdocs (printf `%s returns the variant of %s whose text is s. It is the inverse of
 [%s.%s] on the declared variants. It returns an error that wraps [%s] for

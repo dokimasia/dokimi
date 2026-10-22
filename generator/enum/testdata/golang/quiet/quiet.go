@@ -2,6 +2,8 @@
 // out.
 package quiet
 
+import "errors"
+
 // Mode is a mode of a lamp with its own render.
 //
 //dokimi:enum methods=off
@@ -38,6 +40,32 @@ const (
 	Loose Plain = iota + 1
 	Tight
 )
+
+// Gauge is a gauge of a rail with a parse function and its error and no
+// render, whose surface the directive leaves out.
+//
+//dokimi:enum methods=off
+type Gauge int
+
+// The gauges of a rail.
+const (
+	Narrow Gauge = iota + 1
+	Wide
+)
+
+// ErrUnknownGauge reports a text of no gauge.
+var ErrUnknownGauge = errors.New("quiet: unknown gauge")
+
+// ParseGauge returns the gauge whose name is s.
+func ParseGauge(s string) (Gauge, error) {
+	switch s {
+	case "Narrow":
+		return Narrow, nil
+	case "Wide":
+		return Wide, nil
+	}
+	return 0, ErrUnknownGauge
+}
 
 // Tone is a tone of a bell with its own encode.
 //

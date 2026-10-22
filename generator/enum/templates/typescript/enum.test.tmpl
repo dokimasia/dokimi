@@ -9,10 +9,11 @@
 {{- $t := spell $c.Type}}
 {{- $e := spellvalue $c.Type}}
 {{- $n := $c.Names}}
-{{- if $c.Calls.Values}}{{use $surface $n.Values}}{{use "@dokimi/assert" "byIdentity"}}{{end}}
+{{- if $c.Calls.Values}}{{use (or (and $c.Generate.Values $surface) $source) $n.Values}}{{use "@dokimi/assert" "byIdentity"}}{{end}}
 {{- if $c.Calls.Render}}{{use (or (and $c.Generate.Render $surface) $source) $n.Render}}{{end}}
 {{- if $c.Calls.Valid}}{{use (or (and $c.Generate.Valid $surface) $source) $n.Valid}}{{end}}
-{{- if $c.Calls.Parse}}{{use $surface $n.Parse}}{{use $surface $n.Sentinel}}{{end}}
+{{- if $c.Calls.Parse}}{{use (or (and $c.Generate.Parse $surface) $source) $n.Parse}}{{end}}
+{{- if $c.Calls.Error}}{{use (or (and $c.Generate.Error $surface) $source) $n.Sentinel}}{{end}}
 
 describe("{{$c.Subject}}", () => {
   it("gives each variant a value of its own", () => {
@@ -108,7 +109,11 @@ describe("{{$c.Subject}}", () => {
       } catch (error) {
         thrown = error;
       }
+{{- if $c.Calls.Error}}
       expect(thrown).errorAs({{$n.Sentinel}}, "{{$n.Parse}} refuses the text with {{$n.Sentinel}}");
+{{- else}}
+      expect(thrown).hasError("{{$n.Parse}} refuses the text");
+{{- end}}
     });
   });
 {{- end}}

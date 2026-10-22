@@ -111,6 +111,23 @@ func TestPlain(t *testing.T) {
 	})
 }
 
+// TestGauge checks the functions and the methods of the enumeration Gauge.
+func TestGauge(t *testing.T) {
+	t.Parallel()
+
+	t.Run("gives each variant a value of its own", func(t *testing.T) {
+		t.Parallel()
+		seen := map[Gauge]bool{}
+		for _, v := range []Gauge{
+			Narrow,
+			Wide,
+		} {
+			assert.False(t, seen[v], "each variant has a value of its own")
+			seen[v] = true
+		}
+	})
+}
+
 // TestTone checks the functions and the methods of the enumeration Tone.
 func TestTone(t *testing.T) {
 	t.Parallel()
@@ -458,6 +475,34 @@ func TestPhase(t *testing.T) {
 			assert.False(t, seen[v], "each variant has a value of its own")
 			seen[v] = true
 		}
+	})
+
+	t.Run("PhaseValues", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []Phase{
+					Warm,
+					Cool,
+				}
+				assert.Equal(t, PhaseValues(), want, "PhaseValues returns the declared variants")
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := PhaseValues(), PhaseValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
 	})
 
 	t.Run("String", func(t *testing.T) {

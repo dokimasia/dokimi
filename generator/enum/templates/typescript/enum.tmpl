@@ -23,7 +23,7 @@ export function {{$n.Render}}(value: {{$t}}): string {
 {{- end}}
 }
 {{- end}}
-{{- if $m.Generate.Parse}}
+{{- if $m.Generate.Error}}
 
 /** {{$n.Sentinel}} is the error of text that names no declared variant of {{$m.Subject}}. */
 export class {{$n.Sentinel}} extends Error {
@@ -37,6 +37,10 @@ export class {{$n.Sentinel}} extends Error {
     this.text = text;
   }
 }
+{{- end}}
+{{- if $m.Generate.Parse}}
+{{- $error := $n.Sentinel}}
+{{- if $m.ErrorRef}}{{$error = spellvalue $m.ErrorRef}}{{end}}
 
 {{docs (wrapdocs (printf `%s returns the variant of %s whose text is text. It is the inverse of
 %s on the declared variants.
@@ -49,7 +53,7 @@ export class {{$n.Sentinel}} extends Error {
       return {{$e}}{{.Member}};
 {{- end}}
   }
-  throw new {{$n.Sentinel}}(text);
+  throw new {{$error}}(text);
 }
 {{- end}}
 {{- if $m.Generate.Values}}

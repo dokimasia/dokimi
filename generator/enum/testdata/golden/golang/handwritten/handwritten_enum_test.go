@@ -24,6 +24,40 @@ func TestWeekday(t *testing.T) {
 		}
 	})
 
+	t.Run("WeekdayValues", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run(
+			"returns the declared variants in the order of their declaration",
+			func(t *testing.T) {
+				t.Parallel()
+				want := []Weekday{
+					Monday,
+					Tuesday,
+					Wednesday,
+				}
+				assert.Equal(
+					t,
+					WeekdayValues(),
+					want,
+					"WeekdayValues returns the declared variants",
+				)
+			},
+		)
+
+		t.Run("returns a new slice for each call", func(t *testing.T) {
+			t.Parallel()
+			first, second := WeekdayValues(), WeekdayValues()
+			assert.NotEqual(
+				t,
+				&first[0],
+				&second[0],
+				"the two calls return two slices",
+				assert.ByIdentity(),
+			)
+		})
+	})
+
 	t.Run("String", func(t *testing.T) {
 		t.Parallel()
 
@@ -68,6 +102,38 @@ func TestWeekday(t *testing.T) {
 			t.Parallel()
 			var zero Weekday
 			assert.False(t, zero.IsValid(), "IsValid refuses the zero value")
+		})
+	})
+
+	t.Run("ParseWeekday", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give Weekday
+		}{
+			{name: "returns Monday for its text", give: Monday},
+			{name: "returns Tuesday for its text", give: Tuesday},
+			{name: "returns Wednesday for its text", give: Wednesday},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+				got, err := ParseWeekday(tt.give.String())
+				assert.NoError(t, err, "ParseWeekday accepts the text of the variant")
+				assert.Equal(t, got, tt.give, "ParseWeekday returns the variant of the text")
+			})
+		}
+
+		t.Run("refuses a text that no variant has", func(t *testing.T) {
+			t.Parallel()
+			_, err := ParseWeekday("??????????")
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownWeekday,
+				"ParseWeekday refuses the text with ErrUnknownWeekday",
+			)
 		})
 	})
 

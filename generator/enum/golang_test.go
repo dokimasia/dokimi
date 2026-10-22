@@ -16,6 +16,8 @@ import (
 	golang "go.dokimi.dev/eidos/lang/go"
 	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	gotesting "go.dokimi.dev/eidos/lang/go/testing"
+	"go.dokimi.dev/eidos/sdk/emit"
+	"go.dokimi.dev/eidos/sdk/plugin"
 	"go.dokimi.dev/eidos/sdk/toolchain"
 
 	"go.dokimi.dev/dokimi/generator/enum"
@@ -339,19 +341,74 @@ func TestGolang(t *testing.T) {
 			"the fields of the record of the checks refer to the declarations of the surface in their order")
 	})
 
-	t.Run("declares nothing beside an enumeration with its own parse function", func(t *testing.T) {
+	{
+		tests := []struct {
+			name         string
+			givePkg      string
+			give         string
+			wantBeside   []string
+			wantRefs     []string
+			wantDeclared []string
+		}{
+			{
+				name:    "refers to each member that the package declares",
+				givePkg: handwrittenPackage, give: weekdayName, wantBeside: []string{"WeekdayValues"},
+				wantRefs:     []string{"ParseWeekday", "WeekdayValues", "ErrUnknownWeekday"},
+				wantDeclared: []string{"ParseWeekday", "", "ErrUnknownWeekday"},
+			},
+			{
+				name:    "refers to the error that the package declares beside the parse function of the surface",
+				givePkg: declaredPackage, give: "Level", wantBeside: []string{"ParseLevel", "LevelValues"},
+				wantRefs:     []string{"ParseLevel", "LevelValues", "ErrUnknownLevel"},
+				wantDeclared: []string{"", "", "ErrUnknownLevel"},
+			},
+			{
+				name:    "refers to no error beside a parse function that the package declares",
+				givePkg: declaredPackage, give: "Lane", wantBeside: []string{"LaneValues"},
+				wantRefs:     []string{"ParseLane", "LaneValues"},
+				wantDeclared: []string{"ParseLane", ""},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, golang.Target, goTree, tt.givePkg)
+				expect.Equal(t, got.beside[tt.give], tt.wantBeside,
+					"the record of the surface declares the members that the package does not declare")
+				assert.NotNil(t, got.tests[tt.give], tt.give+" has checks")
+				expect.Equal(t, gentest.Referents(got.tests[tt.give]), tt.wantRefs,
+					"the record of the checks refers to each package member that a check calls")
+				declared := make([]string, 0, got.tests[tt.give].Fields.Len())
+				for _, f := range got.tests[tt.give].Fields.Items() {
+					declared = append(declared, f.Type.Target.Name)
+				}
+				expect.Equal(t, declared, tt.wantDeclared,
+					"a reference to a declared member targets its declaration, and any other is bare")
+			})
+		}
+	}
+
+	t.Run("finds the type of a field of the record of the checks by its name", func(t *testing.T) {
 		t.Parallel()
 
-		got := generate(t, golang.Target, goTree, handwrittenPackage)
-		expect.Empty(t, got.beside[weekdayName], "the surface of Weekday has no parse function of its own")
-	})
-
-	t.Run("refers to nothing from the checks of an enumeration with its own parse function", func(t *testing.T) {
-		t.Parallel()
-
-		got := generate(t, golang.Target, goTree, handwrittenPackage)
-		assert.NotNil(t, got.tests[weekdayName], "Weekday has checks")
-		expect.Empty(t, gentest.Referents(got.tests[weekdayName]), "the checks of Weekday call no parse function")
+		got := generate(t, golang.Target, goTree, statusPackage).tests[statusName]
+		assert.NotNil(t, got, "Status has checks")
+		templates, provides := enum.New().(plugin.TemplateProvider)
+		assert.True(t, provides, "enum declares templates")
+		fieldType, declared := templates.TemplateFuncs(golang.Target)["fieldType"].(func(*emit.Struct, string) (
+			*emit.TypeRef, error))
+		assert.True(t, declared, "the target golang declares the helper fieldType")
+		typ, err := fieldType(got, "values")
+		assert.NoError(t, err, "the record of the checks of Status has the field values")
+		expect.Equal(t, typ.Spelling, "StatusValues", "the field values refers to the list of the variants")
+		respelled, err := fieldType(got, "Values")
+		assert.NoError(t, err, "the name of a field matches in the case that the layout gives it")
+		expect.Equal(t, respelled, typ, "the field Values is the field values")
+		_, err = fieldType(got, "absent")
+		assert.HasError(t, err, "the record has no field absent")
+		expect.Equal(t, err.Error(), `enum: the record of the checks of Status has no field "absent"`,
+			"the error contains the record and the name of the field")
 	})
 }
 
@@ -363,7 +420,7 @@ func rendered(t *testing.T) fstest.MapFS {
 
 	p := enum.New()
 	res := fixture(t, golang.Target, goTree, p, statusPackage, "example.com/shop/priority", regionPackage,
-		"example.com/shop/split", "example.com/shop/handwritten", quietPackage, commentedPackage, gapPackage,
+		"example.com/shop/split", handwrittenPackage, declaredPackage, quietPackage, commentedPackage, gapPackage,
 		remotePackage, shapedPackage).Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
 	return gentest.Rendered(t, res, p, gobackend.New())

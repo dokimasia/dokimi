@@ -26,6 +26,7 @@ const (
 	quietPackage       = "example.com/shop/quiet"
 	commentedPackage   = "example.com/shop/commented"
 	handwrittenPackage = "example.com/shop/handwritten"
+	declaredPackage    = "example.com/shop/declared"
 	statusModule       = "status"
 	enumTemplate       = "enum.tmpl"
 	testTemplate       = "enum.test.tmpl"

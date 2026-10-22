@@ -21,13 +21,12 @@ import (
 	"go.dokimi.dev/eidos/sdk/symbol"
 )
 
-// The parts of the names of the members of the surface of TypeScript: the
-// render ends with typescriptRender, the list of the variants ends with
-// typescriptValues, the check of a value opens with typescriptValid, and the
-// error of the parse function ends with typescriptError.
+// The parts of the names of the members of the surface of TypeScript that the
+// language fixes: the render ends with typescriptRender, the type guard opens
+// with typescriptValid, and the error of the parse function ends with
+// typescriptError.
 const (
 	typescriptRender = "ToString"
-	typescriptValues = "Values"
 	typescriptValid  = "is"
 	typescriptError  = "Error"
 )
@@ -51,8 +50,8 @@ const (
 var typescriptTemplates embed.FS
 
 // typescriptCaser cases the names that the part of TypeScript derives. It
-// recognises no initialism, so each word keeps the case that its author
-// wrote.
+// recognises no initialism. It writes an upper-case word such as HTML as its
+// author wrote it, and title-cases every other word.
 var typescriptCaser = naming.New()
 
 // typescriptPart is the part of enum for TypeScript.
@@ -85,20 +84,47 @@ func sourceModule(file string) string {
 	return strings.TrimSuffix(surfaceModule(file), typescriptSurfaceSuffix)
 }
 
+// typescriptForms are the forms of the members of the surface of TypeScript,
+// which a declaration of the module under the name of a member has.
+// TypeScript has no encode and no decode.
+var typescriptForms = map[member]form{
+	memberRender: {
+		kind: kindFunction, inputs: []shape{shapeVariant}, values: []shape{shapeText},
+		text: "a function of a value of the enum that returns a text",
+	},
+	memberParse: {
+		kind: kindFunction, inputs: []shape{shapeText}, values: []shape{shapeVariant},
+		text: "a function of a text that returns a variant",
+	},
+	memberError: {kind: kindClass, text: "a class"},
+	memberValues: {
+		kind: kindFunction, values: []shape{shapeVariants},
+		text: "a function without a parameter that returns a list of the enum",
+	},
+	memberValid: {
+		kind: kindFunction, inputs: []shape{shapeAny}, values: []shape{shapeAny},
+		text: "a function of one value",
+	},
+}
+
 // names returns the names of the functions of the surface of the enum named
 // subject, such as statusToString, parseStatus, statusValues, isStatus and
-// UnknownStatusError for Status and the words parse and unknown. TypeScript
-// has no pair that writes a value as text and reads it back, because JSON
-// writes the value of a member.
-func (typescriptPart) names(_ *rules.Bound, subject, parse, sentinel string) Names {
-	camel := typescriptCaser.Camel(subject)
-	pascal := typescriptCaser.Pascal(subject)
+// UnknownStatusError for Status and the default templates. A function is in
+// camelCase, and the error class is in PascalCase with the suffix Error. The
+// type guard isStatus takes the name of the enum, as TypeScript names a type
+// guard, and reads no method template. TypeScript has no pair that writes a
+// value as text and reads it back, because JSON writes the value of a member.
+func (typescriptPart) names(_ *rules.Bound, subject string, n baseNames) Names {
 	return Names{
-		Render: camel + typescriptRender, Parse: typescriptCaser.Camel(parse) + pascal,
-		Values: camel + typescriptValues, Valid: typescriptValid + pascal,
-		Sentinel: typescriptCaser.Pascal(sentinel) + pascal + typescriptError,
+		Render: typescriptCaser.Camel(subject) + typescriptRender, Parse: typescriptCaser.Camel(n.parse),
+		Values: typescriptCaser.Camel(n.values), Valid: typescriptValid + typescriptCaser.Pascal(subject),
+		Sentinel: typescriptCaser.Pascal(n.err) + typescriptError,
 	}
 }
+
+// form returns the form of a member of the surface of TypeScript, and the
+// zero form for the encode and the decode, which TypeScript does not have.
+func (typescriptPart) form(x member) form { return typescriptForms[x] }
 
 // fallback returns nil, because the render of TypeScript prints a value
 // outside the members through String.

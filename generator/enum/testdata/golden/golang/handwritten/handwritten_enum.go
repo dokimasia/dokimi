@@ -1,5 +1,15 @@
 package handwritten
 
+// WeekdayValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
+func WeekdayValues() []Weekday {
+	return []Weekday{
+		Monday,
+		Tuesday,
+		Wednesday,
+	}
+}
+
 // IsValid reports whether v is a declared variant. A conversion from the
 // underlying type can make any other value.
 func (v Weekday) IsValid() bool {

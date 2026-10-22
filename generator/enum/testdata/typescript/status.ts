@@ -48,3 +48,36 @@ export enum Mode {
 export function modeToString(mode: Mode): string {
   return mode === Mode.On ? "on" : "off";
 }
+
+/** Represents the level of a log record, whose module declares the error of its parse function. */
+//dokimi:enum
+export enum Level {
+  Debug = 1,
+  Info,
+  Warn,
+}
+
+/** Represents the phase of a job, whose module declares its type guard. */
+//dokimi:enum
+export enum Phase {
+  Queued,
+  Running,
+}
+
+/** Reports whether a value is a phase. */
+export function isPhase(value: unknown): value is Phase {
+  return value === Phase.Queued || value === Phase.Running;
+}
+
+/** Is the error of a text of no level. */
+export class UnknownLevelError extends Error {
+  /** text is the text of no level. */
+  readonly text: string;
+
+  /** Creates the error of the text of no level. */
+  constructor(text: string) {
+    super(`status: unknown Level value ${JSON.stringify(text)}`);
+    this.name = "UnknownLevelError";
+    this.text = text;
+  }
+}

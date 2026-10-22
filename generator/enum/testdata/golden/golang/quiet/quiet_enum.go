@@ -144,6 +144,15 @@ func (v *Switch) UnmarshalText(text []byte) error {
 	return nil
 }
 
+// PhaseValues returns the declared variants in the order of their
+// declaration. Each call returns a new slice.
+func PhaseValues() []Phase {
+	return []Phase{
+		Warm,
+		Cool,
+	}
+}
+
 // IsValid reports whether v is a declared variant. A conversion from the
 // underlying type can make any other value.
 func (v Phase) IsValid() bool {

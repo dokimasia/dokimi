@@ -34,9 +34,19 @@
 //
 // # Options
 //
-// The option parse-word sets the word of the name of each parse function,
-// and the option sentinel-word sets the word of the name of its error. The
-// option no-tests leaves out the checks.
+// The options parse-function, values-function and parse-error are the name
+// templates of the parse function, of the function that lists the variants
+// and of the error of the parse function. The option valid-method is the
+// method template of the validity method of Go. A template has the syntax of
+// text/template, and {{.Enum}} is the name of the enumeration. Each language
+// writes a rendered name in its own case convention:
+//
+//	parse-function: Parse{{.Enum}}     # ParseStatus, parseStatus
+//	values-function: "{{.Enum}}Values" # StatusValues, statusValues
+//	parse-error: Unknown{{.Enum}}      # ErrUnknownStatus, UnknownStatusError
+//	valid-method: IsValid              # IsValid
+//
+// The option no-tests leaves out the checks.
 //
 // # Languages
 //
@@ -58,8 +68,10 @@
 // # Diagnostics
 //
 // enum reports [Empty] at an enumeration without a variant, and [Duplicate]
-// at an enumeration whose two variants have one value or one text. enum
-// records nothing for an enumeration that it reports.
+// at an enumeration whose two variants have one value or one text. It reports
+// [Conflict] at a declaration of the package that has the name of a member of
+// the surface and another form. enum records nothing for an enumeration that
+// it reports.
 //
 // # Dependency position
 //

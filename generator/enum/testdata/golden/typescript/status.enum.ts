@@ -1,4 +1,4 @@
-import { Grade, Header, Mode, Region, Status } from "./status";
+import { Grade, Header, Level, Mode, Phase, Region, Status, UnknownLevelError } from "./status";
 
 /**
  * statusToString returns the text of value. A value outside the declared set
@@ -299,6 +299,17 @@ export function isGrade(value: unknown): value is Grade {
 }
 
 /**
+ * modeValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
+ */
+export function modeValues(): Mode[] {
+  return [
+    Mode.Off,
+    Mode.On,
+  ];
+}
+
+/**
  * isMode reports whether value is a declared variant of Mode.
  * A cast can make any other value.
  */
@@ -309,4 +320,118 @@ export function isMode(value: unknown): value is Mode {
       return true;
   }
   return false;
+}
+
+/**
+ * levelToString returns the text of value. A value outside the declared set
+ * renders as its own value.
+ */
+export function levelToString(value: Level): string {
+  switch (value) {
+    case Level.Debug:
+      return "Debug";
+    case Level.Info:
+      return "Info";
+    case Level.Warn:
+      return "Warn";
+  }
+  return `Level(${String(value)})`;
+}
+
+/**
+ * parseLevel returns the variant of Level whose text is text. It is the
+ * inverse of levelToString on the declared variants.
+ *
+ * @throws UnknownLevelError for text that names no declared variant.
+ */
+export function parseLevel(text: string): Level {
+  switch (text) {
+    case "Debug":
+      return Level.Debug;
+    case "Info":
+      return Level.Info;
+    case "Warn":
+      return Level.Warn;
+  }
+  throw new UnknownLevelError(text);
+}
+
+/**
+ * levelValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
+ */
+export function levelValues(): Level[] {
+  return [
+    Level.Debug,
+    Level.Info,
+    Level.Warn,
+  ];
+}
+
+/**
+ * isLevel reports whether value is a declared variant of Level.
+ * A cast can make any other value.
+ */
+export function isLevel(value: unknown): value is Level {
+  switch (value) {
+    case Level.Debug:
+    case Level.Info:
+    case Level.Warn:
+      return true;
+  }
+  return false;
+}
+
+/**
+ * phaseToString returns the text of value. A value outside the declared set
+ * renders as its own value.
+ */
+export function phaseToString(value: Phase): string {
+  switch (value) {
+    case Phase.Queued:
+      return "Queued";
+    case Phase.Running:
+      return "Running";
+  }
+  return `Phase(${String(value)})`;
+}
+
+/** UnknownPhaseError is the error of text that names no declared variant of Phase. */
+export class UnknownPhaseError extends Error {
+  /** text is the text that names no declared variant. */
+  readonly text: string;
+
+  /** Creates the error of the text that names no declared variant. */
+  constructor(text: string) {
+    super(`status: unknown Phase value ${JSON.stringify(text)}`);
+    this.name = "UnknownPhaseError";
+    this.text = text;
+  }
+}
+
+/**
+ * parsePhase returns the variant of Phase whose text is text. It is the
+ * inverse of phaseToString on the declared variants.
+ *
+ * @throws UnknownPhaseError for text that names no declared variant.
+ */
+export function parsePhase(text: string): Phase {
+  switch (text) {
+    case "Queued":
+      return Phase.Queued;
+    case "Running":
+      return Phase.Running;
+  }
+  throw new UnknownPhaseError(text);
+}
+
+/**
+ * phaseValues returns the declared variants in the order of their
+ * declaration. Each call returns a new array.
+ */
+export function phaseValues(): Phase[] {
+  return [
+    Phase.Queued,
+    Phase.Running,
+  ];
 }

@@ -1,16 +1,18 @@
-import { check } from '@dokimi/assert';
-import { test } from '@dokimi/assert/vitest';
-import { describe } from 'vitest';
-import { LabelError } from './label';
+import { describe, expect, it } from "vitest";
+import { LabelError } from "./label";
 
-describe("LabelError contract", () => {
-  test("reports a message", ({ seat }) => {
-    const got = new LabelError('cause-a', 'op-a');
-    check.notEqual(seat, got.message, "", "an error must report a message");
+function labelErrorMessageCases(): void {
+  it("is not empty", () => {
+    const got = new LabelError("cause-a", "op-a");
+    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 
-  test("puts every member it carries into its message", ({ seat }) => {
-    const got = new LabelError('cause-a', 'op-a');
-    check.isTrue(seat, got.message.includes(got.op), "op must reach the message");
+  it("contains each text member", () => {
+    const got = new LabelError("cause-a", "op-a");
+    expect(got.message).doesContain(got.op, "the message contains op");
   });
+}
+
+describe("LabelError", () => {
+  describe("message", labelErrorMessageCases);
 });

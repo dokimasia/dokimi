@@ -1,42 +1,55 @@
-{{- use "vitest" "describe"}}{{use "@dokimi/assert/vitest" "test"}}{{use "@dokimi/assert" "check"}}
+{{- use "vitest" "describe"}}{{use "vitest" "expect"}}{{use "vitest" "it"}}
 {{- range .Records}}
 {{- $r := .Decl}}
 {{- $c := .Data}}
 {{- range $c.Kinds}}
 {{- $m := index $r.Methods.Items .Method}}
 
-describe("{{.Name}} contract", () => {
-  test("reports a message", ({ seat }) => {
-{{memberbody $m}}    check.notEqual(seat, got.message, "", "an error must report a message");
+function {{sentinelCases .Name "message"}}(): void {
+  it("is not empty", () => {
+{{memberbody $m}}    expect(got.message).isNotEqualTo("", "the error has a message");
   });
 {{- if $c.Prefix}}
 
-  test("carries the prefix of its module", ({ seat }) => {
-{{memberbody $m}}    check.isTrue(seat, got.message.startsWith({{printf "%q" $c.Prefix}}), "an error class must carry the prefix of its module");
+  it("opens with the prefix of its module", () => {
+{{memberbody $m}}    expect(got.message).hasPrefix({{printf "%q" $c.Prefix}}, "the message opens with the prefix of the module");
   });
 {{- end}}
-{{- if ge .PeersMethod 0}}
+{{- $texts := false}}{{$several := false}}
+{{- range .Members}}{{if .Text}}{{if $texts}}{{$several = true}}{{end}}{{$texts = true}}{{end}}{{end}}
+{{- if $texts}}
+{{- $check := "expect"}}{{if $several}}{{$check = "expect.soft"}}{{end}}
 
-  test("does not match the other error classes of its module", ({ seat }) => {
-{{memberbody $m}}{{memberbody (index $r.Methods.Items .PeersMethod)}}    for (const other of others) {
-      check.errorIsNot(seat, got, other, "an error class must not match another declared here");
-    }
-  });
+  it("contains each text member", () => {
+{{memberbody $m}}
+{{- range .Members}}{{if .Text}}    {{$check}}(got.message).doesContain(got.{{.Name}}, "the message contains {{.Name}}");
+{{end}}{{end}}  });
 {{- end}}
+}
 {{- if ge .CauseMethod 0}}
 
-  test("exposes the cause it was given", ({ seat }) => {
+function {{sentinelCases .Name "cause"}}(): void {
+  it("is the cause of the construction", () => {
     const cause = new Error("cause");
-{{memberbody (index $r.Methods.Items .CauseMethod)}}    check.equal(seat, got.cause, cause, "an error naming a cause must expose it");
+{{memberbody (index $r.Methods.Items .CauseMethod)}}    expect(got.cause).isEqualTo(cause, "the error keeps its cause");
   });
+}
 {{- end}}
-{{- $texts := 0}}{{range .Members}}{{if .Text}}{{$texts = 1}}{{end}}{{end}}
-{{- if $texts}}
 
-  test("puts every member it carries into its message", ({ seat }) => {
-{{memberbody $m}}
-{{- range .Members}}{{if .Text}}    check.isTrue(seat, got.message.includes(got.{{.Name}}), "{{.Name}} must reach the message");
-{{end}}{{end}}  });
+describe("{{.Name}}", () => {
+{{- if ge .PeersMethod 0}}
+  it("matches no other error class of its module", () => {
+{{memberbody $m}}{{memberbody (index $r.Methods.Items .PeersMethod)}}    for (const other of others) {
+      expect.soft(got).errorIsNot(other, "the error does not match another error class of the module");
+    }
+  });
+
+{{- end}}
+{{- if ge .PeersMethod 0}}
+{{end}}
+  describe("message", {{sentinelCases .Name "message"}});
+{{- if ge .CauseMethod 0}}
+  describe("cause", {{sentinelCases .Name "cause"}});
 {{- end}}
 });
 {{- end}}

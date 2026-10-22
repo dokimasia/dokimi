@@ -390,7 +390,7 @@ Each runtime implements the same parts in the conventions of its language:
 | The constants of the spec | The package `spec`, such as `spec.ErrorsDiffer` and `spec.SharedIdentity` | The module `spec`, such as `probes.errorsDiffer` and `reasons.sharedIdentity` |
 | A check | `conform.Check[S]`: the identity and the key, the statement, the claim with its law and machinery, the reason of its defect, a function that applies the check through its handle, and a function that returns its planted defect as a subject of the type `S`. Its methods `Run` and `Falsify` apply the check on any seat to a subject and to its planted defect | `Check<S>`, with the same fields and functions |
 | The checks of one declaration | `conform.Suite[S]`: the language, the package, the declaration, the checks, the refusals and the unclaimed classifications | `Suite<S>` |
-| The test handle | `*conform.Handle[S]`, which implements `assert.TB`, `assert.Reporter` and `assert.Clocked`, and builds the subjects of its check | `Handle<S>`, which implements `Seat` |
+| The test handle | `*conform.Handle[S]`, which implements `assert.TB`, `assert.Reporter` and `assert.Clocked`, returns the seat of its check from `Unwrap`, and builds the subjects of its check | `Handle<S>`, which implements `Seat` |
 | The name of a callable | `conform.Callable[S]`, whose method `Check` returns the identity `conform.ID[S]` of a check of the callable | `Callable<S>`, with the function `check` |
 | A probe | A function of the package `probe`, such as `probe.ErrorsDiffer(h, values)` | A function of the module `probe`, such as `errorsDiffer(h, values)` |
 | A named value | `conform.Named[T]` | `Named<T>` |

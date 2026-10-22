@@ -11,6 +11,6 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 |---|---|---|
 | [0001](0001-the-architecture-of-dokimi.md) | The purpose and scope of dokimi | Draft |
 | [0002](0002-the-conformance-spec.md) | The conformance spec | Draft |
-| [0003](0003-the-suite-generator.md) | The suite generator | Draft |
-| [0004](0004-doubles-builders-enumerations-and-errors.md) | Doubles, builders, enumerations and errors | Draft |
+| [0003](0003-the-suite-generator.md) | The suite generator | Accepted |
+| [0004](0004-doubles-builders-enumerations-and-errors.md) | Doubles, builders, enumerations and errors | Accepted |
 | [0005](0005-the-package-structure-of-dokimi.md) | The package structure of dokimi | Draft |

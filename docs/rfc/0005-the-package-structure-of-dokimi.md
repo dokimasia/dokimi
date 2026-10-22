@@ -197,12 +197,12 @@ corpus/<lang>/
     └── <fixture>test/                 the directory that the fixture routes its files to
         ├── checks.go                  the checks of the fixture, under the directive check
         ├── inmemory.go                the subject of the suite
-        ├── inmemory_conform_test.go   the test that the directive subject writes for the subject
+        ├── inmemory_suite_test.go     the test that the directive subject writes for the subject
         └── inmemory_test.go           the test of a subject that the handle builds, and the checks that conform.With adds
 ```
 
 - The families are `enum`, `errors`, `iface`, `integration` and `struct`. The family `iface` has the groups `composite`, `contract`, `detector`, `lang` and `mixin`, and the other families have no group.
-- A fixture has the same path, the same declarations and the same files in every language. The tree shows the names of Go, and TypeScript names the same files `iface.ts`, `checks.ts`, `inmemory.ts`, `inmemory.conform.test.ts` and `inmemory.test.ts`.
+- A fixture has the same path, the same declarations and the same files in every language. The tree shows the names of Go, and TypeScript names the same files `iface.ts`, `checks.ts`, `inmemory.ts`, `inmemory.suite.test.ts` and `inmemory.test.ts`.
 - A fixture that a language cannot state, such as a Go channel in TypeScript, has the file `absent.md` in its directory of that language. The file states the reason.
 - dokimi writes the generated files of each fixture into its routed directory. The generation gate fails while a committed file differs from a fresh run.
 

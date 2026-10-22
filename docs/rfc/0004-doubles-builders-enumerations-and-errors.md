@@ -2,9 +2,9 @@
 rfc: 0004
 title: Doubles, builders, enumerations and errors
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-19
-updated: 2026-10-21
+updated: 2026-10-22
 discussion: none
 supersedes: none
 superseded-by: none
@@ -27,7 +27,7 @@ Four generators of dokimi write the parts of a test that are not suites:
 - `enum` writes the text surface of an enumeration and the checks of the surface.
 - `sentinel` writes the checks of the error values and error types of a package.
 
-The checks of `enum` and `sentinel` are the checks that the enumeration tests and the error tests of testkit write, and they assert through the assert library of each language. A double and a builder are tools that tests use, so a structural test of the generated code covers them.
+The checks of `enum` and `sentinel` cover the checks that the enumeration tests and the error tests of testkit write, and they assert through the assert library of each language. A double and a builder are tools that tests use, so a structural test of the generated code covers them.
 
 A double and a builder work together. Where a test configures nothing, a double returns a new value from the builder of each result whose type has one. A test then configures only the calls that it checks.
 
@@ -115,7 +115,7 @@ The runtime of each language implements the parts of a double that do not depend
 | A setting of the whole double | `stub.Group` over `stub.Configurable` | `Group` over `Configurable` of `stub/group` |
 | The order of the calls of two methods | `stub.OrderTracker` | `OrderTracker` of `stub/order-tracker` |
 | The contract of each method | `stub.Behaviour` | `behaviour` of `stub/behaviour` |
-| The contract of the whole double | `stub.DoubleBehaviour` | `doubleBehaviour` of `stub/double-behaviour` |
+| The contract of each option, each constructor and the reset of the double | `stub.BenchModeBehaviour`, `StrictBehaviour`, `ResetBehaviour`, `RandSourceBehaviour`, `ClockBehaviour` and `LatencyBehaviour` | `benchModeBehaviour`, `strictBehaviour`, `resetBehaviour`, `randSourceBehaviour`, `clockBehaviour` and `latencyBehaviour` of `stub/double-behaviour` |
 | The fault strategies | The package `fault` of the module `go.dokimi.dev/fault` | The module `fault` |
 
 Each module of TypeScript is a subpath export of the package, such as `@dokimi/runtime/stub/answer`.
@@ -167,7 +167,7 @@ The templates of each language write a double in the conventions of the language
 
 A field of a call has the name of its parameter in the case of the language. A parameter without a name, or with the name `_`, takes `a` followed by its position, as `naming.Params` of eidos names it. A field of the results of Go has the name of its result. A result without a name is `Err` for the error and `Result` for one other result. Where a method has two or more other results, they are `Result0`, `Result1` and onward. A method of a Go double declares the names of its results where each result has a name that no parameter has. A TypeScript call records the result in the field `result` and a thrown error in the field `error`.
 
-The constructor registers the check of the expected counts of each method for the end of the test. Go registers it through the method `Cleanup` of the TB. TypeScript registers it through the method `cleanup` of the `Collector` that the Vitest adapter of the assert library passes to each test. Under the option `Strict`, a double refuses each unconfigured call. The option `DelegateTo` passes each call to an implementation, and the double records the call. The option `Failing` arms each method that can fail with one error.
+The constructor registers the check of the expected counts of each method for the end of the test. Go registers it through the method `Cleanup` of the TB. TypeScript registers it through the method `cleanup` of the `Collector` that the Vitest adapter of the assert library passes to each test. Under the option `Strict`, a double refuses each unconfigured call. The option `DelegateTo` passes each call to an implementation, and the double records the call. The implementation of the double of a Go struct has the type of the interface of the methods of the double. Both a pointer to the struct and a second double implement that interface. The option `Failing` arms each method that can fail with one error.
 
 A method of a Go double with the mixin `deprecated` of the shape catalog logs through the TB that it is deprecated. A seat of the assert library of TypeScript has no log, so a TypeScript double does not log the mixin. A method with the mixin `order-after` refuses a call before its sibling in a strict double, through the order tracker of the double.
 
@@ -192,18 +192,35 @@ The helpers of TypeScript are `faultNotFound()`, `retrySchedule(error)`, `faultF
 
 #### The test of a double
 
-The stub generator writes a test of each double. The test of a double with a method runs the behaviour suites of the runtime against the double:
+The stub generator writes a test of each double with a method, and a test of the stub of each method with a parameter or a result. The test of the double, such as `TestStoreStub`, has a level for each method and each option of the double. It also has the levels `ResetCalls`, `NewStoreStubDelayed` and `NewStoreStubFailing`. The test of the stub of a method, such as `TestStoreGetStub`, has a level for each method of the stub. A TypeScript test nests the same levels in `describe` blocks. The levels run the behaviour suites of the runtime against the double:
 
-| Suite | Checks |
-|---|---|
-| `Behaviour` of each method | A call is recorded. An unmet count of `Times` and of `TimesAtLeast` fails the test. Strict mode refuses an unconfigured call. An unconfigured call returns the default results. The double calls the function that the test set. An armed fault fails the call, a counted fault fails the nth call, and a call that a fault failed is recorded |
-| `DoubleBehaviour` of the double | Bench mode records no call. A strict double refuses an unconfigured call. A reset clears the instants of the calls. A fault with a probability reads the source of the double. A latency sleeps on the clock of the double, and a call is recorded after its latency. The latency of `NewStoreStubDelayed` sleeps on the same clock. Under the latency of `StoreStub.newDelayed`, a synchronous TypeScript method records its call at once. A fault with a window stops when the window closes |
+| Suite | Level | Checks |
+|---|---|---|
+| `Behaviour` | Each method | A call is recorded. An unmet count of `Times` and of `TimesAtLeast` fails the test. Strict mode refuses an unconfigured call. An unconfigured call returns the default results. The double calls the function that the test set. An armed fault fails the call, a counted fault fails the nth call, and a call that a fault failed is recorded |
+| `ResetBehaviour` | `ResetCalls` | A reset clears the instants of the calls |
+| `LatencyBehaviour` | `NewStoreStubDelayed` and `StoreStubWithLatency` | A latency sleeps on the clock of the double. Under the latency of `StoreStub.newDelayed`, a synchronous TypeScript method records its call at once |
+| `StrictBehaviour` | `StoreStubStrict` | A strict double refuses an unconfigured call |
+| `ClockBehaviour` | `StoreStubWithClock` | A latency sleeps on the clock of the double, and a call is recorded after its latency. A fault with a window stops when the window closes |
+| `RandSourceBehaviour` | `StoreStubWithRandSource` | A fault with a probability reads the source of the double |
+| `BenchModeBehaviour` | `StoreStubBenchMode` | Bench mode records no call |
 
-The test of each method also checks the results that need a value of the signature of the method. The method returns the samples of Returns, and the log of calls contains the arguments. The check of Returns first checks that its samples differ from the default results, because a check with equal values passes for a double that ignores Returns. OnRecord runs with each call, the option of the method sets its function, and Failing fails the method. A reset keeps the configuration of the results. Further checks cover a sequence, the refusal of a call before its sibling in a strict double, the helper of each error value, the retry schedule, and the two partition faults. The helper of an error value fails the next call with the value, and the call after it succeeds. The arguments take a sample of each parameter, and Returns takes a sample of each result. A variadic parameter takes no sample. The test of a generic double runs at the witnesses of its type parameters. Without witnesses, the test states that the double has no checks.
+Each level also checks what needs a value of the signature of a method:
 
-A double without methods, such as the TypeScript double of an interface with properties alone, does not run a suite, because each suite calls a method of the double. Its test builds the double under each option and through `newDelayed`. It assigns a sample to each property and then calls `resetCalls`. The test checks that each property keeps its sample.
+- **A method of the double.** The log of calls contains the arguments, and OnRecord runs once for each call.
+- **`ResetCalls`.** A reset clears the calls of each method, and keeps the results of Returns.
+- **`NewStoreStubFailing` and `StoreStubFailing`.** Each method that can fail fails with the error.
+- **`StoreStubStrict`.** A strict double refuses a call before its sibling.
+- **`StoreStubDelegateTo`.** Each method passes its call to the implementation, and fails with the error of the implementation.
+- **The option of each method, such as `WithStoreGet`.** The option sets the function of the method.
+- **`Returns` of the stub of a method.** The method returns the samples of Returns, after a check that its samples differ from the default results, because a check with equal values passes for a double that ignores Returns. A method with the results of Returns passes strict mode.
+- **`Func` of the stub of a method.** The function receives the arguments of each call.
+- **The other methods of the stub of a method.** Further levels cover a sequence, the helper of each error value, the retry schedule and the two partition faults. The helper of an error value fails the next call with the value, and the call after it succeeds.
 
-The runtime proves each check of its suites with a double that breaks the check, in its own tests. In TypeScript, a suite returns its checks as data. The generated test registers each check with the `test` of the Vitest adapter of the assert library.
+The arguments take a sample of each parameter, and Returns takes a sample of each result. A variadic parameter takes no sample. In Go the error result of Returns is a new error, which the check matches. The test passes its own context to a parameter that the rules of the language give the role of a context. A helper of each method returns the samples of its arguments, and a second helper calls the method with them, so each check calls the method in one line. Each check of `DelegateTo` builds a double, and a second double as its implementation. The test of a generic double runs at the witnesses of its type parameters. Without witnesses, the test states that the double has no checks.
+
+A double without methods, such as the TypeScript double of an interface with properties alone, does not run a suite, because each suite calls a method of the double. Its test has the level `resetCalls`, with a case for `new`, for each option and for `newDelayed`. Each case builds the double, assigns a sample to each property and then calls `resetCalls`. The case checks that each property keeps its sample.
+
+The tests of the runtime prove each check of its suites with a double that breaks the check. In TypeScript, a suite returns its checks as data. The generated test registers each check with `it` of vitest and runs it on a `Standard` seat of the assert library. A `Standard` seat throws at the first failure. The other cases of the test build each double without a seat. They assert through the assertions of the assert library on the `expect` of vitest. The setup file of the project registers those assertions through `register` of `@dokimi/assert/vitest`.
 
 ### The builder
 
@@ -235,7 +252,7 @@ A builder has the same operations in every language, and the templates of each l
 | Set a field | `WithStreet(v string)` | `withStreet(value: string): this` |
 | Replace a list | `WithLines(v ...string)` | `withLines(...values: string[]): this` |
 | Append to a list | `AppendLines(v ...string)` | `appendLines(...values: string[]): this` |
-| Set an entry of a map | `WithLabelsEntry(k string, v string)` | `withLabelsEntry(key: string, value: string): this` |
+| Set an entry of a map | `WithLabelsEntry(k, v string)` | `withLabelsEntry(key: string, value: string): this` |
 | Copy the entries of another map | `WithLabelsEntries(entries map[string]string)` | `withLabelsEntries(entries: Map<string, string>): this` |
 | Add keys to a set | `WithTagsEntry(k string)` and `WithTagsEntries(keys ...string)` | `withTagsEntry(key: string)` and `withTagsEntries(...keys: string[])` |
 | Set bytes from text | `WithRawString(s string)` | None. A TypeScript caller encodes text with `TextEncoder` |
@@ -254,18 +271,23 @@ The builder has three options:
 | `companion-word` | `defaults` | The word that the name of a companion function joins to the name of its declaration |
 | `no-tests` | false | Leaves out the checks of every builder |
 
-The family of the tests writes the checks of each builder, which assert through the assert library of its language:
+The family of the tests writes the test of each builder, such as `TestAddressBuilder`, which asserts through the assert library of its language. The test has a level for each constructor, each setter, each probe, `Mutate`, `Clone` and `Build`:
 
-| Test | Checks |
+| Level | Checks |
 |---|---|
-| `TestAddressBuilderConstruction` | `From` keeps each scalar member of a seed that sets a sample of each. The constructor sets each declared default other than the zero value of its type |
-| `TestAddressBuilderSetters` | Each setter writes its member. A list, a map, a set and bytes have the length of the sample, and an optional is set. A scalar setter called twice keeps the second value. A probe calls each method that these checks leave out: the appender of a list, the setters of the entries of a map and of the keys of a set, the setter of bytes from text, and the setter of a member without a sample |
-| `TestAddressBuilderClone` | Each list, map, set and bytes member of a clone is not shared with the original. The check writes the alternate sample into the member of the clone in place, and the member of the original keeps the sample |
-| `TestAddressBuilderMethods` | `Mutate` passes one value to each function. A clone is a builder of its own, and it builds the value of its original. `From` keeps the value that it gets |
+| `NewAddressBuilder` | The constructor sets each declared default other than the zero value of its type |
+| `NewAddressBuilderFrom` | `From` keeps each scalar member of a seed that sets a sample of each. It keeps the value that it gets |
+| Each setter, such as `WithStreet` | The setter writes its member, which then equals the sample, and an optional points at the sample. A setter called twice keeps the second value |
+| Each probe, such as `AppendLines` | A probe calls each method that the checks of the setters leave out: the appender of a list, the setters of the entries of a map and of the keys of a set, the setter of bytes from text, and the setter of a member without a sample |
+| `Mutate` | `Mutate` passes one value to each function |
+| `Clone` | A clone is a builder of its own, and it builds the value of its original. Each list, map, set and bytes member of a clone is not shared with the original. The check writes the alternate sample into the member of the clone in place, and the member of the original keeps the sample |
+| `Build` | `Build` returns the value that `Mutate` sets, where the seed sets a sample of a member. A TypeScript build returns a new object for each call |
+
+The level of a constructor exists where the builder has a declared default. In TypeScript the levels are `create`, `from`, `withStreet`, `mutate`, `clone` and `build`. A TypeScript test declares the cases of each level in a function of its own, such as `addressBuilderWithStreetCases`, which `describe("withStreet")` runs.
 
 A check of a setter needs a sample of the argument of the setter alone, so a field of the type `*int` has a check through `int`. A check of a replacement and a check that a clone does not share a member also need an alternate sample. An embedded field and a member without a sample have a probe of their setter instead.
 
-In Go, a probe passes zero values, such as `*new(string)`. The probe of a scalar without a sample checks that the setter returns its builder. In TypeScript, a probe passes the sample of its member, and the probe of a member without a sample checks that the setter returns its builder. The Go check of `Clone` sets each list, map, set and bytes member before it clones the builder. The TypeScript checks of a clone set the sample of each such member and compare the member of the clone with it.
+The probe of an appender passes the sample and then the alternate of its member, or the sample twice without an alternate, and expects the elements of both calls. In Go, the probe of the entries of a map with an alternate copies the sample and then the alternate into a nil map, and expects both. Every other Go probe, the probe of an appender of a member without a sample included, passes the zero value of each part as a literal, such as `""` and `nil`, and compares the whole member. The probe of a scalar without a sample checks that the setter returns its builder. In TypeScript, the other probes pass the sample of their member, and the probe of a member without a sample checks that the setter returns its builder. The Go check of `Clone` sets each list, map, set and bytes member before it clones the builder. The TypeScript checks of a clone set the sample of each such member and compare the member of the clone with it.
 
 A generic declaration is checked at the witnesses of its type parameters. Without witnesses, the test file states that the declaration has no checks.
 
@@ -345,7 +367,7 @@ const (
 | Write a value as text | `func (v Status) MarshalText() ([]byte, error)` | None. JSON writes the value of a member |
 | Read a value from text | `func (v *Status) UnmarshalText(text []byte) error` | None |
 
-The render of a value outside the variants returns the value itself: `Status(42)` in Go, and the value of the member in TypeScript.
+The render of a value outside the variants returns the value itself: `Status(42)` in Go, and the value of the member in TypeScript. The error of `ParseStatus` wraps `ErrUnknownStatus` with the quoted text, as in `status: unknown Status value "Pending"`. The error class of TypeScript has the text in its message and in its field `text`.
 
 The Go render of an enumeration of integers takes the form that the tool stringer writes:
 
@@ -365,13 +387,18 @@ The enum generator has three options:
 | `sentinel-word` | `unknown` | The word that the name of the error of a parse function joins to the name of its enumeration |
 | `no-tests` | false | Leaves out the checks of every enumeration |
 
-The checks call each member of the surface, and each member that the author declares on the enumeration or in its package. They assert through the assert library of the language:
+The checks call each member of the surface, and each member that the author declares on the enumeration or in its package. They assert through the assert library of the language, in the test of the enumeration, such as `TestStatus`. Its first case checks that no two variants share a value, and the test has a level for each member that it calls:
 
-| Test | Checks |
+| Level | Checks |
 |---|---|
-| `TestStatusVariants` | The number of the variants. No two variants share a value or a text. A variant renders the text that its value, its trailing comment or its directive `text` states. A value outside the variants is not valid, and each variant is valid. The zero value is the variant that declares it, or no variant |
-| `TestStatusText` | Each variant parses back from its text. A text of no variant returns the error of the parse function. A value outside the variants renders another text than each variant |
-| `TestStatusEncoding` | Each variant writes its text. A variant that the surface writes and reads makes the round trip, and the read refuses a text of no variant |
+| `StatusValues` | The list contains the variants in the order of their declaration, and each call returns a new slice |
+| `String` | A variant renders the text that its value, its trailing comment or its directive `text` states. No two variants share a text. A value outside the variants renders another text than each variant, where the surface writes the render |
+| `IsValid` | Each variant is valid, and a value outside the variants is not. The zero value is the variant that declares it, or no variant |
+| `ParseStatus` | Each variant parses back from its text. A text of no variant returns the error of the parse function, and in Go that error contains the text |
+| `MarshalText` | Each variant writes its text |
+| `UnmarshalText` | A variant that the surface writes and reads makes the round trip, and the read refuses a text of no variant |
+
+A level checks each variant in a case of its own, the row of a table.
 
 The text of no variant is a run of question marks one longer than the longest text. The rules of each language derive the value outside the variants, such as the value after the largest number or a text that no variant has. The checks of TypeScript leave out the zero value, which TypeScript does not have for a type. They also leave out the encoding pair.
 
@@ -398,14 +425,18 @@ The directive has two params:
 
 Without the param `prefix`, the opening of a Go message is the name of the package and `: `, such as `store: `. The option `prefix` of the generator replaces the name of the package in that opening. TypeScript has no convention for the opening of a message, so its checks of the opening exist only where the directive states `prefix`.
 
-The generated test of a package writes the checks of the error tests of testkit. They assert through the assert library of the language:
+The generated file of a package writes the checks of the error tests of testkit, in a test of each error value and of each error type. They assert through the assert library of the language:
 
-| Test | Checks |
-|---|---|
-| `TestStoreSentinels` | Each error value is set and has a message with the opening. No two error values share a message, and no message opens with the whole message of another. No error value matches another one, or one of a package of `no-overlap-with` |
-| `TestNotFoundErrorContract` | The value of the type reports a message with the opening. It matches no other error type of the package. A type that compares itself and has no hook `Unwrap` agrees with `errors.Is` on each error value of the package. A type with a cause exposes the cause that a check gives it. Each member of text is in the message |
+| Test | Level | Checks |
+|---|---|---|
+| `TestErrNotFound` | `Error` | The error value is set and has a message with the opening. Its message differs from the message of each other error value, and opens with the whole message of none |
+| | `errors.Is` | The error value matches no other error value, and no error value of a package of `no-overlap-with` |
+| `TestNotFoundError` | `Error` | The value of the type reports a message with the opening. Each member of text is in the message |
+| | `Is` | A type that compares itself and has no hook `Unwrap` agrees with `errors.Is` on each error value of the package |
+| | `Unwrap` | A type with a cause returns the cause that a check gives it |
+| | `errors.Is` | The value of the type matches no other error type of the package |
 
-A check over the error values loops over them and reports each failure through `t.Errorf` with the names of the error values, because one failure can involve two of them. A check of one value asserts through assert-go. The checks of an error class of TypeScript have the same names inside `describe("NotFoundError contract")`. They match two errors through `errorIsNot` of the assert library. `errorIsNot` follows the chain of `cause`. It matches an instance of the same name and message. A TypeScript module has no error values, and its classes have no hooks. Its test has no checks of error values and no check of the agreement.
+The test of an error value loops over the other error values and reports each failure through the package `expect` of assert-go with the name of the other error value, so the loop continues after a failure. A check of one value asserts through assert-go. The test of an error class of TypeScript, `describe("NotFoundError")`, checks that the class matches no other error class of its module, and has the levels `message` and `cause`. It matches two errors through `errorIsNot` of the assert library. `errorIsNot` follows the chain of `cause`. It matches an instance of the same name and message. A TypeScript module has no error values, and its classes have no hooks. Its test has no checks of error values and no check of the agreement.
 
 | Part | Go | TypeScript |
 |---|---|---|

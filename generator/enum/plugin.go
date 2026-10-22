@@ -120,7 +120,7 @@ type Names struct {
 // Variant is one variant of an enumeration. Name is the name of the variant.
 // Member is the reference to the variant in the language of the
 // enumeration, which the template writes after the enumeration where the
-// language reaches a variant through it, as in Status.Draft of TypeScript.
+// language refers to a variant through it, as in Status.Draft of TypeScript.
 // Value is the name of the declaration of the variant as a value, which the
 // builtin value of a template writes with the import of its package. Text is
 // the text of the variant as a string literal of the language. Stated
@@ -417,7 +417,7 @@ type part interface {
 	// render prints such a value without a conversion.
 	fallback(b *rules.Bound, e *node.Enum, textual bool) (*emit.TypeRef, string)
 	// member returns the reference to the variant named name, which the
-	// template writes after the enumeration where the language reaches a
+	// template writes after the enumeration where the language refers to a
 	// variant through it.
 	member(name string) string
 	// literal returns the literal of the language of the value v: a string
@@ -616,9 +616,11 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 			if !called {
 				return
 			}
-			ref := &emit.TypeRef{Spelling: name}
+			// A generated member is a declaration of the record of the
+			// enumeration, which an emitted reference finds by its origin.
+			ref := &emit.TypeRef{Spelling: name, Target: enum.ID, Emitted: true}
 			if d, declaredHere := found[x]; declaredHere {
-				ref.Target = d.Identity()
+				ref.Target, ref.Emitted = d.Identity(), false
 			}
 			test.Fields.Append(&emit.Field{Name: field, Type: ref})
 		}

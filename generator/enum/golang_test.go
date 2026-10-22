@@ -46,13 +46,13 @@ func TestGolang(t *testing.T) {
 		gentest.Templates(t, enum.New(), golang.Target, enumTemplate, testTemplate)
 	})
 
-	t.Run("writes the surfaces and the checks of the golden tree golang", func(t *testing.T) {
+	t.Run("writes the golden tree golang", func(t *testing.T) {
 		t.Parallel()
 
 		golden.MatchTree(t, "golang", rendered(t), golden.ShouldUpdate())
 	})
 
-	t.Run("writes Go that vets and whose tests pass", func(t *testing.T) {
+	t.Run("writes Go that passes go vet then go test", func(t *testing.T) {
 		t.Parallel()
 
 		a := gotesting.New()
@@ -64,7 +64,7 @@ func TestGolang(t *testing.T) {
 		toolchain.AssertTestsPass(t.Context(), t, a, project)
 	})
 
-	t.Run("names the methods, the functions and the error of the surface", func(t *testing.T) {
+	t.Run("names each declaration of the surface", func(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, golang.Target, goTree, statusPackage).models[statusName].Names
@@ -216,7 +216,7 @@ func TestGolang(t *testing.T) {
 		}
 	}
 
-	t.Run("records no index and no map of ten runs of one value", func(t *testing.T) {
+	t.Run("records neither an index nor a map of ten runs of one value", func(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, golang.Target, goTree, gapPackage).models["Odd"].Table
@@ -287,8 +287,8 @@ func TestGolang(t *testing.T) {
 			want     int
 		}{
 			{name: "records an index of 8 bits for texts below 256 bytes", giveSize: 255, want: 8},
-			{name: "records an index of 16 bits for texts of 256 bytes or more", giveSize: 256, want: 16},
-			{name: "records an index of 32 bits for texts of 65536 bytes or more", giveSize: 1 << 16, want: 32},
+			{name: "records an index of 16 bits for texts from 256 bytes", giveSize: 256, want: 16},
+			{name: "records an index of 32 bits for texts from 65536 bytes", giveSize: 1 << 16, want: 32},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -343,30 +343,30 @@ func TestGolang(t *testing.T) {
 
 	{
 		tests := []struct {
-			name         string
-			givePkg      string
-			give         string
-			wantBeside   []string
-			wantRefs     []string
-			wantDeclared []string
+			name        string
+			givePkg     string
+			give        string
+			wantBeside  []string
+			wantRefs    []string
+			wantTargets []string
 		}{
 			{
 				name:    "refers to each member that the package declares",
 				givePkg: handwrittenPackage, give: weekdayName, wantBeside: []string{"WeekdayValues"},
-				wantRefs:     []string{"ParseWeekday", "WeekdayValues", "ErrUnknownWeekday"},
-				wantDeclared: []string{"ParseWeekday", "", "ErrUnknownWeekday"},
+				wantRefs:    []string{"ParseWeekday", "WeekdayValues", "ErrUnknownWeekday"},
+				wantTargets: []string{"ParseWeekday", "emitted Weekday", "ErrUnknownWeekday"},
 			},
 			{
 				name:    "refers to the error that the package declares beside the parse function of the surface",
 				givePkg: declaredPackage, give: "Level", wantBeside: []string{"ParseLevel", "LevelValues"},
-				wantRefs:     []string{"ParseLevel", "LevelValues", "ErrUnknownLevel"},
-				wantDeclared: []string{"", "", "ErrUnknownLevel"},
+				wantRefs:    []string{"ParseLevel", "LevelValues", "ErrUnknownLevel"},
+				wantTargets: []string{"emitted Level", "emitted Level", "ErrUnknownLevel"},
 			},
 			{
 				name:    "refers to no error beside a parse function that the package declares",
 				givePkg: declaredPackage, give: "Lane", wantBeside: []string{"LaneValues"},
-				wantRefs:     []string{"ParseLane", "LaneValues"},
-				wantDeclared: []string{"ParseLane", ""},
+				wantRefs:    []string{"ParseLane", "LaneValues"},
+				wantTargets: []string{"ParseLane", "emitted Lane"},
 			},
 		}
 		for _, tt := range tests {
@@ -379,12 +379,16 @@ func TestGolang(t *testing.T) {
 				assert.NotNil(t, got.tests[tt.give], tt.give+" has checks")
 				expect.Equal(t, gentest.Referents(got.tests[tt.give]), tt.wantRefs,
 					"the record of the checks refers to each package member that a check calls")
-				declared := make([]string, 0, got.tests[tt.give].Fields.Len())
+				targets := make([]string, 0, got.tests[tt.give].Fields.Len())
 				for _, f := range got.tests[tt.give].Fields.Items() {
-					declared = append(declared, f.Type.Target.Name)
+					target := f.Type.Target.Name
+					if f.Type.Emitted {
+						target = "emitted " + target
+					}
+					targets = append(targets, target)
 				}
-				expect.Equal(t, declared, tt.wantDeclared,
-					"a reference to a declared member targets its declaration, and any other is bare")
+				expect.Equal(t, targets, tt.wantTargets, "a reference to a declared member targets its declaration, "+
+					"and a reference to a generated member targets the record of the enumeration")
 			})
 		}
 	}

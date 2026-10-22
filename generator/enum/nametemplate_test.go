@@ -27,7 +27,7 @@ func TestNameTemplate(t *testing.T) {
 		}{
 			{name: "accepts a name before the name of the enumeration", give: "Parse{{.Enum}}"},
 			{name: "accepts a name after the name of the enumeration", give: "{{.Enum}}Values"},
-			{name: "accepts a space, a hyphen or an underscore between words", give: "parse {{.Enum}}-from_text"},
+			{name: "accepts each separator between words", give: "parse {{.Enum}}-from_text"},
 			{name: "accepts spaces inside the braces of the action", give: "Parse{{ .Enum }}"},
 			{name: "accepts a digit after the first letter", give: "V2{{.Enum}}"},
 		}

@@ -20,7 +20,7 @@ import (
 
 // The part of TypeScript declares the target typescript with the template
 // of each family and its helper, and names the functions of the surface of an
-// enum. It reaches each member through its enum, and quotes the text of each
+// enum. It refers to each member through its enum, and quotes the text of each
 // member. The checks import each function of the surface by its module.
 func TestTypeScript(t *testing.T) {
 	t.Parallel()
@@ -31,13 +31,13 @@ func TestTypeScript(t *testing.T) {
 		gentest.Templates(t, enum.New(), typescript.Target, enumTemplate, testTemplate)
 	})
 
-	t.Run("writes the surfaces and the checks of the golden tree typescript", func(t *testing.T) {
+	t.Run("writes the golden tree typescript", func(t *testing.T) {
 		t.Parallel()
 
 		golden.MatchTree(t, "typescript", renderedTypeScript(t), golden.ShouldUpdate())
 	})
 
-	t.Run("names the functions and the error of the surface", func(t *testing.T) {
+	t.Run("names each declaration of the surface", func(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, typescript.Target, tsTree, statusModule).models[statusName].Names
@@ -96,7 +96,7 @@ func TestTypeScript(t *testing.T) {
 		})
 	}
 
-	t.Run("reaches a member through a dot or through brackets", func(t *testing.T) {
+	t.Run("refers to a member whose name is no identifier through brackets", func(t *testing.T) {
 		t.Parallel()
 
 		got := generate(t, typescript.Target, tsTree, statusModule).models[headerName]
@@ -105,7 +105,7 @@ func TestTypeScript(t *testing.T) {
 			members = append(members, v.Member)
 		}
 		assert.Equal(t, members, []string{`["content-type"]`, ".Accept", ".Html", `["1st"]`},
-			"a member whose name is no identifier is reached in brackets")
+			"the reference to a member whose name is no identifier is in brackets")
 		want := []string{`content-type="ct"`, `Accept="a"`, `Html="<html>"`, `1st="first"`}
 		expect.Equal(t, texts(got.Variants), want, "each text is a string of TypeScript, without escapes of HTML")
 	})
@@ -130,8 +130,8 @@ func TestTypeScript(t *testing.T) {
 		helper string
 		want   string
 	}{
-		{name: "names the module of the surface beside a test file", helper: "surfaceModule", want: "./status.enum"},
-		{name: "names the module of the enum beside a test file", helper: "sourceModule", want: "./status"},
+		{name: "names the module of the surface beside a spec", helper: "surfaceModule", want: "./status.enum"},
+		{name: "names the module of the enum beside a spec", helper: "sourceModule", want: "./status"},
 	}
 	for _, tt := range modules {
 		t.Run(tt.name, func(t *testing.T) {

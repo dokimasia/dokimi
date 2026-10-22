@@ -67,7 +67,7 @@ func TestEnum(t *testing.T) {
 			})
 		})
 
-		t.Run("tests each enumeration from outside its package", func(t *testing.T) {
+		t.Run("checks each enumeration from outside its package", func(t *testing.T) {
 			t.Parallel()
 
 			gentest.External(t, enum.New(), enum.TestTag)
@@ -286,16 +286,16 @@ func TestEnum(t *testing.T) {
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Gauge",
 			},
 			{
-				name:   "leaves out the surface under methods=off and checks the members of the type",
+				name:   "checks the members of the type without a surface under methods=off",
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: modeName,
 				calls: enum.Members{Render: true, Valid: true, Encode: true},
 			},
 			{
-				name:   "leaves out the surface under methods=off and checks no member without one",
+				name:   "checks no member of a type without members under methods=off",
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Plain",
 			},
 			{
-				name:   "keeps the decode where the type declares the encode, and checks no round trip",
+				name:   "keeps the decode of a type that declares the encode",
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Tone",
 				want:  enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Decode: true},
 				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
@@ -307,7 +307,7 @@ func TestEnum(t *testing.T) {
 				calls: enum.Members{Render: true, Values: true, Valid: true},
 			},
 			{
-				name:   "leaves out the decode that the type declares, and keeps the encode",
+				name:   "keeps the encode of a type that declares the decode",
 				target: golang.Target, tree: goTree, pkg: quietPackage, give: "Speed",
 				want:  enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
 				calls: enum.Members{Render: true, Parse: true, Error: true, Values: true, Valid: true, Encode: true},
@@ -402,7 +402,7 @@ func TestEnum(t *testing.T) {
 			wantOutOfRange string
 		}{
 			{
-				name: "records a text longer than every text, and the value after the last", target: golang.Target,
+				name: "records the probes outside an enumeration of numbers", target: golang.Target,
 				tree: goTree, pkg: statusPackage, give: statusName, wantUnknown: `"??????????"`,
 				wantOutOfRange: "4",
 			},

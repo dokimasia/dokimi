@@ -18,7 +18,7 @@ var Empty = diag.MustRegister(CodePrefix, diag.CodeSpec{
 
 // Duplicate reports an enumeration under the directive enum whose two
 // variants have one value or one text. A render cannot tell two variants of
-// one value apart, and a parse cannot reach one of two variants of one text,
+// one value apart, and a parse cannot return one of two variants of one text,
 // so the finding is an Error at the enumeration, and enum writes nothing for
 // it.
 var Duplicate = diag.MustRegister(CodePrefix, diag.CodeSpec{

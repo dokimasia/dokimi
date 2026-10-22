@@ -300,6 +300,11 @@ linters:
       - path: _test\.go$
         linters: [paralleltest, tparallel]
         text: 'Test\w*(Allocs|Env|Process)\b'
+      # The error fixtures noprefix and store of the Go corpus state error texts without the
+      # prefix of their package, which the directive sentinel reads under prefix=off and
+      # prefix=kv. Their texts are the inputs of the generator.
+      - path: ^errors/(noprefix|store)/
+        linters: [errorprefix]
 formatters:
   enable:
     - gci

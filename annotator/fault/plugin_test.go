@@ -21,17 +21,19 @@ import (
 
 // The Go tree and its packages, and the TypeScript tree and its module.
 const (
-	goTree       = "testdata/golang"
-	storePackage = "example.com/shop/store"
-	badPackage   = "example.com/shop/bad"
-	tsTree       = "testdata/typescript"
-	storeModule  = "store"
+	goTree        = "testdata/golang"
+	storePackage  = "example.com/shop/store"
+	badPackage    = "example.com/shop/bad"
+	remotePackage = "example.com/shop/remote"
+	tsTree        = "testdata/typescript"
+	storeModule   = "store"
 )
 
 // The interfaces of the trees.
 const (
 	storeName  = "Store"
 	ledgerName = "Ledger"
+	remoteName = "Remote"
 )
 
 // otherRegistrant is the registrant that claims the namespace of fault
@@ -91,6 +93,11 @@ func TestFault(t *testing.T) {
 					errors: []string{"ErrNotFound", "ErrGone"}, retry: 3, retried: true,
 					partition: "id", partitioned: true,
 				},
+			},
+			{
+				name:     "stamps an error of a package that another file of the package imports",
+				giveTree: goTree, givePkg: remotePackage, giveOwner: remoteName, give: "Call",
+				want: stamp{errors: []string{"ErrTimeout"}},
 			},
 			{
 				name:     "stamps the attempt of retry on a Go method without a partition",

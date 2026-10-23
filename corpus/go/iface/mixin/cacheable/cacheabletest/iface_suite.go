@@ -62,7 +62,7 @@ func RunMixedSuite[T cacheable.Mixed](t *testing.T, newSubject func() T, opts ..
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T cacheable.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) cacheable.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -75,14 +75,14 @@ func FuzzMixedSuite[T cacheable.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) cacheable.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T cacheable.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) cacheable.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -94,7 +94,13 @@ func BenchMixedSuite[T cacheable.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) cacheable.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T cacheable.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) cacheable.Mixed {
+	return func(h *MixedHandle) cacheable.Mixed { return newSubject(h) }
 }
 
 // mixedGetCalls generates the calls of Mixed.Get with the inputs that each
@@ -131,4 +137,4 @@ func newMixedOver(_ *MixedHandle, spend func()) cacheable.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0b091d00c7fb5df3908e11a134c432dfc0ab9a7b6e324ac830935673dacb01c3
+// dokimi:provenance sha256:61374bdb216ec6c56506bf3337311251459cb9f199628a3298e9f7f3ac46edcc

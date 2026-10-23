@@ -81,11 +81,7 @@ func RunStreamReaderSuiteFromHandle[T streamreader.StreamReader](
 	opts ...StreamReaderOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		StreamReaderSuite(),
-		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
-		opts...)
+	conform.Run(t, StreamReaderSuite(), streamReaderSubjects(newSubject), opts...)
 }
 
 // FuzzStreamReaderSuite registers on f the fuzz target of the property
@@ -98,12 +94,7 @@ func FuzzStreamReaderSuite[T streamreader.StreamReader](
 	opts ...StreamReaderOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		StreamReaderSuite(),
-		callable,
-		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, StreamReaderSuite(), callable, streamReaderSubjects(newSubject), opts...)
 }
 
 // RunStreamReaderBudgets applies the allocation ceilings of StreamReader,
@@ -115,11 +106,7 @@ func RunStreamReaderBudgets[T streamreader.StreamReader](
 	opts ...StreamReaderOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		StreamReaderSuite(),
-		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, StreamReaderSuite(), streamReaderSubjects(newSubject), opts...)
 }
 
 // BenchStreamReaderSuite measures callable on a subject of newSubject,
@@ -131,12 +118,15 @@ func BenchStreamReaderSuite[T streamreader.StreamReader](
 	opts ...StreamReaderOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		StreamReaderSuite(),
-		callable,
-		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
-		opts...)
+	conform.Bench(b, StreamReaderSuite(), callable, streamReaderSubjects(newSubject), opts...)
+}
+
+// streamReaderSubjects returns the factory of the subjects of StreamReader
+// that calls newSubject with the handle of each check.
+func streamReaderSubjects[T streamreader.StreamReader](
+	newSubject func(h *StreamReaderHandle) T,
+) func(h *StreamReaderHandle) streamreader.StreamReader {
+	return func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) }
 }
 
 // streamReaderAddCalls generates the calls of StreamReader.Add with the
@@ -187,4 +177,4 @@ func newStreamReaderOver(_ *StreamReaderHandle, spend func()) streamreader.Strea
 	return streamReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ecb54d06fc3abf1b3eb4adc33e38331662661aa7a79357b5ef285c408b6d2386
+// dokimi:provenance sha256:78534b4682c40984c836527ea1b6dfca8056d464b0322311495266aa60471900

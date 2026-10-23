@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T cursor.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) cursor.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,19 +93,14 @@ func FuzzContractSuite[T cursor.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) cursor.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T cursor.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) cursor.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -117,12 +112,13 @@ func BenchContractSuite[T cursor.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) cursor.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T cursor.Contract](newSubject func(h *ContractHandle) T) func(h *ContractHandle) cursor.Contract {
+	return func(h *ContractHandle) cursor.Contract { return newSubject(h) }
 }
 
 // contractNextCalls generates the calls of Contract.Next with the inputs
@@ -172,4 +168,4 @@ func newContractOver(_ *ContractHandle, spend func()) cursor.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c9b991379eaedabb9b33ffe968996b3b6cdb4540f60f8c48f33227019de23bd6
+// dokimi:provenance sha256:43e7f54d76c284da8d4b2e47ddab775adcbec1d74cfd9d0744397c39ef723753

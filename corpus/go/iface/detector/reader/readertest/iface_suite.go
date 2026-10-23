@@ -62,7 +62,7 @@ func RunReaderSuite[T reader.Reader](t *testing.T, newSubject func() T, opts ...
 // newSubject builds from the handle of each check.
 func RunReaderSuiteFromHandle[T reader.Reader](t *testing.T, newSubject func(h *ReaderHandle) T, opts ...ReaderOption) {
 	t.Helper()
-	conform.Run(t, ReaderSuite(), func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+	conform.Run(t, ReaderSuite(), readerSubjects(newSubject), opts...)
 }
 
 // FuzzReaderSuite registers on f the fuzz target of the property checks of
@@ -75,14 +75,14 @@ func FuzzReaderSuite[T reader.Reader](
 	opts ...ReaderOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, ReaderSuite(), callable, func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+	conform.Fuzz(f, ReaderSuite(), callable, readerSubjects(newSubject), opts...)
 }
 
 // RunReaderBudgets applies the allocation ceilings of Reader, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunReaderBudgets[T reader.Reader](t *testing.T, newSubject func(h *ReaderHandle) T, opts ...ReaderOption) {
 	t.Helper()
-	conform.RunBudgets(t, ReaderSuite(), func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ReaderSuite(), readerSubjects(newSubject), opts...)
 }
 
 // BenchReaderSuite measures callable on a subject of newSubject, under the
@@ -94,7 +94,13 @@ func BenchReaderSuite[T reader.Reader](
 	opts ...ReaderOption,
 ) {
 	b.Helper()
-	conform.Bench(b, ReaderSuite(), callable, func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
+	conform.Bench(b, ReaderSuite(), callable, readerSubjects(newSubject), opts...)
+}
+
+// readerSubjects returns the factory of the subjects of Reader that calls
+// newSubject with the handle of each check.
+func readerSubjects[T reader.Reader](newSubject func(h *ReaderHandle) T) func(h *ReaderHandle) reader.Reader {
+	return func(h *ReaderHandle) reader.Reader { return newSubject(h) }
 }
 
 // readerGetCalls generates the calls of Reader.Get with the inputs that
@@ -131,4 +137,4 @@ func newReaderOver(_ *ReaderHandle, spend func()) reader.Reader {
 	return readerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:a0be8c5904ed19029028cb1adcbc6446c08e1d86fb12699ddf3304b9a6b840d1
+// dokimi:provenance sha256:486d218f3d767613f9638e08e20c7cf53f94a0b699936a1878b9d64ceabe524e

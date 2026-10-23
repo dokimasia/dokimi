@@ -67,11 +67,7 @@ func RunBatchReaderSuiteFromHandle[T batchreader.BatchReader](
 	opts ...BatchReaderOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		BatchReaderSuite(),
-		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
-		opts...)
+	conform.Run(t, BatchReaderSuite(), batchReaderSubjects(newSubject), opts...)
 }
 
 // FuzzBatchReaderSuite registers on f the fuzz target of the property
@@ -84,12 +80,7 @@ func FuzzBatchReaderSuite[T batchreader.BatchReader](
 	opts ...BatchReaderOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		BatchReaderSuite(),
-		callable,
-		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, BatchReaderSuite(), callable, batchReaderSubjects(newSubject), opts...)
 }
 
 // RunBatchReaderBudgets applies the allocation ceilings of BatchReader,
@@ -101,11 +92,7 @@ func RunBatchReaderBudgets[T batchreader.BatchReader](
 	opts ...BatchReaderOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		BatchReaderSuite(),
-		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, BatchReaderSuite(), batchReaderSubjects(newSubject), opts...)
 }
 
 // BenchBatchReaderSuite measures callable on a subject of newSubject,
@@ -117,12 +104,15 @@ func BenchBatchReaderSuite[T batchreader.BatchReader](
 	opts ...BatchReaderOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		BatchReaderSuite(),
-		callable,
-		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
-		opts...)
+	conform.Bench(b, BatchReaderSuite(), callable, batchReaderSubjects(newSubject), opts...)
+}
+
+// batchReaderSubjects returns the factory of the subjects of BatchReader
+// that calls newSubject with the handle of each check.
+func batchReaderSubjects[T batchreader.BatchReader](
+	newSubject func(h *BatchReaderHandle) T,
+) func(h *BatchReaderHandle) batchreader.BatchReader {
+	return func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) }
 }
 
 // batchReaderGetAllCalls generates the calls of BatchReader.GetAll with
@@ -159,4 +149,4 @@ func newBatchReaderOver(_ *BatchReaderHandle, spend func()) batchreader.BatchRea
 	return batchReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b52824f9b713b7207ca6b50f42d6baa2558097d9f82d23e7e3641714fd5711b6
+// dokimi:provenance sha256:07180d37606649697afbeb53c22454878d44e5116dbe559de4e659c7ec29d542

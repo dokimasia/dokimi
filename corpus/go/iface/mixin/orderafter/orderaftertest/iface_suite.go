@@ -76,7 +76,7 @@ func RunMixedSuite[T orderafter.Mixed](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T orderafter.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) orderafter.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -89,14 +89,14 @@ func FuzzMixedSuite[T orderafter.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) orderafter.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T orderafter.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) orderafter.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -108,7 +108,13 @@ func BenchMixedSuite[T orderafter.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) orderafter.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T orderafter.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) orderafter.Mixed {
+	return func(h *MixedHandle) orderafter.Mixed { return newSubject(h) }
 }
 
 // mixedCommitCalls generates the calls of Mixed.Commit with the inputs
@@ -157,4 +163,4 @@ func newMixedOver(_ *MixedHandle, spend func()) orderafter.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7bf443cf03a827782ba07109a384e18c04cdda9caf75044e0a39d1baa8057702
+// dokimi:provenance sha256:e2806ce03816bdae370ce18fff0811d526ec900974310a381f930218a5d8fab1

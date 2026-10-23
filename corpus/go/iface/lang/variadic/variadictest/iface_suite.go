@@ -80,7 +80,7 @@ func RunFinderSuiteFromHandle[T variadic.Finder](
 	opts ...FinderOption,
 ) {
 	t.Helper()
-	conform.Run(t, FinderSuite(), func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+	conform.Run(t, FinderSuite(), finderSubjects(newSubject), opts...)
 }
 
 // FuzzFinderSuite registers on f the fuzz target of the property checks of
@@ -93,14 +93,14 @@ func FuzzFinderSuite[T variadic.Finder](
 	opts ...FinderOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, FinderSuite(), callable, func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+	conform.Fuzz(f, FinderSuite(), callable, finderSubjects(newSubject), opts...)
 }
 
 // RunFinderBudgets applies the allocation ceilings of Finder, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunFinderBudgets[T variadic.Finder](t *testing.T, newSubject func(h *FinderHandle) T, opts ...FinderOption) {
 	t.Helper()
-	conform.RunBudgets(t, FinderSuite(), func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, FinderSuite(), finderSubjects(newSubject), opts...)
 }
 
 // BenchFinderSuite measures callable on a subject of newSubject, under the
@@ -112,7 +112,13 @@ func BenchFinderSuite[T variadic.Finder](
 	opts ...FinderOption,
 ) {
 	b.Helper()
-	conform.Bench(b, FinderSuite(), callable, func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
+	conform.Bench(b, FinderSuite(), callable, finderSubjects(newSubject), opts...)
+}
+
+// finderSubjects returns the factory of the subjects of Finder that calls
+// newSubject with the handle of each check.
+func finderSubjects[T variadic.Finder](newSubject func(h *FinderHandle) T) func(h *FinderHandle) variadic.Finder {
+	return func(h *FinderHandle) variadic.Finder { return newSubject(h) }
 }
 
 // finderFindCalls generates the calls of Finder.Find with the inputs that
@@ -166,4 +172,4 @@ func newFinderOver(_ *FinderHandle, spend func()) variadic.Finder {
 	return finderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:77a641e02cae01f84765fb96656c840180e131d3a5c34b0ea4a9ce9b19d6a728
+// dokimi:provenance sha256:36ccf5b70f3556f23835866e7d24ceebe0e4e925bdf849c2d23a3a7b3168e8fb

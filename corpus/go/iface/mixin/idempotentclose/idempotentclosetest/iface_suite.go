@@ -80,7 +80,7 @@ func RunCloserSuiteFromHandle[T idempotentclose.Closer](
 	opts ...CloserOption,
 ) {
 	t.Helper()
-	conform.Run(t, CloserSuite(), func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) }, opts...)
+	conform.Run(t, CloserSuite(), closerSubjects(newSubject), opts...)
 }
 
 // FuzzCloserSuite registers on f the fuzz target of the property checks of
@@ -93,12 +93,7 @@ func FuzzCloserSuite[T idempotentclose.Closer](
 	opts ...CloserOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		CloserSuite(),
-		callable,
-		func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, CloserSuite(), callable, closerSubjects(newSubject), opts...)
 }
 
 // RunCloserBudgets applies the allocation ceilings of Closer, and the
@@ -109,7 +104,7 @@ func RunCloserBudgets[T idempotentclose.Closer](
 	opts ...CloserOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, CloserSuite(), func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, CloserSuite(), closerSubjects(newSubject), opts...)
 }
 
 // BenchCloserSuite measures callable on a subject of newSubject, under the
@@ -121,12 +116,15 @@ func BenchCloserSuite[T idempotentclose.Closer](
 	opts ...CloserOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		CloserSuite(),
-		callable,
-		func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) },
-		opts...)
+	conform.Bench(b, CloserSuite(), callable, closerSubjects(newSubject), opts...)
+}
+
+// closerSubjects returns the factory of the subjects of Closer that calls
+// newSubject with the handle of each check.
+func closerSubjects[T idempotentclose.Closer](
+	newSubject func(h *CloserHandle) T,
+) func(h *CloserHandle) idempotentclose.Closer {
+	return func(h *CloserHandle) idempotentclose.Closer { return newSubject(h) }
 }
 
 // closerCloseCalls generates the calls of Closer.Close with the inputs
@@ -176,4 +174,4 @@ func newCloserOver(_ *CloserHandle, spend func()) idempotentclose.Closer {
 	return closerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ba613166596c360b425494792d150451ac4bccbd286afb8f6c04b19e9c1bd9fa
+// dokimi:provenance sha256:5f12a3f7c9e02f0bc6fa665fdc512533be624932d78ed1682af78a45d0335483

@@ -79,7 +79,7 @@ func RunMixedSuiteFromHandle[T monotonicwrites.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) monotonicwrites.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -92,19 +92,14 @@ func FuzzMixedSuite[T monotonicwrites.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) monotonicwrites.Mixed { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T monotonicwrites.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) monotonicwrites.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -116,12 +111,15 @@ func BenchMixedSuite[T monotonicwrites.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) monotonicwrites.Mixed { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T monotonicwrites.Mixed](
+	newSubject func(h *MixedHandle) T,
+) func(h *MixedHandle) monotonicwrites.Mixed {
+	return func(h *MixedHandle) monotonicwrites.Mixed { return newSubject(h) }
 }
 
 // mixedStoreCalls generates the calls of Mixed.Store with the inputs that
@@ -174,4 +172,4 @@ func newMixedOver(_ *MixedHandle, spend func()) monotonicwrites.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:fac1fca585b26b8ffccb24b8233f97f7db92f447daa4310acb019137c15e0e03
+// dokimi:provenance sha256:c015a7043fe319f1ba91c80605ae0f91c08716a1eaa5ce9688f53a8dbb3d77ed

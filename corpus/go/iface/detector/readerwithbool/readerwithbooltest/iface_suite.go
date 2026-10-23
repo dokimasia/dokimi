@@ -71,11 +71,7 @@ func RunReaderWithBoolSuiteFromHandle[T readerwithbool.ReaderWithBool](
 	opts ...ReaderWithBoolOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		ReaderWithBoolSuite(),
-		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
-		opts...)
+	conform.Run(t, ReaderWithBoolSuite(), readerWithBoolSubjects(newSubject), opts...)
 }
 
 // FuzzReaderWithBoolSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
 	opts ...ReaderWithBoolOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ReaderWithBoolSuite(),
-		callable,
-		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ReaderWithBoolSuite(), callable, readerWithBoolSubjects(newSubject), opts...)
 }
 
 // RunReaderWithBoolBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunReaderWithBoolBudgets[T readerwithbool.ReaderWithBool](
 	opts ...ReaderWithBoolOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ReaderWithBoolSuite(),
-		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ReaderWithBoolSuite(), readerWithBoolSubjects(newSubject), opts...)
 }
 
 // BenchReaderWithBoolSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
 	opts ...ReaderWithBoolOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ReaderWithBoolSuite(),
-		callable,
-		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ReaderWithBoolSuite(), callable, readerWithBoolSubjects(newSubject), opts...)
+}
+
+// readerWithBoolSubjects returns the factory of the subjects of
+// ReaderWithBool that calls newSubject with the handle of each check.
+func readerWithBoolSubjects[T readerwithbool.ReaderWithBool](
+	newSubject func(h *ReaderWithBoolHandle) T,
+) func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool {
+	return func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) }
 }
 
 // readerWithBoolLoadCalls generates the calls of ReaderWithBool.Load with
@@ -165,4 +155,4 @@ func newReaderWithBoolOver(_ *ReaderWithBoolHandle, spend func()) readerwithbool
 	return readerWithBoolOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c5bbed2b61b0af2d3de267a6ff67e2d7c64266f4ebf3f2b089613dc2d16c9117
+// dokimi:provenance sha256:f198d373888c9cdfb6713a5ef738d4347b5f4a1e5f23b56f91a168169e3c7ee2

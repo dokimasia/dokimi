@@ -84,11 +84,7 @@ func RunMultiArgWriterSuiteFromHandle[T multiargwriter.MultiArgWriter](
 	opts ...MultiArgWriterOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		MultiArgWriterSuite(),
-		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
-		opts...)
+	conform.Run(t, MultiArgWriterSuite(), multiArgWriterSubjects(newSubject), opts...)
 }
 
 // FuzzMultiArgWriterSuite registers on f the fuzz target of the property
@@ -101,12 +97,7 @@ func FuzzMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
 	opts ...MultiArgWriterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MultiArgWriterSuite(),
-		callable,
-		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MultiArgWriterSuite(), callable, multiArgWriterSubjects(newSubject), opts...)
 }
 
 // RunMultiArgWriterBudgets applies the allocation ceilings of
@@ -118,11 +109,7 @@ func RunMultiArgWriterBudgets[T multiargwriter.MultiArgWriter](
 	opts ...MultiArgWriterOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		MultiArgWriterSuite(),
-		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, MultiArgWriterSuite(), multiArgWriterSubjects(newSubject), opts...)
 }
 
 // BenchMultiArgWriterSuite measures callable on a subject of newSubject,
@@ -134,12 +121,15 @@ func BenchMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
 	opts ...MultiArgWriterOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MultiArgWriterSuite(),
-		callable,
-		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MultiArgWriterSuite(), callable, multiArgWriterSubjects(newSubject), opts...)
+}
+
+// multiArgWriterSubjects returns the factory of the subjects of
+// MultiArgWriter that calls newSubject with the handle of each check.
+func multiArgWriterSubjects[T multiargwriter.MultiArgWriter](
+	newSubject func(h *MultiArgWriterHandle) T,
+) func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter {
+	return func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) }
 }
 
 // multiArgWriterSetCalls generates the calls of MultiArgWriter.Set with
@@ -197,4 +187,4 @@ func newMultiArgWriterOver(_ *MultiArgWriterHandle, spend func()) multiargwriter
 	return multiArgWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:2d80de01acf4b838e5d9cde1ab0892d13c9fde1ebf8db3b205fa0c6185e67591
+// dokimi:provenance sha256:ef581c06d5ff06ac8b7b76dd9d225dc21fc8722187455dd8b6feec19178fed6c

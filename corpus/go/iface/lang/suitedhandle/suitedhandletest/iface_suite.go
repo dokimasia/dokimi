@@ -74,7 +74,7 @@ func RunFileSuite[T suitedhandle.File](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunFileSuiteFromHandle[T suitedhandle.File](t *testing.T, newSubject func(h *FileHandle) T, opts ...FileOption) {
 	t.Helper()
-	conform.Run(t, FileSuite(), func(h *FileHandle) suitedhandle.File { return newSubject(h) }, opts...)
+	conform.Run(t, FileSuite(), fileSubjects(newSubject), opts...)
 }
 
 // FuzzFileSuite registers on f the fuzz target of the property checks of
@@ -87,14 +87,14 @@ func FuzzFileSuite[T suitedhandle.File](
 	opts ...FileOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, FileSuite(), callable, func(h *FileHandle) suitedhandle.File { return newSubject(h) }, opts...)
+	conform.Fuzz(f, FileSuite(), callable, fileSubjects(newSubject), opts...)
 }
 
 // RunFileBudgets applies the allocation ceilings of File, and the ceilings
 // that opts add, to a fresh subject of newSubject for each case.
 func RunFileBudgets[T suitedhandle.File](t *testing.T, newSubject func(h *FileHandle) T, opts ...FileOption) {
 	t.Helper()
-	conform.RunBudgets(t, FileSuite(), func(h *FileHandle) suitedhandle.File { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, FileSuite(), fileSubjects(newSubject), opts...)
 }
 
 // BenchFileSuite measures callable on a subject of newSubject, under the
@@ -106,7 +106,13 @@ func BenchFileSuite[T suitedhandle.File](
 	opts ...FileOption,
 ) {
 	b.Helper()
-	conform.Bench(b, FileSuite(), callable, func(h *FileHandle) suitedhandle.File { return newSubject(h) }, opts...)
+	conform.Bench(b, FileSuite(), callable, fileSubjects(newSubject), opts...)
+}
+
+// fileSubjects returns the factory of the subjects of File that calls
+// newSubject with the handle of each check.
+func fileSubjects[T suitedhandle.File](newSubject func(h *FileHandle) T) func(h *FileHandle) suitedhandle.File {
+	return func(h *FileHandle) suitedhandle.File { return newSubject(h) }
 }
 
 // fileNameCalls generates the calls of File.Name with the inputs that each
@@ -205,7 +211,7 @@ func RunFSSuite[T suitedhandle.FS](t *testing.T, newSubject func() T, opts ...FS
 // newSubject builds from the handle of each check.
 func RunFSSuiteFromHandle[T suitedhandle.FS](t *testing.T, newSubject func(h *FSHandle) T, opts ...FSOption) {
 	t.Helper()
-	conform.Run(t, FSSuite(), func(h *FSHandle) suitedhandle.FS { return newSubject(h) }, opts...)
+	conform.Run(t, FSSuite(), fsSubjects(newSubject), opts...)
 }
 
 // FuzzFSSuite registers on f the fuzz target of the property checks of
@@ -218,14 +224,14 @@ func FuzzFSSuite[T suitedhandle.FS](
 	opts ...FSOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, FSSuite(), callable, func(h *FSHandle) suitedhandle.FS { return newSubject(h) }, opts...)
+	conform.Fuzz(f, FSSuite(), callable, fsSubjects(newSubject), opts...)
 }
 
 // RunFSBudgets applies the allocation ceilings of FS, and the ceilings
 // that opts add, to a fresh subject of newSubject for each case.
 func RunFSBudgets[T suitedhandle.FS](t *testing.T, newSubject func(h *FSHandle) T, opts ...FSOption) {
 	t.Helper()
-	conform.RunBudgets(t, FSSuite(), func(h *FSHandle) suitedhandle.FS { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, FSSuite(), fsSubjects(newSubject), opts...)
 }
 
 // BenchFSSuite measures callable on a subject of newSubject, under the
@@ -237,7 +243,13 @@ func BenchFSSuite[T suitedhandle.FS](
 	opts ...FSOption,
 ) {
 	b.Helper()
-	conform.Bench(b, FSSuite(), callable, func(h *FSHandle) suitedhandle.FS { return newSubject(h) }, opts...)
+	conform.Bench(b, FSSuite(), callable, fsSubjects(newSubject), opts...)
+}
+
+// fsSubjects returns the factory of the subjects of FS that calls
+// newSubject with the handle of each check.
+func fsSubjects[T suitedhandle.FS](newSubject func(h *FSHandle) T) func(h *FSHandle) suitedhandle.FS {
+	return func(h *FSHandle) suitedhandle.FS { return newSubject(h) }
 }
 
 // fsOpenCalls generates the calls of FS.Open with the inputs that each
@@ -274,4 +286,4 @@ func newFSOver(_ *FSHandle, spend func()) suitedhandle.FS {
 	return fsOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8aa8c7f88c9ded422ad92a62bc2e033032af3b3625c0e125593eded477d95eb7
+// dokimi:provenance sha256:1db1fca8856c0f401728d7eb531f14a32f86d8806c6a886e2761d71c505e1d7f

@@ -81,7 +81,7 @@ func RunFilterSuiteFromHandle[T selfnamed.Filter](
 	opts ...FilterOption,
 ) {
 	t.Helper()
-	conform.Run(t, FilterSuite(), func(h *FilterHandle) selfnamed.Filter { return newSubject(h) }, opts...)
+	conform.Run(t, FilterSuite(), filterSubjects(newSubject), opts...)
 }
 
 // FuzzFilterSuite registers on f the fuzz target of the property checks of
@@ -94,14 +94,14 @@ func FuzzFilterSuite[T selfnamed.Filter](
 	opts ...FilterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, FilterSuite(), callable, func(h *FilterHandle) selfnamed.Filter { return newSubject(h) }, opts...)
+	conform.Fuzz(f, FilterSuite(), callable, filterSubjects(newSubject), opts...)
 }
 
 // RunFilterBudgets applies the allocation ceilings of Filter, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunFilterBudgets[T selfnamed.Filter](t *testing.T, newSubject func(h *FilterHandle) T, opts ...FilterOption) {
 	t.Helper()
-	conform.RunBudgets(t, FilterSuite(), func(h *FilterHandle) selfnamed.Filter { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, FilterSuite(), filterSubjects(newSubject), opts...)
 }
 
 // BenchFilterSuite measures callable on a subject of newSubject, under the
@@ -113,7 +113,13 @@ func BenchFilterSuite[T selfnamed.Filter](
 	opts ...FilterOption,
 ) {
 	b.Helper()
-	conform.Bench(b, FilterSuite(), callable, func(h *FilterHandle) selfnamed.Filter { return newSubject(h) }, opts...)
+	conform.Bench(b, FilterSuite(), callable, filterSubjects(newSubject), opts...)
+}
+
+// filterSubjects returns the factory of the subjects of Filter that calls
+// newSubject with the handle of each check.
+func filterSubjects[T selfnamed.Filter](newSubject func(h *FilterHandle) T) func(h *FilterHandle) selfnamed.Filter {
+	return func(h *FilterHandle) selfnamed.Filter { return newSubject(h) }
 }
 
 // filterFilterCalls generates the calls of Filter.Filter with the inputs
@@ -197,4 +203,4 @@ func newFilterOver(_ *FilterHandle, spend func()) selfnamed.Filter {
 	return filterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:93ecf8b30433a807478a961f169702660beca05cc8fa74ea729db9b9449c3c46
+// dokimi:provenance sha256:8086d55027834521b3057b74c04ef0ba9acc3983d7cee5729285d918087c225c

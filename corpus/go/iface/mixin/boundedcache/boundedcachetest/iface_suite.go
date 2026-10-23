@@ -94,7 +94,7 @@ func RunMixedSuiteFromHandle[T boundedcache.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -107,14 +107,14 @@ func FuzzMixedSuite[T boundedcache.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T boundedcache.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -126,7 +126,13 @@ func BenchMixedSuite[T boundedcache.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T boundedcache.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) boundedcache.Mixed {
+	return func(h *MixedHandle) boundedcache.Mixed { return newSubject(h) }
 }
 
 // mixedPutCalls generates the calls of Mixed.Put with the inputs that each
@@ -215,4 +221,4 @@ func newMixedOver(_ *MixedHandle, spend func()) boundedcache.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:a93fa739cff2b61475e68b97b9b94ba117747cdae4780668683b0f773bb16c69
+// dokimi:provenance sha256:dff07755a484b20311020c7ff6dc1c15f3ff50d211ca4229c5de3f351895ea86

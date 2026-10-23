@@ -76,7 +76,7 @@ func RunMixedSuite[T sideeffect.Mixed](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T sideeffect.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -89,14 +89,14 @@ func FuzzMixedSuite[T sideeffect.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T sideeffect.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -108,7 +108,13 @@ func BenchMixedSuite[T sideeffect.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T sideeffect.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) sideeffect.Mixed {
+	return func(h *MixedHandle) sideeffect.Mixed { return newSubject(h) }
 }
 
 // mixedTouchCalls generates the calls of Mixed.Touch with the inputs that
@@ -160,4 +166,4 @@ func newMixedOver(_ *MixedHandle, spend func()) sideeffect.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6e7b278659a01ffc9c8e5232f8385a264e00ee99b1256c06bde4200debacc74e
+// dokimi:provenance sha256:df5763bd3f1d1a76d19e6e536fa7358a0e08bfb2f67ec0aace79fc1ebda19283

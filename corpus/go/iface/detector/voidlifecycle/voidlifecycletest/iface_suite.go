@@ -71,11 +71,7 @@ func RunVoidLifecycleSuiteFromHandle[T voidlifecycle.VoidLifecycle](
 	opts ...VoidLifecycleOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		VoidLifecycleSuite(),
-		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
-		opts...)
+	conform.Run(t, VoidLifecycleSuite(), voidLifecycleSubjects(newSubject), opts...)
 }
 
 // FuzzVoidLifecycleSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
 	opts ...VoidLifecycleOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		VoidLifecycleSuite(),
-		callable,
-		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, VoidLifecycleSuite(), callable, voidLifecycleSubjects(newSubject), opts...)
 }
 
 // RunVoidLifecycleBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunVoidLifecycleBudgets[T voidlifecycle.VoidLifecycle](
 	opts ...VoidLifecycleOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		VoidLifecycleSuite(),
-		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, VoidLifecycleSuite(), voidLifecycleSubjects(newSubject), opts...)
 }
 
 // BenchVoidLifecycleSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
 	opts ...VoidLifecycleOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		VoidLifecycleSuite(),
-		callable,
-		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
-		opts...)
+	conform.Bench(b, VoidLifecycleSuite(), callable, voidLifecycleSubjects(newSubject), opts...)
+}
+
+// voidLifecycleSubjects returns the factory of the subjects of
+// VoidLifecycle that calls newSubject with the handle of each check.
+func voidLifecycleSubjects[T voidlifecycle.VoidLifecycle](
+	newSubject func(h *VoidLifecycleHandle) T,
+) func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle {
+	return func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) }
 }
 
 // voidLifecycleStopCalls generates the calls of VoidLifecycle.Stop with
@@ -161,4 +151,4 @@ func newVoidLifecycleOver(_ *VoidLifecycleHandle, spend func()) voidlifecycle.Vo
 	return voidLifecycleOver{spend: spend}
 }
 
-// dokimi:provenance sha256:607a680a5d8fe48fb31ec3efc20cd7327e3af55628280539ba4327aa4268c628
+// dokimi:provenance sha256:297f04d33942d1a15c61e1333a846f9948324e88b4751ec55409a64519c8e320

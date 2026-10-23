@@ -83,7 +83,7 @@ func RunCatalogSuiteFromHandle[T seededreader.Catalog](
 	opts ...CatalogOption,
 ) {
 	t.Helper()
-	conform.Run(t, CatalogSuite(), func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) }, opts...)
+	conform.Run(t, CatalogSuite(), catalogSubjects(newSubject), opts...)
 }
 
 // FuzzCatalogSuite registers on f the fuzz target of the property checks
@@ -96,12 +96,7 @@ func FuzzCatalogSuite[T seededreader.Catalog](
 	opts ...CatalogOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		CatalogSuite(),
-		callable,
-		func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, CatalogSuite(), callable, catalogSubjects(newSubject), opts...)
 }
 
 // RunCatalogBudgets applies the allocation ceilings of Catalog, and the
@@ -112,7 +107,7 @@ func RunCatalogBudgets[T seededreader.Catalog](
 	opts ...CatalogOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, CatalogSuite(), func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, CatalogSuite(), catalogSubjects(newSubject), opts...)
 }
 
 // BenchCatalogSuite measures callable on a subject of newSubject, under
@@ -124,12 +119,15 @@ func BenchCatalogSuite[T seededreader.Catalog](
 	opts ...CatalogOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		CatalogSuite(),
-		callable,
-		func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) },
-		opts...)
+	conform.Bench(b, CatalogSuite(), callable, catalogSubjects(newSubject), opts...)
+}
+
+// catalogSubjects returns the factory of the subjects of Catalog that
+// calls newSubject with the handle of each check.
+func catalogSubjects[T seededreader.Catalog](
+	newSubject func(h *CatalogHandle) T,
+) func(h *CatalogHandle) seededreader.Catalog {
+	return func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) }
 }
 
 // catalogLookupCalls generates the calls of Catalog.Lookup with the inputs
@@ -191,4 +189,4 @@ func newCatalogOver(_ *CatalogHandle, spend func()) seededreader.Catalog {
 	return catalogOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0e6c6abfa1f51068bd5dce91801fd75696062faa474c8e23e0479acd137d1312
+// dokimi:provenance sha256:eca2553d9f24f896f6ad0ebc48c97e6bd23a1023c52485c5b4fbddbb3f748313

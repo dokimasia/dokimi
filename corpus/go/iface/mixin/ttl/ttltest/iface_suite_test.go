@@ -79,6 +79,34 @@ func TestMixedSuite(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("MixedChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(ttltest.MixedChecks.Read.ExpiresAfterTheLifetime()),
+			"Mixed.Read/expires-after-the-lifetime",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(ttltest.MixedChecks.Read.AllocationBudget()),
+			"Mixed.Read/allocation-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(ttltest.MixedChecks.Read.LatencyBudget()),
+			"Mixed.Read/latency-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(ttltest.MixedChecks.Read.MeanLatencyBudget()),
+			"Mixed.Read/mean-latency-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // TestMixedSuiteAllocs falsifies the allocation ceilings of the suite of
@@ -145,4 +173,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:88175045b85b4e0d0fa3bc08302d1d05d6178e87e6d314b335af3d529ecacb81
+// dokimi:provenance sha256:fb163c3b6a5350e9cc9f840d4992d61f7f6f72c44d1bf0ba4d9e6012de1db171

@@ -79,6 +79,16 @@ func TestBatchedSuite(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("BatchedChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit()),
+			"Batched.List/lists-at-most-the-limit",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // batchedIdle returns the planted defect of a ceiling of Batched with a
@@ -165,4 +175,4 @@ func BenchmarkBatchedSuiteParallel(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5b2660ee4991b87ee5ac60600d6f1cb17c3c62b43e1238e243652f5d344c309e
+// dokimi:provenance sha256:5effba5cee6a883d98fb95814ca34216dca1521899e5c5b3edc12c4652b91601

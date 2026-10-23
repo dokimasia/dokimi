@@ -93,11 +93,7 @@ func RunTxWithRetrySuiteFromHandle[T txwithretry.TxWithRetry](
 	opts ...TxWithRetryOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		TxWithRetrySuite(),
-		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
-		opts...)
+	conform.Run(t, TxWithRetrySuite(), txWithRetrySubjects(newSubject), opts...)
 }
 
 // FuzzTxWithRetrySuite registers on f the fuzz target of the property
@@ -110,12 +106,7 @@ func FuzzTxWithRetrySuite[T txwithretry.TxWithRetry](
 	opts ...TxWithRetryOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		TxWithRetrySuite(),
-		callable,
-		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, TxWithRetrySuite(), callable, txWithRetrySubjects(newSubject), opts...)
 }
 
 // RunTxWithRetryBudgets applies the allocation ceilings of TxWithRetry,
@@ -127,11 +118,7 @@ func RunTxWithRetryBudgets[T txwithretry.TxWithRetry](
 	opts ...TxWithRetryOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		TxWithRetrySuite(),
-		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, TxWithRetrySuite(), txWithRetrySubjects(newSubject), opts...)
 }
 
 // BenchTxWithRetrySuite measures callable on a subject of newSubject,
@@ -143,12 +130,15 @@ func BenchTxWithRetrySuite[T txwithretry.TxWithRetry](
 	opts ...TxWithRetryOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		TxWithRetrySuite(),
-		callable,
-		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
-		opts...)
+	conform.Bench(b, TxWithRetrySuite(), callable, txWithRetrySubjects(newSubject), opts...)
+}
+
+// txWithRetrySubjects returns the factory of the subjects of TxWithRetry
+// that calls newSubject with the handle of each check.
+func txWithRetrySubjects[T txwithretry.TxWithRetry](
+	newSubject func(h *TxWithRetryHandle) T,
+) func(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) }
 }
 
 // txWithRetryBeginCalls generates the calls of TxWithRetry.Begin with the
@@ -211,4 +201,4 @@ func newTxWithRetryOver(_ *TxWithRetryHandle, spend func()) txwithretry.TxWithRe
 	return txWithRetryOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9fc524c47662efde53cdbdff54f04b9f27a1b2ddc089f892a58d791755664f13
+// dokimi:provenance sha256:c7ad80db10dd53c79ed4f69c4a71ffd7ce431943cc2d43eb56e95e6830736d9d

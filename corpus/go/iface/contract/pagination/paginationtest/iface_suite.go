@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T pagination.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) pagination.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,12 +93,7 @@ func FuzzContractSuite[T pagination.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) pagination.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -109,11 +104,7 @@ func RunContractBudgets[T pagination.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) pagination.Contract { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -125,12 +116,15 @@ func BenchContractSuite[T pagination.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) pagination.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T pagination.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) pagination.Contract {
+	return func(h *ContractHandle) pagination.Contract { return newSubject(h) }
 }
 
 // contractFetchCalls generates the calls of Contract.Fetch with the inputs
@@ -182,4 +176,4 @@ func newContractOver(_ *ContractHandle, spend func()) pagination.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ee3e7de9fb5afe0a4cb4ebba75f9f589bdbd8cb2c705aaecec51b503de3ca949
+// dokimi:provenance sha256:059fe667bc45175d707526d69abe25183f10c8c35ea5c0aba0b0762e53d77234

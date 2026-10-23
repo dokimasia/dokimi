@@ -93,7 +93,7 @@ func RunContractSuiteFromHandle[T pool.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) pool.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -106,14 +106,14 @@ func FuzzContractSuite[T pool.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) pool.Contract { return newSubject(h) }, opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T pool.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) pool.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -125,7 +125,13 @@ func BenchContractSuite[T pool.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(b, ContractSuite(), callable, func(h *ContractHandle) pool.Contract { return newSubject(h) }, opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T pool.Contract](newSubject func(h *ContractHandle) T) func(h *ContractHandle) pool.Contract {
+	return func(h *ContractHandle) pool.Contract { return newSubject(h) }
 }
 
 // contractGetCalls generates the calls of Contract.Get with the inputs
@@ -191,4 +197,4 @@ func newContractOver(_ *ContractHandle, spend func()) pool.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:eec21278337a5ad05b67018cfb70d3bd134ff47c7dd4ad07b54c5c1fccf0edfc
+// dokimi:provenance sha256:e153e11e9e7eb827749a5605904266b29c6d751ec38c852473b02d381ce37026

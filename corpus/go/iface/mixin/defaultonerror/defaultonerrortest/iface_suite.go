@@ -82,7 +82,7 @@ func RunMixedSuiteFromHandle[T defaultonerror.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) defaultonerror.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -95,14 +95,14 @@ func FuzzMixedSuite[T defaultonerror.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) defaultonerror.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T defaultonerror.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) defaultonerror.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -114,12 +114,15 @@ func BenchMixedSuite[T defaultonerror.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) defaultonerror.Mixed { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T defaultonerror.Mixed](
+	newSubject func(h *MixedHandle) T,
+) func(h *MixedHandle) defaultonerror.Mixed {
+	return func(h *MixedHandle) defaultonerror.Mixed { return newSubject(h) }
 }
 
 // mixedStoreCalls generates the calls of Mixed.Store with the inputs that
@@ -182,4 +185,4 @@ func newMixedOver(_ *MixedHandle, spend func()) defaultonerror.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:adf774acdff5d118c0569288364c05bf8ba146884fa7041cd3b14ba9b96c1d44
+// dokimi:provenance sha256:f276f94cd06e855bbce1e52dd1ae89527bd199da75e4fe7db11e0d18a130da3a

@@ -67,11 +67,7 @@ func RunMultiReaderSuiteFromHandle[T multireader.MultiReader](
 	opts ...MultiReaderOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		MultiReaderSuite(),
-		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
-		opts...)
+	conform.Run(t, MultiReaderSuite(), multiReaderSubjects(newSubject), opts...)
 }
 
 // FuzzMultiReaderSuite registers on f the fuzz target of the property
@@ -84,12 +80,7 @@ func FuzzMultiReaderSuite[T multireader.MultiReader](
 	opts ...MultiReaderOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MultiReaderSuite(),
-		callable,
-		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MultiReaderSuite(), callable, multiReaderSubjects(newSubject), opts...)
 }
 
 // RunMultiReaderBudgets applies the allocation ceilings of MultiReader,
@@ -101,11 +92,7 @@ func RunMultiReaderBudgets[T multireader.MultiReader](
 	opts ...MultiReaderOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		MultiReaderSuite(),
-		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, MultiReaderSuite(), multiReaderSubjects(newSubject), opts...)
 }
 
 // BenchMultiReaderSuite measures callable on a subject of newSubject,
@@ -117,12 +104,15 @@ func BenchMultiReaderSuite[T multireader.MultiReader](
 	opts ...MultiReaderOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MultiReaderSuite(),
-		callable,
-		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MultiReaderSuite(), callable, multiReaderSubjects(newSubject), opts...)
+}
+
+// multiReaderSubjects returns the factory of the subjects of MultiReader
+// that calls newSubject with the handle of each check.
+func multiReaderSubjects[T multireader.MultiReader](
+	newSubject func(h *MultiReaderHandle) T,
+) func(h *MultiReaderHandle) multireader.MultiReader {
+	return func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) }
 }
 
 // multiReaderGetWithMetaCalls generates the calls of
@@ -161,4 +151,4 @@ func newMultiReaderOver(_ *MultiReaderHandle, spend func()) multireader.MultiRea
 	return multiReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f7978bf53f88b34bef1c5f1bfcb274585ac85dd2640ae4ac9fb4d91a7956c82c
+// dokimi:provenance sha256:dbff8ee5a5ad7665552e228da3fea86df3378ea5b04456220d93866f7e7e4229

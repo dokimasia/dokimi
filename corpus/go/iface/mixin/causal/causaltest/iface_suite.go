@@ -75,7 +75,7 @@ func RunMixedSuite[T causal.Mixed](t *testing.T, newSubject func() T, opts ...Mi
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T causal.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) causal.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -88,14 +88,14 @@ func FuzzMixedSuite[T causal.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) causal.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T causal.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) causal.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -107,7 +107,13 @@ func BenchMixedSuite[T causal.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) causal.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T causal.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) causal.Mixed {
+	return func(h *MixedHandle) causal.Mixed { return newSubject(h) }
 }
 
 // mixedStoreCalls generates the calls of Mixed.Store with the inputs that
@@ -160,4 +166,4 @@ func newMixedOver(_ *MixedHandle, spend func()) causal.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:135b612fb38f5e03b70ba5abba7750ab12b4a63c366823539b1042d469eb035f
+// dokimi:provenance sha256:72019bd8024fb6c750cd444f1bdb78250db76a132b4627143dabdcd9e251506d

@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T outbox.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) outbox.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,19 +93,14 @@ func FuzzContractSuite[T outbox.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) outbox.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T outbox.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) outbox.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -117,12 +112,13 @@ func BenchContractSuite[T outbox.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) outbox.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T outbox.Contract](newSubject func(h *ContractHandle) T) func(h *ContractHandle) outbox.Contract {
+	return func(h *ContractHandle) outbox.Contract { return newSubject(h) }
 }
 
 // contractAppendCalls generates the calls of Contract.Append with the
@@ -173,4 +169,4 @@ func newContractOver(_ *ContractHandle, spend func()) outbox.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7e9d1ea3621b1157462d2c9ce03f0f2c6cc46ccaa262ba7fcb6944025de10ddf
+// dokimi:provenance sha256:f6c41257b272f3295f88f3b58efcec3f27ae276c4b8bf331be4a5cd9a066b179

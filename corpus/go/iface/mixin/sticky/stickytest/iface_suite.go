@@ -75,7 +75,7 @@ func RunMixedSuite[T sticky.Mixed](t *testing.T, newSubject func() T, opts ...Mi
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T sticky.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -88,14 +88,14 @@ func FuzzMixedSuite[T sticky.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T sticky.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -107,7 +107,13 @@ func BenchMixedSuite[T sticky.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) sticky.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T sticky.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) sticky.Mixed {
+	return func(h *MixedHandle) sticky.Mixed { return newSubject(h) }
 }
 
 // mixedStoreCalls generates the calls of Mixed.Store with the inputs that
@@ -159,4 +165,4 @@ func newMixedOver(_ *MixedHandle, spend func()) sticky.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:11e8bc05e53afb557b844f2c0d1c5bfddb671d22ac4e2c488edb6e8f65fe74fd
+// dokimi:provenance sha256:d6e59684368139145ce8c29a9cbdf7ee5e409d375939ecb0474d96be1156eb28

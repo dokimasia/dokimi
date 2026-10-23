@@ -63,7 +63,7 @@ func RunCloserSuite[T closer.Closer](t *testing.T, newSubject func() T, opts ...
 // newSubject builds from the handle of each check.
 func RunCloserSuiteFromHandle[T closer.Closer](t *testing.T, newSubject func(h *CloserHandle) T, opts ...CloserOption) {
 	t.Helper()
-	conform.Run(t, CloserSuite(), func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+	conform.Run(t, CloserSuite(), closerSubjects(newSubject), opts...)
 }
 
 // FuzzCloserSuite registers on f the fuzz target of the property checks of
@@ -76,14 +76,14 @@ func FuzzCloserSuite[T closer.Closer](
 	opts ...CloserOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, CloserSuite(), callable, func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+	conform.Fuzz(f, CloserSuite(), callable, closerSubjects(newSubject), opts...)
 }
 
 // RunCloserBudgets applies the allocation ceilings of Closer, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunCloserBudgets[T closer.Closer](t *testing.T, newSubject func(h *CloserHandle) T, opts ...CloserOption) {
 	t.Helper()
-	conform.RunBudgets(t, CloserSuite(), func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, CloserSuite(), closerSubjects(newSubject), opts...)
 }
 
 // BenchCloserSuite measures callable on a subject of newSubject, under the
@@ -95,7 +95,13 @@ func BenchCloserSuite[T closer.Closer](
 	opts ...CloserOption,
 ) {
 	b.Helper()
-	conform.Bench(b, CloserSuite(), callable, func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
+	conform.Bench(b, CloserSuite(), callable, closerSubjects(newSubject), opts...)
+}
+
+// closerSubjects returns the factory of the subjects of Closer that calls
+// newSubject with the handle of each check.
+func closerSubjects[T closer.Closer](newSubject func(h *CloserHandle) T) func(h *CloserHandle) closer.Closer {
+	return func(h *CloserHandle) closer.Closer { return newSubject(h) }
 }
 
 // closerCloseCalls generates the calls of Closer.Close with the inputs
@@ -130,4 +136,4 @@ func newCloserOver(_ *CloserHandle, spend func()) closer.Closer {
 	return closerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:399bc2e99ca4a4cfa854dfde68b301cf1895802418338eea0127b288a7ef1401
+// dokimi:provenance sha256:96981e35c9503fd3c5159cfccaa84e76f8f6001629e51d75075cac49527a695e

@@ -63,7 +63,7 @@ func RunPureSuite[T pure.Pure](t *testing.T, newSubject func() T, opts ...PureOp
 // newSubject builds from the handle of each check.
 func RunPureSuiteFromHandle[T pure.Pure](t *testing.T, newSubject func(h *PureHandle) T, opts ...PureOption) {
 	t.Helper()
-	conform.Run(t, PureSuite(), func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+	conform.Run(t, PureSuite(), pureSubjects(newSubject), opts...)
 }
 
 // FuzzPureSuite registers on f the fuzz target of the property checks of
@@ -76,14 +76,14 @@ func FuzzPureSuite[T pure.Pure](
 	opts ...PureOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+	conform.Fuzz(f, PureSuite(), callable, pureSubjects(newSubject), opts...)
 }
 
 // RunPureBudgets applies the allocation ceilings of Pure, and the ceilings
 // that opts add, to a fresh subject of newSubject for each case.
 func RunPureBudgets[T pure.Pure](t *testing.T, newSubject func(h *PureHandle) T, opts ...PureOption) {
 	t.Helper()
-	conform.RunBudgets(t, PureSuite(), func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, PureSuite(), pureSubjects(newSubject), opts...)
 }
 
 // BenchPureSuite measures callable on a subject of newSubject, under the
@@ -95,7 +95,13 @@ func BenchPureSuite[T pure.Pure](
 	opts ...PureOption,
 ) {
 	b.Helper()
-	conform.Bench(b, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
+	conform.Bench(b, PureSuite(), callable, pureSubjects(newSubject), opts...)
+}
+
+// pureSubjects returns the factory of the subjects of Pure that calls
+// newSubject with the handle of each check.
+func pureSubjects[T pure.Pure](newSubject func(h *PureHandle) T) func(h *PureHandle) pure.Pure {
+	return func(h *PureHandle) pure.Pure { return newSubject(h) }
 }
 
 // pureDescribeCalls generates the calls of Pure.Describe with the inputs
@@ -131,4 +137,4 @@ func newPureOver(_ *PureHandle, spend func()) pure.Pure {
 	return pureOver{spend: spend}
 }
 
-// dokimi:provenance sha256:aa972912104a90efc753aa632cb53b3651fbcb0c84546886446562c3e7982e76
+// dokimi:provenance sha256:05a4e3286959208b73abc1e1250820478bf40890e191b437136fa6b80222eeef

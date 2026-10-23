@@ -74,7 +74,7 @@ func RunMixedSuite[T scope.Mixed](t *testing.T, newSubject func() T, opts ...Mix
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T scope.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -87,14 +87,14 @@ func FuzzMixedSuite[T scope.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T scope.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -106,7 +106,13 @@ func BenchMixedSuite[T scope.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) scope.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T scope.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) scope.Mixed {
+	return func(h *MixedHandle) scope.Mixed { return newSubject(h) }
 }
 
 // mixedSetCalls generates the calls of Mixed.Set with the inputs that each
@@ -161,4 +167,4 @@ func newMixedOver(_ *MixedHandle, spend func()) scope.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ff44d1d21edbcf3ee0ee82b17cdf4edee14755f1945011164600bdd0e6ab6d63
+// dokimi:provenance sha256:b4e0964ef9670384ff5de9c371dd37ccedff61263027aa474bb718e5c4742e7d

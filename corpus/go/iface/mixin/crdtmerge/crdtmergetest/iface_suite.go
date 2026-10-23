@@ -89,7 +89,7 @@ func RunMixedSuite[T crdtmerge.Mixed](t *testing.T, newSubject func() T, opts ..
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T crdtmerge.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -102,14 +102,14 @@ func FuzzMixedSuite[T crdtmerge.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T crdtmerge.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -121,7 +121,13 @@ func BenchMixedSuite[T crdtmerge.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T crdtmerge.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) crdtmerge.Mixed {
+	return func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }
 }
 
 // mixedMergeCalls generates the calls of Mixed.Merge with the inputs that
@@ -223,4 +229,4 @@ func newMixedOver(_ *MixedHandle, spend func()) crdtmerge.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d44b5ca184cfed50039b7527dd33fd273e749312aade9ccc49afb975dc6fa1a4
+// dokimi:provenance sha256:36e75ac1be2eecfb561d9f8f56869078046a268d4e0566283a55ad3c7181d1d0

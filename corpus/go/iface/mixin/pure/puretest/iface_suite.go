@@ -63,7 +63,7 @@ func RunMixedSuite[T pure.Mixed](t *testing.T, newSubject func() T, opts ...Mixe
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T pure.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) pure.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -76,14 +76,14 @@ func FuzzMixedSuite[T pure.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) pure.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T pure.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) pure.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -95,7 +95,13 @@ func BenchMixedSuite[T pure.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) pure.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T pure.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) pure.Mixed {
+	return func(h *MixedHandle) pure.Mixed { return newSubject(h) }
 }
 
 // mixedDeriveCalls generates the calls of Mixed.Derive with the inputs
@@ -132,4 +138,4 @@ func newMixedOver(_ *MixedHandle, spend func()) pure.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ae2d44ecb16f052527777c0a392cfdffad4ce93ba131f6d0633cf5e0fe6560fb
+// dokimi:provenance sha256:a55c0f1d86656456ea3c18bc8df8390600c4d948c65d53184200ca7679c0cfa2

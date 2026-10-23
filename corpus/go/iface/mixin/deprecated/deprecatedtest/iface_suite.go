@@ -74,7 +74,7 @@ func RunMixedSuite[T deprecated.Mixed](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T deprecated.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -87,14 +87,14 @@ func FuzzMixedSuite[T deprecated.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T deprecated.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -106,7 +106,13 @@ func BenchMixedSuite[T deprecated.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T deprecated.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) deprecated.Mixed {
+	return func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }
 }
 
 // mixedOldCalls generates the calls of Mixed.Old with the inputs that each
@@ -159,4 +165,4 @@ func newMixedOver(_ *MixedHandle, spend func()) deprecated.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:4090bf0f1134d551b4e4482a15c1df262294d76c1797f9d88a2130ccdbe42921
+// dokimi:provenance sha256:2dc67bcdbeebd703f3380a6ad33075c53332992bc95326c22d12d25c5e29be92

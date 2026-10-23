@@ -93,7 +93,7 @@ func RunMixedSuiteFromHandle[T tamperevident.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -106,14 +106,14 @@ func FuzzMixedSuite[T tamperevident.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T tamperevident.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -125,7 +125,13 @@ func BenchMixedSuite[T tamperevident.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T tamperevident.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) tamperevident.Mixed {
+	return func(h *MixedHandle) tamperevident.Mixed { return newSubject(h) }
 }
 
 // mixedStoreCalls generates the calls of Mixed.Store with the inputs that
@@ -189,4 +195,4 @@ func newMixedOver(_ *MixedHandle, spend func()) tamperevident.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:cf31130b69c610c9a90957c1dbe9e5e08757c734407da6e13a13ebd873a4ae47
+// dokimi:provenance sha256:bdd5627ff63e2a7e7ef5b0748f3270596d842bd4c04008a0e446882a1e36ab35

@@ -67,7 +67,7 @@ func RunContractSuiteFromHandle[T ratelimit.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) ratelimit.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -80,12 +80,7 @@ func FuzzContractSuite[T ratelimit.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) ratelimit.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -96,7 +91,7 @@ func RunContractBudgets[T ratelimit.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) ratelimit.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -108,12 +103,15 @@ func BenchContractSuite[T ratelimit.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) ratelimit.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T ratelimit.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) ratelimit.Contract {
+	return func(h *ContractHandle) ratelimit.Contract { return newSubject(h) }
 }
 
 // contractRunCalls generates the calls of Contract.Run with the inputs
@@ -149,4 +147,4 @@ func newContractOver(_ *ContractHandle, spend func()) ratelimit.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:a78e4263d9dc9a086772df90c4481a0078d7d98f0cee81f8b4ee2e0ce15037bc
+// dokimi:provenance sha256:48fa8af5cbe470202fb4832a77288432539a2bcb973714525adc8818731669bb

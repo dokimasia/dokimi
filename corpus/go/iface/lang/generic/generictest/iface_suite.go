@@ -78,7 +78,7 @@ func RunStoreSuiteFromHandle[T generic.Store[int, int]](
 	opts ...StoreOption,
 ) {
 	t.Helper()
-	conform.Run(t, StoreSuite(), func(h *StoreHandle) generic.Store[int, int] { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // FuzzStoreSuite registers on f the fuzz target of the property checks of
@@ -91,19 +91,14 @@ func FuzzStoreSuite[T generic.Store[int, int]](
 	opts ...StoreOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		StoreSuite(),
-		callable,
-		func(h *StoreHandle) generic.Store[int, int] { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, StoreSuite(), callable, storeSubjects(newSubject), opts...)
 }
 
 // RunStoreBudgets applies the allocation ceilings of Store, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunStoreBudgets[T generic.Store[int, int]](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
 	t.Helper()
-	conform.RunBudgets(t, StoreSuite(), func(h *StoreHandle) generic.Store[int, int] { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // BenchStoreSuite measures callable on a subject of newSubject, under the
@@ -115,12 +110,15 @@ func BenchStoreSuite[T generic.Store[int, int]](
 	opts ...StoreOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		StoreSuite(),
-		callable,
-		func(h *StoreHandle) generic.Store[int, int] { return newSubject(h) },
-		opts...)
+	conform.Bench(b, StoreSuite(), callable, storeSubjects(newSubject), opts...)
+}
+
+// storeSubjects returns the factory of the subjects of Store that calls
+// newSubject with the handle of each check.
+func storeSubjects[T generic.Store[int, int]](
+	newSubject func(h *StoreHandle) T,
+) func(h *StoreHandle) generic.Store[int, int] {
+	return func(h *StoreHandle) generic.Store[int, int] { return newSubject(h) }
 }
 
 // storeGetCalls generates the calls of Store.Get with the inputs that each
@@ -173,4 +171,4 @@ func newStoreOver(_ *StoreHandle, spend func()) generic.Store[int, int] {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:94a6542a130057e21772cac8cf7e5b22a4690ca4819bbe5f29d7fea07acb8972
+// dokimi:provenance sha256:af337c2127d5316ad33440c7fe1462663c2a1808b9a53eda80d84259c9b35c40

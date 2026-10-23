@@ -78,7 +78,7 @@ func RunStoreSuite[T roledtypes.Store](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunStoreSuiteFromHandle[T roledtypes.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
 	t.Helper()
-	conform.Run(t, StoreSuite(), func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // FuzzStoreSuite registers on f the fuzz target of the property checks of
@@ -91,14 +91,14 @@ func FuzzStoreSuite[T roledtypes.Store](
 	opts ...StoreOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, StoreSuite(), callable, func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
+	conform.Fuzz(f, StoreSuite(), callable, storeSubjects(newSubject), opts...)
 }
 
 // RunStoreBudgets applies the allocation ceilings of Store, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunStoreBudgets[T roledtypes.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
 	t.Helper()
-	conform.RunBudgets(t, StoreSuite(), func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // BenchStoreSuite measures callable on a subject of newSubject, under the
@@ -110,7 +110,13 @@ func BenchStoreSuite[T roledtypes.Store](
 	opts ...StoreOption,
 ) {
 	b.Helper()
-	conform.Bench(b, StoreSuite(), callable, func(h *StoreHandle) roledtypes.Store { return newSubject(h) }, opts...)
+	conform.Bench(b, StoreSuite(), callable, storeSubjects(newSubject), opts...)
+}
+
+// storeSubjects returns the factory of the subjects of Store that calls
+// newSubject with the handle of each check.
+func storeSubjects[T roledtypes.Store](newSubject func(h *StoreHandle) T) func(h *StoreHandle) roledtypes.Store {
+	return func(h *StoreHandle) roledtypes.Store { return newSubject(h) }
 }
 
 // storePutCalls generates the calls of Store.Put with the inputs that each
@@ -184,4 +190,4 @@ func newStoreOver(_ *StoreHandle, spend func()) roledtypes.Store {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:a80bde99abeb12ff6b25bb106c24d5ad4051824cf47e00e12811b91dfee020ce
+// dokimi:provenance sha256:1ff27db063b54848f44d82a82e9927b57e895846251c2861d22cc6abd3585ed8

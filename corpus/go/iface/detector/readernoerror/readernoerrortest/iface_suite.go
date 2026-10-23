@@ -71,11 +71,7 @@ func RunReaderNoErrorSuiteFromHandle[T readernoerror.ReaderNoError](
 	opts ...ReaderNoErrorOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		ReaderNoErrorSuite(),
-		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
-		opts...)
+	conform.Run(t, ReaderNoErrorSuite(), readerNoErrorSubjects(newSubject), opts...)
 }
 
 // FuzzReaderNoErrorSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzReaderNoErrorSuite[T readernoerror.ReaderNoError](
 	opts ...ReaderNoErrorOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ReaderNoErrorSuite(),
-		callable,
-		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ReaderNoErrorSuite(), callable, readerNoErrorSubjects(newSubject), opts...)
 }
 
 // RunReaderNoErrorBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunReaderNoErrorBudgets[T readernoerror.ReaderNoError](
 	opts ...ReaderNoErrorOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ReaderNoErrorSuite(),
-		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ReaderNoErrorSuite(), readerNoErrorSubjects(newSubject), opts...)
 }
 
 // BenchReaderNoErrorSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchReaderNoErrorSuite[T readernoerror.ReaderNoError](
 	opts ...ReaderNoErrorOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ReaderNoErrorSuite(),
-		callable,
-		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ReaderNoErrorSuite(), callable, readerNoErrorSubjects(newSubject), opts...)
+}
+
+// readerNoErrorSubjects returns the factory of the subjects of
+// ReaderNoError that calls newSubject with the handle of each check.
+func readerNoErrorSubjects[T readernoerror.ReaderNoError](
+	newSubject func(h *ReaderNoErrorHandle) T,
+) func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError {
+	return func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) }
 }
 
 // readerNoErrorLookupCalls generates the calls of ReaderNoError.Lookup
@@ -165,4 +155,4 @@ func newReaderNoErrorOver(_ *ReaderNoErrorHandle, spend func()) readernoerror.Re
 	return readerNoErrorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:494906dd12031f8111df1ec09202163bba534df7ba872544dabd9f0e377dbdfb
+// dokimi:provenance sha256:21fc9920e6aec2b924f6fd5c28a322a98ead3cbd12e80a2fb1fb4d38eeb0aaf5

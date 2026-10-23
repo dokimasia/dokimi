@@ -67,7 +67,7 @@ func RunAggregatorSuiteFromHandle[T aggregator.Aggregator](
 	opts ...AggregatorOption,
 ) {
 	t.Helper()
-	conform.Run(t, AggregatorSuite(), func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) }, opts...)
+	conform.Run(t, AggregatorSuite(), aggregatorSubjects(newSubject), opts...)
 }
 
 // FuzzAggregatorSuite registers on f the fuzz target of the property
@@ -80,12 +80,7 @@ func FuzzAggregatorSuite[T aggregator.Aggregator](
 	opts ...AggregatorOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		AggregatorSuite(),
-		callable,
-		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, AggregatorSuite(), callable, aggregatorSubjects(newSubject), opts...)
 }
 
 // RunAggregatorBudgets applies the allocation ceilings of Aggregator, and
@@ -97,11 +92,7 @@ func RunAggregatorBudgets[T aggregator.Aggregator](
 	opts ...AggregatorOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		AggregatorSuite(),
-		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, AggregatorSuite(), aggregatorSubjects(newSubject), opts...)
 }
 
 // BenchAggregatorSuite measures callable on a subject of newSubject, under
@@ -113,12 +104,15 @@ func BenchAggregatorSuite[T aggregator.Aggregator](
 	opts ...AggregatorOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		AggregatorSuite(),
-		callable,
-		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
-		opts...)
+	conform.Bench(b, AggregatorSuite(), callable, aggregatorSubjects(newSubject), opts...)
+}
+
+// aggregatorSubjects returns the factory of the subjects of Aggregator
+// that calls newSubject with the handle of each check.
+func aggregatorSubjects[T aggregator.Aggregator](
+	newSubject func(h *AggregatorHandle) T,
+) func(h *AggregatorHandle) aggregator.Aggregator {
+	return func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) }
 }
 
 // aggregatorCountCalls generates the calls of Aggregator.Count with the
@@ -154,4 +148,4 @@ func newAggregatorOver(_ *AggregatorHandle, spend func()) aggregator.Aggregator 
 	return aggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:51eb6818cfde021d777dea58f069db8ca8c3c8f5e0b3a9a8d397c56e5a8bed8f
+// dokimi:provenance sha256:bf8478efde6cdd18b2a593e0fb54b03a2a28980333cf8a142800bc2065076e0d

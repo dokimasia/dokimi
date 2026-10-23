@@ -74,7 +74,7 @@ func RunMixedSuite[T partition.Mixed](t *testing.T, newSubject func() T, opts ..
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T partition.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) partition.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -87,14 +87,14 @@ func FuzzMixedSuite[T partition.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) partition.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T partition.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) partition.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -106,7 +106,13 @@ func BenchMixedSuite[T partition.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) partition.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T partition.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) partition.Mixed {
+	return func(h *MixedHandle) partition.Mixed { return newSubject(h) }
 }
 
 // mixedPutCalls generates the calls of Mixed.Put with the inputs that each
@@ -161,4 +167,4 @@ func newMixedOver(_ *MixedHandle, spend func()) partition.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:2bbbb2b2f37e18d75d08f50a7d56cf46597fb570c33412c3276d7c96605e0591
+// dokimi:provenance sha256:997d8383df54d2096bfa50e96637b96b09ce3e16ab5608edbe7a5bce523ee770

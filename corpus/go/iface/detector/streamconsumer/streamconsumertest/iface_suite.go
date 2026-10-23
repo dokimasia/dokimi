@@ -72,11 +72,7 @@ func RunStreamConsumerSuiteFromHandle[T streamconsumer.StreamConsumer](
 	opts ...StreamConsumerOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		StreamConsumerSuite(),
-		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
-		opts...)
+	conform.Run(t, StreamConsumerSuite(), streamConsumerSubjects(newSubject), opts...)
 }
 
 // FuzzStreamConsumerSuite registers on f the fuzz target of the property
@@ -89,12 +85,7 @@ func FuzzStreamConsumerSuite[T streamconsumer.StreamConsumer](
 	opts ...StreamConsumerOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		StreamConsumerSuite(),
-		callable,
-		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, StreamConsumerSuite(), callable, streamConsumerSubjects(newSubject), opts...)
 }
 
 // RunStreamConsumerBudgets applies the allocation ceilings of
@@ -106,11 +97,7 @@ func RunStreamConsumerBudgets[T streamconsumer.StreamConsumer](
 	opts ...StreamConsumerOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		StreamConsumerSuite(),
-		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, StreamConsumerSuite(), streamConsumerSubjects(newSubject), opts...)
 }
 
 // BenchStreamConsumerSuite measures callable on a subject of newSubject,
@@ -122,12 +109,15 @@ func BenchStreamConsumerSuite[T streamconsumer.StreamConsumer](
 	opts ...StreamConsumerOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		StreamConsumerSuite(),
-		callable,
-		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
-		opts...)
+	conform.Bench(b, StreamConsumerSuite(), callable, streamConsumerSubjects(newSubject), opts...)
+}
+
+// streamConsumerSubjects returns the factory of the subjects of
+// StreamConsumer that calls newSubject with the handle of each check.
+func streamConsumerSubjects[T streamconsumer.StreamConsumer](
+	newSubject func(h *StreamConsumerHandle) T,
+) func(h *StreamConsumerHandle) streamconsumer.StreamConsumer {
+	return func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) }
 }
 
 // streamConsumerIngestCalls generates the calls of StreamConsumer.Ingest
@@ -207,4 +197,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d52fb247a5106d3c642a7a9d0a7e2c3fadb1f0fbb6f1e190f89f8caafdc761af
+// dokimi:provenance sha256:daf593dd4d294bf5f84f1c15e85859183007e448e75b73f693564ea733d1d65a

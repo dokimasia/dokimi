@@ -108,7 +108,7 @@ func RunBatchedSuiteFromHandle[T batchedmixins.Batched](
 	opts ...BatchedOption,
 ) {
 	t.Helper()
-	conform.Run(t, BatchedSuite(), func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) }, opts...)
+	conform.Run(t, BatchedSuite(), batchedSubjects(newSubject), opts...)
 }
 
 // FuzzBatchedSuite registers on f the fuzz target of the property checks
@@ -121,12 +121,7 @@ func FuzzBatchedSuite[T batchedmixins.Batched](
 	opts ...BatchedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		BatchedSuite(),
-		callable,
-		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, BatchedSuite(), callable, batchedSubjects(newSubject), opts...)
 }
 
 // RunBatchedBudgets applies the allocation ceilings of Batched, and the
@@ -137,11 +132,7 @@ func RunBatchedBudgets[T batchedmixins.Batched](
 	opts ...BatchedOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		BatchedSuite(),
-		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, BatchedSuite(), batchedSubjects(newSubject), opts...)
 }
 
 // BenchBatchedSuite measures callable on a subject of newSubject, under
@@ -153,12 +144,7 @@ func BenchBatchedSuite[T batchedmixins.Batched](
 	opts ...BatchedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		BatchedSuite(),
-		callable,
-		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
-		opts...)
+	conform.Bench(b, BatchedSuite(), callable, batchedSubjects(newSubject), opts...)
 }
 
 // BenchBatchedSuiteParallel measures callable on a subject of newSubject
@@ -170,12 +156,15 @@ func BenchBatchedSuiteParallel[T batchedmixins.Batched](
 	opts ...BatchedOption,
 ) {
 	b.Helper()
-	conform.BenchParallel(
-		b,
-		BatchedSuite(),
-		callable,
-		func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) },
-		opts...)
+	conform.BenchParallel(b, BatchedSuite(), callable, batchedSubjects(newSubject), opts...)
+}
+
+// batchedSubjects returns the factory of the subjects of Batched that
+// calls newSubject with the handle of each check.
+func batchedSubjects[T batchedmixins.Batched](
+	newSubject func(h *BatchedHandle) T,
+) func(h *BatchedHandle) batchedmixins.Batched {
+	return func(h *BatchedHandle) batchedmixins.Batched { return newSubject(h) }
 }
 
 // batchedPutCalls generates the calls of Batched.Put with the inputs that
@@ -243,4 +232,4 @@ func newBatchedOver(_ *BatchedHandle, spend func()) batchedmixins.Batched {
 	return batchedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6c302efcd2bfdd368bacc3aa5813573f7bbb6ec2cba61a9d196d0cfc2e56d35b
+// dokimi:provenance sha256:e2dc9c4f03b4a3e47bce53611263782622ca396b1f4b6751b20c1b64ce94f8db

@@ -71,11 +71,7 @@ func RunCompositeWriterSuiteFromHandle[T compositewriter.CompositeWriter](
 	opts ...CompositeWriterOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		CompositeWriterSuite(),
-		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
-		opts...)
+	conform.Run(t, CompositeWriterSuite(), compositeWriterSubjects(newSubject), opts...)
 }
 
 // FuzzCompositeWriterSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzCompositeWriterSuite[T compositewriter.CompositeWriter](
 	opts ...CompositeWriterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		CompositeWriterSuite(),
-		callable,
-		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, CompositeWriterSuite(), callable, compositeWriterSubjects(newSubject), opts...)
 }
 
 // RunCompositeWriterBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunCompositeWriterBudgets[T compositewriter.CompositeWriter](
 	opts ...CompositeWriterOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		CompositeWriterSuite(),
-		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, CompositeWriterSuite(), compositeWriterSubjects(newSubject), opts...)
 }
 
 // BenchCompositeWriterSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchCompositeWriterSuite[T compositewriter.CompositeWriter](
 	opts ...CompositeWriterOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		CompositeWriterSuite(),
-		callable,
-		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
-		opts...)
+	conform.Bench(b, CompositeWriterSuite(), callable, compositeWriterSubjects(newSubject), opts...)
+}
+
+// compositeWriterSubjects returns the factory of the subjects of
+// CompositeWriter that calls newSubject with the handle of each check.
+func compositeWriterSubjects[T compositewriter.CompositeWriter](
+	newSubject func(h *CompositeWriterHandle) T,
+) func(h *CompositeWriterHandle) compositewriter.CompositeWriter {
+	return func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) }
 }
 
 // compositeWriterSetCalls generates the calls of CompositeWriter.Set with
@@ -165,4 +155,4 @@ func newCompositeWriterOver(_ *CompositeWriterHandle, spend func()) compositewri
 	return compositeWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:326001d756a2d11e941e9dcf5153292472143b0bcdc03e8fe1ee753c30a37af6
+// dokimi:provenance sha256:07b19a083d180f009bf326b3cab96d30f4dfbbd5fb308a9932864c56f9b887ce

@@ -71,11 +71,7 @@ func RunPoisonAccessorSuiteFromHandle[T poisonaccessor.PoisonAccessor](
 	opts ...PoisonAccessorOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		PoisonAccessorSuite(),
-		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
-		opts...)
+	conform.Run(t, PoisonAccessorSuite(), poisonAccessorSubjects(newSubject), opts...)
 }
 
 // FuzzPoisonAccessorSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzPoisonAccessorSuite[T poisonaccessor.PoisonAccessor](
 	opts ...PoisonAccessorOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		PoisonAccessorSuite(),
-		callable,
-		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, PoisonAccessorSuite(), callable, poisonAccessorSubjects(newSubject), opts...)
 }
 
 // RunPoisonAccessorBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunPoisonAccessorBudgets[T poisonaccessor.PoisonAccessor](
 	opts ...PoisonAccessorOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		PoisonAccessorSuite(),
-		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, PoisonAccessorSuite(), poisonAccessorSubjects(newSubject), opts...)
 }
 
 // BenchPoisonAccessorSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchPoisonAccessorSuite[T poisonaccessor.PoisonAccessor](
 	opts ...PoisonAccessorOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		PoisonAccessorSuite(),
-		callable,
-		func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) },
-		opts...)
+	conform.Bench(b, PoisonAccessorSuite(), callable, poisonAccessorSubjects(newSubject), opts...)
+}
+
+// poisonAccessorSubjects returns the factory of the subjects of
+// PoisonAccessor that calls newSubject with the handle of each check.
+func poisonAccessorSubjects[T poisonaccessor.PoisonAccessor](
+	newSubject func(h *PoisonAccessorHandle) T,
+) func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor {
+	return func(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor { return newSubject(h) }
 }
 
 // poisonAccessorErrCalls generates the calls of PoisonAccessor.Err with
@@ -163,4 +153,4 @@ func newPoisonAccessorOver(_ *PoisonAccessorHandle, spend func()) poisonaccessor
 	return poisonAccessorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:870e8d9c9dd792205772616483781d3f6fc052e0ec80fe3383dc260cbe5980e2
+// dokimi:provenance sha256:200c2e564fd0edbde2d2c21d4216afcb35b873988bd1207b3404cbe21affbf70

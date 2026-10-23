@@ -71,7 +71,7 @@ func RunLabellerSuiteFromHandle[T sampled.Labeller](
 	opts ...LabellerOption,
 ) {
 	t.Helper()
-	conform.Run(t, LabellerSuite(), func(h *LabellerHandle) sampled.Labeller { return newSubject(h) }, opts...)
+	conform.Run(t, LabellerSuite(), labellerSubjects(newSubject), opts...)
 }
 
 // FuzzLabellerSuite registers on f the fuzz target of the property checks
@@ -84,12 +84,7 @@ func FuzzLabellerSuite[T sampled.Labeller](
 	opts ...LabellerOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		LabellerSuite(),
-		callable,
-		func(h *LabellerHandle) sampled.Labeller { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, LabellerSuite(), callable, labellerSubjects(newSubject), opts...)
 }
 
 // RunLabellerBudgets applies the allocation ceilings of Labeller, and the
@@ -100,7 +95,7 @@ func RunLabellerBudgets[T sampled.Labeller](
 	opts ...LabellerOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, LabellerSuite(), func(h *LabellerHandle) sampled.Labeller { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, LabellerSuite(), labellerSubjects(newSubject), opts...)
 }
 
 // BenchLabellerSuite measures callable on a subject of newSubject, under
@@ -112,12 +107,15 @@ func BenchLabellerSuite[T sampled.Labeller](
 	opts ...LabellerOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		LabellerSuite(),
-		callable,
-		func(h *LabellerHandle) sampled.Labeller { return newSubject(h) },
-		opts...)
+	conform.Bench(b, LabellerSuite(), callable, labellerSubjects(newSubject), opts...)
+}
+
+// labellerSubjects returns the factory of the subjects of Labeller that
+// calls newSubject with the handle of each check.
+func labellerSubjects[T sampled.Labeller](
+	newSubject func(h *LabellerHandle) T,
+) func(h *LabellerHandle) sampled.Labeller {
+	return func(h *LabellerHandle) sampled.Labeller { return newSubject(h) }
 }
 
 // labellerApplyCalls generates the calls of Labeller.Apply with the inputs
@@ -174,4 +172,4 @@ func newLabellerOver(_ *LabellerHandle, spend func()) sampled.Labeller {
 	return labellerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:07990d0a2e9b96431894002f45b727bf6b3ffb8ccb08d628d1a34e17e54cb0a9
+// dokimi:provenance sha256:c5dd7cacf190bad8d9a4a7455ffd0a27f5660ca90126ffa95679a50374f0a091

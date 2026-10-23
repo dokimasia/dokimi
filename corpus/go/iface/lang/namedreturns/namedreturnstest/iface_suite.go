@@ -93,7 +93,7 @@ func RunServiceSuiteFromHandle[T namedreturns.Service](
 	opts ...ServiceOption,
 ) {
 	t.Helper()
-	conform.Run(t, ServiceSuite(), func(h *ServiceHandle) namedreturns.Service { return newSubject(h) }, opts...)
+	conform.Run(t, ServiceSuite(), serviceSubjects(newSubject), opts...)
 }
 
 // FuzzServiceSuite registers on f the fuzz target of the property checks
@@ -106,12 +106,7 @@ func FuzzServiceSuite[T namedreturns.Service](
 	opts ...ServiceOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ServiceSuite(),
-		callable,
-		func(h *ServiceHandle) namedreturns.Service { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ServiceSuite(), callable, serviceSubjects(newSubject), opts...)
 }
 
 // RunServiceBudgets applies the allocation ceilings of Service, and the
@@ -122,7 +117,7 @@ func RunServiceBudgets[T namedreturns.Service](
 	opts ...ServiceOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, ServiceSuite(), func(h *ServiceHandle) namedreturns.Service { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ServiceSuite(), serviceSubjects(newSubject), opts...)
 }
 
 // BenchServiceSuite measures callable on a subject of newSubject, under
@@ -134,12 +129,15 @@ func BenchServiceSuite[T namedreturns.Service](
 	opts ...ServiceOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ServiceSuite(),
-		callable,
-		func(h *ServiceHandle) namedreturns.Service { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ServiceSuite(), callable, serviceSubjects(newSubject), opts...)
+}
+
+// serviceSubjects returns the factory of the subjects of Service that
+// calls newSubject with the handle of each check.
+func serviceSubjects[T namedreturns.Service](
+	newSubject func(h *ServiceHandle) T,
+) func(h *ServiceHandle) namedreturns.Service {
+	return func(h *ServiceHandle) namedreturns.Service { return newSubject(h) }
 }
 
 // serviceNamedCalls generates the calls of Service.Named with the inputs
@@ -208,4 +206,4 @@ func newServiceOver(_ *ServiceHandle, spend func()) namedreturns.Service {
 	return serviceOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ecea46a1a58c3184b6d5e2f35d8e46b05baaa0c1b4457c5952386e56df51ed37
+// dokimi:provenance sha256:3c219d889c945b99467468bd4ff1e767cceb4c3a4b888b6558d355dfa6ade774

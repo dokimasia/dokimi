@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T upserter.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) upserter.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,12 +93,7 @@ func FuzzContractSuite[T upserter.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) upserter.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -109,7 +104,7 @@ func RunContractBudgets[T upserter.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) upserter.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -121,12 +116,15 @@ func BenchContractSuite[T upserter.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) upserter.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T upserter.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) upserter.Contract {
+	return func(h *ContractHandle) upserter.Contract { return newSubject(h) }
 }
 
 // contractPutCalls generates the calls of Contract.Put with the inputs
@@ -178,4 +176,4 @@ func newContractOver(_ *ContractHandle, spend func()) upserter.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d9a33dcc7f5761475d32ca8ff5314b7e6e33e749fac91d3bd5277cc6fad1bd02
+// dokimi:provenance sha256:435ccf8fc2dca438f4cf93ec00280ceec1b1df35e6613f2bc6b96dea40819182

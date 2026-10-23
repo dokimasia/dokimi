@@ -76,7 +76,7 @@ func RunMixedSuite[T concurrent.Mixed](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T concurrent.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -89,14 +89,14 @@ func FuzzMixedSuite[T concurrent.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T concurrent.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -108,7 +108,7 @@ func BenchMixedSuite[T concurrent.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuiteParallel measures callable on a subject of newSubject on
@@ -120,12 +120,13 @@ func BenchMixedSuiteParallel[T concurrent.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.BenchParallel(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) concurrent.Mixed { return newSubject(h) },
-		opts...)
+	conform.BenchParallel(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T concurrent.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) concurrent.Mixed {
+	return func(h *MixedHandle) concurrent.Mixed { return newSubject(h) }
 }
 
 // mixedBumpCalls generates the calls of Mixed.Bump with the inputs that
@@ -176,4 +177,4 @@ func newMixedOver(_ *MixedHandle, spend func()) concurrent.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:e14114777efbb4b723a071b268db5f46137693baf9cc91e9fe9e7aca451492cc
+// dokimi:provenance sha256:fb596c0a4776e81ac76f367175f43eb59e5dd5798e4d4c0a88519559c3223057

@@ -71,11 +71,7 @@ func RunAnsweringWriterSuiteFromHandle[T answeringwriter.AnsweringWriter](
 	opts ...AnsweringWriterOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		AnsweringWriterSuite(),
-		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
-		opts...)
+	conform.Run(t, AnsweringWriterSuite(), answeringWriterSubjects(newSubject), opts...)
 }
 
 // FuzzAnsweringWriterSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
 	opts ...AnsweringWriterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		AnsweringWriterSuite(),
-		callable,
-		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, AnsweringWriterSuite(), callable, answeringWriterSubjects(newSubject), opts...)
 }
 
 // RunAnsweringWriterBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunAnsweringWriterBudgets[T answeringwriter.AnsweringWriter](
 	opts ...AnsweringWriterOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		AnsweringWriterSuite(),
-		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, AnsweringWriterSuite(), answeringWriterSubjects(newSubject), opts...)
 }
 
 // BenchAnsweringWriterSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
 	opts ...AnsweringWriterOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		AnsweringWriterSuite(),
-		callable,
-		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
-		opts...)
+	conform.Bench(b, AnsweringWriterSuite(), callable, answeringWriterSubjects(newSubject), opts...)
+}
+
+// answeringWriterSubjects returns the factory of the subjects of
+// AnsweringWriter that calls newSubject with the handle of each check.
+func answeringWriterSubjects[T answeringwriter.AnsweringWriter](
+	newSubject func(h *AnsweringWriterHandle) T,
+) func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter {
+	return func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) }
 }
 
 // answeringWriterPutCalls generates the calls of AnsweringWriter.Put with
@@ -165,4 +155,4 @@ func newAnsweringWriterOver(_ *AnsweringWriterHandle, spend func()) answeringwri
 	return answeringWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f9641ae0b841e16d68209db767bbb5648184471861caa1a2945d94487b7cad2f
+// dokimi:provenance sha256:1127cc1d7ff9009263e9139636d2d1e23d7447c8eea591fc332f0628c8e3bb56

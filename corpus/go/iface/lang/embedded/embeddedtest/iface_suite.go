@@ -93,7 +93,7 @@ func RunComposedSuiteFromHandle[T embedded.Composed](
 	opts ...ComposedOption,
 ) {
 	t.Helper()
-	conform.Run(t, ComposedSuite(), func(h *ComposedHandle) embedded.Composed { return newSubject(h) }, opts...)
+	conform.Run(t, ComposedSuite(), composedSubjects(newSubject), opts...)
 }
 
 // FuzzComposedSuite registers on f the fuzz target of the property checks
@@ -106,12 +106,7 @@ func FuzzComposedSuite[T embedded.Composed](
 	opts ...ComposedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ComposedSuite(),
-		callable,
-		func(h *ComposedHandle) embedded.Composed { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ComposedSuite(), callable, composedSubjects(newSubject), opts...)
 }
 
 // RunComposedBudgets applies the allocation ceilings of Composed, and the
@@ -122,7 +117,7 @@ func RunComposedBudgets[T embedded.Composed](
 	opts ...ComposedOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, ComposedSuite(), func(h *ComposedHandle) embedded.Composed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ComposedSuite(), composedSubjects(newSubject), opts...)
 }
 
 // BenchComposedSuite measures callable on a subject of newSubject, under
@@ -134,12 +129,15 @@ func BenchComposedSuite[T embedded.Composed](
 	opts ...ComposedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ComposedSuite(),
-		callable,
-		func(h *ComposedHandle) embedded.Composed { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ComposedSuite(), callable, composedSubjects(newSubject), opts...)
+}
+
+// composedSubjects returns the factory of the subjects of Composed that
+// calls newSubject with the handle of each check.
+func composedSubjects[T embedded.Composed](
+	newSubject func(h *ComposedHandle) T,
+) func(h *ComposedHandle) embedded.Composed {
+	return func(h *ComposedHandle) embedded.Composed { return newSubject(h) }
 }
 
 // composedGetCalls generates the calls of Composed.Get with the inputs
@@ -204,4 +202,4 @@ func newComposedOver(_ *ComposedHandle, spend func()) embedded.Composed {
 	return composedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:78d7da4d1556e395e15912a5a74b79671e5ffa608fac9cae750c95b091a54383
+// dokimi:provenance sha256:ae4dc8efdf15d70908bc48c4f794e196f24de7afe8bf3500c64860397ad215a7

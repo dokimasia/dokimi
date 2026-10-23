@@ -93,7 +93,7 @@ func RunContractSuiteFromHandle[T cache.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) cache.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -106,14 +106,14 @@ func FuzzContractSuite[T cache.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) cache.Contract { return newSubject(h) }, opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T cache.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) cache.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -125,12 +125,13 @@ func BenchContractSuite[T cache.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) cache.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T cache.Contract](newSubject func(h *ContractHandle) T) func(h *ContractHandle) cache.Contract {
+	return func(h *ContractHandle) cache.Contract { return newSubject(h) }
 }
 
 // contractStoreCalls generates the calls of Contract.Store with the inputs
@@ -199,4 +200,4 @@ func newContractOver(_ *ContractHandle, spend func()) cache.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3a9a16bb757ec2996d2ffa322b0b90ecfa6838854127975d44ac9fa7f8bc116a
+// dokimi:provenance sha256:742368dba7c2059ee7b3e6c7b85d7a746a53652606197605336cb51d783e73d3

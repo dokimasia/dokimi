@@ -80,7 +80,7 @@ func RunStreamSuiteFromHandle[T embeddedforeign.Stream](
 	opts ...StreamOption,
 ) {
 	t.Helper()
-	conform.Run(t, StreamSuite(), func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) }, opts...)
+	conform.Run(t, StreamSuite(), streamSubjects(newSubject), opts...)
 }
 
 // FuzzStreamSuite registers on f the fuzz target of the property checks of
@@ -93,12 +93,7 @@ func FuzzStreamSuite[T embeddedforeign.Stream](
 	opts ...StreamOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		StreamSuite(),
-		callable,
-		func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, StreamSuite(), callable, streamSubjects(newSubject), opts...)
 }
 
 // RunStreamBudgets applies the allocation ceilings of Stream, and the
@@ -109,7 +104,7 @@ func RunStreamBudgets[T embeddedforeign.Stream](
 	opts ...StreamOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, StreamSuite(), func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, StreamSuite(), streamSubjects(newSubject), opts...)
 }
 
 // BenchStreamSuite measures callable on a subject of newSubject, under the
@@ -121,12 +116,15 @@ func BenchStreamSuite[T embeddedforeign.Stream](
 	opts ...StreamOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		StreamSuite(),
-		callable,
-		func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) },
-		opts...)
+	conform.Bench(b, StreamSuite(), callable, streamSubjects(newSubject), opts...)
+}
+
+// streamSubjects returns the factory of the subjects of Stream that calls
+// newSubject with the handle of each check.
+func streamSubjects[T embeddedforeign.Stream](
+	newSubject func(h *StreamHandle) T,
+) func(h *StreamHandle) embeddedforeign.Stream {
+	return func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) }
 }
 
 // streamReadCalls generates the calls of Stream.Read with the inputs that
@@ -177,4 +175,4 @@ func newStreamOver(_ *StreamHandle, spend func()) embeddedforeign.Stream {
 	return streamOver{spend: spend}
 }
 
-// dokimi:provenance sha256:dba4654c26f9ea43dd4230a67af373db71300112b36f67b778ce485ac6a2db46
+// dokimi:provenance sha256:f82a8f98b4404b8a2a9b2e5a8b24b6af5e003f76d997b7c15277565a4637bb4b

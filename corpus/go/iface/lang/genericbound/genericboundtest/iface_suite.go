@@ -84,11 +84,7 @@ func RunRankedSuiteFromHandle[T genericbound.Ranked[int, genericbound.Score]](
 	opts ...RankedOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		RankedSuite(),
-		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
-		opts...)
+	conform.Run(t, RankedSuite(), rankedSubjects(newSubject), opts...)
 }
 
 // FuzzRankedSuite registers on f the fuzz target of the property checks of
@@ -101,12 +97,7 @@ func FuzzRankedSuite[T genericbound.Ranked[int, genericbound.Score]](
 	opts ...RankedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		RankedSuite(),
-		callable,
-		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, RankedSuite(), callable, rankedSubjects(newSubject), opts...)
 }
 
 // RunRankedBudgets applies the allocation ceilings of Ranked, and the
@@ -117,11 +108,7 @@ func RunRankedBudgets[T genericbound.Ranked[int, genericbound.Score]](
 	opts ...RankedOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		RankedSuite(),
-		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, RankedSuite(), rankedSubjects(newSubject), opts...)
 }
 
 // BenchRankedSuite measures callable on a subject of newSubject, under the
@@ -133,12 +120,15 @@ func BenchRankedSuite[T genericbound.Ranked[int, genericbound.Score]](
 	opts ...RankedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		RankedSuite(),
-		callable,
-		func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) },
-		opts...)
+	conform.Bench(b, RankedSuite(), callable, rankedSubjects(newSubject), opts...)
+}
+
+// rankedSubjects returns the factory of the subjects of Ranked that calls
+// newSubject with the handle of each check.
+func rankedSubjects[T genericbound.Ranked[int, genericbound.Score]](
+	newSubject func(h *RankedHandle) T,
+) func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] {
+	return func(h *RankedHandle) genericbound.Ranked[int, genericbound.Score] { return newSubject(h) }
 }
 
 // rankedRankCalls generates the calls of Ranked.Rank with the inputs that
@@ -193,4 +183,4 @@ func newRankedOver(_ *RankedHandle, spend func()) genericbound.Ranked[int, gener
 	return rankedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5e6e16790997d232b31ba4b86f63652d21cef02d5dc2c77b34ae3bc0c7ac9b05
+// dokimi:provenance sha256:be39a7e3995671573c799b4b315494696c645f52789422efb6fa6b1f056be160

@@ -90,7 +90,7 @@ func RunRankedSuiteFromHandle[T indexed.Ranked](
 	opts ...RankedOption,
 ) {
 	t.Helper()
-	conform.Run(t, RankedSuite(), func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
+	conform.Run(t, RankedSuite(), rankedSubjects(newSubject), opts...)
 }
 
 // FuzzRankedSuite registers on f the fuzz target of the property checks of
@@ -103,14 +103,14 @@ func FuzzRankedSuite[T indexed.Ranked](
 	opts ...RankedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, RankedSuite(), callable, func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
+	conform.Fuzz(f, RankedSuite(), callable, rankedSubjects(newSubject), opts...)
 }
 
 // RunRankedBudgets applies the allocation ceilings of Ranked, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunRankedBudgets[T indexed.Ranked](t *testing.T, newSubject func(h *RankedHandle) T, opts ...RankedOption) {
 	t.Helper()
-	conform.RunBudgets(t, RankedSuite(), func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, RankedSuite(), rankedSubjects(newSubject), opts...)
 }
 
 // BenchRankedSuite measures callable on a subject of newSubject, under the
@@ -122,7 +122,13 @@ func BenchRankedSuite[T indexed.Ranked](
 	opts ...RankedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, RankedSuite(), callable, func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
+	conform.Bench(b, RankedSuite(), callable, rankedSubjects(newSubject), opts...)
+}
+
+// rankedSubjects returns the factory of the subjects of Ranked that calls
+// newSubject with the handle of each check.
+func rankedSubjects[T indexed.Ranked](newSubject func(h *RankedHandle) T) func(h *RankedHandle) indexed.Ranked {
+	return func(h *RankedHandle) indexed.Ranked { return newSubject(h) }
 }
 
 // rankedAddCalls generates the calls of Ranked.Add with the inputs that
@@ -189,4 +195,4 @@ func newRankedOver(_ *RankedHandle, spend func()) indexed.Ranked {
 	return rankedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7dd7813da51312d562417c12e9fd5c2032f852daaabe5646449c63b36c367223
+// dokimi:provenance sha256:848af9729f973b065d3fc662675b804d1dd13fc30e826389cda2cfe44e6bf44e

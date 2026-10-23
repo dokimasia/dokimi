@@ -76,7 +76,7 @@ func RunMixedSuite[T timeaware.Mixed](t *testing.T, newSubject func() T, opts ..
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T timeaware.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -89,14 +89,14 @@ func FuzzMixedSuite[T timeaware.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T timeaware.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -108,7 +108,13 @@ func BenchMixedSuite[T timeaware.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T timeaware.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) timeaware.Mixed {
+	return func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }
 }
 
 // mixedTouchCalls generates the calls of Mixed.Touch with the inputs that
@@ -160,4 +166,4 @@ func newMixedOver(_ *MixedHandle, spend func()) timeaware.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:98779155377609a634b9131821553f75902a6601eb9f32bc29047f9ccebff4b0
+// dokimi:provenance sha256:79b72ed1fae7e3ed90944540dd2c1687cec20ed8161cc57da9e7bd647444cd93

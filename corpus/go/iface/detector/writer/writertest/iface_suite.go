@@ -62,7 +62,7 @@ func RunWriterSuite[T writer.Writer](t *testing.T, newSubject func() T, opts ...
 // newSubject builds from the handle of each check.
 func RunWriterSuiteFromHandle[T writer.Writer](t *testing.T, newSubject func(h *WriterHandle) T, opts ...WriterOption) {
 	t.Helper()
-	conform.Run(t, WriterSuite(), func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+	conform.Run(t, WriterSuite(), writerSubjects(newSubject), opts...)
 }
 
 // FuzzWriterSuite registers on f the fuzz target of the property checks of
@@ -75,14 +75,14 @@ func FuzzWriterSuite[T writer.Writer](
 	opts ...WriterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, WriterSuite(), callable, func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+	conform.Fuzz(f, WriterSuite(), callable, writerSubjects(newSubject), opts...)
 }
 
 // RunWriterBudgets applies the allocation ceilings of Writer, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunWriterBudgets[T writer.Writer](t *testing.T, newSubject func(h *WriterHandle) T, opts ...WriterOption) {
 	t.Helper()
-	conform.RunBudgets(t, WriterSuite(), func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, WriterSuite(), writerSubjects(newSubject), opts...)
 }
 
 // BenchWriterSuite measures callable on a subject of newSubject, under the
@@ -94,7 +94,13 @@ func BenchWriterSuite[T writer.Writer](
 	opts ...WriterOption,
 ) {
 	b.Helper()
-	conform.Bench(b, WriterSuite(), callable, func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
+	conform.Bench(b, WriterSuite(), callable, writerSubjects(newSubject), opts...)
+}
+
+// writerSubjects returns the factory of the subjects of Writer that calls
+// newSubject with the handle of each check.
+func writerSubjects[T writer.Writer](newSubject func(h *WriterHandle) T) func(h *WriterHandle) writer.Writer {
+	return func(h *WriterHandle) writer.Writer { return newSubject(h) }
 }
 
 // writerPutCalls generates the calls of Writer.Put with the inputs that
@@ -130,4 +136,4 @@ func newWriterOver(_ *WriterHandle, spend func()) writer.Writer {
 	return writerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b0eca632fdb4eaaa470c25807981160d1dfd206a29e5e006abff6903ce96f5f4
+// dokimi:provenance sha256:868c9c57f71225cfb7b8a696e8db5000ba27776e6e6c21f1a58db9a31723d8e2

@@ -84,11 +84,7 @@ func RunPaginatedReaderSuiteFromHandle[T paginatedreader.PaginatedReader](
 	opts ...PaginatedReaderOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		PaginatedReaderSuite(),
-		func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) },
-		opts...)
+	conform.Run(t, PaginatedReaderSuite(), paginatedReaderSubjects(newSubject), opts...)
 }
 
 // FuzzPaginatedReaderSuite registers on f the fuzz target of the property
@@ -101,12 +97,7 @@ func FuzzPaginatedReaderSuite[T paginatedreader.PaginatedReader](
 	opts ...PaginatedReaderOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		PaginatedReaderSuite(),
-		callable,
-		func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, PaginatedReaderSuite(), callable, paginatedReaderSubjects(newSubject), opts...)
 }
 
 // RunPaginatedReaderBudgets applies the allocation ceilings of
@@ -118,11 +109,7 @@ func RunPaginatedReaderBudgets[T paginatedreader.PaginatedReader](
 	opts ...PaginatedReaderOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		PaginatedReaderSuite(),
-		func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, PaginatedReaderSuite(), paginatedReaderSubjects(newSubject), opts...)
 }
 
 // BenchPaginatedReaderSuite measures callable on a subject of newSubject,
@@ -134,12 +121,15 @@ func BenchPaginatedReaderSuite[T paginatedreader.PaginatedReader](
 	opts ...PaginatedReaderOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		PaginatedReaderSuite(),
-		callable,
-		func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) },
-		opts...)
+	conform.Bench(b, PaginatedReaderSuite(), callable, paginatedReaderSubjects(newSubject), opts...)
+}
+
+// paginatedReaderSubjects returns the factory of the subjects of
+// PaginatedReader that calls newSubject with the handle of each check.
+func paginatedReaderSubjects[T paginatedreader.PaginatedReader](
+	newSubject func(h *PaginatedReaderHandle) T,
+) func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) }
 }
 
 // paginatedReaderFetchCalls generates the calls of PaginatedReader.Fetch
@@ -195,4 +185,4 @@ func newPaginatedReaderOver(_ *PaginatedReaderHandle, spend func()) paginatedrea
 	return paginatedReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:649676adf2bf9f9524f117d31045699fe6c8b74d8e050ad10fe5f5bf60095d1b
+// dokimi:provenance sha256:5d2917f5f14cdda559cc9aa93c7fd73fcbcc83f1f87d2cde2e1ee8cf852230cc

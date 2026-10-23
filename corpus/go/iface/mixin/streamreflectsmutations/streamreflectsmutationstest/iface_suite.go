@@ -93,7 +93,7 @@ func RunMixedSuiteFromHandle[T streamreflectsmutations.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -106,12 +106,7 @@ func FuzzMixedSuite[T streamreflectsmutations.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
@@ -122,11 +117,7 @@ func RunMixedBudgets[T streamreflectsmutations.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		MixedSuite(),
-		func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -138,12 +129,15 @@ func BenchMixedSuite[T streamreflectsmutations.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T streamreflectsmutations.Mixed](
+	newSubject func(h *MixedHandle) T,
+) func(h *MixedHandle) streamreflectsmutations.Mixed {
+	return func(h *MixedHandle) streamreflectsmutations.Mixed { return newSubject(h) }
 }
 
 // mixedStreamCalls generates the calls of Mixed.Stream with the inputs
@@ -209,4 +203,4 @@ func newMixedOver(_ *MixedHandle, spend func()) streamreflectsmutations.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3242cf4d339c734a392c91afe15ef1c9db9bd7c56137d3413799eeb286fac203
+// dokimi:provenance sha256:72b8886748df01869398472a16073b8509a260f138d86a119a2817fe06e0b616

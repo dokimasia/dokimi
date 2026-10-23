@@ -92,7 +92,7 @@ func RunMixedSuiteFromHandle[T snapshotisolation.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) snapshotisolation.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -105,19 +105,14 @@ func FuzzMixedSuite[T snapshotisolation.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) snapshotisolation.Mixed { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T snapshotisolation.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) snapshotisolation.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -129,12 +124,15 @@ func BenchMixedSuite[T snapshotisolation.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) snapshotisolation.Mixed { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T snapshotisolation.Mixed](
+	newSubject func(h *MixedHandle) T,
+) func(h *MixedHandle) snapshotisolation.Mixed {
+	return func(h *MixedHandle) snapshotisolation.Mixed { return newSubject(h) }
 }
 
 // mixedRecordCalls generates the calls of Mixed.Record with the inputs
@@ -201,4 +199,4 @@ func newMixedOver(_ *MixedHandle, spend func()) snapshotisolation.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:74b7f5840002c0d9c50fc5a83d1548fa24a8124eada4bafba5c60fe362d088cd
+// dokimi:provenance sha256:c7e90ffebec81cb8845b366e0cd205db16469087eca1d0e56baaf8317e227b05

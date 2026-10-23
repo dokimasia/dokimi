@@ -83,7 +83,7 @@ func RunContractSuiteFromHandle[T batchwriter.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) batchwriter.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -96,12 +96,7 @@ func FuzzContractSuite[T batchwriter.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) batchwriter.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -112,11 +107,7 @@ func RunContractBudgets[T batchwriter.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) batchwriter.Contract { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -128,12 +119,15 @@ func BenchContractSuite[T batchwriter.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) batchwriter.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T batchwriter.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) batchwriter.Contract {
+	return func(h *ContractHandle) batchwriter.Contract { return newSubject(h) }
 }
 
 // contractPutCalls generates the calls of Contract.Put with the inputs
@@ -199,4 +193,4 @@ func newContractOver(_ *ContractHandle, spend func()) batchwriter.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1a45de537a22bccd5736bc4bd213e82fecfb386797442029276beb3259eeb476
+// dokimi:provenance sha256:3fa5519188410b2eedd2048aeaf660ded334d49ca5113f7b68a2c801ada9cfba

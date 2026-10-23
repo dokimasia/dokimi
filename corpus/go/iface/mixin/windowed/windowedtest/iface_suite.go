@@ -76,7 +76,7 @@ func RunMixedSuite[T windowed.Mixed](t *testing.T, newSubject func() T, opts ...
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T windowed.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) windowed.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -89,14 +89,14 @@ func FuzzMixedSuite[T windowed.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) windowed.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T windowed.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) windowed.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -108,7 +108,13 @@ func BenchMixedSuite[T windowed.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) windowed.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T windowed.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) windowed.Mixed {
+	return func(h *MixedHandle) windowed.Mixed { return newSubject(h) }
 }
 
 // mixedRecordCalls generates the calls of Mixed.Record with the inputs
@@ -160,4 +166,4 @@ func newMixedOver(_ *MixedHandle, spend func()) windowed.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5cf62e130f54ecc48a45b21edc8aa41d869bee8bfe3cf626ed73a768b47f9e70
+// dokimi:provenance sha256:f5d1dd1e6530c11de2ea8381b70cb12b88ad4af97b0b21a67e5bcd71b0292e60

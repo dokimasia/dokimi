@@ -67,7 +67,7 @@ func RunPredicateSuiteFromHandle[T predicate.Predicate](
 	opts ...PredicateOption,
 ) {
 	t.Helper()
-	conform.Run(t, PredicateSuite(), func(h *PredicateHandle) predicate.Predicate { return newSubject(h) }, opts...)
+	conform.Run(t, PredicateSuite(), predicateSubjects(newSubject), opts...)
 }
 
 // FuzzPredicateSuite registers on f the fuzz target of the property checks
@@ -80,12 +80,7 @@ func FuzzPredicateSuite[T predicate.Predicate](
 	opts ...PredicateOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		PredicateSuite(),
-		callable,
-		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, PredicateSuite(), callable, predicateSubjects(newSubject), opts...)
 }
 
 // RunPredicateBudgets applies the allocation ceilings of Predicate, and
@@ -97,11 +92,7 @@ func RunPredicateBudgets[T predicate.Predicate](
 	opts ...PredicateOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		PredicateSuite(),
-		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, PredicateSuite(), predicateSubjects(newSubject), opts...)
 }
 
 // BenchPredicateSuite measures callable on a subject of newSubject, under
@@ -113,12 +104,15 @@ func BenchPredicateSuite[T predicate.Predicate](
 	opts ...PredicateOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		PredicateSuite(),
-		callable,
-		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
-		opts...)
+	conform.Bench(b, PredicateSuite(), callable, predicateSubjects(newSubject), opts...)
+}
+
+// predicateSubjects returns the factory of the subjects of Predicate that
+// calls newSubject with the handle of each check.
+func predicateSubjects[T predicate.Predicate](
+	newSubject func(h *PredicateHandle) T,
+) func(h *PredicateHandle) predicate.Predicate {
+	return func(h *PredicateHandle) predicate.Predicate { return newSubject(h) }
 }
 
 // predicateIsEmptyCalls generates the calls of Predicate.IsEmpty with the
@@ -154,4 +148,4 @@ func newPredicateOver(_ *PredicateHandle, spend func()) predicate.Predicate {
 	return predicateOver{spend: spend}
 }
 
-// dokimi:provenance sha256:19e79d3c4f038a1fbd08985c1b41750474db32cd0fc54232c8a05323bc3324ab
+// dokimi:provenance sha256:f3ebb856d4f58637ae4125853ac9181f54b243443f751f5978f627cabdaaeabb

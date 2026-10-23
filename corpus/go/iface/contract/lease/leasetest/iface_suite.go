@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T lease.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) lease.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,14 +93,14 @@ func FuzzContractSuite[T lease.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) lease.Contract { return newSubject(h) }, opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T lease.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) lease.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -112,12 +112,13 @@ func BenchContractSuite[T lease.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) lease.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T lease.Contract](newSubject func(h *ContractHandle) T) func(h *ContractHandle) lease.Contract {
+	return func(h *ContractHandle) lease.Contract { return newSubject(h) }
 }
 
 // contractAcquireCalls generates the calls of Contract.Acquire with the
@@ -168,4 +169,4 @@ func newContractOver(_ *ContractHandle, spend func()) lease.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9f1607de13d35ca14a531dc8d298b7fb7408309619b502779d85c14b39fbfc69
+// dokimi:provenance sha256:3d308c25c7e17a6300f10da0fc3c24d058db26fc7ade6ef792321294916557b5

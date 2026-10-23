@@ -81,7 +81,7 @@ func RunContractSuiteFromHandle[T singleflight.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) singleflight.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -94,12 +94,7 @@ func FuzzContractSuite[T singleflight.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) singleflight.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -110,11 +105,7 @@ func RunContractBudgets[T singleflight.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) singleflight.Contract { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -126,12 +117,15 @@ func BenchContractSuite[T singleflight.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) singleflight.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T singleflight.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) singleflight.Contract {
+	return func(h *ContractHandle) singleflight.Contract { return newSubject(h) }
 }
 
 // contractRunCalls generates the calls of Contract.Run with the inputs
@@ -192,4 +186,4 @@ func newContractOver(_ *ContractHandle, spend func()) singleflight.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:83378596965d9889d5355134e620974ca47bfc57ada41258dc116aff5171ef6d
+// dokimi:provenance sha256:93f5efaa55c8a23bc03500dad2550a557e32049d604a6ba1665c931b1b3222b2

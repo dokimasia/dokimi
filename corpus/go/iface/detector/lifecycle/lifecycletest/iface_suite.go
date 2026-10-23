@@ -67,7 +67,7 @@ func RunLifecycleSuiteFromHandle[T lifecycle.Lifecycle](
 	opts ...LifecycleOption,
 ) {
 	t.Helper()
-	conform.Run(t, LifecycleSuite(), func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) }, opts...)
+	conform.Run(t, LifecycleSuite(), lifecycleSubjects(newSubject), opts...)
 }
 
 // FuzzLifecycleSuite registers on f the fuzz target of the property checks
@@ -80,12 +80,7 @@ func FuzzLifecycleSuite[T lifecycle.Lifecycle](
 	opts ...LifecycleOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		LifecycleSuite(),
-		callable,
-		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, LifecycleSuite(), callable, lifecycleSubjects(newSubject), opts...)
 }
 
 // RunLifecycleBudgets applies the allocation ceilings of Lifecycle, and
@@ -97,11 +92,7 @@ func RunLifecycleBudgets[T lifecycle.Lifecycle](
 	opts ...LifecycleOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		LifecycleSuite(),
-		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, LifecycleSuite(), lifecycleSubjects(newSubject), opts...)
 }
 
 // BenchLifecycleSuite measures callable on a subject of newSubject, under
@@ -113,12 +104,15 @@ func BenchLifecycleSuite[T lifecycle.Lifecycle](
 	opts ...LifecycleOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		LifecycleSuite(),
-		callable,
-		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
-		opts...)
+	conform.Bench(b, LifecycleSuite(), callable, lifecycleSubjects(newSubject), opts...)
+}
+
+// lifecycleSubjects returns the factory of the subjects of Lifecycle that
+// calls newSubject with the handle of each check.
+func lifecycleSubjects[T lifecycle.Lifecycle](
+	newSubject func(h *LifecycleHandle) T,
+) func(h *LifecycleHandle) lifecycle.Lifecycle {
+	return func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) }
 }
 
 // lifecycleCloseCalls generates the calls of Lifecycle.Close with the
@@ -153,4 +147,4 @@ func newLifecycleOver(_ *LifecycleHandle, spend func()) lifecycle.Lifecycle {
 	return lifecycleOver{spend: spend}
 }
 
-// dokimi:provenance sha256:a6eaa9ead9a25c794b216e6ba57620c2e6dc55e6b0603cdf87d959b74799faff
+// dokimi:provenance sha256:0a9c4167d8a0b9cff16386c2c17e916ce8a3c6a0ffa596cf963d1e830868e29c

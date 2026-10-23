@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T updater.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) updater.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,12 +93,7 @@ func FuzzContractSuite[T updater.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) updater.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -109,7 +104,7 @@ func RunContractBudgets[T updater.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) updater.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -121,12 +116,15 @@ func BenchContractSuite[T updater.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) updater.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T updater.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) updater.Contract {
+	return func(h *ContractHandle) updater.Contract { return newSubject(h) }
 }
 
 // contractPutCalls generates the calls of Contract.Put with the inputs
@@ -178,4 +176,4 @@ func newContractOver(_ *ContractHandle, spend func()) updater.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:23fe9f63a1c03089da77ec3e258e2f8e50bcbc1dd70469761c20fab3e6ea6f3e
+// dokimi:provenance sha256:c39ce33942b579476a1d486cf8d2a1d7c8f04b25d28d6f2c72bd8b3b41bd3bca

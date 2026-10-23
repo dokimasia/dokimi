@@ -84,11 +84,7 @@ func RunLeasedWriterSuiteFromHandle[T leasedidempotentwriter.LeasedWriter](
 	opts ...LeasedWriterOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		LeasedWriterSuite(),
-		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
-		opts...)
+	conform.Run(t, LeasedWriterSuite(), leasedWriterSubjects(newSubject), opts...)
 }
 
 // FuzzLeasedWriterSuite registers on f the fuzz target of the property
@@ -101,12 +97,7 @@ func FuzzLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
 	opts ...LeasedWriterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		LeasedWriterSuite(),
-		callable,
-		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, LeasedWriterSuite(), callable, leasedWriterSubjects(newSubject), opts...)
 }
 
 // RunLeasedWriterBudgets applies the allocation ceilings of LeasedWriter,
@@ -118,11 +109,7 @@ func RunLeasedWriterBudgets[T leasedidempotentwriter.LeasedWriter](
 	opts ...LeasedWriterOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		LeasedWriterSuite(),
-		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, LeasedWriterSuite(), leasedWriterSubjects(newSubject), opts...)
 }
 
 // BenchLeasedWriterSuite measures callable on a subject of newSubject,
@@ -134,12 +121,15 @@ func BenchLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
 	opts ...LeasedWriterOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		LeasedWriterSuite(),
-		callable,
-		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
-		opts...)
+	conform.Bench(b, LeasedWriterSuite(), callable, leasedWriterSubjects(newSubject), opts...)
+}
+
+// leasedWriterSubjects returns the factory of the subjects of LeasedWriter
+// that calls newSubject with the handle of each check.
+func leasedWriterSubjects[T leasedidempotentwriter.LeasedWriter](
+	newSubject func(h *LeasedWriterHandle) T,
+) func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
+	return func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) }
 }
 
 // leasedWriterAcquireCalls generates the calls of LeasedWriter.Acquire
@@ -194,4 +184,4 @@ func newLeasedWriterOver(_ *LeasedWriterHandle, spend func()) leasedidempotentwr
 	return leasedWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:fe6c3ba9b75cc33b6e89eb836b067de998cbd33a818640e5b252ef903475a245
+// dokimi:provenance sha256:eeb68f42297a45d215d26fc2f4692ccfff22eb21950187f85a3dc2ae8309ee85

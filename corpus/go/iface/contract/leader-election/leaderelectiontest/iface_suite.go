@@ -93,7 +93,7 @@ func RunContractSuiteFromHandle[T leaderelection.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) leaderelection.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -106,12 +106,7 @@ func FuzzContractSuite[T leaderelection.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) leaderelection.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -122,11 +117,7 @@ func RunContractBudgets[T leaderelection.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) leaderelection.Contract { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -138,12 +129,15 @@ func BenchContractSuite[T leaderelection.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) leaderelection.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T leaderelection.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) leaderelection.Contract {
+	return func(h *ContractHandle) leaderelection.Contract { return newSubject(h) }
 }
 
 // contractCampaignCalls generates the calls of Contract.Campaign with the
@@ -207,4 +201,4 @@ func newContractOver(_ *ContractHandle, spend func()) leaderelection.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f11df37eeafde4d3783ee7d514dbfb128ad972c7bf45085ac0157391dcea5595
+// dokimi:provenance sha256:256db8fd895681a4aa6e10378f18371c1d09d628ee2578f881dc75199bbf5972

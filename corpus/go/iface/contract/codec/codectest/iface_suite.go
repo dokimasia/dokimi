@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T codec.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) codec.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,14 +93,14 @@ func FuzzContractSuite[T codec.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) codec.Contract { return newSubject(h) }, opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T codec.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) codec.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -112,12 +112,13 @@ func BenchContractSuite[T codec.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) codec.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T codec.Contract](newSubject func(h *ContractHandle) T) func(h *ContractHandle) codec.Contract {
+	return func(h *ContractHandle) codec.Contract { return newSubject(h) }
 }
 
 // contractEncodeCalls generates the calls of Contract.Encode with the
@@ -170,4 +171,4 @@ func newContractOver(_ *ContractHandle, spend func()) codec.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:067552fb870c336a72beb78f44230e0dd852203368a292636bc2e06ce22b426c
+// dokimi:provenance sha256:503a6a1daef4298fb83e7b421f7fee9248c551a2694ace1d29bb8b7b46f97d09

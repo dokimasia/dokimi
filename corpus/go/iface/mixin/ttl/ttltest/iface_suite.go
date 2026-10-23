@@ -112,7 +112,7 @@ func RunMixedSuite[T ttl.Mixed](t *testing.T, newSubject func() T, opts ...Mixed
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T ttl.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -125,14 +125,14 @@ func FuzzMixedSuite[T ttl.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T ttl.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -144,7 +144,13 @@ func BenchMixedSuite[T ttl.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) ttl.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T ttl.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) ttl.Mixed {
+	return func(h *MixedHandle) ttl.Mixed { return newSubject(h) }
 }
 
 // mixedPutCalls generates the calls of Mixed.Put with the inputs that each
@@ -196,4 +202,4 @@ func newMixedOver(_ *MixedHandle, spend func()) ttl.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ecad687796bd9b9e5362dea2d9571a50156d1088b70a2108ae921b1d4139b56b
+// dokimi:provenance sha256:3f0a69407870ba8569ba1dfdc5c43223b8a76a9904ab2af3768a2d9d41e8e442

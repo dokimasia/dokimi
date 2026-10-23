@@ -80,7 +80,7 @@ func RunContractSuiteFromHandle[T codeclossy.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) codeclossy.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -93,12 +93,7 @@ func FuzzContractSuite[T codeclossy.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) codeclossy.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -109,11 +104,7 @@ func RunContractBudgets[T codeclossy.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) codeclossy.Contract { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -125,12 +116,15 @@ func BenchContractSuite[T codeclossy.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) codeclossy.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T codeclossy.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) codeclossy.Contract {
+	return func(h *ContractHandle) codeclossy.Contract { return newSubject(h) }
 }
 
 // contractEncodeCalls generates the calls of Contract.Encode with the
@@ -183,4 +177,4 @@ func newContractOver(_ *ContractHandle, spend func()) codeclossy.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b755b8bbd9a147d550992420eab70e2de0d1efcdec73c97e2708374c565ffdc7
+// dokimi:provenance sha256:cf72e80aef5cb597b3f060fa34eca216693b018bb6271cfb7f0c7aef577d6679

@@ -71,11 +71,7 @@ func RunPointerReaderSuiteFromHandle[T pointerreader.PointerReader](
 	opts ...PointerReaderOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		PointerReaderSuite(),
-		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
-		opts...)
+	conform.Run(t, PointerReaderSuite(), pointerReaderSubjects(newSubject), opts...)
 }
 
 // FuzzPointerReaderSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzPointerReaderSuite[T pointerreader.PointerReader](
 	opts ...PointerReaderOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		PointerReaderSuite(),
-		callable,
-		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, PointerReaderSuite(), callable, pointerReaderSubjects(newSubject), opts...)
 }
 
 // RunPointerReaderBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunPointerReaderBudgets[T pointerreader.PointerReader](
 	opts ...PointerReaderOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		PointerReaderSuite(),
-		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, PointerReaderSuite(), pointerReaderSubjects(newSubject), opts...)
 }
 
 // BenchPointerReaderSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchPointerReaderSuite[T pointerreader.PointerReader](
 	opts ...PointerReaderOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		PointerReaderSuite(),
-		callable,
-		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
-		opts...)
+	conform.Bench(b, PointerReaderSuite(), callable, pointerReaderSubjects(newSubject), opts...)
+}
+
+// pointerReaderSubjects returns the factory of the subjects of
+// PointerReader that calls newSubject with the handle of each check.
+func pointerReaderSubjects[T pointerreader.PointerReader](
+	newSubject func(h *PointerReaderHandle) T,
+) func(h *PointerReaderHandle) pointerreader.PointerReader {
+	return func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) }
 }
 
 // pointerReaderFindCalls generates the calls of PointerReader.Find with
@@ -165,4 +155,4 @@ func newPointerReaderOver(_ *PointerReaderHandle, spend func()) pointerreader.Po
 	return pointerReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1ac60b988f4cfbea5d03f3e9757bae0abbaa2eb8ca35c5b775443a7e7c515fc7
+// dokimi:provenance sha256:db2005b9105dc913e1fdcda08762a3c2c507dd0248d8ab99d22f430bb17b1b36

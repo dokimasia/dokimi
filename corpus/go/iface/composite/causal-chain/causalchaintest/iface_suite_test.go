@@ -87,6 +87,22 @@ func TestLogSuite(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("LogChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(causalchaintest.LogChecks.Replay.KeepsEveryBody()),
+			"Log.Replay/keeps-every-body",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(causalchaintest.LogChecks.Replay.KeepsTheBody()),
+			"Log.Replay/keeps-the-body",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // logIdle returns the planted defect of a ceiling of Log with a spend of
@@ -153,4 +169,4 @@ func BenchmarkLogSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5418447100520cc5c38efee59386d70d64d9511778febcdf66b0996643a90b5f
+// dokimi:provenance sha256:11b692f9a4648f2dc0be2daeb37441666e07514d5cd3823c24cfffccd200b6ac

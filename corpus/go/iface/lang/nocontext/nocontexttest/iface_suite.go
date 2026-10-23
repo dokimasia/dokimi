@@ -93,7 +93,7 @@ func RunCalculatorSuiteFromHandle[T nocontext.Calculator](
 	opts ...CalculatorOption,
 ) {
 	t.Helper()
-	conform.Run(t, CalculatorSuite(), func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) }, opts...)
+	conform.Run(t, CalculatorSuite(), calculatorSubjects(newSubject), opts...)
 }
 
 // FuzzCalculatorSuite registers on f the fuzz target of the property
@@ -106,12 +106,7 @@ func FuzzCalculatorSuite[T nocontext.Calculator](
 	opts ...CalculatorOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		CalculatorSuite(),
-		callable,
-		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, CalculatorSuite(), callable, calculatorSubjects(newSubject), opts...)
 }
 
 // RunCalculatorBudgets applies the allocation ceilings of Calculator, and
@@ -123,11 +118,7 @@ func RunCalculatorBudgets[T nocontext.Calculator](
 	opts ...CalculatorOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		CalculatorSuite(),
-		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, CalculatorSuite(), calculatorSubjects(newSubject), opts...)
 }
 
 // BenchCalculatorSuite measures callable on a subject of newSubject, under
@@ -139,12 +130,15 @@ func BenchCalculatorSuite[T nocontext.Calculator](
 	opts ...CalculatorOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		CalculatorSuite(),
-		callable,
-		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
-		opts...)
+	conform.Bench(b, CalculatorSuite(), callable, calculatorSubjects(newSubject), opts...)
+}
+
+// calculatorSubjects returns the factory of the subjects of Calculator
+// that calls newSubject with the handle of each check.
+func calculatorSubjects[T nocontext.Calculator](
+	newSubject func(h *CalculatorHandle) T,
+) func(h *CalculatorHandle) nocontext.Calculator {
+	return func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) }
 }
 
 // calculatorAddCalls generates the calls of Calculator.Add with the inputs
@@ -213,4 +207,4 @@ func newCalculatorOver(_ *CalculatorHandle, spend func()) nocontext.Calculator {
 	return calculatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c89a0bff68fd2d696a63a335605345f71cce6052b6ae1a933934545407e19a11
+// dokimi:provenance sha256:4ea966a5a6e97bdf300dec9ac7e1e769a8119a5d8e62249a1972ccd85ef4139d

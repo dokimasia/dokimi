@@ -88,7 +88,7 @@ func RunWideSuite[T multireturn.Wide](t *testing.T, newSubject func() T, opts ..
 // newSubject builds from the handle of each check.
 func RunWideSuiteFromHandle[T multireturn.Wide](t *testing.T, newSubject func(h *WideHandle) T, opts ...WideOption) {
 	t.Helper()
-	conform.Run(t, WideSuite(), func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+	conform.Run(t, WideSuite(), wideSubjects(newSubject), opts...)
 }
 
 // FuzzWideSuite registers on f the fuzz target of the property checks of
@@ -101,14 +101,14 @@ func FuzzWideSuite[T multireturn.Wide](
 	opts ...WideOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, WideSuite(), callable, func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+	conform.Fuzz(f, WideSuite(), callable, wideSubjects(newSubject), opts...)
 }
 
 // RunWideBudgets applies the allocation ceilings of Wide, and the ceilings
 // that opts add, to a fresh subject of newSubject for each case.
 func RunWideBudgets[T multireturn.Wide](t *testing.T, newSubject func(h *WideHandle) T, opts ...WideOption) {
 	t.Helper()
-	conform.RunBudgets(t, WideSuite(), func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, WideSuite(), wideSubjects(newSubject), opts...)
 }
 
 // BenchWideSuite measures callable on a subject of newSubject, under the
@@ -120,7 +120,13 @@ func BenchWideSuite[T multireturn.Wide](
 	opts ...WideOption,
 ) {
 	b.Helper()
-	conform.Bench(b, WideSuite(), callable, func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
+	conform.Bench(b, WideSuite(), callable, wideSubjects(newSubject), opts...)
+}
+
+// wideSubjects returns the factory of the subjects of Wide that calls
+// newSubject with the handle of each check.
+func wideSubjects[T multireturn.Wide](newSubject func(h *WideHandle) T) func(h *WideHandle) multireturn.Wide {
+	return func(h *WideHandle) multireturn.Wide { return newSubject(h) }
 }
 
 // wideQuadCalls generates the calls of Wide.Quad with the inputs that each
@@ -189,4 +195,4 @@ func newWideOver(_ *WideHandle, spend func()) multireturn.Wide {
 	return wideOver{spend: spend}
 }
 
-// dokimi:provenance sha256:50070f62597763cdc92c0964af6f608bf26a65c05f50f121dabe838ad721ea0a
+// dokimi:provenance sha256:c215ebf6b715683df57fc32f5934684ddd2310f260e62319bd55cb805605532b

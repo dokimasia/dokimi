@@ -74,7 +74,7 @@ func RunMixedSuite[T idempotent.Mixed](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T idempotent.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -87,14 +87,14 @@ func FuzzMixedSuite[T idempotent.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T idempotent.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -106,7 +106,13 @@ func BenchMixedSuite[T idempotent.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T idempotent.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) idempotent.Mixed {
+	return func(h *MixedHandle) idempotent.Mixed { return newSubject(h) }
 }
 
 // mixedPutCalls generates the calls of Mixed.Put with the inputs that each
@@ -159,4 +165,4 @@ func newMixedOver(_ *MixedHandle, spend func()) idempotent.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:10f43009d374fcbd3e40d5bbff060200056f8cb40bef19a0932d59becc4b1ec4
+// dokimi:provenance sha256:2b578750738f7606941c1dd84cc4fdac9690c9b71d1990e6f50f9cf7ac9d80db

@@ -67,7 +67,7 @@ func RunMixedSuiteFromHandle[T integrationonly.Mixed](
 	opts ...MixedOption,
 ) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) integrationonly.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -80,19 +80,14 @@ func FuzzMixedSuite[T integrationonly.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) integrationonly.Mixed { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T integrationonly.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) integrationonly.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -104,12 +99,15 @@ func BenchMixedSuite[T integrationonly.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) integrationonly.Mixed { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T integrationonly.Mixed](
+	newSubject func(h *MixedHandle) T,
+) func(h *MixedHandle) integrationonly.Mixed {
+	return func(h *MixedHandle) integrationonly.Mixed { return newSubject(h) }
 }
 
 // mixedConnectCalls generates the calls of Mixed.Connect with the inputs
@@ -145,4 +143,4 @@ func newMixedOver(_ *MixedHandle, spend func()) integrationonly.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:54e65d7ba289c649bc8dd27dfd8d85a9cf2e90875b42c289922ff0d039252284
+// dokimi:provenance sha256:717d6c1f0ed81fae697bda6111085ede1e0f078e3ecdf84313f4f6915506516e

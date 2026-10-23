@@ -67,7 +67,7 @@ func RunContractSuiteFromHandle[T ifabsent.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) ifabsent.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -80,12 +80,7 @@ func FuzzContractSuite[T ifabsent.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) ifabsent.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -96,7 +91,7 @@ func RunContractBudgets[T ifabsent.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) ifabsent.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -108,12 +103,15 @@ func BenchContractSuite[T ifabsent.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) ifabsent.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T ifabsent.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) ifabsent.Contract {
+	return func(h *ContractHandle) ifabsent.Contract { return newSubject(h) }
 }
 
 // contractPutCalls generates the calls of Contract.Put with the inputs
@@ -149,4 +147,4 @@ func newContractOver(_ *ContractHandle, spend func()) ifabsent.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0144ab668f7d48a524af3415a06129c9f6b1456f86be8c8f441c5bda9db9f5b5
+// dokimi:provenance sha256:cfad6cede9d69b92b246a0ec1f6fe617f7a572e0847a0b2c6f015a3021cfd453

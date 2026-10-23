@@ -93,7 +93,7 @@ func RunContractSuiteFromHandle[T chain.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) chain.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -106,14 +106,14 @@ func FuzzContractSuite[T chain.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, ContractSuite(), callable, func(h *ContractHandle) chain.Contract { return newSubject(h) }, opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T chain.Contract](t *testing.T, newSubject func(h *ContractHandle) T, opts ...ContractOption) {
 	t.Helper()
-	conform.RunBudgets(t, ContractSuite(), func(h *ContractHandle) chain.Contract { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -125,12 +125,13 @@ func BenchContractSuite[T chain.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) chain.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T chain.Contract](newSubject func(h *ContractHandle) T) func(h *ContractHandle) chain.Contract {
+	return func(h *ContractHandle) chain.Contract { return newSubject(h) }
 }
 
 // contractAppendCalls generates the calls of Contract.Append with the
@@ -195,4 +196,4 @@ func newContractOver(_ *ContractHandle, spend func()) chain.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:2b3783c1120f7a15bbe89c88b5cac766eda0092fd628f31cc880361a42a2ef21
+// dokimi:provenance sha256:4aaafe27662b3e3fb4f33e910bd00e0a1761f64a1a3a60f213b90a260d92366e

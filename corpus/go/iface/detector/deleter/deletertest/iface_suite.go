@@ -67,7 +67,7 @@ func RunDeleterSuiteFromHandle[T deleter.Deleter](
 	opts ...DeleterOption,
 ) {
 	t.Helper()
-	conform.Run(t, DeleterSuite(), func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+	conform.Run(t, DeleterSuite(), deleterSubjects(newSubject), opts...)
 }
 
 // FuzzDeleterSuite registers on f the fuzz target of the property checks
@@ -80,14 +80,14 @@ func FuzzDeleterSuite[T deleter.Deleter](
 	opts ...DeleterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, DeleterSuite(), callable, func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+	conform.Fuzz(f, DeleterSuite(), callable, deleterSubjects(newSubject), opts...)
 }
 
 // RunDeleterBudgets applies the allocation ceilings of Deleter, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunDeleterBudgets[T deleter.Deleter](t *testing.T, newSubject func(h *DeleterHandle) T, opts ...DeleterOption) {
 	t.Helper()
-	conform.RunBudgets(t, DeleterSuite(), func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, DeleterSuite(), deleterSubjects(newSubject), opts...)
 }
 
 // BenchDeleterSuite measures callable on a subject of newSubject, under
@@ -99,7 +99,13 @@ func BenchDeleterSuite[T deleter.Deleter](
 	opts ...DeleterOption,
 ) {
 	b.Helper()
-	conform.Bench(b, DeleterSuite(), callable, func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
+	conform.Bench(b, DeleterSuite(), callable, deleterSubjects(newSubject), opts...)
+}
+
+// deleterSubjects returns the factory of the subjects of Deleter that
+// calls newSubject with the handle of each check.
+func deleterSubjects[T deleter.Deleter](newSubject func(h *DeleterHandle) T) func(h *DeleterHandle) deleter.Deleter {
+	return func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }
 }
 
 // deleterDeleteCalls generates the calls of Deleter.Delete with the inputs
@@ -135,4 +141,4 @@ func newDeleterOver(_ *DeleterHandle, spend func()) deleter.Deleter {
 	return deleterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:cfa4ac4e76aeb7817def3fee599e513921b67b368bf46b5472582b58277736e0
+// dokimi:provenance sha256:5a0dddcdb3a88b434134a79fc4ff073c278c9aaa49307bccd9610816cb1dbb40

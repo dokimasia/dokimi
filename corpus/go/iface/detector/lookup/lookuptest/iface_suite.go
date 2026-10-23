@@ -63,7 +63,7 @@ func RunLookupSuite[T lookup.Lookup](t *testing.T, newSubject func() T, opts ...
 // newSubject builds from the handle of each check.
 func RunLookupSuiteFromHandle[T lookup.Lookup](t *testing.T, newSubject func(h *LookupHandle) T, opts ...LookupOption) {
 	t.Helper()
-	conform.Run(t, LookupSuite(), func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+	conform.Run(t, LookupSuite(), lookupSubjects(newSubject), opts...)
 }
 
 // FuzzLookupSuite registers on f the fuzz target of the property checks of
@@ -76,14 +76,14 @@ func FuzzLookupSuite[T lookup.Lookup](
 	opts ...LookupOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, LookupSuite(), callable, func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+	conform.Fuzz(f, LookupSuite(), callable, lookupSubjects(newSubject), opts...)
 }
 
 // RunLookupBudgets applies the allocation ceilings of Lookup, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunLookupBudgets[T lookup.Lookup](t *testing.T, newSubject func(h *LookupHandle) T, opts ...LookupOption) {
 	t.Helper()
-	conform.RunBudgets(t, LookupSuite(), func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, LookupSuite(), lookupSubjects(newSubject), opts...)
 }
 
 // BenchLookupSuite measures callable on a subject of newSubject, under the
@@ -95,7 +95,13 @@ func BenchLookupSuite[T lookup.Lookup](
 	opts ...LookupOption,
 ) {
 	b.Helper()
-	conform.Bench(b, LookupSuite(), callable, func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
+	conform.Bench(b, LookupSuite(), callable, lookupSubjects(newSubject), opts...)
+}
+
+// lookupSubjects returns the factory of the subjects of Lookup that calls
+// newSubject with the handle of each check.
+func lookupSubjects[T lookup.Lookup](newSubject func(h *LookupHandle) T) func(h *LookupHandle) lookup.Lookup {
+	return func(h *LookupHandle) lookup.Lookup { return newSubject(h) }
 }
 
 // lookupInspectCalls generates the calls of Lookup.Inspect with the inputs
@@ -132,4 +138,4 @@ func newLookupOver(_ *LookupHandle, spend func()) lookup.Lookup {
 	return lookupOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b9180f2ca60d5b0ba404ccc0dc70a1743174cf3faffaa16b849b02d23f9dec62
+// dokimi:provenance sha256:3b27905d9a92c87d63eaea8777cbcd47c563e3f5012095ab0e1c135bb091f29e

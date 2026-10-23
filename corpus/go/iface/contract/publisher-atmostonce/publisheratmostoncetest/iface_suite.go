@@ -80,11 +80,7 @@ func RunContractSuiteFromHandle[T publisheratmostonce.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) },
-		opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -97,12 +93,7 @@ func FuzzContractSuite[T publisheratmostonce.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -113,11 +104,7 @@ func RunContractBudgets[T publisheratmostonce.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -129,12 +116,15 @@ func BenchContractSuite[T publisheratmostonce.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T publisheratmostonce.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) publisheratmostonce.Contract {
+	return func(h *ContractHandle) publisheratmostonce.Contract { return newSubject(h) }
 }
 
 // contractPublishCalls generates the calls of Contract.Publish with the
@@ -185,4 +175,4 @@ func newContractOver(_ *ContractHandle, spend func()) publisheratmostonce.Contra
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0e5ca62bc38c7f4a0cf93ea104808deac090bb679a4e57b4a50f195d40747c10
+// dokimi:provenance sha256:6659284ab179c8c27eb0440365782b724b408b176e8759e3af2f69c4986fc396

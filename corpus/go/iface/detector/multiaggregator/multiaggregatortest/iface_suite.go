@@ -71,11 +71,7 @@ func RunMultiAggregatorSuiteFromHandle[T multiaggregator.MultiAggregator](
 	opts ...MultiAggregatorOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		MultiAggregatorSuite(),
-		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
-		opts...)
+	conform.Run(t, MultiAggregatorSuite(), multiAggregatorSubjects(newSubject), opts...)
 }
 
 // FuzzMultiAggregatorSuite registers on f the fuzz target of the property
@@ -88,12 +84,7 @@ func FuzzMultiAggregatorSuite[T multiaggregator.MultiAggregator](
 	opts ...MultiAggregatorOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MultiAggregatorSuite(),
-		callable,
-		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MultiAggregatorSuite(), callable, multiAggregatorSubjects(newSubject), opts...)
 }
 
 // RunMultiAggregatorBudgets applies the allocation ceilings of
@@ -105,11 +96,7 @@ func RunMultiAggregatorBudgets[T multiaggregator.MultiAggregator](
 	opts ...MultiAggregatorOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		MultiAggregatorSuite(),
-		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, MultiAggregatorSuite(), multiAggregatorSubjects(newSubject), opts...)
 }
 
 // BenchMultiAggregatorSuite measures callable on a subject of newSubject,
@@ -121,12 +108,15 @@ func BenchMultiAggregatorSuite[T multiaggregator.MultiAggregator](
 	opts ...MultiAggregatorOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MultiAggregatorSuite(),
-		callable,
-		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MultiAggregatorSuite(), callable, multiAggregatorSubjects(newSubject), opts...)
+}
+
+// multiAggregatorSubjects returns the factory of the subjects of
+// MultiAggregator that calls newSubject with the handle of each check.
+func multiAggregatorSubjects[T multiaggregator.MultiAggregator](
+	newSubject func(h *MultiAggregatorHandle) T,
+) func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator {
+	return func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) }
 }
 
 // multiAggregatorStatsCalls generates the calls of MultiAggregator.Stats
@@ -164,4 +154,4 @@ func newMultiAggregatorOver(_ *MultiAggregatorHandle, spend func()) multiaggrega
 	return multiAggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:e9684973a5a77655d4a20460dcddae8c72a550fd0335338edc8979efab6695a2
+// dokimi:provenance sha256:7f202b5d8184e1a3991658caea0417cae5069c600bdff8aaea61fa63c2f66b0f

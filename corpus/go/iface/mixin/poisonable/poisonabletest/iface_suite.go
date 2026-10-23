@@ -75,7 +75,7 @@ func RunMixedSuite[T poisonable.Mixed](t *testing.T, newSubject func() T, opts .
 // newSubject builds from the handle of each check.
 func RunMixedSuiteFromHandle[T poisonable.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.Run(t, MixedSuite(), func(h *MixedHandle) poisonable.Mixed { return newSubject(h) }, opts...)
+	conform.Run(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // FuzzMixedSuite registers on f the fuzz target of the property checks of
@@ -88,14 +88,14 @@ func FuzzMixedSuite[T poisonable.Mixed](
 	opts ...MixedOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MixedSuite(), callable, func(h *MixedHandle) poisonable.Mixed { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
 // RunMixedBudgets applies the allocation ceilings of Mixed, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T poisonable.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
-	conform.RunBudgets(t, MixedSuite(), func(h *MixedHandle) poisonable.Mixed { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
 }
 
 // BenchMixedSuite measures callable on a subject of newSubject, under the
@@ -107,7 +107,13 @@ func BenchMixedSuite[T poisonable.Mixed](
 	opts ...MixedOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) poisonable.Mixed { return newSubject(h) }, opts...)
+	conform.Bench(b, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
+}
+
+// mixedSubjects returns the factory of the subjects of Mixed that calls
+// newSubject with the handle of each check.
+func mixedSubjects[T poisonable.Mixed](newSubject func(h *MixedHandle) T) func(h *MixedHandle) poisonable.Mixed {
+	return func(h *MixedHandle) poisonable.Mixed { return newSubject(h) }
 }
 
 // mixedFailCalls generates the calls of Mixed.Fail with the inputs that
@@ -156,4 +162,4 @@ func newMixedOver(_ *MixedHandle, spend func()) poisonable.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f241a19063e2e1a4c4bb23a6523dd00dbf9294954287782d2afa7dd1ea8d480b
+// dokimi:provenance sha256:840ea0caf91d60d5d5358a4dc5c22040fadb4e29b263f376304edb8d0f7c1d1b

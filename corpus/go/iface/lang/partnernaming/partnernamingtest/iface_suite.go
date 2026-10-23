@@ -128,7 +128,7 @@ func RunStoreSuiteFromHandle[T partnernaming.Store](
 	opts ...StoreOption,
 ) {
 	t.Helper()
-	conform.Run(t, StoreSuite(), func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // FuzzStoreSuite registers on f the fuzz target of the property checks of
@@ -141,14 +141,14 @@ func FuzzStoreSuite[T partnernaming.Store](
 	opts ...StoreOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, StoreSuite(), callable, func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+	conform.Fuzz(f, StoreSuite(), callable, storeSubjects(newSubject), opts...)
 }
 
 // RunStoreBudgets applies the allocation ceilings of Store, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunStoreBudgets[T partnernaming.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
 	t.Helper()
-	conform.RunBudgets(t, StoreSuite(), func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // BenchStoreSuite measures callable on a subject of newSubject, under the
@@ -160,7 +160,13 @@ func BenchStoreSuite[T partnernaming.Store](
 	opts ...StoreOption,
 ) {
 	b.Helper()
-	conform.Bench(b, StoreSuite(), callable, func(h *StoreHandle) partnernaming.Store { return newSubject(h) }, opts...)
+	conform.Bench(b, StoreSuite(), callable, storeSubjects(newSubject), opts...)
+}
+
+// storeSubjects returns the factory of the subjects of Store that calls
+// newSubject with the handle of each check.
+func storeSubjects[T partnernaming.Store](newSubject func(h *StoreHandle) T) func(h *StoreHandle) partnernaming.Store {
+	return func(h *StoreHandle) partnernaming.Store { return newSubject(h) }
 }
 
 // storeTouchCalls generates the calls of Store.Touch with the inputs that
@@ -276,4 +282,4 @@ func newStoreOver(_ *StoreHandle, spend func()) partnernaming.Store {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1d62a49e2bf4115b145456489af896508ce6b14647178ee493731afc24c593f7
+// dokimi:provenance sha256:734d10e69cc1bc06afc2a8f079e2d65bf872fd61afc8960296fe9658f2fe85ef

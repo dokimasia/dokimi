@@ -103,7 +103,7 @@ func RunLogSuite[T causalchain.Log](t *testing.T, newSubject func() T, opts ...L
 // newSubject builds from the handle of each check.
 func RunLogSuiteFromHandle[T causalchain.Log](t *testing.T, newSubject func(h *LogHandle) T, opts ...LogOption) {
 	t.Helper()
-	conform.Run(t, LogSuite(), func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+	conform.Run(t, LogSuite(), logSubjects(newSubject), opts...)
 }
 
 // FuzzLogSuite registers on f the fuzz target of the property checks of
@@ -116,14 +116,14 @@ func FuzzLogSuite[T causalchain.Log](
 	opts ...LogOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+	conform.Fuzz(f, LogSuite(), callable, logSubjects(newSubject), opts...)
 }
 
 // RunLogBudgets applies the allocation ceilings of Log, and the ceilings
 // that opts add, to a fresh subject of newSubject for each case.
 func RunLogBudgets[T causalchain.Log](t *testing.T, newSubject func(h *LogHandle) T, opts ...LogOption) {
 	t.Helper()
-	conform.RunBudgets(t, LogSuite(), func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, LogSuite(), logSubjects(newSubject), opts...)
 }
 
 // BenchLogSuite measures callable on a subject of newSubject, under the
@@ -135,7 +135,13 @@ func BenchLogSuite[T causalchain.Log](
 	opts ...LogOption,
 ) {
 	b.Helper()
-	conform.Bench(b, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
+	conform.Bench(b, LogSuite(), callable, logSubjects(newSubject), opts...)
+}
+
+// logSubjects returns the factory of the subjects of Log that calls
+// newSubject with the handle of each check.
+func logSubjects[T causalchain.Log](newSubject func(h *LogHandle) T) func(h *LogHandle) causalchain.Log {
+	return func(h *LogHandle) causalchain.Log { return newSubject(h) }
 }
 
 // logAppendCalls generates the calls of Log.Append with the inputs that
@@ -206,4 +212,4 @@ func newLogOver(_ *LogHandle, spend func()) causalchain.Log {
 	return logOver{spend: spend}
 }
 
-// dokimi:provenance sha256:a76160214aabcad5b3eab6c55bf2fe8574695630c8f5cdab0980940ef36f4217
+// dokimi:provenance sha256:98434d716278c2ec35c96bdb9f7baa19e066cb23d18988e949d9671c72ace873

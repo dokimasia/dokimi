@@ -67,7 +67,7 @@ func RunContractSuiteFromHandle[T circuitbreaker.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.Run(t, ContractSuite(), func(h *ContractHandle) circuitbreaker.Contract { return newSubject(h) }, opts...)
+	conform.Run(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // FuzzContractSuite registers on f the fuzz target of the property checks
@@ -80,12 +80,7 @@ func FuzzContractSuite[T circuitbreaker.Contract](
 	opts ...ContractOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) circuitbreaker.Contract { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
 // RunContractBudgets applies the allocation ceilings of Contract, and the
@@ -96,11 +91,7 @@ func RunContractBudgets[T circuitbreaker.Contract](
 	opts ...ContractOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		ContractSuite(),
-		func(h *ContractHandle) circuitbreaker.Contract { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, ContractSuite(), contractSubjects(newSubject), opts...)
 }
 
 // BenchContractSuite measures callable on a subject of newSubject, under
@@ -112,12 +103,15 @@ func BenchContractSuite[T circuitbreaker.Contract](
 	opts ...ContractOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) circuitbreaker.Contract { return newSubject(h) },
-		opts...)
+	conform.Bench(b, ContractSuite(), callable, contractSubjects(newSubject), opts...)
+}
+
+// contractSubjects returns the factory of the subjects of Contract that
+// calls newSubject with the handle of each check.
+func contractSubjects[T circuitbreaker.Contract](
+	newSubject func(h *ContractHandle) T,
+) func(h *ContractHandle) circuitbreaker.Contract {
+	return func(h *ContractHandle) circuitbreaker.Contract { return newSubject(h) }
 }
 
 // contractRunCalls generates the calls of Contract.Run with the inputs
@@ -153,4 +147,4 @@ func newContractOver(_ *ContractHandle, spend func()) circuitbreaker.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3f551f441adb6aaf4bdf27dee731a485a3127a5b80390cc1f80eac1b55ec30cb
+// dokimi:provenance sha256:c1fe4b6600de6416f3e36cae8a8c4502b95113221dc3f92fe4d2b1f251667d92

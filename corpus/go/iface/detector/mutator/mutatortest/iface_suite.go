@@ -67,7 +67,7 @@ func RunMutatorSuiteFromHandle[T mutator.Mutator](
 	opts ...MutatorOption,
 ) {
 	t.Helper()
-	conform.Run(t, MutatorSuite(), func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+	conform.Run(t, MutatorSuite(), mutatorSubjects(newSubject), opts...)
 }
 
 // FuzzMutatorSuite registers on f the fuzz target of the property checks
@@ -80,14 +80,14 @@ func FuzzMutatorSuite[T mutator.Mutator](
 	opts ...MutatorOption,
 ) {
 	f.Helper()
-	conform.Fuzz(f, MutatorSuite(), callable, func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+	conform.Fuzz(f, MutatorSuite(), callable, mutatorSubjects(newSubject), opts...)
 }
 
 // RunMutatorBudgets applies the allocation ceilings of Mutator, and the
 // ceilings that opts add, to a fresh subject of newSubject for each case.
 func RunMutatorBudgets[T mutator.Mutator](t *testing.T, newSubject func(h *MutatorHandle) T, opts ...MutatorOption) {
 	t.Helper()
-	conform.RunBudgets(t, MutatorSuite(), func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, MutatorSuite(), mutatorSubjects(newSubject), opts...)
 }
 
 // BenchMutatorSuite measures callable on a subject of newSubject, under
@@ -99,7 +99,13 @@ func BenchMutatorSuite[T mutator.Mutator](
 	opts ...MutatorOption,
 ) {
 	b.Helper()
-	conform.Bench(b, MutatorSuite(), callable, func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
+	conform.Bench(b, MutatorSuite(), callable, mutatorSubjects(newSubject), opts...)
+}
+
+// mutatorSubjects returns the factory of the subjects of Mutator that
+// calls newSubject with the handle of each check.
+func mutatorSubjects[T mutator.Mutator](newSubject func(h *MutatorHandle) T) func(h *MutatorHandle) mutator.Mutator {
+	return func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }
 }
 
 // mutatorTouchCalls generates the calls of Mutator.Touch with the inputs
@@ -135,4 +141,4 @@ func newMutatorOver(_ *MutatorHandle, spend func()) mutator.Mutator {
 	return mutatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:81698f3fbf740f4d339f65b23885df04e60b496c1add0889a5de8cd0c91138b1
+// dokimi:provenance sha256:76e4eb6bc6a45fd40451f957e246223933a61b9e1fd8315abc520ebfaf683f3c

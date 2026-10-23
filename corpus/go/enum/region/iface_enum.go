@@ -58,8 +58,13 @@ func (v Region) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownRegion] for a value that [Region.IsValid] refuses,
+// whose text [ParseRegion] does not parse.
 func (v Region) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownRegion, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -75,4 +80,4 @@ func (v *Region) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:58ae90a1924ba8c8d1596396a1c8fe243678ecb4512b5b2c58ae8158d8dc3503
+// dokimi:provenance sha256:977f18a205b65db1c9d7a6811be2a94d25767f0300cf6a07ca2a7741a54caa76

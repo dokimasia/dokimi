@@ -168,6 +168,14 @@ func TestPriority(t *testing.T) {
 				assert.Equal(t, string(text), tt.give.String(), "the encoding of the variant is its text")
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := priority.Priority(4)
+			_, err := out.MarshalText()
+			assert.ErrorIs(t, err, priority.ErrUnknownPriority, "MarshalText refuses the value with ErrUnknownPriority")
+			assert.Contains(t, err.Error(), out.String(), "the error contains the text of the value")
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -201,4 +209,4 @@ func TestPriority(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:563cd173146cefd7ceb5c13e416eecb9fd7163ac167f04b05482086cb7d11405
+// dokimi:provenance sha256:ba58d16331c7062814ae256ec8b40e83226c3a31d331153e94b163e3483b47f7

@@ -147,6 +147,19 @@ func TestWeekday(t *testing.T) {
 				assert.Equal(t, string(text), tt.give.String(), "the encoding of the variant is its text")
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := handwritten.Weekday(4)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				handwritten.ErrUnknownWeekday,
+				"MarshalText refuses the value with ErrUnknownWeekday",
+			)
+			assert.Contains(t, err.Error(), out.String(), "the error contains the text of the value")
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -179,4 +192,4 @@ func TestWeekday(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:0981b2d37f1f9d228528b1af7c9649888c16f22fea7143a6eaa81b9341d1a320
+// dokimi:provenance sha256:ea34e6fa2a609637c5200085a9127cfb79035981427c51eeb1f0266327133e72

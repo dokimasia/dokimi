@@ -76,8 +76,13 @@ func (v Status) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownStatus] for a value that [Status.IsValid] refuses,
+// whose text [ParseStatus] does not parse.
 func (v Status) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownStatus, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -93,4 +98,4 @@ func (v *Status) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:91af2f7fc325b96c606e3b7cf59444b1dfe4979e26fb1261c8b2eb9cd8001e0f
+// dokimi:provenance sha256:d1646ef7dcc75a40a13c8c570b9f1c79d2b095bcec929400d29fd65b5786fada

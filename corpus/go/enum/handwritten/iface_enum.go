@@ -4,6 +4,10 @@
 
 package handwritten
 
+import (
+	"fmt"
+)
+
 // WeekdayValues returns the declared variants in the order of their
 // declaration. Each call returns a new slice.
 func WeekdayValues() []Weekday {
@@ -26,8 +30,13 @@ func (v Weekday) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownWeekday] for a value that [Weekday.IsValid]
+// refuses, whose text [ParseWeekday] does not parse.
 func (v Weekday) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownWeekday, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -43,4 +52,4 @@ func (v *Weekday) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:b145bd3518ac6c79a6d47af4ad64177e38bd12c54695236d6950661a536139ad
+// dokimi:provenance sha256:686291f92b28e368c557219a197b3ad27f540162f7e7bf4a01edfbcf5cfff5c1

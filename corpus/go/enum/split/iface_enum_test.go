@@ -155,6 +155,14 @@ func TestSignal(t *testing.T) {
 				assert.Equal(t, string(text), tt.give.String(), "the encoding of the variant is its text")
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := split.Signal(4)
+			_, err := out.MarshalText()
+			assert.ErrorIs(t, err, split.ErrUnknownSignal, "MarshalText refuses the value with ErrUnknownSignal")
+			assert.Contains(t, err.Error(), out.String(), "the error contains the text of the value")
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -187,4 +195,4 @@ func TestSignal(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:88d2e4e1865c81d1b51ff27f87b6e9d32b0ac583b0d2bb76e63c954198bfeb80
+// dokimi:provenance sha256:80c9f5609284ac0a9610dbafa87b90bb047a364fbdbab219d58cb6078886023c

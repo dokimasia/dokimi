@@ -80,8 +80,13 @@ func (v Priority) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownPriority] for a value that [Priority.IsValid]
+// refuses, whose text [ParsePriority] does not parse.
 func (v Priority) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownPriority, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -97,4 +102,4 @@ func (v *Priority) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:69307ed4ef8dace48e1a016d0991d124079cd28c31b3670bf7800e60f28a1900
+// dokimi:provenance sha256:1844ab6081defb5d5c1f0867a96611277b0b52f209eb04bbc8165f20a737f3b5

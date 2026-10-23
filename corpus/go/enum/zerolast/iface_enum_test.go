@@ -172,6 +172,14 @@ func TestRegion(t *testing.T) {
 				assert.Equal(t, string(text), tt.give.String(), "the encoding of the variant is its text")
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := zerolast.Region("????????")
+			_, err := out.MarshalText()
+			assert.ErrorIs(t, err, zerolast.ErrUnknownRegion, "MarshalText refuses the value with ErrUnknownRegion")
+			assert.Contains(t, err.Error(), out.String(), "the error contains the text of the value")
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -204,4 +212,4 @@ func TestRegion(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a9c0daaea69d45dd06451449c23c96d65b9a66ada8b5a133f0c9f35f2138ed33
+// dokimi:provenance sha256:9304a8ea0f1de0ecf9b8557a8433cb83c4e21527dba8e301a1008e0ebc2acc6c

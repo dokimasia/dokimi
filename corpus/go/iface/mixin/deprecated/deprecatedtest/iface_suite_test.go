@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deprecated/deprecatedtest"
 )
 
+// mixedSubjectEmbedded is deprecated.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = deprecated.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ deprecated.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:4ce36e32e09b97b73abd9f92897298a124309405fc589e42362f04cd07718a96
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *deprecatedtest.MixedHandle) deprecated.Mixed {
+	return deprecatedtest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	deprecatedtest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(deprecatedtest.MixedChecks.Old.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(deprecatedtest.MixedChecks.New.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteOld registers the fuzz target of Mixed.Old on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteOld(f *testing.F) {
+	deprecatedtest.FuzzMixedSuite(
+		f,
+		deprecatedtest.MixedChecks.Old.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteNew registers the fuzz target of Mixed.New on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteNew(f *testing.F) {
+	deprecatedtest.FuzzMixedSuite(
+		f,
+		deprecatedtest.MixedChecks.New.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Old", func(b *testing.B) {
+		deprecatedtest.BenchMixedSuite(b, deprecatedtest.MixedChecks.Old.Callable, mixedIdle)
+	})
+	b.Run("New", func(b *testing.B) {
+		deprecatedtest.BenchMixedSuite(b, deprecatedtest.MixedChecks.New.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:d04d3ee3de282f67bd3bd98641c5f3afba3f26a6a043e7888f3355a262dcdb89

@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader/batchreadertest"
 )
 
+// batchReaderSubjectEmbedded is batchreader.BatchReader under the name of
+// the field that batchReaderSubject embeds.
+type batchReaderSubjectEmbedded = batchreader.BatchReader
+
 // batchReaderSubject is a value of BatchReader that only
 // TestBatchReaderSuite builds.
-type batchReaderSubject struct{ batchreader.BatchReader }
+type batchReaderSubject struct{ batchReaderSubjectEmbedded }
 
 // TestBatchReaderSuite checks the suite of BatchReader and the two forms
 // of its application.
@@ -70,4 +74,40 @@ func TestBatchReaderSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:20f0b59329fc6797413147c348a4ef6f83e5d053777f1b5f4c04cf132f39b85e
+// batchReaderIdle returns the planted defect of a ceiling of BatchReader
+// with a spend of nothing, a subject that answers each call at once.
+func batchReaderIdle(h *batchreadertest.BatchReaderHandle) batchreader.BatchReader {
+	return batchreadertest.BatchReaderSuite().Calls[0].Over(h, func() {})
+}
+
+// TestBatchReaderSuiteBudgets applies the allocation ceilings of the suite
+// of BatchReader to batchReaderIdle, and a ceiling of 0 to each callable
+// without a budget whose calls build no input of their own.
+func TestBatchReaderSuiteBudgets(t *testing.T) {
+	batchreadertest.RunBatchReaderBudgets(
+		t,
+		batchReaderIdle,
+		conform.Ceilings(batchreadertest.BatchReaderChecks.GetAll.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzBatchReaderSuiteGetAll registers the fuzz target of
+// BatchReader.GetAll on batchReaderIdle, with every check of the suite
+// excused.
+func FuzzBatchReaderSuiteGetAll(f *testing.F) {
+	batchreadertest.FuzzBatchReaderSuite(
+		f,
+		batchreadertest.BatchReaderChecks.GetAll.Callable,
+		batchReaderIdle,
+	)
+}
+
+// BenchmarkBatchReaderSuite measures each callable of the suite of
+// BatchReader on batchReaderIdle.
+func BenchmarkBatchReaderSuite(b *testing.B) {
+	b.Run("GetAll", func(b *testing.B) {
+		batchreadertest.BenchBatchReaderSuite(b, batchreadertest.BatchReaderChecks.GetAll.Callable, batchReaderIdle)
+	})
+}
+
+// dokimi:provenance sha256:0ac2e4804fa4ec426d0a49987c1bb9b59d60d67e9abe8fa2d894f4988fccb981

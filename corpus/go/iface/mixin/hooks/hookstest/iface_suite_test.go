@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/hooks/hookstest"
 )
 
+// mixedSubjectEmbedded is hooks.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = hooks.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ hooks.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a9e35e3f7f09f285701462345d42b2b8be7d219e73b2d4899a1dec0ab2231302
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *hookstest.MixedHandle) hooks.Mixed {
+	return hookstest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	hookstest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(hookstest.MixedChecks.Fire.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(hookstest.MixedChecks.OnEvent.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteFire registers the fuzz target of Mixed.Fire on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteFire(f *testing.F) {
+	hookstest.FuzzMixedSuite(
+		f,
+		hookstest.MixedChecks.Fire.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteOnEvent registers the fuzz target of Mixed.OnEvent on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteOnEvent(f *testing.F) {
+	hookstest.FuzzMixedSuite(
+		f,
+		hookstest.MixedChecks.OnEvent.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Fire", func(b *testing.B) {
+		hookstest.BenchMixedSuite(b, hookstest.MixedChecks.Fire.Callable, mixedIdle)
+	})
+	b.Run("OnEvent", func(b *testing.B) {
+		hookstest.BenchMixedSuite(b, hookstest.MixedChecks.OnEvent.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:9a88cb72b8abebec66fb1e0c67f16280d4b2281959354384d1afae97df6ec79b

@@ -123,23 +123,6 @@ func BenchWideSuite[T multireturn.Wide](
 	conform.Bench(b, WideSuite(), callable, func(h *WideHandle) multireturn.Wide { return newSubject(h) }, opts...)
 }
 
-// BenchWideSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchWideSuiteParallel[T multireturn.Wide](
-	b *testing.B,
-	callable conform.Callable[multireturn.Wide],
-	newSubject func(h *WideHandle) T,
-	opts ...WideOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		WideSuite(),
-		callable,
-		func(h *WideHandle) multireturn.Wide { return newSubject(h) },
-		opts...)
-}
-
 // wideQuadCalls generates the calls of Wide.Quad with the inputs that each
 // case draws.
 var wideQuadCalls = prop.Composite(func(c *prop.Case) func(context.Context, multireturn.Wide) error {
@@ -170,11 +153,15 @@ var wideNoErrorCalls = prop.Composite(func(c *prop.Case) func(context.Context, m
 	}
 })
 
+// wideOverEmbedded is multireturn.Wide under the name of the field that
+// wideOver embeds.
+type wideOverEmbedded = multireturn.Wide
+
 // wideOver is a subject of Wide whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type wideOver struct {
-	multireturn.Wide
+	wideOverEmbedded
 	spend func()
 }
 
@@ -202,4 +189,4 @@ func newWideOver(_ *WideHandle, spend func()) multireturn.Wide {
 	return wideOver{spend: spend}
 }
 
-// dokimi:provenance sha256:00f4a7261e6ec5e64dc316381a4a10b9747da9ae0af86e13bb6b603acae0e785
+// dokimi:provenance sha256:50070f62597763cdc92c0964af6f608bf26a65c05f50f121dabe838ad721ea0a

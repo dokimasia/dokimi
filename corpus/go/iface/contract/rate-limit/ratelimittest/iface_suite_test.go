@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/rate-limit/ratelimittest"
 )
 
+// contractSubjectEmbedded is ratelimit.Contract under the name of the
+// field that contractSubject embeds.
+type contractSubjectEmbedded = ratelimit.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ ratelimit.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,39 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:3dba76eaa9dccd2e144d8e5ec7532c8cf234b0d16f74d2ffd1961e725ec13fe4
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *ratelimittest.ContractHandle) ratelimit.Contract {
+	return ratelimittest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	ratelimittest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(ratelimittest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteRun registers the fuzz target of Contract.Run on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteRun(f *testing.F) {
+	ratelimittest.FuzzContractSuite(
+		f,
+		ratelimittest.ContractChecks.Run.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Run", func(b *testing.B) {
+		ratelimittest.BenchContractSuite(b, ratelimittest.ContractChecks.Run.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:5ac3fdc30ed38bb5a64997eae913562aed8f756ebd1b40515856f99daa99768f

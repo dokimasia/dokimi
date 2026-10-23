@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrent/concurrenttest"
 )
 
+// mixedSubjectEmbedded is concurrent.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = concurrent.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ concurrent.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,62 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e87b32214c14ab3c5a19c7a7874a247d3c14588f524d4dd71e9e274a98eb4966
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *concurrenttest.MixedHandle) concurrent.Mixed {
+	return concurrenttest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	concurrenttest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(concurrenttest.MixedChecks.Bump.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(concurrenttest.MixedChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteBump registers the fuzz target of Mixed.Bump on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteBump(f *testing.F) {
+	concurrenttest.FuzzMixedSuite(
+		f,
+		concurrenttest.MixedChecks.Bump.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteCount registers the fuzz target of Mixed.Count on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteCount(f *testing.F) {
+	concurrenttest.FuzzMixedSuite(
+		f,
+		concurrenttest.MixedChecks.Count.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Bump", func(b *testing.B) {
+		concurrenttest.BenchMixedSuite(b, concurrenttest.MixedChecks.Bump.Callable, mixedIdle)
+	})
+	b.Run("Count", func(b *testing.B) {
+		concurrenttest.BenchMixedSuite(b, concurrenttest.MixedChecks.Count.Callable, mixedIdle)
+	})
+}
+
+// BenchmarkMixedSuiteParallel measures each callable of the suite of Mixed
+// that admits concurrent calls on mixedIdle, on GOMAXPROCS goroutines at
+// once.
+func BenchmarkMixedSuiteParallel(b *testing.B) {
+	b.Run("Bump", func(b *testing.B) {
+		concurrenttest.BenchMixedSuiteParallel(b, concurrenttest.MixedChecks.Bump.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:a76d1ff8bce952f9aef5a6406f1193f0c6e0afe4118c919e32de5ecb0227d6a0

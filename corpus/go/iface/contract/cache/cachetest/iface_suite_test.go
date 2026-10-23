@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache/cachetest"
 )
 
+// contractSubjectEmbedded is cache.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = cache.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ cache.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,67 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d8f43d6b7556798f3818de3f347bc6b0df584eeecae0b019ee8279f9da5612cd
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *cachetest.ContractHandle) cache.Contract {
+	return cachetest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	cachetest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(cachetest.ContractChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(cachetest.ContractChecks.Lookup.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(cachetest.ContractChecks.Fetch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteStore registers the fuzz target of Contract.Store on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteStore(f *testing.F) {
+	cachetest.FuzzContractSuite(
+		f,
+		cachetest.ContractChecks.Store.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteLookup registers the fuzz target of Contract.Lookup on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteLookup(f *testing.F) {
+	cachetest.FuzzContractSuite(
+		f,
+		cachetest.ContractChecks.Lookup.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteFetch registers the fuzz target of Contract.Fetch on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteFetch(f *testing.F) {
+	cachetest.FuzzContractSuite(
+		f,
+		cachetest.ContractChecks.Fetch.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		cachetest.BenchContractSuite(b, cachetest.ContractChecks.Store.Callable, contractIdle)
+	})
+	b.Run("Lookup", func(b *testing.B) {
+		cachetest.BenchContractSuite(b, cachetest.ContractChecks.Lookup.Callable, contractIdle)
+	})
+	b.Run("Fetch", func(b *testing.B) {
+		cachetest.BenchContractSuite(b, cachetest.ContractChecks.Fetch.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:d699dc28e4f6ae3f6b400339f102a132bd2e89b04547de0adae18696ebcef700

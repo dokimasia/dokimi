@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/orderafter/orderaftertest"
 )
 
+// mixedSubjectEmbedded is orderafter.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = orderafter.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ orderafter.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:6797cf6c7340521f1b29c48d9dc2b3ec7334914d1038316f9718fc7fe4611eeb
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *orderaftertest.MixedHandle) orderafter.Mixed {
+	return orderaftertest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	orderaftertest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(orderaftertest.MixedChecks.Commit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(orderaftertest.MixedChecks.Prepare.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteCommit registers the fuzz target of Mixed.Commit on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteCommit(f *testing.F) {
+	orderaftertest.FuzzMixedSuite(
+		f,
+		orderaftertest.MixedChecks.Commit.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuitePrepare registers the fuzz target of Mixed.Prepare on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuitePrepare(f *testing.F) {
+	orderaftertest.FuzzMixedSuite(
+		f,
+		orderaftertest.MixedChecks.Prepare.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Commit", func(b *testing.B) {
+		orderaftertest.BenchMixedSuite(b, orderaftertest.MixedChecks.Commit.Callable, mixedIdle)
+	})
+	b.Run("Prepare", func(b *testing.B) {
+		orderaftertest.BenchMixedSuite(b, orderaftertest.MixedChecks.Prepare.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:f16b65744fbb8095b14c94ddc70b005cedf5e83d758bf04755c9d2b095d4120e

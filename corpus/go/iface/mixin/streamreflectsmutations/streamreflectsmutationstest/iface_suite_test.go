@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations/streamreflectsmutationstest"
 )
 
+// mixedSubjectEmbedded is streamreflectsmutations.Mixed under the name of
+// the field that mixedSubject embeds.
+type mixedSubjectEmbedded = streamreflectsmutations.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ streamreflectsmutations.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,81 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ec7af8adfdffc868f674bbc846deff6bc91927a6ed8f548b53af10a6bd29b74e
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *streamreflectsmutationstest.MixedHandle) streamreflectsmutations.Mixed {
+	return streamreflectsmutationstest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	streamreflectsmutationstest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(
+			streamreflectsmutationstest.MixedChecks.Stream.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(streamreflectsmutationstest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			streamreflectsmutationstest.MixedChecks.Remove.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzMixedSuiteStream registers the fuzz target of Mixed.Stream on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteStream(f *testing.F) {
+	streamreflectsmutationstest.FuzzMixedSuite(
+		f,
+		streamreflectsmutationstest.MixedChecks.Stream.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteAdd registers the fuzz target of Mixed.Add on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteAdd(f *testing.F) {
+	streamreflectsmutationstest.FuzzMixedSuite(
+		f,
+		streamreflectsmutationstest.MixedChecks.Add.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteRemove registers the fuzz target of Mixed.Remove on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteRemove(f *testing.F) {
+	streamreflectsmutationstest.FuzzMixedSuite(
+		f,
+		streamreflectsmutationstest.MixedChecks.Remove.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Stream", func(b *testing.B) {
+		streamreflectsmutationstest.BenchMixedSuite(
+			b,
+			streamreflectsmutationstest.MixedChecks.Stream.Callable,
+			mixedIdle,
+		)
+	})
+	b.Run("Add", func(b *testing.B) {
+		streamreflectsmutationstest.BenchMixedSuite(b, streamreflectsmutationstest.MixedChecks.Add.Callable, mixedIdle)
+	})
+	b.Run("Remove", func(b *testing.B) {
+		streamreflectsmutationstest.BenchMixedSuite(
+			b,
+			streamreflectsmutationstest.MixedChecks.Remove.Callable,
+			mixedIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:35a281cfcfe86656e4766b15b7c678ef34060b49213fe67c1131f7cc595f30e0

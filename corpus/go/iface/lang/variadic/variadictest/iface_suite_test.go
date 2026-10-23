@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/variadic/variadictest"
 )
 
+// finderSubjectEmbedded is variadic.Finder under the name of the field
+// that finderSubject embeds.
+type finderSubjectEmbedded = variadic.Finder
+
 // finderSubject is a value of Finder that only TestFinderSuite builds.
-type finderSubject struct{ variadic.Finder }
+type finderSubject struct{ finderSubjectEmbedded }
 
 // TestFinderSuite checks the suite of Finder and the two forms of its
 // application.
@@ -69,4 +73,54 @@ func TestFinderSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b37be67cb4cc938a32c55c9a5f675838b0e94a70341df086f3e3a29a23247026
+// finderIdle returns the planted defect of a ceiling of Finder with a
+// spend of nothing, a subject that answers each call at once.
+func finderIdle(h *variadictest.FinderHandle) variadic.Finder {
+	return variadictest.FinderSuite().Calls[0].Over(h, func() {})
+}
+
+// TestFinderSuiteBudgets applies the allocation ceilings of the suite of
+// Finder to finderIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestFinderSuiteBudgets(t *testing.T) {
+	variadictest.RunFinderBudgets(
+		t,
+		finderIdle,
+		conform.Ceilings(variadictest.FinderChecks.Find.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(variadictest.FinderChecks.FindWithLimit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzFinderSuiteFind registers the fuzz target of Finder.Find on
+// finderIdle, with every check of the suite excused.
+func FuzzFinderSuiteFind(f *testing.F) {
+	variadictest.FuzzFinderSuite(
+		f,
+		variadictest.FinderChecks.Find.Callable,
+		finderIdle,
+	)
+}
+
+// FuzzFinderSuiteFindWithLimit registers the fuzz target of
+// Finder.FindWithLimit on finderIdle, with every check of the suite
+// excused.
+func FuzzFinderSuiteFindWithLimit(f *testing.F) {
+	variadictest.FuzzFinderSuite(
+		f,
+		variadictest.FinderChecks.FindWithLimit.Callable,
+		finderIdle,
+	)
+}
+
+// BenchmarkFinderSuite measures each callable of the suite of Finder on
+// finderIdle.
+func BenchmarkFinderSuite(b *testing.B) {
+	b.Run("Find", func(b *testing.B) {
+		variadictest.BenchFinderSuite(b, variadictest.FinderChecks.Find.Callable, finderIdle)
+	})
+	b.Run("FindWithLimit", func(b *testing.B) {
+		variadictest.BenchFinderSuite(b, variadictest.FinderChecks.FindWithLimit.Callable, finderIdle)
+	})
+}
+
+// dokimi:provenance sha256:eef45f6c6bf7ee4b92540e36b83bc0ab7df519058de16a45a481b248fa07c507

@@ -129,24 +129,6 @@ func BenchReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
 		opts...)
 }
 
-// BenchReaderWithBoolSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchReaderWithBoolSuiteParallel[T readerwithbool.ReaderWithBool](
-	b *testing.B,
-	callable conform.Callable[readerwithbool.ReaderWithBool],
-	newSubject func(h *ReaderWithBoolHandle) T,
-	opts ...ReaderWithBoolOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		ReaderWithBoolSuite(),
-		callable,
-		func(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool { return newSubject(h) },
-		opts...)
-}
-
 // readerWithBoolLoadCalls generates the calls of ReaderWithBool.Load with
 // the inputs that each case draws.
 var readerWithBoolLoadCalls = prop.Composite(
@@ -159,11 +141,15 @@ var readerWithBoolLoadCalls = prop.Composite(
 	},
 )
 
+// readerWithBoolOverEmbedded is readerwithbool.ReaderWithBool under the
+// name of the field that readerWithBoolOver embeds.
+type readerWithBoolOverEmbedded = readerwithbool.ReaderWithBool
+
 // readerWithBoolOver is a subject of ReaderWithBool whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type readerWithBoolOver struct {
-	readerwithbool.ReaderWithBool
+	readerWithBoolOverEmbedded
 	spend func()
 }
 
@@ -179,4 +165,4 @@ func newReaderWithBoolOver(_ *ReaderWithBoolHandle, spend func()) readerwithbool
 	return readerWithBoolOver{spend: spend}
 }
 
-// dokimi:provenance sha256:fb36c9e0fb4f1999921faf85fb9d3761ddc566466c678dc81880dcbac0bbaa09
+// dokimi:provenance sha256:c5bbed2b61b0af2d3de267a6ff67e2d7c64266f4ebf3f2b089613dc2d16c9117

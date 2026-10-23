@@ -63,6 +63,7 @@ Dispositions:
 | sampled | claimed | Authored values, load-bearing: Apply validates the tag, a refused first call leaves the idempotent claim vacuous, and the census fails the run — so only the `//testkit:sample` value keeps the suite green (witnessed by a config-override probe). Level carries sample and default at once, pinning the precedence — sample over default over derivation. |
 | embedded, embeddedforeign, multireturn, namedreturns, nocontext, partnernaming, roledtypes, variadic | pending (batch 4) | |
 | function | no suite | A function type declares no method set to derive from. |
+| selfnamed | claimed | `Filter.Filter` and `Source.Source` have the names of their interfaces. The planted defect of a ceiling and the input of `Source` embed each interface through an alias, so the generated methods compile. |
 
 ## Detector axis (batch 1 — reviewed)
 

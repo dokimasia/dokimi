@@ -139,24 +139,6 @@ func BenchStreamReaderSuite[T streamreader.StreamReader](
 		opts...)
 }
 
-// BenchStreamReaderSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchStreamReaderSuiteParallel[T streamreader.StreamReader](
-	b *testing.B,
-	callable conform.Callable[streamreader.StreamReader],
-	newSubject func(h *StreamReaderHandle) T,
-	opts ...StreamReaderOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		StreamReaderSuite(),
-		callable,
-		func(h *StreamReaderHandle) streamreader.StreamReader { return newSubject(h) },
-		opts...)
-}
-
 // streamReaderAddCalls generates the calls of StreamReader.Add with the
 // inputs that each case draws.
 var streamReaderAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, streamreader.StreamReader) error {
@@ -175,11 +157,15 @@ var streamReaderListCalls = prop.Composite(func(*prop.Case) func(context.Context
 	}
 })
 
+// streamReaderOverEmbedded is streamreader.StreamReader under the name of
+// the field that streamReaderOver embeds.
+type streamReaderOverEmbedded = streamreader.StreamReader
+
 // streamReaderOver is a subject of StreamReader whose callables call spend
 // and return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type streamReaderOver struct {
-	streamreader.StreamReader
+	streamReaderOverEmbedded
 	spend func()
 }
 
@@ -201,4 +187,4 @@ func newStreamReaderOver(_ *StreamReaderHandle, spend func()) streamreader.Strea
 	return streamReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:22998056387969580d9f2ecd7eb4d157b8df588240a720e23f825a99fabd74bd
+// dokimi:provenance sha256:ecb54d06fc3abf1b3eb4adc33e38331662661aa7a79357b5ef285c408b6d2386

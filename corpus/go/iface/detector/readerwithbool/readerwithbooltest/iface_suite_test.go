@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool/readerwithbooltest"
 )
 
+// readerWithBoolSubjectEmbedded is readerwithbool.ReaderWithBool under the
+// name of the field that readerWithBoolSubject embeds.
+type readerWithBoolSubjectEmbedded = readerwithbool.ReaderWithBool
+
 // readerWithBoolSubject is a value of ReaderWithBool that only
 // TestReaderWithBoolSuite builds.
-type readerWithBoolSubject struct{ readerwithbool.ReaderWithBool }
+type readerWithBoolSubject struct{ readerWithBoolSubjectEmbedded }
 
 // TestReaderWithBoolSuite checks the suite of ReaderWithBool and the two
 // forms of its application.
@@ -74,4 +78,45 @@ func TestReaderWithBoolSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c91df14ea0eee26d1d17c1d98e5adb7f54ce2078c7269ec907de4aeeeca161ca
+// readerWithBoolIdle returns the planted defect of a ceiling of
+// ReaderWithBool with a spend of nothing, a subject that answers each call
+// at once.
+func readerWithBoolIdle(h *readerwithbooltest.ReaderWithBoolHandle) readerwithbool.ReaderWithBool {
+	return readerwithbooltest.ReaderWithBoolSuite().Calls[0].Over(h, func() {})
+}
+
+// TestReaderWithBoolSuiteBudgets applies the allocation ceilings of the
+// suite of ReaderWithBool to readerWithBoolIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestReaderWithBoolSuiteBudgets(t *testing.T) {
+	readerwithbooltest.RunReaderWithBoolBudgets(
+		t,
+		readerWithBoolIdle,
+		conform.Ceilings(readerwithbooltest.ReaderWithBoolChecks.Load.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzReaderWithBoolSuiteLoad registers the fuzz target of
+// ReaderWithBool.Load on readerWithBoolIdle, with every check of the suite
+// excused.
+func FuzzReaderWithBoolSuiteLoad(f *testing.F) {
+	readerwithbooltest.FuzzReaderWithBoolSuite(
+		f,
+		readerwithbooltest.ReaderWithBoolChecks.Load.Callable,
+		readerWithBoolIdle,
+	)
+}
+
+// BenchmarkReaderWithBoolSuite measures each callable of the suite of
+// ReaderWithBool on readerWithBoolIdle.
+func BenchmarkReaderWithBoolSuite(b *testing.B) {
+	b.Run("Load", func(b *testing.B) {
+		readerwithbooltest.BenchReaderWithBoolSuite(
+			b,
+			readerwithbooltest.ReaderWithBoolChecks.Load.Callable,
+			readerWithBoolIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:40bef63b0578472f658292003121e246c664349e56dd812e4d0277f419fcca26

@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/crdtmerge/crdtmergetest"
 )
 
+// mixedSubjectEmbedded is crdtmerge.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = crdtmerge.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ crdtmerge.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,66 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:bfb9b5135eeec30c40e2363279d4eee5dbfedb65423cb249d63166863b9d332d
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *crdtmergetest.MixedHandle) crdtmerge.Mixed {
+	return crdtmergetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	crdtmergetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(crdtmergetest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(crdtmergetest.MixedChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteMerge registers the fuzz target of Mixed.Merge on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteMerge(f *testing.F) {
+	crdtmergetest.FuzzMixedSuite(
+		f,
+		crdtmergetest.MixedChecks.Merge.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteAdd registers the fuzz target of Mixed.Add on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteAdd(f *testing.F) {
+	crdtmergetest.FuzzMixedSuite(
+		f,
+		crdtmergetest.MixedChecks.Add.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteItems registers the fuzz target of Mixed.Items on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteItems(f *testing.F) {
+	crdtmergetest.FuzzMixedSuite(
+		f,
+		crdtmergetest.MixedChecks.Items.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Merge", func(b *testing.B) {
+		crdtmergetest.BenchMixedSuite(b, crdtmergetest.MixedChecks.Merge.Callable, mixedIdle)
+	})
+	b.Run("Add", func(b *testing.B) {
+		crdtmergetest.BenchMixedSuite(b, crdtmergetest.MixedChecks.Add.Callable, mixedIdle)
+	})
+	b.Run("Items", func(b *testing.B) {
+		crdtmergetest.BenchMixedSuite(b, crdtmergetest.MixedChecks.Items.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:b3cafd783112ff6649da329d7dc23ffc6df4520f01364cad9d846228acb33ccf

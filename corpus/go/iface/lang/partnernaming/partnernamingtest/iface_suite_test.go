@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/partnernaming/partnernamingtest"
 )
 
+// storeSubjectEmbedded is partnernaming.Store under the name of the field
+// that storeSubject embeds.
+type storeSubjectEmbedded = partnernaming.Store
+
 // storeSubject is a value of Store that only TestStoreSuite builds.
-type storeSubject struct{ partnernaming.Store }
+type storeSubject struct{ storeSubjectEmbedded }
 
 // TestStoreSuite checks the suite of Store and the two forms of its
 // application.
@@ -69,4 +73,109 @@ func TestStoreSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d81d08010e3f9b025efed55ecc262ebaad2c609d8450d9ebf22a39f5cf42d35c
+// storeIdle returns the planted defect of a ceiling of Store with a spend
+// of nothing, a subject that answers each call at once.
+func storeIdle(h *partnernamingtest.StoreHandle) partnernaming.Store {
+	return partnernamingtest.StoreSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStoreSuiteBudgets applies the allocation ceilings of the suite of
+// Store to storeIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestStoreSuiteBudgets(t *testing.T) {
+	partnernamingtest.RunStoreBudgets(
+		t,
+		storeIdle,
+		conform.Ceilings(partnernamingtest.StoreChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(partnernamingtest.StoreChecks.Seen.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(partnernamingtest.StoreChecks.Move.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(partnernamingtest.StoreChecks.At.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(partnernamingtest.StoreChecks.Emit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(partnernamingtest.StoreChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzStoreSuiteTouch registers the fuzz target of Store.Touch on
+// storeIdle, with every check of the suite excused.
+func FuzzStoreSuiteTouch(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Touch.Callable,
+		storeIdle,
+	)
+}
+
+// FuzzStoreSuiteSeen registers the fuzz target of Store.Seen on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuiteSeen(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Seen.Callable,
+		storeIdle,
+	)
+}
+
+// FuzzStoreSuiteMove registers the fuzz target of Store.Move on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuiteMove(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Move.Callable,
+		storeIdle,
+	)
+}
+
+// FuzzStoreSuiteAt registers the fuzz target of Store.At on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuiteAt(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.At.Callable,
+		storeIdle,
+	)
+}
+
+// FuzzStoreSuiteEmit registers the fuzz target of Store.Emit on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuiteEmit(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Emit.Callable,
+		storeIdle,
+	)
+}
+
+// FuzzStoreSuiteCount registers the fuzz target of Store.Count on
+// storeIdle, with every check of the suite excused.
+func FuzzStoreSuiteCount(f *testing.F) {
+	partnernamingtest.FuzzStoreSuite(
+		f,
+		partnernamingtest.StoreChecks.Count.Callable,
+		storeIdle,
+	)
+}
+
+// BenchmarkStoreSuite measures each callable of the suite of Store on
+// storeIdle.
+func BenchmarkStoreSuite(b *testing.B) {
+	b.Run("Touch", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(b, partnernamingtest.StoreChecks.Touch.Callable, storeIdle)
+	})
+	b.Run("Seen", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(b, partnernamingtest.StoreChecks.Seen.Callable, storeIdle)
+	})
+	b.Run("Move", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(b, partnernamingtest.StoreChecks.Move.Callable, storeIdle)
+	})
+	b.Run("At", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(b, partnernamingtest.StoreChecks.At.Callable, storeIdle)
+	})
+	b.Run("Emit", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(b, partnernamingtest.StoreChecks.Emit.Callable, storeIdle)
+	})
+	b.Run("Count", func(b *testing.B) {
+		partnernamingtest.BenchStoreSuite(b, partnernamingtest.StoreChecks.Count.Callable, storeIdle)
+	})
+}
+
+// dokimi:provenance sha256:90436b4e8fbdc5c9851d561b1603136af8f46fbe97e0b311e15ab938ae2031c7

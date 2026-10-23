@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample/sampletest"
 )
 
+// mixedSubjectEmbedded is sample.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = sample.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ sample.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:8347e48cd66406800c4a1a44586ae4a9ea8b0f4f78c337a5785f52d7e15b3875
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *sampletest.MixedHandle) sample.Mixed {
+	return sampletest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	sampletest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(sampletest.MixedChecks.Process.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(sampletest.MixedChecks.NewInput.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteProcess registers the fuzz target of Mixed.Process on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteProcess(f *testing.F) {
+	sampletest.FuzzMixedSuite(
+		f,
+		sampletest.MixedChecks.Process.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteNewInput registers the fuzz target of Mixed.NewInput on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteNewInput(f *testing.F) {
+	sampletest.FuzzMixedSuite(
+		f,
+		sampletest.MixedChecks.NewInput.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Process", func(b *testing.B) {
+		sampletest.BenchMixedSuite(b, sampletest.MixedChecks.Process.Callable, mixedIdle)
+	})
+	b.Run("NewInput", func(b *testing.B) {
+		sampletest.BenchMixedSuite(b, sampletest.MixedChecks.NewInput.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:e55fa98e7055e01984bf20641ed5776ae589fbd1ff5851e2f5011fbb3e565282

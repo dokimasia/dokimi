@@ -151,24 +151,6 @@ func BenchTxWithRetrySuite[T txwithretry.TxWithRetry](
 		opts...)
 }
 
-// BenchTxWithRetrySuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchTxWithRetrySuiteParallel[T txwithretry.TxWithRetry](
-	b *testing.B,
-	callable conform.Callable[txwithretry.TxWithRetry],
-	newSubject func(h *TxWithRetryHandle) T,
-	opts ...TxWithRetryOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		TxWithRetrySuite(),
-		callable,
-		func(h *TxWithRetryHandle) txwithretry.TxWithRetry { return newSubject(h) },
-		opts...)
-}
-
 // txWithRetryBeginCalls generates the calls of TxWithRetry.Begin with the
 // inputs that each case draws.
 var txWithRetryBeginCalls = prop.Composite(func(*prop.Case) func(context.Context, txwithretry.TxWithRetry) error {
@@ -193,11 +175,15 @@ var txWithRetryRollbackCalls = prop.Composite(func(*prop.Case) func(context.Cont
 	}
 })
 
+// txWithRetryOverEmbedded is txwithretry.TxWithRetry under the name of the
+// field that txWithRetryOver embeds.
+type txWithRetryOverEmbedded = txwithretry.TxWithRetry
+
 // txWithRetryOver is a subject of TxWithRetry whose callables call spend
 // and return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type txWithRetryOver struct {
-	txwithretry.TxWithRetry
+	txWithRetryOverEmbedded
 	spend func()
 }
 
@@ -225,4 +211,4 @@ func newTxWithRetryOver(_ *TxWithRetryHandle, spend func()) txwithretry.TxWithRe
 	return txWithRetryOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0ced159cc01af5f7dc16b7ec099c1d9b49d0b5ce7890939e932470953803d1db
+// dokimi:provenance sha256:9fc524c47662efde53cdbdff54f04b9f27a1b2ddc089f892a58d791755664f13

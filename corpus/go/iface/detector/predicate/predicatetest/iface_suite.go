@@ -121,23 +121,6 @@ func BenchPredicateSuite[T predicate.Predicate](
 		opts...)
 }
 
-// BenchPredicateSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchPredicateSuiteParallel[T predicate.Predicate](
-	b *testing.B,
-	callable conform.Callable[predicate.Predicate],
-	newSubject func(h *PredicateHandle) T,
-	opts ...PredicateOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		PredicateSuite(),
-		callable,
-		func(h *PredicateHandle) predicate.Predicate { return newSubject(h) },
-		opts...)
-}
-
 // predicateIsEmptyCalls generates the calls of Predicate.IsEmpty with the
 // inputs that each case draws.
 var predicateIsEmptyCalls = prop.Composite(func(*prop.Case) func(context.Context, predicate.Predicate) error {
@@ -147,11 +130,15 @@ var predicateIsEmptyCalls = prop.Composite(func(*prop.Case) func(context.Context
 	}
 })
 
+// predicateOverEmbedded is predicate.Predicate under the name of the field
+// that predicateOver embeds.
+type predicateOverEmbedded = predicate.Predicate
+
 // predicateOver is a subject of Predicate whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type predicateOver struct {
-	predicate.Predicate
+	predicateOverEmbedded
 	spend func()
 }
 
@@ -167,4 +154,4 @@ func newPredicateOver(_ *PredicateHandle, spend func()) predicate.Predicate {
 	return predicateOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c9cdbeec68d569887df2efa2cbe1fe0db8b9eaf498286a45c8885aca24b0d694
+// dokimi:provenance sha256:19e79d3c4f038a1fbd08985c1b41750474db32cd0fc54232c8a05323bc3324ab

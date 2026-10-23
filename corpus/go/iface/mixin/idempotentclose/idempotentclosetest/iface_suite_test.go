@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose/idempotentclosetest"
 )
 
+// closerSubjectEmbedded is idempotentclose.Closer under the name of the
+// field that closerSubject embeds.
+type closerSubjectEmbedded = idempotentclose.Closer
+
 // closerSubject is a value of Closer that only TestCloserSuite builds.
-type closerSubject struct{ idempotentclose.Closer }
+type closerSubject struct{ closerSubjectEmbedded }
 
 // TestCloserSuite checks the suite of Closer and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestCloserSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e974b31b768fbf19abe2515b1ba0414c42aa96e34a5b1a6b644b02cb49c40840
+// closerIdle returns the planted defect of a ceiling of Closer with a
+// spend of nothing, a subject that answers each call at once.
+func closerIdle(h *idempotentclosetest.CloserHandle) idempotentclose.Closer {
+	return idempotentclosetest.CloserSuite().Calls[0].Over(h, func() {})
+}
+
+// TestCloserSuiteBudgets applies the allocation ceilings of the suite of
+// Closer to closerIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestCloserSuiteBudgets(t *testing.T) {
+	idempotentclosetest.RunCloserBudgets(
+		t,
+		closerIdle,
+		conform.Ceilings(idempotentclosetest.CloserChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(idempotentclosetest.CloserChecks.Stats.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzCloserSuiteClose registers the fuzz target of Closer.Close on
+// closerIdle, with every check of the suite excused.
+func FuzzCloserSuiteClose(f *testing.F) {
+	idempotentclosetest.FuzzCloserSuite(
+		f,
+		idempotentclosetest.CloserChecks.Close.Callable,
+		closerIdle,
+	)
+}
+
+// FuzzCloserSuiteStats registers the fuzz target of Closer.Stats on
+// closerIdle, with every check of the suite excused.
+func FuzzCloserSuiteStats(f *testing.F) {
+	idempotentclosetest.FuzzCloserSuite(
+		f,
+		idempotentclosetest.CloserChecks.Stats.Callable,
+		closerIdle,
+	)
+}
+
+// BenchmarkCloserSuite measures each callable of the suite of Closer on
+// closerIdle.
+func BenchmarkCloserSuite(b *testing.B) {
+	b.Run("Close", func(b *testing.B) {
+		idempotentclosetest.BenchCloserSuite(b, idempotentclosetest.CloserChecks.Close.Callable, closerIdle)
+	})
+	b.Run("Stats", func(b *testing.B) {
+		idempotentclosetest.BenchCloserSuite(b, idempotentclosetest.CloserChecks.Stats.Callable, closerIdle)
+	})
+}
+
+// dokimi:provenance sha256:13256336a08753e0898a08cf0d27d8f2ddaf783ef545beb6c1def45d41755854

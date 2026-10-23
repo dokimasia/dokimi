@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup/lookuptest"
 )
 
+// lookupSubjectEmbedded is lookup.Lookup under the name of the field that
+// lookupSubject embeds.
+type lookupSubjectEmbedded = lookup.Lookup
+
 // lookupSubject is a value of Lookup that only TestLookupSuite builds.
-type lookupSubject struct{ lookup.Lookup }
+type lookupSubject struct{ lookupSubjectEmbedded }
 
 // TestLookupSuite checks the suite of Lookup and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestLookupSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1f5a75db45d5ccea86a5efb64187a8ad7db1b5299ff36663ad37fdb20e5ac096
+// lookupIdle returns the planted defect of a ceiling of Lookup with a
+// spend of nothing, a subject that answers each call at once.
+func lookupIdle(h *lookuptest.LookupHandle) lookup.Lookup {
+	return lookuptest.LookupSuite().Calls[0].Over(h, func() {})
+}
+
+// TestLookupSuiteBudgets applies the allocation ceilings of the suite of
+// Lookup to lookupIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestLookupSuiteBudgets(t *testing.T) {
+	lookuptest.RunLookupBudgets(
+		t,
+		lookupIdle,
+		conform.Ceilings(lookuptest.LookupChecks.Inspect.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzLookupSuiteInspect registers the fuzz target of Lookup.Inspect on
+// lookupIdle, with every check of the suite excused.
+func FuzzLookupSuiteInspect(f *testing.F) {
+	lookuptest.FuzzLookupSuite(
+		f,
+		lookuptest.LookupChecks.Inspect.Callable,
+		lookupIdle,
+	)
+}
+
+// BenchmarkLookupSuite measures each callable of the suite of Lookup on
+// lookupIdle.
+func BenchmarkLookupSuite(b *testing.B) {
+	b.Run("Inspect", func(b *testing.B) {
+		lookuptest.BenchLookupSuite(b, lookuptest.LookupChecks.Inspect.Callable, lookupIdle)
+	})
+}
+
+// dokimi:provenance sha256:2674ce516ebf22d7fd38ee46896e31c871a89618f88d4f8180e4c5dc63f9c1b0

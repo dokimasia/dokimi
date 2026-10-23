@@ -97,23 +97,6 @@ func BenchReaderSuite[T reader.Reader](
 	conform.Bench(b, ReaderSuite(), callable, func(h *ReaderHandle) reader.Reader { return newSubject(h) }, opts...)
 }
 
-// BenchReaderSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchReaderSuiteParallel[T reader.Reader](
-	b *testing.B,
-	callable conform.Callable[reader.Reader],
-	newSubject func(h *ReaderHandle) T,
-	opts ...ReaderOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		ReaderSuite(),
-		callable,
-		func(h *ReaderHandle) reader.Reader { return newSubject(h) },
-		opts...)
-}
-
 // readerGetCalls generates the calls of Reader.Get with the inputs that
 // each case draws.
 var readerGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, reader.Reader) error {
@@ -124,11 +107,15 @@ var readerGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, rea
 	}
 })
 
+// readerOverEmbedded is reader.Reader under the name of the field that
+// readerOver embeds.
+type readerOverEmbedded = reader.Reader
+
 // readerOver is a subject of Reader whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type readerOver struct {
-	reader.Reader
+	readerOverEmbedded
 	spend func()
 }
 
@@ -144,4 +131,4 @@ func newReaderOver(_ *ReaderHandle, spend func()) reader.Reader {
 	return readerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5e6584cd68806d42a5264329649ff124d71a58208a30160f3fccf58791d34dd7
+// dokimi:provenance sha256:a0be8c5904ed19029028cb1adcbc6446c08e1d86fb12699ddf3304b9a6b840d1

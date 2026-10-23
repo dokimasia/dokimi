@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader/pointerreadertest"
 )
 
+// pointerReaderSubjectEmbedded is pointerreader.PointerReader under the
+// name of the field that pointerReaderSubject embeds.
+type pointerReaderSubjectEmbedded = pointerreader.PointerReader
+
 // pointerReaderSubject is a value of PointerReader that only
 // TestPointerReaderSuite builds.
-type pointerReaderSubject struct{ pointerreader.PointerReader }
+type pointerReaderSubject struct{ pointerReaderSubjectEmbedded }
 
 // TestPointerReaderSuite checks the suite of PointerReader and the two
 // forms of its application.
@@ -74,4 +78,45 @@ func TestPointerReaderSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:9a4ea0b017b9268aa077632f875e6592b0a7b942ec8ee3a9d3f9e82813e16e0b
+// pointerReaderIdle returns the planted defect of a ceiling of
+// PointerReader with a spend of nothing, a subject that answers each call
+// at once.
+func pointerReaderIdle(h *pointerreadertest.PointerReaderHandle) pointerreader.PointerReader {
+	return pointerreadertest.PointerReaderSuite().Calls[0].Over(h, func() {})
+}
+
+// TestPointerReaderSuiteBudgets applies the allocation ceilings of the
+// suite of PointerReader to pointerReaderIdle, and a ceiling of 0 to each
+// callable without a budget whose calls build no input of their own.
+func TestPointerReaderSuiteBudgets(t *testing.T) {
+	pointerreadertest.RunPointerReaderBudgets(
+		t,
+		pointerReaderIdle,
+		conform.Ceilings(pointerreadertest.PointerReaderChecks.Find.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzPointerReaderSuiteFind registers the fuzz target of
+// PointerReader.Find on pointerReaderIdle, with every check of the suite
+// excused.
+func FuzzPointerReaderSuiteFind(f *testing.F) {
+	pointerreadertest.FuzzPointerReaderSuite(
+		f,
+		pointerreadertest.PointerReaderChecks.Find.Callable,
+		pointerReaderIdle,
+	)
+}
+
+// BenchmarkPointerReaderSuite measures each callable of the suite of
+// PointerReader on pointerReaderIdle.
+func BenchmarkPointerReaderSuite(b *testing.B) {
+	b.Run("Find", func(b *testing.B) {
+		pointerreadertest.BenchPointerReaderSuite(
+			b,
+			pointerreadertest.PointerReaderChecks.Find.Callable,
+			pointerReaderIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:c6b7c6ffbda4c5a6b8d0408c5f1fae4cfb347c05812a8f1a20ce6f41c97b7a6d

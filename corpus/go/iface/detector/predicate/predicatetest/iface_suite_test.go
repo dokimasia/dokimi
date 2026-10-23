@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate/predicatetest"
 )
 
+// predicateSubjectEmbedded is predicate.Predicate under the name of the
+// field that predicateSubject embeds.
+type predicateSubjectEmbedded = predicate.Predicate
+
 // predicateSubject is a value of Predicate that only TestPredicateSuite
 // builds.
-type predicateSubject struct{ predicate.Predicate }
+type predicateSubject struct{ predicateSubjectEmbedded }
 
 // TestPredicateSuite checks the suite of Predicate and the two forms of
 // its application.
@@ -70,4 +74,39 @@ func TestPredicateSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:8f561286b4c101d8508d4ca5b7b6b1fc0c042d50f4c91f34b302ea8e00dda809
+// predicateIdle returns the planted defect of a ceiling of Predicate with
+// a spend of nothing, a subject that answers each call at once.
+func predicateIdle(h *predicatetest.PredicateHandle) predicate.Predicate {
+	return predicatetest.PredicateSuite().Calls[0].Over(h, func() {})
+}
+
+// TestPredicateSuiteBudgets applies the allocation ceilings of the suite
+// of Predicate to predicateIdle, and a ceiling of 0 to each callable
+// without a budget whose calls build no input of their own.
+func TestPredicateSuiteBudgets(t *testing.T) {
+	predicatetest.RunPredicateBudgets(
+		t,
+		predicateIdle,
+		conform.Ceilings(predicatetest.PredicateChecks.IsEmpty.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzPredicateSuiteIsEmpty registers the fuzz target of Predicate.IsEmpty
+// on predicateIdle, with every check of the suite excused.
+func FuzzPredicateSuiteIsEmpty(f *testing.F) {
+	predicatetest.FuzzPredicateSuite(
+		f,
+		predicatetest.PredicateChecks.IsEmpty.Callable,
+		predicateIdle,
+	)
+}
+
+// BenchmarkPredicateSuite measures each callable of the suite of Predicate
+// on predicateIdle.
+func BenchmarkPredicateSuite(b *testing.B) {
+	b.Run("IsEmpty", func(b *testing.B) {
+		predicatetest.BenchPredicateSuite(b, predicatetest.PredicateChecks.IsEmpty.Callable, predicateIdle)
+	})
+}
+
+// dokimi:provenance sha256:4f8be0bfbff1f0ee65dd4a78a2e623e688e804d3191a5fe197b2de37383f231e

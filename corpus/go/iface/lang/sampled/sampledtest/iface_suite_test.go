@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampled/sampledtest"
 )
 
+// labellerSubjectEmbedded is sampled.Labeller under the name of the field
+// that labellerSubject embeds.
+type labellerSubjectEmbedded = sampled.Labeller
+
 // labellerSubject is a value of Labeller that only TestLabellerSuite
 // builds.
-type labellerSubject struct{ sampled.Labeller }
+type labellerSubject struct{ labellerSubjectEmbedded }
 
 // TestLabellerSuite checks the suite of Labeller and the two forms of its
 // application.
@@ -70,4 +74,39 @@ func TestLabellerSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d14eafc3e6e943952408f18535066fbc30b176e7628f1b457555ea8e3bf9c512
+// labellerIdle returns the planted defect of a ceiling of Labeller with a
+// spend of nothing, a subject that answers each call at once.
+func labellerIdle(h *sampledtest.LabellerHandle) sampled.Labeller {
+	return sampledtest.LabellerSuite().Calls[0].Over(h, func() {})
+}
+
+// TestLabellerSuiteBudgets applies the allocation ceilings of the suite of
+// Labeller to labellerIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestLabellerSuiteBudgets(t *testing.T) {
+	sampledtest.RunLabellerBudgets(
+		t,
+		labellerIdle,
+		conform.Ceilings(sampledtest.LabellerChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzLabellerSuiteApply registers the fuzz target of Labeller.Apply on
+// labellerIdle, with every check of the suite excused.
+func FuzzLabellerSuiteApply(f *testing.F) {
+	sampledtest.FuzzLabellerSuite(
+		f,
+		sampledtest.LabellerChecks.Apply.Callable,
+		labellerIdle,
+	)
+}
+
+// BenchmarkLabellerSuite measures each callable of the suite of Labeller
+// on labellerIdle.
+func BenchmarkLabellerSuite(b *testing.B) {
+	b.Run("Apply", func(b *testing.B) {
+		sampledtest.BenchLabellerSuite(b, sampledtest.LabellerChecks.Apply.Callable, labellerIdle)
+	})
+}
+
+// dokimi:provenance sha256:b26897cec79659b223d1f06f32bb682d26709cd885da5965867c64fa8b21019e

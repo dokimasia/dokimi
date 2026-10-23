@@ -13,11 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator/multiaggregatortest"
 )
 
+// multiAggregatorSubjectEmbedded is multiaggregator.MultiAggregator under
+// the name of the field that multiAggregatorSubject embeds.
+type multiAggregatorSubjectEmbedded = multiaggregator.MultiAggregator
+
 // multiAggregatorSubject is a value of MultiAggregator that only
 // TestMultiAggregatorSuite builds.
-type multiAggregatorSubject struct {
-	multiaggregator.MultiAggregator
-}
+type multiAggregatorSubject struct{ multiAggregatorSubjectEmbedded }
 
 // TestMultiAggregatorSuite checks the suite of MultiAggregator and the two
 // forms of its application.
@@ -76,4 +78,48 @@ func TestMultiAggregatorSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ad6b607132919dfcafe5143fda1d5fd287fbdf034c17433cbae4a6e8188b9767
+// multiAggregatorIdle returns the planted defect of a ceiling of
+// MultiAggregator with a spend of nothing, a subject that answers each
+// call at once.
+func multiAggregatorIdle(h *multiaggregatortest.MultiAggregatorHandle) multiaggregator.MultiAggregator {
+	return multiaggregatortest.MultiAggregatorSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMultiAggregatorSuiteBudgets applies the allocation ceilings of the
+// suite of MultiAggregator to multiAggregatorIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestMultiAggregatorSuiteBudgets(t *testing.T) {
+	multiaggregatortest.RunMultiAggregatorBudgets(
+		t,
+		multiAggregatorIdle,
+		conform.Ceilings(
+			multiaggregatortest.MultiAggregatorChecks.Stats.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzMultiAggregatorSuiteStats registers the fuzz target of
+// MultiAggregator.Stats on multiAggregatorIdle, with every check of the
+// suite excused.
+func FuzzMultiAggregatorSuiteStats(f *testing.F) {
+	multiaggregatortest.FuzzMultiAggregatorSuite(
+		f,
+		multiaggregatortest.MultiAggregatorChecks.Stats.Callable,
+		multiAggregatorIdle,
+	)
+}
+
+// BenchmarkMultiAggregatorSuite measures each callable of the suite of
+// MultiAggregator on multiAggregatorIdle.
+func BenchmarkMultiAggregatorSuite(b *testing.B) {
+	b.Run("Stats", func(b *testing.B) {
+		multiaggregatortest.BenchMultiAggregatorSuite(
+			b,
+			multiaggregatortest.MultiAggregatorChecks.Stats.Callable,
+			multiAggregatorIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:4cace96b8ccd02ea97c0900d7a2b2bf75e460fa54d058651f1188bac4b0c452c

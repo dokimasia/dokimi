@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/atomic/atomictest"
 )
 
+// mixedSubjectEmbedded is atomic.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = atomic.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ atomic.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7f1570bbc05e6928910f6cef479740bcc970444361ededc98214555246382af9
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *atomictest.MixedHandle) atomic.Mixed {
+	return atomictest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	atomictest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(atomictest.MixedChecks.Write.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(atomictest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteWrite registers the fuzz target of Mixed.Write on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteWrite(f *testing.F) {
+	atomictest.FuzzMixedSuite(
+		f,
+		atomictest.MixedChecks.Write.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteRead registers the fuzz target of Mixed.Read on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteRead(f *testing.F) {
+	atomictest.FuzzMixedSuite(
+		f,
+		atomictest.MixedChecks.Read.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Write", func(b *testing.B) {
+		atomictest.BenchMixedSuite(b, atomictest.MixedChecks.Write.Callable, mixedIdle)
+	})
+	b.Run("Read", func(b *testing.B) {
+		atomictest.BenchMixedSuite(b, atomictest.MixedChecks.Read.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:1d0b65a6b3bed9ee141cd22c644519fd9d1aa4437ea7fc9e9540e02a77d75d15

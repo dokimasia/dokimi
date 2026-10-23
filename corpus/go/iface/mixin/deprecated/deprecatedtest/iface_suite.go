@@ -109,23 +109,6 @@ func BenchMixedSuite[T deprecated.Mixed](
 	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) deprecated.Mixed { return newSubject(h) }, opts...)
 }
 
-// BenchMixedSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchMixedSuiteParallel[T deprecated.Mixed](
-	b *testing.B,
-	callable conform.Callable[deprecated.Mixed],
-	newSubject func(h *MixedHandle) T,
-	opts ...MixedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) deprecated.Mixed { return newSubject(h) },
-		opts...)
-}
-
 // mixedOldCalls generates the calls of Mixed.Old with the inputs that each
 // case draws.
 var mixedOldCalls = prop.Composite(func(c *prop.Case) func(context.Context, deprecated.Mixed) error {
@@ -146,11 +129,15 @@ var mixedNewCalls = prop.Composite(func(c *prop.Case) func(context.Context, depr
 	}
 })
 
+// mixedOverEmbedded is deprecated.Mixed under the name of the field that
+// mixedOver embeds.
+type mixedOverEmbedded = deprecated.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	deprecated.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -172,4 +159,4 @@ func newMixedOver(_ *MixedHandle, spend func()) deprecated.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6dba41e215bd8d08e25d12188ae472ee7b2bb2b23942a5b7645ff9fdf79d1185
+// dokimi:provenance sha256:4090bf0f1134d551b4e4482a15c1df262294d76c1797f9d88a2130ccdbe42921

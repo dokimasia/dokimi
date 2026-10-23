@@ -13,11 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/answeringwriter/answeringwritertest"
 )
 
+// answeringWriterSubjectEmbedded is answeringwriter.AnsweringWriter under
+// the name of the field that answeringWriterSubject embeds.
+type answeringWriterSubjectEmbedded = answeringwriter.AnsweringWriter
+
 // answeringWriterSubject is a value of AnsweringWriter that only
 // TestAnsweringWriterSuite builds.
-type answeringWriterSubject struct {
-	answeringwriter.AnsweringWriter
-}
+type answeringWriterSubject struct{ answeringWriterSubjectEmbedded }
 
 // TestAnsweringWriterSuite checks the suite of AnsweringWriter and the two
 // forms of its application.
@@ -76,4 +78,48 @@ func TestAnsweringWriterSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:9c155418e0d266cf2933009404daf6072b4a2fba470db1ff913723c73b3283c9
+// answeringWriterIdle returns the planted defect of a ceiling of
+// AnsweringWriter with a spend of nothing, a subject that answers each
+// call at once.
+func answeringWriterIdle(h *answeringwritertest.AnsweringWriterHandle) answeringwriter.AnsweringWriter {
+	return answeringwritertest.AnsweringWriterSuite().Calls[0].Over(h, func() {})
+}
+
+// TestAnsweringWriterSuiteBudgets applies the allocation ceilings of the
+// suite of AnsweringWriter to answeringWriterIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestAnsweringWriterSuiteBudgets(t *testing.T) {
+	answeringwritertest.RunAnsweringWriterBudgets(
+		t,
+		answeringWriterIdle,
+		conform.Ceilings(
+			answeringwritertest.AnsweringWriterChecks.Put.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzAnsweringWriterSuitePut registers the fuzz target of
+// AnsweringWriter.Put on answeringWriterIdle, with every check of the
+// suite excused.
+func FuzzAnsweringWriterSuitePut(f *testing.F) {
+	answeringwritertest.FuzzAnsweringWriterSuite(
+		f,
+		answeringwritertest.AnsweringWriterChecks.Put.Callable,
+		answeringWriterIdle,
+	)
+}
+
+// BenchmarkAnsweringWriterSuite measures each callable of the suite of
+// AnsweringWriter on answeringWriterIdle.
+func BenchmarkAnsweringWriterSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		answeringwritertest.BenchAnsweringWriterSuite(
+			b,
+			answeringwritertest.AnsweringWriterChecks.Put.Callable,
+			answeringWriterIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:7ab6da92c0f7845b15eafe5e5ec75a1f0ab87c514fefcc6ae63b82d4cad03b77

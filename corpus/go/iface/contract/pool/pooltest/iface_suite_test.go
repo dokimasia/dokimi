@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pool/pooltest"
 )
 
+// contractSubjectEmbedded is pool.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = pool.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ pool.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,67 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c0801d06a98e484bcdf612989d81b91ccdbfebaae0d36561ff7c5e04f1372c77
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *pooltest.ContractHandle) pool.Contract {
+	return pooltest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	pooltest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(pooltest.ContractChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(pooltest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(pooltest.ContractChecks.Stats.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteGet registers the fuzz target of Contract.Get on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteGet(f *testing.F) {
+	pooltest.FuzzContractSuite(
+		f,
+		pooltest.ContractChecks.Get.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuitePut registers the fuzz target of Contract.Put on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuitePut(f *testing.F) {
+	pooltest.FuzzContractSuite(
+		f,
+		pooltest.ContractChecks.Put.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteStats registers the fuzz target of Contract.Stats on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteStats(f *testing.F) {
+	pooltest.FuzzContractSuite(
+		f,
+		pooltest.ContractChecks.Stats.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		pooltest.BenchContractSuite(b, pooltest.ContractChecks.Get.Callable, contractIdle)
+	})
+	b.Run("Put", func(b *testing.B) {
+		pooltest.BenchContractSuite(b, pooltest.ContractChecks.Put.Callable, contractIdle)
+	})
+	b.Run("Stats", func(b *testing.B) {
+		pooltest.BenchContractSuite(b, pooltest.ContractChecks.Stats.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:a261bfd66a1d8dc3b4f3a1131815a1dce4f97d072348f263bc179436e782aa23

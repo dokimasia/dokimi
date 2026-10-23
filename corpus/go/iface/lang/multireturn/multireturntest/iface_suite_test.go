@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn/multireturntest"
 )
 
+// wideSubjectEmbedded is multireturn.Wide under the name of the field that
+// wideSubject embeds.
+type wideSubjectEmbedded = multireturn.Wide
+
 // wideSubject is a value of Wide that only TestWideSuite builds.
-type wideSubject struct{ multireturn.Wide }
+type wideSubject struct{ wideSubjectEmbedded }
 
 // TestWideSuite checks the suite of Wide and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestWideSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:38aa17d0d7be157e14491eda4b399b2b73f41b4741d50cbc6b776b91b47ecefa
+// wideIdle returns the planted defect of a ceiling of Wide with a spend of
+// nothing, a subject that answers each call at once.
+func wideIdle(h *multireturntest.WideHandle) multireturn.Wide {
+	return multireturntest.WideSuite().Calls[0].Over(h, func() {})
+}
+
+// TestWideSuiteBudgets applies the allocation ceilings of the suite of
+// Wide to wideIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestWideSuiteBudgets(t *testing.T) {
+	multireturntest.RunWideBudgets(
+		t,
+		wideIdle,
+		conform.Ceilings(multireturntest.WideChecks.Quad.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(multireturntest.WideChecks.Triple.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(multireturntest.WideChecks.NoError.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzWideSuiteQuad registers the fuzz target of Wide.Quad on wideIdle,
+// with every check of the suite excused.
+func FuzzWideSuiteQuad(f *testing.F) {
+	multireturntest.FuzzWideSuite(
+		f,
+		multireturntest.WideChecks.Quad.Callable,
+		wideIdle,
+	)
+}
+
+// FuzzWideSuiteTriple registers the fuzz target of Wide.Triple on
+// wideIdle, with every check of the suite excused.
+func FuzzWideSuiteTriple(f *testing.F) {
+	multireturntest.FuzzWideSuite(
+		f,
+		multireturntest.WideChecks.Triple.Callable,
+		wideIdle,
+	)
+}
+
+// FuzzWideSuiteNoError registers the fuzz target of Wide.NoError on
+// wideIdle, with every check of the suite excused.
+func FuzzWideSuiteNoError(f *testing.F) {
+	multireturntest.FuzzWideSuite(
+		f,
+		multireturntest.WideChecks.NoError.Callable,
+		wideIdle,
+	)
+}
+
+// BenchmarkWideSuite measures each callable of the suite of Wide on
+// wideIdle.
+func BenchmarkWideSuite(b *testing.B) {
+	b.Run("Quad", func(b *testing.B) {
+		multireturntest.BenchWideSuite(b, multireturntest.WideChecks.Quad.Callable, wideIdle)
+	})
+	b.Run("Triple", func(b *testing.B) {
+		multireturntest.BenchWideSuite(b, multireturntest.WideChecks.Triple.Callable, wideIdle)
+	})
+	b.Run("NoError", func(b *testing.B) {
+		multireturntest.BenchWideSuite(b, multireturntest.WideChecks.NoError.Callable, wideIdle)
+	})
+}
+
+// dokimi:provenance sha256:e910e949c80a088cf709d34b4a0e304dcd7c1869a20fd1bdab6498c4bedc7ca9

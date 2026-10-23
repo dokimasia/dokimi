@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/deleteremoves/deleteremovestest"
 )
 
+// mixedSubjectEmbedded is deleteremoves.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = deleteremoves.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ deleteremoves.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d7c5b61c74925eef2e6476a8d890236cc328763cb6c6d1d489ccf69056f9d068
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *deleteremovestest.MixedHandle) deleteremoves.Mixed {
+	return deleteremovestest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	deleteremovestest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(deleteremovestest.MixedChecks.Delete.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(deleteremovestest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(deleteremovestest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteDelete registers the fuzz target of Mixed.Delete on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteDelete(f *testing.F) {
+	deleteremovestest.FuzzMixedSuite(
+		f,
+		deleteremovestest.MixedChecks.Delete.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuitePut registers the fuzz target of Mixed.Put on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuitePut(f *testing.F) {
+	deleteremovestest.FuzzMixedSuite(
+		f,
+		deleteremovestest.MixedChecks.Put.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteRead registers the fuzz target of Mixed.Read on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteRead(f *testing.F) {
+	deleteremovestest.FuzzMixedSuite(
+		f,
+		deleteremovestest.MixedChecks.Read.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Delete", func(b *testing.B) {
+		deleteremovestest.BenchMixedSuite(b, deleteremovestest.MixedChecks.Delete.Callable, mixedIdle)
+	})
+	b.Run("Put", func(b *testing.B) {
+		deleteremovestest.BenchMixedSuite(b, deleteremovestest.MixedChecks.Put.Callable, mixedIdle)
+	})
+	b.Run("Read", func(b *testing.B) {
+		deleteremovestest.BenchMixedSuite(b, deleteremovestest.MixedChecks.Read.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:9c10f9d30337f57086d0d4519796957e68d88e851cc9676fdb2cbbe6e8be627d

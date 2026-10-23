@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually/eventuallytest"
 )
 
+// mixedSubjectEmbedded is eventually.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = eventually.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ eventually.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,80 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:bdd42f56e20769ec3ca228c284bc1a6612c749f890cff305d68a300773577ff9
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *eventuallytest.MixedHandle) eventually.Mixed {
+	return eventuallytest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	eventuallytest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(eventuallytest.MixedChecks.Publish.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(eventuallytest.MixedChecks.Settle.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(eventuallytest.MixedChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuitePublish registers the fuzz target of Mixed.Publish on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuitePublish(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Publish.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteSettle registers the fuzz target of Mixed.Settle on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteSettle(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Settle.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteSync registers the fuzz target of Mixed.Sync on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteSync(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Sync.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteItems registers the fuzz target of Mixed.Items on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteItems(f *testing.F) {
+	eventuallytest.FuzzMixedSuite(
+		f,
+		eventuallytest.MixedChecks.Items.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Publish", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(b, eventuallytest.MixedChecks.Publish.Callable, mixedIdle)
+	})
+	b.Run("Settle", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(b, eventuallytest.MixedChecks.Settle.Callable, mixedIdle)
+	})
+	b.Run("Sync", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(b, eventuallytest.MixedChecks.Sync.Callable, mixedIdle)
+	})
+	b.Run("Items", func(b *testing.B) {
+		eventuallytest.BenchMixedSuite(b, eventuallytest.MixedChecks.Items.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:912268dd0387f004c1bbac8dcc59b8cbb7e52dec819a96509674f90e87e05fac

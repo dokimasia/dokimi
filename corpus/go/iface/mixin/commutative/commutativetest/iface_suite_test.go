@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/commutative/commutativetest"
 )
 
+// mixedSubjectEmbedded is commutative.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = commutative.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ commutative.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:25ab35535b3c9b6c82f98046604f02f5e02d7304a87e7c0d39bd08c6ffe1b537
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *commutativetest.MixedHandle) commutative.Mixed {
+	return commutativetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	commutativetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(commutativetest.MixedChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(commutativetest.MixedChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteApply registers the fuzz target of Mixed.Apply on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteApply(f *testing.F) {
+	commutativetest.FuzzMixedSuite(
+		f,
+		commutativetest.MixedChecks.Apply.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteTotal registers the fuzz target of Mixed.Total on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteTotal(f *testing.F) {
+	commutativetest.FuzzMixedSuite(
+		f,
+		commutativetest.MixedChecks.Total.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Apply", func(b *testing.B) {
+		commutativetest.BenchMixedSuite(b, commutativetest.MixedChecks.Apply.Callable, mixedIdle)
+	})
+	b.Run("Total", func(b *testing.B) {
+		commutativetest.BenchMixedSuite(b, commutativetest.MixedChecks.Total.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:910f76e0a6f542303459557424d8fcce3b6185059b05e9145739f1d2f18b0e88

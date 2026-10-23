@@ -129,24 +129,6 @@ func BenchReaderNoErrorSuite[T readernoerror.ReaderNoError](
 		opts...)
 }
 
-// BenchReaderNoErrorSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchReaderNoErrorSuiteParallel[T readernoerror.ReaderNoError](
-	b *testing.B,
-	callable conform.Callable[readernoerror.ReaderNoError],
-	newSubject func(h *ReaderNoErrorHandle) T,
-	opts ...ReaderNoErrorOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		ReaderNoErrorSuite(),
-		callable,
-		func(h *ReaderNoErrorHandle) readernoerror.ReaderNoError { return newSubject(h) },
-		opts...)
-}
-
 // readerNoErrorLookupCalls generates the calls of ReaderNoError.Lookup
 // with the inputs that each case draws.
 var readerNoErrorLookupCalls = prop.Composite(
@@ -159,11 +141,15 @@ var readerNoErrorLookupCalls = prop.Composite(
 	},
 )
 
+// readerNoErrorOverEmbedded is readernoerror.ReaderNoError under the name
+// of the field that readerNoErrorOver embeds.
+type readerNoErrorOverEmbedded = readernoerror.ReaderNoError
+
 // readerNoErrorOver is a subject of ReaderNoError whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type readerNoErrorOver struct {
-	readernoerror.ReaderNoError
+	readerNoErrorOverEmbedded
 	spend func()
 }
 
@@ -179,4 +165,4 @@ func newReaderNoErrorOver(_ *ReaderNoErrorHandle, spend func()) readernoerror.Re
 	return readerNoErrorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:77c5bddf4cb887c31f571c596c673c5d10e37ddbf48014b13a6138a16caeff65
+// dokimi:provenance sha256:494906dd12031f8111df1ec09202163bba534df7ba872544dabd9f0e377dbdfb

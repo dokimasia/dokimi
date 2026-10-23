@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/pagination/paginationtest"
 )
 
+// contractSubjectEmbedded is pagination.Contract under the name of the
+// field that contractSubject embeds.
+type contractSubjectEmbedded = pagination.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ pagination.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,53 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:96135e587a16135d6cb51f167b3af75281eba0c7c499d4c13ea10bc51f4feec6
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *paginationtest.ContractHandle) pagination.Contract {
+	return paginationtest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	paginationtest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(paginationtest.ContractChecks.Fetch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(paginationtest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteFetch registers the fuzz target of Contract.Fetch on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteFetch(f *testing.F) {
+	paginationtest.FuzzContractSuite(
+		f,
+		paginationtest.ContractChecks.Fetch.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuitePut registers the fuzz target of Contract.Put on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuitePut(f *testing.F) {
+	paginationtest.FuzzContractSuite(
+		f,
+		paginationtest.ContractChecks.Put.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Fetch", func(b *testing.B) {
+		paginationtest.BenchContractSuite(b, paginationtest.ContractChecks.Fetch.Callable, contractIdle)
+	})
+	b.Run("Put", func(b *testing.B) {
+		paginationtest.BenchContractSuite(b, paginationtest.ContractChecks.Put.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:9088ec6e9bbb17213e62da12e7f6d11839a9cf8234f9675980e08372abff3940

@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins/batchedmixinstest"
 )
 
+// batchedSubjectEmbedded is batchedmixins.Batched under the name of the
+// field that batchedSubject embeds.
+type batchedSubjectEmbedded = batchedmixins.Batched
+
 // batchedSubject is a value of Batched that only TestBatchedSuite builds.
-type batchedSubject struct{ batchedmixins.Batched }
+type batchedSubject struct{ batchedSubjectEmbedded }
 
 // TestBatchedSuite checks the suite of Batched and the two forms of its
 // application.
@@ -77,4 +81,88 @@ func TestBatchedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:88429e5998ade69c9e92fe9dab82ea4149df79513ce20352a9785f83f22c0961
+// batchedIdle returns the planted defect of a ceiling of Batched with a
+// spend of nothing, a subject that answers each call at once.
+func batchedIdle(h *batchedmixinstest.BatchedHandle) batchedmixins.Batched {
+	return batchedmixinstest.BatchedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestBatchedSuiteBudgets applies the allocation ceilings of the suite of
+// Batched to batchedIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestBatchedSuiteBudgets(t *testing.T) {
+	batchedmixinstest.RunBatchedBudgets(
+		t,
+		batchedIdle,
+		conform.Ceilings(batchedmixinstest.BatchedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(batchedmixinstest.BatchedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(batchedmixinstest.BatchedChecks.List.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzBatchedSuitePut registers the fuzz target of Batched.Put on
+// batchedIdle, with every check of the suite excused.
+func FuzzBatchedSuitePut(f *testing.F) {
+	batchedmixinstest.FuzzBatchedSuite(
+		f,
+		batchedmixinstest.BatchedChecks.Put.Callable,
+		batchedIdle,
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBatchedSuiteRead registers the fuzz target of Batched.Read on
+// batchedIdle, with every check of the suite excused.
+func FuzzBatchedSuiteRead(f *testing.F) {
+	batchedmixinstest.FuzzBatchedSuite(
+		f,
+		batchedmixinstest.BatchedChecks.Read.Callable,
+		batchedIdle,
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzBatchedSuiteList registers the fuzz target of Batched.List on
+// batchedIdle, with every check of the suite excused.
+func FuzzBatchedSuiteList(f *testing.F) {
+	batchedmixinstest.FuzzBatchedSuite(
+		f,
+		batchedmixinstest.BatchedChecks.List.Callable,
+		batchedIdle,
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkBatchedSuite measures each callable of the suite of Batched on
+// batchedIdle.
+func BenchmarkBatchedSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuite(b, batchedmixinstest.BatchedChecks.Put.Callable, batchedIdle)
+	})
+	b.Run("Read", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuite(b, batchedmixinstest.BatchedChecks.Read.Callable, batchedIdle)
+	})
+	b.Run("List", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuite(b, batchedmixinstest.BatchedChecks.List.Callable, batchedIdle)
+	})
+}
+
+// BenchmarkBatchedSuiteParallel measures each callable of the suite of
+// Batched that admits concurrent calls on batchedIdle, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkBatchedSuiteParallel(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		batchedmixinstest.BenchBatchedSuiteParallel(b, batchedmixinstest.BatchedChecks.Put.Callable, batchedIdle)
+	})
+}
+
+// dokimi:provenance sha256:5b2660ee4991b87ee5ac60600d6f1cb17c3c62b43e1238e243652f5d344c309e

@@ -142,24 +142,6 @@ func BenchPaginatedReaderSuite[T paginatedreader.PaginatedReader](
 		opts...)
 }
 
-// BenchPaginatedReaderSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchPaginatedReaderSuiteParallel[T paginatedreader.PaginatedReader](
-	b *testing.B,
-	callable conform.Callable[paginatedreader.PaginatedReader],
-	newSubject func(h *PaginatedReaderHandle) T,
-	opts ...PaginatedReaderOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		PaginatedReaderSuite(),
-		callable,
-		func(h *PaginatedReaderHandle) paginatedreader.PaginatedReader { return newSubject(h) },
-		opts...)
-}
-
 // paginatedReaderFetchCalls generates the calls of PaginatedReader.Fetch
 // with the inputs that each case draws.
 var paginatedReaderFetchCalls = prop.Composite(
@@ -183,11 +165,15 @@ var paginatedReaderAddCalls = prop.Composite(
 	},
 )
 
+// paginatedReaderOverEmbedded is paginatedreader.PaginatedReader under the
+// name of the field that paginatedReaderOver embeds.
+type paginatedReaderOverEmbedded = paginatedreader.PaginatedReader
+
 // paginatedReaderOver is a subject of PaginatedReader whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type paginatedReaderOver struct {
-	paginatedreader.PaginatedReader
+	paginatedReaderOverEmbedded
 	spend func()
 }
 
@@ -209,4 +195,4 @@ func newPaginatedReaderOver(_ *PaginatedReaderHandle, spend func()) paginatedrea
 	return paginatedReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8d3beeb4e4978df8287a07f703e304174c4bd27b4a776268b1f160ca7d2fa1a3
+// dokimi:provenance sha256:649676adf2bf9f9524f117d31045699fe6c8b74d8e050ad10fe5f5bf60095d1b

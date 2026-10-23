@@ -142,23 +142,6 @@ func BenchServiceSuite[T namedreturns.Service](
 		opts...)
 }
 
-// BenchServiceSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchServiceSuiteParallel[T namedreturns.Service](
-	b *testing.B,
-	callable conform.Callable[namedreturns.Service],
-	newSubject func(h *ServiceHandle) T,
-	opts ...ServiceOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		ServiceSuite(),
-		callable,
-		func(h *ServiceHandle) namedreturns.Service { return newSubject(h) },
-		opts...)
-}
-
 // serviceNamedCalls generates the calls of Service.Named with the inputs
 // that each case draws.
 var serviceNamedCalls = prop.Composite(func(c *prop.Case) func(context.Context, namedreturns.Service) error {
@@ -189,11 +172,15 @@ var servicePartiallyNamedCalls = prop.Composite(func(c *prop.Case) func(context.
 	}
 })
 
+// serviceOverEmbedded is namedreturns.Service under the name of the field
+// that serviceOver embeds.
+type serviceOverEmbedded = namedreturns.Service
+
 // serviceOver is a subject of Service whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type serviceOver struct {
-	namedreturns.Service
+	serviceOverEmbedded
 	spend func()
 }
 
@@ -221,4 +208,4 @@ func newServiceOver(_ *ServiceHandle, spend func()) namedreturns.Service {
 	return serviceOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9ed057ca0a1c8da78a955365c3dde6717efefcea595c84b51b086bb4759b4a91
+// dokimi:provenance sha256:ecea46a1a58c3184b6d5e2f35d8e46b05baaa0c1b4457c5952386e56df51ed37

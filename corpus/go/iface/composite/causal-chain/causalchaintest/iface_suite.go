@@ -138,18 +138,6 @@ func BenchLogSuite[T causalchain.Log](
 	conform.Bench(b, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
 }
 
-// BenchLogSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchLogSuiteParallel[T causalchain.Log](
-	b *testing.B,
-	callable conform.Callable[causalchain.Log],
-	newSubject func(h *LogHandle) T,
-	opts ...LogOption,
-) {
-	b.Helper()
-	conform.BenchParallel(b, LogSuite(), callable, func(h *LogHandle) causalchain.Log { return newSubject(h) }, opts...)
-}
-
 // logAppendCalls generates the calls of Log.Append with the inputs that
 // each case draws.
 var logAppendCalls = prop.Composite(func(c *prop.Case) func(context.Context, causalchain.Log) error {
@@ -188,11 +176,15 @@ var logEntryValues = prop.Composite(func(c *prop.Case) causalchain.Entry {
 	return value
 })
 
+// logOverEmbedded is causalchain.Log under the name of the field that
+// logOver embeds.
+type logOverEmbedded = causalchain.Log
+
 // logOver is a subject of Log whose callables call spend and return their
 // zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type logOver struct {
-	causalchain.Log
+	logOverEmbedded
 	spend func()
 }
 
@@ -214,4 +206,4 @@ func newLogOver(_ *LogHandle, spend func()) causalchain.Log {
 	return logOver{spend: spend}
 }
 
-// dokimi:provenance sha256:56b78471f531c7fe8c3a8be8fd44ad94cf52f101da77b69907400c225de459a2
+// dokimi:provenance sha256:a76160214aabcad5b3eab6c55bf2fe8574695630c8f5cdab0980940ef36f4217

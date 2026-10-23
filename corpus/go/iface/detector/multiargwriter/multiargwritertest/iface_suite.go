@@ -142,24 +142,6 @@ func BenchMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
 		opts...)
 }
 
-// BenchMultiArgWriterSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchMultiArgWriterSuiteParallel[T multiargwriter.MultiArgWriter](
-	b *testing.B,
-	callable conform.Callable[multiargwriter.MultiArgWriter],
-	newSubject func(h *MultiArgWriterHandle) T,
-	opts ...MultiArgWriterOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MultiArgWriterSuite(),
-		callable,
-		func(h *MultiArgWriterHandle) multiargwriter.MultiArgWriter { return newSubject(h) },
-		opts...)
-}
-
 // multiArgWriterSetCalls generates the calls of MultiArgWriter.Set with
 // the inputs that each case draws.
 var multiArgWriterSetCalls = prop.Composite(
@@ -185,11 +167,15 @@ var multiArgWriterGetCalls = prop.Composite(
 	},
 )
 
+// multiArgWriterOverEmbedded is multiargwriter.MultiArgWriter under the
+// name of the field that multiArgWriterOver embeds.
+type multiArgWriterOverEmbedded = multiargwriter.MultiArgWriter
+
 // multiArgWriterOver is a subject of MultiArgWriter whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type multiArgWriterOver struct {
-	multiargwriter.MultiArgWriter
+	multiArgWriterOverEmbedded
 	spend func()
 }
 
@@ -211,4 +197,4 @@ func newMultiArgWriterOver(_ *MultiArgWriterHandle, spend func()) multiargwriter
 	return multiArgWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5111acc65cbf014ff992c18afa81e8094629accea97ab408f0b838d734cb32fa
+// dokimi:provenance sha256:2d80de01acf4b838e5d9cde1ab0892d13c9fde1ebf8db3b205fa0c6185e67591

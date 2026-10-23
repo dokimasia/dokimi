@@ -102,23 +102,6 @@ func BenchDeleterSuite[T deleter.Deleter](
 	conform.Bench(b, DeleterSuite(), callable, func(h *DeleterHandle) deleter.Deleter { return newSubject(h) }, opts...)
 }
 
-// BenchDeleterSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchDeleterSuiteParallel[T deleter.Deleter](
-	b *testing.B,
-	callable conform.Callable[deleter.Deleter],
-	newSubject func(h *DeleterHandle) T,
-	opts ...DeleterOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		DeleterSuite(),
-		callable,
-		func(h *DeleterHandle) deleter.Deleter { return newSubject(h) },
-		opts...)
-}
-
 // deleterDeleteCalls generates the calls of Deleter.Delete with the inputs
 // that each case draws.
 var deleterDeleteCalls = prop.Composite(func(c *prop.Case) func(context.Context, deleter.Deleter) error {
@@ -128,11 +111,15 @@ var deleterDeleteCalls = prop.Composite(func(c *prop.Case) func(context.Context,
 	}
 })
 
+// deleterOverEmbedded is deleter.Deleter under the name of the field that
+// deleterOver embeds.
+type deleterOverEmbedded = deleter.Deleter
+
 // deleterOver is a subject of Deleter whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type deleterOver struct {
-	deleter.Deleter
+	deleterOverEmbedded
 	spend func()
 }
 
@@ -148,4 +135,4 @@ func newDeleterOver(_ *DeleterHandle, spend func()) deleter.Deleter {
 	return deleterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d3c77eef02d2fcfef42175803eb8925735cd80e07544a8b4bc63cd93b909ada6
+// dokimi:provenance sha256:cfa4ac4e76aeb7817def3fee599e513921b67b368bf46b5472582b58277736e0

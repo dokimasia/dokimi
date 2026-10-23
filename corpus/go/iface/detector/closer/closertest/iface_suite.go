@@ -98,23 +98,6 @@ func BenchCloserSuite[T closer.Closer](
 	conform.Bench(b, CloserSuite(), callable, func(h *CloserHandle) closer.Closer { return newSubject(h) }, opts...)
 }
 
-// BenchCloserSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchCloserSuiteParallel[T closer.Closer](
-	b *testing.B,
-	callable conform.Callable[closer.Closer],
-	newSubject func(h *CloserHandle) T,
-	opts ...CloserOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		CloserSuite(),
-		callable,
-		func(h *CloserHandle) closer.Closer { return newSubject(h) },
-		opts...)
-}
-
 // closerCloseCalls generates the calls of Closer.Close with the inputs
 // that each case draws.
 var closerCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, closer.Closer) error {
@@ -123,11 +106,15 @@ var closerCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, clo
 	}
 })
 
+// closerOverEmbedded is closer.Closer under the name of the field that
+// closerOver embeds.
+type closerOverEmbedded = closer.Closer
+
 // closerOver is a subject of Closer whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type closerOver struct {
-	closer.Closer
+	closerOverEmbedded
 	spend func()
 }
 
@@ -143,4 +130,4 @@ func newCloserOver(_ *CloserHandle, spend func()) closer.Closer {
 	return closerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5f0137ccf99fa5dca4db65250c410bc1c6c46b271e16e1e9fe014f0fb52d8b89
+// dokimi:provenance sha256:399bc2e99ca4a4cfa854dfde68b301cf1895802418338eea0127b288a7ef1401

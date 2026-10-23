@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer/writertest"
 )
 
+// writerSubjectEmbedded is writer.Writer under the name of the field that
+// writerSubject embeds.
+type writerSubjectEmbedded = writer.Writer
+
 // writerSubject is a value of Writer that only TestWriterSuite builds.
-type writerSubject struct{ writer.Writer }
+type writerSubject struct{ writerSubjectEmbedded }
 
 // TestWriterSuite checks the suite of Writer and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestWriterSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:426d446d68b3fdfab75613d8a35593a2f9279b879922635adf003f0bfb07f558
+// writerIdle returns the planted defect of a ceiling of Writer with a
+// spend of nothing, a subject that answers each call at once.
+func writerIdle(h *writertest.WriterHandle) writer.Writer {
+	return writertest.WriterSuite().Calls[0].Over(h, func() {})
+}
+
+// TestWriterSuiteBudgets applies the allocation ceilings of the suite of
+// Writer to writerIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestWriterSuiteBudgets(t *testing.T) {
+	writertest.RunWriterBudgets(
+		t,
+		writerIdle,
+		conform.Ceilings(writertest.WriterChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzWriterSuitePut registers the fuzz target of Writer.Put on
+// writerIdle, with every check of the suite excused.
+func FuzzWriterSuitePut(f *testing.F) {
+	writertest.FuzzWriterSuite(
+		f,
+		writertest.WriterChecks.Put.Callable,
+		writerIdle,
+	)
+}
+
+// BenchmarkWriterSuite measures each callable of the suite of Writer on
+// writerIdle.
+func BenchmarkWriterSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		writertest.BenchWriterSuite(b, writertest.WriterChecks.Put.Callable, writerIdle)
+	})
+}
+
+// dokimi:provenance sha256:960ed608e2caa614b9bf8b71f829f498c958b1e2dadb7f5deeab03f98169a6cd

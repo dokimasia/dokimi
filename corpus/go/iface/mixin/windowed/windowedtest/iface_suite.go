@@ -111,23 +111,6 @@ func BenchMixedSuite[T windowed.Mixed](
 	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) windowed.Mixed { return newSubject(h) }, opts...)
 }
 
-// BenchMixedSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchMixedSuiteParallel[T windowed.Mixed](
-	b *testing.B,
-	callable conform.Callable[windowed.Mixed],
-	newSubject func(h *MixedHandle) T,
-	opts ...MixedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) windowed.Mixed { return newSubject(h) },
-		opts...)
-}
-
 // mixedRecordCalls generates the calls of Mixed.Record with the inputs
 // that each case draws.
 var mixedRecordCalls = prop.Composite(func(c *prop.Case) func(context.Context, windowed.Mixed) error {
@@ -147,11 +130,15 @@ var mixedCountInCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 	}
 })
 
+// mixedOverEmbedded is windowed.Mixed under the name of the field that
+// mixedOver embeds.
+type mixedOverEmbedded = windowed.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	windowed.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -173,4 +160,4 @@ func newMixedOver(_ *MixedHandle, spend func()) windowed.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:97130e64274b8b13e5f2810f8878ee2a6ca4be10a1ff96a8b65c7047bca2e3a4
+// dokimi:provenance sha256:5cf62e130f54ecc48a45b21edc8aa41d869bee8bfe3cf626ed73a768b47f9e70

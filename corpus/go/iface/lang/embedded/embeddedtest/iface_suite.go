@@ -142,23 +142,6 @@ func BenchComposedSuite[T embedded.Composed](
 		opts...)
 }
 
-// BenchComposedSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchComposedSuiteParallel[T embedded.Composed](
-	b *testing.B,
-	callable conform.Callable[embedded.Composed],
-	newSubject func(h *ComposedHandle) T,
-	opts ...ComposedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		ComposedSuite(),
-		callable,
-		func(h *ComposedHandle) embedded.Composed { return newSubject(h) },
-		opts...)
-}
-
 // composedGetCalls generates the calls of Composed.Get with the inputs
 // that each case draws.
 var composedGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, embedded.Composed) error {
@@ -185,11 +168,15 @@ var composedCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, e
 	}
 })
 
+// composedOverEmbedded is embedded.Composed under the name of the field
+// that composedOver embeds.
+type composedOverEmbedded = embedded.Composed
+
 // composedOver is a subject of Composed whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type composedOver struct {
-	embedded.Composed
+	composedOverEmbedded
 	spend func()
 }
 
@@ -217,4 +204,4 @@ func newComposedOver(_ *ComposedHandle, spend func()) embedded.Composed {
 	return composedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b695d8251ee74fcbf725431878f30c7a73553116f9aa76dda63a7f8d7b9f0d49
+// dokimi:provenance sha256:78d7da4d1556e395e15912a5a74b79671e5ffa608fac9cae750c95b091a54383

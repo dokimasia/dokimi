@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonic/monotonictest"
 )
 
+// mixedSubjectEmbedded is monotonic.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = monotonic.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ monotonic.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a34a637a2be2946e717ea339028b2538809232c981302e9d29946cdb7c3222b3
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *monotonictest.MixedHandle) monotonic.Mixed {
+	return monotonictest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	monotonictest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(monotonictest.MixedChecks.Version.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(monotonictest.MixedChecks.Advance.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteVersion registers the fuzz target of Mixed.Version on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteVersion(f *testing.F) {
+	monotonictest.FuzzMixedSuite(
+		f,
+		monotonictest.MixedChecks.Version.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteAdvance registers the fuzz target of Mixed.Advance on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteAdvance(f *testing.F) {
+	monotonictest.FuzzMixedSuite(
+		f,
+		monotonictest.MixedChecks.Advance.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Version", func(b *testing.B) {
+		monotonictest.BenchMixedSuite(b, monotonictest.MixedChecks.Version.Callable, mixedIdle)
+	})
+	b.Run("Advance", func(b *testing.B) {
+		monotonictest.BenchMixedSuite(b, monotonictest.MixedChecks.Advance.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:466cb193b6735112996a7bb203776aeff45fc24d39193b9931f081dc6aca6513

@@ -129,24 +129,6 @@ func BenchVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
 		opts...)
 }
 
-// BenchVoidLifecycleSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchVoidLifecycleSuiteParallel[T voidlifecycle.VoidLifecycle](
-	b *testing.B,
-	callable conform.Callable[voidlifecycle.VoidLifecycle],
-	newSubject func(h *VoidLifecycleHandle) T,
-	opts ...VoidLifecycleOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		VoidLifecycleSuite(),
-		callable,
-		func(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle { return newSubject(h) },
-		opts...)
-}
-
 // voidLifecycleStopCalls generates the calls of VoidLifecycle.Stop with
 // the inputs that each case draws.
 var voidLifecycleStopCalls = prop.Composite(func(*prop.Case) func(context.Context, voidlifecycle.VoidLifecycle) error {
@@ -156,11 +138,15 @@ var voidLifecycleStopCalls = prop.Composite(func(*prop.Case) func(context.Contex
 	}
 })
 
+// voidLifecycleOverEmbedded is voidlifecycle.VoidLifecycle under the name
+// of the field that voidLifecycleOver embeds.
+type voidLifecycleOverEmbedded = voidlifecycle.VoidLifecycle
+
 // voidLifecycleOver is a subject of VoidLifecycle whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type voidLifecycleOver struct {
-	voidlifecycle.VoidLifecycle
+	voidLifecycleOverEmbedded
 	spend func()
 }
 
@@ -175,4 +161,4 @@ func newVoidLifecycleOver(_ *VoidLifecycleHandle, spend func()) voidlifecycle.Vo
 	return voidLifecycleOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7dc9f893de26cfec5f39769495173ae395aac6bc887f73c6ff85a01392a59afe
+// dokimi:provenance sha256:607a680a5d8fe48fb31ec3efc20cd7327e3af55628280539ba4327aa4268c628

@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lifecycle/lifecycletest"
 )
 
+// lifecycleSubjectEmbedded is lifecycle.Lifecycle under the name of the
+// field that lifecycleSubject embeds.
+type lifecycleSubjectEmbedded = lifecycle.Lifecycle
+
 // lifecycleSubject is a value of Lifecycle that only TestLifecycleSuite
 // builds.
-type lifecycleSubject struct{ lifecycle.Lifecycle }
+type lifecycleSubject struct{ lifecycleSubjectEmbedded }
 
 // TestLifecycleSuite checks the suite of Lifecycle and the two forms of
 // its application.
@@ -70,4 +74,39 @@ func TestLifecycleSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a9f5f3ca32697d33ba4e7487fefb38f400d5943dde1c403ce504670ddd8d94e4
+// lifecycleIdle returns the planted defect of a ceiling of Lifecycle with
+// a spend of nothing, a subject that answers each call at once.
+func lifecycleIdle(h *lifecycletest.LifecycleHandle) lifecycle.Lifecycle {
+	return lifecycletest.LifecycleSuite().Calls[0].Over(h, func() {})
+}
+
+// TestLifecycleSuiteBudgets applies the allocation ceilings of the suite
+// of Lifecycle to lifecycleIdle, and a ceiling of 0 to each callable
+// without a budget whose calls build no input of their own.
+func TestLifecycleSuiteBudgets(t *testing.T) {
+	lifecycletest.RunLifecycleBudgets(
+		t,
+		lifecycleIdle,
+		conform.Ceilings(lifecycletest.LifecycleChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzLifecycleSuiteClose registers the fuzz target of Lifecycle.Close on
+// lifecycleIdle, with every check of the suite excused.
+func FuzzLifecycleSuiteClose(f *testing.F) {
+	lifecycletest.FuzzLifecycleSuite(
+		f,
+		lifecycletest.LifecycleChecks.Close.Callable,
+		lifecycleIdle,
+	)
+}
+
+// BenchmarkLifecycleSuite measures each callable of the suite of Lifecycle
+// on lifecycleIdle.
+func BenchmarkLifecycleSuite(b *testing.B) {
+	b.Run("Close", func(b *testing.B) {
+		lifecycletest.BenchLifecycleSuite(b, lifecycletest.LifecycleChecks.Close.Callable, lifecycleIdle)
+	})
+}
+
+// dokimi:provenance sha256:6efccaaa92a6742439597d5d84342f8c6dea34c5086cf3211baace695d18dd1b

@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/retrysucceeds/retrysucceedstest"
 )
 
+// mixedSubjectEmbedded is retrysucceeds.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = retrysucceeds.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ retrysucceeds.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:dee325a2021025872b210387a289bb4f7ffab022272c61f77c798a0f6aae9aa2
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *retrysucceedstest.MixedHandle) retrysucceeds.Mixed {
+	return retrysucceedstest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	retrysucceedstest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(retrysucceedstest.MixedChecks.Call.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(retrysucceedstest.MixedChecks.Attempts.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteCall registers the fuzz target of Mixed.Call on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteCall(f *testing.F) {
+	retrysucceedstest.FuzzMixedSuite(
+		f,
+		retrysucceedstest.MixedChecks.Call.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteAttempts registers the fuzz target of Mixed.Attempts on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteAttempts(f *testing.F) {
+	retrysucceedstest.FuzzMixedSuite(
+		f,
+		retrysucceedstest.MixedChecks.Attempts.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Call", func(b *testing.B) {
+		retrysucceedstest.BenchMixedSuite(b, retrysucceedstest.MixedChecks.Call.Callable, mixedIdle)
+	})
+	b.Run("Attempts", func(b *testing.B) {
+		retrysucceedstest.BenchMixedSuite(b, retrysucceedstest.MixedChecks.Attempts.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:784b4e8db592644882fecc7cfed7732e48c76d64824c15c12e12ebbfa89e9b47

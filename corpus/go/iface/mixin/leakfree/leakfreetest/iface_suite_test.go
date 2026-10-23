@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/leakfree/leakfreetest"
 )
 
+// mixedSubjectEmbedded is leakfree.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = leakfree.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ leakfree.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:12986065bc8da4a591d58791a14f413c86b4127ac684d619e2ea2cf64e57a71f
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *leakfreetest.MixedHandle) leakfree.Mixed {
+	return leakfreetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	leakfreetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(leakfreetest.MixedChecks.Acquire.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(leakfreetest.MixedChecks.Release.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(leakfreetest.MixedChecks.Outstanding.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteAcquire registers the fuzz target of Mixed.Acquire on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteAcquire(f *testing.F) {
+	leakfreetest.FuzzMixedSuite(
+		f,
+		leakfreetest.MixedChecks.Acquire.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteRelease registers the fuzz target of Mixed.Release on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteRelease(f *testing.F) {
+	leakfreetest.FuzzMixedSuite(
+		f,
+		leakfreetest.MixedChecks.Release.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteOutstanding registers the fuzz target of Mixed.Outstanding
+// on mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteOutstanding(f *testing.F) {
+	leakfreetest.FuzzMixedSuite(
+		f,
+		leakfreetest.MixedChecks.Outstanding.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Acquire", func(b *testing.B) {
+		leakfreetest.BenchMixedSuite(b, leakfreetest.MixedChecks.Acquire.Callable, mixedIdle)
+	})
+	b.Run("Release", func(b *testing.B) {
+		leakfreetest.BenchMixedSuite(b, leakfreetest.MixedChecks.Release.Callable, mixedIdle)
+	})
+	b.Run("Outstanding", func(b *testing.B) {
+		leakfreetest.BenchMixedSuite(b, leakfreetest.MixedChecks.Outstanding.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:8b7ec21bbcd1cd5b5ae9addd5d4e534cdfc72a57b35f63ebbbf1f8906ddac703

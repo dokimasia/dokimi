@@ -133,23 +133,6 @@ func BenchContractSuite[T codeclossy.Contract](
 		opts...)
 }
 
-// BenchContractSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchContractSuiteParallel[T codeclossy.Contract](
-	b *testing.B,
-	callable conform.Callable[codeclossy.Contract],
-	newSubject func(h *ContractHandle) T,
-	opts ...ContractOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) codeclossy.Contract { return newSubject(h) },
-		opts...)
-}
-
 // contractEncodeCalls generates the calls of Contract.Encode with the
 // inputs that each case draws.
 var contractEncodeCalls = prop.Composite(func(c *prop.Case) func(context.Context, codeclossy.Contract) error {
@@ -170,11 +153,15 @@ var contractDecodeCalls = prop.Composite(func(c *prop.Case) func(context.Context
 	}
 })
 
+// contractOverEmbedded is codeclossy.Contract under the name of the field
+// that contractOver embeds.
+type contractOverEmbedded = codeclossy.Contract
+
 // contractOver is a subject of Contract whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type contractOver struct {
-	codeclossy.Contract
+	contractOverEmbedded
 	spend func()
 }
 
@@ -196,4 +183,4 @@ func newContractOver(_ *ContractHandle, spend func()) codeclossy.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3b653eec8bf208867f7a79ea6de177ec73797ba9a1e3ce580c4a0387ad1c953c
+// dokimi:provenance sha256:b755b8bbd9a147d550992420eab70e2de0d1efcdec73c97e2708374c565ffdc7

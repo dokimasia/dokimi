@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/singleflight/singleflighttest"
 )
 
+// contractSubjectEmbedded is singleflight.Contract under the name of the
+// field that contractSubject embeds.
+type contractSubjectEmbedded = singleflight.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ singleflight.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,53 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1f9687d6164ef940a1b816f01516725abefa98d23a87e41be778d95b65a8d295
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *singleflighttest.ContractHandle) singleflight.Contract {
+	return singleflighttest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	singleflighttest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(singleflighttest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(singleflighttest.ContractChecks.Flights.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteRun registers the fuzz target of Contract.Run on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteRun(f *testing.F) {
+	singleflighttest.FuzzContractSuite(
+		f,
+		singleflighttest.ContractChecks.Run.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteFlights registers the fuzz target of Contract.Flights
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuiteFlights(f *testing.F) {
+	singleflighttest.FuzzContractSuite(
+		f,
+		singleflighttest.ContractChecks.Flights.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Run", func(b *testing.B) {
+		singleflighttest.BenchContractSuite(b, singleflighttest.ContractChecks.Run.Callable, contractIdle)
+	})
+	b.Run("Flights", func(b *testing.B) {
+		singleflighttest.BenchContractSuite(b, singleflighttest.ContractChecks.Flights.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:e6f45ccbc0bb9c79b2d366485af11520acc170f7c4bfe03b4f575df79545826d

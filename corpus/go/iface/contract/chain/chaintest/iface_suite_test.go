@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain/chaintest"
 )
 
+// contractSubjectEmbedded is chain.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = chain.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ chain.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,67 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:9124787b57084027c9a326ba9b4ea1b1ea4f4dd377870ba196471392ca274d07
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *chaintest.ContractHandle) chain.Contract {
+	return chaintest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	chaintest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(chaintest.ContractChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(chaintest.ContractChecks.Replay.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(chaintest.ContractChecks.Verify.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteAppend registers the fuzz target of Contract.Append on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteAppend(f *testing.F) {
+	chaintest.FuzzContractSuite(
+		f,
+		chaintest.ContractChecks.Append.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteReplay registers the fuzz target of Contract.Replay on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteReplay(f *testing.F) {
+	chaintest.FuzzContractSuite(
+		f,
+		chaintest.ContractChecks.Replay.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteVerify registers the fuzz target of Contract.Verify on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteVerify(f *testing.F) {
+	chaintest.FuzzContractSuite(
+		f,
+		chaintest.ContractChecks.Verify.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Append", func(b *testing.B) {
+		chaintest.BenchContractSuite(b, chaintest.ContractChecks.Append.Callable, contractIdle)
+	})
+	b.Run("Replay", func(b *testing.B) {
+		chaintest.BenchContractSuite(b, chaintest.ContractChecks.Replay.Callable, contractIdle)
+	})
+	b.Run("Verify", func(b *testing.B) {
+		chaintest.BenchContractSuite(b, chaintest.ContractChecks.Verify.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:6fd4cf1251af931c57ccdebf25db4494d3ea9c79e2a23a69a4c50f7af380ab50

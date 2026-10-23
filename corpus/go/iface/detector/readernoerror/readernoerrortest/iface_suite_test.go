@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror/readernoerrortest"
 )
 
+// readerNoErrorSubjectEmbedded is readernoerror.ReaderNoError under the
+// name of the field that readerNoErrorSubject embeds.
+type readerNoErrorSubjectEmbedded = readernoerror.ReaderNoError
+
 // readerNoErrorSubject is a value of ReaderNoError that only
 // TestReaderNoErrorSuite builds.
-type readerNoErrorSubject struct{ readernoerror.ReaderNoError }
+type readerNoErrorSubject struct{ readerNoErrorSubjectEmbedded }
 
 // TestReaderNoErrorSuite checks the suite of ReaderNoError and the two
 // forms of its application.
@@ -74,4 +78,45 @@ func TestReaderNoErrorSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e5685b2d20ae663a85039a987a81f7b7ed15f72b9dab52d8f10a01b901b004a6
+// readerNoErrorIdle returns the planted defect of a ceiling of
+// ReaderNoError with a spend of nothing, a subject that answers each call
+// at once.
+func readerNoErrorIdle(h *readernoerrortest.ReaderNoErrorHandle) readernoerror.ReaderNoError {
+	return readernoerrortest.ReaderNoErrorSuite().Calls[0].Over(h, func() {})
+}
+
+// TestReaderNoErrorSuiteBudgets applies the allocation ceilings of the
+// suite of ReaderNoError to readerNoErrorIdle, and a ceiling of 0 to each
+// callable without a budget whose calls build no input of their own.
+func TestReaderNoErrorSuiteBudgets(t *testing.T) {
+	readernoerrortest.RunReaderNoErrorBudgets(
+		t,
+		readerNoErrorIdle,
+		conform.Ceilings(readernoerrortest.ReaderNoErrorChecks.Lookup.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzReaderNoErrorSuiteLookup registers the fuzz target of
+// ReaderNoError.Lookup on readerNoErrorIdle, with every check of the suite
+// excused.
+func FuzzReaderNoErrorSuiteLookup(f *testing.F) {
+	readernoerrortest.FuzzReaderNoErrorSuite(
+		f,
+		readernoerrortest.ReaderNoErrorChecks.Lookup.Callable,
+		readerNoErrorIdle,
+	)
+}
+
+// BenchmarkReaderNoErrorSuite measures each callable of the suite of
+// ReaderNoError on readerNoErrorIdle.
+func BenchmarkReaderNoErrorSuite(b *testing.B) {
+	b.Run("Lookup", func(b *testing.B) {
+		readernoerrortest.BenchReaderNoErrorSuite(
+			b,
+			readernoerrortest.ReaderNoErrorChecks.Lookup.Callable,
+			readerNoErrorIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:142b5787d9ef707789ed2987f30b37eeabcc2e0c6c37c819cebc8c9a8db23b61

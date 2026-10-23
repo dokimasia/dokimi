@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pure/puretest"
 )
 
+// mixedSubjectEmbedded is pure.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = pure.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ pure.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:78c1fc148308a5fb822e5a7efb726fdb44bc27d226a9948938390b4328f41c1c
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *puretest.MixedHandle) pure.Mixed {
+	return puretest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	puretest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(puretest.MixedChecks.Derive.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteDerive registers the fuzz target of Mixed.Derive on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteDerive(f *testing.F) {
+	puretest.FuzzMixedSuite(
+		f,
+		puretest.MixedChecks.Derive.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Derive", func(b *testing.B) {
+		puretest.BenchMixedSuite(b, puretest.MixedChecks.Derive.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:a9b7dadcb41182fee5a289860c252a7edd4e1994630a530a495a3b63319d8d47

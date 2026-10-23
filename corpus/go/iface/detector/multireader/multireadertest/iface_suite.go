@@ -125,24 +125,6 @@ func BenchMultiReaderSuite[T multireader.MultiReader](
 		opts...)
 }
 
-// BenchMultiReaderSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchMultiReaderSuiteParallel[T multireader.MultiReader](
-	b *testing.B,
-	callable conform.Callable[multireader.MultiReader],
-	newSubject func(h *MultiReaderHandle) T,
-	opts ...MultiReaderOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MultiReaderSuite(),
-		callable,
-		func(h *MultiReaderHandle) multireader.MultiReader { return newSubject(h) },
-		opts...)
-}
-
 // multiReaderGetWithMetaCalls generates the calls of
 // MultiReader.GetWithMeta with the inputs that each case draws.
 var multiReaderGetWithMetaCalls = prop.Composite(
@@ -155,11 +137,15 @@ var multiReaderGetWithMetaCalls = prop.Composite(
 	},
 )
 
+// multiReaderOverEmbedded is multireader.MultiReader under the name of the
+// field that multiReaderOver embeds.
+type multiReaderOverEmbedded = multireader.MultiReader
+
 // multiReaderOver is a subject of MultiReader whose callables call spend
 // and return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type multiReaderOver struct {
-	multireader.MultiReader
+	multiReaderOverEmbedded
 	spend func()
 }
 
@@ -175,4 +161,4 @@ func newMultiReaderOver(_ *MultiReaderHandle, spend func()) multireader.MultiRea
 	return multiReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:30018f73bfb077d771ca7581f3914e9760e657eb139a26a04a87cc896b0cde87
+// dokimi:provenance sha256:f7978bf53f88b34bef1c5f1bfcb274585ac85dd2640ae4ac9fb4d91a7956c82c

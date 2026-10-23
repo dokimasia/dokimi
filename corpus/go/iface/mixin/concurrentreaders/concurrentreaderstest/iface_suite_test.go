@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrentreaders/concurrentreaderstest"
 )
 
+// mixedSubjectEmbedded is concurrentreaders.Mixed under the name of the
+// field that mixedSubject embeds.
+type mixedSubjectEmbedded = concurrentreaders.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ concurrentreaders.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,62 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:602b4aa17d2481228a778636c0196ed46f87ea1747af93aa321fc76ba5a16d72
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *concurrentreaderstest.MixedHandle) concurrentreaders.Mixed {
+	return concurrentreaderstest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	concurrentreaderstest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(concurrentreaderstest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(concurrentreaderstest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteGet registers the fuzz target of Mixed.Get on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteGet(f *testing.F) {
+	concurrentreaderstest.FuzzMixedSuite(
+		f,
+		concurrentreaderstest.MixedChecks.Get.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuitePut registers the fuzz target of Mixed.Put on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuitePut(f *testing.F) {
+	concurrentreaderstest.FuzzMixedSuite(
+		f,
+		concurrentreaderstest.MixedChecks.Put.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		concurrentreaderstest.BenchMixedSuite(b, concurrentreaderstest.MixedChecks.Get.Callable, mixedIdle)
+	})
+	b.Run("Put", func(b *testing.B) {
+		concurrentreaderstest.BenchMixedSuite(b, concurrentreaderstest.MixedChecks.Put.Callable, mixedIdle)
+	})
+}
+
+// BenchmarkMixedSuiteParallel measures each callable of the suite of Mixed
+// that admits concurrent calls on mixedIdle, on GOMAXPROCS goroutines at
+// once.
+func BenchmarkMixedSuiteParallel(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		concurrentreaderstest.BenchMixedSuiteParallel(b, concurrentreaderstest.MixedChecks.Get.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:b49d79517447e43bde00ae423a1b6b3cb6d3e17b7328abd7eb2164850e1879f6

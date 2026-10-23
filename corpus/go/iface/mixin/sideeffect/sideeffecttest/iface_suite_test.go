@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sideeffect/sideeffecttest"
 )
 
+// mixedSubjectEmbedded is sideeffect.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = sideeffect.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ sideeffect.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:69b72ead5657c48382cc980592b0c96ec232e80c97088cc1339d103da4f51f85
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *sideeffecttest.MixedHandle) sideeffect.Mixed {
+	return sideeffecttest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	sideeffecttest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(sideeffecttest.MixedChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(sideeffecttest.MixedChecks.Observed.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteTouch registers the fuzz target of Mixed.Touch on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteTouch(f *testing.F) {
+	sideeffecttest.FuzzMixedSuite(
+		f,
+		sideeffecttest.MixedChecks.Touch.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteObserved registers the fuzz target of Mixed.Observed on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteObserved(f *testing.F) {
+	sideeffecttest.FuzzMixedSuite(
+		f,
+		sideeffecttest.MixedChecks.Observed.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Touch", func(b *testing.B) {
+		sideeffecttest.BenchMixedSuite(b, sideeffecttest.MixedChecks.Touch.Callable, mixedIdle)
+	})
+	b.Run("Observed", func(b *testing.B) {
+		sideeffecttest.BenchMixedSuite(b, sideeffecttest.MixedChecks.Observed.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:49003be8bfcef00b433cd0bb94a212fedb91ae32e493e0d8ccb8ff86d3292b34

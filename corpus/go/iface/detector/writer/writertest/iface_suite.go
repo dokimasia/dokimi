@@ -97,23 +97,6 @@ func BenchWriterSuite[T writer.Writer](
 	conform.Bench(b, WriterSuite(), callable, func(h *WriterHandle) writer.Writer { return newSubject(h) }, opts...)
 }
 
-// BenchWriterSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchWriterSuiteParallel[T writer.Writer](
-	b *testing.B,
-	callable conform.Callable[writer.Writer],
-	newSubject func(h *WriterHandle) T,
-	opts ...WriterOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		WriterSuite(),
-		callable,
-		func(h *WriterHandle) writer.Writer { return newSubject(h) },
-		opts...)
-}
-
 // writerPutCalls generates the calls of Writer.Put with the inputs that
 // each case draws.
 var writerPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, writer.Writer) error {
@@ -123,11 +106,15 @@ var writerPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, wri
 	}
 })
 
+// writerOverEmbedded is writer.Writer under the name of the field that
+// writerOver embeds.
+type writerOverEmbedded = writer.Writer
+
 // writerOver is a subject of Writer whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type writerOver struct {
-	writer.Writer
+	writerOverEmbedded
 	spend func()
 }
 
@@ -143,4 +130,4 @@ func newWriterOver(_ *WriterHandle, spend func()) writer.Writer {
 	return writerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9e171126fd50ca94e2c73411115558626a93a1b975c89e45104f99a4065b88c4
+// dokimi:provenance sha256:b0eca632fdb4eaaa470c25807981160d1dfd206a29e5e006abff6903ce96f5f4

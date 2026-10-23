@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scope/scopetest"
 )
 
+// mixedSubjectEmbedded is scope.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = scope.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ scope.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:0521ad4cd76ff8c3835e36bc74b0413c6f01fece3e84e5d93a8a5e0ee32f6d2a
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *scopetest.MixedHandle) scope.Mixed {
+	return scopetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	scopetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(scopetest.MixedChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(scopetest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteSet registers the fuzz target of Mixed.Set on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteSet(f *testing.F) {
+	scopetest.FuzzMixedSuite(
+		f,
+		scopetest.MixedChecks.Set.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteGet registers the fuzz target of Mixed.Get on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteGet(f *testing.F) {
+	scopetest.FuzzMixedSuite(
+		f,
+		scopetest.MixedChecks.Get.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		scopetest.BenchMixedSuite(b, scopetest.MixedChecks.Set.Callable, mixedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		scopetest.BenchMixedSuite(b, scopetest.MixedChecks.Get.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:ca0967bc406f2ef273fdfd5e6d726ee857a1bb6b4c79559ce33bad62565537ff

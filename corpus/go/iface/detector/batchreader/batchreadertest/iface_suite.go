@@ -125,24 +125,6 @@ func BenchBatchReaderSuite[T batchreader.BatchReader](
 		opts...)
 }
 
-// BenchBatchReaderSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchBatchReaderSuiteParallel[T batchreader.BatchReader](
-	b *testing.B,
-	callable conform.Callable[batchreader.BatchReader],
-	newSubject func(h *BatchReaderHandle) T,
-	opts ...BatchReaderOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		BatchReaderSuite(),
-		callable,
-		func(h *BatchReaderHandle) batchreader.BatchReader { return newSubject(h) },
-		opts...)
-}
-
 // batchReaderGetAllCalls generates the calls of BatchReader.GetAll with
 // the inputs that each case draws.
 var batchReaderGetAllCalls = prop.Composite(func(c *prop.Case) func(context.Context, batchreader.BatchReader) error {
@@ -153,11 +135,15 @@ var batchReaderGetAllCalls = prop.Composite(func(c *prop.Case) func(context.Cont
 	}
 })
 
+// batchReaderOverEmbedded is batchreader.BatchReader under the name of the
+// field that batchReaderOver embeds.
+type batchReaderOverEmbedded = batchreader.BatchReader
+
 // batchReaderOver is a subject of BatchReader whose callables call spend
 // and return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type batchReaderOver struct {
-	batchreader.BatchReader
+	batchReaderOverEmbedded
 	spend func()
 }
 
@@ -173,4 +159,4 @@ func newBatchReaderOver(_ *BatchReaderHandle, spend func()) batchreader.BatchRea
 	return batchReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3b4337de92e7c2dea0ccaee193a2a6d5bd3e59f305d41daf46e1c11f47457ba0
+// dokimi:provenance sha256:b52824f9b713b7207ca6b50f42d6baa2558097d9f82d23e7e3641714fd5711b6

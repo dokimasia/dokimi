@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext/nocontexttest"
 )
 
+// calculatorSubjectEmbedded is nocontext.Calculator under the name of the
+// field that calculatorSubject embeds.
+type calculatorSubjectEmbedded = nocontext.Calculator
+
 // calculatorSubject is a value of Calculator that only TestCalculatorSuite
 // builds.
-type calculatorSubject struct{ nocontext.Calculator }
+type calculatorSubject struct{ calculatorSubjectEmbedded }
 
 // TestCalculatorSuite checks the suite of Calculator and the two forms of
 // its application.
@@ -70,4 +74,67 @@ func TestCalculatorSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:681a4c3a6efece204f95984ba6b428ea21a7b0067a196ad7ea2995dd9bcd65d8
+// calculatorIdle returns the planted defect of a ceiling of Calculator
+// with a spend of nothing, a subject that answers each call at once.
+func calculatorIdle(h *nocontexttest.CalculatorHandle) nocontext.Calculator {
+	return nocontexttest.CalculatorSuite().Calls[0].Over(h, func() {})
+}
+
+// TestCalculatorSuiteBudgets applies the allocation ceilings of the suite
+// of Calculator to calculatorIdle, and a ceiling of 0 to each callable
+// without a budget whose calls build no input of their own.
+func TestCalculatorSuiteBudgets(t *testing.T) {
+	nocontexttest.RunCalculatorBudgets(
+		t,
+		calculatorIdle,
+		conform.Ceilings(nocontexttest.CalculatorChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(nocontexttest.CalculatorChecks.Divide.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(nocontexttest.CalculatorChecks.Reset.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzCalculatorSuiteAdd registers the fuzz target of Calculator.Add on
+// calculatorIdle, with every check of the suite excused.
+func FuzzCalculatorSuiteAdd(f *testing.F) {
+	nocontexttest.FuzzCalculatorSuite(
+		f,
+		nocontexttest.CalculatorChecks.Add.Callable,
+		calculatorIdle,
+	)
+}
+
+// FuzzCalculatorSuiteDivide registers the fuzz target of Calculator.Divide
+// on calculatorIdle, with every check of the suite excused.
+func FuzzCalculatorSuiteDivide(f *testing.F) {
+	nocontexttest.FuzzCalculatorSuite(
+		f,
+		nocontexttest.CalculatorChecks.Divide.Callable,
+		calculatorIdle,
+	)
+}
+
+// FuzzCalculatorSuiteReset registers the fuzz target of Calculator.Reset
+// on calculatorIdle, with every check of the suite excused.
+func FuzzCalculatorSuiteReset(f *testing.F) {
+	nocontexttest.FuzzCalculatorSuite(
+		f,
+		nocontexttest.CalculatorChecks.Reset.Callable,
+		calculatorIdle,
+	)
+}
+
+// BenchmarkCalculatorSuite measures each callable of the suite of
+// Calculator on calculatorIdle.
+func BenchmarkCalculatorSuite(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		nocontexttest.BenchCalculatorSuite(b, nocontexttest.CalculatorChecks.Add.Callable, calculatorIdle)
+	})
+	b.Run("Divide", func(b *testing.B) {
+		nocontexttest.BenchCalculatorSuite(b, nocontexttest.CalculatorChecks.Divide.Callable, calculatorIdle)
+	})
+	b.Run("Reset", func(b *testing.B) {
+		nocontexttest.BenchCalculatorSuite(b, nocontexttest.CalculatorChecks.Reset.Callable, calculatorIdle)
+	})
+}
+
+// dokimi:provenance sha256:6693864cb9f36734fff9c663e4d64a1c6197b508fc66bde3eff7d7d94bfb2b23

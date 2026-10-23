@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed/indexedtest"
 )
 
+// rankedSubjectEmbedded is indexed.Ranked under the name of the field that
+// rankedSubject embeds.
+type rankedSubjectEmbedded = indexed.Ranked
+
 // rankedSubject is a value of Ranked that only TestRankedSuite builds.
-type rankedSubject struct{ indexed.Ranked }
+type rankedSubject struct{ rankedSubjectEmbedded }
 
 // TestRankedSuite checks the suite of Ranked and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestRankedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:17f50a1e53db8cfd65b5bbcfda016173d2bd8bf1a2facb60122b1c15bead04d0
+// rankedIdle returns the planted defect of a ceiling of Ranked with a
+// spend of nothing, a subject that answers each call at once.
+func rankedIdle(h *indexedtest.RankedHandle) indexed.Ranked {
+	return indexedtest.RankedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestRankedSuiteBudgets applies the allocation ceilings of the suite of
+// Ranked to rankedIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestRankedSuiteBudgets(t *testing.T) {
+	indexedtest.RunRankedBudgets(
+		t,
+		rankedIdle,
+		conform.Ceilings(indexedtest.RankedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(indexedtest.RankedChecks.Len.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(indexedtest.RankedChecks.At.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzRankedSuiteAdd registers the fuzz target of Ranked.Add on
+// rankedIdle, with every check of the suite excused.
+func FuzzRankedSuiteAdd(f *testing.F) {
+	indexedtest.FuzzRankedSuite(
+		f,
+		indexedtest.RankedChecks.Add.Callable,
+		rankedIdle,
+	)
+}
+
+// FuzzRankedSuiteLen registers the fuzz target of Ranked.Len on
+// rankedIdle, with every check of the suite excused.
+func FuzzRankedSuiteLen(f *testing.F) {
+	indexedtest.FuzzRankedSuite(
+		f,
+		indexedtest.RankedChecks.Len.Callable,
+		rankedIdle,
+	)
+}
+
+// FuzzRankedSuiteAt registers the fuzz target of Ranked.At on rankedIdle,
+// with every check of the suite excused.
+func FuzzRankedSuiteAt(f *testing.F) {
+	indexedtest.FuzzRankedSuite(
+		f,
+		indexedtest.RankedChecks.At.Callable,
+		rankedIdle,
+	)
+}
+
+// BenchmarkRankedSuite measures each callable of the suite of Ranked on
+// rankedIdle.
+func BenchmarkRankedSuite(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		indexedtest.BenchRankedSuite(b, indexedtest.RankedChecks.Add.Callable, rankedIdle)
+	})
+	b.Run("Len", func(b *testing.B) {
+		indexedtest.BenchRankedSuite(b, indexedtest.RankedChecks.Len.Callable, rankedIdle)
+	})
+	b.Run("At", func(b *testing.B) {
+		indexedtest.BenchRankedSuite(b, indexedtest.RankedChecks.At.Callable, rankedIdle)
+	})
+}
+
+// dokimi:provenance sha256:b3d51f186029a02d52867fe3c241ad7d47351355ccfe9db43e4625eaee1273b4

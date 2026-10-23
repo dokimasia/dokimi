@@ -129,24 +129,6 @@ func BenchAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
 		opts...)
 }
 
-// BenchAnsweringWriterSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchAnsweringWriterSuiteParallel[T answeringwriter.AnsweringWriter](
-	b *testing.B,
-	callable conform.Callable[answeringwriter.AnsweringWriter],
-	newSubject func(h *AnsweringWriterHandle) T,
-	opts ...AnsweringWriterOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		AnsweringWriterSuite(),
-		callable,
-		func(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter { return newSubject(h) },
-		opts...)
-}
-
 // answeringWriterPutCalls generates the calls of AnsweringWriter.Put with
 // the inputs that each case draws.
 var answeringWriterPutCalls = prop.Composite(
@@ -159,11 +141,15 @@ var answeringWriterPutCalls = prop.Composite(
 	},
 )
 
+// answeringWriterOverEmbedded is answeringwriter.AnsweringWriter under the
+// name of the field that answeringWriterOver embeds.
+type answeringWriterOverEmbedded = answeringwriter.AnsweringWriter
+
 // answeringWriterOver is a subject of AnsweringWriter whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type answeringWriterOver struct {
-	answeringwriter.AnsweringWriter
+	answeringWriterOverEmbedded
 	spend func()
 }
 
@@ -179,4 +165,4 @@ func newAnsweringWriterOver(_ *AnsweringWriterHandle, spend func()) answeringwri
 	return answeringWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9718361511fdfef1bb0f11f3b633378347d345f27900018b4b36fc2de1eadccb
+// dokimi:provenance sha256:f9641ae0b841e16d68209db767bbb5648184471861caa1a2945d94487b7cad2f

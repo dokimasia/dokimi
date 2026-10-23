@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader/readertest"
 )
 
+// readerSubjectEmbedded is reader.Reader under the name of the field that
+// readerSubject embeds.
+type readerSubjectEmbedded = reader.Reader
+
 // readerSubject is a value of Reader that only TestReaderSuite builds.
-type readerSubject struct{ reader.Reader }
+type readerSubject struct{ readerSubjectEmbedded }
 
 // TestReaderSuite checks the suite of Reader and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestReaderSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7545e45db362d74ae5e69c89430056fc7fc39a3fb69d172b3a7342efc4e431ae
+// readerIdle returns the planted defect of a ceiling of Reader with a
+// spend of nothing, a subject that answers each call at once.
+func readerIdle(h *readertest.ReaderHandle) reader.Reader {
+	return readertest.ReaderSuite().Calls[0].Over(h, func() {})
+}
+
+// TestReaderSuiteBudgets applies the allocation ceilings of the suite of
+// Reader to readerIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestReaderSuiteBudgets(t *testing.T) {
+	readertest.RunReaderBudgets(
+		t,
+		readerIdle,
+		conform.Ceilings(readertest.ReaderChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzReaderSuiteGet registers the fuzz target of Reader.Get on
+// readerIdle, with every check of the suite excused.
+func FuzzReaderSuiteGet(f *testing.F) {
+	readertest.FuzzReaderSuite(
+		f,
+		readertest.ReaderChecks.Get.Callable,
+		readerIdle,
+	)
+}
+
+// BenchmarkReaderSuite measures each callable of the suite of Reader on
+// readerIdle.
+func BenchmarkReaderSuite(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		readertest.BenchReaderSuite(b, readertest.ReaderChecks.Get.Callable, readerIdle)
+	})
+}
+
+// dokimi:provenance sha256:e6ac07d2460e6e237c5831b344a80e4efaafed836c2139a56519d7a9fe73b366

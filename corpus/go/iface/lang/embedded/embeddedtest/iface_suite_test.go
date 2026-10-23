@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embedded/embeddedtest"
 )
 
+// composedSubjectEmbedded is embedded.Composed under the name of the field
+// that composedSubject embeds.
+type composedSubjectEmbedded = embedded.Composed
+
 // composedSubject is a value of Composed that only TestComposedSuite
 // builds.
-type composedSubject struct{ embedded.Composed }
+type composedSubject struct{ composedSubjectEmbedded }
 
 // TestComposedSuite checks the suite of Composed and the two forms of its
 // application.
@@ -70,4 +74,67 @@ func TestComposedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:4edf4064f9df849f3e3b573cd2ef88b7a439d5f7b1eacc7d9d98d1a7779b3213
+// composedIdle returns the planted defect of a ceiling of Composed with a
+// spend of nothing, a subject that answers each call at once.
+func composedIdle(h *embeddedtest.ComposedHandle) embedded.Composed {
+	return embeddedtest.ComposedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestComposedSuiteBudgets applies the allocation ceilings of the suite of
+// Composed to composedIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestComposedSuiteBudgets(t *testing.T) {
+	embeddedtest.RunComposedBudgets(
+		t,
+		composedIdle,
+		conform.Ceilings(embeddedtest.ComposedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(embeddedtest.ComposedChecks.Ping.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(embeddedtest.ComposedChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzComposedSuiteGet registers the fuzz target of Composed.Get on
+// composedIdle, with every check of the suite excused.
+func FuzzComposedSuiteGet(f *testing.F) {
+	embeddedtest.FuzzComposedSuite(
+		f,
+		embeddedtest.ComposedChecks.Get.Callable,
+		composedIdle,
+	)
+}
+
+// FuzzComposedSuitePing registers the fuzz target of Composed.Ping on
+// composedIdle, with every check of the suite excused.
+func FuzzComposedSuitePing(f *testing.F) {
+	embeddedtest.FuzzComposedSuite(
+		f,
+		embeddedtest.ComposedChecks.Ping.Callable,
+		composedIdle,
+	)
+}
+
+// FuzzComposedSuiteClose registers the fuzz target of Composed.Close on
+// composedIdle, with every check of the suite excused.
+func FuzzComposedSuiteClose(f *testing.F) {
+	embeddedtest.FuzzComposedSuite(
+		f,
+		embeddedtest.ComposedChecks.Close.Callable,
+		composedIdle,
+	)
+}
+
+// BenchmarkComposedSuite measures each callable of the suite of Composed
+// on composedIdle.
+func BenchmarkComposedSuite(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		embeddedtest.BenchComposedSuite(b, embeddedtest.ComposedChecks.Get.Callable, composedIdle)
+	})
+	b.Run("Ping", func(b *testing.B) {
+		embeddedtest.BenchComposedSuite(b, embeddedtest.ComposedChecks.Ping.Callable, composedIdle)
+	})
+	b.Run("Close", func(b *testing.B) {
+		embeddedtest.BenchComposedSuite(b, embeddedtest.ComposedChecks.Close.Callable, composedIdle)
+	})
+}
+
+// dokimi:provenance sha256:270b23c5296053d1b0357b3b90c1e27e083861644cff07cb871c1929555dd6e0

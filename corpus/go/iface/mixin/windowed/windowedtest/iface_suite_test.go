@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/windowed/windowedtest"
 )
 
+// mixedSubjectEmbedded is windowed.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = windowed.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ windowed.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:eb09689193eada6b946967873e8436afa8a175462ab969e8fb9da981cebf9b47
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *windowedtest.MixedHandle) windowed.Mixed {
+	return windowedtest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	windowedtest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(windowedtest.MixedChecks.Record.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(windowedtest.MixedChecks.CountIn.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteRecord registers the fuzz target of Mixed.Record on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteRecord(f *testing.F) {
+	windowedtest.FuzzMixedSuite(
+		f,
+		windowedtest.MixedChecks.Record.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteCountIn registers the fuzz target of Mixed.CountIn on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteCountIn(f *testing.F) {
+	windowedtest.FuzzMixedSuite(
+		f,
+		windowedtest.MixedChecks.CountIn.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Record", func(b *testing.B) {
+		windowedtest.BenchMixedSuite(b, windowedtest.MixedChecks.Record.Callable, mixedIdle)
+	})
+	b.Run("CountIn", func(b *testing.B) {
+		windowedtest.BenchMixedSuite(b, windowedtest.MixedChecks.CountIn.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:2530774533c62d3898967dbec038583f4f361b76e0971765be9e6dba5807bac8

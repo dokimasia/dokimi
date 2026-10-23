@@ -207,11 +207,15 @@ var batchedListCalls = prop.Composite(func(*prop.Case) func(context.Context, bat
 	}
 })
 
+// batchedOverEmbedded is batchedmixins.Batched under the name of the field
+// that batchedOver embeds.
+type batchedOverEmbedded = batchedmixins.Batched
+
 // batchedOver is a subject of Batched whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type batchedOver struct {
-	batchedmixins.Batched
+	batchedOverEmbedded
 	spend func()
 }
 
@@ -239,4 +243,4 @@ func newBatchedOver(_ *BatchedHandle, spend func()) batchedmixins.Batched {
 	return batchedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:39b1e2758491793bd827a261ac72d015a09aa6d2a48acb8b534ef6102cdfad04
+// dokimi:provenance sha256:6c302efcd2bfdd368bacc3aa5813573f7bbb6ec2cba61a9d196d0cfc2e56d35b

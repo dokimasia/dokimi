@@ -122,23 +122,6 @@ func BenchStoreSuite[T restrictedpool.Store](
 		opts...)
 }
 
-// BenchStoreSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchStoreSuiteParallel[T restrictedpool.Store](
-	b *testing.B,
-	callable conform.Callable[restrictedpool.Store],
-	newSubject func(h *StoreHandle) T,
-	opts ...StoreOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		StoreSuite(),
-		callable,
-		func(h *StoreHandle) restrictedpool.Store { return newSubject(h) },
-		opts...)
-}
-
 // storePutCalls generates the calls of Store.Put with the inputs that each
 // case draws.
 var storePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, restrictedpool.Store) error {
@@ -179,11 +162,15 @@ var storeBodyValues = prop.Composite(func(c *prop.Case) restrictedpool.Body {
 	return "test-body"
 })
 
+// storeOverEmbedded is restrictedpool.Store under the name of the field
+// that storeOver embeds.
+type storeOverEmbedded = restrictedpool.Store
+
 // storeOver is a subject of Store whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type storeOver struct {
-	restrictedpool.Store
+	storeOverEmbedded
 	spend func()
 }
 
@@ -205,4 +192,4 @@ func newStoreOver(_ *StoreHandle, spend func()) restrictedpool.Store {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8c81ad98252ec26b0b07b3f9ce650618cb421e13f0fe9afc13fd0a386d2c561e
+// dokimi:provenance sha256:570d12cde417a44de0f5bab6f0e15f716527901490415538a6f92d88aa589b38

@@ -124,23 +124,6 @@ func BenchMixedSuite[T crdtmerge.Mixed](
 	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) }, opts...)
 }
 
-// BenchMixedSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchMixedSuiteParallel[T crdtmerge.Mixed](
-	b *testing.B,
-	callable conform.Callable[crdtmerge.Mixed],
-	newSubject func(h *MixedHandle) T,
-	opts ...MixedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) crdtmerge.Mixed { return newSubject(h) },
-		opts...)
-}
-
 // mixedMergeCalls generates the calls of Mixed.Merge with the inputs that
 // each case draws.
 var mixedMergeCalls = prop.Composite(func(c *prop.Case) func(context.Context, crdtmerge.Mixed) error {
@@ -188,10 +171,14 @@ var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, crdt
 	}
 })
 
+// mixedReplicaInputEmbedded is Replica under the name of the field that
+// mixedReplicaInput embeds.
+type mixedReplicaInputEmbedded = crdtmerge.Replica
+
 // mixedReplicaInput is a Replica whose methods return the results that the
 // call generators of Mixed draw for them, in turn.
 type mixedReplicaInput struct {
-	crdtmerge.Replica
+	mixedReplicaInputEmbedded
 	onItems func(a0 context.Context) ([]string, error)
 }
 
@@ -200,11 +187,15 @@ func (in mixedReplicaInput) Items(a0 context.Context) ([]string, error) {
 	return in.onItems(a0)
 }
 
+// mixedOverEmbedded is crdtmerge.Mixed under the name of the field that
+// mixedOver embeds.
+type mixedOverEmbedded = crdtmerge.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	crdtmerge.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -232,4 +223,4 @@ func newMixedOver(_ *MixedHandle, spend func()) crdtmerge.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:fe97a7366c7551d86d2bc23c9daab4d515b0aea5dd329a805bf4e8aea6af328d
+// dokimi:provenance sha256:d44b5ca184cfed50039b7527dd33fd273e749312aade9ccc49afb975dc6fa1a4

@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/partition/partitiontest"
 )
 
+// mixedSubjectEmbedded is partition.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = partition.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ partition.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:78e1a483d62a784818e5fdc9da1391eb9f2eae152d6f6a697d6723fc963b0f42
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *partitiontest.MixedHandle) partition.Mixed {
+	return partitiontest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	partitiontest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(partitiontest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(partitiontest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuitePut registers the fuzz target of Mixed.Put on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuitePut(f *testing.F) {
+	partitiontest.FuzzMixedSuite(
+		f,
+		partitiontest.MixedChecks.Put.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteRead registers the fuzz target of Mixed.Read on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteRead(f *testing.F) {
+	partitiontest.FuzzMixedSuite(
+		f,
+		partitiontest.MixedChecks.Read.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		partitiontest.BenchMixedSuite(b, partitiontest.MixedChecks.Put.Callable, mixedIdle)
+	})
+	b.Run("Read", func(b *testing.B) {
+		partitiontest.BenchMixedSuite(b, partitiontest.MixedChecks.Read.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:71220a66ecba81943d75199e639537f4c20d084841278435bbf53a426f623fa3

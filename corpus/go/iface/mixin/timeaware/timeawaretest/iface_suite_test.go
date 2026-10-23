@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeaware/timeawaretest"
 )
 
+// mixedSubjectEmbedded is timeaware.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = timeaware.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ timeaware.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:3c9a23a21cd4ad38940bec964e11a86698fec899912766daf8775f20fcb2a137
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *timeawaretest.MixedHandle) timeaware.Mixed {
+	return timeawaretest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	timeawaretest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(timeawaretest.MixedChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(timeawaretest.MixedChecks.AgeOf.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteTouch registers the fuzz target of Mixed.Touch on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteTouch(f *testing.F) {
+	timeawaretest.FuzzMixedSuite(
+		f,
+		timeawaretest.MixedChecks.Touch.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteAgeOf registers the fuzz target of Mixed.AgeOf on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteAgeOf(f *testing.F) {
+	timeawaretest.FuzzMixedSuite(
+		f,
+		timeawaretest.MixedChecks.AgeOf.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Touch", func(b *testing.B) {
+		timeawaretest.BenchMixedSuite(b, timeawaretest.MixedChecks.Touch.Callable, mixedIdle)
+	})
+	b.Run("AgeOf", func(b *testing.B) {
+		timeawaretest.BenchMixedSuite(b, timeawaretest.MixedChecks.AgeOf.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:e27d50ddbcd8f43e24ffccf22c575b744586b654c2895b26af424a55489bdd09

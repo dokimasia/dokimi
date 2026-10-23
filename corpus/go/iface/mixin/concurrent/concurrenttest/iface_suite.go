@@ -146,11 +146,15 @@ var mixedCountCalls = prop.Composite(func(*prop.Case) func(context.Context, conc
 	}
 })
 
+// mixedOverEmbedded is concurrent.Mixed under the name of the field that
+// mixedOver embeds.
+type mixedOverEmbedded = concurrent.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	concurrent.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -172,4 +176,4 @@ func newMixedOver(_ *MixedHandle, spend func()) concurrent.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b79ea87372030f50df52b652a8e8ceea7fdbb42971d755900604937f01f25cb9
+// dokimi:provenance sha256:e14114777efbb4b723a071b268db5f46137693baf9cc91e9fe9e7aca451492cc

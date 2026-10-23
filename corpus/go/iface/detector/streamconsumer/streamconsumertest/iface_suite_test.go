@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamconsumer/streamconsumertest"
 )
 
+// streamConsumerSubjectEmbedded is streamconsumer.StreamConsumer under the
+// name of the field that streamConsumerSubject embeds.
+type streamConsumerSubjectEmbedded = streamconsumer.StreamConsumer
+
 // streamConsumerSubject is a value of StreamConsumer that only
 // TestStreamConsumerSuite builds.
-type streamConsumerSubject struct{ streamconsumer.StreamConsumer }
+type streamConsumerSubject struct{ streamConsumerSubjectEmbedded }
 
 // TestStreamConsumerSuite checks the suite of StreamConsumer and the two
 // forms of its application.
@@ -74,4 +78,44 @@ func TestStreamConsumerSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1c5ce245144aa8c5325e9610fd5c9ab5a84037746265949708375640e7c21756
+// streamConsumerIdle returns the planted defect of a ceiling of
+// StreamConsumer with a spend of nothing, a subject that answers each call
+// at once.
+func streamConsumerIdle(h *streamconsumertest.StreamConsumerHandle) streamconsumer.StreamConsumer {
+	return streamconsumertest.StreamConsumerSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStreamConsumerSuiteBudgets applies the allocation ceilings of the
+// suite of StreamConsumer to streamConsumerIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestStreamConsumerSuiteBudgets(t *testing.T) {
+	streamconsumertest.RunStreamConsumerBudgets(
+		t,
+		streamConsumerIdle,
+	)
+}
+
+// FuzzStreamConsumerSuiteIngest registers the fuzz target of
+// StreamConsumer.Ingest on streamConsumerIdle, with every check of the
+// suite excused.
+func FuzzStreamConsumerSuiteIngest(f *testing.F) {
+	streamconsumertest.FuzzStreamConsumerSuite(
+		f,
+		streamconsumertest.StreamConsumerChecks.Ingest.Callable,
+		streamConsumerIdle,
+	)
+}
+
+// BenchmarkStreamConsumerSuite measures each callable of the suite of
+// StreamConsumer on streamConsumerIdle.
+func BenchmarkStreamConsumerSuite(b *testing.B) {
+	b.Run("Ingest", func(b *testing.B) {
+		streamconsumertest.BenchStreamConsumerSuite(
+			b,
+			streamconsumertest.StreamConsumerChecks.Ingest.Callable,
+			streamConsumerIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:c70e2e7b37de0395307951f9926516b0d183401475766865f849a2258e933b22

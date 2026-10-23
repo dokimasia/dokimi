@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor/cursortest"
 )
 
+// contractSubjectEmbedded is cursor.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = cursor.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ cursor.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,53 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:acb56964c69b1ccfe9ad2d95e50e17cbe734d07ec8d8911102f6bbda4e8f5283
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *cursortest.ContractHandle) cursor.Contract {
+	return cursortest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	cursortest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(cursortest.ContractChecks.Next.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(cursortest.ContractChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteNext registers the fuzz target of Contract.Next on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteNext(f *testing.F) {
+	cursortest.FuzzContractSuite(
+		f,
+		cursortest.ContractChecks.Next.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteClose registers the fuzz target of Contract.Close on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteClose(f *testing.F) {
+	cursortest.FuzzContractSuite(
+		f,
+		cursortest.ContractChecks.Close.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Next", func(b *testing.B) {
+		cursortest.BenchContractSuite(b, cursortest.ContractChecks.Next.Callable, contractIdle)
+	})
+	b.Run("Close", func(b *testing.B) {
+		cursortest.BenchContractSuite(b, cursortest.ContractChecks.Close.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:363f794308e7296969e0841d75b27307ba086f1a5292b4e8ec34a46c58296056

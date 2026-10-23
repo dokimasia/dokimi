@@ -13,11 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter/compositewritertest"
 )
 
+// compositeWriterSubjectEmbedded is compositewriter.CompositeWriter under
+// the name of the field that compositeWriterSubject embeds.
+type compositeWriterSubjectEmbedded = compositewriter.CompositeWriter
+
 // compositeWriterSubject is a value of CompositeWriter that only
 // TestCompositeWriterSuite builds.
-type compositeWriterSubject struct {
-	compositewriter.CompositeWriter
-}
+type compositeWriterSubject struct{ compositeWriterSubjectEmbedded }
 
 // TestCompositeWriterSuite checks the suite of CompositeWriter and the two
 // forms of its application.
@@ -76,4 +78,48 @@ func TestCompositeWriterSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7b4f8783491b17af70c2ba174b948cfc34afc567c657daa95c173211117c21ac
+// compositeWriterIdle returns the planted defect of a ceiling of
+// CompositeWriter with a spend of nothing, a subject that answers each
+// call at once.
+func compositeWriterIdle(h *compositewritertest.CompositeWriterHandle) compositewriter.CompositeWriter {
+	return compositewritertest.CompositeWriterSuite().Calls[0].Over(h, func() {})
+}
+
+// TestCompositeWriterSuiteBudgets applies the allocation ceilings of the
+// suite of CompositeWriter to compositeWriterIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestCompositeWriterSuiteBudgets(t *testing.T) {
+	compositewritertest.RunCompositeWriterBudgets(
+		t,
+		compositeWriterIdle,
+		conform.Ceilings(
+			compositewritertest.CompositeWriterChecks.Set.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzCompositeWriterSuiteSet registers the fuzz target of
+// CompositeWriter.Set on compositeWriterIdle, with every check of the
+// suite excused.
+func FuzzCompositeWriterSuiteSet(f *testing.F) {
+	compositewritertest.FuzzCompositeWriterSuite(
+		f,
+		compositewritertest.CompositeWriterChecks.Set.Callable,
+		compositeWriterIdle,
+	)
+}
+
+// BenchmarkCompositeWriterSuite measures each callable of the suite of
+// CompositeWriter on compositeWriterIdle.
+func BenchmarkCompositeWriterSuite(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		compositewritertest.BenchCompositeWriterSuite(
+			b,
+			compositewritertest.CompositeWriterChecks.Set.Callable,
+			compositeWriterIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:13168fa625a2cc42cb4d9ab00a4b6f5a14dd3bb42de4fc12ae510ed332a47e45

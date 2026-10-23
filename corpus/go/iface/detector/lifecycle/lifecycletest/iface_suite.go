@@ -121,23 +121,6 @@ func BenchLifecycleSuite[T lifecycle.Lifecycle](
 		opts...)
 }
 
-// BenchLifecycleSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchLifecycleSuiteParallel[T lifecycle.Lifecycle](
-	b *testing.B,
-	callable conform.Callable[lifecycle.Lifecycle],
-	newSubject func(h *LifecycleHandle) T,
-	opts ...LifecycleOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		LifecycleSuite(),
-		callable,
-		func(h *LifecycleHandle) lifecycle.Lifecycle { return newSubject(h) },
-		opts...)
-}
-
 // lifecycleCloseCalls generates the calls of Lifecycle.Close with the
 // inputs that each case draws.
 var lifecycleCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, lifecycle.Lifecycle) error {
@@ -146,11 +129,15 @@ var lifecycleCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, 
 	}
 })
 
+// lifecycleOverEmbedded is lifecycle.Lifecycle under the name of the field
+// that lifecycleOver embeds.
+type lifecycleOverEmbedded = lifecycle.Lifecycle
+
 // lifecycleOver is a subject of Lifecycle whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type lifecycleOver struct {
-	lifecycle.Lifecycle
+	lifecycleOverEmbedded
 	spend func()
 }
 
@@ -166,4 +153,4 @@ func newLifecycleOver(_ *LifecycleHandle, spend func()) lifecycle.Lifecycle {
 	return lifecycleOver{spend: spend}
 }
 
-// dokimi:provenance sha256:13a1c6c0acff7c1aad861579c881438c86eb6c867f7c5fb035038bae50002eb7
+// dokimi:provenance sha256:a6eaa9ead9a25c794b216e6ba57620c2e6dc55e6b0603cdf87d959b74799faff

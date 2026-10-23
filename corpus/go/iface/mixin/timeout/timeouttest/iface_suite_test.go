@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeout/timeouttest"
 )
 
+// mixedSubjectEmbedded is timeout.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = timeout.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ timeout.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e0d1897b7a292f178f45da7013c780c33164ccae4048bd4d24c7283614d476e0
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *timeouttest.MixedHandle) timeout.Mixed {
+	return timeouttest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	timeouttest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(timeouttest.MixedChecks.Slow.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteSlow registers the fuzz target of Mixed.Slow on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteSlow(f *testing.F) {
+	timeouttest.FuzzMixedSuite(
+		f,
+		timeouttest.MixedChecks.Slow.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Slow", func(b *testing.B) {
+		timeouttest.BenchMixedSuite(b, timeouttest.MixedChecks.Slow.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:a25ef01c7480451d7582a7647120828dc0f0950ad996ef7611a9751740a7c34d

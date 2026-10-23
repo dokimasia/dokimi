@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe/nilsafetest"
 )
 
+// mixedSubjectEmbedded is nilsafe.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = nilsafe.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ nilsafe.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b4e68ad346ae72ad6078e431de4792ff4e3af8e6e22ad082f6421f4cfb5e8fa2
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *nilsafetest.MixedHandle) nilsafe.Mixed {
+	return nilsafetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	nilsafetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(nilsafetest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteStore registers the fuzz target of Mixed.Store on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteStore(f *testing.F) {
+	nilsafetest.FuzzMixedSuite(
+		f,
+		nilsafetest.MixedChecks.Store.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		nilsafetest.BenchMixedSuite(b, nilsafetest.MixedChecks.Store.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:9d917c1e9540f15ba05990173adda85a6373db7501213dae09f6c01b4f5a3bfc

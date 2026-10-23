@@ -111,23 +111,6 @@ func BenchMixedSuite[T timeaware.Mixed](
 	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) timeaware.Mixed { return newSubject(h) }, opts...)
 }
 
-// BenchMixedSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchMixedSuiteParallel[T timeaware.Mixed](
-	b *testing.B,
-	callable conform.Callable[timeaware.Mixed],
-	newSubject func(h *MixedHandle) T,
-	opts ...MixedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) timeaware.Mixed { return newSubject(h) },
-		opts...)
-}
-
 // mixedTouchCalls generates the calls of Mixed.Touch with the inputs that
 // each case draws.
 var mixedTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, timeaware.Mixed) error {
@@ -147,11 +130,15 @@ var mixedAgeOfCalls = prop.Composite(func(c *prop.Case) func(context.Context, ti
 	}
 })
 
+// mixedOverEmbedded is timeaware.Mixed under the name of the field that
+// mixedOver embeds.
+type mixedOverEmbedded = timeaware.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	timeaware.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -173,4 +160,4 @@ func newMixedOver(_ *MixedHandle, spend func()) timeaware.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:625d8ccc2406d5136d1a0e01d1c2c80bbfcd9158beef81e184339b485829ec33
+// dokimi:provenance sha256:98779155377609a634b9131821553f75902a6601eb9f32bc29047f9ccebff4b0

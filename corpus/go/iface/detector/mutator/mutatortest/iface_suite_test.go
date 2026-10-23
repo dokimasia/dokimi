@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator/mutatortest"
 )
 
+// mutatorSubjectEmbedded is mutator.Mutator under the name of the field
+// that mutatorSubject embeds.
+type mutatorSubjectEmbedded = mutator.Mutator
+
 // mutatorSubject is a value of Mutator that only TestMutatorSuite builds.
-type mutatorSubject struct{ mutator.Mutator }
+type mutatorSubject struct{ mutatorSubjectEmbedded }
 
 // TestMutatorSuite checks the suite of Mutator and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestMutatorSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:4530aba2d821c643dddcc2688b4538375184747cfadff06f0fa49e437d0976a2
+// mutatorIdle returns the planted defect of a ceiling of Mutator with a
+// spend of nothing, a subject that answers each call at once.
+func mutatorIdle(h *mutatortest.MutatorHandle) mutator.Mutator {
+	return mutatortest.MutatorSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMutatorSuiteBudgets applies the allocation ceilings of the suite of
+// Mutator to mutatorIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestMutatorSuiteBudgets(t *testing.T) {
+	mutatortest.RunMutatorBudgets(
+		t,
+		mutatorIdle,
+		conform.Ceilings(mutatortest.MutatorChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMutatorSuiteTouch registers the fuzz target of Mutator.Touch on
+// mutatorIdle, with every check of the suite excused.
+func FuzzMutatorSuiteTouch(f *testing.F) {
+	mutatortest.FuzzMutatorSuite(
+		f,
+		mutatortest.MutatorChecks.Touch.Callable,
+		mutatorIdle,
+	)
+}
+
+// BenchmarkMutatorSuite measures each callable of the suite of Mutator on
+// mutatorIdle.
+func BenchmarkMutatorSuite(b *testing.B) {
+	b.Run("Touch", func(b *testing.B) {
+		mutatortest.BenchMutatorSuite(b, mutatortest.MutatorChecks.Touch.Callable, mutatorIdle)
+	})
+}
+
+// dokimi:provenance sha256:e254d58524943f9e3c4c6e7526e950bb7e1acd63794c0b9621291b7da3ef58de

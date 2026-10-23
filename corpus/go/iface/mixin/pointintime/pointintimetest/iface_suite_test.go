@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pointintime/pointintimetest"
 )
 
+// mixedSubjectEmbedded is pointintime.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = pointintime.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ pointintime.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:0ce492fc601bec23f03229ce1538641e096aa3b218bffebd09c5d3b575c72632
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *pointintimetest.MixedHandle) pointintime.Mixed {
+	return pointintimetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	pointintimetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(pointintimetest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(pointintimetest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteStore registers the fuzz target of Mixed.Store on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteStore(f *testing.F) {
+	pointintimetest.FuzzMixedSuite(
+		f,
+		pointintimetest.MixedChecks.Store.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteGet registers the fuzz target of Mixed.Get on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteGet(f *testing.F) {
+	pointintimetest.FuzzMixedSuite(
+		f,
+		pointintimetest.MixedChecks.Get.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		pointintimetest.BenchMixedSuite(b, pointintimetest.MixedChecks.Store.Callable, mixedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		pointintimetest.BenchMixedSuite(b, pointintimetest.MixedChecks.Get.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:03ebd8b738112dad7097c1ccb74b7dbb7d6a19c2f1dcc56d258e8334cca28d09

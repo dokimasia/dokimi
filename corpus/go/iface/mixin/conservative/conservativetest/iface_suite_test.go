@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/conservative/conservativetest"
 )
 
+// mixedSubjectEmbedded is conservative.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = conservative.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ conservative.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:8555074f593d14d5c4fdaa059f489910d78f5c95951f85ce74a9033d8b2224b9
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *conservativetest.MixedHandle) conservative.Mixed {
+	return conservativetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	conservativetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(conservativetest.MixedChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(conservativetest.MixedChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteApply registers the fuzz target of Mixed.Apply on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteApply(f *testing.F) {
+	conservativetest.FuzzMixedSuite(
+		f,
+		conservativetest.MixedChecks.Apply.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteTotal registers the fuzz target of Mixed.Total on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteTotal(f *testing.F) {
+	conservativetest.FuzzMixedSuite(
+		f,
+		conservativetest.MixedChecks.Total.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Apply", func(b *testing.B) {
+		conservativetest.BenchMixedSuite(b, conservativetest.MixedChecks.Apply.Callable, mixedIdle)
+	})
+	b.Run("Total", func(b *testing.B) {
+		conservativetest.BenchMixedSuite(b, conservativetest.MixedChecks.Total.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:951fc9ca5fc8949825a56b9636d0d35f81a9ed5a07441f2b06e9747411682c8b

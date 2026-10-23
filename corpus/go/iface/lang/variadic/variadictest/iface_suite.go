@@ -115,23 +115,6 @@ func BenchFinderSuite[T variadic.Finder](
 	conform.Bench(b, FinderSuite(), callable, func(h *FinderHandle) variadic.Finder { return newSubject(h) }, opts...)
 }
 
-// BenchFinderSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchFinderSuiteParallel[T variadic.Finder](
-	b *testing.B,
-	callable conform.Callable[variadic.Finder],
-	newSubject func(h *FinderHandle) T,
-	opts ...FinderOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		FinderSuite(),
-		callable,
-		func(h *FinderHandle) variadic.Finder { return newSubject(h) },
-		opts...)
-}
-
 // finderFindCalls generates the calls of Finder.Find with the inputs that
 // each case draws.
 var finderFindCalls = prop.Composite(func(c *prop.Case) func(context.Context, variadic.Finder) error {
@@ -153,11 +136,15 @@ var finderFindWithLimitCalls = prop.Composite(func(c *prop.Case) func(context.Co
 	}
 })
 
+// finderOverEmbedded is variadic.Finder under the name of the field that
+// finderOver embeds.
+type finderOverEmbedded = variadic.Finder
+
 // finderOver is a subject of Finder whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type finderOver struct {
-	variadic.Finder
+	finderOverEmbedded
 	spend func()
 }
 
@@ -179,4 +166,4 @@ func newFinderOver(_ *FinderHandle, spend func()) variadic.Finder {
 	return finderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:88cec9ec74af7a16e8e8a2c5af30f2fa78d8ee964aa1e3c3f280aefaa42225e3
+// dokimi:provenance sha256:77a641e02cae01f84765fb96656c840180e131d3a5c34b0ea4a9ce9b19d6a728

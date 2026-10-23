@@ -13,11 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader/paginatedreadertest"
 )
 
+// paginatedReaderSubjectEmbedded is paginatedreader.PaginatedReader under
+// the name of the field that paginatedReaderSubject embeds.
+type paginatedReaderSubjectEmbedded = paginatedreader.PaginatedReader
+
 // paginatedReaderSubject is a value of PaginatedReader that only
 // TestPaginatedReaderSuite builds.
-type paginatedReaderSubject struct {
-	paginatedreader.PaginatedReader
-}
+type paginatedReaderSubject struct{ paginatedReaderSubjectEmbedded }
 
 // TestPaginatedReaderSuite checks the suite of PaginatedReader and the two
 // forms of its application.
@@ -76,4 +78,70 @@ func TestPaginatedReaderSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:adae9d64bec1173ae8470090d06cebbe1cf436d206a3f4444917a0f63034ec16
+// paginatedReaderIdle returns the planted defect of a ceiling of
+// PaginatedReader with a spend of nothing, a subject that answers each
+// call at once.
+func paginatedReaderIdle(h *paginatedreadertest.PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return paginatedreadertest.PaginatedReaderSuite().Calls[0].Over(h, func() {})
+}
+
+// TestPaginatedReaderSuiteBudgets applies the allocation ceilings of the
+// suite of PaginatedReader to paginatedReaderIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestPaginatedReaderSuiteBudgets(t *testing.T) {
+	paginatedreadertest.RunPaginatedReaderBudgets(
+		t,
+		paginatedReaderIdle,
+		conform.Ceilings(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			paginatedreadertest.PaginatedReaderChecks.Add.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzPaginatedReaderSuiteFetch registers the fuzz target of
+// PaginatedReader.Fetch on paginatedReaderIdle, with every check of the
+// suite excused.
+func FuzzPaginatedReaderSuiteFetch(f *testing.F) {
+	paginatedreadertest.FuzzPaginatedReaderSuite(
+		f,
+		paginatedreadertest.PaginatedReaderChecks.Fetch.Callable,
+		paginatedReaderIdle,
+	)
+}
+
+// FuzzPaginatedReaderSuiteAdd registers the fuzz target of
+// PaginatedReader.Add on paginatedReaderIdle, with every check of the
+// suite excused.
+func FuzzPaginatedReaderSuiteAdd(f *testing.F) {
+	paginatedreadertest.FuzzPaginatedReaderSuite(
+		f,
+		paginatedreadertest.PaginatedReaderChecks.Add.Callable,
+		paginatedReaderIdle,
+	)
+}
+
+// BenchmarkPaginatedReaderSuite measures each callable of the suite of
+// PaginatedReader on paginatedReaderIdle.
+func BenchmarkPaginatedReaderSuite(b *testing.B) {
+	b.Run("Fetch", func(b *testing.B) {
+		paginatedreadertest.BenchPaginatedReaderSuite(
+			b,
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Callable,
+			paginatedReaderIdle,
+		)
+	})
+	b.Run("Add", func(b *testing.B) {
+		paginatedreadertest.BenchPaginatedReaderSuite(
+			b,
+			paginatedreadertest.PaginatedReaderChecks.Add.Callable,
+			paginatedReaderIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:50676728e4b0606698d7072587acdd9a59d352d5dffcf2492c94cc2691805b08

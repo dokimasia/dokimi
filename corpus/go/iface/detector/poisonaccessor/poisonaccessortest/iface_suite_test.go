@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/poisonaccessor/poisonaccessortest"
 )
 
+// poisonAccessorSubjectEmbedded is poisonaccessor.PoisonAccessor under the
+// name of the field that poisonAccessorSubject embeds.
+type poisonAccessorSubjectEmbedded = poisonaccessor.PoisonAccessor
+
 // poisonAccessorSubject is a value of PoisonAccessor that only
 // TestPoisonAccessorSuite builds.
-type poisonAccessorSubject struct{ poisonaccessor.PoisonAccessor }
+type poisonAccessorSubject struct{ poisonAccessorSubjectEmbedded }
 
 // TestPoisonAccessorSuite checks the suite of PoisonAccessor and the two
 // forms of its application.
@@ -74,4 +78,45 @@ func TestPoisonAccessorSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:188267d09fda699124090c90af3d0c97f993aac129b0f2c7e0a9707ac29e9b1c
+// poisonAccessorIdle returns the planted defect of a ceiling of
+// PoisonAccessor with a spend of nothing, a subject that answers each call
+// at once.
+func poisonAccessorIdle(h *poisonaccessortest.PoisonAccessorHandle) poisonaccessor.PoisonAccessor {
+	return poisonaccessortest.PoisonAccessorSuite().Calls[0].Over(h, func() {})
+}
+
+// TestPoisonAccessorSuiteBudgets applies the allocation ceilings of the
+// suite of PoisonAccessor to poisonAccessorIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestPoisonAccessorSuiteBudgets(t *testing.T) {
+	poisonaccessortest.RunPoisonAccessorBudgets(
+		t,
+		poisonAccessorIdle,
+		conform.Ceilings(poisonaccessortest.PoisonAccessorChecks.Err.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzPoisonAccessorSuiteErr registers the fuzz target of
+// PoisonAccessor.Err on poisonAccessorIdle, with every check of the suite
+// excused.
+func FuzzPoisonAccessorSuiteErr(f *testing.F) {
+	poisonaccessortest.FuzzPoisonAccessorSuite(
+		f,
+		poisonaccessortest.PoisonAccessorChecks.Err.Callable,
+		poisonAccessorIdle,
+	)
+}
+
+// BenchmarkPoisonAccessorSuite measures each callable of the suite of
+// PoisonAccessor on poisonAccessorIdle.
+func BenchmarkPoisonAccessorSuite(b *testing.B) {
+	b.Run("Err", func(b *testing.B) {
+		poisonaccessortest.BenchPoisonAccessorSuite(
+			b,
+			poisonaccessortest.PoisonAccessorChecks.Err.Callable,
+			poisonAccessorIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:246dbb788bb9d72122c9ce8cf09bc70fc3723076051755f2bc5709fae66d3e70

@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher/watchertest"
 )
 
+// contractSubjectEmbedded is watcher.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = watcher.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ watcher.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,53 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ac1ad29be8f6905a838bd3927eec5d876bb12eb765a1cd687075968fbc81719c
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *watchertest.ContractHandle) watcher.Contract {
+	return watchertest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	watchertest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(watchertest.ContractChecks.Watch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(watchertest.ContractChecks.Trigger.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteWatch registers the fuzz target of Contract.Watch on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteWatch(f *testing.F) {
+	watchertest.FuzzContractSuite(
+		f,
+		watchertest.ContractChecks.Watch.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteTrigger registers the fuzz target of Contract.Trigger
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuiteTrigger(f *testing.F) {
+	watchertest.FuzzContractSuite(
+		f,
+		watchertest.ContractChecks.Trigger.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Watch", func(b *testing.B) {
+		watchertest.BenchContractSuite(b, watchertest.ContractChecks.Watch.Callable, contractIdle)
+	})
+	b.Run("Trigger", func(b *testing.B) {
+		watchertest.BenchContractSuite(b, watchertest.ContractChecks.Trigger.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:0866d9c8a20965e2b80defdde8bafb17dd4f88a4306afb8c1ac52048b1559bbf

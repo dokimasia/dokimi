@@ -125,23 +125,6 @@ func BenchRankedSuite[T indexed.Ranked](
 	conform.Bench(b, RankedSuite(), callable, func(h *RankedHandle) indexed.Ranked { return newSubject(h) }, opts...)
 }
 
-// BenchRankedSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchRankedSuiteParallel[T indexed.Ranked](
-	b *testing.B,
-	callable conform.Callable[indexed.Ranked],
-	newSubject func(h *RankedHandle) T,
-	opts ...RankedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		RankedSuite(),
-		callable,
-		func(h *RankedHandle) indexed.Ranked { return newSubject(h) },
-		opts...)
-}
-
 // rankedAddCalls generates the calls of Ranked.Add with the inputs that
 // each case draws.
 var rankedAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, indexed.Ranked) error {
@@ -170,11 +153,15 @@ var rankedAtCalls = prop.Composite(func(c *prop.Case) func(context.Context, inde
 	}
 })
 
+// rankedOverEmbedded is indexed.Ranked under the name of the field that
+// rankedOver embeds.
+type rankedOverEmbedded = indexed.Ranked
+
 // rankedOver is a subject of Ranked whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type rankedOver struct {
-	indexed.Ranked
+	rankedOverEmbedded
 	spend func()
 }
 
@@ -202,4 +189,4 @@ func newRankedOver(_ *RankedHandle, spend func()) indexed.Ranked {
 	return rankedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f3513cd141fe9c4e3588676665a6aeb994601b317bfbbf5229342ec3f2b944d6
+// dokimi:provenance sha256:7dd7813da51312d562417c12e9fd5c2032f852daaabe5646449c63b36c367223

@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/closer/closertest"
 )
 
+// closerSubjectEmbedded is closer.Closer under the name of the field that
+// closerSubject embeds.
+type closerSubjectEmbedded = closer.Closer
+
 // closerSubject is a value of Closer that only TestCloserSuite builds.
-type closerSubject struct{ closer.Closer }
+type closerSubject struct{ closerSubjectEmbedded }
 
 // TestCloserSuite checks the suite of Closer and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestCloserSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ff93acf4730f5edbc5264bb62d2fa2809f21e0911e770c50e6474b0df226fcb3
+// closerIdle returns the planted defect of a ceiling of Closer with a
+// spend of nothing, a subject that answers each call at once.
+func closerIdle(h *closertest.CloserHandle) closer.Closer {
+	return closertest.CloserSuite().Calls[0].Over(h, func() {})
+}
+
+// TestCloserSuiteBudgets applies the allocation ceilings of the suite of
+// Closer to closerIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestCloserSuiteBudgets(t *testing.T) {
+	closertest.RunCloserBudgets(
+		t,
+		closerIdle,
+		conform.Ceilings(closertest.CloserChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzCloserSuiteClose registers the fuzz target of Closer.Close on
+// closerIdle, with every check of the suite excused.
+func FuzzCloserSuiteClose(f *testing.F) {
+	closertest.FuzzCloserSuite(
+		f,
+		closertest.CloserChecks.Close.Callable,
+		closerIdle,
+	)
+}
+
+// BenchmarkCloserSuite measures each callable of the suite of Closer on
+// closerIdle.
+func BenchmarkCloserSuite(b *testing.B) {
+	b.Run("Close", func(b *testing.B) {
+		closertest.BenchCloserSuite(b, closertest.CloserChecks.Close.Callable, closerIdle)
+	})
+}
+
+// dokimi:provenance sha256:183bc58dcbb1f1474df669a6c7b98899d2d3eafe9d2b577e49254b49a74e216b

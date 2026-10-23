@@ -98,18 +98,6 @@ func BenchPureSuite[T pure.Pure](
 	conform.Bench(b, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
 }
 
-// BenchPureSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchPureSuiteParallel[T pure.Pure](
-	b *testing.B,
-	callable conform.Callable[pure.Pure],
-	newSubject func(h *PureHandle) T,
-	opts ...PureOption,
-) {
-	b.Helper()
-	conform.BenchParallel(b, PureSuite(), callable, func(h *PureHandle) pure.Pure { return newSubject(h) }, opts...)
-}
-
 // pureDescribeCalls generates the calls of Pure.Describe with the inputs
 // that each case draws.
 var pureDescribeCalls = prop.Composite(func(*prop.Case) func(context.Context, pure.Pure) error {
@@ -119,11 +107,15 @@ var pureDescribeCalls = prop.Composite(func(*prop.Case) func(context.Context, pu
 	}
 })
 
+// pureOverEmbedded is pure.Pure under the name of the field that pureOver
+// embeds.
+type pureOverEmbedded = pure.Pure
+
 // pureOver is a subject of Pure whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type pureOver struct {
-	pure.Pure
+	pureOverEmbedded
 	spend func()
 }
 
@@ -139,4 +131,4 @@ func newPureOver(_ *PureHandle, spend func()) pure.Pure {
 	return pureOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0c1e4d2a02cf49c08f4b7722a68eef62d6d6528e7ca69ecf4d73111049403a0e
+// dokimi:provenance sha256:aa972912104a90efc753aa632cb53b3651fbcb0c84546886446562c3e7982e76

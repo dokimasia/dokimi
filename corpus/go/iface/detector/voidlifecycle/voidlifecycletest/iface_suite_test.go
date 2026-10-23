@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle/voidlifecycletest"
 )
 
+// voidLifecycleSubjectEmbedded is voidlifecycle.VoidLifecycle under the
+// name of the field that voidLifecycleSubject embeds.
+type voidLifecycleSubjectEmbedded = voidlifecycle.VoidLifecycle
+
 // voidLifecycleSubject is a value of VoidLifecycle that only
 // TestVoidLifecycleSuite builds.
-type voidLifecycleSubject struct{ voidlifecycle.VoidLifecycle }
+type voidLifecycleSubject struct{ voidLifecycleSubjectEmbedded }
 
 // TestVoidLifecycleSuite checks the suite of VoidLifecycle and the two
 // forms of its application.
@@ -74,4 +78,45 @@ func TestVoidLifecycleSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:4366ff1a924d8ee8da53a119aeed306d7b9322cada7e7e18804597202fe93d39
+// voidLifecycleIdle returns the planted defect of a ceiling of
+// VoidLifecycle with a spend of nothing, a subject that answers each call
+// at once.
+func voidLifecycleIdle(h *voidlifecycletest.VoidLifecycleHandle) voidlifecycle.VoidLifecycle {
+	return voidlifecycletest.VoidLifecycleSuite().Calls[0].Over(h, func() {})
+}
+
+// TestVoidLifecycleSuiteBudgets applies the allocation ceilings of the
+// suite of VoidLifecycle to voidLifecycleIdle, and a ceiling of 0 to each
+// callable without a budget whose calls build no input of their own.
+func TestVoidLifecycleSuiteBudgets(t *testing.T) {
+	voidlifecycletest.RunVoidLifecycleBudgets(
+		t,
+		voidLifecycleIdle,
+		conform.Ceilings(voidlifecycletest.VoidLifecycleChecks.Stop.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzVoidLifecycleSuiteStop registers the fuzz target of
+// VoidLifecycle.Stop on voidLifecycleIdle, with every check of the suite
+// excused.
+func FuzzVoidLifecycleSuiteStop(f *testing.F) {
+	voidlifecycletest.FuzzVoidLifecycleSuite(
+		f,
+		voidlifecycletest.VoidLifecycleChecks.Stop.Callable,
+		voidLifecycleIdle,
+	)
+}
+
+// BenchmarkVoidLifecycleSuite measures each callable of the suite of
+// VoidLifecycle on voidLifecycleIdle.
+func BenchmarkVoidLifecycleSuite(b *testing.B) {
+	b.Run("Stop", func(b *testing.B) {
+		voidlifecycletest.BenchVoidLifecycleSuite(
+			b,
+			voidlifecycletest.VoidLifecycleChecks.Stop.Callable,
+			voidLifecycleIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:3aa8b50c5c3131bc3a9d436189f6b1c0f62b800dcd64350cde1a7314e49ee82a

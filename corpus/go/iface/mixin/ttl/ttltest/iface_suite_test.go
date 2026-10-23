@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl/ttltest"
 )
 
+// mixedSubjectEmbedded is ttl.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = ttl.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ ttl.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -85,4 +89,60 @@ func TestMixedSuiteAllocs(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:068e1c157de632280c9de1b464609964ec6c84d6fb68cce87b74098dfe467f41
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *ttltest.MixedHandle) ttl.Mixed {
+	return ttltest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	ttltest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(ttltest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuitePut registers the fuzz target of Mixed.Put on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuitePut(f *testing.F) {
+	ttltest.FuzzMixedSuite(
+		f,
+		ttltest.MixedChecks.Put.Callable,
+		mixedIdle,
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzMixedSuiteRead registers the fuzz target of Mixed.Read on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteRead(f *testing.F) {
+	ttltest.FuzzMixedSuite(
+		f,
+		ttltest.MixedChecks.Read.Callable,
+		mixedIdle,
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		ttltest.BenchMixedSuite(b, ttltest.MixedChecks.Put.Callable, mixedIdle)
+	})
+	b.Run("Read", func(b *testing.B) {
+		ttltest.BenchMixedSuite(b, ttltest.MixedChecks.Read.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:88175045b85b4e0d0fa3bc08302d1d05d6178e87e6d314b335af3d529ecacb81

@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/lifecycleafterclose/lifecycleafterclosetest"
 )
 
+// mixedSubjectEmbedded is lifecycleafterclose.Mixed under the name of the
+// field that mixedSubject embeds.
+type mixedSubjectEmbedded = lifecycleafterclose.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ lifecycleafterclose.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:f8ac6135e4753e7c9b90d3087bc3524f9a7447a5f9653b1d3769f093903148e3
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *lifecycleafterclosetest.MixedHandle) lifecycleafterclose.Mixed {
+	return lifecycleafterclosetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	lifecycleafterclosetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(lifecycleafterclosetest.MixedChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(lifecycleafterclosetest.MixedChecks.Work.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteClose registers the fuzz target of Mixed.Close on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteClose(f *testing.F) {
+	lifecycleafterclosetest.FuzzMixedSuite(
+		f,
+		lifecycleafterclosetest.MixedChecks.Close.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteWork registers the fuzz target of Mixed.Work on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteWork(f *testing.F) {
+	lifecycleafterclosetest.FuzzMixedSuite(
+		f,
+		lifecycleafterclosetest.MixedChecks.Work.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Close", func(b *testing.B) {
+		lifecycleafterclosetest.BenchMixedSuite(b, lifecycleafterclosetest.MixedChecks.Close.Callable, mixedIdle)
+	})
+	b.Run("Work", func(b *testing.B) {
+		lifecycleafterclosetest.BenchMixedSuite(b, lifecycleafterclosetest.MixedChecks.Work.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:9a13f36e005aba592339d9856670d4bd5be8b96b2f0a29c81a91c02efb6b7dec

@@ -137,23 +137,6 @@ func BenchMixedSuite[T eventually.Mixed](
 	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) eventually.Mixed { return newSubject(h) }, opts...)
 }
 
-// BenchMixedSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchMixedSuiteParallel[T eventually.Mixed](
-	b *testing.B,
-	callable conform.Callable[eventually.Mixed],
-	newSubject func(h *MixedHandle) T,
-	opts ...MixedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) eventually.Mixed { return newSubject(h) },
-		opts...)
-}
-
 // mixedPublishCalls generates the calls of Mixed.Publish with the inputs
 // that each case draws.
 var mixedPublishCalls = prop.Composite(func(c *prop.Case) func(context.Context, eventually.Mixed) error {
@@ -239,10 +222,14 @@ var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, even
 	}
 })
 
+// mixedMixedInputEmbedded is Mixed under the name of the field that
+// mixedMixedInput embeds.
+type mixedMixedInputEmbedded = eventually.Mixed
+
 // mixedMixedInput is a Mixed whose methods return the results that the
 // call generators of Mixed draw for them, in turn.
 type mixedMixedInput struct {
-	eventually.Mixed
+	mixedMixedInputEmbedded
 	onPublish func(a0 context.Context, a1 string) error
 	onSettle  func(a0 context.Context) error
 	onSync    func(a0 context.Context, a1 eventually.Mixed) error
@@ -269,11 +256,15 @@ func (in mixedMixedInput) Items(a0 context.Context) ([]string, error) {
 	return in.onItems(a0)
 }
 
+// mixedOverEmbedded is eventually.Mixed under the name of the field that
+// mixedOver embeds.
+type mixedOverEmbedded = eventually.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	eventually.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -307,4 +298,4 @@ func newMixedOver(_ *MixedHandle, spend func()) eventually.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:fffbe38b1054fcb097a6c6d6d970785d8984324d9158e45ed7fdc86c81b63d96
+// dokimi:provenance sha256:685669b222ae13f0941ff16664aba88e5d4254109fccf29b455a43761c50910f

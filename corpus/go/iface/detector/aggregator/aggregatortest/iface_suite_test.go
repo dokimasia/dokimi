@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator/aggregatortest"
 )
 
+// aggregatorSubjectEmbedded is aggregator.Aggregator under the name of the
+// field that aggregatorSubject embeds.
+type aggregatorSubjectEmbedded = aggregator.Aggregator
+
 // aggregatorSubject is a value of Aggregator that only TestAggregatorSuite
 // builds.
-type aggregatorSubject struct{ aggregator.Aggregator }
+type aggregatorSubject struct{ aggregatorSubjectEmbedded }
 
 // TestAggregatorSuite checks the suite of Aggregator and the two forms of
 // its application.
@@ -70,4 +74,39 @@ func TestAggregatorSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:68c8d03009e39b72f335544c98fcf361a897723afe4230ac5d65f5329fdbf52c
+// aggregatorIdle returns the planted defect of a ceiling of Aggregator
+// with a spend of nothing, a subject that answers each call at once.
+func aggregatorIdle(h *aggregatortest.AggregatorHandle) aggregator.Aggregator {
+	return aggregatortest.AggregatorSuite().Calls[0].Over(h, func() {})
+}
+
+// TestAggregatorSuiteBudgets applies the allocation ceilings of the suite
+// of Aggregator to aggregatorIdle, and a ceiling of 0 to each callable
+// without a budget whose calls build no input of their own.
+func TestAggregatorSuiteBudgets(t *testing.T) {
+	aggregatortest.RunAggregatorBudgets(
+		t,
+		aggregatorIdle,
+		conform.Ceilings(aggregatortest.AggregatorChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzAggregatorSuiteCount registers the fuzz target of Aggregator.Count
+// on aggregatorIdle, with every check of the suite excused.
+func FuzzAggregatorSuiteCount(f *testing.F) {
+	aggregatortest.FuzzAggregatorSuite(
+		f,
+		aggregatortest.AggregatorChecks.Count.Callable,
+		aggregatorIdle,
+	)
+}
+
+// BenchmarkAggregatorSuite measures each callable of the suite of
+// Aggregator on aggregatorIdle.
+func BenchmarkAggregatorSuite(b *testing.B) {
+	b.Run("Count", func(b *testing.B) {
+		aggregatortest.BenchAggregatorSuite(b, aggregatortest.AggregatorChecks.Count.Callable, aggregatorIdle)
+	})
+}
+
+// dokimi:provenance sha256:2cd103b5e044f2c8994a2a73d6d6e74b71fc261c2b223fa094b04108d7729ecf

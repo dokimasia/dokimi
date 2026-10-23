@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/seededreader/seededreadertest"
 )
 
+// catalogSubjectEmbedded is seededreader.Catalog under the name of the
+// field that catalogSubject embeds.
+type catalogSubjectEmbedded = seededreader.Catalog
+
 // catalogSubject is a value of Catalog that only TestCatalogSuite builds.
-type catalogSubject struct{ seededreader.Catalog }
+type catalogSubject struct{ catalogSubjectEmbedded }
 
 // TestCatalogSuite checks the suite of Catalog and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestCatalogSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:31537f4e8740b30170ce2c0a8ef180eed98ef65e1c9f73297247fe2e061acd75
+// catalogIdle returns the planted defect of a ceiling of Catalog with a
+// spend of nothing, a subject that answers each call at once.
+func catalogIdle(h *seededreadertest.CatalogHandle) seededreader.Catalog {
+	return seededreadertest.CatalogSuite().Calls[0].Over(h, func() {})
+}
+
+// TestCatalogSuiteBudgets applies the allocation ceilings of the suite of
+// Catalog to catalogIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestCatalogSuiteBudgets(t *testing.T) {
+	seededreadertest.RunCatalogBudgets(
+		t,
+		catalogIdle,
+		conform.Ceilings(seededreadertest.CatalogChecks.Lookup.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(seededreadertest.CatalogChecks.Len.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzCatalogSuiteLookup registers the fuzz target of Catalog.Lookup on
+// catalogIdle, with every check of the suite excused.
+func FuzzCatalogSuiteLookup(f *testing.F) {
+	seededreadertest.FuzzCatalogSuite(
+		f,
+		seededreadertest.CatalogChecks.Lookup.Callable,
+		catalogIdle,
+	)
+}
+
+// FuzzCatalogSuiteLen registers the fuzz target of Catalog.Len on
+// catalogIdle, with every check of the suite excused.
+func FuzzCatalogSuiteLen(f *testing.F) {
+	seededreadertest.FuzzCatalogSuite(
+		f,
+		seededreadertest.CatalogChecks.Len.Callable,
+		catalogIdle,
+	)
+}
+
+// BenchmarkCatalogSuite measures each callable of the suite of Catalog on
+// catalogIdle.
+func BenchmarkCatalogSuite(b *testing.B) {
+	b.Run("Lookup", func(b *testing.B) {
+		seededreadertest.BenchCatalogSuite(b, seededreadertest.CatalogChecks.Lookup.Callable, catalogIdle)
+	})
+	b.Run("Len", func(b *testing.B) {
+		seededreadertest.BenchCatalogSuite(b, seededreadertest.CatalogChecks.Len.Callable, catalogIdle)
+	})
+}
+
+// dokimi:provenance sha256:61b2fc7faf598b2d521c9bc3ae20eb536b9a59fb4cef229115f207dd6cefffb8

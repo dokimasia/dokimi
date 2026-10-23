@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/serializable/serializabletest"
 )
 
+// mixedSubjectEmbedded is serializable.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = serializable.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ serializable.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:506b72fd9cdbe4dc1618e652d2bb0086bc82f4b67a2f4fe5dcec691647b935bc
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *serializabletest.MixedHandle) serializable.Mixed {
+	return serializabletest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	serializabletest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(serializabletest.MixedChecks.Record.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(serializabletest.MixedChecks.History.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(serializabletest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteRecord registers the fuzz target of Mixed.Record on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteRecord(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.Record.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteHistory registers the fuzz target of Mixed.History on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteHistory(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.History.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteGet registers the fuzz target of Mixed.Get on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteGet(f *testing.F) {
+	serializabletest.FuzzMixedSuite(
+		f,
+		serializabletest.MixedChecks.Get.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Record", func(b *testing.B) {
+		serializabletest.BenchMixedSuite(b, serializabletest.MixedChecks.Record.Callable, mixedIdle)
+	})
+	b.Run("History", func(b *testing.B) {
+		serializabletest.BenchMixedSuite(b, serializabletest.MixedChecks.History.Callable, mixedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		serializabletest.BenchMixedSuite(b, serializabletest.MixedChecks.Get.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:a82aa51b5d24450bf93593b097fe5cd3c9569b4996d1f637d5cfc57204df0a3e

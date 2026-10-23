@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/associative/associativetest"
 )
 
+// mixedSubjectEmbedded is associative.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = associative.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ associative.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:2aa63bcb0ad8fe4338b150c0afebcb1fa05f222f6ed3570662449c5eb73e548a
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *associativetest.MixedHandle) associative.Mixed {
+	return associativetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	associativetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(associativetest.MixedChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(associativetest.MixedChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteApply registers the fuzz target of Mixed.Apply on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteApply(f *testing.F) {
+	associativetest.FuzzMixedSuite(
+		f,
+		associativetest.MixedChecks.Apply.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteTotal registers the fuzz target of Mixed.Total on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteTotal(f *testing.F) {
+	associativetest.FuzzMixedSuite(
+		f,
+		associativetest.MixedChecks.Total.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Apply", func(b *testing.B) {
+		associativetest.BenchMixedSuite(b, associativetest.MixedChecks.Apply.Callable, mixedIdle)
+	})
+	b.Run("Total", func(b *testing.B) {
+		associativetest.BenchMixedSuite(b, associativetest.MixedChecks.Total.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:d3f7f79071e8a4776133fef7a6d002ba51423fd039c9b734dcf96ab1e07836db

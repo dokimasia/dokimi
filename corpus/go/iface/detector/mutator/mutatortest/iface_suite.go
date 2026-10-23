@@ -102,23 +102,6 @@ func BenchMutatorSuite[T mutator.Mutator](
 	conform.Bench(b, MutatorSuite(), callable, func(h *MutatorHandle) mutator.Mutator { return newSubject(h) }, opts...)
 }
 
-// BenchMutatorSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchMutatorSuiteParallel[T mutator.Mutator](
-	b *testing.B,
-	callable conform.Callable[mutator.Mutator],
-	newSubject func(h *MutatorHandle) T,
-	opts ...MutatorOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MutatorSuite(),
-		callable,
-		func(h *MutatorHandle) mutator.Mutator { return newSubject(h) },
-		opts...)
-}
-
 // mutatorTouchCalls generates the calls of Mutator.Touch with the inputs
 // that each case draws.
 var mutatorTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, mutator.Mutator) error {
@@ -129,11 +112,15 @@ var mutatorTouchCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 	}
 })
 
+// mutatorOverEmbedded is mutator.Mutator under the name of the field that
+// mutatorOver embeds.
+type mutatorOverEmbedded = mutator.Mutator
+
 // mutatorOver is a subject of Mutator whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type mutatorOver struct {
-	mutator.Mutator
+	mutatorOverEmbedded
 	spend func()
 }
 
@@ -148,4 +135,4 @@ func newMutatorOver(_ *MutatorHandle, spend func()) mutator.Mutator {
 	return mutatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:4a5c5a5b368d350b3d2b898fc506f2ea481d1eec78af0035988785c5db5be914
+// dokimi:provenance sha256:81698f3fbf740f4d339f65b23885df04e60b496c1add0889a5de8cd0c91138b1

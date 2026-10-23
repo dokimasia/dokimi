@@ -113,23 +113,6 @@ func BenchMixedSuite[T ttlperwrite.Mixed](
 	conform.Bench(b, MixedSuite(), callable, func(h *MixedHandle) ttlperwrite.Mixed { return newSubject(h) }, opts...)
 }
 
-// BenchMixedSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchMixedSuiteParallel[T ttlperwrite.Mixed](
-	b *testing.B,
-	callable conform.Callable[ttlperwrite.Mixed],
-	newSubject func(h *MixedHandle) T,
-	opts ...MixedOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MixedSuite(),
-		callable,
-		func(h *MixedHandle) ttlperwrite.Mixed { return newSubject(h) },
-		opts...)
-}
-
 // mixedPutCalls generates the calls of Mixed.Put with the inputs that each
 // case draws.
 var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, ttlperwrite.Mixed) error {
@@ -149,11 +132,15 @@ var mixedReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, ttl
 	}
 })
 
+// mixedOverEmbedded is ttlperwrite.Mixed under the name of the field that
+// mixedOver embeds.
+type mixedOverEmbedded = ttlperwrite.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	ttlperwrite.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -175,4 +162,4 @@ func newMixedOver(_ *MixedHandle, spend func()) ttlperwrite.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:05052a3b99e0d082c7fb74c170b5ecc377361e83b9f06def6b33a87bf519c965
+// dokimi:provenance sha256:29f939a4a827a0b0caa1f876f8969f3ec74940d23f5dfe04dca3c09feed58c71

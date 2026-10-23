@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-redeliver/publisherredelivertest"
 )
 
+// contractSubjectEmbedded is publisherredeliver.Contract under the name of
+// the field that contractSubject embeds.
+type contractSubjectEmbedded = publisherredeliver.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ publisherredeliver.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,90 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c5c37af6eea0ff82349c0f5dc61b94c6684333a3da3c4345d2d4a00f94ca41af
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *publisherredelivertest.ContractHandle) publisherredeliver.Contract {
+	return publisherredelivertest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	publisherredelivertest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(
+			publisherredelivertest.ContractChecks.Publish.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			publisherredelivertest.ContractChecks.Republish.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			publisherredelivertest.ContractChecks.Subscribe.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzContractSuitePublish registers the fuzz target of Contract.Publish
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuitePublish(f *testing.F) {
+	publisherredelivertest.FuzzContractSuite(
+		f,
+		publisherredelivertest.ContractChecks.Publish.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteRepublish registers the fuzz target of
+// Contract.Republish on contractIdle, with every check of the suite
+// excused.
+func FuzzContractSuiteRepublish(f *testing.F) {
+	publisherredelivertest.FuzzContractSuite(
+		f,
+		publisherredelivertest.ContractChecks.Republish.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteSubscribe registers the fuzz target of
+// Contract.Subscribe on contractIdle, with every check of the suite
+// excused.
+func FuzzContractSuiteSubscribe(f *testing.F) {
+	publisherredelivertest.FuzzContractSuite(
+		f,
+		publisherredelivertest.ContractChecks.Subscribe.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Publish", func(b *testing.B) {
+		publisherredelivertest.BenchContractSuite(
+			b,
+			publisherredelivertest.ContractChecks.Publish.Callable,
+			contractIdle,
+		)
+	})
+	b.Run("Republish", func(b *testing.B) {
+		publisherredelivertest.BenchContractSuite(
+			b,
+			publisherredelivertest.ContractChecks.Republish.Callable,
+			contractIdle,
+		)
+	})
+	b.Run("Subscribe", func(b *testing.B) {
+		publisherredelivertest.BenchContractSuite(
+			b,
+			publisherredelivertest.ContractChecks.Subscribe.Callable,
+			contractIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:207879d9931ca736414af46fbdac9151ca532b2ef5c77e858791e8a6db5850dc

@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/roledtypes/roledtypestest"
 )
 
+// storeSubjectEmbedded is roledtypes.Store under the name of the field
+// that storeSubject embeds.
+type storeSubjectEmbedded = roledtypes.Store
+
 // storeSubject is a value of Store that only TestStoreSuite builds.
-type storeSubject struct{ roledtypes.Store }
+type storeSubject struct{ storeSubjectEmbedded }
 
 // TestStoreSuite checks the suite of Store and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestStoreSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:50c1ccd5e0edc74f191598e5ccb6938a9b5d70627e82d13173155ea9fa6b350e
+// storeIdle returns the planted defect of a ceiling of Store with a spend
+// of nothing, a subject that answers each call at once.
+func storeIdle(h *roledtypestest.StoreHandle) roledtypes.Store {
+	return roledtypestest.StoreSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStoreSuiteBudgets applies the allocation ceilings of the suite of
+// Store to storeIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestStoreSuiteBudgets(t *testing.T) {
+	roledtypestest.RunStoreBudgets(
+		t,
+		storeIdle,
+		conform.Ceilings(roledtypestest.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(roledtypestest.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzStoreSuitePut registers the fuzz target of Store.Put on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuitePut(f *testing.F) {
+	roledtypestest.FuzzStoreSuite(
+		f,
+		roledtypestest.StoreChecks.Put.Callable,
+		storeIdle,
+	)
+}
+
+// FuzzStoreSuiteGet registers the fuzz target of Store.Get on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuiteGet(f *testing.F) {
+	roledtypestest.FuzzStoreSuite(
+		f,
+		roledtypestest.StoreChecks.Get.Callable,
+		storeIdle,
+	)
+}
+
+// BenchmarkStoreSuite measures each callable of the suite of Store on
+// storeIdle.
+func BenchmarkStoreSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		roledtypestest.BenchStoreSuite(b, roledtypestest.StoreChecks.Put.Callable, storeIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		roledtypestest.BenchStoreSuite(b, roledtypestest.StoreChecks.Get.Callable, storeIdle)
+	})
+}
+
+// dokimi:provenance sha256:56846e5c1e8e61859f26609d8be51db7b1d60df63441ed7d2dd1174ca5353f79

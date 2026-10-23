@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/restrictedpool/restrictedpooltest"
 )
 
+// storeSubjectEmbedded is restrictedpool.Store under the name of the field
+// that storeSubject embeds.
+type storeSubjectEmbedded = restrictedpool.Store
+
 // storeSubject is a value of Store that only TestStoreSuite builds.
-type storeSubject struct{ restrictedpool.Store }
+type storeSubject struct{ storeSubjectEmbedded }
 
 // TestStoreSuite checks the suite of Store and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestStoreSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c2d34f72b4fa2b1ce6180cf61fbc7db3f6c209efd4bba3a53e8459f3f02ef483
+// storeIdle returns the planted defect of a ceiling of Store with a spend
+// of nothing, a subject that answers each call at once.
+func storeIdle(h *restrictedpooltest.StoreHandle) restrictedpool.Store {
+	return restrictedpooltest.StoreSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStoreSuiteBudgets applies the allocation ceilings of the suite of
+// Store to storeIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestStoreSuiteBudgets(t *testing.T) {
+	restrictedpooltest.RunStoreBudgets(
+		t,
+		storeIdle,
+		conform.Ceilings(restrictedpooltest.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(restrictedpooltest.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzStoreSuitePut registers the fuzz target of Store.Put on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuitePut(f *testing.F) {
+	restrictedpooltest.FuzzStoreSuite(
+		f,
+		restrictedpooltest.StoreChecks.Put.Callable,
+		storeIdle,
+	)
+}
+
+// FuzzStoreSuiteGet registers the fuzz target of Store.Get on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuiteGet(f *testing.F) {
+	restrictedpooltest.FuzzStoreSuite(
+		f,
+		restrictedpooltest.StoreChecks.Get.Callable,
+		storeIdle,
+	)
+}
+
+// BenchmarkStoreSuite measures each callable of the suite of Store on
+// storeIdle.
+func BenchmarkStoreSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		restrictedpooltest.BenchStoreSuite(b, restrictedpooltest.StoreChecks.Put.Callable, storeIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		restrictedpooltest.BenchStoreSuite(b, restrictedpooltest.StoreChecks.Get.Callable, storeIdle)
+	})
+}
+
+// dokimi:provenance sha256:d0018c780a55f1691e20b86ccc64a2a84e8a88661d0f9648b07e62b8dafabff6

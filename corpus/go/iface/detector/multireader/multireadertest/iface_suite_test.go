@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multireader/multireadertest"
 )
 
+// multiReaderSubjectEmbedded is multireader.MultiReader under the name of
+// the field that multiReaderSubject embeds.
+type multiReaderSubjectEmbedded = multireader.MultiReader
+
 // multiReaderSubject is a value of MultiReader that only
 // TestMultiReaderSuite builds.
-type multiReaderSubject struct{ multireader.MultiReader }
+type multiReaderSubject struct{ multiReaderSubjectEmbedded }
 
 // TestMultiReaderSuite checks the suite of MultiReader and the two forms
 // of its application.
@@ -70,4 +74,47 @@ func TestMultiReaderSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:cf2ba8595c9d5cb04d776c87c372a46bf9569054c5f6901f865ef52c1933b45e
+// multiReaderIdle returns the planted defect of a ceiling of MultiReader
+// with a spend of nothing, a subject that answers each call at once.
+func multiReaderIdle(h *multireadertest.MultiReaderHandle) multireader.MultiReader {
+	return multireadertest.MultiReaderSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMultiReaderSuiteBudgets applies the allocation ceilings of the suite
+// of MultiReader to multiReaderIdle, and a ceiling of 0 to each callable
+// without a budget whose calls build no input of their own.
+func TestMultiReaderSuiteBudgets(t *testing.T) {
+	multireadertest.RunMultiReaderBudgets(
+		t,
+		multiReaderIdle,
+		conform.Ceilings(
+			multireadertest.MultiReaderChecks.GetWithMeta.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzMultiReaderSuiteGetWithMeta registers the fuzz target of
+// MultiReader.GetWithMeta on multiReaderIdle, with every check of the
+// suite excused.
+func FuzzMultiReaderSuiteGetWithMeta(f *testing.F) {
+	multireadertest.FuzzMultiReaderSuite(
+		f,
+		multireadertest.MultiReaderChecks.GetWithMeta.Callable,
+		multiReaderIdle,
+	)
+}
+
+// BenchmarkMultiReaderSuite measures each callable of the suite of
+// MultiReader on multiReaderIdle.
+func BenchmarkMultiReaderSuite(b *testing.B) {
+	b.Run("GetWithMeta", func(b *testing.B) {
+		multireadertest.BenchMultiReaderSuite(
+			b,
+			multireadertest.MultiReaderChecks.GetWithMeta.Callable,
+			multiReaderIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:28675b144b198d2b74e1a9708146efe3b3006171fc55a44c5adb2b5b55659305

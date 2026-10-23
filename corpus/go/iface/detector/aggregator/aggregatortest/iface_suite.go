@@ -121,24 +121,6 @@ func BenchAggregatorSuite[T aggregator.Aggregator](
 		opts...)
 }
 
-// BenchAggregatorSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchAggregatorSuiteParallel[T aggregator.Aggregator](
-	b *testing.B,
-	callable conform.Callable[aggregator.Aggregator],
-	newSubject func(h *AggregatorHandle) T,
-	opts ...AggregatorOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		AggregatorSuite(),
-		callable,
-		func(h *AggregatorHandle) aggregator.Aggregator { return newSubject(h) },
-		opts...)
-}
-
 // aggregatorCountCalls generates the calls of Aggregator.Count with the
 // inputs that each case draws.
 var aggregatorCountCalls = prop.Composite(func(*prop.Case) func(context.Context, aggregator.Aggregator) error {
@@ -148,11 +130,15 @@ var aggregatorCountCalls = prop.Composite(func(*prop.Case) func(context.Context,
 	}
 })
 
+// aggregatorOverEmbedded is aggregator.Aggregator under the name of the
+// field that aggregatorOver embeds.
+type aggregatorOverEmbedded = aggregator.Aggregator
+
 // aggregatorOver is a subject of Aggregator whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type aggregatorOver struct {
-	aggregator.Aggregator
+	aggregatorOverEmbedded
 	spend func()
 }
 
@@ -168,4 +154,4 @@ func newAggregatorOver(_ *AggregatorHandle, spend func()) aggregator.Aggregator 
 	return aggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f23379dea175b2b5c8919068aa5aa8878b4696ac696366c4f40c811bea8ffd03
+// dokimi:provenance sha256:51eb6818cfde021d777dea58f069db8ca8c3c8f5e0b3a9a8d397c56e5a8bed8f

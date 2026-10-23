@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter/deletertest"
 )
 
+// deleterSubjectEmbedded is deleter.Deleter under the name of the field
+// that deleterSubject embeds.
+type deleterSubjectEmbedded = deleter.Deleter
+
 // deleterSubject is a value of Deleter that only TestDeleterSuite builds.
-type deleterSubject struct{ deleter.Deleter }
+type deleterSubject struct{ deleterSubjectEmbedded }
 
 // TestDeleterSuite checks the suite of Deleter and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestDeleterSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:24473d70d79a246c73225570c6ff070ad6298e83d184f3271c7aacd269ef6e68
+// deleterIdle returns the planted defect of a ceiling of Deleter with a
+// spend of nothing, a subject that answers each call at once.
+func deleterIdle(h *deletertest.DeleterHandle) deleter.Deleter {
+	return deletertest.DeleterSuite().Calls[0].Over(h, func() {})
+}
+
+// TestDeleterSuiteBudgets applies the allocation ceilings of the suite of
+// Deleter to deleterIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestDeleterSuiteBudgets(t *testing.T) {
+	deletertest.RunDeleterBudgets(
+		t,
+		deleterIdle,
+		conform.Ceilings(deletertest.DeleterChecks.Delete.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzDeleterSuiteDelete registers the fuzz target of Deleter.Delete on
+// deleterIdle, with every check of the suite excused.
+func FuzzDeleterSuiteDelete(f *testing.F) {
+	deletertest.FuzzDeleterSuite(
+		f,
+		deletertest.DeleterChecks.Delete.Callable,
+		deleterIdle,
+	)
+}
+
+// BenchmarkDeleterSuite measures each callable of the suite of Deleter on
+// deleterIdle.
+func BenchmarkDeleterSuite(b *testing.B) {
+	b.Run("Delete", func(b *testing.B) {
+		deletertest.BenchDeleterSuite(b, deletertest.DeleterChecks.Delete.Callable, deleterIdle)
+	})
+}
+
+// dokimi:provenance sha256:896d43b05d5bd305a60583e72125e6b0464519a6eddb1de13a9849b6ba5e4dfe

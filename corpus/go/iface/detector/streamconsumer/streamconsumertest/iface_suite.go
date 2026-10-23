@@ -130,24 +130,6 @@ func BenchStreamConsumerSuite[T streamconsumer.StreamConsumer](
 		opts...)
 }
 
-// BenchStreamConsumerSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchStreamConsumerSuiteParallel[T streamconsumer.StreamConsumer](
-	b *testing.B,
-	callable conform.Callable[streamconsumer.StreamConsumer],
-	newSubject func(h *StreamConsumerHandle) T,
-	opts ...StreamConsumerOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		StreamConsumerSuite(),
-		callable,
-		func(h *StreamConsumerHandle) streamconsumer.StreamConsumer { return newSubject(h) },
-		opts...)
-}
-
 // streamConsumerIngestCalls generates the calls of StreamConsumer.Ingest
 // with the inputs that each case draws.
 var streamConsumerIngestCalls = prop.Composite(
@@ -185,10 +167,14 @@ var streamConsumerIngestCalls = prop.Composite(
 	},
 )
 
+// streamConsumerSourceInputEmbedded is Source under the name of the field
+// that streamConsumerSourceInput embeds.
+type streamConsumerSourceInputEmbedded = streamconsumer.Source
+
 // streamConsumerSourceInput is a Source whose methods return the results
 // that the call generators of StreamConsumer draw for them, in turn.
 type streamConsumerSourceInput struct {
-	streamconsumer.Source
+	streamConsumerSourceInputEmbedded
 	onNext func(a0 context.Context) (streamconsumer.Value, bool, error)
 }
 
@@ -197,11 +183,15 @@ func (in streamConsumerSourceInput) Next(a0 context.Context) (streamconsumer.Val
 	return in.onNext(a0)
 }
 
+// streamConsumerOverEmbedded is streamconsumer.StreamConsumer under the
+// name of the field that streamConsumerOver embeds.
+type streamConsumerOverEmbedded = streamconsumer.StreamConsumer
+
 // streamConsumerOver is a subject of StreamConsumer whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type streamConsumerOver struct {
-	streamconsumer.StreamConsumer
+	streamConsumerOverEmbedded
 	spend func()
 }
 
@@ -217,4 +207,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9285e345908b7dfc9cf27e76ad11428c0ebf7ee605975a76b51091a9946b7826
+// dokimi:provenance sha256:d52fb247a5106d3c642a7a9d0a7e2c3fadb1f0fbb6f1e190f89f8caafdc761af

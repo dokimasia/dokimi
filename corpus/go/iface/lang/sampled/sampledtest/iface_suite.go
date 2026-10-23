@@ -120,23 +120,6 @@ func BenchLabellerSuite[T sampled.Labeller](
 		opts...)
 }
 
-// BenchLabellerSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchLabellerSuiteParallel[T sampled.Labeller](
-	b *testing.B,
-	callable conform.Callable[sampled.Labeller],
-	newSubject func(h *LabellerHandle) T,
-	opts ...LabellerOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		LabellerSuite(),
-		callable,
-		func(h *LabellerHandle) sampled.Labeller { return newSubject(h) },
-		opts...)
-}
-
 // labellerApplyCalls generates the calls of Labeller.Apply with the inputs
 // that each case draws.
 var labellerApplyCalls = prop.Composite(func(c *prop.Case) func(context.Context, sampled.Labeller) error {
@@ -167,11 +150,15 @@ var labellerLevelValues = prop.Composite(func(c *prop.Case) sampled.Level {
 	return sampled.NewTestLevel()
 })
 
+// labellerOverEmbedded is sampled.Labeller under the name of the field
+// that labellerOver embeds.
+type labellerOverEmbedded = sampled.Labeller
+
 // labellerOver is a subject of Labeller whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type labellerOver struct {
-	sampled.Labeller
+	labellerOverEmbedded
 	spend func()
 }
 
@@ -187,4 +174,4 @@ func newLabellerOver(_ *LabellerHandle, spend func()) sampled.Labeller {
 	return labellerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6829879191dd82ed190ae24eb5b306919688f1dcaa599e902fddc75db0a2639b
+// dokimi:provenance sha256:07990d0a2e9b96431894002f45b727bf6b3ffb8ccb08d628d1a34e17e54cb0a9

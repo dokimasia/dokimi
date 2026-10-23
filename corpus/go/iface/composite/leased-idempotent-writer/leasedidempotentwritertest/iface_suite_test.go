@@ -13,11 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer/leasedidempotentwritertest"
 )
 
+// leasedWriterSubjectEmbedded is leasedidempotentwriter.LeasedWriter under
+// the name of the field that leasedWriterSubject embeds.
+type leasedWriterSubjectEmbedded = leasedidempotentwriter.LeasedWriter
+
 // leasedWriterSubject is a value of LeasedWriter that only
 // TestLeasedWriterSuite builds.
-type leasedWriterSubject struct {
-	leasedidempotentwriter.LeasedWriter
-}
+type leasedWriterSubject struct{ leasedWriterSubjectEmbedded }
 
 // TestLeasedWriterSuite checks the suite of LeasedWriter and the two forms
 // of its application.
@@ -76,4 +78,69 @@ func TestLeasedWriterSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:cdcd43141a568746b90f235ce36b76975f1b59f0118e8f72fa247826b60a9a58
+// leasedWriterIdle returns the planted defect of a ceiling of LeasedWriter
+// with a spend of nothing, a subject that answers each call at once.
+func leasedWriterIdle(h *leasedidempotentwritertest.LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
+	return leasedidempotentwritertest.LeasedWriterSuite().Calls[0].Over(h, func() {})
+}
+
+// TestLeasedWriterSuiteBudgets applies the allocation ceilings of the
+// suite of LeasedWriter to leasedWriterIdle, and a ceiling of 0 to each
+// callable without a budget whose calls build no input of their own.
+func TestLeasedWriterSuiteBudgets(t *testing.T) {
+	leasedidempotentwritertest.RunLeasedWriterBudgets(
+		t,
+		leasedWriterIdle,
+		conform.Ceilings(
+			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+		conform.Ceilings(
+			leasedidempotentwritertest.LeasedWriterChecks.Release.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzLeasedWriterSuiteAcquire registers the fuzz target of
+// LeasedWriter.Acquire on leasedWriterIdle, with every check of the suite
+// excused.
+func FuzzLeasedWriterSuiteAcquire(f *testing.F) {
+	leasedidempotentwritertest.FuzzLeasedWriterSuite(
+		f,
+		leasedidempotentwritertest.LeasedWriterChecks.Acquire.Callable,
+		leasedWriterIdle,
+	)
+}
+
+// FuzzLeasedWriterSuiteRelease registers the fuzz target of
+// LeasedWriter.Release on leasedWriterIdle, with every check of the suite
+// excused.
+func FuzzLeasedWriterSuiteRelease(f *testing.F) {
+	leasedidempotentwritertest.FuzzLeasedWriterSuite(
+		f,
+		leasedidempotentwritertest.LeasedWriterChecks.Release.Callable,
+		leasedWriterIdle,
+	)
+}
+
+// BenchmarkLeasedWriterSuite measures each callable of the suite of
+// LeasedWriter on leasedWriterIdle.
+func BenchmarkLeasedWriterSuite(b *testing.B) {
+	b.Run("Acquire", func(b *testing.B) {
+		leasedidempotentwritertest.BenchLeasedWriterSuite(
+			b,
+			leasedidempotentwritertest.LeasedWriterChecks.Acquire.Callable,
+			leasedWriterIdle,
+		)
+	})
+	b.Run("Release", func(b *testing.B) {
+		leasedidempotentwritertest.BenchLeasedWriterSuite(
+			b,
+			leasedidempotentwritertest.LeasedWriterChecks.Release.Callable,
+			leasedWriterIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:ebb6db06b0e00e59871876f2c8044fce4f8353b831be5ba1aaf764fbf1c787e0

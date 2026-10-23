@@ -129,24 +129,6 @@ func BenchCompositeWriterSuite[T compositewriter.CompositeWriter](
 		opts...)
 }
 
-// BenchCompositeWriterSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchCompositeWriterSuiteParallel[T compositewriter.CompositeWriter](
-	b *testing.B,
-	callable conform.Callable[compositewriter.CompositeWriter],
-	newSubject func(h *CompositeWriterHandle) T,
-	opts ...CompositeWriterOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		CompositeWriterSuite(),
-		callable,
-		func(h *CompositeWriterHandle) compositewriter.CompositeWriter { return newSubject(h) },
-		opts...)
-}
-
 // compositeWriterSetCalls generates the calls of CompositeWriter.Set with
 // the inputs that each case draws.
 var compositeWriterSetCalls = prop.Composite(
@@ -159,11 +141,15 @@ var compositeWriterSetCalls = prop.Composite(
 	},
 )
 
+// compositeWriterOverEmbedded is compositewriter.CompositeWriter under the
+// name of the field that compositeWriterOver embeds.
+type compositeWriterOverEmbedded = compositewriter.CompositeWriter
+
 // compositeWriterOver is a subject of CompositeWriter whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type compositeWriterOver struct {
-	compositewriter.CompositeWriter
+	compositeWriterOverEmbedded
 	spend func()
 }
 
@@ -179,4 +165,4 @@ func newCompositeWriterOver(_ *CompositeWriterHandle, spend func()) compositewri
 	return compositeWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:769f7ee51f2e0687ab1f2c13c45127614bd77836938821fddc6988106cd7da2c
+// dokimi:provenance sha256:326001d756a2d11e941e9dcf5153292472143b0bcdc03e8fe1ee753c30a37af6

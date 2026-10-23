@@ -98,23 +98,6 @@ func BenchLookupSuite[T lookup.Lookup](
 	conform.Bench(b, LookupSuite(), callable, func(h *LookupHandle) lookup.Lookup { return newSubject(h) }, opts...)
 }
 
-// BenchLookupSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchLookupSuiteParallel[T lookup.Lookup](
-	b *testing.B,
-	callable conform.Callable[lookup.Lookup],
-	newSubject func(h *LookupHandle) T,
-	opts ...LookupOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		LookupSuite(),
-		callable,
-		func(h *LookupHandle) lookup.Lookup { return newSubject(h) },
-		opts...)
-}
-
 // lookupInspectCalls generates the calls of Lookup.Inspect with the inputs
 // that each case draws.
 var lookupInspectCalls = prop.Composite(func(c *prop.Case) func(context.Context, lookup.Lookup) error {
@@ -125,11 +108,15 @@ var lookupInspectCalls = prop.Composite(func(c *prop.Case) func(context.Context,
 	}
 })
 
+// lookupOverEmbedded is lookup.Lookup under the name of the field that
+// lookupOver embeds.
+type lookupOverEmbedded = lookup.Lookup
+
 // lookupOver is a subject of Lookup whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type lookupOver struct {
-	lookup.Lookup
+	lookupOverEmbedded
 	spend func()
 }
 
@@ -145,4 +132,4 @@ func newLookupOver(_ *LookupHandle, spend func()) lookup.Lookup {
 	return lookupOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8ef06a41d3c690fe11c28356643371f893fedf102396ae9c7b1f463d17a4e741
+// dokimi:provenance sha256:b9180f2ca60d5b0ba404ccc0dc70a1743174cf3faffaa16b849b02d23f9dec62

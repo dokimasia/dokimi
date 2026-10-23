@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/defaultonerror/defaultonerrortest"
 )
 
+// mixedSubjectEmbedded is defaultonerror.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = defaultonerror.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ defaultonerror.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:eb23471eb3a09393076ace7f970a5888f3c0010e575101e38288609d966f11c1
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *defaultonerrortest.MixedHandle) defaultonerror.Mixed {
+	return defaultonerrortest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	defaultonerrortest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(defaultonerrortest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(defaultonerrortest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteStore registers the fuzz target of Mixed.Store on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteStore(f *testing.F) {
+	defaultonerrortest.FuzzMixedSuite(
+		f,
+		defaultonerrortest.MixedChecks.Store.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteGet registers the fuzz target of Mixed.Get on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteGet(f *testing.F) {
+	defaultonerrortest.FuzzMixedSuite(
+		f,
+		defaultonerrortest.MixedChecks.Get.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		defaultonerrortest.BenchMixedSuite(b, defaultonerrortest.MixedChecks.Store.Callable, mixedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		defaultonerrortest.BenchMixedSuite(b, defaultonerrortest.MixedChecks.Get.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:44bdaa2d4af8b321b6f5b3c6efa0c045677ca3bd1af05783fb221b8a5a58bb6e

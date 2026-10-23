@@ -142,24 +142,6 @@ func BenchLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
 		opts...)
 }
 
-// BenchLeasedWriterSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchLeasedWriterSuiteParallel[T leasedidempotentwriter.LeasedWriter](
-	b *testing.B,
-	callable conform.Callable[leasedidempotentwriter.LeasedWriter],
-	newSubject func(h *LeasedWriterHandle) T,
-	opts ...LeasedWriterOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		LeasedWriterSuite(),
-		callable,
-		func(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter { return newSubject(h) },
-		opts...)
-}
-
 // leasedWriterAcquireCalls generates the calls of LeasedWriter.Acquire
 // with the inputs that each case draws.
 var leasedWriterAcquireCalls = prop.Composite(
@@ -182,11 +164,15 @@ var leasedWriterReleaseCalls = prop.Composite(
 	},
 )
 
+// leasedWriterOverEmbedded is leasedidempotentwriter.LeasedWriter under
+// the name of the field that leasedWriterOver embeds.
+type leasedWriterOverEmbedded = leasedidempotentwriter.LeasedWriter
+
 // leasedWriterOver is a subject of LeasedWriter whose callables call spend
 // and return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type leasedWriterOver struct {
-	leasedidempotentwriter.LeasedWriter
+	leasedWriterOverEmbedded
 	spend func()
 }
 
@@ -208,4 +194,4 @@ func newLeasedWriterOver(_ *LeasedWriterHandle, spend func()) leasedidempotentwr
 	return leasedWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:4c368aa98cc1b1915a1f7030a4c87919bd67210f2336f08a4a2cd562d08ab029
+// dokimi:provenance sha256:fe6c3ba9b75cc33b6e89eb836b067de998cbd33a818640e5b252ef903475a245

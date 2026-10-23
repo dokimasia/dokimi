@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation/permutationtest"
 )
 
+// mixedSubjectEmbedded is permutation.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = permutation.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ permutation.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:3d43f4af5631825ee839bce681d2fe36aa9b7283c6665d991bc019f9e87c2339
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *permutationtest.MixedHandle) permutation.Mixed {
+	return permutationtest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	permutationtest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(permutationtest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(permutationtest.MixedChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteAdd registers the fuzz target of Mixed.Add on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteAdd(f *testing.F) {
+	permutationtest.FuzzMixedSuite(
+		f,
+		permutationtest.MixedChecks.Add.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteItems registers the fuzz target of Mixed.Items on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteItems(f *testing.F) {
+	permutationtest.FuzzMixedSuite(
+		f,
+		permutationtest.MixedChecks.Items.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		permutationtest.BenchMixedSuite(b, permutationtest.MixedChecks.Add.Callable, mixedIdle)
+	})
+	b.Run("Items", func(b *testing.B) {
+		permutationtest.BenchMixedSuite(b, permutationtest.MixedChecks.Items.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:ec0a9e6417ccff9298e5b57ceaa2a098c0dd945dadd8ff31423f9cd05e043901

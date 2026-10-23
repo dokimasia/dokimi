@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain/causalchaintest"
 )
 
+// logSubjectEmbedded is causalchain.Log under the name of the field that
+// logSubject embeds.
+type logSubjectEmbedded = causalchain.Log
+
 // logSubject is a value of Log that only TestLogSuite builds.
-type logSubject struct{ causalchain.Log }
+type logSubject struct{ logSubjectEmbedded }
 
 // TestLogSuite checks the suite of Log and the two forms of its
 // application.
@@ -85,4 +89,68 @@ func TestLogSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:898f2164c6df34c37a21f6c67bf002169c0f635eb793464a0b54c761e9644e01
+// logIdle returns the planted defect of a ceiling of Log with a spend of
+// nothing, a subject that answers each call at once.
+func logIdle(h *causalchaintest.LogHandle) causalchain.Log {
+	return causalchaintest.LogSuite().Calls[0].Over(h, func() {})
+}
+
+// TestLogSuiteBudgets applies the allocation ceilings of the suite of Log
+// to logIdle, and a ceiling of 0 to each callable without a budget whose
+// calls build no input of their own.
+func TestLogSuiteBudgets(t *testing.T) {
+	causalchaintest.RunLogBudgets(
+		t,
+		logIdle,
+		conform.Ceilings(causalchaintest.LogChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(causalchaintest.LogChecks.Replay.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzLogSuiteAppend registers the fuzz target of Log.Append on logIdle,
+// with every check of the suite excused.
+func FuzzLogSuiteAppend(f *testing.F) {
+	causalchaintest.FuzzLogSuite(
+		f,
+		causalchaintest.LogChecks.Append.Callable,
+		logIdle,
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsTheBody(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzLogSuiteReplay registers the fuzz target of Log.Replay on logIdle,
+// with every check of the suite excused.
+func FuzzLogSuiteReplay(f *testing.F) {
+	causalchaintest.FuzzLogSuite(
+		f,
+		causalchaintest.LogChecks.Replay.Callable,
+		logIdle,
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsTheBody(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkLogSuite measures each callable of the suite of Log on logIdle.
+func BenchmarkLogSuite(b *testing.B) {
+	b.Run("Append", func(b *testing.B) {
+		causalchaintest.BenchLogSuite(b, causalchaintest.LogChecks.Append.Callable, logIdle)
+	})
+	b.Run("Replay", func(b *testing.B) {
+		causalchaintest.BenchLogSuite(b, causalchaintest.LogChecks.Replay.Callable, logIdle)
+	})
+}
+
+// dokimi:provenance sha256:5418447100520cc5c38efee59386d70d64d9511778febcdf66b0996643a90b5f

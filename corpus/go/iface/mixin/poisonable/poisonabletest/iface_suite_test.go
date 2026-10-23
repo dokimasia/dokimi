@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/poisonable/poisonabletest"
 )
 
+// mixedSubjectEmbedded is poisonable.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = poisonable.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ poisonable.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:d5ae89efcd9967fec4dafff0104ad62456f6971130b262ec9f545568003e10c7
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *poisonabletest.MixedHandle) poisonable.Mixed {
+	return poisonabletest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	poisonabletest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(poisonabletest.MixedChecks.Fail.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(poisonabletest.MixedChecks.Probe.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteFail registers the fuzz target of Mixed.Fail on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteFail(f *testing.F) {
+	poisonabletest.FuzzMixedSuite(
+		f,
+		poisonabletest.MixedChecks.Fail.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteProbe registers the fuzz target of Mixed.Probe on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteProbe(f *testing.F) {
+	poisonabletest.FuzzMixedSuite(
+		f,
+		poisonabletest.MixedChecks.Probe.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Fail", func(b *testing.B) {
+		poisonabletest.BenchMixedSuite(b, poisonabletest.MixedChecks.Fail.Callable, mixedIdle)
+	})
+	b.Run("Probe", func(b *testing.B) {
+		poisonabletest.BenchMixedSuite(b, poisonabletest.MixedChecks.Probe.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:8b7b89b9e597ddcaae4a22ed38e75665559885d1b305264279cd3cf405831cb0

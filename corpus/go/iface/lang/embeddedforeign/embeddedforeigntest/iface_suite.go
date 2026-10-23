@@ -129,23 +129,6 @@ func BenchStreamSuite[T embeddedforeign.Stream](
 		opts...)
 }
 
-// BenchStreamSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchStreamSuiteParallel[T embeddedforeign.Stream](
-	b *testing.B,
-	callable conform.Callable[embeddedforeign.Stream],
-	newSubject func(h *StreamHandle) T,
-	opts ...StreamOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		StreamSuite(),
-		callable,
-		func(h *StreamHandle) embeddedforeign.Stream { return newSubject(h) },
-		opts...)
-}
-
 // streamReadCalls generates the calls of Stream.Read with the inputs that
 // each case draws.
 var streamReadCalls = prop.Composite(func(c *prop.Case) func(context.Context, embeddedforeign.Stream) error {
@@ -164,11 +147,15 @@ var streamCloseCalls = prop.Composite(func(*prop.Case) func(context.Context, emb
 	}
 })
 
+// streamOverEmbedded is embeddedforeign.Stream under the name of the field
+// that streamOver embeds.
+type streamOverEmbedded = embeddedforeign.Stream
+
 // streamOver is a subject of Stream whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type streamOver struct {
-	embeddedforeign.Stream
+	streamOverEmbedded
 	spend func()
 }
 
@@ -190,4 +177,4 @@ func newStreamOver(_ *StreamHandle, spend func()) embeddedforeign.Stream {
 	return streamOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5c9bcb923e6d6dc9a3cfbd6bf0776633fa796832ac21ca0d46bae8e8df0ead22
+// dokimi:provenance sha256:dba4654c26f9ea43dd4230a67af373db71300112b36f67b778ce485ac6a2db46

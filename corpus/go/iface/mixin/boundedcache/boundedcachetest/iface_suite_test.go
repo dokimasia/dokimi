@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/boundedcache/boundedcachetest"
 )
 
+// mixedSubjectEmbedded is boundedcache.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = boundedcache.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ boundedcache.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:1774ef133159a72035252ed4a64a9c1811ba38c3c6bf45f96349170a4726ac6d
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *boundedcachetest.MixedHandle) boundedcache.Mixed {
+	return boundedcachetest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	boundedcachetest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(boundedcachetest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(boundedcachetest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(boundedcachetest.MixedChecks.Len.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuitePut registers the fuzz target of Mixed.Put on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuitePut(f *testing.F) {
+	boundedcachetest.FuzzMixedSuite(
+		f,
+		boundedcachetest.MixedChecks.Put.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteGet registers the fuzz target of Mixed.Get on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteGet(f *testing.F) {
+	boundedcachetest.FuzzMixedSuite(
+		f,
+		boundedcachetest.MixedChecks.Get.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteLen registers the fuzz target of Mixed.Len on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteLen(f *testing.F) {
+	boundedcachetest.FuzzMixedSuite(
+		f,
+		boundedcachetest.MixedChecks.Len.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		boundedcachetest.BenchMixedSuite(b, boundedcachetest.MixedChecks.Put.Callable, mixedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		boundedcachetest.BenchMixedSuite(b, boundedcachetest.MixedChecks.Get.Callable, mixedIdle)
+	})
+	b.Run("Len", func(b *testing.B) {
+		boundedcachetest.BenchMixedSuite(b, boundedcachetest.MixedChecks.Len.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:ac2de9ad8dcd87378def46ada769c92a66ed382e7c279f61746683f1dfbfcb20

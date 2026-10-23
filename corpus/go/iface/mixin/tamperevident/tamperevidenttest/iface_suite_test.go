@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/tamperevident/tamperevidenttest"
 )
 
+// mixedSubjectEmbedded is tamperevident.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = tamperevident.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ tamperevident.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ea7925cd9cf8154a51edd84ee5109d94aba614d6dc9c2e262ea9532650c90041
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *tamperevidenttest.MixedHandle) tamperevident.Mixed {
+	return tamperevidenttest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	tamperevidenttest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(tamperevidenttest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(tamperevidenttest.MixedChecks.Corrupt.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(tamperevidenttest.MixedChecks.Verify.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteStore registers the fuzz target of Mixed.Store on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteStore(f *testing.F) {
+	tamperevidenttest.FuzzMixedSuite(
+		f,
+		tamperevidenttest.MixedChecks.Store.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteCorrupt registers the fuzz target of Mixed.Corrupt on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteCorrupt(f *testing.F) {
+	tamperevidenttest.FuzzMixedSuite(
+		f,
+		tamperevidenttest.MixedChecks.Corrupt.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteVerify registers the fuzz target of Mixed.Verify on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteVerify(f *testing.F) {
+	tamperevidenttest.FuzzMixedSuite(
+		f,
+		tamperevidenttest.MixedChecks.Verify.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		tamperevidenttest.BenchMixedSuite(b, tamperevidenttest.MixedChecks.Store.Callable, mixedIdle)
+	})
+	b.Run("Corrupt", func(b *testing.B) {
+		tamperevidenttest.BenchMixedSuite(b, tamperevidenttest.MixedChecks.Corrupt.Callable, mixedIdle)
+	})
+	b.Run("Verify", func(b *testing.B) {
+		tamperevidenttest.BenchMixedSuite(b, tamperevidenttest.MixedChecks.Verify.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:83c3c3e8fe24e102b2f477c2bcf8ad34c514e7fcfc48fb20e80d25f2099090ea

@@ -129,24 +129,6 @@ func BenchPointerReaderSuite[T pointerreader.PointerReader](
 		opts...)
 }
 
-// BenchPointerReaderSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchPointerReaderSuiteParallel[T pointerreader.PointerReader](
-	b *testing.B,
-	callable conform.Callable[pointerreader.PointerReader],
-	newSubject func(h *PointerReaderHandle) T,
-	opts ...PointerReaderOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		PointerReaderSuite(),
-		callable,
-		func(h *PointerReaderHandle) pointerreader.PointerReader { return newSubject(h) },
-		opts...)
-}
-
 // pointerReaderFindCalls generates the calls of PointerReader.Find with
 // the inputs that each case draws.
 var pointerReaderFindCalls = prop.Composite(
@@ -159,11 +141,15 @@ var pointerReaderFindCalls = prop.Composite(
 	},
 )
 
+// pointerReaderOverEmbedded is pointerreader.PointerReader under the name
+// of the field that pointerReaderOver embeds.
+type pointerReaderOverEmbedded = pointerreader.PointerReader
+
 // pointerReaderOver is a subject of PointerReader whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type pointerReaderOver struct {
-	pointerreader.PointerReader
+	pointerReaderOverEmbedded
 	spend func()
 }
 
@@ -179,4 +165,4 @@ func newPointerReaderOver(_ *PointerReaderHandle, spend func()) pointerreader.Po
 	return pointerReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:28c77c206fa02e33ece0621a96e18dc93df6445710f8b48a05cb9e402f1f4ad5
+// dokimi:provenance sha256:1ac60b988f4cfbea5d03f3e9757bae0abbaa2eb8ca35c5b775443a7e7c515fc7

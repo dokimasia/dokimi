@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/noduplicates/noduplicatestest"
 )
 
+// mixedSubjectEmbedded is noduplicates.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = noduplicates.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ noduplicates.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:373972ab07fe981b981492aac9eb0877d6be90b181b73e8f4da42b618c3dff89
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *noduplicatestest.MixedHandle) noduplicates.Mixed {
+	return noduplicatestest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	noduplicatestest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(noduplicatestest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(noduplicatestest.MixedChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteAdd registers the fuzz target of Mixed.Add on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteAdd(f *testing.F) {
+	noduplicatestest.FuzzMixedSuite(
+		f,
+		noduplicatestest.MixedChecks.Add.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteItems registers the fuzz target of Mixed.Items on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteItems(f *testing.F) {
+	noduplicatestest.FuzzMixedSuite(
+		f,
+		noduplicatestest.MixedChecks.Items.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		noduplicatestest.BenchMixedSuite(b, noduplicatestest.MixedChecks.Add.Callable, mixedIdle)
+	})
+	b.Run("Items", func(b *testing.B) {
+		noduplicatestest.BenchMixedSuite(b, noduplicatestest.MixedChecks.Items.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:b27afe61ed728b19748f80d5c4323e03ddd1ad6418b97cee4a414143ab8eed7f

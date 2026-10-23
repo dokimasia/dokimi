@@ -132,23 +132,6 @@ func BenchCatalogSuite[T seededreader.Catalog](
 		opts...)
 }
 
-// BenchCatalogSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchCatalogSuiteParallel[T seededreader.Catalog](
-	b *testing.B,
-	callable conform.Callable[seededreader.Catalog],
-	newSubject func(h *CatalogHandle) T,
-	opts ...CatalogOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		CatalogSuite(),
-		callable,
-		func(h *CatalogHandle) seededreader.Catalog { return newSubject(h) },
-		opts...)
-}
-
 // catalogLookupCalls generates the calls of Catalog.Lookup with the inputs
 // that each case draws.
 var catalogLookupCalls = prop.Composite(func(c *prop.Case) func(context.Context, seededreader.Catalog) error {
@@ -178,11 +161,15 @@ var catalogKeyValues = prop.Composite(func(c *prop.Case) seededreader.Key {
 	return "test-doc"
 })
 
+// catalogOverEmbedded is seededreader.Catalog under the name of the field
+// that catalogOver embeds.
+type catalogOverEmbedded = seededreader.Catalog
+
 // catalogOver is a subject of Catalog whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type catalogOver struct {
-	seededreader.Catalog
+	catalogOverEmbedded
 	spend func()
 }
 
@@ -204,4 +191,4 @@ func newCatalogOver(_ *CatalogHandle, spend func()) seededreader.Catalog {
 	return catalogOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8abcd58737d891e861e0cc186cd259e1805ae51c2d5a64ba35803798d36cc1c6
+// dokimi:provenance sha256:0e6c6abfa1f51068bd5dce91801fd75696062faa474c8e23e0479acd137d1312

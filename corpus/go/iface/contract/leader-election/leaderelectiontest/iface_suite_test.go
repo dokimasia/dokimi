@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/leader-election/leaderelectiontest"
 )
 
+// contractSubjectEmbedded is leaderelection.Contract under the name of the
+// field that contractSubject embeds.
+type contractSubjectEmbedded = leaderelection.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ leaderelection.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,67 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:c389b8b5a0c168f529608a3e4311c5d407ad5b76b1b94cc8063d8ef880b3982f
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *leaderelectiontest.ContractHandle) leaderelection.Contract {
+	return leaderelectiontest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	leaderelectiontest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(leaderelectiontest.ContractChecks.Campaign.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(leaderelectiontest.ContractChecks.Resign.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(leaderelectiontest.ContractChecks.IsLeader.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteCampaign registers the fuzz target of Contract.Campaign
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuiteCampaign(f *testing.F) {
+	leaderelectiontest.FuzzContractSuite(
+		f,
+		leaderelectiontest.ContractChecks.Campaign.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteResign registers the fuzz target of Contract.Resign on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteResign(f *testing.F) {
+	leaderelectiontest.FuzzContractSuite(
+		f,
+		leaderelectiontest.ContractChecks.Resign.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteIsLeader registers the fuzz target of Contract.IsLeader
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuiteIsLeader(f *testing.F) {
+	leaderelectiontest.FuzzContractSuite(
+		f,
+		leaderelectiontest.ContractChecks.IsLeader.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Campaign", func(b *testing.B) {
+		leaderelectiontest.BenchContractSuite(b, leaderelectiontest.ContractChecks.Campaign.Callable, contractIdle)
+	})
+	b.Run("Resign", func(b *testing.B) {
+		leaderelectiontest.BenchContractSuite(b, leaderelectiontest.ContractChecks.Resign.Callable, contractIdle)
+	})
+	b.Run("IsLeader", func(b *testing.B) {
+		leaderelectiontest.BenchContractSuite(b, leaderelectiontest.ContractChecks.IsLeader.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:c0df31263980c46b3f22cb78212435b587e21c5041102170e9fa8bede720b4ff

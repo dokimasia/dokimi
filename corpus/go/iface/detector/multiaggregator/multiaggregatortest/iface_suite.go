@@ -129,24 +129,6 @@ func BenchMultiAggregatorSuite[T multiaggregator.MultiAggregator](
 		opts...)
 }
 
-// BenchMultiAggregatorSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchMultiAggregatorSuiteParallel[T multiaggregator.MultiAggregator](
-	b *testing.B,
-	callable conform.Callable[multiaggregator.MultiAggregator],
-	newSubject func(h *MultiAggregatorHandle) T,
-	opts ...MultiAggregatorOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		MultiAggregatorSuite(),
-		callable,
-		func(h *MultiAggregatorHandle) multiaggregator.MultiAggregator { return newSubject(h) },
-		opts...)
-}
-
 // multiAggregatorStatsCalls generates the calls of MultiAggregator.Stats
 // with the inputs that each case draws.
 var multiAggregatorStatsCalls = prop.Composite(
@@ -158,11 +140,15 @@ var multiAggregatorStatsCalls = prop.Composite(
 	},
 )
 
+// multiAggregatorOverEmbedded is multiaggregator.MultiAggregator under the
+// name of the field that multiAggregatorOver embeds.
+type multiAggregatorOverEmbedded = multiaggregator.MultiAggregator
+
 // multiAggregatorOver is a subject of MultiAggregator whose callables call
 // spend and return their zero results. The planted defect of a ceiling
 // passes a spend that exceeds the ceiling.
 type multiAggregatorOver struct {
-	multiaggregator.MultiAggregator
+	multiAggregatorOverEmbedded
 	spend func()
 }
 
@@ -178,4 +164,4 @@ func newMultiAggregatorOver(_ *MultiAggregatorHandle, spend func()) multiaggrega
 	return multiAggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:753915c9ea673c14537304f71a407df0c5e717ae381bb211b5397e19c3d93502
+// dokimi:provenance sha256:e9684973a5a77655d4a20460dcddae8c72a550fd0335338edc8979efab6695a2

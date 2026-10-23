@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/validates/validatestest"
 )
 
+// mixedSubjectEmbedded is validates.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = validates.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ validates.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,67 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b6b24cc7eb7ee3fe2e710797a137359ee64433a11c0a72736f561350dd799a44
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *validatestest.MixedHandle) validates.Mixed {
+	return validatestest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	validatestest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(validatestest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(validatestest.MixedChecks.Validate.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(validatestest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteStore registers the fuzz target of Mixed.Store on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteStore(f *testing.F) {
+	validatestest.FuzzMixedSuite(
+		f,
+		validatestest.MixedChecks.Store.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteValidate registers the fuzz target of Mixed.Validate on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteValidate(f *testing.F) {
+	validatestest.FuzzMixedSuite(
+		f,
+		validatestest.MixedChecks.Validate.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteRead registers the fuzz target of Mixed.Read on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteRead(f *testing.F) {
+	validatestest.FuzzMixedSuite(
+		f,
+		validatestest.MixedChecks.Read.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		validatestest.BenchMixedSuite(b, validatestest.MixedChecks.Store.Callable, mixedIdle)
+	})
+	b.Run("Validate", func(b *testing.B) {
+		validatestest.BenchMixedSuite(b, validatestest.MixedChecks.Validate.Callable, mixedIdle)
+	})
+	b.Run("Read", func(b *testing.B) {
+		validatestest.BenchMixedSuite(b, validatestest.MixedChecks.Read.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:bfa9a232fdc76f3586ad733cdd4bda4327dcfab72d486f068944c5cc9d636a6a

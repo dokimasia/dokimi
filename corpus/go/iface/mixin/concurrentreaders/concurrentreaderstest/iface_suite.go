@@ -161,11 +161,15 @@ var mixedPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, conc
 	}
 })
 
+// mixedOverEmbedded is concurrentreaders.Mixed under the name of the field
+// that mixedOver embeds.
+type mixedOverEmbedded = concurrentreaders.Mixed
+
 // mixedOver is a subject of Mixed whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type mixedOver struct {
-	concurrentreaders.Mixed
+	mixedOverEmbedded
 	spend func()
 }
 
@@ -187,4 +191,4 @@ func newMixedOver(_ *MixedHandle, spend func()) concurrentreaders.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:dfb7c5f01d4eb1fb061a1137e1b7d20add1ec0287ace6a5aaf4bbb5dcea7e06f
+// dokimi:provenance sha256:1c7aa3ae5c1dea0ed4a1762bffb08020ccab792aee7ef638f309ee3693a54aee

@@ -147,24 +147,6 @@ func BenchCalculatorSuite[T nocontext.Calculator](
 		opts...)
 }
 
-// BenchCalculatorSuiteParallel measures callable on a subject of
-// newSubject on GOMAXPROCS goroutines at once, under the ceilings of its
-// budget.
-func BenchCalculatorSuiteParallel[T nocontext.Calculator](
-	b *testing.B,
-	callable conform.Callable[nocontext.Calculator],
-	newSubject func(h *CalculatorHandle) T,
-	opts ...CalculatorOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		CalculatorSuite(),
-		callable,
-		func(h *CalculatorHandle) nocontext.Calculator { return newSubject(h) },
-		opts...)
-}
-
 // calculatorAddCalls generates the calls of Calculator.Add with the inputs
 // that each case draws.
 var calculatorAddCalls = prop.Composite(func(c *prop.Case) func(context.Context, nocontext.Calculator) error {
@@ -196,11 +178,15 @@ var calculatorResetCalls = prop.Composite(func(*prop.Case) func(context.Context,
 	}
 })
 
+// calculatorOverEmbedded is nocontext.Calculator under the name of the
+// field that calculatorOver embeds.
+type calculatorOverEmbedded = nocontext.Calculator
+
 // calculatorOver is a subject of Calculator whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type calculatorOver struct {
-	nocontext.Calculator
+	calculatorOverEmbedded
 	spend func()
 }
 
@@ -227,4 +213,4 @@ func newCalculatorOver(_ *CalculatorHandle, spend func()) nocontext.Calculator {
 	return calculatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ebaf78eb49e66978a4b4dec9264c406b7f60b0b4014934ecad49ba91b314db5b
+// dokimi:provenance sha256:c89a0bff68fd2d696a63a335605345f71cce6052b6ae1a933934545407e19a11

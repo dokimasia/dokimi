@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/saga/sagatest"
 )
 
+// contractSubjectEmbedded is saga.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = saga.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ saga.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,96 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a70c76b24b5b7dc0ee8c22968fe32940e92812a6bde5c2685f6e539913ece3aa
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *sagatest.ContractHandle) saga.Contract {
+	return sagatest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	sagatest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(sagatest.ContractChecks.Step.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(sagatest.ContractChecks.Compensate.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(sagatest.ContractChecks.Ship.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(sagatest.ContractChecks.UndoShip.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(sagatest.ContractChecks.State.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteStep registers the fuzz target of Contract.Step on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteStep(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.Step.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteCompensate registers the fuzz target of
+// Contract.Compensate on contractIdle, with every check of the suite
+// excused.
+func FuzzContractSuiteCompensate(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.Compensate.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteShip registers the fuzz target of Contract.Ship on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteShip(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.Ship.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteUndoShip registers the fuzz target of Contract.UndoShip
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuiteUndoShip(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.UndoShip.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteState registers the fuzz target of Contract.State on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteState(f *testing.F) {
+	sagatest.FuzzContractSuite(
+		f,
+		sagatest.ContractChecks.State.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Step", func(b *testing.B) {
+		sagatest.BenchContractSuite(b, sagatest.ContractChecks.Step.Callable, contractIdle)
+	})
+	b.Run("Compensate", func(b *testing.B) {
+		sagatest.BenchContractSuite(b, sagatest.ContractChecks.Compensate.Callable, contractIdle)
+	})
+	b.Run("Ship", func(b *testing.B) {
+		sagatest.BenchContractSuite(b, sagatest.ContractChecks.Ship.Callable, contractIdle)
+	})
+	b.Run("UndoShip", func(b *testing.B) {
+		sagatest.BenchContractSuite(b, sagatest.ContractChecks.UndoShip.Callable, contractIdle)
+	})
+	b.Run("State", func(b *testing.B) {
+		sagatest.BenchContractSuite(b, sagatest.ContractChecks.State.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:a9a569794bbcff85423ce283bb79cd4ea35e3e49a72b76516c1075dfc54e5173

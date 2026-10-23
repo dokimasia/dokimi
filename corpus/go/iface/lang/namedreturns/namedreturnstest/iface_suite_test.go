@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns/namedreturnstest"
 )
 
+// serviceSubjectEmbedded is namedreturns.Service under the name of the
+// field that serviceSubject embeds.
+type serviceSubjectEmbedded = namedreturns.Service
+
 // serviceSubject is a value of Service that only TestServiceSuite builds.
-type serviceSubject struct{ namedreturns.Service }
+type serviceSubject struct{ serviceSubjectEmbedded }
 
 // TestServiceSuite checks the suite of Service and the two forms of its
 // application.
@@ -69,4 +73,71 @@ func TestServiceSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7b9598632c4e852e4142532a66eb99c020ec561c0c720442bb3d14fb2f8a89e1
+// serviceIdle returns the planted defect of a ceiling of Service with a
+// spend of nothing, a subject that answers each call at once.
+func serviceIdle(h *namedreturnstest.ServiceHandle) namedreturns.Service {
+	return namedreturnstest.ServiceSuite().Calls[0].Over(h, func() {})
+}
+
+// TestServiceSuiteBudgets applies the allocation ceilings of the suite of
+// Service to serviceIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestServiceSuiteBudgets(t *testing.T) {
+	namedreturnstest.RunServiceBudgets(
+		t,
+		serviceIdle,
+		conform.Ceilings(namedreturnstest.ServiceChecks.Named.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(namedreturnstest.ServiceChecks.Unnamed.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
+			conform.Budget{Allocs: new(uint64(0))},
+		),
+	)
+}
+
+// FuzzServiceSuiteNamed registers the fuzz target of Service.Named on
+// serviceIdle, with every check of the suite excused.
+func FuzzServiceSuiteNamed(f *testing.F) {
+	namedreturnstest.FuzzServiceSuite(
+		f,
+		namedreturnstest.ServiceChecks.Named.Callable,
+		serviceIdle,
+	)
+}
+
+// FuzzServiceSuiteUnnamed registers the fuzz target of Service.Unnamed on
+// serviceIdle, with every check of the suite excused.
+func FuzzServiceSuiteUnnamed(f *testing.F) {
+	namedreturnstest.FuzzServiceSuite(
+		f,
+		namedreturnstest.ServiceChecks.Unnamed.Callable,
+		serviceIdle,
+	)
+}
+
+// FuzzServiceSuitePartiallyNamed registers the fuzz target of
+// Service.PartiallyNamed on serviceIdle, with every check of the suite
+// excused.
+func FuzzServiceSuitePartiallyNamed(f *testing.F) {
+	namedreturnstest.FuzzServiceSuite(
+		f,
+		namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
+		serviceIdle,
+	)
+}
+
+// BenchmarkServiceSuite measures each callable of the suite of Service on
+// serviceIdle.
+func BenchmarkServiceSuite(b *testing.B) {
+	b.Run("Named", func(b *testing.B) {
+		namedreturnstest.BenchServiceSuite(b, namedreturnstest.ServiceChecks.Named.Callable, serviceIdle)
+	})
+	b.Run("Unnamed", func(b *testing.B) {
+		namedreturnstest.BenchServiceSuite(b, namedreturnstest.ServiceChecks.Unnamed.Callable, serviceIdle)
+	})
+	b.Run("PartiallyNamed", func(b *testing.B) {
+		namedreturnstest.BenchServiceSuite(b, namedreturnstest.ServiceChecks.PartiallyNamed.Callable, serviceIdle)
+	})
+}
+
+// dokimi:provenance sha256:ce0314c0312177aba4023ca326e29e70699aa024f8937ca7fccce4e6858e32be

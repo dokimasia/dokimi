@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/stableorder/stableordertest"
 )
 
+// mixedSubjectEmbedded is stableorder.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = stableorder.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ stableorder.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:814b18103234517d105981a3f15355602fc406a824e4f2da8a763d6d4c2c721a
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *stableordertest.MixedHandle) stableorder.Mixed {
+	return stableordertest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	stableordertest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(stableordertest.MixedChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(stableordertest.MixedChecks.Items.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteAdd registers the fuzz target of Mixed.Add on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteAdd(f *testing.F) {
+	stableordertest.FuzzMixedSuite(
+		f,
+		stableordertest.MixedChecks.Add.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteItems registers the fuzz target of Mixed.Items on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteItems(f *testing.F) {
+	stableordertest.FuzzMixedSuite(
+		f,
+		stableordertest.MixedChecks.Items.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		stableordertest.BenchMixedSuite(b, stableordertest.MixedChecks.Add.Callable, mixedIdle)
+	})
+	b.Run("Items", func(b *testing.B) {
+		stableordertest.BenchMixedSuite(b, stableordertest.MixedChecks.Items.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:ee29c358db31c43a60000a949235d5345db952122acc2d8621ecde5deaed5565

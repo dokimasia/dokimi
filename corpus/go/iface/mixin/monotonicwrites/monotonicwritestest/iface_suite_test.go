@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonicwrites/monotonicwritestest"
 )
 
+// mixedSubjectEmbedded is monotonicwrites.Mixed under the name of the
+// field that mixedSubject embeds.
+type mixedSubjectEmbedded = monotonicwrites.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ monotonicwrites.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:9af68c3b576bae9734e6755e1f538fe9b8fe74a7d28ccec2401ab84bca7855ee
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *monotonicwritestest.MixedHandle) monotonicwrites.Mixed {
+	return monotonicwritestest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	monotonicwritestest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(monotonicwritestest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(monotonicwritestest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteStore registers the fuzz target of Mixed.Store on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteStore(f *testing.F) {
+	monotonicwritestest.FuzzMixedSuite(
+		f,
+		monotonicwritestest.MixedChecks.Store.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteGet registers the fuzz target of Mixed.Get on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteGet(f *testing.F) {
+	monotonicwritestest.FuzzMixedSuite(
+		f,
+		monotonicwritestest.MixedChecks.Get.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		monotonicwritestest.BenchMixedSuite(b, monotonicwritestest.MixedChecks.Store.Callable, mixedIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		monotonicwritestest.BenchMixedSuite(b, monotonicwritestest.MixedChecks.Get.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:2f632ff525d99725b5e129d3b4e3c63034db4d45306fa4732217cccf4ea8771f

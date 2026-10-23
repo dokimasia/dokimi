@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia/wrappedviatest"
 )
 
+// mixedSubjectEmbedded is wrappedvia.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = wrappedvia.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ wrappedvia.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ea7bcc690b4d3cd09ec5a7dd342eb45740ff843e98e5e9d052fc4d955a00a143
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *wrappedviatest.MixedHandle) wrappedvia.Mixed {
+	return wrappedviatest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	wrappedviatest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(wrappedviatest.MixedChecks.Open.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(wrappedviatest.MixedChecks.Cause.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteOpen registers the fuzz target of Mixed.Open on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteOpen(f *testing.F) {
+	wrappedviatest.FuzzMixedSuite(
+		f,
+		wrappedviatest.MixedChecks.Open.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteCause registers the fuzz target of Mixed.Cause on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteCause(f *testing.F) {
+	wrappedviatest.FuzzMixedSuite(
+		f,
+		wrappedviatest.MixedChecks.Cause.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Open", func(b *testing.B) {
+		wrappedviatest.BenchMixedSuite(b, wrappedviatest.MixedChecks.Open.Callable, mixedIdle)
+	})
+	b.Run("Cause", func(b *testing.B) {
+		wrappedviatest.BenchMixedSuite(b, wrappedviatest.MixedChecks.Cause.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:1fdf918d48d93350e319f3e6bb93cd8cde02f86df56529fadc8315cf352ba6e3

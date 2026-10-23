@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotent/idempotenttest"
 )
 
+// mixedSubjectEmbedded is idempotent.Mixed under the name of the field
+// that mixedSubject embeds.
+type mixedSubjectEmbedded = idempotent.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ idempotent.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:f5ece478c5591b0d328eef239458e86da82209887ed4213ffca4cbede6147a24
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *idempotenttest.MixedHandle) idempotent.Mixed {
+	return idempotenttest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	idempotenttest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(idempotenttest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(idempotenttest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuitePut registers the fuzz target of Mixed.Put on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuitePut(f *testing.F) {
+	idempotenttest.FuzzMixedSuite(
+		f,
+		idempotenttest.MixedChecks.Put.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteRead registers the fuzz target of Mixed.Read on mixedIdle,
+// with every check of the suite excused.
+func FuzzMixedSuiteRead(f *testing.F) {
+	idempotenttest.FuzzMixedSuite(
+		f,
+		idempotenttest.MixedChecks.Read.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		idempotenttest.BenchMixedSuite(b, idempotenttest.MixedChecks.Put.Callable, mixedIdle)
+	})
+	b.Run("Read", func(b *testing.B) {
+		idempotenttest.BenchMixedSuite(b, idempotenttest.MixedChecks.Read.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:7eb67c5508ce15bad4b30226d0405bec3c3c2f2875aff019367de31762a1fc04

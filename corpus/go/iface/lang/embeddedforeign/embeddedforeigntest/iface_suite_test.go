@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign/embeddedforeigntest"
 )
 
+// streamSubjectEmbedded is embeddedforeign.Stream under the name of the
+// field that streamSubject embeds.
+type streamSubjectEmbedded = embeddedforeign.Stream
+
 // streamSubject is a value of Stream that only TestStreamSuite builds.
-type streamSubject struct{ embeddedforeign.Stream }
+type streamSubject struct{ streamSubjectEmbedded }
 
 // TestStreamSuite checks the suite of Stream and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestStreamSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7e968df63b197e1b6cdc2d5fef208ccb85311f7d9de42d9e930dca4c86a32383
+// streamIdle returns the planted defect of a ceiling of Stream with a
+// spend of nothing, a subject that answers each call at once.
+func streamIdle(h *embeddedforeigntest.StreamHandle) embeddedforeign.Stream {
+	return embeddedforeigntest.StreamSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStreamSuiteBudgets applies the allocation ceilings of the suite of
+// Stream to streamIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestStreamSuiteBudgets(t *testing.T) {
+	embeddedforeigntest.RunStreamBudgets(
+		t,
+		streamIdle,
+		conform.Ceilings(embeddedforeigntest.StreamChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(embeddedforeigntest.StreamChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzStreamSuiteRead registers the fuzz target of Stream.Read on
+// streamIdle, with every check of the suite excused.
+func FuzzStreamSuiteRead(f *testing.F) {
+	embeddedforeigntest.FuzzStreamSuite(
+		f,
+		embeddedforeigntest.StreamChecks.Read.Callable,
+		streamIdle,
+	)
+}
+
+// FuzzStreamSuiteClose registers the fuzz target of Stream.Close on
+// streamIdle, with every check of the suite excused.
+func FuzzStreamSuiteClose(f *testing.F) {
+	embeddedforeigntest.FuzzStreamSuite(
+		f,
+		embeddedforeigntest.StreamChecks.Close.Callable,
+		streamIdle,
+	)
+}
+
+// BenchmarkStreamSuite measures each callable of the suite of Stream on
+// streamIdle.
+func BenchmarkStreamSuite(b *testing.B) {
+	b.Run("Read", func(b *testing.B) {
+		embeddedforeigntest.BenchStreamSuite(b, embeddedforeigntest.StreamChecks.Read.Callable, streamIdle)
+	})
+	b.Run("Close", func(b *testing.B) {
+		embeddedforeigntest.BenchStreamSuite(b, embeddedforeigntest.StreamChecks.Close.Callable, streamIdle)
+	})
+}
+
+// dokimi:provenance sha256:be2200814ce63da3a32a206de5397d944c242d6dfdc8173dae4ae17bccbf48ad

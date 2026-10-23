@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/upserter/upsertertest"
 )
 
+// contractSubjectEmbedded is upserter.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = upserter.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ upserter.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,53 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:7c6976fc2e4b6a1b0a6454ab9d8220229a697a2549ecb6e12c63cdc11106a8ee
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *upsertertest.ContractHandle) upserter.Contract {
+	return upsertertest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	upsertertest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(upsertertest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(upsertertest.ContractChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuitePut registers the fuzz target of Contract.Put on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuitePut(f *testing.F) {
+	upsertertest.FuzzContractSuite(
+		f,
+		upsertertest.ContractChecks.Put.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteGet registers the fuzz target of Contract.Get on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteGet(f *testing.F) {
+	upsertertest.FuzzContractSuite(
+		f,
+		upsertertest.ContractChecks.Get.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		upsertertest.BenchContractSuite(b, upsertertest.ContractChecks.Put.Callable, contractIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		upsertertest.BenchContractSuite(b, upsertertest.ContractChecks.Get.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:00652d70fdcb46654e487dcdeb5f3513b98f400bec91fccf2294a93fbf0df105

@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/appender/appendertest"
 )
 
+// contractSubjectEmbedded is appender.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = appender.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ appender.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,39 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:75156736fb6d6760f607900a75f454a8c7c821fc5ee25caccfd06e6198c4fa9f
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *appendertest.ContractHandle) appender.Contract {
+	return appendertest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	appendertest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(appendertest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteRun registers the fuzz target of Contract.Run on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteRun(f *testing.F) {
+	appendertest.FuzzContractSuite(
+		f,
+		appendertest.ContractChecks.Run.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Run", func(b *testing.B) {
+		appendertest.BenchContractSuite(b, appendertest.ContractChecks.Run.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:6c2a149cf4b0df755c5ab9fd630c0472865be008be3895f70a3fb33f8ffb483f

@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher/publishertest"
 )
 
+// contractSubjectEmbedded is publisher.Contract under the name of the
+// field that contractSubject embeds.
+type contractSubjectEmbedded = publisher.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ publisher.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,54 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:07b15951d01e18beb484303221140b87534a5ce698fbbdf49376159b6e690f5c
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *publishertest.ContractHandle) publisher.Contract {
+	return publishertest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	publishertest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(publishertest.ContractChecks.Publish.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(publishertest.ContractChecks.Subscribe.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuitePublish registers the fuzz target of Contract.Publish
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuitePublish(f *testing.F) {
+	publishertest.FuzzContractSuite(
+		f,
+		publishertest.ContractChecks.Publish.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteSubscribe registers the fuzz target of
+// Contract.Subscribe on contractIdle, with every check of the suite
+// excused.
+func FuzzContractSuiteSubscribe(f *testing.F) {
+	publishertest.FuzzContractSuite(
+		f,
+		publishertest.ContractChecks.Subscribe.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Publish", func(b *testing.B) {
+		publishertest.BenchContractSuite(b, publishertest.ContractChecks.Publish.Callable, contractIdle)
+	})
+	b.Run("Subscribe", func(b *testing.B) {
+		publishertest.BenchContractSuite(b, publishertest.ContractChecks.Subscribe.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:973cf7f899566b8fe5ab0c9883418d4447bc1b0e849e0622fd2d21bfcc9cfd5d

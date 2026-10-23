@@ -13,10 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/genericbound/genericboundtest"
 )
 
+// rankedSubjectEmbedded is genericbound.Ranked[int, genericbound.Score]
+// under the name of the field that rankedSubject embeds.
+type rankedSubjectEmbedded = genericbound.Ranked[int, genericbound.Score]
+
 // rankedSubject is a value of Ranked that only TestRankedSuite builds.
-type rankedSubject struct {
-	genericbound.Ranked[int, genericbound.Score]
-}
+type rankedSubject struct{ rankedSubjectEmbedded }
 
 // TestRankedSuite checks the suite of Ranked and the two forms of its
 // application.
@@ -87,4 +89,53 @@ func TestRankedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:56afae3ba5f41de61eaac022522c2bfc66aa12f5131c9db477d2c00e2ee5e3eb
+// rankedIdle returns the planted defect of a ceiling of Ranked with a
+// spend of nothing, a subject that answers each call at once.
+func rankedIdle(h *genericboundtest.RankedHandle) genericbound.Ranked[int, genericbound.Score] {
+	return genericboundtest.RankedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestRankedSuiteBudgets applies the allocation ceilings of the suite of
+// Ranked to rankedIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestRankedSuiteBudgets(t *testing.T) {
+	genericboundtest.RunRankedBudgets(
+		t,
+		rankedIdle,
+		conform.Ceilings(genericboundtest.RankedChecks.Rank.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(genericboundtest.RankedChecks.Reset.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzRankedSuiteRank registers the fuzz target of Ranked.Rank on
+// rankedIdle, with every check of the suite excused.
+func FuzzRankedSuiteRank(f *testing.F) {
+	genericboundtest.FuzzRankedSuite(
+		f,
+		genericboundtest.RankedChecks.Rank.Callable,
+		rankedIdle,
+	)
+}
+
+// FuzzRankedSuiteReset registers the fuzz target of Ranked.Reset on
+// rankedIdle, with every check of the suite excused.
+func FuzzRankedSuiteReset(f *testing.F) {
+	genericboundtest.FuzzRankedSuite(
+		f,
+		genericboundtest.RankedChecks.Reset.Callable,
+		rankedIdle,
+	)
+}
+
+// BenchmarkRankedSuite measures each callable of the suite of Ranked on
+// rankedIdle.
+func BenchmarkRankedSuite(b *testing.B) {
+	b.Run("Rank", func(b *testing.B) {
+		genericboundtest.BenchRankedSuite(b, genericboundtest.RankedChecks.Rank.Callable, rankedIdle)
+	})
+	b.Run("Reset", func(b *testing.B) {
+		genericboundtest.BenchRankedSuite(b, genericboundtest.RankedChecks.Reset.Callable, rankedIdle)
+	})
+}
+
+// dokimi:provenance sha256:f5b94248e953280edcdf7b77a7565dfbd2639701958cdbcfa87e6ba5eca272c7

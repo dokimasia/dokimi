@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/tx/txtest"
 )
 
+// contractSubjectEmbedded is tx.Contract under the name of the field that
+// contractSubject embeds.
+type contractSubjectEmbedded = tx.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ tx.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,95 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:f873299098f9c5225ad6321a470055bda4736d1512195cfcde78e8dc26ec529e
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *txtest.ContractHandle) tx.Contract {
+	return txtest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	txtest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(txtest.ContractChecks.Begin.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(txtest.ContractChecks.Commit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(txtest.ContractChecks.Rollback.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(txtest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(txtest.ContractChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteBegin registers the fuzz target of Contract.Begin on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteBegin(f *testing.F) {
+	txtest.FuzzContractSuite(
+		f,
+		txtest.ContractChecks.Begin.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteCommit registers the fuzz target of Contract.Commit on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteCommit(f *testing.F) {
+	txtest.FuzzContractSuite(
+		f,
+		txtest.ContractChecks.Commit.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteRollback registers the fuzz target of Contract.Rollback
+// on contractIdle, with every check of the suite excused.
+func FuzzContractSuiteRollback(f *testing.F) {
+	txtest.FuzzContractSuite(
+		f,
+		txtest.ContractChecks.Rollback.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuitePut registers the fuzz target of Contract.Put on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuitePut(f *testing.F) {
+	txtest.FuzzContractSuite(
+		f,
+		txtest.ContractChecks.Put.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteGet registers the fuzz target of Contract.Get on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteGet(f *testing.F) {
+	txtest.FuzzContractSuite(
+		f,
+		txtest.ContractChecks.Get.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Begin", func(b *testing.B) {
+		txtest.BenchContractSuite(b, txtest.ContractChecks.Begin.Callable, contractIdle)
+	})
+	b.Run("Commit", func(b *testing.B) {
+		txtest.BenchContractSuite(b, txtest.ContractChecks.Commit.Callable, contractIdle)
+	})
+	b.Run("Rollback", func(b *testing.B) {
+		txtest.BenchContractSuite(b, txtest.ContractChecks.Rollback.Callable, contractIdle)
+	})
+	b.Run("Put", func(b *testing.B) {
+		txtest.BenchContractSuite(b, txtest.ContractChecks.Put.Callable, contractIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		txtest.BenchContractSuite(b, txtest.ContractChecks.Get.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:595e76d0a5a94833dbd497c3885147a03ebd3f979d4612cabfca080ed295bea5

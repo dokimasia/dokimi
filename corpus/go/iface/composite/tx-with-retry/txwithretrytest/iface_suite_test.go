@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry/txwithretrytest"
 )
 
+// txWithRetrySubjectEmbedded is txwithretry.TxWithRetry under the name of
+// the field that txWithRetrySubject embeds.
+type txWithRetrySubjectEmbedded = txwithretry.TxWithRetry
+
 // txWithRetrySubject is a value of TxWithRetry that only
 // TestTxWithRetrySuite builds.
-type txWithRetrySubject struct{ txwithretry.TxWithRetry }
+type txWithRetrySubject struct{ txWithRetrySubjectEmbedded }
 
 // TestTxWithRetrySuite checks the suite of TxWithRetry and the two forms
 // of its application.
@@ -70,4 +74,69 @@ func TestTxWithRetrySuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:2e22a4d3b049d390eb3b4267f21661ae2f35d1544f267db0d8e2a64b11ad0072
+// txWithRetryIdle returns the planted defect of a ceiling of TxWithRetry
+// with a spend of nothing, a subject that answers each call at once.
+func txWithRetryIdle(h *txwithretrytest.TxWithRetryHandle) txwithretry.TxWithRetry {
+	return txwithretrytest.TxWithRetrySuite().Calls[0].Over(h, func() {})
+}
+
+// TestTxWithRetrySuiteBudgets applies the allocation ceilings of the suite
+// of TxWithRetry to txWithRetryIdle, and a ceiling of 0 to each callable
+// without a budget whose calls build no input of their own.
+func TestTxWithRetrySuiteBudgets(t *testing.T) {
+	txwithretrytest.RunTxWithRetryBudgets(
+		t,
+		txWithRetryIdle,
+		conform.Ceilings(txwithretrytest.TxWithRetryChecks.Begin.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(txwithretrytest.TxWithRetryChecks.Commit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(txwithretrytest.TxWithRetryChecks.Rollback.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzTxWithRetrySuiteBegin registers the fuzz target of TxWithRetry.Begin
+// on txWithRetryIdle, with every check of the suite excused.
+func FuzzTxWithRetrySuiteBegin(f *testing.F) {
+	txwithretrytest.FuzzTxWithRetrySuite(
+		f,
+		txwithretrytest.TxWithRetryChecks.Begin.Callable,
+		txWithRetryIdle,
+	)
+}
+
+// FuzzTxWithRetrySuiteCommit registers the fuzz target of
+// TxWithRetry.Commit on txWithRetryIdle, with every check of the suite
+// excused.
+func FuzzTxWithRetrySuiteCommit(f *testing.F) {
+	txwithretrytest.FuzzTxWithRetrySuite(
+		f,
+		txwithretrytest.TxWithRetryChecks.Commit.Callable,
+		txWithRetryIdle,
+	)
+}
+
+// FuzzTxWithRetrySuiteRollback registers the fuzz target of
+// TxWithRetry.Rollback on txWithRetryIdle, with every check of the suite
+// excused.
+func FuzzTxWithRetrySuiteRollback(f *testing.F) {
+	txwithretrytest.FuzzTxWithRetrySuite(
+		f,
+		txwithretrytest.TxWithRetryChecks.Rollback.Callable,
+		txWithRetryIdle,
+	)
+}
+
+// BenchmarkTxWithRetrySuite measures each callable of the suite of
+// TxWithRetry on txWithRetryIdle.
+func BenchmarkTxWithRetrySuite(b *testing.B) {
+	b.Run("Begin", func(b *testing.B) {
+		txwithretrytest.BenchTxWithRetrySuite(b, txwithretrytest.TxWithRetryChecks.Begin.Callable, txWithRetryIdle)
+	})
+	b.Run("Commit", func(b *testing.B) {
+		txwithretrytest.BenchTxWithRetrySuite(b, txwithretrytest.TxWithRetryChecks.Commit.Callable, txWithRetryIdle)
+	})
+	b.Run("Rollback", func(b *testing.B) {
+		txwithretrytest.BenchTxWithRetrySuite(b, txwithretrytest.TxWithRetryChecks.Rollback.Callable, txWithRetryIdle)
+	})
+}
+
+// dokimi:provenance sha256:bbc716966963e37a39d362f572e9546158531c522a70b250cd261906d7f1874f

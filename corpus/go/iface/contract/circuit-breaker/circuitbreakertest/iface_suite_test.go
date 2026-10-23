@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/circuit-breaker/circuitbreakertest"
 )
 
+// contractSubjectEmbedded is circuitbreaker.Contract under the name of the
+// field that contractSubject embeds.
+type contractSubjectEmbedded = circuitbreaker.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ circuitbreaker.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,39 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:a1695ebf62593af5d991adb66d253a578e39454c32342b3f15c9885c1416c88a
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *circuitbreakertest.ContractHandle) circuitbreaker.Contract {
+	return circuitbreakertest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	circuitbreakertest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(circuitbreakertest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteRun registers the fuzz target of Contract.Run on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteRun(f *testing.F) {
+	circuitbreakertest.FuzzContractSuite(
+		f,
+		circuitbreakertest.ContractChecks.Run.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Run", func(b *testing.B) {
+		circuitbreakertest.BenchContractSuite(b, circuitbreakertest.ContractChecks.Run.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:05b04f79ea6971cda1d74815112fbc56b518c3cc78366a9446415ec03949b1a9

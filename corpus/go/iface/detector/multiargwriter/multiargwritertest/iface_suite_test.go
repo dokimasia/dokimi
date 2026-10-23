@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiargwriter/multiargwritertest"
 )
 
+// multiArgWriterSubjectEmbedded is multiargwriter.MultiArgWriter under the
+// name of the field that multiArgWriterSubject embeds.
+type multiArgWriterSubjectEmbedded = multiargwriter.MultiArgWriter
+
 // multiArgWriterSubject is a value of MultiArgWriter that only
 // TestMultiArgWriterSuite builds.
-type multiArgWriterSubject struct{ multiargwriter.MultiArgWriter }
+type multiArgWriterSubject struct{ multiArgWriterSubjectEmbedded }
 
 // TestMultiArgWriterSuite checks the suite of MultiArgWriter and the two
 // forms of its application.
@@ -74,4 +78,64 @@ func TestMultiArgWriterSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:eb8fbf04c85945577df0c739c80c0757cabe3de8e4dfef6dc9f1ac99bde58b64
+// multiArgWriterIdle returns the planted defect of a ceiling of
+// MultiArgWriter with a spend of nothing, a subject that answers each call
+// at once.
+func multiArgWriterIdle(h *multiargwritertest.MultiArgWriterHandle) multiargwriter.MultiArgWriter {
+	return multiargwritertest.MultiArgWriterSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMultiArgWriterSuiteBudgets applies the allocation ceilings of the
+// suite of MultiArgWriter to multiArgWriterIdle, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
+func TestMultiArgWriterSuiteBudgets(t *testing.T) {
+	multiargwritertest.RunMultiArgWriterBudgets(
+		t,
+		multiArgWriterIdle,
+		conform.Ceilings(multiargwritertest.MultiArgWriterChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(multiargwritertest.MultiArgWriterChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMultiArgWriterSuiteSet registers the fuzz target of
+// MultiArgWriter.Set on multiArgWriterIdle, with every check of the suite
+// excused.
+func FuzzMultiArgWriterSuiteSet(f *testing.F) {
+	multiargwritertest.FuzzMultiArgWriterSuite(
+		f,
+		multiargwritertest.MultiArgWriterChecks.Set.Callable,
+		multiArgWriterIdle,
+	)
+}
+
+// FuzzMultiArgWriterSuiteGet registers the fuzz target of
+// MultiArgWriter.Get on multiArgWriterIdle, with every check of the suite
+// excused.
+func FuzzMultiArgWriterSuiteGet(f *testing.F) {
+	multiargwritertest.FuzzMultiArgWriterSuite(
+		f,
+		multiargwritertest.MultiArgWriterChecks.Get.Callable,
+		multiArgWriterIdle,
+	)
+}
+
+// BenchmarkMultiArgWriterSuite measures each callable of the suite of
+// MultiArgWriter on multiArgWriterIdle.
+func BenchmarkMultiArgWriterSuite(b *testing.B) {
+	b.Run("Set", func(b *testing.B) {
+		multiargwritertest.BenchMultiArgWriterSuite(
+			b,
+			multiargwritertest.MultiArgWriterChecks.Set.Callable,
+			multiArgWriterIdle,
+		)
+	})
+	b.Run("Get", func(b *testing.B) {
+		multiargwritertest.BenchMultiArgWriterSuite(
+			b,
+			multiargwritertest.MultiArgWriterChecks.Get.Callable,
+			multiArgWriterIdle,
+		)
+	})
+}
+
+// dokimi:provenance sha256:c02f8c46d56a6f63d57a7e663988dcc621ec2480457a97355257256fb58eb535

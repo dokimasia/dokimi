@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/workflow/workflowtest"
 )
 
+// contractSubjectEmbedded is workflow.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = workflow.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ workflow.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,53 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:e624b4066f402d5c1616fe4bf252b499a217d99908fbe2b0f638ca0437c44d83
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *workflowtest.ContractHandle) workflow.Contract {
+	return workflowtest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	workflowtest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(workflowtest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(workflowtest.ContractChecks.State.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteRun registers the fuzz target of Contract.Run on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteRun(f *testing.F) {
+	workflowtest.FuzzContractSuite(
+		f,
+		workflowtest.ContractChecks.Run.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteState registers the fuzz target of Contract.State on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteState(f *testing.F) {
+	workflowtest.FuzzContractSuite(
+		f,
+		workflowtest.ContractChecks.State.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Run", func(b *testing.B) {
+		workflowtest.BenchContractSuite(b, workflowtest.ContractChecks.Run.Callable, contractIdle)
+	})
+	b.Run("State", func(b *testing.B) {
+		workflowtest.BenchContractSuite(b, workflowtest.ContractChecks.State.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:14fd6b56cb51d8b7cdbbe3cd086712039d5eda39ba50f7d6ca454dfb55278929

@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/if-absent/ifabsenttest"
 )
 
+// contractSubjectEmbedded is ifabsent.Contract under the name of the field
+// that contractSubject embeds.
+type contractSubjectEmbedded = ifabsent.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ ifabsent.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,39 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:43bc5caae844a39e5c4bb1b60c3e057746b9c182415b82a10fb9a84ab6908580
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *ifabsenttest.ContractHandle) ifabsent.Contract {
+	return ifabsenttest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	ifabsenttest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(ifabsenttest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuitePut registers the fuzz target of Contract.Put on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuitePut(f *testing.F) {
+	ifabsenttest.FuzzContractSuite(
+		f,
+		ifabsenttest.ContractChecks.Put.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		ifabsenttest.BenchContractSuite(b, ifabsenttest.ContractChecks.Put.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:84e38f3c5b260250e83c5e2ac9434408527c7b32ae86377c8539eec8848ac843

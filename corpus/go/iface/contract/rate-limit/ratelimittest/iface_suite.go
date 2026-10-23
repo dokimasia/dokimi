@@ -116,23 +116,6 @@ func BenchContractSuite[T ratelimit.Contract](
 		opts...)
 }
 
-// BenchContractSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchContractSuiteParallel[T ratelimit.Contract](
-	b *testing.B,
-	callable conform.Callable[ratelimit.Contract],
-	newSubject func(h *ContractHandle) T,
-	opts ...ContractOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		ContractSuite(),
-		callable,
-		func(h *ContractHandle) ratelimit.Contract { return newSubject(h) },
-		opts...)
-}
-
 // contractRunCalls generates the calls of Contract.Run with the inputs
 // that each case draws.
 var contractRunCalls = prop.Composite(func(c *prop.Case) func(context.Context, ratelimit.Contract) error {
@@ -142,11 +125,15 @@ var contractRunCalls = prop.Composite(func(c *prop.Case) func(context.Context, r
 	}
 })
 
+// contractOverEmbedded is ratelimit.Contract under the name of the field
+// that contractOver embeds.
+type contractOverEmbedded = ratelimit.Contract
+
 // contractOver is a subject of Contract whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type contractOver struct {
-	ratelimit.Contract
+	contractOverEmbedded
 	spend func()
 }
 
@@ -162,4 +149,4 @@ func newContractOver(_ *ContractHandle, spend func()) ratelimit.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:aad833c6d0f5ae06087451bc316097a3d0312b890bb8b1c9149753cda7dc50d7
+// dokimi:provenance sha256:a78e4263d9dc9a086772df90c4481a0078d7d98f0cee81f8b4ee2e0ce15037bc

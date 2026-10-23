@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/total/totaltest"
 )
 
+// mixedSubjectEmbedded is total.Mixed under the name of the field that
+// mixedSubject embeds.
+type mixedSubjectEmbedded = total.Mixed
+
 // mixedSubject is a value of Mixed that only TestMixedSuite builds.
-type mixedSubject struct{ total.Mixed }
+type mixedSubject struct{ mixedSubjectEmbedded }
 
 // TestMixedSuite checks the suite of Mixed and the two forms of its
 // application.
@@ -69,4 +73,53 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:036903e21c57b6eb11afc724c0d90fbf3e5ea02a973388e938dd49114944a8c2
+// mixedIdle returns the planted defect of a ceiling of Mixed with a spend
+// of nothing, a subject that answers each call at once.
+func mixedIdle(h *totaltest.MixedHandle) total.Mixed {
+	return totaltest.MixedSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMixedSuiteBudgets applies the allocation ceilings of the suite of
+// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMixedSuiteBudgets(t *testing.T) {
+	totaltest.RunMixedBudgets(
+		t,
+		mixedIdle,
+		conform.Ceilings(totaltest.MixedChecks.Classify.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(totaltest.MixedChecks.Normalize.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMixedSuiteClassify registers the fuzz target of Mixed.Classify on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteClassify(f *testing.F) {
+	totaltest.FuzzMixedSuite(
+		f,
+		totaltest.MixedChecks.Classify.Callable,
+		mixedIdle,
+	)
+}
+
+// FuzzMixedSuiteNormalize registers the fuzz target of Mixed.Normalize on
+// mixedIdle, with every check of the suite excused.
+func FuzzMixedSuiteNormalize(f *testing.F) {
+	totaltest.FuzzMixedSuite(
+		f,
+		totaltest.MixedChecks.Normalize.Callable,
+		mixedIdle,
+	)
+}
+
+// BenchmarkMixedSuite measures each callable of the suite of Mixed on
+// mixedIdle.
+func BenchmarkMixedSuite(b *testing.B) {
+	b.Run("Classify", func(b *testing.B) {
+		totaltest.BenchMixedSuite(b, totaltest.MixedChecks.Classify.Callable, mixedIdle)
+	})
+	b.Run("Normalize", func(b *testing.B) {
+		totaltest.BenchMixedSuite(b, totaltest.MixedChecks.Normalize.Callable, mixedIdle)
+	})
+}
+
+// dokimi:provenance sha256:3ae4ef1f626a8e3adc9d612f03bb1dba3b3095476796b8bd2e4fcf3ed4e45c2d

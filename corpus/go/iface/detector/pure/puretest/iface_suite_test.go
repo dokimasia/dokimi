@@ -13,8 +13,12 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pure/puretest"
 )
 
+// pureSubjectEmbedded is pure.Pure under the name of the field that
+// pureSubject embeds.
+type pureSubjectEmbedded = pure.Pure
+
 // pureSubject is a value of Pure that only TestPureSuite builds.
-type pureSubject struct{ pure.Pure }
+type pureSubject struct{ pureSubjectEmbedded }
 
 // TestPureSuite checks the suite of Pure and the two forms of its
 // application.
@@ -69,4 +73,39 @@ func TestPureSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:fe0852e0ba3b25bc20b81ecd88e20593adef5f0f16d65f64456d2bb33550ef7c
+// pureIdle returns the planted defect of a ceiling of Pure with a spend of
+// nothing, a subject that answers each call at once.
+func pureIdle(h *puretest.PureHandle) pure.Pure {
+	return puretest.PureSuite().Calls[0].Over(h, func() {})
+}
+
+// TestPureSuiteBudgets applies the allocation ceilings of the suite of
+// Pure to pureIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestPureSuiteBudgets(t *testing.T) {
+	puretest.RunPureBudgets(
+		t,
+		pureIdle,
+		conform.Ceilings(puretest.PureChecks.Describe.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzPureSuiteDescribe registers the fuzz target of Pure.Describe on
+// pureIdle, with every check of the suite excused.
+func FuzzPureSuiteDescribe(f *testing.F) {
+	puretest.FuzzPureSuite(
+		f,
+		puretest.PureChecks.Describe.Callable,
+		pureIdle,
+	)
+}
+
+// BenchmarkPureSuite measures each callable of the suite of Pure on
+// pureIdle.
+func BenchmarkPureSuite(b *testing.B) {
+	b.Run("Describe", func(b *testing.B) {
+		puretest.BenchPureSuite(b, puretest.PureChecks.Describe.Callable, pureIdle)
+	})
+}
+
+// dokimi:provenance sha256:5e2f450c2248757fc6574e4acb134996da17129456f78dc13ce8f1dacc0a1637

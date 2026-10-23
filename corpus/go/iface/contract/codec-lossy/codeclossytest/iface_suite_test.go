@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/codec-lossy/codeclossytest"
 )
 
+// contractSubjectEmbedded is codeclossy.Contract under the name of the
+// field that contractSubject embeds.
+type contractSubjectEmbedded = codeclossy.Contract
+
 // contractSubject is a value of Contract that only TestContractSuite
 // builds.
-type contractSubject struct{ codeclossy.Contract }
+type contractSubject struct{ contractSubjectEmbedded }
 
 // TestContractSuite checks the suite of Contract and the two forms of its
 // application.
@@ -70,4 +74,53 @@ func TestContractSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:58414872e5d612a5694a9d18a1bfa0f83631125c9574005c7f4ba0a940577297
+// contractIdle returns the planted defect of a ceiling of Contract with a
+// spend of nothing, a subject that answers each call at once.
+func contractIdle(h *codeclossytest.ContractHandle) codeclossy.Contract {
+	return codeclossytest.ContractSuite().Calls[0].Over(h, func() {})
+}
+
+// TestContractSuiteBudgets applies the allocation ceilings of the suite of
+// Contract to contractIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestContractSuiteBudgets(t *testing.T) {
+	codeclossytest.RunContractBudgets(
+		t,
+		contractIdle,
+		conform.Ceilings(codeclossytest.ContractChecks.Encode.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(codeclossytest.ContractChecks.Decode.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzContractSuiteEncode registers the fuzz target of Contract.Encode on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteEncode(f *testing.F) {
+	codeclossytest.FuzzContractSuite(
+		f,
+		codeclossytest.ContractChecks.Encode.Callable,
+		contractIdle,
+	)
+}
+
+// FuzzContractSuiteDecode registers the fuzz target of Contract.Decode on
+// contractIdle, with every check of the suite excused.
+func FuzzContractSuiteDecode(f *testing.F) {
+	codeclossytest.FuzzContractSuite(
+		f,
+		codeclossytest.ContractChecks.Decode.Callable,
+		contractIdle,
+	)
+}
+
+// BenchmarkContractSuite measures each callable of the suite of Contract
+// on contractIdle.
+func BenchmarkContractSuite(b *testing.B) {
+	b.Run("Encode", func(b *testing.B) {
+		codeclossytest.BenchContractSuite(b, codeclossytest.ContractChecks.Encode.Callable, contractIdle)
+	})
+	b.Run("Decode", func(b *testing.B) {
+		codeclossytest.BenchContractSuite(b, codeclossytest.ContractChecks.Decode.Callable, contractIdle)
+	})
+}
+
+// dokimi:provenance sha256:3c00a24cf5ab3fcfcc293ba4de9e6188bccc9216729147906c0f9f00cdcd8803

@@ -13,9 +13,13 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader/streamreadertest"
 )
 
+// streamReaderSubjectEmbedded is streamreader.StreamReader under the name
+// of the field that streamReaderSubject embeds.
+type streamReaderSubjectEmbedded = streamreader.StreamReader
+
 // streamReaderSubject is a value of StreamReader that only
 // TestStreamReaderSuite builds.
-type streamReaderSubject struct{ streamreader.StreamReader }
+type streamReaderSubject struct{ streamReaderSubjectEmbedded }
 
 // TestStreamReaderSuite checks the suite of StreamReader and the two forms
 // of its application.
@@ -70,4 +74,53 @@ func TestStreamReaderSuite(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:ab5db30d94b24248ff40b26592b33920bcbfa9b4ee971b347c5bfe28cbfdcbfd
+// streamReaderIdle returns the planted defect of a ceiling of StreamReader
+// with a spend of nothing, a subject that answers each call at once.
+func streamReaderIdle(h *streamreadertest.StreamReaderHandle) streamreader.StreamReader {
+	return streamreadertest.StreamReaderSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStreamReaderSuiteBudgets applies the allocation ceilings of the
+// suite of StreamReader to streamReaderIdle, and a ceiling of 0 to each
+// callable without a budget whose calls build no input of their own.
+func TestStreamReaderSuiteBudgets(t *testing.T) {
+	streamreadertest.RunStreamReaderBudgets(
+		t,
+		streamReaderIdle,
+		conform.Ceilings(streamreadertest.StreamReaderChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(streamreadertest.StreamReaderChecks.List.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzStreamReaderSuiteAdd registers the fuzz target of StreamReader.Add
+// on streamReaderIdle, with every check of the suite excused.
+func FuzzStreamReaderSuiteAdd(f *testing.F) {
+	streamreadertest.FuzzStreamReaderSuite(
+		f,
+		streamreadertest.StreamReaderChecks.Add.Callable,
+		streamReaderIdle,
+	)
+}
+
+// FuzzStreamReaderSuiteList registers the fuzz target of StreamReader.List
+// on streamReaderIdle, with every check of the suite excused.
+func FuzzStreamReaderSuiteList(f *testing.F) {
+	streamreadertest.FuzzStreamReaderSuite(
+		f,
+		streamreadertest.StreamReaderChecks.List.Callable,
+		streamReaderIdle,
+	)
+}
+
+// BenchmarkStreamReaderSuite measures each callable of the suite of
+// StreamReader on streamReaderIdle.
+func BenchmarkStreamReaderSuite(b *testing.B) {
+	b.Run("Add", func(b *testing.B) {
+		streamreadertest.BenchStreamReaderSuite(b, streamreadertest.StreamReaderChecks.Add.Callable, streamReaderIdle)
+	})
+	b.Run("List", func(b *testing.B) {
+		streamreadertest.BenchStreamReaderSuite(b, streamreadertest.StreamReaderChecks.List.Callable, streamReaderIdle)
+	})
+}
+
+// dokimi:provenance sha256:03c0d8304e0a8efe4067bb31b35c12007f5701600c438816df16dfbb9d2c5d0d

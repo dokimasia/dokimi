@@ -25,12 +25,12 @@ export function {{$n.Render}}(value: {{$t}}): string {
 {{- end}}
 {{- if $m.Generate.Error}}
 
-/** {{$n.Sentinel}} is the error of text that names no declared variant of {{$m.Subject}}. */
+/** {{$n.Sentinel}} is the error of a text that does not match a declared variant of {{$m.Subject}}. */
 export class {{$n.Sentinel}} extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`{{$m.Package}}: unknown {{$m.Subject}} value ${JSON.stringify(text)}`);
     this.name = "{{$n.Sentinel}}";
@@ -45,7 +45,7 @@ export class {{$n.Sentinel}} extends Error {
 {{docs (wrapdocs (printf `%s returns the variant of %s whose text is text. It is the inverse of
 %s on the declared variants.
 
-@throws %s for text that names no declared variant.` $n.Parse $m.Subject $n.Render $n.Sentinel))}}
+@throws %s for a text that does not match a declared variant.` $n.Parse $m.Subject $n.Render $n.Sentinel))}}
 {{- ""}}export function {{$n.Parse}}(text: string): {{$t}} {
   switch (text) {
 {{- range $m.Variants}}

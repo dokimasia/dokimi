@@ -11,13 +11,14 @@ func (v Region) String() string {
 	return string(v)
 }
 
-// ErrUnknownRegion is the error of text that names no declared variant.
-// The error of [ParseRegion] wraps it with the text.
+// ErrUnknownRegion is the error of a text that does not match a declared
+// variant. The error of [ParseRegion] wraps it with the text.
 var ErrUnknownRegion = errors.New("region: unknown Region value")
 
 // ParseRegion returns the variant of Region whose text is s. It is the
 // inverse of [Region.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownRegion] for text that names no declared variant.
+// that wraps [ErrUnknownRegion] for a text that does not match a declared
+// variant.
 func ParseRegion(s string) (Region, error) {
 	switch s {
 	case "us-east":
@@ -59,7 +60,8 @@ func (v Region) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseRegion] for text that names no declared variant.
+// error of [ParseRegion] for a text that does not match a declared
+// variant.
 func (v *Region) UnmarshalText(text []byte) error {
 	parsed, err := ParseRegion(string(text))
 	if err != nil {
@@ -75,13 +77,14 @@ func (v Zone) String() string {
 	return string(v)
 }
 
-// ErrUnknownZone is the error of text that names no declared variant. The
-// error of [ParseZone] wraps it with the text.
+// ErrUnknownZone is the error of a text that does not match a declared
+// variant. The error of [ParseZone] wraps it with the text.
 var ErrUnknownZone = errors.New("region: unknown Zone value")
 
 // ParseZone returns the variant of Zone whose text is s. It is the inverse
 // of [Zone.String] on the declared variants. It returns an error that
-// wraps [ErrUnknownZone] for text that names no declared variant.
+// wraps [ErrUnknownZone] for a text that does not match a declared
+// variant.
 func ParseZone(s string) (Zone, error) {
 	switch s {
 	case "north":
@@ -123,7 +126,7 @@ func (v Zone) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseZone] for text that names no declared variant.
+// error of [ParseZone] for a text that does not match a declared variant.
 func (v *Zone) UnmarshalText(text []byte) error {
 	parsed, err := ParseZone(string(text))
 	if err != nil {
@@ -145,13 +148,14 @@ func (v Lane) String() string {
 	return string(v)
 }
 
-// ErrUnknownLane is the error of text that names no declared variant. The
-// error of [ParseLane] wraps it with the text.
+// ErrUnknownLane is the error of a text that does not match a declared
+// variant. The error of [ParseLane] wraps it with the text.
 var ErrUnknownLane = errors.New("region: unknown Lane value")
 
 // ParseLane returns the variant of Lane whose text is s. It is the inverse
 // of [Lane.String] on the declared variants. It returns an error that
-// wraps [ErrUnknownLane] for text that names no declared variant.
+// wraps [ErrUnknownLane] for a text that does not match a declared
+// variant.
 func ParseLane(s string) (Lane, error) {
 	switch s {
 	case "left":
@@ -190,7 +194,7 @@ func (v Lane) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseLane] for text that names no declared variant.
+// error of [ParseLane] for a text that does not match a declared variant.
 func (v *Lane) UnmarshalText(text []byte) error {
 	parsed, err := ParseLane(string(text))
 	if err != nil {

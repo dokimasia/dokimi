@@ -17,13 +17,14 @@ func (v Ratio) String() string {
 	return fmt.Sprintf("Ratio(%g)", float64(v))
 }
 
-// ErrUnknownRatio is the error of text that names no declared variant. The
-// error of [ParseRatio] wraps it with the text.
+// ErrUnknownRatio is the error of a text that does not match a declared
+// variant. The error of [ParseRatio] wraps it with the text.
 var ErrUnknownRatio = errors.New("shaped: unknown Ratio value")
 
 // ParseRatio returns the variant of Ratio whose text is s. It is the
 // inverse of [Ratio.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownRatio] for text that names no declared variant.
+// that wraps [ErrUnknownRatio] for a text that does not match a declared
+// variant.
 func ParseRatio(s string) (Ratio, error) {
 	switch s {
 	case "Single":
@@ -62,7 +63,7 @@ func (v Ratio) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseRatio] for text that names no declared variant.
+// error of [ParseRatio] for a text that does not match a declared variant.
 func (v *Ratio) UnmarshalText(text []byte) error {
 	parsed, err := ParseRatio(string(text))
 	if err != nil {
@@ -84,13 +85,14 @@ func (v Tier) String() string {
 	return fmt.Sprintf("Tier(%d)", Base(v))
 }
 
-// ErrUnknownTier is the error of text that names no declared variant. The
-// error of [ParseTier] wraps it with the text.
+// ErrUnknownTier is the error of a text that does not match a declared
+// variant. The error of [ParseTier] wraps it with the text.
 var ErrUnknownTier = errors.New("shaped: unknown Tier value")
 
 // ParseTier returns the variant of Tier whose text is s. It is the inverse
 // of [Tier.String] on the declared variants. It returns an error that
-// wraps [ErrUnknownTier] for text that names no declared variant.
+// wraps [ErrUnknownTier] for a text that does not match a declared
+// variant.
 func ParseTier(s string) (Tier, error) {
 	switch s {
 	case "Bronze":
@@ -129,7 +131,7 @@ func (v Tier) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseTier] for text that names no declared variant.
+// error of [ParseTier] for a text that does not match a declared variant.
 func (v *Tier) UnmarshalText(text []byte) error {
 	parsed, err := ParseTier(string(text))
 	if err != nil {

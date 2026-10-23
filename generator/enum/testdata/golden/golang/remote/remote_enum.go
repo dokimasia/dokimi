@@ -17,13 +17,14 @@ func (v Season) String() string {
 	return fmt.Sprintf("Season(%d)", int(v))
 }
 
-// ErrUnknownSeason is the error of text that names no declared variant.
-// The error of [ParseSeason] wraps it with the text.
+// ErrUnknownSeason is the error of a text that does not match a declared
+// variant. The error of [ParseSeason] wraps it with the text.
 var ErrUnknownSeason = errors.New("remote: unknown Season value")
 
 // ParseSeason returns the variant of Season whose text is s. It is the
 // inverse of [Season.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownSeason] for text that names no declared variant.
+// that wraps [ErrUnknownSeason] for a text that does not match a declared
+// variant.
 func ParseSeason(s string) (Season, error) {
 	switch s {
 	case "Spring":
@@ -62,7 +63,8 @@ func (v Season) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseSeason] for text that names no declared variant.
+// error of [ParseSeason] for a text that does not match a declared
+// variant.
 func (v *Season) UnmarshalText(text []byte) error {
 	parsed, err := ParseSeason(string(text))
 	if err != nil {

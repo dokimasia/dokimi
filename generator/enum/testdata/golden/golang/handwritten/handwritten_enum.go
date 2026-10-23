@@ -28,7 +28,8 @@ func (v Weekday) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseWeekday] for text that names no declared variant.
+// error of [ParseWeekday] for a text that does not match a declared
+// variant.
 func (v *Weekday) UnmarshalText(text []byte) error {
 	parsed, err := ParseWeekday(string(text))
 	if err != nil {

@@ -18,12 +18,12 @@ export function tierToString(value: Tier): string {
   return String(value);
 }
 
-/** UnknownTierError is the error of text that names no declared variant of Tier. */
+/** UnknownTierError is the error of a text that does not match a declared variant of Tier. */
 export class UnknownTierError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`catalog: unknown Tier value ${JSON.stringify(text)}`);
     this.name = "UnknownTierError";
@@ -35,7 +35,8 @@ export class UnknownTierError extends Error {
  * parseTier returns the variant of Tier whose text is text. It is the
  * inverse of tierToString on the declared variants.
  *
- * @throws UnknownTierError for text that names no declared variant.
+ * @throws UnknownTierError for a text that does not match a declared
+ * variant.
  */
 export function parseTier(text: string): Tier {
   switch (text) {
@@ -71,4 +72,4 @@ export function isTier(value: unknown): value is Tier {
   return false;
 }
 
-// dokimi:provenance sha256:46caf4d208bd331d1d5b3bdf36a6e65839bfc349697d0f8abd8f14f2f4849a8f
+// dokimi:provenance sha256:6c1930bf81e2da5f1ae36487eea2fd9b4f265c3e7cb2628fcb9acebbd48f5c15

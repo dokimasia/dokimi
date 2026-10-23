@@ -31,7 +31,8 @@ func (v Level) String() string {
 
 // ParseLevel returns the variant of Level whose text is s. It is the
 // inverse of [Level.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownLevel] for text that names no declared variant.
+// that wraps [ErrUnknownLevel] for a text that does not match a declared
+// variant.
 func ParseLevel(s string) (Level, error) {
 	switch s {
 	case "Debug":
@@ -73,7 +74,7 @@ func (v Level) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseLevel] for text that names no declared variant.
+// error of [ParseLevel] for a text that does not match a declared variant.
 func (v *Level) UnmarshalText(text []byte) error {
 	parsed, err := ParseLevel(string(text))
 	if err != nil {
@@ -105,13 +106,14 @@ func (v Color) String() string {
 	return _Color_name[_Color_index[idx]:_Color_index[idx+1]]
 }
 
-// ErrUnknownColor is the error of text that names no declared variant. The
-// error of [ParseColor] wraps it with the text.
+// ErrUnknownColor is the error of a text that does not match a declared
+// variant. The error of [ParseColor] wraps it with the text.
 var ErrUnknownColor = errors.New("declared: unknown Color value")
 
 // ParseColor returns the variant of Color whose text is s. It is the
 // inverse of [Color.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownColor] for text that names no declared variant.
+// that wraps [ErrUnknownColor] for a text that does not match a declared
+// variant.
 func ParseColor(s string) (Color, error) {
 	switch s {
 	case "Red":
@@ -141,7 +143,7 @@ func (v Color) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseColor] for text that names no declared variant.
+// error of [ParseColor] for a text that does not match a declared variant.
 func (v *Color) UnmarshalText(text []byte) error {
 	parsed, err := ParseColor(string(text))
 	if err != nil {
@@ -200,7 +202,7 @@ func (v Lane) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseLane] for text that names no declared variant.
+// error of [ParseLane] for a text that does not match a declared variant.
 func (v *Lane) UnmarshalText(text []byte) error {
 	parsed, err := ParseLane(string(text))
 	if err != nil {
@@ -232,13 +234,14 @@ func (v Coil) String() string {
 	return _Coil_name[_Coil_index[idx]:_Coil_index[idx+1]]
 }
 
-// ErrUnknownCoil is the error of text that names no declared variant. The
-// error of [ParseCoil] wraps it with the text.
+// ErrUnknownCoil is the error of a text that does not match a declared
+// variant. The error of [ParseCoil] wraps it with the text.
 var ErrUnknownCoil = errors.New("declared: unknown Coil value")
 
 // ParseCoil returns the variant of Coil whose text is s. It is the inverse
 // of [Coil.String] on the declared variants. It returns an error that
-// wraps [ErrUnknownCoil] for text that names no declared variant.
+// wraps [ErrUnknownCoil] for a text that does not match a declared
+// variant.
 func ParseCoil(s string) (Coil, error) {
 	switch s {
 	case "Snug":
@@ -277,7 +280,7 @@ func (v Coil) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseCoil] for text that names no declared variant.
+// error of [ParseCoil] for a text that does not match a declared variant.
 func (v *Coil) UnmarshalText(text []byte) error {
 	parsed, err := ParseCoil(string(text))
 	if err != nil {

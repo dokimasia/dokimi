@@ -116,7 +116,7 @@ var (
 {{- end}}
 {{- if $m.Generate.Error}}{{use "errors"}}
 
-{{docs (wrapdocs (printf `%s is the error of text that names no declared variant. The error of
+{{docs (wrapdocs (printf `%s is the error of a text that does not match a declared variant. The error of
 [%s] wraps it with the text.` $n.Sentinel $n.Parse))}}
 {{- ""}}var {{$n.Sentinel}} = errors.New("{{$m.Package}}: unknown {{$m.Subject}} value")
 {{- end}}
@@ -124,7 +124,7 @@ var (
 
 {{docs (wrapdocs (printf `%s returns the variant of %s whose text is s. It is the inverse of
 [%s.%s] on the declared variants. It returns an error that wraps [%s] for
-text that names no declared variant.` $n.Parse $m.Subject $m.Subject $n.Render $n.Sentinel))}}
+a text that does not match a declared variant.` $n.Parse $m.Subject $m.Subject $n.Render $n.Sentinel))}}
 {{- ""}}func {{$n.Parse}}(s string) ({{$t}}, error) {
 	switch s {
 {{- range $m.Variants}}
@@ -172,7 +172,7 @@ uses it for a value and for a map key.` $n.Encode))}}
 {{- if $m.Generate.Decode}}
 
 {{docs (wrapdocs (printf `%s implements [encoding.TextUnmarshaler]. It returns the error of
-[%s] for text that names no declared variant.` $n.Decode $n.Parse))}}
+[%s] for a text that does not match a declared variant.` $n.Decode $n.Parse))}}
 {{- ""}}func (v *{{$t}}) {{$n.Decode}}(text []byte) error {
 	parsed, err := {{$n.Parse}}(string(text))
 	if err != nil {

@@ -33,13 +33,14 @@ func (v Status) String() string {
 	return _Status_name[_Status_index[idx]:_Status_index[idx+1]]
 }
 
-// ErrUnknownStatus is the error of text that names no declared variant.
-// The error of [ParseStatus] wraps it with the text.
+// ErrUnknownStatus is the error of a text that does not match a declared
+// variant. The error of [ParseStatus] wraps it with the text.
 var ErrUnknownStatus = errors.New("catalog: unknown Status value")
 
 // ParseStatus returns the variant of Status whose text is s. It is the
 // inverse of [Status.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownStatus] for text that names no declared variant.
+// that wraps [ErrUnknownStatus] for a text that does not match a declared
+// variant.
 func ParseStatus(s string) (Status, error) {
 	switch s {
 	case "Active":
@@ -81,7 +82,8 @@ func (v Status) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseStatus] for text that names no declared variant.
+// error of [ParseStatus] for a text that does not match a declared
+// variant.
 func (v *Status) UnmarshalText(text []byte) error {
 	parsed, err := ParseStatus(string(text))
 	if err != nil {
@@ -91,4 +93,4 @@ func (v *Status) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:22f4fffd22dc4a54ded0054365bebac94f3f238dfaf7e2c9200796317a4fd9c6
+// dokimi:provenance sha256:e92ddecc14ecb9266940cdd660a4b013a8633982cbcb53b0d041782f9a8bf133

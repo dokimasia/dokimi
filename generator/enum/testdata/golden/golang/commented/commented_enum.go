@@ -29,13 +29,14 @@ func (v Grade) String() string {
 	return _Grade_name[_Grade_index[idx]:_Grade_index[idx+1]]
 }
 
-// ErrUnknownGrade is the error of text that names no declared variant. The
-// error of [ParseGrade] wraps it with the text.
+// ErrUnknownGrade is the error of a text that does not match a declared
+// variant. The error of [ParseGrade] wraps it with the text.
 var ErrUnknownGrade = errors.New("commented: unknown Grade value")
 
 // ParseGrade returns the variant of Grade whose text is s. It is the
 // inverse of [Grade.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownGrade] for text that names no declared variant.
+// that wraps [ErrUnknownGrade] for a text that does not match a declared
+// variant.
 func ParseGrade(s string) (Grade, error) {
 	switch s {
 	case "poor":
@@ -77,7 +78,7 @@ func (v Grade) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseGrade] for text that names no declared variant.
+// error of [ParseGrade] for a text that does not match a declared variant.
 func (v *Grade) UnmarshalText(text []byte) error {
 	parsed, err := ParseGrade(string(text))
 	if err != nil {
@@ -109,13 +110,14 @@ func (v Mood) String() string {
 	return _Mood_name[_Mood_index[idx]:_Mood_index[idx+1]]
 }
 
-// ErrUnknownMood is the error of text that names no declared variant. The
-// error of [ParseMood] wraps it with the text.
+// ErrUnknownMood is the error of a text that does not match a declared
+// variant. The error of [ParseMood] wraps it with the text.
 var ErrUnknownMood = errors.New("commented: unknown Mood value")
 
 // ParseMood returns the variant of Mood whose text is s. It is the inverse
 // of [Mood.String] on the declared variants. It returns an error that
-// wraps [ErrUnknownMood] for text that names no declared variant.
+// wraps [ErrUnknownMood] for a text that does not match a declared
+// variant.
 func ParseMood(s string) (Mood, error) {
 	switch s {
 	case "Calm":
@@ -154,7 +156,7 @@ func (v Mood) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseMood] for text that names no declared variant.
+// error of [ParseMood] for a text that does not match a declared variant.
 func (v *Mood) UnmarshalText(text []byte) error {
 	parsed, err := ParseMood(string(text))
 	if err != nil {

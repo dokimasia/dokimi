@@ -45,13 +45,13 @@ func (v Gap) String() string {
 	}
 }
 
-// ErrUnknownGap is the error of text that names no declared variant. The
-// error of [ParseGap] wraps it with the text.
+// ErrUnknownGap is the error of a text that does not match a declared
+// variant. The error of [ParseGap] wraps it with the text.
 var ErrUnknownGap = errors.New("gap: unknown Gap value")
 
 // ParseGap returns the variant of Gap whose text is s. It is the inverse
 // of [Gap.String] on the declared variants. It returns an error that wraps
-// [ErrUnknownGap] for text that names no declared variant.
+// [ErrUnknownGap] for a text that does not match a declared variant.
 func ParseGap(s string) (Gap, error) {
 	switch s {
 	case "Two":
@@ -99,7 +99,7 @@ func (v Gap) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseGap] for text that names no declared variant.
+// error of [ParseGap] for a text that does not match a declared variant.
 func (v *Gap) UnmarshalText(text []byte) error {
 	parsed, err := ParseGap(string(text))
 	if err != nil {
@@ -138,13 +138,14 @@ func (v Unum) String() string {
 	}
 }
 
-// ErrUnknownUnum is the error of text that names no declared variant. The
-// error of [ParseUnum] wraps it with the text.
+// ErrUnknownUnum is the error of a text that does not match a declared
+// variant. The error of [ParseUnum] wraps it with the text.
 var ErrUnknownUnum = errors.New("gap: unknown Unum value")
 
 // ParseUnum returns the variant of Unum whose text is s. It is the inverse
 // of [Unum.String] on the declared variants. It returns an error that
-// wraps [ErrUnknownUnum] for text that names no declared variant.
+// wraps [ErrUnknownUnum] for a text that does not match a declared
+// variant.
 func ParseUnum(s string) (Unum, error) {
 	switch s {
 	case "Naught":
@@ -186,7 +187,7 @@ func (v Unum) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseUnum] for text that names no declared variant.
+// error of [ParseUnum] for a text that does not match a declared variant.
 func (v *Unum) UnmarshalText(text []byte) error {
 	parsed, err := ParseUnum(string(text))
 	if err != nil {
@@ -240,13 +241,14 @@ func (v Prime) String() string {
 	return "Prime(" + strconv.FormatInt(int64(v), 10) + ")"
 }
 
-// ErrUnknownPrime is the error of text that names no declared variant. The
-// error of [ParsePrime] wraps it with the text.
+// ErrUnknownPrime is the error of a text that does not match a declared
+// variant. The error of [ParsePrime] wraps it with the text.
 var ErrUnknownPrime = errors.New("gap: unknown Prime value")
 
 // ParsePrime returns the variant of Prime whose text is s. It is the
 // inverse of [Prime.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownPrime] for text that names no declared variant.
+// that wraps [ErrUnknownPrime] for a text that does not match a declared
+// variant.
 func ParsePrime(s string) (Prime, error) {
 	switch s {
 	case "P2":
@@ -315,7 +317,7 @@ func (v Prime) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParsePrime] for text that names no declared variant.
+// error of [ParsePrime] for a text that does not match a declared variant.
 func (v *Prime) UnmarshalText(text []byte) error {
 	parsed, err := ParsePrime(string(text))
 	if err != nil {
@@ -348,13 +350,14 @@ func (v Rank) String() string {
 	return _Rank_name[_Rank_index[idx]:_Rank_index[idx+1]]
 }
 
-// ErrUnknownRank is the error of text that names no declared variant. The
-// error of [ParseRank] wraps it with the text.
+// ErrUnknownRank is the error of a text that does not match a declared
+// variant. The error of [ParseRank] wraps it with the text.
 var ErrUnknownRank = errors.New("gap: unknown Rank value")
 
 // ParseRank returns the variant of Rank whose text is s. It is the inverse
 // of [Rank.String] on the declared variants. It returns an error that
-// wraps [ErrUnknownRank] for text that names no declared variant.
+// wraps [ErrUnknownRank] for a text that does not match a declared
+// variant.
 func ParseRank(s string) (Rank, error) {
 	switch s {
 	case "Gold":
@@ -396,7 +399,7 @@ func (v Rank) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseRank] for text that names no declared variant.
+// error of [ParseRank] for a text that does not match a declared variant.
 func (v *Rank) UnmarshalText(text []byte) error {
 	parsed, err := ParseRank(string(text))
 	if err != nil {
@@ -464,13 +467,13 @@ func (v Odd) String() string {
 	}
 }
 
-// ErrUnknownOdd is the error of text that names no declared variant. The
-// error of [ParseOdd] wraps it with the text.
+// ErrUnknownOdd is the error of a text that does not match a declared
+// variant. The error of [ParseOdd] wraps it with the text.
 var ErrUnknownOdd = errors.New("gap: unknown Odd value")
 
 // ParseOdd returns the variant of Odd whose text is s. It is the inverse
 // of [Odd.String] on the declared variants. It returns an error that wraps
-// [ErrUnknownOdd] for text that names no declared variant.
+// [ErrUnknownOdd] for a text that does not match a declared variant.
 func ParseOdd(s string) (Odd, error) {
 	switch s {
 	case "O1":
@@ -533,7 +536,7 @@ func (v Odd) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseOdd] for text that names no declared variant.
+// error of [ParseOdd] for a text that does not match a declared variant.
 func (v *Odd) UnmarshalText(text []byte) error {
 	parsed, err := ParseOdd(string(text))
 	if err != nil {
@@ -566,13 +569,13 @@ func (v Num) String() string {
 	return _Num_name[_Num_index[idx]:_Num_index[idx+1]]
 }
 
-// ErrUnknownNum is the error of text that names no declared variant. The
-// error of [ParseNum] wraps it with the text.
+// ErrUnknownNum is the error of a text that does not match a declared
+// variant. The error of [ParseNum] wraps it with the text.
 var ErrUnknownNum = errors.New("gap: unknown Num value")
 
 // ParseNum returns the variant of Num whose text is s. It is the inverse
 // of [Num.String] on the declared variants. It returns an error that wraps
-// [ErrUnknownNum] for text that names no declared variant.
+// [ErrUnknownNum] for a text that does not match a declared variant.
 func ParseNum(s string) (Num, error) {
 	switch s {
 	case "Minus":
@@ -614,7 +617,7 @@ func (v Num) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseNum] for text that names no declared variant.
+// error of [ParseNum] for a text that does not match a declared variant.
 func (v *Num) UnmarshalText(text []byte) error {
 	parsed, err := ParseNum(string(text))
 	if err != nil {

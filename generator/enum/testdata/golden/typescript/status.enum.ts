@@ -16,12 +16,12 @@ export function statusToString(value: Status): string {
   return `Status(${String(value)})`;
 }
 
-/** UnknownStatusError is the error of text that names no declared variant of Status. */
+/** UnknownStatusError is the error of a text that does not match a declared variant of Status. */
 export class UnknownStatusError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`status: unknown Status value ${JSON.stringify(text)}`);
     this.name = "UnknownStatusError";
@@ -33,7 +33,8 @@ export class UnknownStatusError extends Error {
  * parseStatus returns the variant of Status whose text is text. It is the
  * inverse of statusToString on the declared variants.
  *
- * @throws UnknownStatusError for text that names no declared variant.
+ * @throws UnknownStatusError for a text that does not match a declared
+ * variant.
  */
 export function parseStatus(text: string): Status {
   switch (text) {
@@ -89,12 +90,12 @@ export function regionToString(value: Region): string {
   return String(value);
 }
 
-/** UnknownRegionError is the error of text that names no declared variant of Region. */
+/** UnknownRegionError is the error of a text that does not match a declared variant of Region. */
 export class UnknownRegionError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`status: unknown Region value ${JSON.stringify(text)}`);
     this.name = "UnknownRegionError";
@@ -106,7 +107,8 @@ export class UnknownRegionError extends Error {
  * parseRegion returns the variant of Region whose text is text. It is the
  * inverse of regionToString on the declared variants.
  *
- * @throws UnknownRegionError for text that names no declared variant.
+ * @throws UnknownRegionError for a text that does not match a declared
+ * variant.
  */
 export function parseRegion(text: string): Region {
   switch (text) {
@@ -164,12 +166,12 @@ export function headerToString(value: Header): string {
   return String(value);
 }
 
-/** UnknownHeaderError is the error of text that names no declared variant of Header. */
+/** UnknownHeaderError is the error of a text that does not match a declared variant of Header. */
 export class UnknownHeaderError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`status: unknown Header value ${JSON.stringify(text)}`);
     this.name = "UnknownHeaderError";
@@ -181,7 +183,8 @@ export class UnknownHeaderError extends Error {
  * parseHeader returns the variant of Header whose text is text. It is the
  * inverse of headerToString on the declared variants.
  *
- * @throws UnknownHeaderError for text that names no declared variant.
+ * @throws UnknownHeaderError for a text that does not match a declared
+ * variant.
  */
 export function parseHeader(text: string): Header {
   switch (text) {
@@ -241,12 +244,12 @@ export function gradeToString(value: Grade): string {
   return `Grade(${String(value)})`;
 }
 
-/** UnknownGradeError is the error of text that names no declared variant of Grade. */
+/** UnknownGradeError is the error of a text that does not match a declared variant of Grade. */
 export class UnknownGradeError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`status: unknown Grade value ${JSON.stringify(text)}`);
     this.name = "UnknownGradeError";
@@ -258,7 +261,8 @@ export class UnknownGradeError extends Error {
  * parseGrade returns the variant of Grade whose text is text. It is the
  * inverse of gradeToString on the declared variants.
  *
- * @throws UnknownGradeError for text that names no declared variant.
+ * @throws UnknownGradeError for a text that does not match a declared
+ * variant.
  */
 export function parseGrade(text: string): Grade {
   switch (text) {
@@ -342,7 +346,8 @@ export function levelToString(value: Level): string {
  * parseLevel returns the variant of Level whose text is text. It is the
  * inverse of levelToString on the declared variants.
  *
- * @throws UnknownLevelError for text that names no declared variant.
+ * @throws UnknownLevelError for a text that does not match a declared
+ * variant.
  */
 export function parseLevel(text: string): Level {
   switch (text) {
@@ -396,12 +401,12 @@ export function phaseToString(value: Phase): string {
   return `Phase(${String(value)})`;
 }
 
-/** UnknownPhaseError is the error of text that names no declared variant of Phase. */
+/** UnknownPhaseError is the error of a text that does not match a declared variant of Phase. */
 export class UnknownPhaseError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`status: unknown Phase value ${JSON.stringify(text)}`);
     this.name = "UnknownPhaseError";
@@ -413,7 +418,8 @@ export class UnknownPhaseError extends Error {
  * parsePhase returns the variant of Phase whose text is text. It is the
  * inverse of phaseToString on the declared variants.
  *
- * @throws UnknownPhaseError for text that names no declared variant.
+ * @throws UnknownPhaseError for a text that does not match a declared
+ * variant.
  */
 export function parsePhase(text: string): Phase {
   switch (text) {

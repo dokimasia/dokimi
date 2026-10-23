@@ -12,6 +12,15 @@ type Ledger interface {
 	Record(ctx context.Context, entry string) error
 }
 
+// Register opens the ledgers of the shop under the directive stub. Its method
+// returns a Ledger, whose double the directive suite asks for.
+//
+//dokimi:stub
+type Register interface {
+	// Open returns the ledger of the day.
+	Open(day string) Ledger
+}
+
 // Journal records the lines of the shop under the directives stub and suite.
 //
 //dokimi:stub

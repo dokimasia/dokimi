@@ -103,8 +103,9 @@ func TestStub(t *testing.T) {
 				}
 			}
 			slices.Sort(subjects)
-			expect.Equal(t, subjects, []string{"Cashbox", "Journal", "Ledger"},
-				"a declaration under suite, stub or both has one double, and a function has none")
+			expect.Equal(t, subjects, []string{"Cashbox", "Journal", "Ledger", "Register"},
+				"a declaration under suite, stub or both has one double, also where another double returns it, and "+
+					"a function has none")
 		})
 
 		t.Run("checks each double from outside its package", func(t *testing.T) {

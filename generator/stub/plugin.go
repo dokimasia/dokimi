@@ -1168,8 +1168,10 @@ func repeated(names []string) (string, bool) {
 
 // handles returns the subjects of the handles of the methods of the subject:
 // each interface of the package of the subject that a method returns. A
-// handle has no directive of its own, and the subject is its first producer.
-// So two subjects that return one handle write one double of it.
+// handle has neither the directive of stub nor the fact [weave.KeyDouble],
+// since stub writes the double of either through the rules of [New]. The
+// subject is the first producer of the handle, so two subjects that return
+// one handle write one double of it.
 func (in *invocation) handles(methods []*node.Method) []*subject {
 	var out []*subject
 	seen := map[symbol.Identity]bool{}
@@ -1181,7 +1183,9 @@ func (in *invocation) handles(methods []*node.Method) []*subject {
 				continue
 			}
 			seen[i.ID] = true
-			if i.ID.Package != in.sub.origin.Package || in.annotated(&i.ID) || in.producer(&i.ID) != in.sub.origin {
+			if i.ID.Package != in.sub.origin.Package || in.annotated(&i.ID) || in.suited(&i.ID) ||
+				in.producer(&i.ID) != in.sub.origin {
+
 				continue
 			}
 			out = append(out, &subject{
@@ -1197,6 +1201,13 @@ func (in *invocation) handles(methods []*node.Method) []*subject {
 // in either spelling.
 func (in *invocation) annotated(id *symbol.Identity) bool {
 	return slices.ContainsFunc(in.carriers(), func(d node.Declaration) bool { return d.Identity() == *id })
+}
+
+// suited reports whether the suite generator stamped the fact
+// [weave.KeyDouble] on the declaration id.
+func (in *invocation) suited(id *symbol.Identity) bool {
+	asked, _ := sdk.FactOf(in.m, *id, meta.Named[bool](weave.KeyDouble))
+	return asked
 }
 
 // producer returns the first producer of the handle id in identity order. A

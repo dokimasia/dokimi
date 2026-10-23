@@ -18,9 +18,9 @@ func TestInMemoryConformsToPure(t *testing.T) {
 	puretest.RunPureSuite(t, puretest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Pure on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToPure measures each callable of the suite of
+// Pure on InMemory.
+func BenchmarkInMemoryConformsToPure(b *testing.B) {
 	b.Run("Describe", func(b *testing.B) {
 		puretest.BenchPureSuite(
 			b,
@@ -30,9 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryDescribe fuzzes the property checks of Pure.Describe on
-// InMemory.
-func FuzzInMemoryDescribe(f *testing.F) {
+// FuzzInMemoryConformsToPureDescribe fuzzes the property checks of
+// Pure.Describe on InMemory.
+func FuzzInMemoryConformsToPureDescribe(f *testing.F) {
 	puretest.FuzzPureSuite(
 		f,
 		puretest.PureChecks.Describe.Callable,
@@ -40,4 +40,4 @@ func FuzzInMemoryDescribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:322babf8355895f733c4772d93a50fa02262515c48f735087921e539434dc9fa
+// dokimi:provenance sha256:89b61ac91ec4cb60f0a8a85141be2a725c0cf01cca36cee04be61f830a9848fb

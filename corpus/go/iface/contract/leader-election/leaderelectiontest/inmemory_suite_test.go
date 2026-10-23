@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	leaderelectiontest.RunContractSuite(t, leaderelectiontest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Campaign", func(b *testing.B) {
 		leaderelectiontest.BenchContractSuite(
 			b,
@@ -50,9 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryCampaign fuzzes the property checks of Contract.Campaign on
-// InMemory.
-func FuzzInMemoryCampaign(f *testing.F) {
+// FuzzInMemoryConformsToContractCampaign fuzzes the property checks of
+// Contract.Campaign on InMemory.
+func FuzzInMemoryConformsToContractCampaign(f *testing.F) {
 	leaderelectiontest.FuzzContractSuite(
 		f,
 		leaderelectiontest.ContractChecks.Campaign.Callable,
@@ -62,9 +62,9 @@ func FuzzInMemoryCampaign(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryResign fuzzes the property checks of Contract.Resign on
-// InMemory.
-func FuzzInMemoryResign(f *testing.F) {
+// FuzzInMemoryConformsToContractResign fuzzes the property checks of
+// Contract.Resign on InMemory.
+func FuzzInMemoryConformsToContractResign(f *testing.F) {
 	leaderelectiontest.FuzzContractSuite(
 		f,
 		leaderelectiontest.ContractChecks.Resign.Callable,
@@ -74,9 +74,9 @@ func FuzzInMemoryResign(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryIsLeader fuzzes the property checks of Contract.IsLeader on
-// InMemory.
-func FuzzInMemoryIsLeader(f *testing.F) {
+// FuzzInMemoryConformsToContractIsLeader fuzzes the property checks of
+// Contract.IsLeader on InMemory.
+func FuzzInMemoryConformsToContractIsLeader(f *testing.F) {
 	leaderelectiontest.FuzzContractSuite(
 		f,
 		leaderelectiontest.ContractChecks.IsLeader.Callable,
@@ -86,4 +86,4 @@ func FuzzInMemoryIsLeader(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3290dc7b565fdbbbe508d220da8c3def25bc6913ce4373d0ee8dd7bb98d40dfa
+// dokimi:provenance sha256:fd59f52512d3d337022535733e8f5adb27ce5d950d03c2ed90cc088666161e4f

@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	stickytest.RunMixedSuite(t, stickytest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
 		stickytest.BenchMixedSuite(
 			b,
@@ -37,8 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryStore fuzzes the property checks of Mixed.Store on InMemory.
-func FuzzInMemoryStore(f *testing.F) {
+// FuzzInMemoryConformsToMixedStore fuzzes the property checks of
+// Mixed.Store on InMemory.
+func FuzzInMemoryConformsToMixedStore(f *testing.F) {
 	stickytest.FuzzMixedSuite(
 		f,
 		stickytest.MixedChecks.Store.Callable,
@@ -46,8 +47,9 @@ func FuzzInMemoryStore(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToMixedGet fuzzes the property checks of Mixed.Get
+// on InMemory.
+func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	stickytest.FuzzMixedSuite(
 		f,
 		stickytest.MixedChecks.Get.Callable,
@@ -55,4 +57,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0afacd959ce4c03b9236c17412533b7a2ab557bac131528b09ac1ca36cd943bd
+// dokimi:provenance sha256:9ddfa44360619cba1df8c78362e00a0c052b6131183a36349642d961ebe4476d

@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	deleteremovestest.RunMixedSuite(t, deleteremovestest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Delete", func(b *testing.B) {
 		deleteremovestest.BenchMixedSuite(
 			b,
@@ -50,9 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryDelete fuzzes the property checks of Mixed.Delete on
-// InMemory.
-func FuzzInMemoryDelete(f *testing.F) {
+// FuzzInMemoryConformsToMixedDelete fuzzes the property checks of
+// Mixed.Delete on InMemory.
+func FuzzInMemoryConformsToMixedDelete(f *testing.F) {
 	deleteremovestest.FuzzMixedSuite(
 		f,
 		deleteremovestest.MixedChecks.Delete.Callable,
@@ -62,8 +62,9 @@ func FuzzInMemoryDelete(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
-func FuzzInMemoryPut(f *testing.F) {
+// FuzzInMemoryConformsToMixedPut fuzzes the property checks of Mixed.Put
+// on InMemory.
+func FuzzInMemoryConformsToMixedPut(f *testing.F) {
 	deleteremovestest.FuzzMixedSuite(
 		f,
 		deleteremovestest.MixedChecks.Put.Callable,
@@ -73,8 +74,9 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRead fuzzes the property checks of Mixed.Read on InMemory.
-func FuzzInMemoryRead(f *testing.F) {
+// FuzzInMemoryConformsToMixedRead fuzzes the property checks of Mixed.Read
+// on InMemory.
+func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	deleteremovestest.FuzzMixedSuite(
 		f,
 		deleteremovestest.MixedChecks.Read.Callable,
@@ -84,4 +86,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f2800e043459869e6870aac220e62f41428f2d4036c944cc7164b389787c4601
+// dokimi:provenance sha256:cf19582061c34bd2c85634bc9a6567281fc2830edec59afefe6d5336057e0a90

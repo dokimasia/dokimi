@@ -18,9 +18,9 @@ func TestInMemoryConformsToCompositeWriter(t *testing.T) {
 	compositewritertest.RunCompositeWriterSuite(t, compositewritertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of CompositeWriter
-// on InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToCompositeWriter measures each callable of the
+// suite of CompositeWriter on InMemory.
+func BenchmarkInMemoryConformsToCompositeWriter(b *testing.B) {
 	b.Run("Set", func(b *testing.B) {
 		compositewritertest.BenchCompositeWriterSuite(
 			b,
@@ -32,9 +32,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemorySet fuzzes the property checks of CompositeWriter.Set on
-// InMemory.
-func FuzzInMemorySet(f *testing.F) {
+// FuzzInMemoryConformsToCompositeWriterSet fuzzes the property checks of
+// CompositeWriter.Set on InMemory.
+func FuzzInMemoryConformsToCompositeWriterSet(f *testing.F) {
 	compositewritertest.FuzzCompositeWriterSuite(
 		f,
 		compositewritertest.CompositeWriterChecks.Set.Callable,
@@ -44,4 +44,4 @@ func FuzzInMemorySet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b37ad860b269e989244f77ed1ec280eaeb972c5ae9be86d55a050ce4ca3047ca
+// dokimi:provenance sha256:ccff60de37ead5d62f59ad9d9887829d26b333c75577f6ef216ef821c1f37858

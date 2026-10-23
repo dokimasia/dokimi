@@ -18,9 +18,9 @@ func TestInMemoryConformsToBatched(t *testing.T) {
 	batchedmixinstest.RunBatchedSuite(t, batchedmixinstest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Batched on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToBatched measures each callable of the suite
+// of Batched on InMemory.
+func BenchmarkInMemoryConformsToBatched(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
 		batchedmixinstest.BenchBatchedSuite(
 			b,
@@ -50,10 +50,10 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// BenchmarkInMemoryParallel measures each callable of the suite of Batched
-// that admits concurrent calls on InMemory, on GOMAXPROCS goroutines at
-// once.
-func BenchmarkInMemoryParallel(b *testing.B) {
+// BenchmarkInMemoryConformsToBatchedParallel measures each callable of the
+// suite of Batched that admits concurrent calls on InMemory, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkInMemoryConformsToBatchedParallel(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
 		batchedmixinstest.BenchBatchedSuiteParallel(
 			b,
@@ -65,8 +65,9 @@ func BenchmarkInMemoryParallel(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryPut fuzzes the property checks of Batched.Put on InMemory.
-func FuzzInMemoryPut(f *testing.F) {
+// FuzzInMemoryConformsToBatchedPut fuzzes the property checks of
+// Batched.Put on InMemory.
+func FuzzInMemoryConformsToBatchedPut(f *testing.F) {
 	batchedmixinstest.FuzzBatchedSuite(
 		f,
 		batchedmixinstest.BatchedChecks.Put.Callable,
@@ -76,8 +77,9 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRead fuzzes the property checks of Batched.Read on InMemory.
-func FuzzInMemoryRead(f *testing.F) {
+// FuzzInMemoryConformsToBatchedRead fuzzes the property checks of
+// Batched.Read on InMemory.
+func FuzzInMemoryConformsToBatchedRead(f *testing.F) {
 	batchedmixinstest.FuzzBatchedSuite(
 		f,
 		batchedmixinstest.BatchedChecks.Read.Callable,
@@ -87,8 +89,9 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryList fuzzes the property checks of Batched.List on InMemory.
-func FuzzInMemoryList(f *testing.F) {
+// FuzzInMemoryConformsToBatchedList fuzzes the property checks of
+// Batched.List on InMemory.
+func FuzzInMemoryConformsToBatchedList(f *testing.F) {
 	batchedmixinstest.FuzzBatchedSuite(
 		f,
 		batchedmixinstest.BatchedChecks.List.Callable,
@@ -98,4 +101,4 @@ func FuzzInMemoryList(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:213327e3bd7ea61632267b9c8765d64dcaefb80a62b7cf5369feb5fb4dbff143
+// dokimi:provenance sha256:8a0327f6ef6dcb5fc9e4f50eec3557a808f039bc5098189f725ca60527637856

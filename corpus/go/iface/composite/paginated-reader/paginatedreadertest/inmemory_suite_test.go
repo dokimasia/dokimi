@@ -18,9 +18,9 @@ func TestInMemoryConformsToPaginatedReader(t *testing.T) {
 	paginatedreadertest.RunPaginatedReaderSuite(t, paginatedreadertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of PaginatedReader
-// on InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToPaginatedReader measures each callable of the
+// suite of PaginatedReader on InMemory.
+func BenchmarkInMemoryConformsToPaginatedReader(b *testing.B) {
 	b.Run("Fetch", func(b *testing.B) {
 		paginatedreadertest.BenchPaginatedReaderSuite(
 			b,
@@ -41,9 +41,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryFetch fuzzes the property checks of PaginatedReader.Fetch on
-// InMemory.
-func FuzzInMemoryFetch(f *testing.F) {
+// FuzzInMemoryConformsToPaginatedReaderFetch fuzzes the property checks of
+// PaginatedReader.Fetch on InMemory.
+func FuzzInMemoryConformsToPaginatedReaderFetch(f *testing.F) {
 	paginatedreadertest.FuzzPaginatedReaderSuite(
 		f,
 		paginatedreadertest.PaginatedReaderChecks.Fetch.Callable,
@@ -53,9 +53,9 @@ func FuzzInMemoryFetch(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryAdd fuzzes the property checks of PaginatedReader.Add on
-// InMemory.
-func FuzzInMemoryAdd(f *testing.F) {
+// FuzzInMemoryConformsToPaginatedReaderAdd fuzzes the property checks of
+// PaginatedReader.Add on InMemory.
+func FuzzInMemoryConformsToPaginatedReaderAdd(f *testing.F) {
 	paginatedreadertest.FuzzPaginatedReaderSuite(
 		f,
 		paginatedreadertest.PaginatedReaderChecks.Add.Callable,
@@ -65,4 +65,4 @@ func FuzzInMemoryAdd(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a449a2c32c702bcb8237e2a346da1e55712880fe22350778601a36bde645dff0
+// dokimi:provenance sha256:1fb5f48ca669a4d786aff5e61dc2fd42b0f45e3766435cfeef038f589d1b8c2e

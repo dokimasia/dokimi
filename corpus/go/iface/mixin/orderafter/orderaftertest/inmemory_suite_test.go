@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	orderaftertest.RunMixedSuite(t, orderaftertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Commit", func(b *testing.B) {
 		orderaftertest.BenchMixedSuite(
 			b,
@@ -37,9 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryCommit fuzzes the property checks of Mixed.Commit on
-// InMemory.
-func FuzzInMemoryCommit(f *testing.F) {
+// FuzzInMemoryConformsToMixedCommit fuzzes the property checks of
+// Mixed.Commit on InMemory.
+func FuzzInMemoryConformsToMixedCommit(f *testing.F) {
 	orderaftertest.FuzzMixedSuite(
 		f,
 		orderaftertest.MixedChecks.Commit.Callable,
@@ -47,9 +47,9 @@ func FuzzInMemoryCommit(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryPrepare fuzzes the property checks of Mixed.Prepare on
-// InMemory.
-func FuzzInMemoryPrepare(f *testing.F) {
+// FuzzInMemoryConformsToMixedPrepare fuzzes the property checks of
+// Mixed.Prepare on InMemory.
+func FuzzInMemoryConformsToMixedPrepare(f *testing.F) {
 	orderaftertest.FuzzMixedSuite(
 		f,
 		orderaftertest.MixedChecks.Prepare.Callable,
@@ -57,4 +57,4 @@ func FuzzInMemoryPrepare(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e17b0b7cf05ef550dd56da978e009952109279d47a683de8dc1b871e68b33a15
+// dokimi:provenance sha256:b80b145906c6e411f65b392b458e41cdbcdf8876e372e94ece41e97a4dbf2264

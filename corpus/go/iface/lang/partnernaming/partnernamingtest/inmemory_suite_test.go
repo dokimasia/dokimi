@@ -18,9 +18,9 @@ func TestInMemoryConformsToStore(t *testing.T) {
 	partnernamingtest.RunStoreSuite(t, partnernamingtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Store on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToStore measures each callable of the suite of
+// Store on InMemory.
+func BenchmarkInMemoryConformsToStore(b *testing.B) {
 	b.Run("Touch", func(b *testing.B) {
 		partnernamingtest.BenchStoreSuite(
 			b,
@@ -77,8 +77,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryTouch fuzzes the property checks of Store.Touch on InMemory.
-func FuzzInMemoryTouch(f *testing.F) {
+// FuzzInMemoryConformsToStoreTouch fuzzes the property checks of
+// Store.Touch on InMemory.
+func FuzzInMemoryConformsToStoreTouch(f *testing.F) {
 	partnernamingtest.FuzzStoreSuite(
 		f,
 		partnernamingtest.StoreChecks.Touch.Callable,
@@ -88,8 +89,9 @@ func FuzzInMemoryTouch(f *testing.F) {
 	)
 }
 
-// FuzzInMemorySeen fuzzes the property checks of Store.Seen on InMemory.
-func FuzzInMemorySeen(f *testing.F) {
+// FuzzInMemoryConformsToStoreSeen fuzzes the property checks of Store.Seen
+// on InMemory.
+func FuzzInMemoryConformsToStoreSeen(f *testing.F) {
 	partnernamingtest.FuzzStoreSuite(
 		f,
 		partnernamingtest.StoreChecks.Seen.Callable,
@@ -99,8 +101,9 @@ func FuzzInMemorySeen(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryMove fuzzes the property checks of Store.Move on InMemory.
-func FuzzInMemoryMove(f *testing.F) {
+// FuzzInMemoryConformsToStoreMove fuzzes the property checks of Store.Move
+// on InMemory.
+func FuzzInMemoryConformsToStoreMove(f *testing.F) {
 	partnernamingtest.FuzzStoreSuite(
 		f,
 		partnernamingtest.StoreChecks.Move.Callable,
@@ -110,8 +113,9 @@ func FuzzInMemoryMove(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryAt fuzzes the property checks of Store.At on InMemory.
-func FuzzInMemoryAt(f *testing.F) {
+// FuzzInMemoryConformsToStoreAt fuzzes the property checks of Store.At on
+// InMemory.
+func FuzzInMemoryConformsToStoreAt(f *testing.F) {
 	partnernamingtest.FuzzStoreSuite(
 		f,
 		partnernamingtest.StoreChecks.At.Callable,
@@ -121,8 +125,9 @@ func FuzzInMemoryAt(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryEmit fuzzes the property checks of Store.Emit on InMemory.
-func FuzzInMemoryEmit(f *testing.F) {
+// FuzzInMemoryConformsToStoreEmit fuzzes the property checks of Store.Emit
+// on InMemory.
+func FuzzInMemoryConformsToStoreEmit(f *testing.F) {
 	partnernamingtest.FuzzStoreSuite(
 		f,
 		partnernamingtest.StoreChecks.Emit.Callable,
@@ -132,8 +137,9 @@ func FuzzInMemoryEmit(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryCount fuzzes the property checks of Store.Count on InMemory.
-func FuzzInMemoryCount(f *testing.F) {
+// FuzzInMemoryConformsToStoreCount fuzzes the property checks of
+// Store.Count on InMemory.
+func FuzzInMemoryConformsToStoreCount(f *testing.F) {
 	partnernamingtest.FuzzStoreSuite(
 		f,
 		partnernamingtest.StoreChecks.Count.Callable,
@@ -143,4 +149,4 @@ func FuzzInMemoryCount(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b81acc0f8ee3c3940622dd44382c1fc4ece193b8c9b52f5e5b9f4d32a5fcaa26
+// dokimi:provenance sha256:716a0a4f099c0e9b9b7cb6a8654ea06c235896113177ae305d8f120b45417995

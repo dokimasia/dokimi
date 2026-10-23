@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	circuitbreakertest.RunContractSuite(t, circuitbreakertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Run", func(b *testing.B) {
 		circuitbreakertest.BenchContractSuite(
 			b,
@@ -32,8 +32,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryRun fuzzes the property checks of Contract.Run on InMemory.
-func FuzzInMemoryRun(f *testing.F) {
+// FuzzInMemoryConformsToContractRun fuzzes the property checks of
+// Contract.Run on InMemory.
+func FuzzInMemoryConformsToContractRun(f *testing.F) {
 	circuitbreakertest.FuzzContractSuite(
 		f,
 		circuitbreakertest.ContractChecks.Run.Callable,
@@ -43,4 +44,4 @@ func FuzzInMemoryRun(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ca66e5306c4a354109b037d86829a60390801265c2e7408dc22f452bddf05876
+// dokimi:provenance sha256:b6d5fb7f51a6caf98d88dfddb9c6a7299ac82a3607fc8d25a7b2e602eb1de898

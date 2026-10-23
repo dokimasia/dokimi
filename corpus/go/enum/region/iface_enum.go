@@ -15,13 +15,14 @@ func (v Region) String() string {
 	return string(v)
 }
 
-// ErrUnknownRegion is the error of text that names no declared variant.
-// The error of [ParseRegion] wraps it with the text.
+// ErrUnknownRegion is the error of a text that does not match a declared
+// variant. The error of [ParseRegion] wraps it with the text.
 var ErrUnknownRegion = errors.New("region: unknown Region value")
 
 // ParseRegion returns the variant of Region whose text is s. It is the
 // inverse of [Region.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownRegion] for text that names no declared variant.
+// that wraps [ErrUnknownRegion] for a text that does not match a declared
+// variant.
 func ParseRegion(s string) (Region, error) {
 	switch s {
 	case "us-east":
@@ -63,7 +64,8 @@ func (v Region) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseRegion] for text that names no declared variant.
+// error of [ParseRegion] for a text that does not match a declared
+// variant.
 func (v *Region) UnmarshalText(text []byte) error {
 	parsed, err := ParseRegion(string(text))
 	if err != nil {
@@ -73,4 +75,4 @@ func (v *Region) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:ca97d2187ac64f8f6ec6663d1a7f4c1cf27c621139b94de48bee8e0d3bf1478d
+// dokimi:provenance sha256:58ae90a1924ba8c8d1596396a1c8fe243678ecb4512b5b2c58ae8158d8dc3503

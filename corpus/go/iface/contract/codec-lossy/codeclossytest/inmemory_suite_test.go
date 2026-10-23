@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	codeclossytest.RunContractSuite(t, codeclossytest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Encode", func(b *testing.B) {
 		codeclossytest.BenchContractSuite(
 			b,
@@ -37,9 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryEncode fuzzes the property checks of Contract.Encode on
-// InMemory.
-func FuzzInMemoryEncode(f *testing.F) {
+// FuzzInMemoryConformsToContractEncode fuzzes the property checks of
+// Contract.Encode on InMemory.
+func FuzzInMemoryConformsToContractEncode(f *testing.F) {
 	codeclossytest.FuzzContractSuite(
 		f,
 		codeclossytest.ContractChecks.Encode.Callable,
@@ -47,9 +47,9 @@ func FuzzInMemoryEncode(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryDecode fuzzes the property checks of Contract.Decode on
-// InMemory.
-func FuzzInMemoryDecode(f *testing.F) {
+// FuzzInMemoryConformsToContractDecode fuzzes the property checks of
+// Contract.Decode on InMemory.
+func FuzzInMemoryConformsToContractDecode(f *testing.F) {
 	codeclossytest.FuzzContractSuite(
 		f,
 		codeclossytest.ContractChecks.Decode.Callable,
@@ -57,4 +57,4 @@ func FuzzInMemoryDecode(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:1b28639543d5ccbc301213e67cf79ca14a61e2f793ad80ea22e4ebb9a64c5ffe
+// dokimi:provenance sha256:5c8778a505520c39a3387d55c750b54527fa93bfc8ff60ef4da4bec5ce16de69

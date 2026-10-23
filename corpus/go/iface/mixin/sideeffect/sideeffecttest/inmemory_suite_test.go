@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	sideeffecttest.RunMixedSuite(t, sideeffecttest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Touch", func(b *testing.B) {
 		sideeffecttest.BenchMixedSuite(
 			b,
@@ -37,8 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryTouch fuzzes the property checks of Mixed.Touch on InMemory.
-func FuzzInMemoryTouch(f *testing.F) {
+// FuzzInMemoryConformsToMixedTouch fuzzes the property checks of
+// Mixed.Touch on InMemory.
+func FuzzInMemoryConformsToMixedTouch(f *testing.F) {
 	sideeffecttest.FuzzMixedSuite(
 		f,
 		sideeffecttest.MixedChecks.Touch.Callable,
@@ -46,9 +47,9 @@ func FuzzInMemoryTouch(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryObserved fuzzes the property checks of Mixed.Observed on
-// InMemory.
-func FuzzInMemoryObserved(f *testing.F) {
+// FuzzInMemoryConformsToMixedObserved fuzzes the property checks of
+// Mixed.Observed on InMemory.
+func FuzzInMemoryConformsToMixedObserved(f *testing.F) {
 	sideeffecttest.FuzzMixedSuite(
 		f,
 		sideeffecttest.MixedChecks.Observed.Callable,
@@ -56,4 +57,4 @@ func FuzzInMemoryObserved(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f9909931b19fd742066f3448b85bc2ff170d01c9283e4a3ddf140f2be32ce462
+// dokimi:provenance sha256:8afc73ef1463b9527dc54cf9e013ebcb36e32773011df13bce9777ff58c661d9

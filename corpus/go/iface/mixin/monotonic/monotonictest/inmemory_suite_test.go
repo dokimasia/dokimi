@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	monotonictest.RunMixedSuite(t, monotonictest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Version", func(b *testing.B) {
 		monotonictest.BenchMixedSuite(
 			b,
@@ -37,9 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryVersion fuzzes the property checks of Mixed.Version on
-// InMemory.
-func FuzzInMemoryVersion(f *testing.F) {
+// FuzzInMemoryConformsToMixedVersion fuzzes the property checks of
+// Mixed.Version on InMemory.
+func FuzzInMemoryConformsToMixedVersion(f *testing.F) {
 	monotonictest.FuzzMixedSuite(
 		f,
 		monotonictest.MixedChecks.Version.Callable,
@@ -47,9 +47,9 @@ func FuzzInMemoryVersion(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryAdvance fuzzes the property checks of Mixed.Advance on
-// InMemory.
-func FuzzInMemoryAdvance(f *testing.F) {
+// FuzzInMemoryConformsToMixedAdvance fuzzes the property checks of
+// Mixed.Advance on InMemory.
+func FuzzInMemoryConformsToMixedAdvance(f *testing.F) {
 	monotonictest.FuzzMixedSuite(
 		f,
 		monotonictest.MixedChecks.Advance.Callable,
@@ -57,4 +57,4 @@ func FuzzInMemoryAdvance(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:66d06d42e45222ec5094ab61ab803ace64dd31dc2575adbb3f2a6867007c6047
+// dokimi:provenance sha256:1e8d91ecc4f969ca8789820f5df8d4b6e6bafef44fb9fed90559bd31e0424810

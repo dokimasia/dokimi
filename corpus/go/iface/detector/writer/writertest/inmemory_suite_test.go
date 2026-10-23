@@ -18,9 +18,9 @@ func TestInMemoryConformsToWriter(t *testing.T) {
 	writertest.RunWriterSuite(t, writertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Writer on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToWriter measures each callable of the suite of
+// Writer on InMemory.
+func BenchmarkInMemoryConformsToWriter(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
 		writertest.BenchWriterSuite(
 			b,
@@ -30,8 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryPut fuzzes the property checks of Writer.Put on InMemory.
-func FuzzInMemoryPut(f *testing.F) {
+// FuzzInMemoryConformsToWriterPut fuzzes the property checks of Writer.Put
+// on InMemory.
+func FuzzInMemoryConformsToWriterPut(f *testing.F) {
 	writertest.FuzzWriterSuite(
 		f,
 		writertest.WriterChecks.Put.Callable,
@@ -39,4 +40,4 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:882f93ae6d2e15ccfc6eb7ce22981add6283047d5aeded6fb4e29957335fa394
+// dokimi:provenance sha256:9bf8636dc2bd34781d127670652a0066ac7c5782cf7ffbdc9895a8733e4299b1

@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	crdtmergetest.RunMixedSuite(t, crdtmergetest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Merge", func(b *testing.B) {
 		crdtmergetest.BenchMixedSuite(
 			b,
@@ -44,8 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryMerge fuzzes the property checks of Mixed.Merge on InMemory.
-func FuzzInMemoryMerge(f *testing.F) {
+// FuzzInMemoryConformsToMixedMerge fuzzes the property checks of
+// Mixed.Merge on InMemory.
+func FuzzInMemoryConformsToMixedMerge(f *testing.F) {
 	crdtmergetest.FuzzMixedSuite(
 		f,
 		crdtmergetest.MixedChecks.Merge.Callable,
@@ -53,8 +54,9 @@ func FuzzInMemoryMerge(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryAdd fuzzes the property checks of Mixed.Add on InMemory.
-func FuzzInMemoryAdd(f *testing.F) {
+// FuzzInMemoryConformsToMixedAdd fuzzes the property checks of Mixed.Add
+// on InMemory.
+func FuzzInMemoryConformsToMixedAdd(f *testing.F) {
 	crdtmergetest.FuzzMixedSuite(
 		f,
 		crdtmergetest.MixedChecks.Add.Callable,
@@ -62,8 +64,9 @@ func FuzzInMemoryAdd(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryItems fuzzes the property checks of Mixed.Items on InMemory.
-func FuzzInMemoryItems(f *testing.F) {
+// FuzzInMemoryConformsToMixedItems fuzzes the property checks of
+// Mixed.Items on InMemory.
+func FuzzInMemoryConformsToMixedItems(f *testing.F) {
 	crdtmergetest.FuzzMixedSuite(
 		f,
 		crdtmergetest.MixedChecks.Items.Callable,
@@ -71,4 +74,4 @@ func FuzzInMemoryItems(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:0b7def8b7aacc3a96320871ee826f47f6dcd431d4817ea6103c529ff1f07c44a
+// dokimi:provenance sha256:eed26b13bc8e6dcd67646687fe95e3dcd5aada009865447676447feb707f62c7

@@ -18,9 +18,9 @@ func TestInMemoryFileConformsToFile(t *testing.T) {
 	suitedhandletest.RunFileSuite(t, suitedhandletest.NewInMemoryFile)
 }
 
-// BenchmarkInMemoryFile measures each callable of the suite of File on
-// InMemoryFile.
-func BenchmarkInMemoryFile(b *testing.B) {
+// BenchmarkInMemoryFileConformsToFile measures each callable of the suite
+// of File on InMemoryFile.
+func BenchmarkInMemoryFileConformsToFile(b *testing.B) {
 	b.Run("Name", func(b *testing.B) {
 		suitedhandletest.BenchFileSuite(
 			b,
@@ -41,9 +41,9 @@ func BenchmarkInMemoryFile(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryFileName fuzzes the property checks of File.Name on
-// InMemoryFile.
-func FuzzInMemoryFileName(f *testing.F) {
+// FuzzInMemoryFileConformsToFileName fuzzes the property checks of
+// File.Name on InMemoryFile.
+func FuzzInMemoryFileConformsToFileName(f *testing.F) {
 	suitedhandletest.FuzzFileSuite(
 		f,
 		suitedhandletest.FileChecks.Name.Callable,
@@ -53,9 +53,9 @@ func FuzzInMemoryFileName(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryFileClose fuzzes the property checks of File.Close on
-// InMemoryFile.
-func FuzzInMemoryFileClose(f *testing.F) {
+// FuzzInMemoryFileConformsToFileClose fuzzes the property checks of
+// File.Close on InMemoryFile.
+func FuzzInMemoryFileConformsToFileClose(f *testing.F) {
 	suitedhandletest.FuzzFileSuite(
 		f,
 		suitedhandletest.FileChecks.Close.Callable,
@@ -73,9 +73,9 @@ func TestInMemoryFSConformsToFS(t *testing.T) {
 	suitedhandletest.RunFSSuite(t, suitedhandletest.NewInMemoryFS)
 }
 
-// BenchmarkInMemoryFS measures each callable of the suite of FS on
-// InMemoryFS.
-func BenchmarkInMemoryFS(b *testing.B) {
+// BenchmarkInMemoryFSConformsToFS measures each callable of the suite of
+// FS on InMemoryFS.
+func BenchmarkInMemoryFSConformsToFS(b *testing.B) {
 	b.Run("Open", func(b *testing.B) {
 		suitedhandletest.BenchFSSuite(
 			b,
@@ -85,8 +85,9 @@ func BenchmarkInMemoryFS(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryFSOpen fuzzes the property checks of FS.Open on InMemoryFS.
-func FuzzInMemoryFSOpen(f *testing.F) {
+// FuzzInMemoryFSConformsToFSOpen fuzzes the property checks of FS.Open on
+// InMemoryFS.
+func FuzzInMemoryFSConformsToFSOpen(f *testing.F) {
 	suitedhandletest.FuzzFSSuite(
 		f,
 		suitedhandletest.FSChecks.Open.Callable,
@@ -94,4 +95,4 @@ func FuzzInMemoryFSOpen(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:cdb118b84f23f267bce80ae271d0e5536417e1cb7bff0cdca01ebc103c896461
+// dokimi:provenance sha256:e49c1ff1c6e7048a26a02757af44fe2db9ec49edc45294d7647c26f85e97229c

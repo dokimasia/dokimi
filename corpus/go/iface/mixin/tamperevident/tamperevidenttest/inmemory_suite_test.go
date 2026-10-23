@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	tamperevidenttest.RunMixedSuite(t, tamperevidenttest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
 		tamperevidenttest.BenchMixedSuite(
 			b,
@@ -50,8 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryStore fuzzes the property checks of Mixed.Store on InMemory.
-func FuzzInMemoryStore(f *testing.F) {
+// FuzzInMemoryConformsToMixedStore fuzzes the property checks of
+// Mixed.Store on InMemory.
+func FuzzInMemoryConformsToMixedStore(f *testing.F) {
 	tamperevidenttest.FuzzMixedSuite(
 		f,
 		tamperevidenttest.MixedChecks.Store.Callable,
@@ -61,9 +62,9 @@ func FuzzInMemoryStore(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryCorrupt fuzzes the property checks of Mixed.Corrupt on
-// InMemory.
-func FuzzInMemoryCorrupt(f *testing.F) {
+// FuzzInMemoryConformsToMixedCorrupt fuzzes the property checks of
+// Mixed.Corrupt on InMemory.
+func FuzzInMemoryConformsToMixedCorrupt(f *testing.F) {
 	tamperevidenttest.FuzzMixedSuite(
 		f,
 		tamperevidenttest.MixedChecks.Corrupt.Callable,
@@ -73,9 +74,9 @@ func FuzzInMemoryCorrupt(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryVerify fuzzes the property checks of Mixed.Verify on
-// InMemory.
-func FuzzInMemoryVerify(f *testing.F) {
+// FuzzInMemoryConformsToMixedVerify fuzzes the property checks of
+// Mixed.Verify on InMemory.
+func FuzzInMemoryConformsToMixedVerify(f *testing.F) {
 	tamperevidenttest.FuzzMixedSuite(
 		f,
 		tamperevidenttest.MixedChecks.Verify.Callable,
@@ -85,4 +86,4 @@ func FuzzInMemoryVerify(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:907ff5c56dba84fc4fd36ebca3e7427a2227f12f5e30c285f34b0b2dc5f04baf
+// dokimi:provenance sha256:6cdeafbb6ad0d5437271d95eb338ed0da323fd1d56a95d68c45a1899cfd02737

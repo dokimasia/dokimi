@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	timeouttest.RunMixedSuite(t, timeouttest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Slow", func(b *testing.B) {
 		timeouttest.BenchMixedSuite(
 			b,
@@ -30,8 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemorySlow fuzzes the property checks of Mixed.Slow on InMemory.
-func FuzzInMemorySlow(f *testing.F) {
+// FuzzInMemoryConformsToMixedSlow fuzzes the property checks of Mixed.Slow
+// on InMemory.
+func FuzzInMemoryConformsToMixedSlow(f *testing.F) {
 	timeouttest.FuzzMixedSuite(
 		f,
 		timeouttest.MixedChecks.Slow.Callable,
@@ -39,4 +40,4 @@ func FuzzInMemorySlow(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:94830faf8b628c179aa1b38ebbf52f19fa650f55a0ce263b0680819df7ff726c
+// dokimi:provenance sha256:ea1ea68bdf058659e643551b3f6d0487b7f3fa775a599ecd74f397bad1dc7fc4

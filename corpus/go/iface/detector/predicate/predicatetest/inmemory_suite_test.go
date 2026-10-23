@@ -18,9 +18,9 @@ func TestInMemoryConformsToPredicate(t *testing.T) {
 	predicatetest.RunPredicateSuite(t, predicatetest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Predicate on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToPredicate measures each callable of the suite
+// of Predicate on InMemory.
+func BenchmarkInMemoryConformsToPredicate(b *testing.B) {
 	b.Run("IsEmpty", func(b *testing.B) {
 		predicatetest.BenchPredicateSuite(
 			b,
@@ -30,9 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryIsEmpty fuzzes the property checks of Predicate.IsEmpty on
-// InMemory.
-func FuzzInMemoryIsEmpty(f *testing.F) {
+// FuzzInMemoryConformsToPredicateIsEmpty fuzzes the property checks of
+// Predicate.IsEmpty on InMemory.
+func FuzzInMemoryConformsToPredicateIsEmpty(f *testing.F) {
 	predicatetest.FuzzPredicateSuite(
 		f,
 		predicatetest.PredicateChecks.IsEmpty.Callable,
@@ -40,4 +40,4 @@ func FuzzInMemoryIsEmpty(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:4575054879fe619d9cf5a908996d6662ca3b2b0aded1166bb615e58d53b670b8
+// dokimi:provenance sha256:2f8ec00250b6e7074e710e9cd000585129245497cdf684a1f0cbec9fd9f47c10

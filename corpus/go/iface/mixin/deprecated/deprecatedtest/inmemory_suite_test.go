@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	deprecatedtest.RunMixedSuite(t, deprecatedtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Old", func(b *testing.B) {
 		deprecatedtest.BenchMixedSuite(
 			b,
@@ -37,8 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryOld fuzzes the property checks of Mixed.Old on InMemory.
-func FuzzInMemoryOld(f *testing.F) {
+// FuzzInMemoryConformsToMixedOld fuzzes the property checks of Mixed.Old
+// on InMemory.
+func FuzzInMemoryConformsToMixedOld(f *testing.F) {
 	deprecatedtest.FuzzMixedSuite(
 		f,
 		deprecatedtest.MixedChecks.Old.Callable,
@@ -46,8 +47,9 @@ func FuzzInMemoryOld(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryNew fuzzes the property checks of Mixed.New on InMemory.
-func FuzzInMemoryNew(f *testing.F) {
+// FuzzInMemoryConformsToMixedNew fuzzes the property checks of Mixed.New
+// on InMemory.
+func FuzzInMemoryConformsToMixedNew(f *testing.F) {
 	deprecatedtest.FuzzMixedSuite(
 		f,
 		deprecatedtest.MixedChecks.New.Callable,
@@ -55,4 +57,4 @@ func FuzzInMemoryNew(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:34cadef431e7d21b2db1ca84b9e8286aced9d07353962ccd23c1752da4f31ce1
+// dokimi:provenance sha256:be98eb94af00525305d75658b19531cdd48ff94d9a702cf6c6a7463959aff1db

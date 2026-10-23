@@ -22,12 +22,12 @@ export function priorityToString(value: Priority): string {
   return `Priority(${String(value)})`;
 }
 
-/** UnknownPriorityError is the error of text that names no declared variant of Priority. */
+/** UnknownPriorityError is the error of a text that does not match a declared variant of Priority. */
 export class UnknownPriorityError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`iface: unknown Priority value ${JSON.stringify(text)}`);
     this.name = "UnknownPriorityError";
@@ -39,7 +39,8 @@ export class UnknownPriorityError extends Error {
  * parsePriority returns the variant of Priority whose text is text. It is
  * the inverse of priorityToString on the declared variants.
  *
- * @throws UnknownPriorityError for text that names no declared variant.
+ * @throws UnknownPriorityError for a text that does not match a declared
+ * variant.
  */
 export function parsePriority(text: string): Priority {
   switch (text) {
@@ -83,4 +84,4 @@ export function isPriority(value: unknown): value is Priority {
   return false;
 }
 
-// dokimi:provenance sha256:04ca8c049a79e98260b70fdb28c1a44d63fcab98ac162bfbfac62abefa3d8dfa
+// dokimi:provenance sha256:c9352a356c911dbe057a3e7bd67a04ffb331ecf20016de9ca575b7dcbe733152

@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	chaintest.RunContractSuite(t, chaintest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Append", func(b *testing.B) {
 		chaintest.BenchContractSuite(
 			b,
@@ -44,9 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryAppend fuzzes the property checks of Contract.Append on
-// InMemory.
-func FuzzInMemoryAppend(f *testing.F) {
+// FuzzInMemoryConformsToContractAppend fuzzes the property checks of
+// Contract.Append on InMemory.
+func FuzzInMemoryConformsToContractAppend(f *testing.F) {
 	chaintest.FuzzContractSuite(
 		f,
 		chaintest.ContractChecks.Append.Callable,
@@ -54,9 +54,9 @@ func FuzzInMemoryAppend(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryReplay fuzzes the property checks of Contract.Replay on
-// InMemory.
-func FuzzInMemoryReplay(f *testing.F) {
+// FuzzInMemoryConformsToContractReplay fuzzes the property checks of
+// Contract.Replay on InMemory.
+func FuzzInMemoryConformsToContractReplay(f *testing.F) {
 	chaintest.FuzzContractSuite(
 		f,
 		chaintest.ContractChecks.Replay.Callable,
@@ -64,9 +64,9 @@ func FuzzInMemoryReplay(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryVerify fuzzes the property checks of Contract.Verify on
-// InMemory.
-func FuzzInMemoryVerify(f *testing.F) {
+// FuzzInMemoryConformsToContractVerify fuzzes the property checks of
+// Contract.Verify on InMemory.
+func FuzzInMemoryConformsToContractVerify(f *testing.F) {
 	chaintest.FuzzContractSuite(
 		f,
 		chaintest.ContractChecks.Verify.Callable,
@@ -74,4 +74,4 @@ func FuzzInMemoryVerify(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:7e5bdb9dae3ec67683e3bd8c652ad83095f9a503e62d67d7fa441ecfd2073cfd
+// dokimi:provenance sha256:47d345ff2fddb8c9ae0c80069812d5cded72cdad6aff57619da352f34dd5550a

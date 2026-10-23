@@ -27,9 +27,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	)
 }
 
-// TestInMemoryAllocs applies the allocation ceilings of the suite of Mixed
-// to InMemory.
-func TestInMemoryAllocs(t *testing.T) {
+// TestInMemoryConformsToMixedAllocs applies the allocation ceilings of the
+// suite of Mixed to InMemory.
+func TestInMemoryConformsToMixedAllocs(t *testing.T) {
 	ttltest.RunMixedBudgets(
 		t,
 		func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
@@ -48,9 +48,9 @@ func TestInMemoryAllocs(t *testing.T) {
 	)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	opts := []ttltest.MixedOption{
 		conform.Ceilings(
 			ttltest.MixedChecks.Put.Callable,
@@ -81,8 +81,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
-func FuzzInMemoryPut(f *testing.F) {
+// FuzzInMemoryConformsToMixedPut fuzzes the property checks of Mixed.Put
+// on InMemory.
+func FuzzInMemoryConformsToMixedPut(f *testing.F) {
 	ttltest.FuzzMixedSuite(
 		f,
 		ttltest.MixedChecks.Put.Callable,
@@ -94,8 +95,9 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRead fuzzes the property checks of Mixed.Read on InMemory.
-func FuzzInMemoryRead(f *testing.F) {
+// FuzzInMemoryConformsToMixedRead fuzzes the property checks of Mixed.Read
+// on InMemory.
+func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	ttltest.FuzzMixedSuite(
 		f,
 		ttltest.MixedChecks.Read.Callable,
@@ -107,4 +109,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:e5efde5901c5c8668e0c9cb47e5e0e7d9222b9a2ba994797877d81f42a1f85f6
+// dokimi:provenance sha256:ff205d79a0c19af69d6709bfba567d9df7b1e63319933320a96e99143ab1a21d

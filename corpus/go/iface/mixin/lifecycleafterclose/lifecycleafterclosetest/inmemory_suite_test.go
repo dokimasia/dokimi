@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	lifecycleafterclosetest.RunMixedSuite(t, lifecycleafterclosetest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Close", func(b *testing.B) {
 		lifecycleafterclosetest.BenchMixedSuite(
 			b,
@@ -41,8 +41,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryClose fuzzes the property checks of Mixed.Close on InMemory.
-func FuzzInMemoryClose(f *testing.F) {
+// FuzzInMemoryConformsToMixedClose fuzzes the property checks of
+// Mixed.Close on InMemory.
+func FuzzInMemoryConformsToMixedClose(f *testing.F) {
 	lifecycleafterclosetest.FuzzMixedSuite(
 		f,
 		lifecycleafterclosetest.MixedChecks.Close.Callable,
@@ -52,8 +53,9 @@ func FuzzInMemoryClose(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryWork fuzzes the property checks of Mixed.Work on InMemory.
-func FuzzInMemoryWork(f *testing.F) {
+// FuzzInMemoryConformsToMixedWork fuzzes the property checks of Mixed.Work
+// on InMemory.
+func FuzzInMemoryConformsToMixedWork(f *testing.F) {
 	lifecycleafterclosetest.FuzzMixedSuite(
 		f,
 		lifecycleafterclosetest.MixedChecks.Work.Callable,
@@ -63,4 +65,4 @@ func FuzzInMemoryWork(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:aecb3f1e74145ed26f9a7293ec8b83a2ade5909d654a07e6ac7402eab83a3d03
+// dokimi:provenance sha256:f27513d802aec0886d8e1b472be6c81c176c045a7ce18a85c304bbf1155b6ab3

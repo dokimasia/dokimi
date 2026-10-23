@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	txtest.RunContractSuite(t, txtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Begin", func(b *testing.B) {
 		txtest.BenchContractSuite(
 			b,
@@ -58,9 +58,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryBegin fuzzes the property checks of Contract.Begin on
-// InMemory.
-func FuzzInMemoryBegin(f *testing.F) {
+// FuzzInMemoryConformsToContractBegin fuzzes the property checks of
+// Contract.Begin on InMemory.
+func FuzzInMemoryConformsToContractBegin(f *testing.F) {
 	txtest.FuzzContractSuite(
 		f,
 		txtest.ContractChecks.Begin.Callable,
@@ -68,9 +68,9 @@ func FuzzInMemoryBegin(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryCommit fuzzes the property checks of Contract.Commit on
-// InMemory.
-func FuzzInMemoryCommit(f *testing.F) {
+// FuzzInMemoryConformsToContractCommit fuzzes the property checks of
+// Contract.Commit on InMemory.
+func FuzzInMemoryConformsToContractCommit(f *testing.F) {
 	txtest.FuzzContractSuite(
 		f,
 		txtest.ContractChecks.Commit.Callable,
@@ -78,9 +78,9 @@ func FuzzInMemoryCommit(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRollback fuzzes the property checks of Contract.Rollback on
-// InMemory.
-func FuzzInMemoryRollback(f *testing.F) {
+// FuzzInMemoryConformsToContractRollback fuzzes the property checks of
+// Contract.Rollback on InMemory.
+func FuzzInMemoryConformsToContractRollback(f *testing.F) {
 	txtest.FuzzContractSuite(
 		f,
 		txtest.ContractChecks.Rollback.Callable,
@@ -88,8 +88,9 @@ func FuzzInMemoryRollback(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryPut fuzzes the property checks of Contract.Put on InMemory.
-func FuzzInMemoryPut(f *testing.F) {
+// FuzzInMemoryConformsToContractPut fuzzes the property checks of
+// Contract.Put on InMemory.
+func FuzzInMemoryConformsToContractPut(f *testing.F) {
 	txtest.FuzzContractSuite(
 		f,
 		txtest.ContractChecks.Put.Callable,
@@ -97,8 +98,9 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryGet fuzzes the property checks of Contract.Get on InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToContractGet fuzzes the property checks of
+// Contract.Get on InMemory.
+func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	txtest.FuzzContractSuite(
 		f,
 		txtest.ContractChecks.Get.Callable,
@@ -106,4 +108,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:17aa1604e7a83f59ada726769a4dbda51c42791920336da44d79093d45ad6717
+// dokimi:provenance sha256:5e406fc124f6d1a3d96a4470b5c42d70c9fe12b91f9a61671250623990e01eb6

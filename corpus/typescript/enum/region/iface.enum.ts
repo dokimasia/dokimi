@@ -20,12 +20,12 @@ export function regionToString(value: Region): string {
   return String(value);
 }
 
-/** UnknownRegionError is the error of text that names no declared variant of Region. */
+/** UnknownRegionError is the error of a text that does not match a declared variant of Region. */
 export class UnknownRegionError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`iface: unknown Region value ${JSON.stringify(text)}`);
     this.name = "UnknownRegionError";
@@ -37,7 +37,8 @@ export class UnknownRegionError extends Error {
  * parseRegion returns the variant of Region whose text is text. It is the
  * inverse of regionToString on the declared variants.
  *
- * @throws UnknownRegionError for text that names no declared variant.
+ * @throws UnknownRegionError for a text that does not match a declared
+ * variant.
  */
 export function parseRegion(text: string): Region {
   switch (text) {
@@ -77,4 +78,4 @@ export function isRegion(value: unknown): value is Region {
   return false;
 }
 
-// dokimi:provenance sha256:8198d12908350c7080c9dd229a07504dcfd10ada8b011013f24ee19ced6a9e49
+// dokimi:provenance sha256:eb730b8387def9a25d9cb3eed648235aa3f0243207cac76aac588b56ea32f992

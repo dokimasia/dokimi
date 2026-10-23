@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	publisherexactlyoncetest.RunContractSuite(t, publisherexactlyoncetest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Publish", func(b *testing.B) {
 		publisherexactlyoncetest.BenchContractSuite(
 			b,
@@ -50,9 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryPublish fuzzes the property checks of Contract.Publish on
-// InMemory.
-func FuzzInMemoryPublish(f *testing.F) {
+// FuzzInMemoryConformsToContractPublish fuzzes the property checks of
+// Contract.Publish on InMemory.
+func FuzzInMemoryConformsToContractPublish(f *testing.F) {
 	publisherexactlyoncetest.FuzzContractSuite(
 		f,
 		publisherexactlyoncetest.ContractChecks.Publish.Callable,
@@ -62,9 +62,9 @@ func FuzzInMemoryPublish(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryReplay fuzzes the property checks of Contract.Replay on
-// InMemory.
-func FuzzInMemoryReplay(f *testing.F) {
+// FuzzInMemoryConformsToContractReplay fuzzes the property checks of
+// Contract.Replay on InMemory.
+func FuzzInMemoryConformsToContractReplay(f *testing.F) {
 	publisherexactlyoncetest.FuzzContractSuite(
 		f,
 		publisherexactlyoncetest.ContractChecks.Replay.Callable,
@@ -74,9 +74,9 @@ func FuzzInMemoryReplay(f *testing.F) {
 	)
 }
 
-// FuzzInMemorySubscribe fuzzes the property checks of Contract.Subscribe
-// on InMemory.
-func FuzzInMemorySubscribe(f *testing.F) {
+// FuzzInMemoryConformsToContractSubscribe fuzzes the property checks of
+// Contract.Subscribe on InMemory.
+func FuzzInMemoryConformsToContractSubscribe(f *testing.F) {
 	publisherexactlyoncetest.FuzzContractSuite(
 		f,
 		publisherexactlyoncetest.ContractChecks.Subscribe.Callable,
@@ -86,4 +86,4 @@ func FuzzInMemorySubscribe(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c90ae12249f078792ae4db5b70b44ab532b60c0463e3ec09d8982b4638758865
+// dokimi:provenance sha256:5653d388952f128e27cb5f2e7947c7f1d44c6e7ebb38ea999ce3baaad68f5724

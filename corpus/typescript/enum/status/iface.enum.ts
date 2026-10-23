@@ -20,12 +20,12 @@ export function statusToString(value: Status): string {
   return `Status(${String(value)})`;
 }
 
-/** UnknownStatusError is the error of text that names no declared variant of Status. */
+/** UnknownStatusError is the error of a text that does not match a declared variant of Status. */
 export class UnknownStatusError extends Error {
-  /** text is the text that names no declared variant. */
+  /** text is the text that does not match a declared variant. */
   readonly text: string;
 
-  /** Creates the error of the text that names no declared variant. */
+  /** Creates the error of a text that does not match a declared variant. */
   constructor(text: string) {
     super(`iface: unknown Status value ${JSON.stringify(text)}`);
     this.name = "UnknownStatusError";
@@ -37,7 +37,8 @@ export class UnknownStatusError extends Error {
  * parseStatus returns the variant of Status whose text is text. It is the
  * inverse of statusToString on the declared variants.
  *
- * @throws UnknownStatusError for text that names no declared variant.
+ * @throws UnknownStatusError for a text that does not match a declared
+ * variant.
  */
 export function parseStatus(text: string): Status {
   switch (text) {
@@ -77,4 +78,4 @@ export function isStatus(value: unknown): value is Status {
   return false;
 }
 
-// dokimi:provenance sha256:2b01106bd327b4de073f787c8f090cd0f5bbb07929946945faa0256ef28289f1
+// dokimi:provenance sha256:d0100227d05744fac06ad5b7d6567222f4f9b7da3ec8e052a3a754cc32f5360a

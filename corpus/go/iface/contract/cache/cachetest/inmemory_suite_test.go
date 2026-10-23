@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	cachetest.RunContractSuite(t, cachetest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
 		cachetest.BenchContractSuite(
 			b,
@@ -44,9 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryStore fuzzes the property checks of Contract.Store on
-// InMemory.
-func FuzzInMemoryStore(f *testing.F) {
+// FuzzInMemoryConformsToContractStore fuzzes the property checks of
+// Contract.Store on InMemory.
+func FuzzInMemoryConformsToContractStore(f *testing.F) {
 	cachetest.FuzzContractSuite(
 		f,
 		cachetest.ContractChecks.Store.Callable,
@@ -54,9 +54,9 @@ func FuzzInMemoryStore(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryLookup fuzzes the property checks of Contract.Lookup on
-// InMemory.
-func FuzzInMemoryLookup(f *testing.F) {
+// FuzzInMemoryConformsToContractLookup fuzzes the property checks of
+// Contract.Lookup on InMemory.
+func FuzzInMemoryConformsToContractLookup(f *testing.F) {
 	cachetest.FuzzContractSuite(
 		f,
 		cachetest.ContractChecks.Lookup.Callable,
@@ -64,9 +64,9 @@ func FuzzInMemoryLookup(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryFetch fuzzes the property checks of Contract.Fetch on
-// InMemory.
-func FuzzInMemoryFetch(f *testing.F) {
+// FuzzInMemoryConformsToContractFetch fuzzes the property checks of
+// Contract.Fetch on InMemory.
+func FuzzInMemoryConformsToContractFetch(f *testing.F) {
 	cachetest.FuzzContractSuite(
 		f,
 		cachetest.ContractChecks.Fetch.Callable,
@@ -74,4 +74,4 @@ func FuzzInMemoryFetch(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ab4aae0c4c905142cf6a66ee0843d57486cdd9cce981f5519a2912610e00c7ed
+// dokimi:provenance sha256:32d72f3f44c1d6f656876f2cc6308a7e0c6e48cba923986a11d6628bbe46ee81

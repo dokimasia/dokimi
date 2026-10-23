@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	updatertest.RunContractSuite(t, updatertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Put", func(b *testing.B) {
 		updatertest.BenchContractSuite(
 			b,
@@ -37,8 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryPut fuzzes the property checks of Contract.Put on InMemory.
-func FuzzInMemoryPut(f *testing.F) {
+// FuzzInMemoryConformsToContractPut fuzzes the property checks of
+// Contract.Put on InMemory.
+func FuzzInMemoryConformsToContractPut(f *testing.F) {
 	updatertest.FuzzContractSuite(
 		f,
 		updatertest.ContractChecks.Put.Callable,
@@ -46,8 +47,9 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryGet fuzzes the property checks of Contract.Get on InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToContractGet fuzzes the property checks of
+// Contract.Get on InMemory.
+func FuzzInMemoryConformsToContractGet(f *testing.F) {
 	updatertest.FuzzContractSuite(
 		f,
 		updatertest.ContractChecks.Get.Callable,
@@ -55,4 +57,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:1a022974fac375f7652e5d52d88c99017a5a4e0799cab81776d5e953102ce40e
+// dokimi:provenance sha256:751d68aa17ad172ba3a3282f9a9f3e7f600b474882b33c7b52607132e000a1da

@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	workflowtest.RunContractSuite(t, workflowtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Run", func(b *testing.B) {
 		workflowtest.BenchContractSuite(
 			b,
@@ -37,8 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryRun fuzzes the property checks of Contract.Run on InMemory.
-func FuzzInMemoryRun(f *testing.F) {
+// FuzzInMemoryConformsToContractRun fuzzes the property checks of
+// Contract.Run on InMemory.
+func FuzzInMemoryConformsToContractRun(f *testing.F) {
 	workflowtest.FuzzContractSuite(
 		f,
 		workflowtest.ContractChecks.Run.Callable,
@@ -46,9 +47,9 @@ func FuzzInMemoryRun(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryState fuzzes the property checks of Contract.State on
-// InMemory.
-func FuzzInMemoryState(f *testing.F) {
+// FuzzInMemoryConformsToContractState fuzzes the property checks of
+// Contract.State on InMemory.
+func FuzzInMemoryConformsToContractState(f *testing.F) {
 	workflowtest.FuzzContractSuite(
 		f,
 		workflowtest.ContractChecks.State.Callable,
@@ -56,4 +57,4 @@ func FuzzInMemoryState(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:56970c162dddc58a0f3533397b0c8cb6b7b71f74ee8179480545aa37c8202fdd
+// dokimi:provenance sha256:f710a2bf559bfd1dd3c60c1e28635584b14d70e879fa49fcaa06715805b353ef

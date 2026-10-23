@@ -33,13 +33,14 @@ func (v Signal) String() string {
 	return _Signal_name[_Signal_index[idx]:_Signal_index[idx+1]]
 }
 
-// ErrUnknownSignal is the error of text that names no declared variant.
-// The error of [ParseSignal] wraps it with the text.
+// ErrUnknownSignal is the error of a text that does not match a declared
+// variant. The error of [ParseSignal] wraps it with the text.
 var ErrUnknownSignal = errors.New("split: unknown Signal value")
 
 // ParseSignal returns the variant of Signal whose text is s. It is the
 // inverse of [Signal.String] on the declared variants. It returns an error
-// that wraps [ErrUnknownSignal] for text that names no declared variant.
+// that wraps [ErrUnknownSignal] for a text that does not match a declared
+// variant.
 func ParseSignal(s string) (Signal, error) {
 	switch s {
 	case "Green":
@@ -81,7 +82,8 @@ func (v Signal) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParseSignal] for text that names no declared variant.
+// error of [ParseSignal] for a text that does not match a declared
+// variant.
 func (v *Signal) UnmarshalText(text []byte) error {
 	parsed, err := ParseSignal(string(text))
 	if err != nil {
@@ -91,4 +93,4 @@ func (v *Signal) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:2ed6cd7dfb48187739aca4c4cdb730a2550b16bdb8be0c1ec55824666bb962d1
+// dokimi:provenance sha256:907fc3feca2f41ec931bec11217e30f0a662b9dbf64c392d43293b02a1704942

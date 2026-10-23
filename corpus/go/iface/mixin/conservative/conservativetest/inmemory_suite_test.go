@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	conservativetest.RunMixedSuite(t, conservativetest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Apply", func(b *testing.B) {
 		conservativetest.BenchMixedSuite(
 			b,
@@ -37,8 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryApply fuzzes the property checks of Mixed.Apply on InMemory.
-func FuzzInMemoryApply(f *testing.F) {
+// FuzzInMemoryConformsToMixedApply fuzzes the property checks of
+// Mixed.Apply on InMemory.
+func FuzzInMemoryConformsToMixedApply(f *testing.F) {
 	conservativetest.FuzzMixedSuite(
 		f,
 		conservativetest.MixedChecks.Apply.Callable,
@@ -46,8 +47,9 @@ func FuzzInMemoryApply(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryTotal fuzzes the property checks of Mixed.Total on InMemory.
-func FuzzInMemoryTotal(f *testing.F) {
+// FuzzInMemoryConformsToMixedTotal fuzzes the property checks of
+// Mixed.Total on InMemory.
+func FuzzInMemoryConformsToMixedTotal(f *testing.F) {
 	conservativetest.FuzzMixedSuite(
 		f,
 		conservativetest.MixedChecks.Total.Callable,
@@ -55,4 +57,4 @@ func FuzzInMemoryTotal(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:93048fd74f83a5aefeb7c289891d50770f7015a9af83d9d1967e724b71410b3f
+// dokimi:provenance sha256:218a09a7d4ef508429fe8320a2d8caf9fa53b225cb36ea0dc140fea3d86caec0

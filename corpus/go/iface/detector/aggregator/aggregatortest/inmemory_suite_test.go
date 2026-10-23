@@ -18,9 +18,9 @@ func TestInMemoryConformsToAggregator(t *testing.T) {
 	aggregatortest.RunAggregatorSuite(t, aggregatortest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Aggregator on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToAggregator measures each callable of the
+// suite of Aggregator on InMemory.
+func BenchmarkInMemoryConformsToAggregator(b *testing.B) {
 	b.Run("Count", func(b *testing.B) {
 		aggregatortest.BenchAggregatorSuite(
 			b,
@@ -30,9 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryCount fuzzes the property checks of Aggregator.Count on
-// InMemory.
-func FuzzInMemoryCount(f *testing.F) {
+// FuzzInMemoryConformsToAggregatorCount fuzzes the property checks of
+// Aggregator.Count on InMemory.
+func FuzzInMemoryConformsToAggregatorCount(f *testing.F) {
 	aggregatortest.FuzzAggregatorSuite(
 		f,
 		aggregatortest.AggregatorChecks.Count.Callable,
@@ -40,4 +40,4 @@ func FuzzInMemoryCount(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a5a747f92ca7f6aeb53a50e14b6cae82eb34d12c1dd5da29bc222d504e6dba52
+// dokimi:provenance sha256:ab5ca6b4aa1caafec7f8afd32cf03c51b4e5cf676a36077a092f936925071a55

@@ -18,9 +18,9 @@ func TestInMemoryConformsToStream(t *testing.T) {
 	embeddedforeigntest.RunStreamSuite(t, embeddedforeigntest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Stream on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToStream measures each callable of the suite of
+// Stream on InMemory.
+func BenchmarkInMemoryConformsToStream(b *testing.B) {
 	b.Run("Read", func(b *testing.B) {
 		embeddedforeigntest.BenchStreamSuite(
 			b,
@@ -41,8 +41,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryRead fuzzes the property checks of Stream.Read on InMemory.
-func FuzzInMemoryRead(f *testing.F) {
+// FuzzInMemoryConformsToStreamRead fuzzes the property checks of
+// Stream.Read on InMemory.
+func FuzzInMemoryConformsToStreamRead(f *testing.F) {
 	embeddedforeigntest.FuzzStreamSuite(
 		f,
 		embeddedforeigntest.StreamChecks.Read.Callable,
@@ -52,9 +53,9 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryClose fuzzes the property checks of Stream.Close on
-// InMemory.
-func FuzzInMemoryClose(f *testing.F) {
+// FuzzInMemoryConformsToStreamClose fuzzes the property checks of
+// Stream.Close on InMemory.
+func FuzzInMemoryConformsToStreamClose(f *testing.F) {
 	embeddedforeigntest.FuzzStreamSuite(
 		f,
 		embeddedforeigntest.StreamChecks.Close.Callable,
@@ -64,4 +65,4 @@ func FuzzInMemoryClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:fee2683951fde7849029bb67c5009f2b9fe261175d78a5bd85d549b77b4fc868
+// dokimi:provenance sha256:f80fc81585778d14dbf115f63846e771b919971a3ccf3309fb86a316abc054cf

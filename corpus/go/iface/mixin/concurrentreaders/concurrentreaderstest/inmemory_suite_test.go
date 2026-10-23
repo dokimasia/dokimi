@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	concurrentreaderstest.RunMixedSuite(t, concurrentreaderstest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		concurrentreaderstest.BenchMixedSuite(
 			b,
@@ -41,10 +41,10 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// BenchmarkInMemoryParallel measures each callable of the suite of Mixed
-// that admits concurrent calls on InMemory, on GOMAXPROCS goroutines at
-// once.
-func BenchmarkInMemoryParallel(b *testing.B) {
+// BenchmarkInMemoryConformsToMixedParallel measures each callable of the
+// suite of Mixed that admits concurrent calls on InMemory, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkInMemoryConformsToMixedParallel(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		concurrentreaderstest.BenchMixedSuiteParallel(
 			b,
@@ -56,8 +56,9 @@ func BenchmarkInMemoryParallel(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToMixedGet fuzzes the property checks of Mixed.Get
+// on InMemory.
+func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	concurrentreaderstest.FuzzMixedSuite(
 		f,
 		concurrentreaderstest.MixedChecks.Get.Callable,
@@ -67,8 +68,9 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryPut fuzzes the property checks of Mixed.Put on InMemory.
-func FuzzInMemoryPut(f *testing.F) {
+// FuzzInMemoryConformsToMixedPut fuzzes the property checks of Mixed.Put
+// on InMemory.
+func FuzzInMemoryConformsToMixedPut(f *testing.F) {
 	concurrentreaderstest.FuzzMixedSuite(
 		f,
 		concurrentreaderstest.MixedChecks.Put.Callable,
@@ -78,4 +80,4 @@ func FuzzInMemoryPut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c079cf37ede73a6180421981c8d690fffdbedf228020500b037be89d5fcd3482
+// dokimi:provenance sha256:e7417fedd2d31f81db7903f8fe3d68e1e5fc766e945fe36b4093eda69fdc5470

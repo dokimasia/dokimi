@@ -18,9 +18,9 @@ func TestInMemoryConformsToPoisonAccessor(t *testing.T) {
 	poisonaccessortest.RunPoisonAccessorSuite(t, poisonaccessortest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of PoisonAccessor
-// on InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToPoisonAccessor measures each callable of the
+// suite of PoisonAccessor on InMemory.
+func BenchmarkInMemoryConformsToPoisonAccessor(b *testing.B) {
 	b.Run("Err", func(b *testing.B) {
 		poisonaccessortest.BenchPoisonAccessorSuite(
 			b,
@@ -32,9 +32,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryErr fuzzes the property checks of PoisonAccessor.Err on
-// InMemory.
-func FuzzInMemoryErr(f *testing.F) {
+// FuzzInMemoryConformsToPoisonAccessorErr fuzzes the property checks of
+// PoisonAccessor.Err on InMemory.
+func FuzzInMemoryConformsToPoisonAccessorErr(f *testing.F) {
 	poisonaccessortest.FuzzPoisonAccessorSuite(
 		f,
 		poisonaccessortest.PoisonAccessorChecks.Err.Callable,
@@ -44,4 +44,4 @@ func FuzzInMemoryErr(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:b86ca313838b7d79c9a281c0083caa43b56e7fc3c8c76ba01b48453ab15497e7
+// dokimi:provenance sha256:34bf94485f557c4574e69ae536eb2faff67558a13e5aa7edbb6af2e02cec7647

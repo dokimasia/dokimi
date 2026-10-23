@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	atomictest.RunMixedSuite(t, atomictest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Write", func(b *testing.B) {
 		atomictest.BenchMixedSuite(
 			b,
@@ -37,8 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryWrite fuzzes the property checks of Mixed.Write on InMemory.
-func FuzzInMemoryWrite(f *testing.F) {
+// FuzzInMemoryConformsToMixedWrite fuzzes the property checks of
+// Mixed.Write on InMemory.
+func FuzzInMemoryConformsToMixedWrite(f *testing.F) {
 	atomictest.FuzzMixedSuite(
 		f,
 		atomictest.MixedChecks.Write.Callable,
@@ -46,8 +47,9 @@ func FuzzInMemoryWrite(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRead fuzzes the property checks of Mixed.Read on InMemory.
-func FuzzInMemoryRead(f *testing.F) {
+// FuzzInMemoryConformsToMixedRead fuzzes the property checks of Mixed.Read
+// on InMemory.
+func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	atomictest.FuzzMixedSuite(
 		f,
 		atomictest.MixedChecks.Read.Callable,
@@ -55,4 +57,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:fae8da6c8fa7f13d0b26d3ede876b34a22c2147e1c198075cf2bac30356f4c34
+// dokimi:provenance sha256:55db73674492bf198a48ec257d5131ead1a91058d0b6a637c6f980976dd8fc8a

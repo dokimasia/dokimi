@@ -18,9 +18,9 @@ func TestInMemoryConformsToWide(t *testing.T) {
 	multireturntest.RunWideSuite(t, multireturntest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Wide on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToWide measures each callable of the suite of
+// Wide on InMemory.
+func BenchmarkInMemoryConformsToWide(b *testing.B) {
 	b.Run("Quad", func(b *testing.B) {
 		multireturntest.BenchWideSuite(
 			b,
@@ -44,8 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryQuad fuzzes the property checks of Wide.Quad on InMemory.
-func FuzzInMemoryQuad(f *testing.F) {
+// FuzzInMemoryConformsToWideQuad fuzzes the property checks of Wide.Quad
+// on InMemory.
+func FuzzInMemoryConformsToWideQuad(f *testing.F) {
 	multireturntest.FuzzWideSuite(
 		f,
 		multireturntest.WideChecks.Quad.Callable,
@@ -53,9 +54,9 @@ func FuzzInMemoryQuad(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryTriple fuzzes the property checks of Wide.Triple on
-// InMemory.
-func FuzzInMemoryTriple(f *testing.F) {
+// FuzzInMemoryConformsToWideTriple fuzzes the property checks of
+// Wide.Triple on InMemory.
+func FuzzInMemoryConformsToWideTriple(f *testing.F) {
 	multireturntest.FuzzWideSuite(
 		f,
 		multireturntest.WideChecks.Triple.Callable,
@@ -63,9 +64,9 @@ func FuzzInMemoryTriple(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryNoError fuzzes the property checks of Wide.NoError on
-// InMemory.
-func FuzzInMemoryNoError(f *testing.F) {
+// FuzzInMemoryConformsToWideNoError fuzzes the property checks of
+// Wide.NoError on InMemory.
+func FuzzInMemoryConformsToWideNoError(f *testing.F) {
 	multireturntest.FuzzWideSuite(
 		f,
 		multireturntest.WideChecks.NoError.Callable,
@@ -73,4 +74,4 @@ func FuzzInMemoryNoError(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:476a6e35c884c6a5205d997e57884303a68e547032387b017044a073483c4a71
+// dokimi:provenance sha256:c78c3839688d99b6fe8d1236926193bcb9c1fea340184b137555ff815f56d571

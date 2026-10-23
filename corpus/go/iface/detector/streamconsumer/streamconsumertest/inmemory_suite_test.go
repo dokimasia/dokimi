@@ -18,9 +18,9 @@ func TestInMemoryConformsToStreamConsumer(t *testing.T) {
 	streamconsumertest.RunStreamConsumerSuite(t, streamconsumertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of StreamConsumer
-// on InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToStreamConsumer measures each callable of the
+// suite of StreamConsumer on InMemory.
+func BenchmarkInMemoryConformsToStreamConsumer(b *testing.B) {
 	b.Run("Ingest", func(b *testing.B) {
 		streamconsumertest.BenchStreamConsumerSuite(
 			b,
@@ -32,9 +32,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryIngest fuzzes the property checks of StreamConsumer.Ingest
-// on InMemory.
-func FuzzInMemoryIngest(f *testing.F) {
+// FuzzInMemoryConformsToStreamConsumerIngest fuzzes the property checks of
+// StreamConsumer.Ingest on InMemory.
+func FuzzInMemoryConformsToStreamConsumerIngest(f *testing.F) {
 	streamconsumertest.FuzzStreamConsumerSuite(
 		f,
 		streamconsumertest.StreamConsumerChecks.Ingest.Callable,
@@ -44,4 +44,4 @@ func FuzzInMemoryIngest(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:bdaf1264aa7760abb831241298d16d25c7a14feeee39e88c321e4e37ab1762bf
+// dokimi:provenance sha256:90158a374bfdd46e98b62864af024c48b8cf6c31fb39a1a0a4642778f7a60844

@@ -18,9 +18,9 @@ func TestInMemoryConformsToService(t *testing.T) {
 	namedreturnstest.RunServiceSuite(t, namedreturnstest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Service on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToService measures each callable of the suite
+// of Service on InMemory.
+func BenchmarkInMemoryConformsToService(b *testing.B) {
 	b.Run("Named", func(b *testing.B) {
 		namedreturnstest.BenchServiceSuite(
 			b,
@@ -50,9 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryNamed fuzzes the property checks of Service.Named on
-// InMemory.
-func FuzzInMemoryNamed(f *testing.F) {
+// FuzzInMemoryConformsToServiceNamed fuzzes the property checks of
+// Service.Named on InMemory.
+func FuzzInMemoryConformsToServiceNamed(f *testing.F) {
 	namedreturnstest.FuzzServiceSuite(
 		f,
 		namedreturnstest.ServiceChecks.Named.Callable,
@@ -62,9 +62,9 @@ func FuzzInMemoryNamed(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryUnnamed fuzzes the property checks of Service.Unnamed on
-// InMemory.
-func FuzzInMemoryUnnamed(f *testing.F) {
+// FuzzInMemoryConformsToServiceUnnamed fuzzes the property checks of
+// Service.Unnamed on InMemory.
+func FuzzInMemoryConformsToServiceUnnamed(f *testing.F) {
 	namedreturnstest.FuzzServiceSuite(
 		f,
 		namedreturnstest.ServiceChecks.Unnamed.Callable,
@@ -74,9 +74,9 @@ func FuzzInMemoryUnnamed(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryPartiallyNamed fuzzes the property checks of
-// Service.PartiallyNamed on InMemory.
-func FuzzInMemoryPartiallyNamed(f *testing.F) {
+// FuzzInMemoryConformsToServicePartiallyNamed fuzzes the property checks
+// of Service.PartiallyNamed on InMemory.
+func FuzzInMemoryConformsToServicePartiallyNamed(f *testing.F) {
 	namedreturnstest.FuzzServiceSuite(
 		f,
 		namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
@@ -86,4 +86,4 @@ func FuzzInMemoryPartiallyNamed(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ac9222b2b6f5e5af2d27b9b65c4f00712f22e3e2f88e9e66b4271406d01ddf78
+// dokimi:provenance sha256:c3d77e45cf7699fa2b5c391fa644ed4175251647e8142972858e01034a599804

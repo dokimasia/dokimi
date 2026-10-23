@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	validatestest.RunMixedSuite(t, validatestest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Store", func(b *testing.B) {
 		validatestest.BenchMixedSuite(
 			b,
@@ -44,8 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryStore fuzzes the property checks of Mixed.Store on InMemory.
-func FuzzInMemoryStore(f *testing.F) {
+// FuzzInMemoryConformsToMixedStore fuzzes the property checks of
+// Mixed.Store on InMemory.
+func FuzzInMemoryConformsToMixedStore(f *testing.F) {
 	validatestest.FuzzMixedSuite(
 		f,
 		validatestest.MixedChecks.Store.Callable,
@@ -53,9 +54,9 @@ func FuzzInMemoryStore(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryValidate fuzzes the property checks of Mixed.Validate on
-// InMemory.
-func FuzzInMemoryValidate(f *testing.F) {
+// FuzzInMemoryConformsToMixedValidate fuzzes the property checks of
+// Mixed.Validate on InMemory.
+func FuzzInMemoryConformsToMixedValidate(f *testing.F) {
 	validatestest.FuzzMixedSuite(
 		f,
 		validatestest.MixedChecks.Validate.Callable,
@@ -63,8 +64,9 @@ func FuzzInMemoryValidate(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRead fuzzes the property checks of Mixed.Read on InMemory.
-func FuzzInMemoryRead(f *testing.F) {
+// FuzzInMemoryConformsToMixedRead fuzzes the property checks of Mixed.Read
+// on InMemory.
+func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	validatestest.FuzzMixedSuite(
 		f,
 		validatestest.MixedChecks.Read.Callable,
@@ -72,4 +74,4 @@ func FuzzInMemoryRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:321a46e0da0fe0c3df05f9a0ef5f0e130e0e9629bd00e636aa33a510e0d4c7cb
+// dokimi:provenance sha256:11d203682b6968ec074c368c072ad42a77a6e2f13d16605c9231b22329b030f3

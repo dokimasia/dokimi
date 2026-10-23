@@ -18,9 +18,9 @@ func TestInMemoryConformsToContract(t *testing.T) {
 	singleflighttest.RunContractSuite(t, singleflighttest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Contract on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToContract measures each callable of the suite
+// of Contract on InMemory.
+func BenchmarkInMemoryConformsToContract(b *testing.B) {
 	b.Run("Run", func(b *testing.B) {
 		singleflighttest.BenchContractSuite(
 			b,
@@ -41,8 +41,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryRun fuzzes the property checks of Contract.Run on InMemory.
-func FuzzInMemoryRun(f *testing.F) {
+// FuzzInMemoryConformsToContractRun fuzzes the property checks of
+// Contract.Run on InMemory.
+func FuzzInMemoryConformsToContractRun(f *testing.F) {
 	singleflighttest.FuzzContractSuite(
 		f,
 		singleflighttest.ContractChecks.Run.Callable,
@@ -52,9 +53,9 @@ func FuzzInMemoryRun(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryFlights fuzzes the property checks of Contract.Flights on
-// InMemory.
-func FuzzInMemoryFlights(f *testing.F) {
+// FuzzInMemoryConformsToContractFlights fuzzes the property checks of
+// Contract.Flights on InMemory.
+func FuzzInMemoryConformsToContractFlights(f *testing.F) {
 	singleflighttest.FuzzContractSuite(
 		f,
 		singleflighttest.ContractChecks.Flights.Callable,
@@ -64,4 +65,4 @@ func FuzzInMemoryFlights(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:187c7c3954fb9236d92306567cc0273ddd6588054150791ed4268ae746679257
+// dokimi:provenance sha256:5ac5eafe5532e66d27230a5cd9538fdb8aec9cc035e660bbf298bfdc5dea0258

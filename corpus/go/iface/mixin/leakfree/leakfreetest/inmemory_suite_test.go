@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	leakfreetest.RunMixedSuite(t, leakfreetest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Acquire", func(b *testing.B) {
 		leakfreetest.BenchMixedSuite(
 			b,
@@ -44,9 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryAcquire fuzzes the property checks of Mixed.Acquire on
-// InMemory.
-func FuzzInMemoryAcquire(f *testing.F) {
+// FuzzInMemoryConformsToMixedAcquire fuzzes the property checks of
+// Mixed.Acquire on InMemory.
+func FuzzInMemoryConformsToMixedAcquire(f *testing.F) {
 	leakfreetest.FuzzMixedSuite(
 		f,
 		leakfreetest.MixedChecks.Acquire.Callable,
@@ -54,9 +54,9 @@ func FuzzInMemoryAcquire(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRelease fuzzes the property checks of Mixed.Release on
-// InMemory.
-func FuzzInMemoryRelease(f *testing.F) {
+// FuzzInMemoryConformsToMixedRelease fuzzes the property checks of
+// Mixed.Release on InMemory.
+func FuzzInMemoryConformsToMixedRelease(f *testing.F) {
 	leakfreetest.FuzzMixedSuite(
 		f,
 		leakfreetest.MixedChecks.Release.Callable,
@@ -64,9 +64,9 @@ func FuzzInMemoryRelease(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryOutstanding fuzzes the property checks of Mixed.Outstanding
-// on InMemory.
-func FuzzInMemoryOutstanding(f *testing.F) {
+// FuzzInMemoryConformsToMixedOutstanding fuzzes the property checks of
+// Mixed.Outstanding on InMemory.
+func FuzzInMemoryConformsToMixedOutstanding(f *testing.F) {
 	leakfreetest.FuzzMixedSuite(
 		f,
 		leakfreetest.MixedChecks.Outstanding.Callable,
@@ -74,4 +74,4 @@ func FuzzInMemoryOutstanding(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c854b94857e4ba7fc19e99f0b8d5349b56b18c8175b20450438e83eeadcaf7b1
+// dokimi:provenance sha256:14783d47a473fce96cd7fd22ba9a4ed4c8b475d4030f676f24f9d6315237ac5a

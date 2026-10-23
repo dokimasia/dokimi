@@ -34,14 +34,14 @@ func (v Priority) String() string {
 	return _Priority_name[_Priority_index[idx]:_Priority_index[idx+1]]
 }
 
-// ErrUnknownPriority is the error of text that names no declared variant.
-// The error of [ParsePriority] wraps it with the text.
+// ErrUnknownPriority is the error of a text that does not match a declared
+// variant. The error of [ParsePriority] wraps it with the text.
 var ErrUnknownPriority = errors.New("priority: unknown Priority value")
 
 // ParsePriority returns the variant of Priority whose text is s. It is the
 // inverse of [Priority.String] on the declared variants. It returns an
-// error that wraps [ErrUnknownPriority] for text that names no declared
-// variant.
+// error that wraps [ErrUnknownPriority] for a text that does not match a
+// declared variant.
 func ParsePriority(s string) (Priority, error) {
 	switch s {
 	case "Low":
@@ -86,7 +86,8 @@ func (v Priority) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText implements [encoding.TextUnmarshaler]. It returns the
-// error of [ParsePriority] for text that names no declared variant.
+// error of [ParsePriority] for a text that does not match a declared
+// variant.
 func (v *Priority) UnmarshalText(text []byte) error {
 	parsed, err := ParsePriority(string(text))
 	if err != nil {
@@ -96,4 +97,4 @@ func (v *Priority) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// dokimi:provenance sha256:9ac9cfa719013af9069c7ae8e97fef93374405fb56dd9ddc130a71e327fed4f4
+// dokimi:provenance sha256:69307ed4ef8dace48e1a016d0991d124079cd28c31b3670bf7800e60f28a1900

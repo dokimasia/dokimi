@@ -18,9 +18,9 @@ func TestInMemoryConformsToTxWithRetry(t *testing.T) {
 	txwithretrytest.RunTxWithRetrySuite(t, txwithretrytest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of TxWithRetry on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToTxWithRetry measures each callable of the
+// suite of TxWithRetry on InMemory.
+func BenchmarkInMemoryConformsToTxWithRetry(b *testing.B) {
 	b.Run("Begin", func(b *testing.B) {
 		txwithretrytest.BenchTxWithRetrySuite(
 			b,
@@ -50,9 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryBegin fuzzes the property checks of TxWithRetry.Begin on
-// InMemory.
-func FuzzInMemoryBegin(f *testing.F) {
+// FuzzInMemoryConformsToTxWithRetryBegin fuzzes the property checks of
+// TxWithRetry.Begin on InMemory.
+func FuzzInMemoryConformsToTxWithRetryBegin(f *testing.F) {
 	txwithretrytest.FuzzTxWithRetrySuite(
 		f,
 		txwithretrytest.TxWithRetryChecks.Begin.Callable,
@@ -62,9 +62,9 @@ func FuzzInMemoryBegin(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryCommit fuzzes the property checks of TxWithRetry.Commit on
-// InMemory.
-func FuzzInMemoryCommit(f *testing.F) {
+// FuzzInMemoryConformsToTxWithRetryCommit fuzzes the property checks of
+// TxWithRetry.Commit on InMemory.
+func FuzzInMemoryConformsToTxWithRetryCommit(f *testing.F) {
 	txwithretrytest.FuzzTxWithRetrySuite(
 		f,
 		txwithretrytest.TxWithRetryChecks.Commit.Callable,
@@ -74,9 +74,9 @@ func FuzzInMemoryCommit(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRollback fuzzes the property checks of TxWithRetry.Rollback
-// on InMemory.
-func FuzzInMemoryRollback(f *testing.F) {
+// FuzzInMemoryConformsToTxWithRetryRollback fuzzes the property checks of
+// TxWithRetry.Rollback on InMemory.
+func FuzzInMemoryConformsToTxWithRetryRollback(f *testing.F) {
 	txwithretrytest.FuzzTxWithRetrySuite(
 		f,
 		txwithretrytest.TxWithRetryChecks.Rollback.Callable,
@@ -86,4 +86,4 @@ func FuzzInMemoryRollback(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:4686279dc7ac25f9ae7c45426a2d4d48547c0e313e869318e4594302a3e7a4e5
+// dokimi:provenance sha256:99a2d13b8ddd8f60856e03a4ab8d997cc6585a00470e33bc29a7dcc7281aac27

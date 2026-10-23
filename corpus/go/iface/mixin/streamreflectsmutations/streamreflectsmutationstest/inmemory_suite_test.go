@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	streamreflectsmutationstest.RunMixedSuite(t, streamreflectsmutationstest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Stream", func(b *testing.B) {
 		streamreflectsmutationstest.BenchMixedSuite(
 			b,
@@ -50,9 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryStream fuzzes the property checks of Mixed.Stream on
-// InMemory.
-func FuzzInMemoryStream(f *testing.F) {
+// FuzzInMemoryConformsToMixedStream fuzzes the property checks of
+// Mixed.Stream on InMemory.
+func FuzzInMemoryConformsToMixedStream(f *testing.F) {
 	streamreflectsmutationstest.FuzzMixedSuite(
 		f,
 		streamreflectsmutationstest.MixedChecks.Stream.Callable,
@@ -62,8 +62,9 @@ func FuzzInMemoryStream(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryAdd fuzzes the property checks of Mixed.Add on InMemory.
-func FuzzInMemoryAdd(f *testing.F) {
+// FuzzInMemoryConformsToMixedAdd fuzzes the property checks of Mixed.Add
+// on InMemory.
+func FuzzInMemoryConformsToMixedAdd(f *testing.F) {
 	streamreflectsmutationstest.FuzzMixedSuite(
 		f,
 		streamreflectsmutationstest.MixedChecks.Add.Callable,
@@ -73,9 +74,9 @@ func FuzzInMemoryAdd(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryRemove fuzzes the property checks of Mixed.Remove on
-// InMemory.
-func FuzzInMemoryRemove(f *testing.F) {
+// FuzzInMemoryConformsToMixedRemove fuzzes the property checks of
+// Mixed.Remove on InMemory.
+func FuzzInMemoryConformsToMixedRemove(f *testing.F) {
 	streamreflectsmutationstest.FuzzMixedSuite(
 		f,
 		streamreflectsmutationstest.MixedChecks.Remove.Callable,
@@ -85,4 +86,4 @@ func FuzzInMemoryRemove(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:03da5306931836dfdb87e21743f6d73ba463e5e9dcb4051ec44ca8cfee1bf2c2
+// dokimi:provenance sha256:5661401255ff5858e327f8998efe18bfac544fe55fbf7f3df81b5c3096743ef0

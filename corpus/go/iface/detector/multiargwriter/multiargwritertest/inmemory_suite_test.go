@@ -18,9 +18,9 @@ func TestInMemoryConformsToMultiArgWriter(t *testing.T) {
 	multiargwritertest.RunMultiArgWriterSuite(t, multiargwritertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of MultiArgWriter
-// on InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMultiArgWriter measures each callable of the
+// suite of MultiArgWriter on InMemory.
+func BenchmarkInMemoryConformsToMultiArgWriter(b *testing.B) {
 	b.Run("Set", func(b *testing.B) {
 		multiargwritertest.BenchMultiArgWriterSuite(
 			b,
@@ -41,9 +41,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemorySet fuzzes the property checks of MultiArgWriter.Set on
-// InMemory.
-func FuzzInMemorySet(f *testing.F) {
+// FuzzInMemoryConformsToMultiArgWriterSet fuzzes the property checks of
+// MultiArgWriter.Set on InMemory.
+func FuzzInMemoryConformsToMultiArgWriterSet(f *testing.F) {
 	multiargwritertest.FuzzMultiArgWriterSuite(
 		f,
 		multiargwritertest.MultiArgWriterChecks.Set.Callable,
@@ -53,9 +53,9 @@ func FuzzInMemorySet(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryGet fuzzes the property checks of MultiArgWriter.Get on
-// InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToMultiArgWriterGet fuzzes the property checks of
+// MultiArgWriter.Get on InMemory.
+func FuzzInMemoryConformsToMultiArgWriterGet(f *testing.F) {
 	multiargwritertest.FuzzMultiArgWriterSuite(
 		f,
 		multiargwritertest.MultiArgWriterChecks.Get.Callable,
@@ -65,4 +65,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:f97568ffe78d77cd86ad77b1d1205390697758a0025b2078e2686a50d36c379a
+// dokimi:provenance sha256:ed04830be711f84ab044e708502fe909b8068d13eddc59f4a6bcbcf70846d26d

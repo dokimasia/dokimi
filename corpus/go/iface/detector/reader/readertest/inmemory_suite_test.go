@@ -18,9 +18,9 @@ func TestInMemoryConformsToReader(t *testing.T) {
 	readertest.RunReaderSuite(t, readertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Reader on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToReader measures each callable of the suite of
+// Reader on InMemory.
+func BenchmarkInMemoryConformsToReader(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		readertest.BenchReaderSuite(
 			b,
@@ -30,8 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryGet fuzzes the property checks of Reader.Get on InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToReaderGet fuzzes the property checks of Reader.Get
+// on InMemory.
+func FuzzInMemoryConformsToReaderGet(f *testing.F) {
 	readertest.FuzzReaderSuite(
 		f,
 		readertest.ReaderChecks.Get.Callable,
@@ -39,4 +40,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:3331752e37abddce9d10fa33062632b215e0adcf2f347c81d95e4616b085579d
+// dokimi:provenance sha256:a7efac6a86113a00e627e50b7271fcd6257876a37ff1875216a8ca6ab6d49d77

@@ -19,8 +19,9 @@ func TestStoreConformsToStore(t *testing.T) {
 	generictest.RunStoreSuite(t, memory.NewInts)
 }
 
-// BenchmarkStore measures each callable of the suite of Store on Store.
-func BenchmarkStore(b *testing.B) {
+// BenchmarkStoreConformsToStore measures each callable of the suite of
+// Store on Store.
+func BenchmarkStoreConformsToStore(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		generictest.BenchStoreSuite(
 			b,
@@ -37,8 +38,9 @@ func BenchmarkStore(b *testing.B) {
 	})
 }
 
-// FuzzStoreGet fuzzes the property checks of Store.Get on Store.
-func FuzzStoreGet(f *testing.F) {
+// FuzzStoreConformsToStoreGet fuzzes the property checks of Store.Get on
+// Store.
+func FuzzStoreConformsToStoreGet(f *testing.F) {
 	generictest.FuzzStoreSuite(
 		f,
 		generictest.StoreChecks.Get.Callable,
@@ -46,8 +48,9 @@ func FuzzStoreGet(f *testing.F) {
 	)
 }
 
-// FuzzStorePut fuzzes the property checks of Store.Put on Store.
-func FuzzStorePut(f *testing.F) {
+// FuzzStoreConformsToStorePut fuzzes the property checks of Store.Put on
+// Store.
+func FuzzStoreConformsToStorePut(f *testing.F) {
 	generictest.FuzzStoreSuite(
 		f,
 		generictest.StoreChecks.Put.Callable,
@@ -55,4 +58,4 @@ func FuzzStorePut(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:62e45f2997c4d01f2df633d611fc4831fb44652b6953c8a03b34f37a0dd7ddf1
+// dokimi:provenance sha256:0a3da7c9bf5527497ae991039bd31322c91846701bf22f9b23af1152a45e1fc6

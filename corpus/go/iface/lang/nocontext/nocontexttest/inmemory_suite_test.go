@@ -18,9 +18,9 @@ func TestInMemoryConformsToCalculator(t *testing.T) {
 	nocontexttest.RunCalculatorSuite(t, nocontexttest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Calculator on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToCalculator measures each callable of the
+// suite of Calculator on InMemory.
+func BenchmarkInMemoryConformsToCalculator(b *testing.B) {
 	b.Run("Add", func(b *testing.B) {
 		nocontexttest.BenchCalculatorSuite(
 			b,
@@ -44,9 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryAdd fuzzes the property checks of Calculator.Add on
-// InMemory.
-func FuzzInMemoryAdd(f *testing.F) {
+// FuzzInMemoryConformsToCalculatorAdd fuzzes the property checks of
+// Calculator.Add on InMemory.
+func FuzzInMemoryConformsToCalculatorAdd(f *testing.F) {
 	nocontexttest.FuzzCalculatorSuite(
 		f,
 		nocontexttest.CalculatorChecks.Add.Callable,
@@ -54,9 +54,9 @@ func FuzzInMemoryAdd(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryDivide fuzzes the property checks of Calculator.Divide on
-// InMemory.
-func FuzzInMemoryDivide(f *testing.F) {
+// FuzzInMemoryConformsToCalculatorDivide fuzzes the property checks of
+// Calculator.Divide on InMemory.
+func FuzzInMemoryConformsToCalculatorDivide(f *testing.F) {
 	nocontexttest.FuzzCalculatorSuite(
 		f,
 		nocontexttest.CalculatorChecks.Divide.Callable,
@@ -64,9 +64,9 @@ func FuzzInMemoryDivide(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryReset fuzzes the property checks of Calculator.Reset on
-// InMemory.
-func FuzzInMemoryReset(f *testing.F) {
+// FuzzInMemoryConformsToCalculatorReset fuzzes the property checks of
+// Calculator.Reset on InMemory.
+func FuzzInMemoryConformsToCalculatorReset(f *testing.F) {
 	nocontexttest.FuzzCalculatorSuite(
 		f,
 		nocontexttest.CalculatorChecks.Reset.Callable,
@@ -74,4 +74,4 @@ func FuzzInMemoryReset(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:19c2efc310d24ed2506615fb95271e1f2c6689d37d6864910ef0c689b537a978
+// dokimi:provenance sha256:3caf0cc00f65f85d281cdb521caf7a70eae717684285d86805d336a4e10578a4

@@ -18,9 +18,9 @@ func TestInMemoryConformsToFilter(t *testing.T) {
 	selfnamedtest.RunFilterSuite(t, selfnamedtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Filter on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToFilter measures each callable of the suite of
+// Filter on InMemory.
+func BenchmarkInMemoryConformsToFilter(b *testing.B) {
 	b.Run("Filter", func(b *testing.B) {
 		selfnamedtest.BenchFilterSuite(
 			b,
@@ -37,9 +37,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryFilter fuzzes the property checks of Filter.Filter on
-// InMemory.
-func FuzzInMemoryFilter(f *testing.F) {
+// FuzzInMemoryConformsToFilterFilter fuzzes the property checks of
+// Filter.Filter on InMemory.
+func FuzzInMemoryConformsToFilterFilter(f *testing.F) {
 	selfnamedtest.FuzzFilterSuite(
 		f,
 		selfnamedtest.FilterChecks.Filter.Callable,
@@ -47,9 +47,9 @@ func FuzzInMemoryFilter(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryDrain fuzzes the property checks of Filter.Drain on
-// InMemory.
-func FuzzInMemoryDrain(f *testing.F) {
+// FuzzInMemoryConformsToFilterDrain fuzzes the property checks of
+// Filter.Drain on InMemory.
+func FuzzInMemoryConformsToFilterDrain(f *testing.F) {
 	selfnamedtest.FuzzFilterSuite(
 		f,
 		selfnamedtest.FilterChecks.Drain.Callable,
@@ -57,4 +57,4 @@ func FuzzInMemoryDrain(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:c0499c163132189ae9e1de763e138339b3d118ee354e8b3ea7ae4d6ed26072b7
+// dokimi:provenance sha256:31f8346470c092506a2b8dc906e3adf6dfa916f7a6712b8a1160c69f1ed4a379

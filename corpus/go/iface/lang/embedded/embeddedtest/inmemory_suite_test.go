@@ -18,9 +18,9 @@ func TestInMemoryConformsToComposed(t *testing.T) {
 	embeddedtest.RunComposedSuite(t, embeddedtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Composed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToComposed measures each callable of the suite
+// of Composed on InMemory.
+func BenchmarkInMemoryConformsToComposed(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		embeddedtest.BenchComposedSuite(
 			b,
@@ -44,8 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryGet fuzzes the property checks of Composed.Get on InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToComposedGet fuzzes the property checks of
+// Composed.Get on InMemory.
+func FuzzInMemoryConformsToComposedGet(f *testing.F) {
 	embeddedtest.FuzzComposedSuite(
 		f,
 		embeddedtest.ComposedChecks.Get.Callable,
@@ -53,9 +54,9 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryPing fuzzes the property checks of Composed.Ping on
-// InMemory.
-func FuzzInMemoryPing(f *testing.F) {
+// FuzzInMemoryConformsToComposedPing fuzzes the property checks of
+// Composed.Ping on InMemory.
+func FuzzInMemoryConformsToComposedPing(f *testing.F) {
 	embeddedtest.FuzzComposedSuite(
 		f,
 		embeddedtest.ComposedChecks.Ping.Callable,
@@ -63,9 +64,9 @@ func FuzzInMemoryPing(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryClose fuzzes the property checks of Composed.Close on
-// InMemory.
-func FuzzInMemoryClose(f *testing.F) {
+// FuzzInMemoryConformsToComposedClose fuzzes the property checks of
+// Composed.Close on InMemory.
+func FuzzInMemoryConformsToComposedClose(f *testing.F) {
 	embeddedtest.FuzzComposedSuite(
 		f,
 		embeddedtest.ComposedChecks.Close.Callable,
@@ -73,4 +74,4 @@ func FuzzInMemoryClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:5d99f15463ee244db79a04f59e1e1667bbc0e214e9576f4d6c1b03651be16955
+// dokimi:provenance sha256:0097b92c776197759013391fba678459d08d96591687dff1c9e90d563bed4384

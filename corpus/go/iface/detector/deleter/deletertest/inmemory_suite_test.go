@@ -18,9 +18,9 @@ func TestInMemoryConformsToDeleter(t *testing.T) {
 	deletertest.RunDeleterSuite(t, deletertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Deleter on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToDeleter measures each callable of the suite
+// of Deleter on InMemory.
+func BenchmarkInMemoryConformsToDeleter(b *testing.B) {
 	b.Run("Delete", func(b *testing.B) {
 		deletertest.BenchDeleterSuite(
 			b,
@@ -30,9 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryDelete fuzzes the property checks of Deleter.Delete on
-// InMemory.
-func FuzzInMemoryDelete(f *testing.F) {
+// FuzzInMemoryConformsToDeleterDelete fuzzes the property checks of
+// Deleter.Delete on InMemory.
+func FuzzInMemoryConformsToDeleterDelete(f *testing.F) {
 	deletertest.FuzzDeleterSuite(
 		f,
 		deletertest.DeleterChecks.Delete.Callable,
@@ -40,4 +40,4 @@ func FuzzInMemoryDelete(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:1a73de48b0f6ee5654b7be0779fb7e68e6b5319f0777658c984ac0cb43703a55
+// dokimi:provenance sha256:93f613507c91d3d11c69ecdd76ea3ca43699c9b796c052c90584436b7f72ff40

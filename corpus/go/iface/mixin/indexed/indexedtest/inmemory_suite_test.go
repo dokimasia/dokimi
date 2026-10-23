@@ -18,9 +18,9 @@ func TestInMemoryConformsToRanked(t *testing.T) {
 	indexedtest.RunRankedSuite(t, indexedtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Ranked on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToRanked measures each callable of the suite of
+// Ranked on InMemory.
+func BenchmarkInMemoryConformsToRanked(b *testing.B) {
 	b.Run("Add", func(b *testing.B) {
 		indexedtest.BenchRankedSuite(
 			b,
@@ -44,8 +44,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryAdd fuzzes the property checks of Ranked.Add on InMemory.
-func FuzzInMemoryAdd(f *testing.F) {
+// FuzzInMemoryConformsToRankedAdd fuzzes the property checks of Ranked.Add
+// on InMemory.
+func FuzzInMemoryConformsToRankedAdd(f *testing.F) {
 	indexedtest.FuzzRankedSuite(
 		f,
 		indexedtest.RankedChecks.Add.Callable,
@@ -53,8 +54,9 @@ func FuzzInMemoryAdd(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryLen fuzzes the property checks of Ranked.Len on InMemory.
-func FuzzInMemoryLen(f *testing.F) {
+// FuzzInMemoryConformsToRankedLen fuzzes the property checks of Ranked.Len
+// on InMemory.
+func FuzzInMemoryConformsToRankedLen(f *testing.F) {
 	indexedtest.FuzzRankedSuite(
 		f,
 		indexedtest.RankedChecks.Len.Callable,
@@ -62,8 +64,9 @@ func FuzzInMemoryLen(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryAt fuzzes the property checks of Ranked.At on InMemory.
-func FuzzInMemoryAt(f *testing.F) {
+// FuzzInMemoryConformsToRankedAt fuzzes the property checks of Ranked.At
+// on InMemory.
+func FuzzInMemoryConformsToRankedAt(f *testing.F) {
 	indexedtest.FuzzRankedSuite(
 		f,
 		indexedtest.RankedChecks.At.Callable,
@@ -71,4 +74,4 @@ func FuzzInMemoryAt(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:40658b753713a51dfcb048a592526ba6b755fc7bd092f567423c9f3b5787ef38
+// dokimi:provenance sha256:47f48b37f8fef84ed97933af96fee97a3fc7fa3f5c0eee4e599d3bd23e989976

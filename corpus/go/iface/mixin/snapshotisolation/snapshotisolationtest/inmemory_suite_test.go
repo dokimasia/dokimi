@@ -18,9 +18,9 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	snapshotisolationtest.RunMixedSuite(t, snapshotisolationtest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Mixed on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToMixed measures each callable of the suite of
+// Mixed on InMemory.
+func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Record", func(b *testing.B) {
 		snapshotisolationtest.BenchMixedSuite(
 			b,
@@ -50,9 +50,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryRecord fuzzes the property checks of Mixed.Record on
-// InMemory.
-func FuzzInMemoryRecord(f *testing.F) {
+// FuzzInMemoryConformsToMixedRecord fuzzes the property checks of
+// Mixed.Record on InMemory.
+func FuzzInMemoryConformsToMixedRecord(f *testing.F) {
 	snapshotisolationtest.FuzzMixedSuite(
 		f,
 		snapshotisolationtest.MixedChecks.Record.Callable,
@@ -62,9 +62,9 @@ func FuzzInMemoryRecord(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryHistory fuzzes the property checks of Mixed.History on
-// InMemory.
-func FuzzInMemoryHistory(f *testing.F) {
+// FuzzInMemoryConformsToMixedHistory fuzzes the property checks of
+// Mixed.History on InMemory.
+func FuzzInMemoryConformsToMixedHistory(f *testing.F) {
 	snapshotisolationtest.FuzzMixedSuite(
 		f,
 		snapshotisolationtest.MixedChecks.History.Callable,
@@ -74,8 +74,9 @@ func FuzzInMemoryHistory(f *testing.F) {
 	)
 }
 
-// FuzzInMemoryGet fuzzes the property checks of Mixed.Get on InMemory.
-func FuzzInMemoryGet(f *testing.F) {
+// FuzzInMemoryConformsToMixedGet fuzzes the property checks of Mixed.Get
+// on InMemory.
+func FuzzInMemoryConformsToMixedGet(f *testing.F) {
 	snapshotisolationtest.FuzzMixedSuite(
 		f,
 		snapshotisolationtest.MixedChecks.Get.Callable,
@@ -85,4 +86,4 @@ func FuzzInMemoryGet(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:a739f3c6cc288f9b9da8554c5d53bff0338646a996bc3ff39fc91f31e7aae894
+// dokimi:provenance sha256:9d7a7146eb5e6d5a72fa498663ff8be8d2f65359efaac7059e4f26cf1ac389f3

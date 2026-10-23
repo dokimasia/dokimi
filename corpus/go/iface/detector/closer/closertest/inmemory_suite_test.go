@@ -18,9 +18,9 @@ func TestInMemoryConformsToCloser(t *testing.T) {
 	closertest.RunCloserSuite(t, closertest.NewInMemory)
 }
 
-// BenchmarkInMemory measures each callable of the suite of Closer on
-// InMemory.
-func BenchmarkInMemory(b *testing.B) {
+// BenchmarkInMemoryConformsToCloser measures each callable of the suite of
+// Closer on InMemory.
+func BenchmarkInMemoryConformsToCloser(b *testing.B) {
 	b.Run("Close", func(b *testing.B) {
 		closertest.BenchCloserSuite(
 			b,
@@ -30,9 +30,9 @@ func BenchmarkInMemory(b *testing.B) {
 	})
 }
 
-// FuzzInMemoryClose fuzzes the property checks of Closer.Close on
-// InMemory.
-func FuzzInMemoryClose(f *testing.F) {
+// FuzzInMemoryConformsToCloserClose fuzzes the property checks of
+// Closer.Close on InMemory.
+func FuzzInMemoryConformsToCloserClose(f *testing.F) {
 	closertest.FuzzCloserSuite(
 		f,
 		closertest.CloserChecks.Close.Callable,
@@ -40,4 +40,4 @@ func FuzzInMemoryClose(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:62fae2389d29c83e9e7a34f7dc0e1635c5f34884eb4ceb1b60b2a394f8d114a7
+// dokimi:provenance sha256:0b0639a75acfc524e54f75e734269a16fcdba5ef00750cd14cbe9a7e4c92486e

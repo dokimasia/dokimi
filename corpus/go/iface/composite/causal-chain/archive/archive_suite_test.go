@@ -18,8 +18,9 @@ func TestLogConformsToLog(t *testing.T) {
 	causalchaintest.RunLogSuite(t, newLog)
 }
 
-// BenchmarkLog measures each callable of the suite of Log on Log.
-func BenchmarkLog(b *testing.B) {
+// BenchmarkLogConformsToLog measures each callable of the suite of Log on
+// Log.
+func BenchmarkLogConformsToLog(b *testing.B) {
 	b.Run("Append", func(b *testing.B) {
 		causalchaintest.BenchLogSuite(
 			b,
@@ -36,8 +37,9 @@ func BenchmarkLog(b *testing.B) {
 	})
 }
 
-// FuzzLogAppend fuzzes the property checks of Log.Append on Log.
-func FuzzLogAppend(f *testing.F) {
+// FuzzLogConformsToLogAppend fuzzes the property checks of Log.Append on
+// Log.
+func FuzzLogConformsToLogAppend(f *testing.F) {
 	causalchaintest.FuzzLogSuite(
 		f,
 		causalchaintest.LogChecks.Append.Callable,
@@ -45,8 +47,9 @@ func FuzzLogAppend(f *testing.F) {
 	)
 }
 
-// FuzzLogReplay fuzzes the property checks of Log.Replay on Log.
-func FuzzLogReplay(f *testing.F) {
+// FuzzLogConformsToLogReplay fuzzes the property checks of Log.Replay on
+// Log.
+func FuzzLogConformsToLogReplay(f *testing.F) {
 	causalchaintest.FuzzLogSuite(
 		f,
 		causalchaintest.LogChecks.Replay.Callable,
@@ -54,4 +57,4 @@ func FuzzLogReplay(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:bcaceffc9c44fcb235565a5057ac2a05910feb81ac5c33f8b34413f159305a65
+// dokimi:provenance sha256:a446e855a9490111843c66b2e5047ba1f724717246f3aa875662725242916897

@@ -125,7 +125,7 @@ func (k *caller) call(c *Callable, sym symbol.Symbol, id *symbol.Identity) Call 
 	}
 	assign, returns := results(&view)
 	return Call{
-		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, mixed(k.m, id, shape.NilSafe)),
+		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, id, mixed(k.m, id, shape.NilSafe)),
 		Assign: assign, Returns: returns, Budget: k.g.budgetFact(k.m, id),
 		Concurrent: mixed(k.m, id, shape.Concurrent) || mixed(k.m, id, shape.ConcurrentReaders),
 		Over:       k.over(&view, id),
@@ -146,8 +146,9 @@ func (k *caller) call(c *Callable, sym symbol.Symbol, id *symbol.Identity) Call 
 // declares no such name and imports no package of the name: the package of
 // the declaration, or the package of a type that a parameter takes. A
 // parameter without a name takes the name and the label a and its position,
-// as a0.
-func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
+// as a0. id is the identity of the callable, which an implementation of an
+// interface takes as its origin where the callable declares it.
+func (k *caller) params(view *rules.Callable, id *symbol.Identity, nilSafe bool) []Param {
 	taken := map[string]bool{}
 	for _, names := range [][]string{reserved, predeclared} {
 		for _, name := range names {
@@ -193,7 +194,7 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 			param.Type, param.Address = rules.EmitRef(ref.Elems[0]), true
 			k.roots = append(k.roots, ref.Elems[0])
 		case implemented:
-			param.Input, param.Funcs = k.inputOf(ref, iface, name, label, taken)
+			param.Input, param.Funcs = k.inputOf(ref, iface, id, name, label, taken)
 		default:
 			k.roots = append(k.roots, ref)
 		}

@@ -76,7 +76,7 @@ func SlugSuite() conform.Suite[SlugFunc] {
 // to subject.
 func RunSlugSuite(t *testing.T, subject SlugFunc, opts ...SlugOption) {
 	t.Helper()
-	RunSlugSuiteFromHandle(t, func(*SlugHandle) SlugFunc { return subject }, opts...)
+	RunSlugSuiteFromHandle(t, slugSubjects(subject), opts...)
 }
 
 // RunSlugSuiteFromHandle applies the same checks to a subject that
@@ -94,31 +94,27 @@ func RunSlugSuiteFromHandle(
 // Slug on subject.
 func FuzzSlugSuite(f *testing.F, subject SlugFunc, opts ...SlugOption) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		SlugSuite(),
-		SlugChecks.Callable,
-		func(*SlugHandle) SlugFunc { return subject },
-		opts...)
+	conform.Fuzz(f, SlugSuite(), SlugChecks.Callable, slugSubjects(subject), opts...)
 }
 
 // RunSlugBudgets applies the allocation ceiling of Slug, and the ceilings
 // that opts add, to subject.
 func RunSlugBudgets(t *testing.T, subject SlugFunc, opts ...SlugOption) {
 	t.Helper()
-	conform.RunBudgets(t, SlugSuite(), func(*SlugHandle) SlugFunc { return subject }, opts...)
+	conform.RunBudgets(t, SlugSuite(), slugSubjects(subject), opts...)
 }
 
 // BenchSlugSuite measures subject under the ceilings of the budget of
 // Slug.
 func BenchSlugSuite(b conform.B, subject SlugFunc, opts ...SlugOption) {
 	b.Helper()
-	conform.Bench(
-		b,
-		SlugSuite(),
-		SlugChecks.Callable,
-		func(*SlugHandle) SlugFunc { return subject },
-		opts...)
+	conform.Bench(b, SlugSuite(), SlugChecks.Callable, slugSubjects(subject), opts...)
+}
+
+// slugSubjects returns the factory of the subjects of Slug that returns
+// subject for each handle.
+func slugSubjects(subject SlugFunc) func(*SlugHandle) SlugFunc {
+	return func(*SlugHandle) SlugFunc { return subject }
 }
 
 // slugCalls generates the calls of Slug with the inputs that each case

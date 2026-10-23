@@ -274,7 +274,7 @@ func RunBoardSuiteFromHandle[T Board](
 	opts ...BoardOption,
 ) {
 	t.Helper()
-	conform.Run(t, BoardSuite(), func(h *BoardHandle) Board { return newSubject(h) }, opts...)
+	conform.Run(t, BoardSuite(), boardSubjects(newSubject), opts...)
 }
 
 // FuzzBoardSuite registers on f the fuzz target of the property checks of
@@ -287,12 +287,7 @@ func FuzzBoardSuite[T Board](
 	opts ...BoardOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		BoardSuite(),
-		callable,
-		func(h *BoardHandle) Board { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, BoardSuite(), callable, boardSubjects(newSubject), opts...)
 }
 
 // RunBoardBudgets applies the allocation ceilings of Board, and the
@@ -303,11 +298,7 @@ func RunBoardBudgets[T Board](
 	opts ...BoardOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		BoardSuite(),
-		func(h *BoardHandle) Board { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, BoardSuite(), boardSubjects(newSubject), opts...)
 }
 
 // BenchBoardSuite measures callable on a subject of newSubject, under the
@@ -319,12 +310,13 @@ func BenchBoardSuite[T Board](
 	opts ...BoardOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		BoardSuite(),
-		callable,
-		func(h *BoardHandle) Board { return newSubject(h) },
-		opts...)
+	conform.Bench(b, BoardSuite(), callable, boardSubjects(newSubject), opts...)
+}
+
+// boardSubjects returns the factory of the subjects of Board that calls
+// newSubject with the handle of each check.
+func boardSubjects[T Board](newSubject func(h *BoardHandle) T) func(h *BoardHandle) Board {
+	return func(h *BoardHandle) Board { return newSubject(h) }
 }
 
 // boardPlaceCalls generates the calls of Board.Place with the inputs that

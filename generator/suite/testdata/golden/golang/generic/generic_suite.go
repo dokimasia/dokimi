@@ -73,11 +73,7 @@ func RunCacheSuiteFromHandle[T Cache[int, int]](
 	opts ...CacheOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		CacheSuite(),
-		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
-		opts...)
+	conform.Run(t, CacheSuite(), cacheSubjects(newSubject), opts...)
 }
 
 // FuzzCacheSuite registers on f the fuzz target of the property checks of
@@ -90,12 +86,7 @@ func FuzzCacheSuite[T Cache[int, int]](
 	opts ...CacheOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		CacheSuite(),
-		callable,
-		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, CacheSuite(), callable, cacheSubjects(newSubject), opts...)
 }
 
 // RunCacheBudgets applies the allocation ceilings of Cache, and the
@@ -106,11 +97,7 @@ func RunCacheBudgets[T Cache[int, int]](
 	opts ...CacheOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		CacheSuite(),
-		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, CacheSuite(), cacheSubjects(newSubject), opts...)
 }
 
 // BenchCacheSuite measures callable on a subject of newSubject, under the
@@ -122,12 +109,15 @@ func BenchCacheSuite[T Cache[int, int]](
 	opts ...CacheOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		CacheSuite(),
-		callable,
-		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
-		opts...)
+	conform.Bench(b, CacheSuite(), callable, cacheSubjects(newSubject), opts...)
+}
+
+// cacheSubjects returns the factory of the subjects of Cache that calls
+// newSubject with the handle of each check.
+func cacheSubjects[T Cache[int, int]](
+	newSubject func(h *CacheHandle) T,
+) func(h *CacheHandle) Cache[int, int] {
+	return func(h *CacheHandle) Cache[int, int] { return newSubject(h) }
 }
 
 // cacheGetCalls generates the calls of Cache.Get with the inputs that each

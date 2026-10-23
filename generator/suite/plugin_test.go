@@ -295,6 +295,86 @@ func TestSuite(t *testing.T) {
 			}, "each target fuzzes the planted defect of a ceiling, in the order of the callables")
 		})
 
+		{
+			tests := []struct {
+				name     string
+				givePkgs []string
+				give     string
+				want     []suite.Identity
+			}{
+				{
+					name: "records the identity of each check of the consumer", givePkgs: []string{storePackage},
+					give: "TestStoreSuite",
+					want: []suite.Identity{
+						{Field: "Get", Method: "KeepsTheItem", ID: "Store.Get/keeps-the-item"},
+						{Field: "Put", Method: "RefusesACancelledPut", ID: "Store.Put/refuses-a-cancelled-put"},
+					},
+				},
+				{
+					name: "records the identity of each ceiling of a budget", givePkgs: []string{meterPackage},
+					give: "TestMeterSuite",
+					want: []suite.Identity{
+						{Field: "Count", Method: "AllocationBudget", ID: "Meter.Count/allocation-budget"},
+						{Field: "Count", Method: "ByteBudget", ID: "Meter.Count/byte-budget"},
+						{Field: "Count", Method: "LatencyBudget", ID: "Meter.Count/latency-budget"},
+						{Field: "Count", Method: "MeanLatencyBudget", ID: "Meter.Count/mean-latency-budget"},
+						{Field: "Record", Method: "LatencyBudget", ID: "Meter.Record/latency-budget"},
+					},
+				},
+				{
+					name: "records the identity of each check of a function", givePkgs: []string{slugPackage},
+					give: "TestSlugSuite",
+					want: []suite.Identity{
+						{Method: "KeepsTheOrder", ID: "Slug/keeps-the-order"},
+						{Method: "KeepsTheWords", ID: "Slug/keeps-the-words"},
+					},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got, found := generate(t, goTree, tt.givePkgs...).tests[tt.give]
+					assert.True(t, found, "suite records the test "+tt.give)
+					expect.Equal(t, got.Data.Identities, tt.want,
+						"the test compares each identity with the method of the names of the callables")
+				})
+			}
+		}
+
+		t.Run("records the test of the implementations of a suite inside its package", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, pathsPackage, inputsPackage)
+			got := recorded(t, f, p)
+			test, found := got.tests["TestPipelineSuiteInputs"]
+			assert.True(t, found, "suite records the test of the implementations of Pipeline")
+			names := make([]string, 0, len(test.Data.Inputs))
+			for _, in := range test.Data.Inputs {
+				names = append(names, in.Name)
+			}
+			expect.Equal(t, names, []string{"PipelineFeedInput", "PipelineSourceInput", "PipelineSourceInput0"},
+				"the test calls the methods of each implementation of the suite")
+			pump := f.Find(t, symbol.KindMethod, "Pipeline", "Pump").Identity()
+			expect.Equal(t, test.Data.Inputs[0].Origin, pump, "the first implementation takes the origin of Pump")
+			expect.True(t, got.inside[pump], "the test calls the implementations from inside their package")
+			_, outside := got.tests["TestPipelineSuite"]
+			expect.True(t, outside, "the falsification test stays in the external test package")
+		})
+
+		t.Run("records the probe of each method of an implementation with named results", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, pathsPackage, inputsPackage).suites["Pipeline"]
+			assert.NotEmpty(t, got.Inputs, "the suite of Pipeline has implementations")
+			next := got.Inputs[0].Methods[0]
+			expect.Equal(t, []string{signature(next.Method), signature(next.Probe)}, []string{
+				"Next(a0 context.Context) (Item, bool, error)",
+				"Next(a0 context.Context) (r0 Item, r1 bool, r2 error)",
+			}, "the probe has the parameters of the method and a name for each result")
+		})
+
 		t.Run("records no idle test for the suite of an interface without callables", func(t *testing.T) {
 			t.Parallel()
 
@@ -376,7 +456,7 @@ func TestSuite(t *testing.T) {
 				Checks: "StoreChecks", Suite: "StoreSuite", Run: "RunStoreSuite",
 				RunFromHandle: "RunStoreSuiteFromHandle", Fuzz: "FuzzStoreSuite", Budgets: "RunStoreBudgets",
 				Bench: "BenchStoreSuite", Handle: "StoreHandle", Check: "StoreCheck", Option: "StoreOption",
-				Over: "StoreOver", NewOver: "NewStoreOver", Embedded: "StoreOverEmbedded",
+				Subjects: "StoreSubjects", Over: "StoreOver", NewOver: "NewStoreOver", Embedded: "StoreOverEmbedded",
 			}, "each name joins the name of the declaration to the word of its part, and a suite without a "+
 				"concurrent callable has no parallel benchmark")
 		})
@@ -440,7 +520,7 @@ func TestSuite(t *testing.T) {
 						"StoreGet", "StorePut", "StoreGetCalls", "StorePutCalls", "StoreOver", "StoreOverEmbedded",
 						"NewStoreOver",
 						"StoreSuite", "RunStoreSuite", "RunStoreSuiteFromHandle", "FuzzStoreSuite", "RunStoreBudgets",
-						"BenchStoreSuite", "StoreHandle", "StoreCheck", "StoreOption",
+						"BenchStoreSuite", "StoreHandle", "StoreCheck", "StoreOption", "StoreSubjects",
 					},
 				},
 				{
@@ -452,6 +532,7 @@ func TestSuite(t *testing.T) {
 						"NewMeterOver",
 						"MeterSuite", "RunMeterSuite", "RunMeterSuiteFromHandle", "FuzzMeterSuite", "RunMeterBudgets",
 						"BenchMeterSuite", "BenchMeterSuiteParallel", "MeterHandle", "MeterCheck", "MeterOption",
+						"MeterSubjects",
 					},
 				},
 				{
@@ -460,7 +541,7 @@ func TestSuite(t *testing.T) {
 						"CatalogMethods", "CatalogFind", "CatalogAdd", "CatalogFindCalls", "CatalogAddCalls",
 						"CatalogOver", "CatalogOverEmbedded", "NewCatalogOver", "CatalogSuite", "RunCatalogSuite",
 						"RunCatalogSuiteFromHandle", "FuzzCatalogSuite", "RunCatalogBudgets", "BenchCatalogSuite",
-						"CatalogHandle", "CatalogCheck", "CatalogOption",
+						"CatalogHandle", "CatalogCheck", "CatalogOption", "CatalogSubjects",
 					},
 				},
 				{
@@ -468,7 +549,7 @@ func TestSuite(t *testing.T) {
 					wantDecl: []string{
 						"SlugFunc", "SlugCallable", "SlugCalls", "NewSlugOver", "SlugSuite", "RunSlugSuite",
 						"RunSlugSuiteFromHandle", "FuzzSlugSuite", "RunSlugBudgets", "BenchSlugSuite", "SlugHandle",
-						"SlugCheck", "SlugOption",
+						"SlugCheck", "SlugOption", "SlugSubjects",
 					},
 				},
 				{
@@ -478,7 +559,7 @@ func TestSuite(t *testing.T) {
 						"RouteFunc", "RouteCallable", "RouteCalls", "RouteItemValues", "RouteDepotInput",
 						"RouteDepotInputEmbedded", "NewRouteOver", "RouteSuite", "RunRouteSuite",
 						"RunRouteSuiteFromHandle", "FuzzRouteSuite", "RunRouteBudgets", "BenchRouteSuite",
-						"RouteHandle", "RouteCheck", "RouteOption",
+						"RouteHandle", "RouteCheck", "RouteOption", "RouteSubjects",
 					},
 				},
 				{
@@ -486,7 +567,7 @@ func TestSuite(t *testing.T) {
 					give: "Idle",
 					wantDecl: []string{
 						"IdleSuite", "RunIdleSuite", "RunIdleSuiteFromHandle", "FuzzIdleSuite", "RunIdleBudgets",
-						"BenchIdleSuite", "IdleHandle", "IdleCheck", "IdleOption",
+						"BenchIdleSuite", "IdleHandle", "IdleCheck", "IdleOption", "IdleSubjects",
 					},
 				},
 			}

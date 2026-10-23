@@ -92,6 +92,40 @@
 {{- end}}
 }
 {{- end}}
+{{- else if $c.Inputs}}{{use "go.dokimi.dev/assert"}}
+
+{{docs (wrapdocs (printf `%s checks that each method of each implementation of an interface of the suite of %s calls the function of its field.` $test $c.Declaration))}}
+{{- ""}}func {{$test}}(t *testing.T) {
+	t.Parallel()
+{{- range $c.Inputs}}
+{{- $input := suiteCamel .Name}}
+
+	t.Run("{{$input}}", func(t *testing.T) {
+		t.Parallel()
+{{- range .Methods}}
+{{- $field := suiteCamel .Field}}
+
+		t.Run("{{.Method.Name}}", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			in := {{$input}}{
+				{{$field}}: func({{params .Probe.Params}}){{results .Probe.Returns}} {
+					called = true
+{{- if .Probe.Returns.Len}}
+					return
+{{- end}}
+				},
+			}
+{{- range .Probe.Params.Items}}
+			var {{.Name}} {{if .Variadic}}[]{{end}}{{spell .Type}}
+{{- end}}
+			in.{{.Method.Name}}({{range $i, $p := .Probe.Params.Items}}{{if $i}}, {{end}}{{$p.Name}}{{if $p.Variadic}}...{{end}}{{end}})
+			assert.True(t, called, "{{.Method.Name}} calls the function of the field {{$field}}")
+		})
+{{- end}}
+	})
+{{- end}}
+}
 {{- else}}{{use "go.dokimi.dev/conform"}}{{use "go.dokimi.dev/assert"}}
 {{- $suite := index $refs 0}}
 {{- $run := index $refs 1}}
@@ -187,6 +221,21 @@
 		)
 {{- end}}
 	})
+{{- with $c.Identities}}
+{{- $checks := index $refs 6}}
+
+	t.Run("{{suitePascal $checks.Type.Spelling}}", func(t *testing.T) {
+		t.Parallel()
+{{- range .}}
+		assert.Equal(
+			t,
+			string({{spell $checks.Type}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}()),
+			{{printf "%q" .ID}},
+			"the identity of the check joins the callable and the segment of the check",
+		)
+{{- end}}
+	})
+{{- end}}
 }
 {{- with $c.SuiteAllocs}}
 {{- $allocs := suitePascal .}}

@@ -254,11 +254,7 @@ func RunPipelineSuiteFromHandle[T Pipeline](
 	opts ...PipelineOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		PipelineSuite(),
-		func(h *PipelineHandle) Pipeline { return newSubject(h) },
-		opts...)
+	conform.Run(t, PipelineSuite(), pipelineSubjects(newSubject), opts...)
 }
 
 // FuzzPipelineSuite registers on f the fuzz target of the property checks
@@ -271,12 +267,7 @@ func FuzzPipelineSuite[T Pipeline](
 	opts ...PipelineOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		PipelineSuite(),
-		callable,
-		func(h *PipelineHandle) Pipeline { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, PipelineSuite(), callable, pipelineSubjects(newSubject), opts...)
 }
 
 // RunPipelineBudgets applies the allocation ceilings of Pipeline, and the
@@ -287,11 +278,7 @@ func RunPipelineBudgets[T Pipeline](
 	opts ...PipelineOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		PipelineSuite(),
-		func(h *PipelineHandle) Pipeline { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, PipelineSuite(), pipelineSubjects(newSubject), opts...)
 }
 
 // BenchPipelineSuite measures callable on a subject of newSubject, under
@@ -303,12 +290,15 @@ func BenchPipelineSuite[T Pipeline](
 	opts ...PipelineOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		PipelineSuite(),
-		callable,
-		func(h *PipelineHandle) Pipeline { return newSubject(h) },
-		opts...)
+	conform.Bench(b, PipelineSuite(), callable, pipelineSubjects(newSubject), opts...)
+}
+
+// pipelineSubjects returns the factory of the subjects of Pipeline that
+// calls newSubject with the handle of each check.
+func pipelineSubjects[T Pipeline](
+	newSubject func(h *PipelineHandle) T,
+) func(h *PipelineHandle) Pipeline {
+	return func(h *PipelineHandle) Pipeline { return newSubject(h) }
 }
 
 // pipelinePumpCalls generates the calls of Pipeline.Pump with the inputs

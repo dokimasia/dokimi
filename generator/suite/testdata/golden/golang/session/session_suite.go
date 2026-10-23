@@ -89,11 +89,7 @@ func RunSessionsSuiteFromHandle[T Sessions](
 	opts ...SessionsOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		SessionsSuite(),
-		func(h *SessionsHandle) Sessions { return newSubject(h) },
-		opts...)
+	conform.Run(t, SessionsSuite(), sessionsSubjects(newSubject), opts...)
 }
 
 // FuzzSessionsSuite registers on f the fuzz target of the property checks
@@ -106,12 +102,7 @@ func FuzzSessionsSuite[T Sessions](
 	opts ...SessionsOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		SessionsSuite(),
-		callable,
-		func(h *SessionsHandle) Sessions { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, SessionsSuite(), callable, sessionsSubjects(newSubject), opts...)
 }
 
 // RunSessionsBudgets applies the allocation ceilings of Sessions, and the
@@ -122,11 +113,7 @@ func RunSessionsBudgets[T Sessions](
 	opts ...SessionsOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		SessionsSuite(),
-		func(h *SessionsHandle) Sessions { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, SessionsSuite(), sessionsSubjects(newSubject), opts...)
 }
 
 // BenchSessionsSuite measures callable on a subject of newSubject, under
@@ -138,12 +125,15 @@ func BenchSessionsSuite[T Sessions](
 	opts ...SessionsOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		SessionsSuite(),
-		callable,
-		func(h *SessionsHandle) Sessions { return newSubject(h) },
-		opts...)
+	conform.Bench(b, SessionsSuite(), callable, sessionsSubjects(newSubject), opts...)
+}
+
+// sessionsSubjects returns the factory of the subjects of Sessions that
+// calls newSubject with the handle of each check.
+func sessionsSubjects[T Sessions](
+	newSubject func(h *SessionsHandle) T,
+) func(h *SessionsHandle) Sessions {
+	return func(h *SessionsHandle) Sessions { return newSubject(h) }
 }
 
 // sessionsPutCalls generates the calls of Sessions.Put with the inputs

@@ -65,6 +65,40 @@ func TestMeterSuite(t *testing.T) {
 			}),
 		)
 	})
+
+	t.Run("MeterChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(MeterChecks.Count.AllocationBudget()),
+			"Meter.Count/allocation-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(MeterChecks.Count.ByteBudget()),
+			"Meter.Count/byte-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(MeterChecks.Count.LatencyBudget()),
+			"Meter.Count/latency-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(MeterChecks.Count.MeanLatencyBudget()),
+			"Meter.Count/mean-latency-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(MeterChecks.Record.LatencyBudget()),
+			"Meter.Record/latency-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // TestMeterSuiteAllocs falsifies the allocation ceilings of the suite of
@@ -205,6 +239,22 @@ func TestWeighSuite(t *testing.T) {
 				},
 				Defect: func(*WeighHandle) WeighFunc { return nil },
 			}),
+		)
+	})
+
+	t.Run("WeighChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(WeighChecks.AllocationBudget()),
+			"Weigh/allocation-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(WeighChecks.LatencyBudget()),
+			"Weigh/latency-budget",
+			"the identity of the check joins the callable and the segment of the check",
 		)
 	})
 }

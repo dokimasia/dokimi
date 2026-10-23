@@ -71,6 +71,22 @@ func TestSlugSuite(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("SlugChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(SlugChecks.KeepsTheOrder()),
+			"Slug/keeps-the-order",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(SlugChecks.KeepsTheWords()),
+			"Slug/keeps-the-words",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // BenchmarkSlug measures Slug.

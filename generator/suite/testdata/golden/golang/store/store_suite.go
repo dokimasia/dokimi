@@ -99,7 +99,7 @@ func RunStoreSuiteFromHandle[T Store](
 	opts ...StoreOption,
 ) {
 	t.Helper()
-	conform.Run(t, StoreSuite(), func(h *StoreHandle) Store { return newSubject(h) }, opts...)
+	conform.Run(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // FuzzStoreSuite registers on f the fuzz target of the property checks of
@@ -112,12 +112,7 @@ func FuzzStoreSuite[T Store](
 	opts ...StoreOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		StoreSuite(),
-		callable,
-		func(h *StoreHandle) Store { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, StoreSuite(), callable, storeSubjects(newSubject), opts...)
 }
 
 // RunStoreBudgets applies the allocation ceilings of Store, and the
@@ -128,11 +123,7 @@ func RunStoreBudgets[T Store](
 	opts ...StoreOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		StoreSuite(),
-		func(h *StoreHandle) Store { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, StoreSuite(), storeSubjects(newSubject), opts...)
 }
 
 // BenchStoreSuite measures callable on a subject of newSubject, under the
@@ -144,12 +135,13 @@ func BenchStoreSuite[T Store](
 	opts ...StoreOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		StoreSuite(),
-		callable,
-		func(h *StoreHandle) Store { return newSubject(h) },
-		opts...)
+	conform.Bench(b, StoreSuite(), callable, storeSubjects(newSubject), opts...)
+}
+
+// storeSubjects returns the factory of the subjects of Store that calls
+// newSubject with the handle of each check.
+func storeSubjects[T Store](newSubject func(h *StoreHandle) T) func(h *StoreHandle) Store {
+	return func(h *StoreHandle) Store { return newSubject(h) }
 }
 
 // storeGetCalls generates the calls of Store.Get with the inputs that each

@@ -20,6 +20,7 @@
 {{- $option := suitePascal $n.Option}}
 {{- $over := suiteCamel $n.Over}}
 {{- $newOver := suiteCamel $n.NewOver}}
+{{- $subjects := suiteCamel $n.Subjects}}
 {{- if $c.Calls}}{{use "context"}}{{use "go.dokimi.dev/assert/prop"}}{{end}}
 
 // The suite refers to the compatibility witness of its runtime.
@@ -148,7 +149,7 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to subject.` $run $c.Declaration))}}
 {{- ""}}func {{$run}}(t *testing.T, subject {{$s}}, opts ...{{$option}}) {
 	t.Helper()
-	{{$fromHandle}}(t, func(*{{$handle}}) {{$s}} { return subject }, opts...)
+	{{$fromHandle}}(t, {{$subjects}}(subject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds from the handle of each check.` $fromHandle))}}
@@ -160,19 +161,19 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s registers on f the fuzz target of the property checks of %s on subject.` $fuzz $c.Declaration))}}
 {{- ""}}func {{$fuzz}}(f *testing.F, subject {{$s}}, opts ...{{$option}}) {
 	f.Helper()
-	conform.Fuzz(f, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
+	conform.Fuzz(f, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s applies the allocation ceiling of %s, and the ceilings that opts add, to subject.` $budgets $c.Declaration))}}
 {{- ""}}func {{$budgets}}(t *testing.T, subject {{$s}}, opts ...{{$option}}) {
 	t.Helper()
-	conform.RunBudgets(t, {{$suite}}(), func(*{{$handle}}) {{$s}} { return subject }, opts...)
+	conform.RunBudgets(t, {{$suite}}(), {{$subjects}}(subject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s measures subject under the ceilings of the budget of %s.` $bench $c.Declaration))}}
 {{- ""}}func {{$bench}}(b conform.B, subject {{$s}}, opts ...{{$option}}) {
 	b.Helper()
-	conform.Bench(b, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
+	conform.Bench(b, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
 }
 
 {{- if $n.BenchParallel}}
@@ -180,9 +181,14 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s measures subject on GOMAXPROCS goroutines at once, under the ceilings of the budget of %s.` $benchParallel $c.Declaration))}}
 {{- ""}}func {{$benchParallel}}(b *testing.B, subject {{$s}}, opts ...{{$option}}) {
 	b.Helper()
-	conform.BenchParallel(b, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
+	conform.BenchParallel(b, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
 }
 {{- end}}
+
+{{docs (wrapdocs (printf `%s returns the factory of the subjects of %s that returns subject for each handle.` $subjects $c.Declaration))}}
+{{- ""}}func {{$subjects}}(subject {{$s}}) func(*{{$handle}}) {{$s}} {
+	return func(*{{$handle}}) {{$s}} { return subject }
+}
 {{- else}}
 
 {{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to a fresh subject of newSubject for each check.` $run $c.Declaration))}}
@@ -194,34 +200,39 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s applies the same checks to a subject that newSubject builds from the handle of each check.` $fromHandle))}}
 {{- ""}}func {{$fromHandle}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	t.Helper()
-	conform.Run(t, {{$suite}}(), func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+	conform.Run(t, {{$suite}}(), {{$subjects}}(newSubject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s registers on f the fuzz target of the property checks of callable, on a subject that newSubject builds from the handle of each case.` $fuzz))}}
 {{- ""}}func {{$fuzz}}[T {{$s}}](f *testing.F, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	f.Helper()
-	conform.Fuzz(f, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+	conform.Fuzz(f, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s applies the allocation ceilings of %s, and the ceilings that opts add, to a fresh subject of newSubject for each case.` $budgets $c.Declaration))}}
 {{- ""}}func {{$budgets}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	t.Helper()
-	conform.RunBudgets(t, {{$suite}}(), func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+	conform.RunBudgets(t, {{$suite}}(), {{$subjects}}(newSubject), opts...)
 }
 
 {{docs (wrapdocs (printf `%s measures callable on a subject of newSubject, under the ceilings of its budget.` $bench))}}
 {{- ""}}func {{$bench}}[T {{$s}}](b conform.B, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	b.Helper()
-	conform.Bench(b, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+	conform.Bench(b, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
 }
 {{- if $n.BenchParallel}}
 
 {{docs (wrapdocs (printf `%s measures callable on a subject of newSubject on GOMAXPROCS goroutines at once, under the ceilings of its budget.` $benchParallel))}}
 {{- ""}}func {{$benchParallel}}[T {{$s}}](b *testing.B, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	b.Helper()
-	conform.BenchParallel(b, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
+	conform.BenchParallel(b, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
 }
 {{- end}}
+
+{{docs (wrapdocs (printf `%s returns the factory of the subjects of %s that calls newSubject with the handle of each check.` $subjects $c.Declaration))}}
+{{- ""}}func {{$subjects}}[T {{$s}}](newSubject func(h *{{$handle}}) T) func(h *{{$handle}}) {{$s}} {
+	return func(h *{{$handle}}) {{$s}} { return newSubject(h) }
+}
 {{- end}}
 {{- range $c.Calls}}
 {{- $name := $c.Declaration}}

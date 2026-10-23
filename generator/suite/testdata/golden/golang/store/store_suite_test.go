@@ -81,6 +81,22 @@ func TestStoreSuite(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("StoreChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(StoreChecks.Get.KeepsTheItem()),
+			"Store.Get/keeps-the-item",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(StoreChecks.Put.RefusesACancelledPut()),
+			"Store.Put/refuses-a-cancelled-put",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // storeIdle returns the planted defect of a ceiling of Store with a spend

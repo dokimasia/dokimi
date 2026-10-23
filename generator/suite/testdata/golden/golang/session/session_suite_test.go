@@ -74,6 +74,16 @@ func TestSessionsSuite(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("SessionsChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(SessionsChecks.Get.KeepsTheLastPut()),
+			"Sessions.Get/keeps-the-last-put",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // sessionsIdle returns the planted defect of a ceiling of Sessions with a

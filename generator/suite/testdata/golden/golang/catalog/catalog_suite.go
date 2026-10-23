@@ -105,11 +105,7 @@ func RunCatalogSuiteFromHandle[T CatalogMethods](
 	opts ...CatalogOption,
 ) {
 	t.Helper()
-	conform.Run(
-		t,
-		CatalogSuite(),
-		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
-		opts...)
+	conform.Run(t, CatalogSuite(), catalogSubjects(newSubject), opts...)
 }
 
 // FuzzCatalogSuite registers on f the fuzz target of the property checks
@@ -122,12 +118,7 @@ func FuzzCatalogSuite[T CatalogMethods](
 	opts ...CatalogOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		CatalogSuite(),
-		callable,
-		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, CatalogSuite(), callable, catalogSubjects(newSubject), opts...)
 }
 
 // RunCatalogBudgets applies the allocation ceilings of Catalog, and the
@@ -138,11 +129,7 @@ func RunCatalogBudgets[T CatalogMethods](
 	opts ...CatalogOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		CatalogSuite(),
-		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, CatalogSuite(), catalogSubjects(newSubject), opts...)
 }
 
 // BenchCatalogSuite measures callable on a subject of newSubject, under
@@ -154,12 +141,15 @@ func BenchCatalogSuite[T CatalogMethods](
 	opts ...CatalogOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		CatalogSuite(),
-		callable,
-		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
-		opts...)
+	conform.Bench(b, CatalogSuite(), callable, catalogSubjects(newSubject), opts...)
+}
+
+// catalogSubjects returns the factory of the subjects of Catalog that
+// calls newSubject with the handle of each check.
+func catalogSubjects[T CatalogMethods](
+	newSubject func(h *CatalogHandle) T,
+) func(h *CatalogHandle) CatalogMethods {
+	return func(h *CatalogHandle) CatalogMethods { return newSubject(h) }
 }
 
 // catalogFindCalls generates the calls of Catalog.Find with the inputs

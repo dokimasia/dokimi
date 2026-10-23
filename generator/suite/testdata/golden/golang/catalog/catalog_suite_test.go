@@ -73,6 +73,22 @@ func TestCatalogSuite(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("CatalogChecks", func(t *testing.T) {
+		t.Parallel()
+		assert.Equal(
+			t,
+			string(CatalogChecks.Find.FindsTheAddedProduct()),
+			"Catalog.Find/finds-the-added-product",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+		assert.Equal(
+			t,
+			string(CatalogChecks.Find.AllocationBudget()),
+			"Catalog.Find/allocation-budget",
+			"the identity of the check joins the callable and the segment of the check",
+		)
+	})
 }
 
 // TestCatalogSuiteAllocs falsifies the allocation ceilings of the suite of

@@ -126,12 +126,14 @@ const (
 	conformsWord    = "ConformsTo"
 	newWord         = "New"
 	subjectWord     = "Subject"
+	subjectsWord    = "Subjects"
 	budgetsWord     = "Budgets"
 	benchWord       = "Bench"
 	parallelWord    = "Parallel"
 	callsWord       = "Calls"
 	overWord        = "Over"
 	embeddedWord    = "Embedded"
+	inputsWord      = "Inputs"
 	allocsWord      = "Allocs"
 	benchmarkWord   = "Benchmark"
 	declaredWord    = "Declared"
@@ -175,7 +177,11 @@ type Suite struct {
 // RunStoreSuiteFromHandle of its application, its fuzz form FuzzStoreSuite,
 // the application of its allocation ceilings RunStoreBudgets, its benchmarks
 // BenchStoreSuite and BenchStoreSuiteParallel, and the aliases StoreHandle,
-// StoreCheck and StoreOption. Methods is the interface of the methods of a
+// StoreCheck and StoreOption. Subjects is the function that turns the factory
+// of an application into the factory of the subjects of the suite, as
+// StoreSubjects. Each form of the application calls it, so the run of one
+// form covers the factory that each form passes. Methods is the interface of
+// the methods of a
 // struct, as CatalogMethods, and Func the function type of a function, as
 // SlugFunc. Each is empty for another declaration. Over is the type of the
 // planted defects of the ceilings of an interface or a struct, as StoreOver,
@@ -197,6 +203,7 @@ type Names struct {
 	Handle        string
 	Check         string
 	Option        string
+	Subjects      string
 	Methods       string
 	Func          string
 	Over          string
@@ -272,7 +279,11 @@ type Check struct {
 // number of valid cases of each property run that the subject states, and 0
 // for a subject without the param cases. The test passes it to the
 // applications whose property runs it sets: the checks and the allocation
-// ceilings.
+// ceilings. Identities are the identities of the checks of a suite, which
+// the test of the suite compares with the names of the callables. Inputs are
+// the implementations of the interfaces of a suite, whose methods the test of
+// the implementations calls from inside the package of the suite. Each is
+// empty for any other test.
 //
 // The record of a conformance test is a struct with ten fields. Their types
 // refer, in this order, to the form of the application, as RunStoreSuite, to
@@ -311,9 +322,23 @@ type Conformance struct {
 	Ceilings    []Ceiling
 	Targets     []Target
 	Levels      []Level
+	Identities  []Identity
+	Inputs      []Input
 	Cases       int64
 	Function    bool
 	FromHandle  bool
+}
+
+// Identity is the identity of one check of a suite, which the test of the
+// suite compares with the identity that the names of the callables return.
+// Field is the field of its callable in the names of the callables, as Get,
+// and empty for a function. Method is the method that returns the identity,
+// as KeepsTheItem or AllocationBudget, and ID is the identity, as
+// Store.Get/keeps-the-item.
+type Identity struct {
+	Field  string
+	Method string
+	ID     string
 }
 
 // Level is one level of the benchmarks of a subject or of a suite. Field is the
@@ -1015,7 +1040,8 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		st := &s.Starts[i]
 		decls = append(decls, &emit.Variable{Origin: *origin, Name: st.Name, Visibility: symbol.VisibilityPackage})
 	}
-	for _, in := range s.Inputs {
+	for i := range s.Inputs {
+		in := &s.Inputs[i]
 		decls = append(decls,
 			&emit.Struct{Origin: *origin, Name: in.Name, Visibility: symbol.VisibilityPackage},
 			&emit.Alias{Origin: *origin, Name: in.Embedded, Visibility: symbol.VisibilityPackage})
@@ -1033,7 +1059,8 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	if n.BenchParallel != "" {
 		decls = append(decls, public(n.BenchParallel))
 	}
-	decls = append(decls, alias(n.Handle), alias(n.Check), alias(n.Option))
+	decls = append(decls, alias(n.Handle), alias(n.Check), alias(n.Option),
+		&emit.Function{Origin: *origin, Name: n.Subjects, Visibility: symbol.VisibilityPackage})
 	e.File().Record(*s, decls...)
 	record := &emit.Struct{
 		Origin: *origin, Name: e.JoinName(proofsWord, s.Declaration), Visibility: symbol.VisibilityPackage,
@@ -1084,7 +1111,39 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	if n.BenchParallel != "" {
 		record.Fields.Append(&emit.Field{Name: parallelWord, Type: emitted(n.BenchParallel)})
 	}
+	test.Identities = identitiesOf(s)
 	e.File(TestTag).Record(test, record)
+	if len(s.Inputs) == 0 {
+		return
+	}
+	// Go splits the internal test file from the external one by the origin of
+	// a declaration, so the test of the implementations takes the origin of a
+	// callable that takes one.
+	inputs := &emit.Struct{
+		Origin: s.Inputs[0].Origin, Name: e.JoinName(inputsWord, record.Name), Visibility: symbol.VisibilityPackage,
+	}
+	e.File(TestTag).Internal().Record(Conformance{
+		Test: e.JoinName(inputsWord, test.Test), Declaration: s.Declaration, Inputs: s.Inputs,
+	}, inputs)
+}
+
+// identitiesOf returns the identity of each check of the suite s, in the order
+// of the callables: the checks of the consumer, then the ceilings of the
+// budget of the callable.
+func identitiesOf(s *Suite) []Identity {
+	var out []Identity
+	for i := range s.Callables {
+		c := &s.Callables[i]
+		for _, check := range s.Checks {
+			if check.Field == c.Field {
+				out = append(out, Identity{Field: c.Field, Method: check.Method, ID: c.Name + "/" + check.Segment})
+			}
+		}
+		for _, segment := range s.Calls[i].Budget.segments() {
+			out = append(out, Identity{Field: c.Field, Method: naming.Pascal(segment), ID: c.Name + "/" + segment})
+		}
+	}
+	return out
 }
 
 // idle names the tests of the suite of an interface or a struct that apply the
@@ -1313,6 +1372,7 @@ func namesOf(e *sdk.Emitter, decl string) Names {
 		Fuzz: e.JoinName(suite, fuzzWord), Budgets: e.JoinName(budgetsWord, e.JoinName(decl, runWord)),
 		Bench: bench, BenchParallel: e.JoinName(parallelWord, bench), Handle: e.JoinName(handleWord, decl),
 		Check: e.JoinName(checkWord, decl), Option: e.JoinName(optionWord, decl),
+		Subjects: e.JoinName(subjectsWord, decl),
 	}
 }
 

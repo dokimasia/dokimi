@@ -64,20 +64,24 @@ type Result struct {
 // Embedded is the alias of the interface that the implementation embeds, as
 // StoreSourceInputEmbedded. The embedded field has the name of the alias, so a
 // method with the name of the interface is a valid method of the
-// implementation.
+// implementation. Origin is the identity of the first callable that takes the
+// implementation, the origin of the test of the implementations.
 type Input struct {
 	Type     *emit.TypeRef
 	Name     string
 	Embedded string
+	Origin   symbol.Identity
 	Methods  []InputMethod
 }
 
 // InputMethod is one method of an [Input]. Method is the signature of the
 // method, whose parameters have the names a0, a1 and so on. The method
 // passes them to the function of the field Field, as OnNext, and returns its
-// results.
+// results. Probe is the same signature with the results r0, r1 and so on,
+// which the function of a test of the method declares.
 type InputMethod struct {
 	Method *emit.Method
+	Probe  *emit.Method
 	Field  string
 }
 
@@ -166,15 +170,17 @@ func (*caller) index(f *Func, name string, taken map[string]bool) string {
 
 // inputOf returns the name of the implementation of the interface iface at
 // the type ref, and the generated function of each method of the interface
-// for the parameter named name with the label label. The suite declares one
-// implementation of each interface at its type arguments. The function of a
-// method takes the declared errors of the method for its error result.
+// for a parameter of the callable id. name is the name of the parameter, and
+// label is its label. The suite declares one implementation of each interface
+// at its type arguments.
+// The function of a method takes the declared errors of the method for its
+// error result.
 func (k *caller) inputOf(
-	ref *node.TypeRef, iface *node.Interface, name, label string, taken map[string]bool,
+	ref *node.TypeRef, iface *node.Interface, id *symbol.Identity, name, label string, taken map[string]bool,
 ) (string, []Func) {
 	b := k.b
 	methods := methodsOf(&b, iface)
-	in := k.input(ref, iface, methods)
+	in := k.input(ref, iface, id, methods)
 	funcs := make([]Func, 0, len(methods))
 	for i, method := range methods {
 		view, _ := b.CallableOf(method)
@@ -203,9 +209,11 @@ func (k *caller) inputOf(
 // input returns the implementation of the interface iface at the type ref,
 // whose methods are the methods of the interface. It declares the
 // implementation where the suite has none of the interface at the type
-// arguments of ref. The name of a second implementation of one interface ends
-// with a number.
-func (k *caller) input(ref *node.TypeRef, iface *node.Interface, methods []*node.Method) *Input {
+// arguments of ref, with the callable id as its origin. The name of a second
+// implementation of one interface ends with a number.
+func (k *caller) input(
+	ref *node.TypeRef, iface *node.Interface, id *symbol.Identity, methods []*node.Method,
+) *Input {
 	typ := rules.EmitRef(ref)
 	for i := range k.inputs {
 		if k.inputs[i].Type.Spelling == typ.Spelling && spelledArgs(k.inputs[i].Type) == spelledArgs(typ) {
@@ -217,7 +225,7 @@ func (k *caller) input(ref *node.TypeRef, iface *node.Interface, methods []*node
 		taken[k.inputs[i].Name] = true
 	}
 	in := Input{Type: typ, Name: naming.Unique(taken, k.e.JoinName(inputWord, k.e.JoinName(iface.Name, k.decl)))}
-	in.Embedded = k.e.JoinName(embeddedWord, in.Name)
+	in.Embedded, in.Origin = k.e.JoinName(embeddedWord, in.Name), *id
 	for _, method := range methods {
 		view, _ := k.b.CallableOf(method)
 		m := &emit.Method{Origin: method.ID, Name: method.Name, Visibility: symbol.VisibilityPublic}
@@ -230,10 +238,15 @@ func (k *caller) input(ref *node.TypeRef, iface *node.Interface, methods []*node
 			}
 			m.Params.Append(param)
 		}
-		for _, r := range view.Returns {
-			m.Returns.Append(&emit.Return{Type: rules.EmitRef(rules.Substitute(r.Ref, iface.TypeParams, ref.Args))})
+		probe := &emit.Method{
+			Origin: method.ID, Name: method.Name, Visibility: symbol.VisibilityPublic, Params: m.Params,
 		}
-		in.Methods = append(in.Methods, InputMethod{Method: m, Field: k.e.JoinName(method.Name, onWord)})
+		for i, r := range view.Returns {
+			typ := rules.EmitRef(rules.Substitute(r.Ref, iface.TypeParams, ref.Args))
+			m.Returns.Append(&emit.Return{Type: typ})
+			probe.Returns.Append(&emit.Return{Name: "r" + strconv.Itoa(i), Type: typ})
+		}
+		in.Methods = append(in.Methods, InputMethod{Method: m, Probe: probe, Field: k.e.JoinName(method.Name, onWord)})
 	}
 	k.inputs = append(k.inputs, in)
 	return &k.inputs[len(k.inputs)-1]

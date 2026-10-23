@@ -145,7 +145,7 @@ func RunMeterSuiteFromHandle[T Meter](
 	opts ...MeterOption,
 ) {
 	t.Helper()
-	conform.Run(t, MeterSuite(), func(h *MeterHandle) Meter { return newSubject(h) }, opts...)
+	conform.Run(t, MeterSuite(), meterSubjects(newSubject), opts...)
 }
 
 // FuzzMeterSuite registers on f the fuzz target of the property checks of
@@ -158,12 +158,7 @@ func FuzzMeterSuite[T Meter](
 	opts ...MeterOption,
 ) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		MeterSuite(),
-		callable,
-		func(h *MeterHandle) Meter { return newSubject(h) },
-		opts...)
+	conform.Fuzz(f, MeterSuite(), callable, meterSubjects(newSubject), opts...)
 }
 
 // RunMeterBudgets applies the allocation ceilings of Meter, and the
@@ -174,11 +169,7 @@ func RunMeterBudgets[T Meter](
 	opts ...MeterOption,
 ) {
 	t.Helper()
-	conform.RunBudgets(
-		t,
-		MeterSuite(),
-		func(h *MeterHandle) Meter { return newSubject(h) },
-		opts...)
+	conform.RunBudgets(t, MeterSuite(), meterSubjects(newSubject), opts...)
 }
 
 // BenchMeterSuite measures callable on a subject of newSubject, under the
@@ -190,12 +181,7 @@ func BenchMeterSuite[T Meter](
 	opts ...MeterOption,
 ) {
 	b.Helper()
-	conform.Bench(
-		b,
-		MeterSuite(),
-		callable,
-		func(h *MeterHandle) Meter { return newSubject(h) },
-		opts...)
+	conform.Bench(b, MeterSuite(), callable, meterSubjects(newSubject), opts...)
 }
 
 // BenchMeterSuiteParallel measures callable on a subject of newSubject on
@@ -207,12 +193,13 @@ func BenchMeterSuiteParallel[T Meter](
 	opts ...MeterOption,
 ) {
 	b.Helper()
-	conform.BenchParallel(
-		b,
-		MeterSuite(),
-		callable,
-		func(h *MeterHandle) Meter { return newSubject(h) },
-		opts...)
+	conform.BenchParallel(b, MeterSuite(), callable, meterSubjects(newSubject), opts...)
+}
+
+// meterSubjects returns the factory of the subjects of Meter that calls
+// newSubject with the handle of each check.
+func meterSubjects[T Meter](newSubject func(h *MeterHandle) T) func(h *MeterHandle) Meter {
+	return func(h *MeterHandle) Meter { return newSubject(h) }
 }
 
 // meterCountCalls generates the calls of Meter.Count with the inputs that
@@ -355,7 +342,7 @@ func WeighSuite() conform.Suite[WeighFunc] {
 // to subject.
 func RunWeighSuite(t *testing.T, subject WeighFunc, opts ...WeighOption) {
 	t.Helper()
-	RunWeighSuiteFromHandle(t, func(*WeighHandle) WeighFunc { return subject }, opts...)
+	RunWeighSuiteFromHandle(t, weighSubjects(subject), opts...)
 }
 
 // RunWeighSuiteFromHandle applies the same checks to a subject that
@@ -373,43 +360,34 @@ func RunWeighSuiteFromHandle(
 // Weigh on subject.
 func FuzzWeighSuite(f *testing.F, subject WeighFunc, opts ...WeighOption) {
 	f.Helper()
-	conform.Fuzz(
-		f,
-		WeighSuite(),
-		WeighChecks.Callable,
-		func(*WeighHandle) WeighFunc { return subject },
-		opts...)
+	conform.Fuzz(f, WeighSuite(), WeighChecks.Callable, weighSubjects(subject), opts...)
 }
 
 // RunWeighBudgets applies the allocation ceiling of Weigh, and the
 // ceilings that opts add, to subject.
 func RunWeighBudgets(t *testing.T, subject WeighFunc, opts ...WeighOption) {
 	t.Helper()
-	conform.RunBudgets(t, WeighSuite(), func(*WeighHandle) WeighFunc { return subject }, opts...)
+	conform.RunBudgets(t, WeighSuite(), weighSubjects(subject), opts...)
 }
 
 // BenchWeighSuite measures subject under the ceilings of the budget of
 // Weigh.
 func BenchWeighSuite(b conform.B, subject WeighFunc, opts ...WeighOption) {
 	b.Helper()
-	conform.Bench(
-		b,
-		WeighSuite(),
-		WeighChecks.Callable,
-		func(*WeighHandle) WeighFunc { return subject },
-		opts...)
+	conform.Bench(b, WeighSuite(), WeighChecks.Callable, weighSubjects(subject), opts...)
 }
 
 // BenchWeighSuiteParallel measures subject on GOMAXPROCS goroutines at
 // once, under the ceilings of the budget of Weigh.
 func BenchWeighSuiteParallel(b *testing.B, subject WeighFunc, opts ...WeighOption) {
 	b.Helper()
-	conform.BenchParallel(
-		b,
-		WeighSuite(),
-		WeighChecks.Callable,
-		func(*WeighHandle) WeighFunc { return subject },
-		opts...)
+	conform.BenchParallel(b, WeighSuite(), WeighChecks.Callable, weighSubjects(subject), opts...)
+}
+
+// weighSubjects returns the factory of the subjects of Weigh that returns
+// subject for each handle.
+func weighSubjects(subject WeighFunc) func(*WeighHandle) WeighFunc {
+	return func(*WeighHandle) WeighFunc { return subject }
 }
 
 // weighCalls generates the calls of Weigh with the inputs that each case

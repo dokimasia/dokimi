@@ -28,6 +28,7 @@ const (
 	addressName    = "Address"
 	streetName     = "Street"
 	warehouseName  = "Warehouse"
+	alikeName      = "Alike"
 )
 
 // The version of the plugins of the cases, the name of the recorder, and the
@@ -56,13 +57,18 @@ type (
 // structs that it records in both of its families, the structs whose record
 // in the primary family also declares a struct and a function after its
 // first struct, the number of findings that it reports at each struct, and
-// the structs at whose first field it reports one finding. body is the
-// template of the primary family, and an empty body writes nothing for a
-// record. external puts the Go files of the family of the tests into the
-// external test package of their directory.
+// the structs at whose first field it reports one finding. again are the
+// structs that get a second record of their origin in the primary family,
+// with data of its own, and alike the structs whose record in the primary
+// family has the data of the name Alike. body is the template of the primary
+// family, and an empty body writes nothing for a record. external puts the Go
+// files of the family of the tests into the external test package of their
+// directory.
 type recording struct {
 	records  []string
 	beside   []string
+	again    []string
+	alike    []string
 	findings map[string]int
 	fields   []string
 	body     string
@@ -115,7 +121,14 @@ func recorder(r recording) plugin.Generator {
 					record = append(record, &emit.Struct{Origin: s.ID, Name: s.Name + "Option"},
 						&emit.Function{Origin: s.ID, Name: "New" + s.Name + "Record"})
 				}
-				e.File().Record(subject{Name: s.Name}, record...)
+				data := subject{Name: s.Name}
+				if slices.Contains(r.alike, s.Name) {
+					data.Name = alikeName
+				}
+				e.File().Record(data, record...)
+				if slices.Contains(r.again, s.Name) {
+					e.File().Record(subject{Name: s.Name + "Again"}, &emit.Struct{Origin: s.ID, Name: s.Name + "Again"})
+				}
 				e.File(sdk.TagTest).Record(check{Name: s.Name}, &emit.Struct{Origin: s.ID, Name: s.Name + "Check"})
 			}
 			return nil

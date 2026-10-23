@@ -25,7 +25,8 @@ const (
 )
 
 // Records returns the records of one type of data from a phase call of a
-// generator, and Beside returns what a record declares beside its struct.
+// generator by their key, List returns their data in order, and Beside
+// returns what a record declares beside its struct.
 // Referents returns the references of the fields of a struct, and Finding
 // returns the one finding at a declaration. Unrecorded checks that a subject
 // has no record, and Assigned returns the names that statements assign.
@@ -54,6 +55,18 @@ func TestGenerated(t *testing.T) {
 			assert.Equal(t, keys(got), []string{addressName}, "the later declarations of Address are no records")
 			assert.NotNil(t, got[addressName].Decl, "the declaration of the record is a struct")
 			expect.Equal(t, got[addressName].Decl.Name, "AddressRecord", "the record has its first struct")
+		})
+
+		t.Run("returns each record of one origin with the data of its own call", func(t *testing.T) {
+			t.Parallel()
+
+			_, _, res := generate(t, recording{
+				records: []string{addressName}, beside: []string{addressName}, again: []string{addressName},
+			})
+			got := gentest.Records(t, res, recordFamily, "", subject.key)
+			assert.Equal(t, keys(got), []string{addressName, addressName + "Again"},
+				"the recorder records Address twice in its primary family")
+			expect.Equal(t, got[addressName+"Again"].Decl.Name, "AddressAgain", "the second record has its own struct")
 		})
 
 		t.Run("returns the records of the family of the tag", func(t *testing.T) {
@@ -86,6 +99,42 @@ func TestGenerated(t *testing.T) {
 			assert.Length(t, records, 1, "the helper fails once, at the record of Address")
 			expect.Equal(t, records[0].Contract, tagContract, "the helper fails at the tag")
 		})
+	})
+
+	t.Run("List", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			name string
+			give recording
+			want []subject
+		}{
+			{
+				name: "returns the data of a record that declares more once",
+				give: recording{records: []string{addressName}, beside: []string{addressName}},
+				want: []subject{{Name: addressName}},
+			},
+			{
+				name: "returns the data of each record of one origin",
+				give: recording{records: []string{addressName}, again: []string{addressName}},
+				want: []subject{{Name: addressName}, {Name: addressName + "Again"}},
+			},
+			{
+				name: "returns the data of each record of two origins with equal data",
+				give: recording{
+					records: []string{addressName, warehouseName}, alike: []string{addressName, warehouseName},
+				},
+				want: []subject{{Name: alikeName}, {Name: alikeName}},
+			},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				_, _, res := generate(t, tt.give)
+				assert.Equal(t, gentest.List[subject](res), tt.want, "the list follows the order of the declarations")
+			})
+		}
 	})
 
 	t.Run("Beside", func(t *testing.T) {

@@ -94,13 +94,10 @@ func TestStub(t *testing.T) {
 			})
 			res := f.Generate(t, p)
 			assert.NoError(t, res.Err, "the generator runs whole")
-			var subjects []string
-			for u := range res.Emit.Units() {
-				for _, data := range u.Data {
-					if m, modelled := data.(stub.Model); modelled {
-						subjects = append(subjects, m.Subject)
-					}
-				}
+			models := gentest.List[stub.Model](res)
+			subjects := make([]string, 0, len(models))
+			for _, m := range models {
+				subjects = append(subjects, m.Subject)
 			}
 			slices.Sort(subjects)
 			expect.Equal(t, subjects, []string{"Cashbox", "Journal", "Ledger", "Register"},

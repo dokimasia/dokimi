@@ -4,6 +4,7 @@
 package sentinel_test
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -23,9 +24,11 @@ import (
 
 // The packages that sentinel reports.
 const (
-	emptyPackage   = "example.com/shop/bad/empty"
-	selfPackage    = "example.com/shop/bad/self"
-	distantPackage = "example.com/shop/bad/distant"
+	emptyPackage    = "example.com/shop/bad/empty"
+	selfPackage     = "example.com/shop/bad/self"
+	distantPackage  = "example.com/shop/bad/distant"
+	strangerPackage = "example.com/shop/bad/stranger"
+	aliasPackage    = "example.com/shop/alias"
 )
 
 // sentinel records the checks of the error values and of the error types of
@@ -177,6 +180,46 @@ func TestSentinel(t *testing.T) {
 				"the neighbour has its error values")
 		})
 
+		t.Run("records a re-export of an error value of another package", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, storePackage, relayPackage).checks["relay"]
+			reexports := map[string]bool{}
+			for _, s := range got.Sentinels {
+				reexports[s.Name] = s.Reexport
+			}
+			expect.Equal(t, reexports, map[string]bool{"ErrNotFound": true, "ErrDropped": false},
+				"ErrNotFound is the error value of store, and ErrDropped is a value of relay")
+		})
+
+		t.Run("records no re-export of an error value of its own package", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, aliasPackage).checks["alias"]
+			reexports := map[string]bool{}
+			for _, s := range got.Sentinels {
+				reexports[s.Name] = s.Reexport
+			}
+			expect.Equal(t, reexports, map[string]bool{"ErrBase": false, "ErrSame": false},
+				"ErrSame is ErrBase of the same package under a second name")
+		})
+
+		t.Run("records each error type under the param remote as remote", func(t *testing.T) {
+			t.Parallel()
+
+			res := generate(t, golang.Target, goTree, storePackage, relayPackage)
+			remote := map[string]bool{}
+			for _, k := range res.checks["relay"].Kinds {
+				remote[k.Name] = k.Remote
+			}
+			expect.Equal(t, remote, map[string]bool{"CallError": true, "TimeoutError": false},
+				"CallError carries the message of the remote store")
+			unknown := slices.ContainsFunc(res.findings, func(d diag.Diag) bool {
+				return d.Code == sentinel.UnknownRemote
+			})
+			expect.False(t, unknown, "CallError is an error type of relay, so sentinel reports no UnknownRemote")
+		})
+
 		t.Run("keeps a package of the param that the run did not load without error values", func(t *testing.T) {
 			t.Parallel()
 
@@ -301,6 +344,14 @@ func TestSentinel(t *testing.T) {
 				pkg:  distantPackage, wantCode: sentinel.Unloaded, want: true,
 				wantMsg: "the package distant lists example.com/shop/missing under no-overlap-with, and the run did " +
 					"not load it, so the check of its error values compares with nothing",
+			},
+			{
+				name:     "reports UnknownRemote at a remote type that is no error type",
+				pkg:      strangerPackage,
+				wantCode: sentinel.UnknownRemote,
+				want:     true,
+				wantMsg: "Point under remote is no error type of the package stranger, so its checks keep the message " +
+					"of its zero value and its prefix",
 			},
 		}
 		for _, tt := range findings {

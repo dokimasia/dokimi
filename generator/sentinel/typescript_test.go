@@ -25,6 +25,7 @@ const (
 	labelModule         = "label"
 	unconstructedModule = "unconstructed"
 	badModule           = "bad"
+	relayModule         = "relay"
 )
 
 // The part of TypeScript declares the target typescript with the template of
@@ -45,9 +46,21 @@ func TestTypeScript(t *testing.T) {
 
 		p := sentinel.New()
 		res := fixture(t, typescript.Target, tsTree, p, storeModule, parseModule, labelModule,
-			unconstructedModule).Generate(t, p)
+			unconstructedModule, relayModule).Generate(t, p)
 		assert.NoError(t, res.Err, "the generator runs whole")
 		golden.MatchTree(t, "typescript", gentest.Rendered(t, res, p, tsbackend.New()), golden.ShouldUpdate())
+	})
+
+	t.Run("records each error class under the param remote as remote", func(t *testing.T) {
+		t.Parallel()
+
+		got := generate(t, typescript.Target, tsTree, relayModule).checks[relayModule]
+		remote := map[string]bool{}
+		for _, k := range got.Kinds {
+			remote[k.Name] = k.Remote
+		}
+		expect.Equal(t, remote, map[string]bool{"CallError": true, "TimeoutError": false},
+			"CallError carries the message of the remote store")
 	})
 
 	t.Run("records each public error class with its members", func(t *testing.T) {

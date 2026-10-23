@@ -29,11 +29,14 @@ const Version = "0.1.0"
 // that states the opening of each message, and the value PrefixOff of the
 // param leaves out the checks of the opening. NeighboursParam is its param
 // that lists the packages whose error values the error values of the package
-// do not match.
+// do not match. RemoteParam is its param that lists the remote error types of
+// the package: the types whose message is the message of an error of another
+// process, unchanged.
 const (
 	SentinelDirective directive.Name     = "sentinel"
 	PrefixParam       directive.ParamKey = "prefix"
 	NeighboursParam   directive.ParamKey = "no-overlap-with"
+	RemoteParam       directive.ParamKey = "remote"
 	PrefixOff                            = "off"
 )
 
@@ -59,10 +62,14 @@ type Options struct {
 }
 
 // Sentinel is one error value of a package: its name, and the reference to
-// it that the template writes.
+// it that the template writes. Reexport reports that the value is an error
+// value of another package under a name of the package, as in ErrNotWriter =
+// agent.ErrNotWriter. Its message opens with the prefix of the package that
+// declares it, whose checks pin that prefix.
 type Sentinel struct {
-	Ref  *emit.TypeRef
-	Name string
+	Ref      *emit.TypeRef
+	Name     string
+	Reexport bool
 }
 
 // Member is one field of an error type that a check writes. Value is the
@@ -79,7 +86,9 @@ type Member struct {
 // field that keeps the cause that a check gives a value, and it is empty
 // where the type has none. Compares reports that the type has the hook that
 // compares it with a target, and Unwraps that it has the hook that returns
-// its cause. Members are the fields of the type that a check writes.
+// its cause. Members are the fields of the type that a check writes. Remote
+// reports a type under [RemoteParam], whose checks leave out the message of
+// the zero value and the opening of the message.
 //
 // Method, CauseMethod and PeersMethod are indexes of the methods of the
 // record, and each is -1 where the record has no such method:
@@ -108,6 +117,7 @@ type Kind struct {
 	Pointer     bool
 	Compares    bool
 	Unwraps     bool
+	Remote      bool
 }
 
 // value is how a check makes a value of an error type. A language with
@@ -197,6 +207,12 @@ var schema = directive.Schema{
 			Key: NeighboursParam, Type: directive.TypeList, ListOf: directive.TypeString,
 			Doc: "the paths of the packages whose error values the error values of the package do not match",
 		},
+		{
+			Key: RemoteParam, Type: directive.TypeList, ListOf: directive.TypeReference,
+			Resolution: directive.ResolveTypeInScope,
+			Doc: "the error types of the package whose message is the message of an error of another process, " +
+				"unchanged, which have no message of their own for the zero value and no prefix",
+		},
 	},
 	Doc: "generates the checks of the error values and of the error types of the package",
 }
@@ -218,15 +234,20 @@ var schema = directive.Schema{
 // They pin that each error type reports a message with the opening, matches
 // no other error type, agrees with the standard comparison where it compares
 // itself and has no cause, exposes the cause that it was given, and puts
-// each field of text into its message.
+// each field of text into its message. A re-export of an error value of
+// another package has no check of the opening, because the package that
+// declares the value pins it. A remote error type of [RemoteParam] has no
+// check of the message of its zero value and no check of the opening.
 //
 // sentinel serves Go and TypeScript, the languages of its parts. It reports
 // [NoErrors] at a package without an error value and without an error type,
 // [OwnNeighbour] at a package that lists itself under [NeighboursParam], and
 // [Unloaded] at a package that lists a package that the run did not load. It
 // reports [Unconstructed] at an error type of a language with constructors
-// that a check cannot construct. sentinel records nothing for a package that
-// it reports under NoErrors. Each call returns a new plugin.
+// that a check cannot construct, and [UnknownRemote] at a type under
+// [RemoteParam] that is no error type of the package. sentinel records nothing
+// for a package that it reports under NoErrors. Each call returns a new
+// plugin.
 func New() plugin.Generator {
 	g := &generator{options: &Options{}}
 	b := sdk.NewPlugin(ID).
@@ -335,7 +356,9 @@ func (g *generator) prefixOf(m *sdk.PackageMatch, p part) string {
 
 // sentinelsOf returns the error values of pkg in the order of its files and
 // declarations, with the identity of the first. A variable is an error
-// value where the rules of its language accept its name for one.
+// value where the rules of its language accept its name for one. A value is
+// a re-export where its initializer resolves in its scope to a variable of
+// another package.
 func sentinelsOf(b *rules.Bound, pkg *node.Package) ([]Sentinel, symbol.Identity) {
 	var out []Sentinel
 	var first symbol.Identity
@@ -351,7 +374,14 @@ func sentinelsOf(b *rules.Bound, pkg *node.Package) ([]Sentinel, symbol.Identity
 			if first.IsZero() {
 				first = v.ID
 			}
-			out = append(out, Sentinel{Name: v.Name, Ref: &emit.TypeRef{Spelling: v.Name, Target: v.ID}})
+			// A resolution returns a declaration of the view, or an error for an
+			// initializer that names no variable, such as a call.
+			found, err := b.Source().Resolve(b.View().ScopeOf(v.ID), v.Value, directive.ResolvePackageVar, b.View())
+			source, _ := found.(node.Declaration)
+			out = append(out, Sentinel{
+				Name: v.Name, Ref: &emit.TypeRef{Spelling: v.Name, Target: v.ID},
+				Reexport: err == nil && source.Identity().Package != v.ID.Package,
+			})
 		}
 	}
 	return out, first
@@ -371,8 +401,17 @@ func sentinelsOf(b *rules.Bound, pkg *node.Package) ([]Sentinel, symbol.Identity
 // its constructor has a parameter of the name of that field. kindsOf reports
 // [Unconstructed] at a type without a constructor that a check can call, and
 // leaves the type out.
+//
+// A type is remote where [RemoteParam] lists it. kindsOf reports
+// [UnknownRemote] at the directive for each listed type that is no error type
+// of the package.
 func kindsOf(m *sdk.PackageMatch, b *rules.Bound, p part) ([]Kind, symbol.Identity) {
 	ctors, constructs := b.Source().(rules.ConstructRules)
+	listed := m.Directive().Params[RemoteParam].List
+	remote := make(map[symbol.Identity]bool, len(listed))
+	for i := range listed {
+		remote[listed[i].Target] = false
+	}
 	var out []Kind
 	var first symbol.Identity
 	for _, f := range m.Package.Files {
@@ -385,10 +424,14 @@ func kindsOf(m *sdk.PackageMatch, b *rules.Bound, p part) ([]Kind, symbol.Identi
 			if !isError {
 				continue
 			}
+			_, isRemote := remote[s.ID]
+			if isRemote {
+				remote[s.ID] = true
+			}
 			k := Kind{
 				Ref: &emit.TypeRef{Spelling: s.Name, Target: s.ID}, Name: s.Name, Members: membersOf(b, s, p),
 				Pointer: contract.Pointer, Compares: contract.Is != nil, Unwraps: contract.Unwrap != nil,
-				value: value{constructs: constructs},
+				Remote: isRemote, value: value{constructs: constructs},
 			}
 			if constructs {
 				var sampled bool
@@ -408,6 +451,12 @@ func kindsOf(m *sdk.PackageMatch, b *rules.Bound, p part) ([]Kind, symbol.Identi
 				first = s.ID
 			}
 			out = append(out, k)
+		}
+	}
+	for i := range listed {
+		if !remote[listed[i].Target] {
+			m.Errorf(UnknownRemote, "%s under %s is no error type of the package %s, so its checks keep the "+
+				"message of its zero value and its prefix", listed[i].Target.Name, RemoteParam, m.Package.Name)
 		}
 	}
 	slices.SortFunc(out, func(a, b Kind) int { return cmp.Compare(a.Name, b.Name) })

@@ -31,6 +31,7 @@ const (
 	noprefixPackage  = "example.com/shop/noprefix"
 	splitPackage     = "example.com/shop/split"
 	typedPackage     = "example.com/shop/typed"
+	relayPackage     = "example.com/shop/relay"
 	storeModule      = "store"
 	testTemplate     = "sentinel.test.tmpl"
 )

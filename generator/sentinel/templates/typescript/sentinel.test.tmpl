@@ -4,8 +4,13 @@
 {{- $c := .Data}}
 {{- range $c.Kinds}}
 {{- $m := index $r.Methods.Items .Method}}
+{{- $texts := false}}{{$several := false}}
+{{- range .Members}}{{if .Text}}{{if $texts}}{{$several = true}}{{end}}{{$texts = true}}{{end}}{{end}}
+{{- $message := or (not .Remote) $texts}}
+{{- if $message}}
 
 function {{sentinelCases .Name "message"}}(): void {
+{{- if not .Remote}}
   it("is not empty", () => {
 {{memberbody $m}}    expect(got.message).isNotEqualTo("", "the error has a message");
   });
@@ -15,17 +20,18 @@ function {{sentinelCases .Name "message"}}(): void {
 {{memberbody $m}}    expect(got.message).hasPrefix({{printf "%q" $c.Prefix}}, "the message opens with the prefix of the module");
   });
 {{- end}}
-{{- $texts := false}}{{$several := false}}
-{{- range .Members}}{{if .Text}}{{if $texts}}{{$several = true}}{{end}}{{$texts = true}}{{end}}{{end}}
+{{- end}}
 {{- if $texts}}
 {{- $check := "expect"}}{{if $several}}{{$check = "expect.soft"}}{{end}}
-
+{{- if not .Remote}}
+{{end}}
   it("contains each text member", () => {
 {{memberbody $m}}
 {{- range .Members}}{{if .Text}}    {{$check}}(got.message).doesContain(got.{{.Name}}, "the message contains {{.Name}}");
 {{end}}{{end}}  });
 {{- end}}
 }
+{{- end}}
 {{- if ge .CauseMethod 0}}
 
 function {{sentinelCases .Name "cause"}}(): void {
@@ -45,9 +51,11 @@ describe("{{.Name}}", () => {
   });
 
 {{- end}}
-{{- if ge .PeersMethod 0}}
+{{- if and (ge .PeersMethod 0) $message}}
 {{end}}
+{{- if $message}}
   describe("message", {{sentinelCases .Name "message"}});
+{{- end}}
 {{- if ge .CauseMethod 0}}
   describe("cause", {{sentinelCases .Name "cause"}});
 {{- end}}

@@ -33,7 +33,7 @@ and reads its message, so it has a message and an identity of its own.` $s.Name 
 			assert.NotNil(t, {{$err}}, "{{$s.Name}} is assigned")
 			assert.NotEqual(t, {{$err}}.Error(), "", "{{$s.Name}} has a message")
 		})
-{{- if $c.Prefix}}
+{{- if and $c.Prefix (not $s.Reexport)}}
 
 		t.Run("opens the message with the package prefix", func(t *testing.T) {
 			t.Parallel()
@@ -101,9 +101,14 @@ and reads its message, so it has a message and an identity of its own.` $s.Name 
 {{docs (wrapdocs (printf `Test%s checks the error type %s.` .Name .Name))}}
 {{- ""}}func Test{{.Name}}(t *testing.T) {
 	t.Parallel()
+{{- $texts := false}}{{$several := false}}
+{{- range .Members}}{{if .Text}}{{if $texts}}{{$several = true}}{{end}}{{$texts = true}}{{end}}{{end}}
+{{- $textual := and (ge .Method 0) $texts}}
+{{- if or (not .Remote) $textual}}
 
 	t.Run("Error", func(t *testing.T) {
 		t.Parallel()
+{{- if not .Remote}}
 
 		t.Run("returns a message for the zero value", func(t *testing.T) {
 			t.Parallel()
@@ -116,11 +121,9 @@ and reads its message, so it has a message and an identity of its own.` $s.Name 
 			assert.HasPrefix(t, ({{$lit}}).Error(), {{printf "%q" $c.Prefix}}, "the message opens with the package prefix")
 		})
 {{- end}}
-{{- if ge .Method 0}}
+{{- end}}
+{{- if $textual}}
 {{- $m := index $r.Methods.Items .Method}}
-{{- $texts := false}}{{$several := false}}
-{{- range .Members}}{{if .Text}}{{if $texts}}{{$several = true}}{{end}}{{$texts = true}}{{end}}{{end}}
-{{- if $texts}}
 {{- $check := "assert"}}{{if $several}}{{$check = "expect"}}{{use "go.dokimi.dev/assert/expect"}}{{end}}
 
 		t.Run("contains each text member", func(t *testing.T) {
@@ -129,8 +132,8 @@ and reads its message, so it has a message and an identity of its own.` $s.Name 
 {{- range .Members}}{{if .Text}}			{{$check}}.Contains(t, got.Error(), got.{{.Name}}, "the message contains {{.Name}}")
 {{end}}{{end}}		})
 {{- end}}
-{{- end}}
 	})
+{{- end}}
 {{- if and .Compares (not .Unwraps) $c.Sentinels}}{{use "errors"}}
 
 	t.Run("Is", func(t *testing.T) {

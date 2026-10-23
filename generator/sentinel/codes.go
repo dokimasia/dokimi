@@ -43,3 +43,14 @@ var Unconstructed = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  4,
 	Meaning: "an error type under the directive sentinel has no public constructor that a check can call",
 })
+
+// UnknownRemote reports a type under the param remote that is no public error
+// type of the package of the directive. The param leaves out the checks of
+// the message of the zero value and of the prefix of a remote error type, so
+// a type of another package or a type that is no error leaves out nothing.
+// The finding is an Error at the package, and the checks of the package keep
+// every check of their error types.
+var UnknownRemote = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  5,
+	Meaning: "a type under the param remote of the directive sentinel is no error type of its package",
+})

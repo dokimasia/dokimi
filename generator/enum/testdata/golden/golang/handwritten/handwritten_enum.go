@@ -1,5 +1,9 @@
 package handwritten
 
+import (
+	"fmt"
+)
+
 // WeekdayValues returns the declared variants in the order of their
 // declaration. Each call returns a new slice.
 func WeekdayValues() []Weekday {
@@ -22,8 +26,13 @@ func (v Weekday) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownWeekday] for a value that [Weekday.IsValid]
+// refuses, whose text [ParseWeekday] does not parse.
 func (v Weekday) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownWeekday, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

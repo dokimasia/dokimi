@@ -161,11 +161,20 @@ underlying type can make any other value.` $n.Valid))}}
 	}
 }
 {{- end}}
-{{- if $m.Generate.Encode}}
+{{- if $m.Generate.Encode}}{{use "fmt"}}
+{{- $sentinel := or $m.Generate.Error $m.ErrorRef}}
 
 {{docs (wrapdocs (printf `%s implements [encoding.TextMarshaler] with the text of v. encoding/json
-uses it for a value and for a map key.` $n.Encode))}}
+uses it for a value and for a map key. It returns an error%s for a value that
+[%s.%s] refuses, whose text [%s] does not parse.` $n.Encode (or (and $sentinel (printf " that wraps [%s]" $n.Sentinel)) "") $m.Subject $n.Valid $n.Parse))}}
 {{- ""}}func (v {{$t}}) {{$n.Encode}}() ([]byte, error) {
+	if !v.{{$n.Valid}}() {
+{{- if $sentinel}}
+		return nil, fmt.Errorf("%w %q", {{$n.Sentinel}}, v.{{$n.Render}}())
+{{- else}}
+		return nil, fmt.Errorf("{{$m.Package}}: unknown {{$m.Subject}} value %q", v.{{$n.Render}}())
+{{- end}}
+	}
 	return []byte(v.{{$n.Render}}()), nil
 }
 {{- end}}

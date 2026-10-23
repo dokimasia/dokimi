@@ -185,6 +185,24 @@ func TestGap(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Gap(12)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownGap,
+				"MarshalText refuses the value with ErrUnknownGap",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -389,6 +407,24 @@ func TestUnum(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Unum(254)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownUnum,
+				"MarshalText refuses the value with ErrUnknownUnum",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -658,6 +694,24 @@ func TestPrime(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Prime(38)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownPrime,
+				"MarshalText refuses the value with ErrUnknownPrime",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -864,6 +918,24 @@ func TestRank(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Rank(4)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownRank,
+				"MarshalText refuses the value with ErrUnknownRank",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -1114,6 +1186,24 @@ func TestOdd(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Odd(20)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownOdd,
+				"MarshalText refuses the value with ErrUnknownOdd",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -1319,6 +1409,24 @@ func TestNum(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Num(2)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownNum,
+				"MarshalText refuses the value with ErrUnknownNum",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {

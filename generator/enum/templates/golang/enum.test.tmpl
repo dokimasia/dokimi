@@ -189,6 +189,24 @@
 				assert.Equal(t, string(text), tt.give.{{$n.Render}}(), "the encoding of the variant is its text")
 			})
 		}
+{{- if and $c.Generate.Encode (or $c.OutOfRange (not $c.Zero))}}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+{{- if $c.OutOfRange}}
+			out := {{$t}}({{$c.OutOfRange}})
+{{- else}}
+			var out {{$t}}
+{{- end}}
+			_, err := out.{{$n.Encode}}()
+{{- if $c.Calls.Error}}
+			assert.ErrorIs(t, err, {{spell (fieldType $d "error")}}, "{{$n.Encode}} refuses the value with {{$n.Sentinel}}")
+{{- else}}
+			assert.HasError(t, err, "{{$n.Encode}} refuses the value")
+{{- end}}
+			assert.Contains(t, err.Error(), out.{{$n.Render}}(), "the error contains the text of the value")
+		})
+{{- end}}
 	})
 {{- if $c.Calls.Decode}}
 

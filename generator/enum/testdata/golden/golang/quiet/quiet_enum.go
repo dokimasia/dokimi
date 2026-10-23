@@ -130,8 +130,13 @@ func (v Switch) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownSwitch] for a value that [Switch.IsValid] refuses,
+// whose text [ParseSwitch] does not parse.
 func (v Switch) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownSwitch, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -229,8 +234,13 @@ func (v Speed) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownSpeed] for a value that [Speed.IsValid] refuses,
+// whose text [ParseSpeed] does not parse.
 func (v Speed) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownSpeed, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -286,8 +296,13 @@ func (v Level) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownLevel] for a value that [Level.IsValid] refuses,
+// whose text [ParseLevel] does not parse.
 func (v Level) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownLevel, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -349,8 +364,13 @@ func (v Flag) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownFlag] for a value that [Flag.IsValid] refuses,
+// whose text [ParseFlag] does not parse.
 func (v Flag) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownFlag, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

@@ -6,6 +6,7 @@ package enum
 import (
 	"embed"
 	"fmt"
+	"go/token"
 	"math/big"
 	"slices"
 	"strconv"
@@ -139,16 +140,29 @@ func fieldType(d *emit.Struct, name string) (*emit.TypeRef, error) {
 	return nil, fmt.Errorf("enum: the record of the checks of %s has no field %q", d.Name, name)
 }
 
+// templated returns the name of an enumeration in PascalCase, as State for
+// state, so a name template renders ParseState for an enumeration that its
+// package does not export. names writes each rendered name in PascalCase
+// again, so an exported name renders as it did before.
+func (golangPart) templated(subject string) string { return naming.Pascal(subject) }
+
 // names returns the names of the members of the surface of an enumeration in
 // PascalCase, such as ParseStatus, StatusValues, IsValid and ErrUnknownStatus
 // for Status and the default templates. The rules of Go name the error with
-// the prefix Err.
-func (golangPart) names(b *rules.Bound, _ string, n baseNames) Names {
+// the prefix Err. The functions and the error of an enumeration that its
+// package does not export are not exported either, as parseState,
+// stateValues and errUnknownState for state. Its methods keep their names.
+func (golangPart) names(b *rules.Bound, subject string, n baseNames) Names {
 	unknown, _ := b.SentinelName(n.err)
-	return Names{
+	out := Names{
 		Render: golangRender, Parse: naming.Pascal(n.parse), Values: naming.Pascal(n.values),
 		Valid: naming.Pascal(n.valid), Encode: golangEncode, Decode: golangDecode, Sentinel: unknown,
 	}
+	if !token.IsExported(subject) {
+		out.Parse, out.Values, out.Sentinel = naming.Camel(out.Parse), naming.Camel(out.Values),
+			naming.Camel(out.Sentinel)
+	}
+	return out
 }
 
 // form returns the form of a member of the surface of Go, which has every

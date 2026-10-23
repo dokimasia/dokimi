@@ -169,6 +169,24 @@ func TestRatio(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Ratio(3)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownRatio,
+				"MarshalText refuses the value with ErrUnknownRatio",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -362,6 +380,24 @@ func TestTier(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Tier(3)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownTier,
+				"MarshalText refuses the value with ErrUnknownTier",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {

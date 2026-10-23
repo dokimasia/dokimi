@@ -68,8 +68,13 @@ func (v Level) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownLevel] for a value that [Level.IsValid] refuses,
+// whose text [ParseLevel] does not parse.
 func (v Level) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownLevel, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -137,8 +142,13 @@ func (v Color) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownColor] for a value that [Color.IsValid] refuses,
+// whose text [ParseColor] does not parse.
 func (v Color) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownColor, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -196,8 +206,13 @@ func (v Lane) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// for a value that [Lane.IsValid] refuses, whose text [ParseLane] does not
+// parse.
 func (v Lane) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("declared: unknown Lane value %q", v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -274,8 +289,13 @@ func (v Coil) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownCoil] for a value that [Coil.IsValid] refuses,
+// whose text [ParseCoil] does not parse.
 func (v Coil) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownCoil, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

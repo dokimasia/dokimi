@@ -187,6 +187,24 @@ func TestStatus(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := catalog.Status(4)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				catalog.ErrUnknownStatus,
+				"MarshalText refuses the value with ErrUnknownStatus",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -223,4 +241,4 @@ func TestStatus(t *testing.T) {
 	})
 }
 
-// dokimi:provenance sha256:b2111868d20a4defb56319b9857ffbb21c83b416c2373a0dd6b56f679b99674a
+// dokimi:provenance sha256:d12b7f77d948c853a65e6b0e92ed3fbb2ef24760efcf24b8d9175d92cf8ff94a

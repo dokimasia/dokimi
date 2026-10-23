@@ -72,8 +72,13 @@ func (v Grade) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownGrade] for a value that [Grade.IsValid] refuses,
+// whose text [ParseGrade] does not parse.
 func (v Grade) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownGrade, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -150,8 +155,13 @@ func (v Mood) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownMood] for a value that [Mood.IsValid] refuses,
+// whose text [ParseMood] does not parse.
 func (v Mood) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownMood, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

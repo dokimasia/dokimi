@@ -57,8 +57,13 @@ func (v Ratio) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownRatio] for a value that [Ratio.IsValid] refuses,
+// whose text [ParseRatio] does not parse.
 func (v Ratio) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownRatio, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -125,8 +130,13 @@ func (v Tier) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownTier] for a value that [Tier.IsValid] refuses,
+// whose text [ParseTier] does not parse.
 func (v Tier) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownTier, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

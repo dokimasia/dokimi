@@ -714,6 +714,24 @@ func TestSpeed(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Speed(3)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownSpeed,
+				"MarshalText refuses the value with ErrUnknownSpeed",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 }
 
@@ -880,6 +898,24 @@ func TestLevel(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Level(2.5)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownLevel,
+				"MarshalText refuses the value with ErrUnknownLevel",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -1066,6 +1102,24 @@ func TestFlag(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Flag(false)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownFlag,
+				"MarshalText refuses the value with ErrUnknownFlag",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {

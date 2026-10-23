@@ -177,6 +177,24 @@ func TestStatus(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Status(4)
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownStatus,
+				"MarshalText refuses the value with ErrUnknownStatus",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {

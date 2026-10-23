@@ -26,9 +26,10 @@ import (
 
 // The packages of the Go tree that this spec alone reads.
 const (
-	gapPackage    = "example.com/shop/gap"
-	remotePackage = "example.com/shop/remote"
-	shapedPackage = "example.com/shop/shaped"
+	gapPackage     = "example.com/shop/gap"
+	remotePackage  = "example.com/shop/remote"
+	shapedPackage  = "example.com/shop/shaped"
+	machinePackage = "example.com/shop/machine"
 )
 
 // The part of Go declares the target golang with the template of each
@@ -72,6 +73,25 @@ func TestGolang(t *testing.T) {
 			Render: "String", Parse: "ParseStatus", Values: "StatusValues", Valid: "IsValid",
 			Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "ErrUnknownStatus",
 		}, "the surface of Status has the names of Go")
+	})
+
+	t.Run("names the package members of an unexported enumeration in camelCase", func(t *testing.T) {
+		t.Parallel()
+
+		got := generate(t, golang.Target, goTree, machinePackage).models["state"].Names
+		assert.Equal(t, got, enum.Names{
+			Render: "String", Parse: "parseState", Values: "stateValues", Valid: "IsValid",
+			Encode: "MarshalText", Decode: "UnmarshalText", Sentinel: "errUnknownState",
+		}, "the surface of state has unexported functions and the methods of Go")
+	})
+
+	t.Run("records no checks of an unexported enumeration", func(t *testing.T) {
+		t.Parallel()
+
+		got := generate(t, golang.Target, goTree, machinePackage)
+		_, modelled := got.models["state"]
+		expect.True(t, modelled, "the surface of state is recorded")
+		expect.Empty(t, got.checks, "the external test package cannot refer to state")
 	})
 
 	fallbacks := []struct {
@@ -425,7 +445,7 @@ func rendered(t *testing.T) fstest.MapFS {
 	p := enum.New()
 	res := fixture(t, golang.Target, goTree, p, statusPackage, "example.com/shop/priority", regionPackage,
 		"example.com/shop/split", handwrittenPackage, declaredPackage, quietPackage, commentedPackage, gapPackage,
-		remotePackage, shapedPackage).Generate(t, p)
+		remotePackage, shapedPackage, machinePackage).Generate(t, p)
 	assert.NoError(t, res.Err, "the generator runs whole")
 	return gentest.Rendered(t, res, p, gobackend.New())
 }

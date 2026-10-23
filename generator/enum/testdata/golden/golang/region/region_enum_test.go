@@ -198,6 +198,24 @@ func TestRegion(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Region("")
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownRegion,
+				"MarshalText refuses the value with ErrUnknownRegion",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -421,6 +439,24 @@ func TestZone(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Zone("??????")
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownZone,
+				"MarshalText refuses the value with ErrUnknownZone",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {
@@ -635,6 +671,24 @@ func TestLane(t *testing.T) {
 				)
 			})
 		}
+
+		t.Run("refuses a value outside the declared set", func(t *testing.T) {
+			t.Parallel()
+			out := Lane("")
+			_, err := out.MarshalText()
+			assert.ErrorIs(
+				t,
+				err,
+				ErrUnknownLane,
+				"MarshalText refuses the value with ErrUnknownLane",
+			)
+			assert.Contains(
+				t,
+				err.Error(),
+				out.String(),
+				"the error contains the text of the value",
+			)
+		})
 	})
 
 	t.Run("UnmarshalText", func(t *testing.T) {

@@ -107,6 +107,10 @@ var typescriptForms = map[member]form{
 	},
 }
 
+// templated returns subject, because names writes each name in the case
+// convention of TypeScript from the name as written.
+func (typescriptPart) templated(subject string) string { return subject }
+
 // names returns the names of the functions of the surface of the enum named
 // subject, such as statusToString, parseStatus, statusValues, isStatus and
 // UnknownStatusError for Status and the default templates. A function is in

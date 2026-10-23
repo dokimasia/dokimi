@@ -54,8 +54,13 @@ func (v Region) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownRegion] for a value that [Region.IsValid] refuses,
+// whose text [ParseRegion] does not parse.
 func (v Region) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownRegion, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -120,8 +125,13 @@ func (v Zone) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownZone] for a value that [Zone.IsValid] refuses,
+// whose text [ParseZone] does not parse.
 func (v Zone) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownZone, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -188,8 +198,13 @@ func (v Lane) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownLane] for a value that [Lane.IsValid] refuses,
+// whose text [ParseLane] does not parse.
 func (v Lane) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownLane, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

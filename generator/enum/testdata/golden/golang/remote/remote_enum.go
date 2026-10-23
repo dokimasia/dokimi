@@ -57,8 +57,13 @@ func (v Season) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownSeason] for a value that [Season.IsValid] refuses,
+// whose text [ParseSeason] does not parse.
 func (v Season) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownSeason, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

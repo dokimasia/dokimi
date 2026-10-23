@@ -403,6 +403,10 @@ type Checks struct {
 // template tree and its helpers, and it names the members of the surface.
 type part interface {
 	lang.Part
+	// templated returns the name of the enumeration named subject that the
+	// name templates of the options render, before names writes each name in
+	// the case convention of the language.
+	templated(subject string) string
 	// names returns the names of the members of the surface of the
 	// enumeration named subject in the case conventions of the language. n
 	// are the names that the templates of the options render for the
@@ -470,10 +474,12 @@ var schema = directive.Schema{
 // the surface of the enumeration in the conventions of the language of the
 // plan. The surface renders a value as text, parses a text back, lists the
 // variants and reports whether a value is a variant. In Go it also encodes a
-// value as text and decodes it. enum records the [Checks] of each
+// value as text and decodes it. enum records the [Checks] of each exported
 // enumeration into the family [Word] under the tag [TestTag]. The checks
 // test the enumeration through the exported API of its package, so a Go file
-// of the family is in the external test package of its directory.
+// of the family is in the external test package of its directory. An
+// enumeration that its package does not export has no checks, and the
+// package tests it through its own API.
 //
 // The surface writes each member that the enumeration or its package does not
 // declare under its name. It writes a parse function only beside a render that
@@ -529,7 +535,7 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 			enum.Name, info.Duplicate, info.Duplicate)
 		return nil
 	}
-	base, err := g.baseNames(enum.Name)
+	base, err := g.baseNames(p.templated(enum.Name))
 	if err != nil {
 		return err
 	}
@@ -589,7 +595,9 @@ func (g *generator) generate(m *sdk.EnumMatch, p part, e *sdk.Emitter) error {
 		}
 		e.File().Record(model, record...)
 	}
-	if g.options.NoTests {
+	// The checks test the enumeration from the external test package, which
+	// cannot refer to an enumeration that its package does not export.
+	if g.options.NoTests || enum.Visibility != symbol.VisibilityPublic {
 		return nil
 	}
 	render := generated.Render || declared.Render

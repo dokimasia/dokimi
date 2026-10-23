@@ -93,8 +93,13 @@ func (v Gap) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownGap] for a value that [Gap.IsValid] refuses, whose
+// text [ParseGap] does not parse.
 func (v Gap) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownGap, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -181,8 +186,13 @@ func (v Unum) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownUnum] for a value that [Unum.IsValid] refuses,
+// whose text [ParseUnum] does not parse.
 func (v Unum) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownUnum, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -311,8 +321,13 @@ func (v Prime) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownPrime] for a value that [Prime.IsValid] refuses,
+// whose text [ParsePrime] does not parse.
 func (v Prime) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownPrime, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -393,8 +408,13 @@ func (v Rank) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownRank] for a value that [Rank.IsValid] refuses,
+// whose text [ParseRank] does not parse.
 func (v Rank) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownRank, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -530,8 +550,13 @@ func (v Odd) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownOdd] for a value that [Odd.IsValid] refuses, whose
+// text [ParseOdd] does not parse.
 func (v Odd) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownOdd, v.String())
+	}
 	return []byte(v.String()), nil
 }
 
@@ -611,8 +636,13 @@ func (v Num) IsValid() bool {
 }
 
 // MarshalText implements [encoding.TextMarshaler] with the text of v.
-// encoding/json uses it for a value and for a map key.
+// encoding/json uses it for a value and for a map key. It returns an error
+// that wraps [ErrUnknownNum] for a value that [Num.IsValid] refuses, whose
+// text [ParseNum] does not parse.
 func (v Num) MarshalText() ([]byte, error) {
+	if !v.IsValid() {
+		return nil, fmt.Errorf("%w %q", ErrUnknownNum, v.String())
+	}
 	return []byte(v.String()), nil
 }
 

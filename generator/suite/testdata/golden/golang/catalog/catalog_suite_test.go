@@ -7,8 +7,12 @@ import (
 	"go.dokimi.dev/conform"
 )
 
+// catalogSubjectEmbedded is CatalogMethods under the name of the field
+// that catalogSubject embeds.
+type catalogSubjectEmbedded = CatalogMethods
+
 // catalogSubject is a value of Catalog that only TestCatalogSuite builds.
-type catalogSubject struct{ CatalogMethods }
+type catalogSubject struct{ catalogSubjectEmbedded }
 
 // TestCatalogSuite checks the suite of Catalog and the two forms of its
 // application.
@@ -76,6 +80,62 @@ func TestCatalogSuite(t *testing.T) {
 func TestCatalogSuiteAllocs(t *testing.T) {
 	t.Run("CatalogSuite", func(t *testing.T) {
 		conform.FalsifyAllocs(t, CatalogSuite())
+	})
+}
+
+// catalogIdle returns the planted defect of a ceiling of Catalog with a
+// spend of nothing, a subject that answers each call at once.
+func catalogIdle(h *CatalogHandle) CatalogMethods {
+	return CatalogSuite().Calls[0].Over(h, func() {})
+}
+
+// TestCatalogSuiteBudgets applies the allocation ceilings of the suite of
+// Catalog to catalogIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestCatalogSuiteBudgets(t *testing.T) {
+	RunCatalogBudgets(
+		t,
+		catalogIdle,
+		conform.Ceilings(CatalogChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzCatalogSuiteFind registers the fuzz target of Catalog.Find on
+// catalogIdle, with every check of the suite excused.
+func FuzzCatalogSuiteFind(f *testing.F) {
+	FuzzCatalogSuite(
+		f,
+		CatalogChecks.Find.Callable,
+		catalogIdle,
+		conform.Excuse(
+			CatalogChecks.Find.FindsTheAddedProduct(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzCatalogSuiteAdd registers the fuzz target of Catalog.Add on
+// catalogIdle, with every check of the suite excused.
+func FuzzCatalogSuiteAdd(f *testing.F) {
+	FuzzCatalogSuite(
+		f,
+		CatalogChecks.Add.Callable,
+		catalogIdle,
+		conform.Excuse(
+			CatalogChecks.Find.FindsTheAddedProduct(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkCatalogSuite measures each callable of the suite of Catalog on
+// catalogIdle.
+func BenchmarkCatalogSuite(b *testing.B) {
+	b.Run("Find", func(b *testing.B) {
+		BenchCatalogSuite(b, CatalogChecks.Find.Callable, catalogIdle)
+	})
+	b.Run("Add", func(b *testing.B) {
+		BenchCatalogSuite(b, CatalogChecks.Add.Callable, catalogIdle)
 	})
 }
 

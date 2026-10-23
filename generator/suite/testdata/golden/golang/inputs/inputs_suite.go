@@ -311,23 +311,6 @@ func BenchPipelineSuite[T Pipeline](
 		opts...)
 }
 
-// BenchPipelineSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchPipelineSuiteParallel[T Pipeline](
-	b *testing.B,
-	callable conform.Callable[Pipeline],
-	newSubject func(h *PipelineHandle) T,
-	opts ...PipelineOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		PipelineSuite(),
-		callable,
-		func(h *PipelineHandle) Pipeline { return newSubject(h) },
-		opts...)
-}
-
 // pipelinePumpCalls generates the calls of Pipeline.Pump with the inputs
 // that each case draws.
 var pipelinePumpCalls = prop.Composite(func(c *prop.Case) func(context.Context, Pipeline) error {
@@ -798,10 +781,14 @@ var pipelineCodeValues = prop.Composite(func(c *prop.Case) Code {
 	return DefaultCode()
 })
 
+// pipelineFeedInputEmbedded is Feed under the name of the field that
+// pipelineFeedInput embeds.
+type pipelineFeedInputEmbedded = Feed
+
 // pipelineFeedInput is a Feed whose methods return the results that the
 // call generators of Pipeline draw for them, in turn.
 type pipelineFeedInput struct {
-	Feed
+	pipelineFeedInputEmbedded
 	onNext  func(a0 context.Context) (Item, bool, error)
 	onGet   func(a0 context.Context, a1 string) (Item, error)
 	onSeek  func(a0 ...string)
@@ -828,10 +815,14 @@ func (in pipelineFeedInput) Close() error {
 	return in.onClose()
 }
 
+// pipelineSourceInputEmbedded is Source under the name of the field that
+// pipelineSourceInput embeds.
+type pipelineSourceInputEmbedded = Source[int]
+
 // pipelineSourceInput is a Source whose methods return the results that
 // the call generators of Pipeline draw for them, in turn.
 type pipelineSourceInput struct {
-	Source[int]
+	pipelineSourceInputEmbedded
 	onRead func() int
 }
 
@@ -840,10 +831,14 @@ func (in pipelineSourceInput) Read() int {
 	return in.onRead()
 }
 
+// pipelineSourceInput0Embedded is Source under the name of the field that
+// pipelineSourceInput0 embeds.
+type pipelineSourceInput0Embedded = Source[string]
+
 // pipelineSourceInput0 is a Source whose methods return the results that
 // the call generators of Pipeline draw for them, in turn.
 type pipelineSourceInput0 struct {
-	Source[string]
+	pipelineSourceInput0Embedded
 	onRead func() string
 }
 
@@ -852,11 +847,15 @@ func (in pipelineSourceInput0) Read() string {
 	return in.onRead()
 }
 
+// pipelineOverEmbedded is Pipeline under the name of the field that
+// pipelineOver embeds.
+type pipelineOverEmbedded = Pipeline
+
 // pipelineOver is a subject of Pipeline whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type pipelineOver struct {
-	Pipeline
+	pipelineOverEmbedded
 	spend func()
 }
 

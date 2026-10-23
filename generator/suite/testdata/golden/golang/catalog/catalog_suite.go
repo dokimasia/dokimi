@@ -162,23 +162,6 @@ func BenchCatalogSuite[T CatalogMethods](
 		opts...)
 }
 
-// BenchCatalogSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchCatalogSuiteParallel[T CatalogMethods](
-	b *testing.B,
-	callable conform.Callable[CatalogMethods],
-	newSubject func(h *CatalogHandle) T,
-	opts ...CatalogOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		CatalogSuite(),
-		callable,
-		func(h *CatalogHandle) CatalogMethods { return newSubject(h) },
-		opts...)
-}
-
 // catalogFindCalls generates the calls of Catalog.Find with the inputs
 // that each case draws.
 var catalogFindCalls = prop.Composite(
@@ -204,11 +187,15 @@ var catalogAddCalls = prop.Composite(
 	},
 )
 
+// catalogOverEmbedded is CatalogMethods under the name of the field that
+// catalogOver embeds.
+type catalogOverEmbedded = CatalogMethods
+
 // catalogOver is a subject of Catalog whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type catalogOver struct {
-	CatalogMethods
+	catalogOverEmbedded
 	spend func()
 }
 

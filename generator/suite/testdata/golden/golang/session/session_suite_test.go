@@ -7,9 +7,13 @@ import (
 	"go.dokimi.dev/conform"
 )
 
+// sessionsSubjectEmbedded is Sessions under the name of the field that
+// sessionsSubject embeds.
+type sessionsSubjectEmbedded = Sessions
+
 // sessionsSubject is a value of Sessions that only TestSessionsSuite
 // builds.
-type sessionsSubject struct{ Sessions }
+type sessionsSubject struct{ sessionsSubjectEmbedded }
 
 // TestSessionsSuite checks the suite of Sessions and the two forms of its
 // application.
@@ -69,5 +73,62 @@ func TestSessionsSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 		)
+	})
+}
+
+// sessionsIdle returns the planted defect of a ceiling of Sessions with a
+// spend of nothing, a subject that answers each call at once.
+func sessionsIdle(h *SessionsHandle) Sessions {
+	return SessionsSuite().Calls[0].Over(h, func() {})
+}
+
+// TestSessionsSuiteBudgets applies the allocation ceilings of the suite of
+// Sessions to sessionsIdle, and a ceiling of 0 to each callable without a
+// budget whose calls build no input of their own.
+func TestSessionsSuiteBudgets(t *testing.T) {
+	RunSessionsBudgets(
+		t,
+		sessionsIdle,
+		conform.Ceilings(SessionsChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(SessionsChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzSessionsSuitePut registers the fuzz target of Sessions.Put on
+// sessionsIdle, with every check of the suite excused.
+func FuzzSessionsSuitePut(f *testing.F) {
+	FuzzSessionsSuite(
+		f,
+		SessionsChecks.Put.Callable,
+		sessionsIdle,
+		conform.Excuse(
+			SessionsChecks.Get.KeepsTheLastPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzSessionsSuiteGet registers the fuzz target of Sessions.Get on
+// sessionsIdle, with every check of the suite excused.
+func FuzzSessionsSuiteGet(f *testing.F) {
+	FuzzSessionsSuite(
+		f,
+		SessionsChecks.Get.Callable,
+		sessionsIdle,
+		conform.Excuse(
+			SessionsChecks.Get.KeepsTheLastPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkSessionsSuite measures each callable of the suite of Sessions
+// on sessionsIdle.
+func BenchmarkSessionsSuite(b *testing.B) {
+	b.Run("Put", func(b *testing.B) {
+		BenchSessionsSuite(b, SessionsChecks.Put.Callable, sessionsIdle)
+	})
+	b.Run("Get", func(b *testing.B) {
+		BenchSessionsSuite(b, SessionsChecks.Get.Callable, sessionsIdle)
 	})
 }

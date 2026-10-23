@@ -121,18 +121,6 @@ func BenchSlugSuite(b conform.B, subject SlugFunc, opts ...SlugOption) {
 		opts...)
 }
 
-// BenchSlugSuiteParallel measures subject on GOMAXPROCS goroutines at
-// once, under the ceilings of the budget of Slug.
-func BenchSlugSuiteParallel(b *testing.B, subject SlugFunc, opts ...SlugOption) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		SlugSuite(),
-		SlugChecks.Callable,
-		func(*SlugHandle) SlugFunc { return subject },
-		opts...)
-}
-
 // slugCalls generates the calls of Slug with the inputs that each case
 // draws.
 var slugCalls = prop.Composite(func(c *prop.Case) func(context.Context, SlugFunc) error {

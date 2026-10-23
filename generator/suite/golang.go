@@ -64,6 +64,10 @@ func golangDuration(d time.Duration) string {
 	return "time." + name
 }
 
+// golangExternal ends the import path of the external test package of a
+// directory, as go/packages reports it, such as example.com/shop/store_test.
+const golangExternal = "_test"
+
 // golangPart is the part of suite for Go.
 type golangPart struct{}
 
@@ -82,4 +86,10 @@ func (golangPart) Options() []sdk.TargetOption {
 			durationHelper: golangDuration,
 		}),
 	}
+}
+
+// external reports whether the package of factory is the external test
+// package of the package of subject, whose import path ends with _test.
+func (golangPart) external(subject, factory *symbol.Identity) bool {
+	return factory.Package == subject.Package+golangExternal
 }

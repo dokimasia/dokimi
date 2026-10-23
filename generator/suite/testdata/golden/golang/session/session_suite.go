@@ -146,23 +146,6 @@ func BenchSessionsSuite[T Sessions](
 		opts...)
 }
 
-// BenchSessionsSuiteParallel measures callable on a subject of newSubject
-// on GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchSessionsSuiteParallel[T Sessions](
-	b *testing.B,
-	callable conform.Callable[Sessions],
-	newSubject func(h *SessionsHandle) T,
-	opts ...SessionsOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		SessionsSuite(),
-		callable,
-		func(h *SessionsHandle) Sessions { return newSubject(h) },
-		opts...)
-}
-
 // sessionsPutCalls generates the calls of Sessions.Put with the inputs
 // that each case draws.
 var sessionsPutCalls = prop.Composite(func(c *prop.Case) func(context.Context, Sessions) error {
@@ -182,11 +165,15 @@ var sessionsGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, S
 	}
 })
 
+// sessionsOverEmbedded is Sessions under the name of the field that
+// sessionsOver embeds.
+type sessionsOverEmbedded = Sessions
+
 // sessionsOver is a subject of Sessions whose callables call spend and
 // return their zero results. The planted defect of a ceiling passes a
 // spend that exceeds the ceiling.
 type sessionsOver struct {
-	Sessions
+	sessionsOverEmbedded
 	spend func()
 }
 

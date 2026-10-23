@@ -131,6 +131,7 @@ const (
 	parallelWord    = "Parallel"
 	callsWord       = "Calls"
 	overWord        = "Over"
+	embeddedWord    = "Embedded"
 	allocsWord      = "Allocs"
 	benchmarkWord   = "Benchmark"
 	declaredWord    = "Declared"
@@ -178,9 +179,12 @@ type Suite struct {
 // struct, as CatalogMethods, and Func the function type of a function, as
 // SlugFunc. Each is empty for another declaration. Over is the type of the
 // planted defects of the ceilings of an interface or a struct, as StoreOver,
-// and NewOver the function that returns such a defect, as NewStoreOver. A
+// and NewOver the function that returns such a defect, as NewStoreOver.
+// Embedded is the alias of the subject type that Over embeds, as
+// StoreOverEmbedded. The embedded field has the name of the alias, so a
+// callable with the name of the subject type is a valid method of Over. A
 // function has no type of its defects, and a declaration without callables
-// has neither name.
+// has none of the three names.
 type Names struct {
 	Checks        string
 	Suite         string
@@ -197,6 +201,7 @@ type Names struct {
 	Func          string
 	Over          string
 	NewOver       string
+	Embedded      string
 }
 
 // Callable is one callable of a declaration. Name is the name of the callable
@@ -246,43 +251,51 @@ type Check struct {
 // suite of a function has the segment Receives, and each other check has
 // the segment Builds. Both are empty for a conformance test. Targets are the
 // fuzz targets of the test: one for each callable in the conformance test of
-// a subject, and one for the function in the test of the suite of a function.
-// FromHandle reports that the factory of a subject takes the handle of a
-// check.
+// a subject and in the test of the suite of an interface or a struct, and one
+// for the function in the test of the suite of a function. FromHandle reports
+// that the factory of a subject takes the handle of a check.
 //
 // SuiteAllocs is the name of the test that falsifies the allocation ceilings
 // of the suite, as TestStoreSuiteAllocs, and empty for the test of a subject
 // and for a suite without one. Allocs is the name of the test that applies
 // the allocation ceilings to a subject or to a function, as TestMemoryAllocs,
-// and empty where no allocation ceiling applies. Benchmark is the name of the
-// benchmark of a subject or a function, as BenchmarkMemory, and Parallel the
-// name of its parallel benchmark, as BenchmarkMemoryParallel. Parallel is
-// empty where no callable admits concurrent calls, and both are empty for the
-// test of an interface or a struct. Levels are the levels of the benchmarks of
-// a subject, one for each callable. Ceilings are the budgets that the subject
+// and empty where no allocation ceiling applies. Budgets is the name of the
+// test that applies the allocation ceilings of the suite of an interface or a
+// struct to its planted defect, as TestStoreSuiteBudgets, and empty for any
+// other test. Benchmark is the name of the benchmark of a subject, a function
+// or the suite of an interface or a struct, as BenchmarkMemory or
+// BenchmarkStoreSuite, and Parallel the name of its parallel benchmark, as
+// BenchmarkMemoryParallel. Parallel is empty where no callable admits
+// concurrent calls. Levels are the levels of the benchmarks of a subject or
+// of a suite, one for each callable. Ceilings are the budgets that the subject
 // states for its callables, in the order of their directives. Cases is the
 // number of valid cases of each property run that the subject states, and 0
 // for a subject without the param cases. The test passes it to the
 // applications whose property runs it sets: the checks and the allocation
 // ceilings.
 //
-// The record of a conformance test is a struct with eleven fields. Their
-// types refer, in this order, to the form of the application, as
-// RunStoreSuite, to the factory of the subjects, to the names of the callables
-// of the suite, as StoreChecks, to its fuzz form, as FuzzStoreSuite, to its
-// alias of the handle, to the type of the subjects that the factory returns,
-// to the application of its allocation ceilings, as RunStoreBudgets, to its
-// two benchmarks, as BenchStoreSuite and BenchStoreSuiteParallel, to its
-// alias of the option, and to the type of the subjects of the suite.
+// The record of a conformance test is a struct with ten fields. Their types
+// refer, in this order, to the form of the application, as RunStoreSuite, to
+// the factory of the subjects, to the names of the callables of the suite, as
+// StoreChecks, to its fuzz form, as FuzzStoreSuite, to its alias of the
+// handle, to the type of the subjects that the factory returns, to the
+// application of its allocation ceilings, as RunStoreBudgets, to its
+// benchmark, as BenchStoreSuite, to its alias of the option, and to the type
+// of the subjects of the suite. The record of a subject of a declaration with
+// a callable that admits concurrent calls has an eleventh field, which refers
+// to its parallel benchmark, as BenchStoreSuiteParallel. The record of the
+// test of a suite ends with that field as well.
 //
 // The record of the test of a suite is a struct whose fields refer, in this
 // order, to the function of the suite as StoreSuite, to the two forms of the
 // application, to the aliases of the handle and the check, to the type of the
 // subjects and to the names of the callables. The record of the suite of a
-// function has five last fields, which refer to the function, to its fuzz
-// form, to the application of its allocation ceilings and to its two
-// benchmarks. The layout of eidos qualifies each reference to the suite by
-// the package of the file of the suite.
+// function has four more fields, which refer to the function, to its fuzz
+// form, to the application of its allocation ceilings and to its benchmark.
+// The record of the suite of an interface or a struct with callables has three
+// more fields, which refer to its fuzz form, to the application of its
+// allocation ceilings and to its benchmark. The layout of eidos qualifies each
+// reference to the suite by the package of the file of the suite.
 type Conformance struct {
 	Test        string
 	Subject     string
@@ -291,6 +304,7 @@ type Conformance struct {
 	Receives    string
 	SuiteAllocs string
 	Allocs      string
+	Budgets     string
 	Benchmark   string
 	Parallel    string
 	Excusals    []Excusal
@@ -302,13 +316,17 @@ type Conformance struct {
 	FromHandle  bool
 }
 
-// Level is one level of the benchmarks of a subject. Field is the field of its
-// callable in the names of the callables, as Get. Concurrent reports that the
-// callable admits concurrent calls, so the parallel benchmark has the level as
-// well.
+// Level is one level of the benchmarks of a subject or of a suite. Field is the
+// field of its callable in the names of the callables, as Get. Concurrent
+// reports that the callable admits concurrent calls, so the parallel benchmark
+// has the level as well. Ceiled reports that the test of a suite adds an
+// allocation ceiling of 0 to the callable: the declaration states no budget of
+// it, and its calls build no implementation of an interface and no channel of
+// their own, so a call of the planted defect allocates nothing.
 type Level struct {
 	Field      string
 	Concurrent bool
+	Ceiled     bool
 }
 
 // Target is one fuzz target of a test. Name is the name of the fuzz function,
@@ -331,8 +349,18 @@ type Excusal struct {
 	Reason string
 }
 
+// part is the part of suite for one language. It declares the target with its
+// template tree and its helpers, and reports each fact of the language that
+// the facts of eidos leave to it.
+type part interface {
+	lang.Part
+	// external reports whether the function factory is in the external test
+	// package of the package of the declaration subject.
+	external(subject, factory *symbol.Identity) bool
+}
+
 // parts are the parts of suite, one for each language that it serves.
-var parts = []lang.Part{golangPart{}}
+var parts = []part{golangPart{}}
 
 // suiteSchema is the directive of a suite.
 var suiteSchema = directive.Schema{
@@ -354,7 +382,8 @@ var subjectSchema = directive.Schema{
 		{
 			Key: NewParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
 			Required: true,
-			Doc:      "the function that returns a fresh subject, without a parameter or from the handle of a check",
+			Doc: "the function that returns a fresh subject, without a parameter or from the handle of a check, in " +
+				"the package of the struct or in the external test package of the struct",
 		},
 		{
 			Key: CasesParam, Type: directive.TypeInt,
@@ -469,10 +498,10 @@ func New() sdk.Dual {
 	lang.Register(b, parts)
 	return b.Handle(
 		sdk.Directive(suiteSchema,
-			sdk.OnInterface(lang.Served(parts, func(_ *sdk.InterfaceMatch, _ lang.Part, st *sdk.Stamper) error {
+			sdk.OnInterface(lang.Served(parts, func(_ *sdk.InterfaceMatch, _ part, st *sdk.Stamper) error {
 				return g.askDouble(st)
 			})),
-			sdk.OnStruct(lang.Served(parts, func(_ *sdk.StructMatch, _ lang.Part, st *sdk.Stamper) error {
+			sdk.OnStruct(lang.Served(parts, func(_ *sdk.StructMatch, _ part, st *sdk.Stamper) error {
 				return g.askDouble(st)
 			})),
 			sdk.OnInterface(lang.Served(parts, g.suiteOfInterface)),
@@ -548,7 +577,7 @@ func (g *generator) askDouble(st *sdk.Stamper) error {
 // no callable, so a check of a function must not have the segment of a check
 // that the test of the suite adds. Otherwise concludeCheck reports
 // [UnknownCallable] or [BadCheck] at the directive.
-func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ lang.Part, st *sdk.Stamper) error {
+func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper) error {
 	fn := m.Function
 	d := m.Directive()
 	decl, callable, resolved := resolveCallable(m, d, fn.Name)
@@ -854,7 +883,7 @@ func listed(words []string, conjunction string) string {
 
 // suiteOfInterface records the suite of an interface. The subject type is the
 // interface at the witnesses of its type parameters.
-func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ lang.Part, e *sdk.Emitter) error {
+func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitter) error {
 	i := m.Interface
 	b := m.Rules()
 	subject := &emit.TypeRef{Spelling: i.Name, Target: i.ID}
@@ -877,7 +906,7 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ lang.Part, e *sdk.
 
 // suiteOfStruct records the suite of a struct. The subject type is the
 // interface of the exported methods of the struct, which the suite declares.
-func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitter) error {
+func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) error {
 	st := m.Struct
 	if len(st.TypeParams) > 0 {
 		m.Errorf(Uninstantiable, "%s is a generic struct, so it has no suite", st.Name)
@@ -916,12 +945,13 @@ func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
 	if len(methods) > 0 {
 		s.Names.Over = k.e.JoinName(overWord, s.Declaration)
 		s.Names.NewOver = k.e.JoinName(s.Names.Over, newWord)
+		s.Names.Embedded = k.e.JoinName(embeddedWord, s.Names.Over)
 	}
 }
 
 // suiteOfFunction records the suite of a function. The subject type is the
 // function type of the function, which the suite declares.
-func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ lang.Part, e *sdk.Emitter) error {
+func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter) error {
 	f := m.Function
 	if len(f.TypeParams) > 0 {
 		m.Errorf(Uninstantiable, "%s is a generic function, so it has no suite", f.Name)
@@ -950,8 +980,12 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ lang.Part, e *sdk.Em
 // function type, the type of each callable, the variable of each call and of
 // each generator of a starting value, each implementation of an interface,
 // the type of the planted defects and the function that returns one, the
-// functions and the aliases. write also records the falsification test of the
-// suite into the family of the tests.
+// functions and the aliases. Each implementation of an interface and the type
+// of the planted defects declare the alias of the type that they embed after
+// their own name. A suite without a call that admits concurrent
+// calls has no parallel benchmark, so its name of the benchmark is empty. write
+// also records the falsification test of the suite into the family of the
+// tests.
 func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	public := func(name string) symbol.Symbol {
 		return &emit.Function{Origin: *origin, Name: name, Visibility: symbol.VisibilityPublic}
@@ -960,6 +994,9 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		return &emit.Alias{Origin: *origin, Name: name, Visibility: symbol.VisibilityPublic}
 	}
 	n := &s.Names
+	if !slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Concurrent }) {
+		n.BenchParallel = ""
+	}
 	decls := []symbol.Symbol{&emit.Variable{Origin: *origin, Name: n.Checks, Visibility: symbol.VisibilityPublic}}
 	if s.Methods != nil {
 		decls = append(decls, s.Methods)
@@ -979,16 +1016,24 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		decls = append(decls, &emit.Variable{Origin: *origin, Name: st.Name, Visibility: symbol.VisibilityPackage})
 	}
 	for _, in := range s.Inputs {
-		decls = append(decls, &emit.Struct{Origin: *origin, Name: in.Name, Visibility: symbol.VisibilityPackage})
+		decls = append(decls,
+			&emit.Struct{Origin: *origin, Name: in.Name, Visibility: symbol.VisibilityPackage},
+			&emit.Alias{Origin: *origin, Name: in.Embedded, Visibility: symbol.VisibilityPackage})
 	}
 	if n.Over != "" {
-		decls = append(decls, &emit.Alias{Origin: *origin, Name: n.Over, Visibility: symbol.VisibilityPackage})
+		decls = append(decls,
+			&emit.Struct{Origin: *origin, Name: n.Over, Visibility: symbol.VisibilityPackage},
+			&emit.Alias{Origin: *origin, Name: n.Embedded, Visibility: symbol.VisibilityPackage})
 	}
 	if n.NewOver != "" {
 		decls = append(decls, &emit.Function{Origin: *origin, Name: n.NewOver, Visibility: symbol.VisibilityPackage})
 	}
 	decls = append(decls, public(n.Suite), public(n.Run), public(n.RunFromHandle), public(n.Fuzz),
-		public(n.Budgets), public(n.Bench), public(n.BenchParallel), alias(n.Handle), alias(n.Check), alias(n.Option))
+		public(n.Budgets), public(n.Bench))
+	if n.BenchParallel != "" {
+		decls = append(decls, public(n.BenchParallel))
+	}
+	decls = append(decls, alias(n.Handle), alias(n.Check), alias(n.Option))
 	e.File().Record(*s, decls...)
 	record := &emit.Struct{
 		Origin: *origin, Name: e.JoinName(proofsWord, s.Declaration), Visibility: symbol.VisibilityPackage,
@@ -1025,12 +1070,45 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
 			&emit.Field{Name: budgetsWord, Type: emitted(n.Budgets)},
 			&emit.Field{Name: benchWord, Type: emitted(n.Bench)},
-			&emit.Field{Name: parallelWord, Type: emitted(n.BenchParallel)},
 		)
 		test.Targets = []Target{{Name: e.JoinName(s.Declaration, fuzzWord)}}
 		test.benchmarks(e, s.Declaration, allocated, s.Calls[0].Concurrent)
+	} else if len(s.Calls) > 0 {
+		record.Fields.Append(
+			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
+			&emit.Field{Name: budgetsWord, Type: emitted(n.Budgets)},
+			&emit.Field{Name: benchWord, Type: emitted(n.Bench)},
+		)
+		test.idle(e, n, s.Calls)
+	}
+	if n.BenchParallel != "" {
+		record.Fields.Append(&emit.Field{Name: parallelWord, Type: emitted(n.BenchParallel)})
 	}
 	e.File(TestTag).Record(test, record)
+}
+
+// idle names the tests of the suite of an interface or a struct that apply the
+// fuzz form, the allocation ceilings and the benchmarks of the suite to its
+// planted defect with a spend of nothing, which answers each call at once. The
+// test has a level and a fuzz target for each call of calls, and a parallel
+// benchmark where a callable admits concurrent calls.
+func (c *Conformance) idle(e *sdk.Emitter, n *Names, calls []Call) {
+	c.Budgets = e.JoinName(budgetsWord, c.Test)
+	c.Benchmark = e.JoinName(n.Suite, benchmarkWord)
+	fuzz := e.JoinName(n.Suite, fuzzWord)
+	concurrent := false
+	for i := range calls {
+		call := &calls[i]
+		builds := slices.ContainsFunc(call.Params, func(p Param) bool { return p.Input != "" || p.Receive })
+		c.Levels = append(c.Levels, Level{
+			Field: call.Field, Concurrent: call.Concurrent, Ceiled: call.Budget == Budget{} && !builds,
+		})
+		c.Targets = append(c.Targets, Target{Name: e.JoinName(call.Field, fuzz), Field: call.Field})
+		concurrent = concurrent || call.Concurrent
+	}
+	if concurrent {
+		c.Parallel = e.JoinName(parallelWord, c.Benchmark)
+	}
 }
 
 // benchmarks names the test of the allocation ceilings and the benchmarks of
@@ -1067,10 +1145,12 @@ const (
 // where an application cannot call the factory. A factory without a parameter
 // goes to the form Run of the application, and a factory of one parameter,
 // the handle of a check, to the form RunFromHandle. The test of a factory
-// that is not exported tests from inside the package. The test applies the
-// allocation ceilings to the subject where the budget of a callable states
-// one, and has a level of its benchmarks for each callable.
-func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitter) error {
+// that is not exported tests from inside the package. The test of a factory of
+// the external test package of the struct is in that package, and calls the
+// factory without a qualifier. The test applies the allocation ceilings to
+// the subject where the budget of a callable states one, and has a level of
+// its benchmarks for each callable.
+func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) error {
 	st := m.Struct
 	d := m.Directive()
 	declared := d.Args[0].Target
@@ -1133,10 +1213,12 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 		&emit.Field{Name: subjectWord, Type: rules.EmitRef(view.Returns[0].Ref)},
 		&emit.Field{Name: budgetsWord, Type: emitted(names.Budgets)},
 		&emit.Field{Name: benchWord, Type: emitted(names.Bench)},
-		&emit.Field{Name: parallelWord, Type: emitted(names.BenchParallel)},
 		&emit.Field{Name: optionWord, Type: emitted(names.Option)},
 		&emit.Field{Name: declaredWord, Type: g.subjectOf(e, &b, decl, emitted)},
 	)
+	if slices.ContainsFunc(levels, func(l Level) bool { return l.Concurrent }) {
+		record.Fields.Append(&emit.Field{Name: parallelWord, Type: emitted(names.BenchParallel)})
+	}
 	var targets []Target
 	fuzz := e.JoinName(st.Name, fuzzWord)
 	for _, method := range methods {
@@ -1144,8 +1226,10 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ lang.Part, e *sdk.Emitte
 	}
 	out := e.File(TestTag)
 	// The directive subject is on a struct, so its factory is a function in
-	// the scope of the struct.
-	if fn, _ := found.(*node.Function); fn.Visibility != symbol.VisibilityPublic {
+	// the scope of the struct or in the external test package of its
+	// directory, whose test file the family writes already.
+	fn, _ := found.(*node.Function)
+	if fn.Visibility != symbol.VisibilityPublic && !p.external(&st.ID, &factory) {
 		out = out.Internal()
 	}
 	test := Conformance{

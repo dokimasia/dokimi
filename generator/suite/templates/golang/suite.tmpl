@@ -175,11 +175,14 @@ var _ = conform.CompatV1
 	conform.Bench(b, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
 }
 
+{{- if $n.BenchParallel}}
+
 {{docs (wrapdocs (printf `%s measures subject on GOMAXPROCS goroutines at once, under the ceilings of the budget of %s.` $benchParallel $c.Declaration))}}
 {{- ""}}func {{$benchParallel}}(b *testing.B, subject {{$s}}, opts ...{{$option}}) {
 	b.Helper()
 	conform.BenchParallel(b, {{$suite}}(), {{$checks}}.Callable, func(*{{$handle}}) {{$s}} { return subject }, opts...)
 }
+{{- end}}
 {{- else}}
 
 {{docs (wrapdocs (printf `%s applies the checks of %s, and the checks that opts add, to a fresh subject of newSubject for each check.` $run $c.Declaration))}}
@@ -211,12 +214,14 @@ var _ = conform.CompatV1
 	b.Helper()
 	conform.Bench(b, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
 }
+{{- if $n.BenchParallel}}
 
 {{docs (wrapdocs (printf `%s measures callable on a subject of newSubject on GOMAXPROCS goroutines at once, under the ceilings of its budget.` $benchParallel))}}
 {{- ""}}func {{$benchParallel}}[T {{$s}}](b *testing.B, callable conform.Callable[{{$s}}], newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	b.Helper()
 	conform.BenchParallel(b, {{$suite}}(), callable, func(h *{{$handle}}) {{$s}} { return newSubject(h) }, opts...)
 }
+{{- end}}
 {{- end}}
 {{- range $c.Calls}}
 {{- $name := $c.Declaration}}
@@ -291,10 +296,14 @@ var _ = conform.CompatV1
 {{- end}}
 {{- range $c.Inputs}}
 {{- $input := suiteCamel .Name}}
+{{- $embedded := suiteCamel .Embedded}}
+
+{{docs (wrapdocs (printf `%s is %s under the name of the field that %s embeds.` $embedded .Type.Spelling $input))}}
+{{- ""}}type {{$embedded}} = {{spell .Type}}
 
 {{docs (wrapdocs (printf `%s is a %s whose methods return the results that the call generators of %s draw for them, in turn.` $input .Type.Spelling $c.Declaration))}}
 {{- ""}}type {{$input}} struct {
-	{{spell .Type}}
+	{{$embedded}}
 {{- range .Methods}}
 	{{suiteCamel .Field}} func({{params .Method.Params}}){{results .Method.Returns}}
 {{- end}}
@@ -309,10 +318,14 @@ var _ = conform.CompatV1
 {{- end}}
 {{- end}}
 {{- with $n.Over}}
+{{- $embedded := suiteCamel $n.Embedded}}
+
+{{docs (wrapdocs (printf `%s is %s under the name of the field that %s embeds.` $embedded $s $over))}}
+{{- ""}}type {{$embedded}} = {{$s}}
 
 {{docs (wrapdocs (printf `%s is a subject of %s whose callables call spend and return their zero results. The planted defect of a ceiling passes a spend that exceeds the ceiling.` $over $c.Declaration))}}
 {{- ""}}type {{$over}} struct {
-	{{$s}}
+	{{$embedded}}
 	spend func()
 }
 {{- range $c.Calls}}

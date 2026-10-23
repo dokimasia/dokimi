@@ -69,7 +69,7 @@
 {{- range $c.Levels}}
 {{- if .Concurrent}}
 	b.Run("{{.Field}}", func(b *testing.B) {
-		{{spell (index $refs 8).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if $options}}, opts...{{end}})
+		{{spell (index $refs 10).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if $options}}, opts...{{end}})
 	})
 {{- end}}
 {{- end}}
@@ -101,9 +101,13 @@
 {{- $subject := spell (index $refs 5).Type}}
 {{- $value := printf "%sSubject" (suiteCamel $c.Declaration)}}
 {{- if not $c.Function}}
+{{- $embedded := printf "%sEmbedded" $value}}
+
+{{docs (wrapdocs (printf `%s is %s under the name of the field that %s embeds.` $embedded $subject $value))}}
+{{- ""}}type {{$embedded}} = {{$subject}}
 
 {{docs (wrapdocs (printf `%s is a value of %s that only %s builds.` $value $c.Declaration $test))}}
-{{- ""}}type {{$value}} struct{ {{$subject}} }
+{{- ""}}type {{$value}} struct{ {{$embedded}} }
 {{- end}}
 
 {{docs (wrapdocs (printf `%s checks the suite of %s and the two forms of its application.` $test $c.Declaration))}}
@@ -194,6 +198,9 @@
 	})
 }
 {{- end}}
+{{- if and (not $c.Function) $c.Levels}}
+{{- template "suite.idle" $r}}
+{{- end}}
 {{- if $c.Function}}
 {{- $fn := spell (index $refs 7).Type}}
 {{- with $c.Allocs}}
@@ -220,7 +227,6 @@
 	{{spell (index $refs 11).Type}}(b, {{$fn}})
 }
 {{- end}}
-{{- end}}
 {{- range $c.Targets}}
 {{- $target := suitePascal .Name}}
 
@@ -228,6 +234,7 @@
 {{- ""}}func {{$target}}(f *testing.F) {
 	{{spell (index $refs 8).Type}}(f, {{spell (index $refs 7).Type}})
 }
+{{- end}}
 {{- end}}
 {{- end}}
 {{- end}}
@@ -239,7 +246,7 @@ none.
 */}}
 {{- define "suite.cases"}}
 {{- with .Data.Cases}}
-		conform.Cases[{{spell (index $.Decl.Fields.Items 10).Type}}]({{.}}),
+		conform.Cases[{{spell (index $.Decl.Fields.Items 9).Type}}]({{.}}),
 {{- end}}
 {{- end}}
 
@@ -251,7 +258,7 @@ budgets and excusals.
 */}}
 {{- define "suite.options"}}
 {{- if or .Data.Ceilings .Data.Excusals}}
-	opts := []{{spell (index .Decl.Fields.Items 9).Type}}{
+	opts := []{{spell (index .Decl.Fields.Items 8).Type}}{
 {{- template "suite.ceilings" .}}
 {{- template "suite.excusals" .}}
 	}
@@ -334,6 +341,85 @@ test built last, by identity.
 				Defect: func(*{{$handle}}) {{$subject}} { return &{{$value}}{} },
 			}),
 {{- template "suite.alone" .}}
+{{- end}}
+
+{{- /*
+suite.idle writes the tests of the suite of an interface or a struct that run
+its applications on its planted defect with a spend of nothing, a subject that
+answers each call at once: the test of the allocation ceilings, a fuzz target
+of each callable and the benchmarks. The test of the allocation ceilings adds
+a ceiling of 0 to each level that Ceiled marks, which the planted defect
+falsifies first.
+*/}}
+{{- define "suite.idle"}}
+{{- $c := .Data}}
+{{- $refs := .Decl.Fields.Items}}
+{{- $suite := spell (index $refs 0).Type}}
+{{- $handle := spell (index $refs 3).Type}}
+{{- $subject := spell (index $refs 5).Type}}
+{{- $checks := spell (index $refs 6).Type}}
+{{- $idle := printf "%sIdle" (suiteCamel $c.Declaration)}}
+
+{{docs (wrapdocs (printf `%s returns the planted defect of a ceiling of %s with a spend of nothing, a subject that answers each call at once.` $idle $c.Declaration))}}
+{{- ""}}func {{$idle}}(h *{{$handle}}) {{$subject}} {
+	return {{$suite}}().Calls[0].Over(h, func() {})
+}
+{{- $budgets := suitePascal $c.Budgets}}
+
+{{docs (wrapdocs (printf `%s applies the allocation ceilings of the suite of %s to %s, and a ceiling of 0 to each callable without a budget whose calls build no input of their own.` $budgets $c.Declaration $idle))}}
+{{- ""}}func {{$budgets}}(t *testing.T) {
+	{{spell (index $refs 8).Type}}(
+		t,
+		{{$idle}},
+{{- range $c.Levels}}
+{{- if .Ceiled}}
+		conform.Ceilings({{$checks}}.{{.Field}}.Callable, conform.Budget{Allocs: new(uint64(0))}),
+{{- end}}
+{{- end}}
+	)
+}
+{{- range $c.Targets}}
+{{- $target := suitePascal .Name}}
+
+{{docs (wrapdocs (printf `%s registers the fuzz target of %s.%s on %s, with every check of the suite excused.` $target $c.Declaration .Field $idle))}}
+{{- ""}}func {{$target}}(f *testing.F) {
+	{{spell (index $refs 7).Type}}(
+		f,
+		{{$checks}}.{{.Field}}.Callable,
+		{{$idle}},
+{{- range $c.Excusals}}
+		conform.Excuse(
+			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+{{- end}}
+	)
+}
+{{- end}}
+{{- $benchmark := suitePascal $c.Benchmark}}
+
+{{docs (wrapdocs (printf `%s measures each callable of the suite of %s on %s.` $benchmark $c.Declaration $idle))}}
+{{- ""}}func {{$benchmark}}(b *testing.B) {
+{{- range $c.Levels}}
+	b.Run("{{.Field}}", func(b *testing.B) {
+		{{spell (index $refs 9).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$idle}})
+	})
+{{- end}}
+}
+{{- with $c.Parallel}}
+{{- $parallel := suitePascal .}}
+
+{{docs (wrapdocs (printf `%s measures each callable of the suite of %s that admits concurrent calls on %s, on GOMAXPROCS goroutines at once.` $parallel $c.Declaration $idle))}}
+{{- ""}}func {{$parallel}}(b *testing.B) {
+{{- range $c.Levels}}
+{{- if .Concurrent}}
+	b.Run("{{.Field}}", func(b *testing.B) {
+		{{spell (index $refs 10).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$idle}})
+	})
+{{- end}}
+{{- end}}
+}
+{{- end}}
 {{- end}}
 
 {{- /*

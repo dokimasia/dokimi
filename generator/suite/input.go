@@ -61,10 +61,15 @@ type Result struct {
 // the interface at the type arguments of the parameters. Methods are the
 // exported methods of the interface, in the order of its member walk. The
 // implementation embeds the interface, so it has each other method as well.
+// Embedded is the alias of the interface that the implementation embeds, as
+// StoreSourceInputEmbedded. The embedded field has the name of the alias, so a
+// method with the name of the interface is a valid method of the
+// implementation.
 type Input struct {
-	Type    *emit.TypeRef
-	Name    string
-	Methods []InputMethod
+	Type     *emit.TypeRef
+	Name     string
+	Embedded string
+	Methods  []InputMethod
 }
 
 // InputMethod is one method of an [Input]. Method is the signature of the
@@ -212,6 +217,7 @@ func (k *caller) input(ref *node.TypeRef, iface *node.Interface, methods []*node
 		taken[k.inputs[i].Name] = true
 	}
 	in := Input{Type: typ, Name: naming.Unique(taken, k.e.JoinName(inputWord, k.e.JoinName(iface.Name, k.decl)))}
+	in.Embedded = k.e.JoinName(embeddedWord, in.Name)
 	for _, method := range methods {
 		view, _ := k.b.CallableOf(method)
 		m := &emit.Method{Origin: method.ID, Name: method.Name, Visibility: symbol.VisibilityPublic}

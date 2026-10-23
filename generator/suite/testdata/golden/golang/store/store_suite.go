@@ -152,23 +152,6 @@ func BenchStoreSuite[T Store](
 		opts...)
 }
 
-// BenchStoreSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchStoreSuiteParallel[T Store](
-	b *testing.B,
-	callable conform.Callable[Store],
-	newSubject func(h *StoreHandle) T,
-	opts ...StoreOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		StoreSuite(),
-		callable,
-		func(h *StoreHandle) Store { return newSubject(h) },
-		opts...)
-}
-
 // storeGetCalls generates the calls of Store.Get with the inputs that each
 // case draws.
 var storeGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Store) error {
@@ -188,11 +171,15 @@ var storePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, Stor
 	}
 })
 
+// storeOverEmbedded is Store under the name of the field that storeOver
+// embeds.
+type storeOverEmbedded = Store
+
 // storeOver is a subject of Store whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type storeOver struct {
-	Store
+	storeOverEmbedded
 	spend func()
 }
 

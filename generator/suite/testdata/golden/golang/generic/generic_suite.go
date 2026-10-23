@@ -130,23 +130,6 @@ func BenchCacheSuite[T Cache[int, int]](
 		opts...)
 }
 
-// BenchCacheSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchCacheSuiteParallel[T Cache[int, int]](
-	b *testing.B,
-	callable conform.Callable[Cache[int, int]],
-	newSubject func(h *CacheHandle) T,
-	opts ...CacheOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		CacheSuite(),
-		callable,
-		func(h *CacheHandle) Cache[int, int] { return newSubject(h) },
-		opts...)
-}
-
 // cacheGetCalls generates the calls of Cache.Get with the inputs that each
 // case draws.
 var cacheGetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Cache[int, int]) error {
@@ -168,11 +151,15 @@ var cacheSetCalls = prop.Composite(func(c *prop.Case) func(context.Context, Cach
 	}
 })
 
+// cacheOverEmbedded is Cache[int, int] under the name of the field that
+// cacheOver embeds.
+type cacheOverEmbedded = Cache[int, int]
+
 // cacheOver is a subject of Cache whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type cacheOver struct {
-	Cache[int, int]
+	cacheOverEmbedded
 	spend func()
 }
 

@@ -12,8 +12,6 @@ import (
 	"go.dokimi.dev/eidos/sdk/meta"
 	"go.dokimi.dev/eidos/sdk/node"
 	"go.dokimi.dev/eidos/sdk/symbol"
-
-	"go.dokimi.dev/dokimi/internal/lang"
 )
 
 // BudgetDirective states the budget of a callable: the most heap allocations
@@ -118,7 +116,7 @@ var budgetSchema = directive.Schema{
 // under the directive suite. It reports [BadBudget] at the budget of a method
 // of another declaration and of a method that is not exported, because no
 // suite has such a callable.
-func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ lang.Part, st *sdk.Stamper) error {
+func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) error {
 	method := m.Method
 	name := method.ID.Owner + "." + method.Name
 	switch {
@@ -135,7 +133,7 @@ func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ lang.Part, st *sdk.Stam
 
 // budgetOfFunction stamps the facts of the budget of a function under the
 // directive suite. It reports [BadBudget] at the budget of another function.
-func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ lang.Part, st *sdk.Stamper) error {
+func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamper) error {
 	fn := m.Function
 	if !suited(m, &fn.ID) {
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s has no directive suite, so the budget of %s has no check",
@@ -149,7 +147,7 @@ func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ lang.Part, st *sdk.
 // budgetOfStruct reports [BadBudget] at the budget of a struct without the
 // directive subject. The conformance test of a subject reads the budgets of
 // its struct, and no other struct has a test that reads them.
-func (*generator) budgetOfStruct(m *sdk.StructMatch, _ lang.Part, _ *sdk.Emitter) error {
+func (*generator) budgetOfStruct(m *sdk.StructMatch, _ part, _ *sdk.Emitter) error {
 	if instances(m, SubjectDirective) == 0 {
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s has no directive subject, so its budget has no check",
 			m.Struct.Name)

@@ -327,23 +327,6 @@ func BenchBoardSuite[T Board](
 		opts...)
 }
 
-// BenchBoardSuiteParallel measures callable on a subject of newSubject on
-// GOMAXPROCS goroutines at once, under the ceilings of its budget.
-func BenchBoardSuiteParallel[T Board](
-	b *testing.B,
-	callable conform.Callable[Board],
-	newSubject func(h *BoardHandle) T,
-	opts ...BoardOption,
-) {
-	b.Helper()
-	conform.BenchParallel(
-		b,
-		BoardSuite(),
-		callable,
-		func(h *BoardHandle) Board { return newSubject(h) },
-		opts...)
-}
-
 // boardPlaceCalls generates the calls of Board.Place with the inputs that
 // each case draws.
 var boardPlaceCalls = prop.Composite(func(c *prop.Case) func(context.Context, Board) error {
@@ -538,11 +521,15 @@ var boardGatherCalls = prop.Composite(func(c *prop.Case) func(context.Context, B
 	}
 })
 
+// boardOverEmbedded is Board under the name of the field that boardOver
+// embeds.
+type boardOverEmbedded = Board
+
 // boardOver is a subject of Board whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type boardOver struct {
-	Board
+	boardOverEmbedded
 	spend func()
 }
 

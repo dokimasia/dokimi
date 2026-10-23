@@ -7,8 +7,12 @@ import (
 	"go.dokimi.dev/conform"
 )
 
+// storeSubjectEmbedded is Store under the name of the field that
+// storeSubject embeds.
+type storeSubjectEmbedded = Store
+
 // storeSubject is a value of Store that only TestStoreSuite builds.
-type storeSubject struct{ Store }
+type storeSubject struct{ storeSubjectEmbedded }
 
 // TestStoreSuite checks the suite of Store and the two forms of its
 // application.
@@ -76,5 +80,70 @@ func TestStoreSuite(t *testing.T) {
 				"the test applies the check of its option alone",
 			),
 		)
+	})
+}
+
+// storeIdle returns the planted defect of a ceiling of Store with a spend
+// of nothing, a subject that answers each call at once.
+func storeIdle(h *StoreHandle) Store {
+	return StoreSuite().Calls[0].Over(h, func() {})
+}
+
+// TestStoreSuiteBudgets applies the allocation ceilings of the suite of
+// Store to storeIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestStoreSuiteBudgets(t *testing.T) {
+	RunStoreBudgets(
+		t,
+		storeIdle,
+		conform.Ceilings(StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzStoreSuiteGet registers the fuzz target of Store.Get on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuiteGet(f *testing.F) {
+	FuzzStoreSuite(
+		f,
+		StoreChecks.Get.Callable,
+		storeIdle,
+		conform.Excuse(
+			StoreChecks.Get.KeepsTheItem(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.RefusesACancelledPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzStoreSuitePut registers the fuzz target of Store.Put on storeIdle,
+// with every check of the suite excused.
+func FuzzStoreSuitePut(f *testing.F) {
+	FuzzStoreSuite(
+		f,
+		StoreChecks.Put.Callable,
+		storeIdle,
+		conform.Excuse(
+			StoreChecks.Get.KeepsTheItem(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.RefusesACancelledPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkStoreSuite measures each callable of the suite of Store on
+// storeIdle.
+func BenchmarkStoreSuite(b *testing.B) {
+	b.Run("Get", func(b *testing.B) {
+		BenchStoreSuite(b, StoreChecks.Get.Callable, storeIdle)
+	})
+	b.Run("Put", func(b *testing.B) {
+		BenchStoreSuite(b, StoreChecks.Put.Callable, storeIdle)
 	})
 }

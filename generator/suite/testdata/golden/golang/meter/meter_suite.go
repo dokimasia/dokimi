@@ -253,11 +253,15 @@ var meterTotalCalls = prop.Composite(func(*prop.Case) func(context.Context, Mete
 	}
 })
 
+// meterOverEmbedded is Meter under the name of the field that meterOver
+// embeds.
+type meterOverEmbedded = Meter
+
 // meterOver is a subject of Meter whose callables call spend and return
 // their zero results. The planted defect of a ceiling passes a spend that
 // exceeds the ceiling.
 type meterOver struct {
-	Meter
+	meterOverEmbedded
 	spend func()
 }
 

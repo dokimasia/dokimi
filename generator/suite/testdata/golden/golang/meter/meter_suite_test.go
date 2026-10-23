@@ -7,8 +7,12 @@ import (
 	"go.dokimi.dev/conform"
 )
 
+// meterSubjectEmbedded is Meter under the name of the field that
+// meterSubject embeds.
+type meterSubjectEmbedded = Meter
+
 // meterSubject is a value of Meter that only TestMeterSuite builds.
-type meterSubject struct{ Meter }
+type meterSubject struct{ meterSubjectEmbedded }
 
 // TestMeterSuite checks the suite of Meter and the two forms of its
 // application.
@@ -68,6 +72,90 @@ func TestMeterSuite(t *testing.T) {
 func TestMeterSuiteAllocs(t *testing.T) {
 	t.Run("MeterSuite", func(t *testing.T) {
 		conform.FalsifyAllocs(t, MeterSuite())
+	})
+}
+
+// meterIdle returns the planted defect of a ceiling of Meter with a spend
+// of nothing, a subject that answers each call at once.
+func meterIdle(h *MeterHandle) Meter {
+	return MeterSuite().Calls[0].Over(h, func() {})
+}
+
+// TestMeterSuiteBudgets applies the allocation ceilings of the suite of
+// Meter to meterIdle, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
+func TestMeterSuiteBudgets(t *testing.T) {
+	RunMeterBudgets(
+		t,
+		meterIdle,
+		conform.Ceilings(MeterChecks.Merge.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(MeterChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
+	)
+}
+
+// FuzzMeterSuiteCount registers the fuzz target of Meter.Count on
+// meterIdle, with every check of the suite excused.
+func FuzzMeterSuiteCount(f *testing.F) {
+	FuzzMeterSuite(
+		f,
+		MeterChecks.Count.Callable,
+		meterIdle,
+	)
+}
+
+// FuzzMeterSuiteRecord registers the fuzz target of Meter.Record on
+// meterIdle, with every check of the suite excused.
+func FuzzMeterSuiteRecord(f *testing.F) {
+	FuzzMeterSuite(
+		f,
+		MeterChecks.Record.Callable,
+		meterIdle,
+	)
+}
+
+// FuzzMeterSuiteMerge registers the fuzz target of Meter.Merge on
+// meterIdle, with every check of the suite excused.
+func FuzzMeterSuiteMerge(f *testing.F) {
+	FuzzMeterSuite(
+		f,
+		MeterChecks.Merge.Callable,
+		meterIdle,
+	)
+}
+
+// FuzzMeterSuiteTotal registers the fuzz target of Meter.Total on
+// meterIdle, with every check of the suite excused.
+func FuzzMeterSuiteTotal(f *testing.F) {
+	FuzzMeterSuite(
+		f,
+		MeterChecks.Total.Callable,
+		meterIdle,
+	)
+}
+
+// BenchmarkMeterSuite measures each callable of the suite of Meter on
+// meterIdle.
+func BenchmarkMeterSuite(b *testing.B) {
+	b.Run("Count", func(b *testing.B) {
+		BenchMeterSuite(b, MeterChecks.Count.Callable, meterIdle)
+	})
+	b.Run("Record", func(b *testing.B) {
+		BenchMeterSuite(b, MeterChecks.Record.Callable, meterIdle)
+	})
+	b.Run("Merge", func(b *testing.B) {
+		BenchMeterSuite(b, MeterChecks.Merge.Callable, meterIdle)
+	})
+	b.Run("Total", func(b *testing.B) {
+		BenchMeterSuite(b, MeterChecks.Total.Callable, meterIdle)
+	})
+}
+
+// BenchmarkMeterSuiteParallel measures each callable of the suite of Meter
+// that admits concurrent calls on meterIdle, on GOMAXPROCS goroutines at
+// once.
+func BenchmarkMeterSuiteParallel(b *testing.B) {
+	b.Run("Count", func(b *testing.B) {
+		BenchMeterSuiteParallel(b, MeterChecks.Count.Callable, meterIdle)
 	})
 }
 

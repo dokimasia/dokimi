@@ -73,15 +73,3 @@ func NewForgetful() *Forgetful {
 func (*Forgetful) Put(context.Context, store.Item) error {
 	return nil
 }
-
-// Hidden is the store of items in memory that only its package can build.
-//
-//dokimi:subject store.Store new=newHidden
-type Hidden struct {
-	*Store
-}
-
-// newHidden returns an empty store.
-func newHidden() *Hidden {
-	return &Hidden{Store: New()}
-}

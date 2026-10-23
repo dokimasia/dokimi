@@ -4,6 +4,7 @@
 package suite_test
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 
@@ -342,39 +343,6 @@ func TestSuite(t *testing.T) {
 			}
 		}
 
-		t.Run("records the test of the implementations of a suite inside its package", func(t *testing.T) {
-			t.Parallel()
-
-			p := suite.New()
-			f := fixture(t, goTree, p, pathsPackage, inputsPackage)
-			got := recorded(t, f, p)
-			test, found := got.tests["TestPipelineSuiteInputs"]
-			assert.True(t, found, "suite records the test of the implementations of Pipeline")
-			names := make([]string, 0, len(test.Data.Inputs))
-			for _, in := range test.Data.Inputs {
-				names = append(names, in.Name)
-			}
-			expect.Equal(t, names, []string{"PipelineFeedInput", "PipelineSourceInput", "PipelineSourceInput0"},
-				"the test calls the methods of each implementation of the suite")
-			pump := f.Find(t, symbol.KindMethod, "Pipeline", "Pump").Identity()
-			expect.Equal(t, test.Data.Inputs[0].Origin, pump, "the first implementation takes the origin of Pump")
-			expect.True(t, got.inside[pump], "the test calls the implementations from inside their package")
-			_, outside := got.tests["TestPipelineSuite"]
-			expect.True(t, outside, "the falsification test stays in the external test package")
-		})
-
-		t.Run("records the probe of each method of an implementation with named results", func(t *testing.T) {
-			t.Parallel()
-
-			got := generate(t, goTree, pathsPackage, inputsPackage).suites["Pipeline"]
-			assert.NotEmpty(t, got.Inputs, "the suite of Pipeline has implementations")
-			next := got.Inputs[0].Methods[0]
-			expect.Equal(t, []string{signature(next.Method), signature(next.Probe)}, []string{
-				"Next(a0 context.Context) (Item, bool, error)",
-				"Next(a0 context.Context) (r0 Item, r1 bool, r2 error)",
-			}, "the probe has the parameters of the method and a name for each result")
-		})
-
 		t.Run("records no idle test for the suite of an interface without callables", func(t *testing.T) {
 			t.Parallel()
 
@@ -628,33 +596,18 @@ func TestSuite(t *testing.T) {
 			}
 		}
 
-		{
-			tests := []struct {
-				name       string
-				give       string
-				wantInside bool
-			}{
-				{
-					name: "records the conformance of a subject with an exported factory in the package with the suffix _test",
-					give: "Store",
-				},
-				{
-					name: "records the conformance of a subject with an unexported factory in its own package",
-					give: "Hidden", wantInside: true,
-				},
-			}
-			for _, tt := range tests {
-				t.Run(tt.name, func(t *testing.T) {
-					t.Parallel()
+		t.Run("records the conformance of a subject with an exported factory in the package with the suffix _test",
+			func(t *testing.T) {
+				t.Parallel()
 
-					p := suite.New()
-					f := fixture(t, goTree, p, storePackage, memoryPackage)
-					subject := f.Find(t, symbol.KindStruct, "", tt.give).Identity()
-					expect.Equal(t, recorded(t, f, p).inside[subject], tt.wantInside,
-						"only the package of a factory that is not exported can call it")
-				})
-			}
-		}
+				p := suite.New()
+				f := fixture(t, goTree, p, storePackage, memoryPackage)
+				got := recorded(t, f, p)
+				subject := f.Find(t, symbol.KindStruct, "", "Store").Identity()
+				expect.False(t, got.inside[subject], "the external test package calls an exported factory")
+				_, found := got.tests["TestStoreConformsToStore"]
+				expect.True(t, found, "suite records the conformance test of Store")
+			})
 
 		{
 			tests := []struct {
@@ -733,6 +686,13 @@ func TestSuite(t *testing.T) {
 					wantMsg:  "the factory NewPaired returns 2 results, so Paired has no conformance test",
 				},
 				{
+					name:     "reports BadFactory at a subject whose factory its package does not export",
+					givePkgs: []string{storePackage, badPackage}, giveKind: symbol.KindStruct, give: "Hidden",
+					wantCode: suite.BadFactory,
+					wantMsg: "the factory newHidden is not exported, so Hidden has no conformance test. Export it, " +
+						"or declare it in the external test package",
+				},
+				{
 					name:     "reports BadFactory at a subject whose factory returns no result",
 					givePkgs: []string{storePackage, badPackage}, giveKind: symbol.KindStruct, give: "Nothing",
 					wantCode: suite.BadFactory,
@@ -761,9 +721,9 @@ func TestSuite(t *testing.T) {
 			got, found := generate(t, goTree, storePackage, memoryPackage).tests["TestStoreConformsToStore"]
 			assert.True(t, found, "suite records the conformance test of Store")
 			expect.Equal(t, got.Data.Targets, []suite.Target{
-				{Name: "FuzzStoreGet", Field: "Get"},
-				{Name: "FuzzStorePut", Field: "Put"},
-			}, "each target joins the subject and the callable, in the order of the callables")
+				{Name: "FuzzStoreConformsToStoreGet", Field: "Get"},
+				{Name: "FuzzStoreConformsToStorePut", Field: "Put"},
+			}, "each target joins the subject, the declaration and the callable, in the order of the callables")
 		})
 
 		t.Run("records the references of the fuzz targets of a subject", func(t *testing.T) {
@@ -912,6 +872,107 @@ func TestSuite(t *testing.T) {
 				"the record refers to the names of the checks that the suite of Store emits")
 		})
 
+		t.Run("records a conformance test for each directive subject of a struct", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, dualPackage).tests
+			reader, found := got["TestBothConformsToReader"]
+			assert.True(t, found, "suite records the conformance test of Both and Reader")
+			writer, found := got["TestBothConformsToWriter"]
+			assert.True(t, found, "suite records the conformance test of Both and Writer")
+			expect.Equal(t, []string{reader.Data.Declaration, writer.Data.Declaration}, []string{"Reader", "Writer"},
+				"each test applies the suite of the declaration of its directive")
+			expect.Empty(t, reader.Data.Excusals, "the subject of Reader leaves the excusal of Writer.Write")
+			expect.Equal(t, writer.Data.Excusals, []suite.Excusal{
+				{Field: "Write", Method: "AllocationBudget", Reason: "the map allocates on each write"},
+			}, "the subject of Writer applies the excusal of Writer.Write")
+		})
+
+		t.Run("records the test of a subject beside a subject whose excusal names no check", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, dualPackage).tests
+			_, reader := got["TestMixedConformsToReader"]
+			expect.False(t, reader, "the subject of Reader excuses a check that its suite does not have")
+			writer, found := got["TestMixedConformsToWriter"]
+			assert.True(t, found, "suite records the conformance test of Mixed and Writer")
+			expect.Equal(t, writer.Data.Excusals, []suite.Excusal{
+				{Field: "Write", Method: "AllocationBudget", Reason: "the map allocates on each write"},
+			}, "the subject of Writer applies its own excusal")
+		})
+
+		t.Run("names each test of a subject after the struct and the declaration", func(t *testing.T) {
+			t.Parallel()
+
+			got, found := generate(t, goTree, dualPackage).tests["TestBothConformsToReader"]
+			assert.True(t, found, "suite records the conformance test of Both and Reader")
+			expect.Equal(t, []string{got.Data.Allocs, got.Data.Benchmark}, []string{
+				"TestBothConformsToReaderAllocs", "BenchmarkBothConformsToReader",
+			}, "the names of the allocation test and the benchmark join the struct and the declaration")
+			expect.Equal(t, got.Data.Targets, []suite.Target{{Name: "FuzzBothConformsToReaderRead", Field: "Read"}},
+				"the fuzz target joins the struct, the declaration and the callable")
+		})
+
+		t.Run("reports RepeatedSubject at a second directive subject of one declaration", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, dualPackage)
+			stamps, res := phases(t, f, p)
+			at := f.Find(t, symbol.KindStruct, "", "Twice").Position()
+			var got []diag.Diag
+			for _, d := range slices.Concat(slices.Collect(stamps.Sink.All()), slices.Collect(res.Sink.All())) {
+				if d.Pos.File == at.File && d.Code == suite.RepeatedSubject {
+					got = append(got, d)
+				}
+			}
+			assert.Length(t, got, 1, "suite reports the second directive subject of Twice once")
+			expect.Equal(t, got[0].Msg, fmt.Sprintf("Twice has a directive subject of Reader at line %d already, so "+
+				"this one has no conformance test", at.Line-2), "the message names the line of the first directive")
+			expect.Equal(t, got[0].Pos.Line, at.Line-1, "the finding is at the second directive")
+			_, found := generate(t, goTree, dualPackage).tests["TestTwiceConformsToReader"]
+			expect.True(t, found, "suite records the conformance test of the first directive")
+		})
+
+		{
+			tests := []struct {
+				name      string
+				give      string
+				wantMsg   string
+				wantTests []string
+			}{
+				{
+					name: "reports UnknownExcusal once for a struct with two directives subject", give: "Unruly",
+					wantMsg: "Lister.List/keeps-the-order is no check of the suite of Reader, so Unruly has no " +
+						"conformance test. The suite of Reader has no check of Lister.List",
+				},
+				{
+					name: "reports UnknownExcusal at an excusal of a declaration that is not a subject of the struct",
+					give: "Stray",
+					wantMsg: "Writer.Write/allocation-budget is no check of the suite of Reader, so Stray has no " +
+						"conformance test. The suite of Reader has no check of Writer.Write",
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					p := suite.New()
+					f := fixture(t, goTree, p, dualPackage)
+					_, res := phases(t, f, p)
+					subject := f.Find(t, symbol.KindStruct, "", tt.give)
+					var got []string
+					for d := range res.Sink.All() {
+						if d.Code == suite.UnknownExcusal && d.Pos.Line == subject.Position().Line-1 {
+							got = append(got, d.Msg)
+						}
+					}
+					expect.Equal(t, got, []string{tt.wantMsg}, "the first directive subject reports the excusal")
+					gentest.Unrecorded(t, res, subject)
+				})
+			}
+		}
+
 		t.Run("records the excusal of a ceiling of the budget of the declaration", func(t *testing.T) {
 			t.Parallel()
 
@@ -978,23 +1039,24 @@ func TestSuite(t *testing.T) {
 				{
 					name:     "names the tests of the budgets of a subject",
 					givePkgs: []string{meterPackage, meteredPackage}, give: "TestMeterConformsToMeter",
-					wantAllocs: "TestMeterAllocs", wantBenchmark: "BenchmarkMeter",
-					wantParallel: "BenchmarkMeterParallel",
+					wantAllocs: "TestMeterConformsToMeterAllocs", wantBenchmark: "BenchmarkMeterConformsToMeter",
+					wantParallel: "BenchmarkMeterConformsToMeterParallel",
 				},
 				{
 					name:     "names the test of the allocation ceilings of a subject with a budget of its own",
 					givePkgs: []string{storePackage, memoryPackage}, give: "TestClockedConformsToStore",
-					wantAllocs: "TestClockedAllocs", wantBenchmark: "BenchmarkClocked",
+					wantAllocs: "TestClockedConformsToStoreAllocs", wantBenchmark: "BenchmarkClockedConformsToStore",
 				},
 				{
 					name:     "names no test of the allocation ceilings of a subject without one",
 					givePkgs: []string{storePackage, memoryPackage}, give: "TestStoreConformsToStore",
-					wantBenchmark: "BenchmarkStore",
+					wantBenchmark: "BenchmarkStoreConformsToStore",
 				},
 				{
 					name:     "names no test of the allocation ceilings of a subject with a p99 of its own alone",
 					givePkgs: []string{pathsPackage, inputsPackage}, give: "TestMemoryConformsToRouter",
-					wantBenchmark: "BenchmarkMemory", wantParallel: "BenchmarkMemoryParallel",
+					wantBenchmark: "BenchmarkMemoryConformsToRouter",
+					wantParallel:  "BenchmarkMemoryConformsToRouterParallel",
 				},
 			}
 			for _, tt := range tests {

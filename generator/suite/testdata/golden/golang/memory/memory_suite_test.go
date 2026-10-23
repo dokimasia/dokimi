@@ -16,8 +16,9 @@ func TestStoreConformsToStore(t *testing.T) {
 	RunStoreSuite(t, New)
 }
 
-// BenchmarkStore measures each callable of the suite of Store on Store.
-func BenchmarkStore(b *testing.B) {
+// BenchmarkStoreConformsToStore measures each callable of the suite of
+// Store on Store.
+func BenchmarkStoreConformsToStore(b *testing.B) {
 	b.Run("Get", func(b *testing.B) {
 		BenchStoreSuite(b, StoreChecks.Get.Callable, func(*StoreHandle) *Store { return New() })
 	})
@@ -26,13 +27,15 @@ func BenchmarkStore(b *testing.B) {
 	})
 }
 
-// FuzzStoreGet fuzzes the property checks of Store.Get on Store.
-func FuzzStoreGet(f *testing.F) {
+// FuzzStoreConformsToStoreGet fuzzes the property checks of Store.Get on
+// Store.
+func FuzzStoreConformsToStoreGet(f *testing.F) {
 	FuzzStoreSuite(f, StoreChecks.Get.Callable, func(*StoreHandle) *Store { return New() })
 }
 
-// FuzzStorePut fuzzes the property checks of Store.Put on Store.
-func FuzzStorePut(f *testing.F) {
+// FuzzStoreConformsToStorePut fuzzes the property checks of Store.Put on
+// Store.
+func FuzzStoreConformsToStorePut(f *testing.F) {
 	FuzzStoreSuite(f, StoreChecks.Put.Callable, func(*StoreHandle) *Store { return New() })
 }
 
@@ -48,9 +51,9 @@ func TestClockedConformsToStore(t *testing.T) {
 	)
 }
 
-// TestClockedAllocs applies the allocation ceilings of the suite of Store
-// to Clocked.
-func TestClockedAllocs(t *testing.T) {
+// TestClockedConformsToStoreAllocs applies the allocation ceilings of the
+// suite of Store to Clocked.
+func TestClockedConformsToStoreAllocs(t *testing.T) {
 	RunStoreBudgets(
 		t,
 		NewClocked,
@@ -65,9 +68,9 @@ func TestClockedAllocs(t *testing.T) {
 	)
 }
 
-// BenchmarkClocked measures each callable of the suite of Store on
-// Clocked.
-func BenchmarkClocked(b *testing.B) {
+// BenchmarkClockedConformsToStore measures each callable of the suite of
+// Store on Clocked.
+func BenchmarkClockedConformsToStore(b *testing.B) {
 	opts := []StoreOption{
 		conform.Ceilings(
 			StoreChecks.Get.Callable,
@@ -85,13 +88,15 @@ func BenchmarkClocked(b *testing.B) {
 	})
 }
 
-// FuzzClockedGet fuzzes the property checks of Store.Get on Clocked.
-func FuzzClockedGet(f *testing.F) {
+// FuzzClockedConformsToStoreGet fuzzes the property checks of Store.Get on
+// Clocked.
+func FuzzClockedConformsToStoreGet(f *testing.F) {
 	FuzzStoreSuite(f, StoreChecks.Get.Callable, NewClocked)
 }
 
-// FuzzClockedPut fuzzes the property checks of Store.Put on Clocked.
-func FuzzClockedPut(f *testing.F) {
+// FuzzClockedConformsToStorePut fuzzes the property checks of Store.Put on
+// Clocked.
+func FuzzClockedConformsToStorePut(f *testing.F) {
 	FuzzStoreSuite(f, StoreChecks.Put.Callable, NewClocked)
 }
 
@@ -114,9 +119,9 @@ func TestForgetfulConformsToStore(t *testing.T) {
 	)
 }
 
-// BenchmarkForgetful measures each callable of the suite of Store on
-// Forgetful.
-func BenchmarkForgetful(b *testing.B) {
+// BenchmarkForgetfulConformsToStore measures each callable of the suite of
+// Store on Forgetful.
+func BenchmarkForgetfulConformsToStore(b *testing.B) {
 	opts := []StoreOption{
 		conform.Excuse(
 			StoreChecks.Get.KeepsTheItem(),
@@ -143,8 +148,9 @@ func BenchmarkForgetful(b *testing.B) {
 	})
 }
 
-// FuzzForgetfulGet fuzzes the property checks of Store.Get on Forgetful.
-func FuzzForgetfulGet(f *testing.F) {
+// FuzzForgetfulConformsToStoreGet fuzzes the property checks of Store.Get
+// on Forgetful.
+func FuzzForgetfulConformsToStoreGet(f *testing.F) {
 	FuzzStoreSuite(
 		f,
 		StoreChecks.Get.Callable,
@@ -160,8 +166,9 @@ func FuzzForgetfulGet(f *testing.F) {
 	)
 }
 
-// FuzzForgetfulPut fuzzes the property checks of Store.Put on Forgetful.
-func FuzzForgetfulPut(f *testing.F) {
+// FuzzForgetfulConformsToStorePut fuzzes the property checks of Store.Put
+// on Forgetful.
+func FuzzForgetfulConformsToStorePut(f *testing.F) {
 	FuzzStoreSuite(
 		f,
 		StoreChecks.Put.Callable,

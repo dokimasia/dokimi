@@ -15,9 +15,9 @@ func TestMeterConformsToMeter(t *testing.T) {
 	RunMeterSuite(t, New)
 }
 
-// TestMeterAllocs applies the allocation ceilings of the suite of Meter to
-// Meter.
-func TestMeterAllocs(t *testing.T) {
+// TestMeterConformsToMeterAllocs applies the allocation ceilings of the
+// suite of Meter to Meter.
+func TestMeterConformsToMeterAllocs(t *testing.T) {
 	RunMeterBudgets(
 		t,
 		func(*MeterHandle) *Meter { return New() },
@@ -31,8 +31,9 @@ func TestMeterAllocs(t *testing.T) {
 	)
 }
 
-// BenchmarkMeter measures each callable of the suite of Meter on Meter.
-func BenchmarkMeter(b *testing.B) {
+// BenchmarkMeterConformsToMeter measures each callable of the suite of
+// Meter on Meter.
+func BenchmarkMeterConformsToMeter(b *testing.B) {
 	opts := []MeterOption{
 		conform.Ceilings(
 			MeterChecks.Merge.Callable,
@@ -72,9 +73,10 @@ func BenchmarkMeter(b *testing.B) {
 	})
 }
 
-// BenchmarkMeterParallel measures each callable of the suite of Meter that
-// admits concurrent calls on Meter, on GOMAXPROCS goroutines at once.
-func BenchmarkMeterParallel(b *testing.B) {
+// BenchmarkMeterConformsToMeterParallel measures each callable of the
+// suite of Meter that admits concurrent calls on Meter, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkMeterConformsToMeterParallel(b *testing.B) {
 	opts := []MeterOption{
 		conform.Ceilings(
 			MeterChecks.Merge.Callable,
@@ -93,23 +95,27 @@ func BenchmarkMeterParallel(b *testing.B) {
 	})
 }
 
-// FuzzMeterCount fuzzes the property checks of Meter.Count on Meter.
-func FuzzMeterCount(f *testing.F) {
+// FuzzMeterConformsToMeterCount fuzzes the property checks of Meter.Count
+// on Meter.
+func FuzzMeterConformsToMeterCount(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Count.Callable, func(*MeterHandle) *Meter { return New() })
 }
 
-// FuzzMeterRecord fuzzes the property checks of Meter.Record on Meter.
-func FuzzMeterRecord(f *testing.F) {
+// FuzzMeterConformsToMeterRecord fuzzes the property checks of
+// Meter.Record on Meter.
+func FuzzMeterConformsToMeterRecord(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Record.Callable, func(*MeterHandle) *Meter { return New() })
 }
 
-// FuzzMeterMerge fuzzes the property checks of Meter.Merge on Meter.
-func FuzzMeterMerge(f *testing.F) {
+// FuzzMeterConformsToMeterMerge fuzzes the property checks of Meter.Merge
+// on Meter.
+func FuzzMeterConformsToMeterMerge(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Merge.Callable, func(*MeterHandle) *Meter { return New() })
 }
 
-// FuzzMeterTotal fuzzes the property checks of Meter.Total on Meter.
-func FuzzMeterTotal(f *testing.F) {
+// FuzzMeterConformsToMeterTotal fuzzes the property checks of Meter.Total
+// on Meter.
+func FuzzMeterConformsToMeterTotal(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Total.Callable, func(*MeterHandle) *Meter { return New() })
 }
 
@@ -128,9 +134,9 @@ func TestPlainConformsToMeter(t *testing.T) {
 	)
 }
 
-// TestPlainAllocs applies the allocation ceilings of the suite of Meter to
-// Plain.
-func TestPlainAllocs(t *testing.T) {
+// TestPlainConformsToMeterAllocs applies the allocation ceilings of the
+// suite of Meter to Plain.
+func TestPlainConformsToMeterAllocs(t *testing.T) {
 	RunMeterBudgets(
 		t,
 		func(*MeterHandle) *Meter { return New() },
@@ -141,8 +147,9 @@ func TestPlainAllocs(t *testing.T) {
 	)
 }
 
-// BenchmarkPlain measures each callable of the suite of Meter on Plain.
-func BenchmarkPlain(b *testing.B) {
+// BenchmarkPlainConformsToMeter measures each callable of the suite of
+// Meter on Plain.
+func BenchmarkPlainConformsToMeter(b *testing.B) {
 	opts := []MeterOption{
 		conform.Excuse(
 			MeterChecks.Count.LatencyBudget(),
@@ -179,9 +186,10 @@ func BenchmarkPlain(b *testing.B) {
 	})
 }
 
-// BenchmarkPlainParallel measures each callable of the suite of Meter that
-// admits concurrent calls on Plain, on GOMAXPROCS goroutines at once.
-func BenchmarkPlainParallel(b *testing.B) {
+// BenchmarkPlainConformsToMeterParallel measures each callable of the
+// suite of Meter that admits concurrent calls on Plain, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkPlainConformsToMeterParallel(b *testing.B) {
 	opts := []MeterOption{
 		conform.Excuse(
 			MeterChecks.Count.LatencyBudget(),
@@ -197,8 +205,9 @@ func BenchmarkPlainParallel(b *testing.B) {
 	})
 }
 
-// FuzzPlainCount fuzzes the property checks of Meter.Count on Plain.
-func FuzzPlainCount(f *testing.F) {
+// FuzzPlainConformsToMeterCount fuzzes the property checks of Meter.Count
+// on Plain.
+func FuzzPlainConformsToMeterCount(f *testing.F) {
 	FuzzMeterSuite(
 		f,
 		MeterChecks.Count.Callable,
@@ -210,8 +219,9 @@ func FuzzPlainCount(f *testing.F) {
 	)
 }
 
-// FuzzPlainRecord fuzzes the property checks of Meter.Record on Plain.
-func FuzzPlainRecord(f *testing.F) {
+// FuzzPlainConformsToMeterRecord fuzzes the property checks of
+// Meter.Record on Plain.
+func FuzzPlainConformsToMeterRecord(f *testing.F) {
 	FuzzMeterSuite(
 		f,
 		MeterChecks.Record.Callable,
@@ -223,8 +233,9 @@ func FuzzPlainRecord(f *testing.F) {
 	)
 }
 
-// FuzzPlainMerge fuzzes the property checks of Meter.Merge on Plain.
-func FuzzPlainMerge(f *testing.F) {
+// FuzzPlainConformsToMeterMerge fuzzes the property checks of Meter.Merge
+// on Plain.
+func FuzzPlainConformsToMeterMerge(f *testing.F) {
 	FuzzMeterSuite(
 		f,
 		MeterChecks.Merge.Callable,
@@ -236,8 +247,9 @@ func FuzzPlainMerge(f *testing.F) {
 	)
 }
 
-// FuzzPlainTotal fuzzes the property checks of Meter.Total on Plain.
-func FuzzPlainTotal(f *testing.F) {
+// FuzzPlainConformsToMeterTotal fuzzes the property checks of Meter.Total
+// on Plain.
+func FuzzPlainConformsToMeterTotal(f *testing.F) {
 	FuzzMeterSuite(
 		f,
 		MeterChecks.Total.Callable,
@@ -257,9 +269,9 @@ func TestWarmedConformsToMeter(t *testing.T) {
 	RunMeterSuite(t, New)
 }
 
-// TestWarmedAllocs applies the allocation ceilings of the suite of Meter
-// to Warmed.
-func TestWarmedAllocs(t *testing.T) {
+// TestWarmedConformsToMeterAllocs applies the allocation ceilings of the
+// suite of Meter to Warmed.
+func TestWarmedConformsToMeterAllocs(t *testing.T) {
 	RunMeterBudgets(
 		t,
 		func(*MeterHandle) *Meter { return New() },
@@ -272,8 +284,9 @@ func TestWarmedAllocs(t *testing.T) {
 	)
 }
 
-// BenchmarkWarmed measures each callable of the suite of Meter on Warmed.
-func BenchmarkWarmed(b *testing.B) {
+// BenchmarkWarmedConformsToMeter measures each callable of the suite of
+// Meter on Warmed.
+func BenchmarkWarmedConformsToMeter(b *testing.B) {
 	opts := []MeterOption{
 		conform.Ceilings(
 			MeterChecks.Merge.Callable,
@@ -312,10 +325,10 @@ func BenchmarkWarmed(b *testing.B) {
 	})
 }
 
-// BenchmarkWarmedParallel measures each callable of the suite of Meter
-// that admits concurrent calls on Warmed, on GOMAXPROCS goroutines at
-// once.
-func BenchmarkWarmedParallel(b *testing.B) {
+// BenchmarkWarmedConformsToMeterParallel measures each callable of the
+// suite of Meter that admits concurrent calls on Warmed, on GOMAXPROCS
+// goroutines at once.
+func BenchmarkWarmedConformsToMeterParallel(b *testing.B) {
 	opts := []MeterOption{
 		conform.Ceilings(
 			MeterChecks.Merge.Callable,
@@ -333,22 +346,26 @@ func BenchmarkWarmedParallel(b *testing.B) {
 	})
 }
 
-// FuzzWarmedCount fuzzes the property checks of Meter.Count on Warmed.
-func FuzzWarmedCount(f *testing.F) {
+// FuzzWarmedConformsToMeterCount fuzzes the property checks of Meter.Count
+// on Warmed.
+func FuzzWarmedConformsToMeterCount(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Count.Callable, func(*MeterHandle) *Meter { return New() })
 }
 
-// FuzzWarmedRecord fuzzes the property checks of Meter.Record on Warmed.
-func FuzzWarmedRecord(f *testing.F) {
+// FuzzWarmedConformsToMeterRecord fuzzes the property checks of
+// Meter.Record on Warmed.
+func FuzzWarmedConformsToMeterRecord(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Record.Callable, func(*MeterHandle) *Meter { return New() })
 }
 
-// FuzzWarmedMerge fuzzes the property checks of Meter.Merge on Warmed.
-func FuzzWarmedMerge(f *testing.F) {
+// FuzzWarmedConformsToMeterMerge fuzzes the property checks of Meter.Merge
+// on Warmed.
+func FuzzWarmedConformsToMeterMerge(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Merge.Callable, func(*MeterHandle) *Meter { return New() })
 }
 
-// FuzzWarmedTotal fuzzes the property checks of Meter.Total on Warmed.
-func FuzzWarmedTotal(f *testing.F) {
+// FuzzWarmedConformsToMeterTotal fuzzes the property checks of Meter.Total
+// on Warmed.
+func FuzzWarmedConformsToMeterTotal(f *testing.F) {
 	FuzzMeterSuite(f, MeterChecks.Total.Callable, func(*MeterHandle) *Meter { return New() })
 }

@@ -133,7 +133,6 @@ const (
 	callsWord       = "Calls"
 	overWord        = "Over"
 	embeddedWord    = "Embedded"
-	inputsWord      = "Inputs"
 	allocsWord      = "Allocs"
 	benchmarkWord   = "Benchmark"
 	declaredWord    = "Declared"
@@ -280,10 +279,8 @@ type Check struct {
 // for a subject without the param cases. The test passes it to the
 // applications whose property runs it sets: the checks and the allocation
 // ceilings. Identities are the identities of the checks of a suite, which
-// the test of the suite compares with the names of the callables. Inputs are
-// the implementations of the interfaces of a suite, whose methods the test of
-// the implementations calls from inside the package of the suite. Each is
-// empty for any other test.
+// the test of the suite compares with the names of the callables, and empty
+// for the test of a subject.
 //
 // The record of a conformance test is a struct with ten fields. Their types
 // refer, in this order, to the form of the application, as RunStoreSuite, to
@@ -323,7 +320,6 @@ type Conformance struct {
 	Targets     []Target
 	Levels      []Level
 	Identities  []Identity
-	Inputs      []Input
 	Cases       int64
 	Function    bool
 	FromHandle  bool
@@ -396,9 +392,11 @@ var suiteSchema = directive.Schema{
 
 // subjectSchema is the directive of a subject. eidos resolves the declaration
 // to a type that the file of the subject can see, and the factory to a
-// function in the scope of the subject.
+// function in the scope of the subject. A struct takes one directive for each
+// declaration whose suite it passes, so the directive repeats.
 var subjectSchema = directive.Schema{
-	Name: SubjectDirective,
+	Name:       SubjectDirective,
+	Repeatable: true,
 	Positional: []directive.ParamSpec{{
 		Key: DeclarationParam, Type: directive.TypeReference, Resolution: directive.ResolveTypeInScope,
 		Required: true, Doc: "the declaration under the directive suite whose checks the subject passes",
@@ -407,8 +405,8 @@ var subjectSchema = directive.Schema{
 		{
 			Key: NewParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
 			Required: true,
-			Doc: "the function that returns a fresh subject, without a parameter or from the handle of a check, in " +
-				"the package of the struct or in the external test package of the struct",
+			Doc: "the function that returns a fresh subject, without a parameter or from the handle of a check: " +
+				"an exported function of the package of the struct, or a function of its external test package",
 		},
 		{
 			Key: CasesParam, Type: directive.TypeInt,
@@ -490,14 +488,14 @@ type generator struct {
 // test that falsifies each check of the suite on its planted defect. Both
 // families have the word [Word], so a Go suite and its test are
 // <file>_suite.go and <file>_suite_test.go. suite also records a Conformance
-// for each struct under [SubjectDirective], and the template writes a test
-// that applies the suite of the declaration to a subject of the factory. The
-// tests of the family test their package from outside, so a Go file of the
-// family is in the external test package of its directory. The test of a
-// subject whose factory is not exported tests from inside the package of the
-// subject, because only that package can call the factory. The test of a
-// subject passes each excusal of the directive [ExcuseDirective] on the
-// struct of the subject to the application.
+// for each directive [SubjectDirective] of a struct, and the template writes
+// a test that applies the suite of the declaration to a subject of the
+// factory. The tests of the family test their package from outside, so a Go
+// file of the family is in the external test package of its directory. The
+// factory of a subject is therefore an exported function of the package of
+// the subject or a function of its external test package. The test of a
+// subject passes each excusal of the directive [ExcuseDirective] of its
+// declaration on the struct to the application.
 //
 // suite runs after stub, whose doubles the planted defects of a suite build
 // on. The annotate half stamps [weave.KeyDouble] on each interface and struct
@@ -839,7 +837,9 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 // callables. excusalsOf reports [UnknownExcusal] at each excusal whose
 // identity does not match such a check, with the identities of the checks of
 // its callable: the checks in the order of their functions, then the
-// ceilings. It returns false where it reports an excusal.
+// ceilings. It returns false where it reports an excusal. A subject of a
+// struct with several directives subject reads the excusals of the callables
+// of its own declaration, as [skips] states.
 func (g *generator) excusalsOf(
 	m *sdk.StructMatch, declared *symbol.Identity, callables []*node.Method,
 ) ([]Excusal, bool) {
@@ -861,6 +861,10 @@ func (g *generator) excusalsOf(
 	for x := range m.Directives(ExcuseDirective) {
 		identity := x.Args[0].Str
 		callable, _, _ := strings.Cut(identity, "/")
+		if skipped, refused := skips(m, callable); skipped {
+			excused = excused && !refused
+			continue
+		}
 		if at := slices.IndexFunc(checks, func(c excusable) bool { return c.identity() == identity }); at >= 0 {
 			_, field, _ := strings.Cut(callable, ".")
 			out = append(out, Excusal{Field: field, Method: checks[at].method, Reason: x.Params[ReasonParam].Str})
@@ -1113,18 +1117,6 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	}
 	test.Identities = identitiesOf(s)
 	e.File(TestTag).Record(test, record)
-	if len(s.Inputs) == 0 {
-		return
-	}
-	// Go splits the internal test file from the external one by the origin of
-	// a declaration, so the test of the implementations takes the origin of a
-	// callable that takes one.
-	inputs := &emit.Struct{
-		Origin: s.Inputs[0].Origin, Name: e.JoinName(inputsWord, record.Name), Visibility: symbol.VisibilityPackage,
-	}
-	e.File(TestTag).Internal().Record(Conformance{
-		Test: e.JoinName(inputsWord, test.Test), Declaration: s.Declaration, Inputs: s.Inputs,
-	}, inputs)
 }
 
 // identitiesOf returns the identity of each check of the suite s, in the order
@@ -1201,20 +1193,27 @@ const (
 // conformanceOf records the conformance test of a struct under the directive
 // subject, with the excusals and the budgets of the struct. It reports
 // [NoSuite] where the declaration has no directive suite, and [BadFactory]
-// where an application cannot call the factory. A factory without a parameter
-// goes to the form Run of the application, and a factory of one parameter,
-// the handle of a check, to the form RunFromHandle. The test of a factory
-// that is not exported tests from inside the package. The test of a factory of
-// the external test package of the struct is in that package, and calls the
-// factory without a qualifier. The test applies the allocation ceilings to
-// the subject where the budget of a callable states one, and has a level of
-// its benchmarks for each callable.
+// where an application cannot call the factory, such as a factory that the
+// package of the struct does not export. A factory without a parameter goes to
+// the form Run of the application, and a factory of one parameter, the handle
+// of a check, to the form RunFromHandle. The test of a factory of the external
+// test package of the struct calls the factory without a qualifier. The test
+// applies the allocation ceilings to the subject where the budget of a
+// callable states one, and has a level of its benchmarks for each callable.
+// A struct has a conformance test for each declaration of its directives
+// subject, and conformanceOf reports [RepeatedSubject] at a second directive
+// of one declaration.
 func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) error {
 	st := m.Struct
 	d := m.Directive()
 	declared := d.Args[0].Target
 	if !suited(m, &declared) {
 		m.Errorf(NoSuite, "%s has no directive suite, so %s has no conformance test", declared.Name, st.Name)
+		return nil
+	}
+	if first := firstSubject(m, &declared); first.Instance != d.Instance {
+		m.ErrorfAt(RepeatedSubject, d.Pos, "%s has a directive subject of %s at line %d already, so this one has "+
+			"no conformance test", st.Name, declared.Name, first.Pos.Line)
 		return nil
 	}
 	factory := d.Params[NewParam].Target
@@ -1236,6 +1235,15 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) er
 			factory.Name, len(view.Returns), st.Name)
 		return nil
 	}
+	// The directive subject is on a struct, so its factory is a function in
+	// the scope of the struct or in the external test package of its
+	// directory, whose test file the family writes.
+	fn, _ := found.(*node.Function)
+	if fn.Visibility != symbol.VisibilityPublic && !p.external(&st.ID, &factory) {
+		m.Errorf(BadFactory, "the factory %s is not exported, so %s has no conformance test. "+
+			"Export it, or declare it in the external test package", factory.Name, st.Name)
+		return nil
+	}
 	decl, _ := m.Reader().Lookup(declared)
 	methods := methodsOf(&b, decl)
 	excusals, excused := g.excusalsOf(m, &declared, methods)
@@ -1250,16 +1258,12 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) er
 		concurrent := mixed(m, &method.ID, shape.Concurrent) || mixed(m, &method.ID, shape.ConcurrentReaders)
 		levels = append(levels, Level{Field: method.Name, Concurrent: concurrent})
 	}
-	// The test of the suite of a struct has the origin of the struct, so the
-	// conformance test of a struct that is the subject of its own suite takes
-	// the origin of its factory.
-	origin := st.ID
-	if suited(m, &st.ID) {
-		origin = factory
-	}
+	// A struct can be the subject of several declarations, so each name of its
+	// test joins the struct and the declaration, as StoreConformsToStore.
+	conforms := e.JoinName(declared.Name, e.JoinName(conformsWord, st.Name))
 	record := &emit.Struct{
-		Origin:     origin,
-		Name:       e.JoinName(conformanceWord, st.Name),
+		Origin:     st.ID,
+		Name:       e.JoinName(conformanceWord, conforms),
 		Visibility: symbol.VisibilityPackage,
 	}
 	emitted := func(name string) *emit.TypeRef { return &emit.TypeRef{Spelling: name, Target: declared, Emitted: true} }
@@ -1279,29 +1283,63 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) er
 		record.Fields.Append(&emit.Field{Name: parallelWord, Type: emitted(names.BenchParallel)})
 	}
 	var targets []Target
-	fuzz := e.JoinName(st.Name, fuzzWord)
+	fuzz := e.JoinName(conforms, fuzzWord)
 	for _, method := range methods {
 		targets = append(targets, Target{Name: e.JoinName(method.Name, fuzz), Field: method.Name})
 	}
-	out := e.File(TestTag)
-	// The directive subject is on a struct, so its factory is a function in
-	// the scope of the struct or in the external test package of its
-	// directory, whose test file the family writes already.
-	fn, _ := found.(*node.Function)
-	if fn.Visibility != symbol.VisibilityPublic && !p.external(&st.ID, &factory) {
-		out = out.Internal()
-	}
 	test := Conformance{
-		Test:    e.JoinName(declared.Name, e.JoinName(conformsWord, e.JoinName(st.Name, testWord))),
+		Test:    e.JoinName(conforms, testWord),
 		Subject: st.Name, Declaration: declared.Name, Excusals: excusals, Ceilings: ceilings, Targets: targets,
 		Levels: levels, FromHandle: len(view.Params) == 1,
 	}
 	if cases, stated := d.Param(CasesParam); stated {
 		test.Cases = cases.Int
 	}
-	test.benchmarks(e, st.Name, allocated, slices.ContainsFunc(levels, func(l Level) bool { return l.Concurrent }))
-	out.Record(test, record)
+	test.benchmarks(e, conforms, allocated, slices.ContainsFunc(levels, func(l Level) bool { return l.Concurrent }))
+	e.File(TestTag).Record(test, record)
 	return nil
+}
+
+// firstSubject returns the first directive subject of the struct of m whose
+// declaration is declared, in source order.
+func firstSubject(m *sdk.StructMatch, declared *symbol.Identity) *directive.Directive {
+	first := m.Directive()
+	for x := range m.Directives(SubjectDirective) {
+		if x.Args[0].Target == *declared {
+			first = x
+			break
+		}
+	}
+	return first
+}
+
+// ownerOf returns the first directive subject of the struct of m whose
+// declaration has the name before the first dot of the callable, as Store of
+// Store.Get. It returns nil where no directive subject of the struct names
+// that declaration. Each directive subject reads the excusals and the budgets
+// of the callables of its own declaration.
+func ownerOf(m *sdk.StructMatch, callable string) *directive.Directive {
+	owner, _, _ := strings.Cut(callable, ".")
+	for x := range m.Directives(SubjectDirective) {
+		if x.Args[0].Target.Name == owner {
+			return x
+		}
+	}
+	return nil
+}
+
+// skips reports whether the directive subject of m leaves the excusal or the
+// budget of the callable to another directive. It leaves the callable of
+// another declaration of the struct to the directive of that declaration.
+// It leaves a callable of no declaration of the struct to the first
+// directive subject, which reports it. refused reports a callable of no
+// declaration, which no directive of the struct records a test for.
+func skips(m *sdk.StructMatch, callable string) (skipped, refused bool) {
+	gate := m.Directive()
+	if owner := ownerOf(m, callable); owner != nil {
+		return owner.Instance != gate.Instance, false
+	}
+	return gate.Instance != 0, true
 }
 
 // subjectOf returns the type of the subjects of the suite of the declaration

@@ -325,7 +325,9 @@ func (b Budget) segments() []string {
 // of the declaration, as in Store.Get, whose declaration states no budget,
 // and a subject states one budget of a callable. ceilingsOf reports
 // [BadBudget] at each budget otherwise, and at each mistake of the ceilings
-// that [budgetOf] reports. It returns false where it reports a budget.
+// that [budgetOf] reports. It returns false where it reports a budget. A
+// subject of a struct with several directives subject reads the budgets of
+// the callables of its own declaration, as [skips] states.
 func (g *generator) ceilingsOf(
 	m *sdk.StructMatch, declared *symbol.Identity, methods []*node.Method,
 ) ([]Ceiling, bool) {
@@ -343,6 +345,14 @@ func (g *generator) ceilingsOf(
 	var out []Ceiling
 	stated := true
 	for d := range m.Directives(BudgetDirective) {
+		named := ""
+		if len(d.Args) > 0 {
+			named = d.Args[0].Str
+		}
+		if skipped, refused := skips(m, named); skipped {
+			stated = stated && !refused
+			continue
+		}
 		if len(d.Args) == 0 {
 			m.ErrorfAt(BadBudget, d.Pos, "the budget of %s names no callable of %s, so it has no check%s",
 				subject, declared.Name, callablesOf(declared.Name, names))

@@ -53,9 +53,9 @@
 //	storetest.RunStoreSuite(t, memory.New, conform.With(keepsTheItem()))
 //
 // The directive subject on a struct of the consumer generates that test in
-// the external test package of the struct. Where the factory is not exported,
-// the test is inside the package of the struct. Its param new contains the
-// name of the factory of the subjects:
+// the external test package of the struct. Its param new contains the name of
+// the factory of the subjects, an exported function of the package of the
+// struct or a function of its external test package:
 //
 //	//dokimi:subject store.Store new=New
 //	type Store struct{ … }

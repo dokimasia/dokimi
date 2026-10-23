@@ -26,11 +26,13 @@ var NoSuite = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Meaning: "the declaration of the directive subject has no directive suite",
 })
 
-// BadFactory reports a subject whose factory takes more than one parameter, or
-// returns another number of results than one. An application calls a factory
-// with nothing or with the handle of a check, and takes one subject from it.
-// The finding is an Error at the subject, and suite records no conformance
-// test for it.
+// BadFactory reports a subject whose factory takes more than one parameter,
+// returns another number of results than one, or is a function of the package
+// of the subject that the package does not export. An application calls a
+// factory with nothing or with the handle of a check, and takes one subject
+// from it. The conformance test is in the external test package, so it calls
+// an exported factory or a factory of that package. The finding is an Error at
+// the subject, and suite records no conformance test for it.
 var BadFactory = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  3,
 	Meaning: "the function of the param new of the directive subject is not a factory of subjects",
@@ -85,4 +87,13 @@ var BadBudget = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 7,
 	Meaning: "the directive budget states a ceiling that no check can apply, a warm-up that no benchmark can apply, " +
 		"or a budget that no suite applies",
+})
+
+// RepeatedSubject reports a second directive subject on a struct that names
+// the declaration of an earlier one. A struct has one conformance test for
+// each declaration. The finding is an Error at the second directive, and suite
+// records the conformance test of the first one alone.
+var RepeatedSubject = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  8,
+	Meaning: "a struct has two directives subject of one declaration",
 })

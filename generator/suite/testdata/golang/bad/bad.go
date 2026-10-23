@@ -44,6 +44,15 @@ type Nothing struct{}
 // NewNothing returns nothing.
 func NewNothing() {}
 
+// Hidden is a subject whose factory its package does not export, so the
+// external test package cannot call it.
+//
+//dokimi:subject store.Store new=newHidden
+type Hidden struct{}
+
+// newHidden returns a new Hidden.
+func newHidden() *Hidden { return &Hidden{} }
+
 // Priceless is a subject that excuses a check of Get that the suite of Store
 // does not have.
 //

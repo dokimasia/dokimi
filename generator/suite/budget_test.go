@@ -212,6 +212,51 @@ func TestBudget(t *testing.T) {
 			}}, "the test applies the warm-up of the subject to the benchmarks of Merge")
 		})
 
+		t.Run("records each budget of a struct with the subject of its declaration", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, dualPackage).tests
+			reader, found := got["TestBothConformsToReader"]
+			assert.True(t, found, "suite records the conformance test of Both and Reader")
+			writer, found := got["TestBothConformsToWriter"]
+			assert.True(t, found, "suite records the conformance test of Both and Writer")
+			expect.Equal(t, reader.Data.Ceilings, []suite.Ceiling{{
+				Field: "Read", Budget: suite.Budget{Allocs: new(int64(1))},
+			}}, "the subject of Reader applies the budget of Reader.Read")
+			expect.Empty(t, writer.Data.Ceilings,
+				"the subject of Writer leaves the budget of Reader.Read to the subject of Reader")
+		})
+
+		t.Run("records the test of a subject beside a subject whose budget no check can apply", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, dualPackage).tests
+			_, reader := got["TestSpentConformsToReader"]
+			expect.False(t, reader, "the budget of Reader.Read states a count of allocations below 0")
+			writer, found := got["TestSpentConformsToWriter"]
+			assert.True(t, found, "suite records the conformance test of Spent and Writer")
+			expect.Equal(t, writer.Data.Ceilings, []suite.Ceiling{{
+				Field: "Flush", Budget: suite.Budget{Allocs: new(int64(2))},
+			}}, "the subject of Writer applies the budget of Writer.Flush")
+		})
+
+		t.Run("records no test of a struct whose budget names no declaration of the struct", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, dualPackage)
+			_, res := phases(t, f, p)
+			subject := f.Find(t, symbol.KindStruct, "", "Overspent")
+			var got []string
+			for d := range res.Sink.All() {
+				if d.Code == suite.BadBudget && d.Pos.Line == subject.Position().Line-1 {
+					got = append(got, d.Msg)
+				}
+			}
+			assert.Length(t, got, 1, "the first directive subject reports the budget of Lister.List once")
+			gentest.Unrecorded(t, res, subject)
+		})
+
 		t.Run("records no ceiling of a subject without a budget", func(t *testing.T) {
 			t.Parallel()
 

@@ -76,37 +76,44 @@ const (
 
 // overrides returns each enumeration and each struct with a starting value
 // that the roots of the calls take at some depth, in the order in which a
-// walk of the roots meets them. The walk enters the elements and the type
-// arguments of each type, the exported fields and the embedded types of a
-// struct, and the target of an alias. It leaves the types of the standard
+// walk of the roots meets them, and whether the roots take a value of the
+// dynamic type, Go's any, at some depth. The walk enters the elements and the
+// type arguments of each type, the exported fields and the embedded types of
+// a struct, and the target of an alias. It leaves the types of the standard
 // library to the shape reader of the property engine, because the value sets
 // of the standard library include sets of flags, such as fs.FileMode, and
 // units, such as time.Duration.
-func (k *caller) overrides() ([]Enumeration, []Start) {
+func (k *caller) overrides() ([]Enumeration, []Start, bool) {
 	w := walk{k: k, seen: map[symbol.Identity]bool{}, names: map[string]bool{}}
 	for _, root := range k.roots {
 		w.visit(root)
 	}
-	return w.enums, w.starts
+	return w.enums, w.starts, w.dynamic
 }
 
 // walk is a walk of the types of the roots of the calls of a suite. seen
 // contains each declaration that the walk visited, and names the names of
 // the generators of the starting values. enums and starts are the
-// enumerations and the structs with a starting value that the walk met.
+// enumerations and the structs with a starting value that the walk met, and
+// dynamic reports that it met the dynamic type.
 type walk struct {
-	k      *caller
-	seen   map[symbol.Identity]bool
-	names  map[string]bool
-	enums  []Enumeration
-	starts []Start
+	k       *caller
+	seen    map[symbol.Identity]bool
+	names   map[string]bool
+	enums   []Enumeration
+	starts  []Start
+	dynamic bool
 }
 
 // visit visits the type ref and each type that it contains. A structural form
 // has no target, and [golang.Standard] reports the empty package of such a
 // target as a package of the standard library, so the walk declares nothing
-// for it.
+// for it. The dynamic type contains no type.
 func (w *walk) visit(ref *node.TypeRef) {
+	if w.k.b.TypeOf(ref).Form == symbol.FormDynamic {
+		w.dynamic = true
+		return
+	}
 	for _, elem := range ref.Elems {
 		w.visit(elem)
 	}

@@ -18,10 +18,8 @@ import (
 	"go.dokimi.dev/eidos/sdk/plugintest"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
-	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
-	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // The trees and the packages that this spec alone reads, and the registrant
@@ -33,6 +31,12 @@ const (
 	badPackage      = "example.com/shop/bad"
 	twinPackage     = "example.com/shop/twin"
 	reservedPackage = "example.com/shop/reserved"
+	kitPackage      = "example.com/shop/kit"
+	kitTestPackage  = "example.com/shop/kit_test"
+	kittestPackage  = "example.com/shop/kit/kittest_test"
+	wrapPackage     = "example.com/shop/wrap"
+	toolPackage     = "example.com/shop/lib/tool"
+	deepPackage     = "example.com/shop/lib/internal/deep"
 	shopPackage     = "shop"
 	otherRegistrant = "other"
 )
@@ -90,52 +94,15 @@ func TestSuite(t *testing.T) {
 			}
 		}
 
-		t.Run("runs after the generator of the doubles", func(t *testing.T) {
+		t.Run("declares no capability, so it runs in any order with the generator of the doubles", func(t *testing.T) {
 			t.Parallel()
 
 			ordered, orders := suite.New().(plugin.CapabilityProvider)
 			assert.True(t, orders, "suite declares its capabilities")
-			expect.Equal(t, ordered.Requires(), []plugin.Capability{stub.Capability},
-				"suite requires the capability of stub")
+			expect.Empty(t, ordered.Requires(), "suite requires no capability")
+			expect.Empty(t, ordered.Provides(plugin.RoleAnnotator), "the annotate half provides no capability")
+			expect.Empty(t, ordered.Provides(plugin.RoleGenerator), "the generate half provides no capability")
 		})
-
-		t.Run("provides its capability in the annotator role alone", func(t *testing.T) {
-			t.Parallel()
-
-			ordered, orders := suite.New().(plugin.CapabilityProvider)
-			assert.True(t, orders, "suite declares its capabilities")
-			expect.Equal(t, ordered.Provides(plugin.RoleAnnotator), []plugin.Capability{weave.Suite},
-				"the annotate half provides the capability after which stub runs")
-			expect.Empty(t, ordered.Provides(plugin.RoleGenerator),
-				"the generate half provides no capability, so it runs after stub")
-		})
-
-		doubles := []struct {
-			name     string
-			giveKind symbol.Kind
-			give     string
-			want     bool
-		}{
-			{
-				name: "stamps the fact of a double on an interface", giveKind: symbol.KindInterface, give: "Store",
-				want: true,
-			},
-			{name: "stamps the fact of a double on a struct", giveKind: symbol.KindStruct, give: "Catalog", want: true},
-			{name: "stamps no fact of a double on a function", giveKind: symbol.KindFunction, give: "Slug"},
-		}
-		for _, tt := range doubles {
-			t.Run(tt.name, func(t *testing.T) {
-				t.Parallel()
-
-				p := suite.New()
-				f := fixture(t, goTree, p, storePackage, catalogPackage, slugPackage)
-				phases(t, f, p)
-				k, registered := meta.Lookup[bool](f.Keys, weave.KeyDouble)
-				assert.True(t, registered, "suite registers the key of the double")
-				got, _ := meta.Get(f.Facts, f.Find(t, tt.giveKind, "", tt.give).Identity(), k)
-				expect.Equal(t, got, tt.want, "the fact asks stub for the double of the declaration")
-			})
-		}
 
 		t.Run("declares that the directive excuse requires the directive subject", func(t *testing.T) {
 			t.Parallel()
@@ -658,6 +625,36 @@ func TestSuite(t *testing.T) {
 					wantMsg:  "the type parameters of Ranked have no witnesses, so Ranked has no suite",
 				},
 				{
+					name: "reports Unimportable at a struct with a callable that refers to an internal package " +
+						"of another tree",
+					givePkgs: []string{wrapPackage, toolPackage, deepPackage}, giveKind: symbol.KindStruct,
+					give: "Wrapped", wantCode: suite.Unimportable,
+					wantMsg: "the callable Wrapped.Level refers to deep.Level, which the file of the suite in the " +
+						"package example.com/shop/wrap cannot import, so Wrapped has no suite: golang: " +
+						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
+						"example.com/shop/wrap is outside it",
+				},
+				{
+					name: "reports Unimportable at a struct with a parameter that refers to an internal package " +
+						"of another tree",
+					givePkgs: []string{wrapPackage, toolPackage, deepPackage}, giveKind: symbol.KindStruct,
+					give: "Adjusted", wantCode: suite.Unimportable,
+					wantMsg: "the callable Adjusted.Set refers to deep.Level, which the file of the suite in the " +
+						"package example.com/shop/wrap cannot import, so Adjusted has no suite: golang: " +
+						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
+						"example.com/shop/wrap is outside it",
+				},
+				{
+					name: "reports Unimportable at an interface with a callable that refers to an internal package " +
+						"of another tree",
+					givePkgs: []string{wrapPackage, toolPackage, deepPackage}, giveKind: symbol.KindInterface,
+					give: "Measured", wantCode: suite.Unimportable,
+					wantMsg: "the callable Measured.Level refers to deep.Level, which the file of the suite in the " +
+						"package example.com/shop/wrap cannot import, so Measured has no suite: golang: " +
+						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
+						"example.com/shop/wrap is outside it",
+				},
+				{
 					name: "reports Uninstantiable at a generic struct", givePkgs: []string{boxPackage},
 					giveKind: symbol.KindStruct, give: "Box", wantCode: suite.Uninstantiable,
 					wantMsg: "Box is a generic struct, so it has no suite",
@@ -689,8 +686,18 @@ func TestSuite(t *testing.T) {
 					name:     "reports BadFactory at a subject whose factory its package does not export",
 					givePkgs: []string{storePackage, badPackage}, giveKind: symbol.KindStruct, give: "Hidden",
 					wantCode: suite.BadFactory,
-					wantMsg: "the factory newHidden is not exported, so Hidden has no conformance test. Export it, " +
-						"or declare it in the external test package",
+					wantMsg: "the conformance test of Hidden in the package example.com/shop/bad_test cannot call " +
+						"the factory newHidden, so Hidden has no conformance test: golang: newHidden is not exported " +
+						"from example.com/shop/bad, and the code is in example.com/shop/bad_test",
+				},
+				{
+					name: "reports BadFactory at a subject under out whose factory is in the external test package " +
+						"of its own directory",
+					givePkgs: []string{kitPackage, kitTestPackage, kittestPackage}, giveKind: symbol.KindStruct,
+					give: "Crate", wantCode: suite.BadFactory,
+					wantMsg: "the conformance test of Crate in the package example.com/shop/kit/kittest_test cannot " +
+						"call the factory newCrate, so Crate has no conformance test: golang: example.com/shop/kit_test " +
+						"is an external test package, and no other package imports it",
 				},
 				{
 					name:     "reports BadFactory at a subject whose factory returns no result",
@@ -714,6 +721,47 @@ func TestSuite(t *testing.T) {
 				})
 			}
 		}
+
+		t.Run("records the conformance of a subject under out with a factory of the external test package of its kit",
+			func(t *testing.T) {
+				t.Parallel()
+
+				p := suite.New()
+				f := fixture(t, goTree, p, kitPackage, kitTestPackage, kittestPackage)
+				test, found := recorded(t, f, p).tests["TestBoxConformsToBox"]
+				assert.True(t, found, "suite records the conformance test of Box")
+				factory := test.Decl.Fields.Items()[1].Type
+				expect.Equal(t, factory.Target.Package, kittestPackage,
+					"the record refers to the factory of the external test package of the kit")
+			})
+
+		t.Run("records the suite of a struct beside a declaration of its file that it reports", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites
+			_, found := got["Plain"]
+			expect.True(t, found, "suite records the suite of Plain in the file of Wrapped and Measured")
+		})
+
+		t.Run("leaves the import of a callable to the layout where the plan previews no package", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			s := specOf(goTree, p, wrapPackage, toolPackage, deepPackage)
+			s.Types = nil
+			_, found := recorded(t, gentest.New(t, s), p).suites["Wrapped"]
+			expect.True(t, found, "suite records the suite of Wrapped, and the layout refuses its interface")
+		})
+
+		t.Run("leaves the check of a factory to the layout where the plan previews no package", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			s := specOf(goTree, p, storePackage, badPackage)
+			s.Types = nil
+			_, found := recorded(t, gentest.New(t, s), p).tests["TestHiddenConformsToStore"]
+			expect.True(t, found, "suite records the conformance test of Hidden, and the layout refuses its factory")
+		})
 
 		t.Run("records a fuzz target of each callable of a subject", func(t *testing.T) {
 			t.Parallel()

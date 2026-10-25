@@ -27,12 +27,13 @@ var NoSuite = diag.MustRegister(CodePrefix, diag.CodeSpec{
 })
 
 // BadFactory reports a subject whose factory takes more than one parameter,
-// returns another number of results than one, or is a function of the package
-// of the subject that the package does not export. An application calls a
-// factory with nothing or with the handle of a check, and takes one subject
-// from it. The conformance test is in the external test package, so it calls
-// an exported factory or a factory of that package. The finding is an Error at
-// the subject, and suite records no conformance test for it.
+// returns another number of results than one, or is a function that the
+// conformance test cannot call. An application calls a factory with nothing
+// or with the handle of a check, and takes one subject from it. The
+// conformance test is in the external test package of the directory of the
+// subject, or of the directory of its directive out. So it calls an exported
+// factory or a factory of its own package. The finding is an Error at the
+// subject, and suite records no conformance test for it.
 var BadFactory = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  3,
 	Meaning: "the function of the param new of the directive subject is not a factory of subjects",
@@ -96,4 +97,16 @@ var BadBudget = diag.MustRegister(CodePrefix, diag.CodeSpec{
 var RepeatedSubject = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  8,
 	Meaning: "a struct has two directives subject of one declaration",
+})
+
+// Unimportable reports an interface or a struct under the directive suite with
+// a callable whose signature refers to a declaration that the file of its
+// suite cannot import, such as a type of an internal package of another tree
+// that the struct promotes from an embedded type. The suite spells the
+// signature of each callable, so the finding is an Error at the declaration,
+// and suite records nothing for it.
+var Unimportable = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 9,
+	Meaning: "a callable of a declaration under the directive suite refers to a declaration that the file of its " +
+		"suite cannot import",
 })

@@ -135,13 +135,24 @@ var _ = conform.CompatV1
 {{- end}}
 		},
 {{- end}}
-{{- if or $c.Using $c.Starts}}
+{{- if or $c.Using $c.Starts $c.Dynamic}}
 		Using: []prop.Option{
 {{- range $c.Using}}
 			prop.Using(prop.SampledFrom({{range $i, $m := .Members}}{{if $i}}, {{end}}{{value $m}}{{end}})),
 {{- end}}
 {{- range $c.Starts}}
 			prop.Using({{suiteCamel .Name}}),
+{{- end}}
+{{- if $c.Dynamic}}
+			prop.Using(prop.Composite(func(c *prop.Case) any {
+				switch c.Draw(prop.Integer(0, 2), "any") {
+				case 0:
+					return c.Draw(prop.String(), "any.string")
+				case 1:
+					return c.Draw(prop.Of[int](), "any.int")
+				}
+				return c.Draw(prop.Boolean(), "any.bool")
+			})),
 {{- end}}
 		},
 {{- end}}

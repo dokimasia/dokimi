@@ -20,9 +20,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
-	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/internal/lang"
-	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // ID is the name of the plugin.
@@ -158,8 +156,10 @@ const (
 // callables. Using are the enumerations that the calls take at some depth,
 // whose members the property runs and the benchmarks of the suite draw, and
 // Starts are the generators of the structs with a starting value that the
-// calls take. Inputs are the implementations of the interfaces that the
-// callables take.
+// calls take. Dynamic reports that the calls take a value of the dynamic type,
+// Go's any, at some depth, which the property runs and the benchmarks draw
+// from a string, an int and a bool. Inputs are the implementations of the
+// interfaces that the callables take.
 type Suite struct {
 	Subject     *emit.TypeRef
 	Methods     *emit.Interface
@@ -172,6 +172,7 @@ type Suite struct {
 	Using       []Enumeration
 	Starts      []Start
 	Inputs      []Input
+	Dynamic     bool
 }
 
 // Names are the names of the declarations of the suite of a declaration such
@@ -378,13 +379,9 @@ type Excusal struct {
 }
 
 // part is the part of suite for one language. It declares the target with its
-// template tree and its helpers, and reports each fact of the language that
-// the facts of eidos leave to it.
+// template tree and its helpers.
 type part interface {
 	lang.Part
-	// external reports whether the function factory is in the external test
-	// package of the package of the declaration subject.
-	external(subject, factory *symbol.Identity) bool
 }
 
 // parts are the parts of suite, one for each language that it serves.
@@ -413,7 +410,7 @@ var subjectSchema = directive.Schema{
 			Key: NewParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
 			Required: true,
 			Doc: "the function that returns a fresh subject, without a parameter or from the handle of a check: " +
-				"an exported function of the package of the struct, or a function of its external test package",
+				"an exported function of the package of the struct, or a function of the package of its test",
 		},
 		{
 			Key: CasesParam, Type: directive.TypeInt,
@@ -488,7 +485,6 @@ type generator struct {
 	latency     meta.Key[int64]
 	mean        meta.Key[int64]
 	warmup      meta.Key[int64]
-	double      meta.Key[bool]
 }
 
 // New returns suite, a plugin with an annotate half and a generate half. The
@@ -507,20 +503,19 @@ type generator struct {
 // for each directive [SubjectDirective] of a struct, and the template writes
 // a test that applies the suite of the declaration to a subject of the
 // factory. The tests of the family test their package from outside, so a Go
-// file of the family is in the external test package of its directory. The
-// factory of a subject is therefore an exported function of the package of
-// the subject or a function of its external test package. The test of a
-// subject passes each excusal of the directive [ExcuseDirective] of its
-// declaration on the struct to the application.
+// file of the family is in the external test package of its directory, or of
+// the directory of its directive out. The factory of a subject is therefore an
+// exported function of the package of the subject or a function of the package
+// of its test. The test of a subject passes each excusal of the directive
+// [ExcuseDirective] of its declaration on the struct to the application.
 //
-// suite runs after stub, whose doubles the planted defects of a suite build
-// on. The annotate half stamps [weave.KeyDouble] on each interface and struct
-// under [SuiteDirective], so stub writes its double without the directive
-// stub. The annotate half provides [weave.Suite], after which stub runs. It serves Go, the language of its part, and leaves a declaration of
+// suite serves Go, the language of its part, and leaves a declaration of
 // another language alone. It reports [Uninstantiable] at a declaration whose
-// type parameters its suite cannot instantiate, [NoSuite] at a subject whose
-// declaration has no directive suite, and [BadFactory] at a subject whose
-// factory an application cannot call. It reports [UnknownCallable] and
+// type parameters its suite cannot instantiate, [Unimportable] at a
+// declaration with a callable whose signature the file of its suite cannot
+// spell, [NoSuite] at a subject whose declaration has no directive suite, and
+// [BadFactory] at a subject whose factory an application cannot call. It
+// reports [UnknownCallable] and
 // [BadCheck] at the directive of a check that it cannot bind, and
 // [UnknownExcusal] at an excusal of a check that the suite does not have.
 // suite records and stamps nothing for a declaration that it reports. Each
@@ -529,20 +524,12 @@ func New() sdk.Dual {
 	g := &generator{}
 	b := sdk.NewPlugin(ID).
 		Version(Version).
-		ProvidesIn(plugin.RoleAnnotator, weave.Suite).
-		Requires(stub.Capability).
 		Keys(g.register).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: suiteTemplate}).
 		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, External: true, Word: Word, Template: conformTemplate})
 	lang.Register(b, parts)
 	return b.Handle(
 		sdk.Directive(suiteSchema,
-			sdk.OnInterface(lang.Served(parts, func(_ *sdk.InterfaceMatch, _ part, st *sdk.Stamper) error {
-				return g.askDouble(st)
-			})),
-			sdk.OnStruct(lang.Served(parts, func(_ *sdk.StructMatch, _ part, st *sdk.Stamper) error {
-				return g.askDouble(st)
-			})),
 			sdk.OnInterface(lang.Served(parts, g.suiteOfInterface)),
 			sdk.OnStruct(lang.Served(parts, g.suiteOfStruct)),
 			sdk.OnFunction(lang.Served(parts, g.suiteOfFunction))),
@@ -571,7 +558,7 @@ func (g *generator) register(r *meta.Registry) error {
 	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
 	}
-	var errs [14]error
+	var errs [13]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
@@ -595,20 +582,9 @@ func (g *generator) register(r *meta.Registry) error {
 		"contains the highest mean latency of one call of the callable, in nanoseconds"))
 	g.warmup, errs[11] = meta.Register[int64](r, budgetKey(KeyWarmup,
 		"contains the number of iterations that each benchmark of the callable runs before it measures"))
-	g.double, errs[12] = meta.Register[bool](r, meta.KeySpec{
-		Name: weave.KeyDouble, Kinds: []symbol.Kind{symbol.KindInterface, symbol.KindStruct},
-		Doc: "asks the stub generator for the double of a declaration under the directive suite",
-	})
-	g.counted, errs[13] = meta.Register[bool](r, spec(KeyCounted,
+	g.counted, errs[12] = meta.Register[bool](r, spec(KeyCounted,
 		"reports that the check counts the allocations of the whole process"))
 	return errors.Join(errs[:]...)
-}
-
-// askDouble stamps the fact [weave.KeyDouble] on the interface or the struct
-// of st, so the stub generator writes its double.
-func (g *generator) askDouble(st *sdk.Stamper) error {
-	sdk.Stamp(st, g.double, true)
-	return nil
 }
 
 // concludeCheck stamps the facts of a check on a function under the directive
@@ -950,8 +926,12 @@ func (g *generator) suiteOfInterface(m *sdk.InterfaceMatch, _ part, e *sdk.Emitt
 			subject.Args = append(subject.Args, rules.EmitRef(w))
 		}
 	}
+	methods := methodsOf(&b, i)
+	if unimportable(m, &b, e.File(), i.Name, methods) {
+		return nil
+	}
 	s := Suite{Subject: subject, Declaration: i.Name, Names: namesOf(e, i.Name)}
-	g.callsOf(&k, &s, methodsOf(&b, i))
+	g.callsOf(&k, &s, methods)
 	write(e, &i.ID, &s)
 	return nil
 }
@@ -965,13 +945,16 @@ func (g *generator) suiteOfStruct(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 		return nil
 	}
 	b := m.Rules()
+	callables := methodsOf(&b, st)
+	if unimportable(m, &b, e.File(), st.Name, callables) {
+		return nil
+	}
 	names := namesOf(e, st.Name)
 	names.Methods = e.JoinName(methodsWord, st.Name)
 	methods := &emit.Interface{Origin: st.ID, Name: names.Methods, Visibility: symbol.VisibilityPublic}
 	s := Suite{
 		Subject: &emit.TypeRef{Spelling: names.Methods}, Methods: methods, Declaration: st.Name, Names: names,
 	}
-	callables := methodsOf(&b, st)
 	for _, method := range callables {
 		methods.Methods.Append(sdk.Mirror(names.Methods, method))
 	}
@@ -991,7 +974,7 @@ func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
 		s.Callables = append(s.Callables, c)
 		s.Calls = append(s.Calls, k.call(&c, method, &method.ID))
 	}
-	s.Using, s.Starts = k.overrides()
+	s.Using, s.Starts, s.Dynamic = k.overrides()
 	s.Inputs = k.inputs
 	s.Checks = g.checksOf(k.m, &k.origin, s.Callables)
 	if len(methods) > 0 {
@@ -1020,7 +1003,7 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 		Names: names, Callables: callables, Checks: g.checksOf(m, &f.ID, callables),
 		Calls: []Call{k.call(&callables[0], f, &f.ID)},
 	}
-	s.Using, s.Starts = k.overrides()
+	s.Using, s.Starts, s.Dynamic = k.overrides()
 	s.Inputs = k.inputs
 	write(e, &f.ID, &s)
 	return nil
@@ -1217,17 +1200,20 @@ const (
 // conformanceOf records the conformance test of a struct under the directive
 // subject, with the excusals and the budgets of the struct. It reports
 // [NoSuite] where the declaration has no directive suite, and [BadFactory]
-// where an application cannot call the factory, such as a factory that the
-// package of the struct does not export. A factory without a parameter goes to
-// the form Run of the application, and a factory of one parameter, the handle
-// of a check, to the form RunFromHandle. The test of a factory of the external
-// test package of the struct calls the factory without a qualifier. The test
-// applies the allocation ceilings to the subject where the budget of a
-// callable states one, and has a level of its benchmarks for each callable.
-// A struct has a conformance test for each declaration of its directives
-// subject, and conformanceOf reports [RepeatedSubject] at a second directive
-// of one declaration.
-func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) error {
+// where an application cannot call the factory. The test calls the factory
+// from the package of its routed file: the external test package of the
+// directory of the struct, or of the directory of its directive out. A factory
+// that the package of the struct does not export, or a function of another
+// external test package, is out of its reach. A factory without a parameter
+// goes to the form Run of the application, and a factory of one parameter,
+// the handle of a check, to the form RunFromHandle. The test of a factory of
+// its own package calls the factory without a qualifier. The test applies the
+// allocation ceilings to the subject where the budget of a callable states
+// one, and has a level of its benchmarks for each callable. A struct has a
+// conformance test for each declaration of its directives subject, and
+// conformanceOf reports [RepeatedSubject] at a second directive of one
+// declaration.
+func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) error {
 	st := m.Struct
 	d := m.Directive()
 	declared := d.Args[0].Target
@@ -1259,14 +1245,14 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) er
 			factory.Name, len(view.Returns), st.Name)
 		return nil
 	}
-	// The directive subject is on a struct, so its factory is a function in
-	// the scope of the struct or in the external test package of its
-	// directory, whose test file the family writes.
-	fn, _ := found.(*node.Function)
-	if fn.Visibility != symbol.VisibilityPublic && !p.external(&st.ID, &factory) {
-		m.Errorf(BadFactory, "the factory %s is not exported, so %s has no conformance test. "+
-			"Export it, or declare it in the external test package", factory.Name, st.Name)
-		return nil
+	// The test calls the factory from the package of its routed file. Where
+	// the plan previews no package, the layout checks the reference itself.
+	if pkg, placed := e.File(TestTag).Package(); placed == nil {
+		if err := b.Importable(pkg, &node.TypeRef{Spelling: factory.Name, Target: factory}); err != nil {
+			m.Errorf(BadFactory, "the conformance test of %s in the package %s cannot call the factory %s, so %s "+
+				"has no conformance test: %v", st.Name, pkg.Package, factory.Name, st.Name, err)
+			return nil
+		}
 	}
 	decl, _ := m.Reader().Lookup(declared)
 	methods := methodsOf(&b, decl)
@@ -1420,6 +1406,39 @@ func methodsOf(b *rules.Bound, decl symbol.Symbol) []*node.Method {
 		}
 	}
 	return out
+}
+
+// unimportable reports [Unimportable] at the declaration named decl where a
+// parameter or a result of a callable of methods refers to a declaration that
+// the code of the package of the file out cannot refer to, and returns true.
+// It checks the package that the plan previews for out. Where the plan
+// previews no package, the layout checks each reference itself, and
+// unimportable returns false. A function is its own callable, and its package
+// can refer to each type of its signature, so the suite of a function needs no
+// check.
+func unimportable(m sdk.SubjectMatch, b *rules.Bound, out *sdk.Out, decl string, methods []*node.Method) bool {
+	pkg, placed := out.Package()
+	if placed != nil {
+		return false
+	}
+	for _, method := range methods {
+		refs := make([]*node.TypeRef, 0, len(method.Params)+len(method.Returns))
+		for _, p := range method.Params {
+			refs = append(refs, p.Type)
+		}
+		for _, r := range method.Returns {
+			refs = append(refs, r.Type)
+		}
+		for _, ref := range refs {
+			if err := b.Importable(pkg, ref); err != nil {
+				m.Errorf(Unimportable, "the callable %s.%s refers to %s, which the file of the suite in the "+
+					"package %s cannot import, so %s has no suite: %v",
+					decl, method.Name, ref.Spelling, pkg.Package, decl, err)
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // namesOf returns the names of the declarations of the suite of the

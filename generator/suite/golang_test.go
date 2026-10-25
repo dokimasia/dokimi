@@ -31,7 +31,8 @@ func TestGolang(t *testing.T) {
 
 		p := suite.New()
 		f := fixture(t, goTree, p, storePackage, genericPackage, catalogPackage, slugPackage, memoryPackage,
-			cachedPackage, sessionPackage, meterPackage, meteredPackage, callsPackage, inputsPackage, ledgerPackage)
+			cachedPackage, sessionPackage, meterPackage, meteredPackage, callsPackage, inputsPackage, ledgerPackage,
+			loosePackage)
 		_, res := phases(t, f, p)
 		golden.MatchTree(t, "golang", gentest.Rendered(t, res, p, gobackend.New()), golden.ShouldUpdate())
 	})

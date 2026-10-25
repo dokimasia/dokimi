@@ -11,6 +11,7 @@ import (
 	"go.dokimi.dev/assert"
 	golang "go.dokimi.dev/eidos/lang/go"
 	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
+	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	"go.dokimi.dev/eidos/plugin/shape/catalog"
 	"go.dokimi.dev/eidos/sdk/authored"
 	"go.dokimi.dev/eidos/sdk/diag"
@@ -47,6 +48,7 @@ const (
 	badBudgetPackage   = "example.com/shop/badbudget"
 	dualPackage        = "example.com/shop/dual"
 	ledgerPackage      = "example.com/shop/ledger"
+	loosePackage       = "example.com/shop/loose"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )
@@ -63,24 +65,32 @@ type generated struct {
 	findings []diag.Diag
 }
 
-// fixture returns a fixture over the packages pkgs of the tree dir with the
-// plugin suite p and the target golang. The annotators of the composition
-// stamp the fixture: the authored samples and witnesses, the facts of Go, the
-// declared defaults, the names of the builders, the faults of the methods and
-// the classifications of the shape catalog.
+// fixture returns a fixture over the packages pkgs of the tree dir, as
+// [specOf] describes it.
 func fixture(tb assert.TB, dir string, p plugin.Plugin, pkgs ...string) *gentest.Fixture {
 	tb.Helper()
 
+	return gentest.New(tb, specOf(dir, p, pkgs...))
+}
+
+// specOf returns the spec of a fixture over the packages pkgs of the tree dir
+// with the plugin suite p, the target golang and the Go backend as its spoke,
+// so a phase call previews the package of each routed file. The annotators of
+// the composition stamp the fixture: the authored samples and witnesses, the
+// facts of Go, the declared defaults, the names of the builders, the faults of
+// the methods and the classifications of the shape catalog.
+func specOf(dir string, p plugin.Plugin, pkgs ...string) *gentest.Spec {
 	annotators := append([]plugin.Annotator{
 		authored.Sample(), authored.Witness(), goannotate.New(), defaults.New(), builder.New(), fault.New(),
 	}, catalog.Annotators()...)
-	return gentest.New(tb, &gentest.Spec{
+	return &gentest.Spec{
 		Dir:        dir,
 		Packages:   pkgs,
 		Target:     golang.Target,
+		Types:      gobackend.New(),
 		Plugins:    []plugin.Plugin{p},
 		Annotators: annotators,
-	})
+	}
 }
 
 // generate runs a new suite over the packages pkgs of the tree dir, and

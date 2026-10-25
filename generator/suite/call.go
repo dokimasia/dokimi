@@ -189,7 +189,8 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 			param.Name = naming.Unique(taken, base+valuesWord)
 			taken[param.Name] = true
 			k.roots = append(k.roots, under.Elems[0])
-		case ref.Form == symbol.FormOptional && !nilSafe:
+		case ref.Form == symbol.FormOptional && !nilSafe && !pointerShapes[ref.Elems[0].Target.Package+"."+
+			ref.Elems[0].Target.Name]:
 			param.Type, param.Address = rules.EmitRef(ref.Elems[0]), true
 			k.roots = append(k.roots, ref.Elems[0])
 		case implemented:
@@ -205,6 +206,13 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 // receiveSpelling opens the spelling of a channel that the callable receives
 // from, and the spelling of no other type.
 const receiveSpelling = "<-chan"
+
+// pointerShapes are the types, by their package and name, whose pointer the
+// shape reader of the property engine reads as a value of its own shape: a
+// *big.Int as an integer, a *big.Rat as a decimal and a *time.Location as a
+// zone. The reader reads no value of such a type, so a pointer to one of them
+// takes the drawn pointer itself in place of the address of a drawn value.
+var pointerShapes = map[string]bool{"math/big.Int": true, "math/big.Rat": true, "time.Location": true}
 
 // packages adds to taken the name of the package of each named type of ref:
 // the qualifier of its spelling, such as context for context.Context, and

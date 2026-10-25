@@ -48,6 +48,15 @@ func TestCodes(t *testing.T) {
 			WantMeaning: "the directive budget states a ceiling that no check can apply, a warm-up that no benchmark " +
 				"can apply, or a budget that no suite applies",
 		},
+		{
+			Name: "RepeatedSubject", Give: suite.RepeatedSubject, WantCode: "DOKIMISUITE-0008",
+			WantMeaning: "a struct has two directives subject of one declaration",
+		},
+		{
+			Name: "Unimportable", Give: suite.Unimportable, WantCode: "DOKIMISUITE-0009",
+			WantMeaning: "a callable of a declaration under the directive suite refers to a declaration that the " +
+				"file of its suite cannot import",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

@@ -80,6 +80,33 @@ func TestOverride(t *testing.T) {
 				"enumeration, and a field that is not exported leads to none")
 		})
 
+		dynamic := []struct {
+			name     string
+			giveDecl string
+			want     bool
+		}{
+			{
+				name:     "records the generator of any for a variadic parameter of any type",
+				giveDecl: "Printer",
+				want:     true,
+			},
+			{
+				name:     "records the generator of any for a parameter of the empty interface",
+				giveDecl: "Recorder",
+				want:     true,
+			},
+			{name: "records the generator of any for a field of any type of an input", giveDecl: "Journal", want: true},
+			{name: "records no generator of any for calls that take no value of any type", giveDecl: "Plain"},
+		}
+		for _, tt := range dynamic {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, goTree, loosePackage).suites[tt.giveDecl]
+				expect.Equal(t, got.Dynamic, tt.want, "the suite draws a value of any type where its calls take one")
+			})
+		}
+
 		t.Run("records the starting value of each struct on a path of the inputs", func(t *testing.T) {
 			t.Parallel()
 

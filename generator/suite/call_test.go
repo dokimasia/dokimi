@@ -190,6 +190,24 @@ func TestCall(t *testing.T) {
 				wantReturns: "nil",
 			},
 			{
+				name: "draws a pointer to a zone as the pointer that the property engine reads", givePkg: loosePackage,
+				giveDecl: "Zoned", give: "In",
+				wantParams:  []param{{name: "loc", label: "loc", spelling: "*time.Location"}},
+				wantReturns: "nil",
+			},
+			{
+				name:    "draws a pointer to a big integer as the pointer that the property engine reads",
+				givePkg: loosePackage, giveDecl: "Zoned", give: "Scale",
+				wantParams:  []param{{name: "n", label: "n", spelling: "*big.Int"}},
+				wantReturns: "nil",
+			},
+			{
+				name:    "draws a pointer to a big rational as the pointer that the property engine reads",
+				givePkg: loosePackage, giveDecl: "Zoned", give: "Ratio",
+				wantParams:  []param{{name: "r", label: "r", spelling: "*big.Rat"}},
+				wantReturns: "nil",
+			},
+			{
 				name: "draws the inputs of a function", givePkg: meterPackage, giveDecl: "Weigh", give: "",
 				wantParams: []param{
 					{name: "s", label: "s", spelling: "Sample"},

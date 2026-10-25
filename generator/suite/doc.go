@@ -64,9 +64,10 @@
 //	storetest.RunStoreSuite(t, memory.New, conform.With(keepsTheItem()))
 //
 // The directive subject on a struct of the consumer generates that test in
-// the external test package of the struct. Its param new contains the name of
-// the factory of the subjects, an exported function of the package of the
-// struct or a function of its external test package:
+// the external test package of the struct, or of the directory of its
+// directive out. Its param new contains the name of the factory of the
+// subjects, an exported function of the package of the struct or a function
+// of the package of the test:
 //
 //	//dokimi:subject store.Store new=New
 //	type Store struct{ … }
@@ -133,8 +134,9 @@
 // concurrent-readers, and a test of the allocation ceilings, such as
 // TestStoreAllocs, where a budget states one or a check counts allocations.
 // The test of a suite with an allocation ceiling or a check that counts
-// allocations declares TestStoreSuiteAllocs, which falsifies both. The test of the suite of a function declares the same parts for
-// the function, such as BenchmarkSlug and TestSlugAllocs.
+// allocations declares TestStoreSuiteAllocs, which falsifies both. The test
+// of the suite of a function declares the same parts for the function, such
+// as BenchmarkSlug and TestSlugAllocs.
 //
 // # Kinds of declaration
 //
@@ -154,22 +156,24 @@
 // # Diagnostics
 //
 // suite reports [Uninstantiable] at a declaration whose type parameters its
-// suite cannot instantiate, [NoSuite] at a subject whose declaration has no
-// directive suite, and [BadFactory] at a subject whose factory an application
-// cannot call. It reports [UnknownCallable] at the directive of a check whose
-// callable it cannot find. It reports [BadCheck] at the directive of a check
-// without a statement or with the wrong signature, of a check of a function
-// with the segment of a check that the spec of the suite adds, and of a check
-// with the segment of a ceiling. It reports [UnknownExcusal] at an excusal
-// whose identity does not match a check of the suite, and [BadBudget] at a
-// budget that no check of a suite applies.
+// suite cannot instantiate, and [Unimportable] at a declaration with a
+// callable whose signature refers to a declaration that the file of its suite
+// cannot import. It reports [NoSuite] at a subject whose declaration has no
+// directive suite, [BadFactory] at a subject whose factory the conformance
+// test cannot call, and [RepeatedSubject] at a second directive subject of
+// one declaration. It reports [UnknownCallable] at the directive of a check
+// whose callable it cannot find. It reports [BadCheck] at the directive of a
+// check without a statement or with the wrong signature, of a check of a
+// function with the segment of a check that the spec of the suite adds, and of
+// a check with the segment of a ceiling. It reports [UnknownExcusal] at an
+// excusal whose identity does not match a check of the suite, and [BadBudget]
+// at a budget that no check of a suite applies.
 //
 // # Dependency position
 //
-// The package imports the packages annotator/defaults, annotator/fault,
-// generator/builder, generator/stub, internal/lang and internal/weave of the
-// module, the root package of the Go satellite in golang.go and call.go, the
-// package naming of eidos-lang, the package shape of the shape plugin of
-// eidos, the root, diag, directive, emit, meta, node, plugin, rules, store and
-// symbol packages of the SDK facade of eidos, and the Go stdlib.
+// The package imports the package internal/lang of the module, the root
+// package of the Go satellite in golang.go and call.go, the package naming of
+// eidos-lang, the package shape of the shape plugin of eidos, the root, diag,
+// directive, emit, meta, node, plugin, rules, store and symbol packages of the
+// SDK facade of eidos, and the Go stdlib.
 package suite

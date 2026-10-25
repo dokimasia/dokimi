@@ -18,9 +18,9 @@ import (
 //
 //dokimi:subject dynamic.Diary new=NewInMemory
 type InMemory struct {
-	records []string
 	zone    *time.Location
 	scale   *big.Int
+	records []string
 	mu      sync.Mutex
 }
 

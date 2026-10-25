@@ -16,6 +16,291 @@ import (
 	"go.dokimi.dev/stub"
 )
 
+// fsStubOpenArgs returns the samples of the arguments of Open.
+func fsStubOpenArgs(tb assert.TB) string {
+	tb.Helper()
+	var a0 string
+	a0 = "Open-a"
+	return a0
+}
+
+// fsStubOpen calls Open of s with the samples of its arguments.
+func fsStubOpen(tb assert.TB, s *suitedhandletest.FSStub) (suitedhandle.File, error) {
+	tb.Helper()
+	a0 := fsStubOpenArgs(tb)
+	return s.Open(a0)
+}
+
+// fsStubOpenPins returns the samples of the results of Open, with a new
+// error as its error result.
+func fsStubOpenPins() (suitedhandle.File, error) {
+	var want0 suitedhandle.File
+	want1 := errors.New("Open-returns")
+	return want0, want1
+}
+
+// fsStubOpenSubject returns the subject of [stub.Behaviour] for Open. The
+// subject calls a new double that reports to tb.
+func fsStubOpenSubject(tb assert.TB) stub.Subject[suitedhandletest.FSOpenCall, suitedhandletest.FSOpenReturn] {
+	tb.Helper()
+	s := suitedhandletest.NewFSStub(tb)
+	return stub.Subject[suitedhandletest.FSOpenCall, suitedhandletest.FSOpenReturn]{
+		Stub: s.OnOpen.MethodStub,
+		Call: func() {
+			_, _ = fsStubOpen(tb, s)
+		},
+		Result: func() suitedhandletest.FSOpenReturn {
+			got0, got1 := fsStubOpen(tb, s)
+			return suitedhandletest.FSOpenReturn{Result: got0, Err: got1}
+		},
+		Override: func(mark func()) {
+			s.OnOpen.Func(func(_ string) (suitedhandle.File, error) {
+				mark()
+				var z0 suitedhandle.File
+				var z1 error
+				return z0, z1
+			})
+		},
+		Fails: func() error {
+			_, r1 := fsStubOpen(tb, s)
+			return r1
+		},
+	}
+}
+
+// fsStubInstance is the instance of a suitedhandletest.FSStub that the
+// checks of the constructors and the options drive.
+type fsStubInstance = stub.Instance[suitedhandletest.FSOpenCall]
+
+// fsStubInstanceOf returns the instance of s. The options apply to the
+// whole double, so the checks call Open alone.
+func fsStubInstanceOf(tb assert.TB, s *suitedhandletest.FSStub) fsStubInstance {
+	tb.Helper()
+	return fsStubInstance{
+		Stub: s.OnOpen.MethodStub,
+		Call: func() {
+			_, _ = fsStubOpen(tb, s)
+		},
+		Reset: s.ResetCalls,
+	}
+}
+
+// TestFSStub checks the methods, the constructors and the options of the
+// double FSStub.
+func TestFSStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Open", func(t *testing.T) {
+		t.Parallel()
+		stub.Behaviour(t, "Open", fsStubOpenSubject)
+
+		t.Run("records the arguments of the call", func(t *testing.T) {
+			t.Parallel()
+			s := suitedhandletest.NewFSStub(t)
+			_, _ = fsStubOpen(t, s)
+			got := s.OnOpen.AssertCalledOnce(t, "Open records the call")
+			a0 := fsStubOpenArgs(t)
+			assert.Equal(t, got.Name, a0, "the call records Name")
+		})
+
+		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
+			t.Parallel()
+			s := suitedhandletest.NewFSStub(t)
+			var seen []suitedhandletest.FSOpenCall
+			s.OnOpen.OnRecord(func(c suitedhandletest.FSOpenCall) { seen = append(seen, c) })
+			_, _ = fsStubOpen(t, s)
+			_, _ = fsStubOpen(t, s)
+			assert.Length(t, seen, 2, "OnRecord runs once for each call of Open")
+		})
+	})
+
+	t.Run("ResetCalls", func(t *testing.T) {
+		t.Parallel()
+		stub.ResetBehaviour(t, func(tb assert.TB) fsStubInstance {
+			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb))
+		})
+
+		t.Run("clears the recorded calls of Open", func(t *testing.T) {
+			t.Parallel()
+			s := suitedhandletest.NewFSStub(t)
+			_, _ = fsStubOpen(t, s)
+			s.ResetCalls()
+			assert.Equal(t, s.OnOpen.CallCount(), 0, "ResetCalls clears the calls of Open")
+		})
+
+		t.Run("keeps the results of Returns of Open", func(t *testing.T) {
+			t.Parallel()
+			s := suitedhandletest.NewFSStub(t)
+			want0, want1 := fsStubOpenPins()
+			s.OnOpen.Returns(want0, want1)
+			s.ResetCalls()
+			_, got1 := fsStubOpen(t, s)
+			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Open")
+		})
+	})
+
+	t.Run("NewFSStubDelayed", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) fsStubInstance {
+			return fsStubInstanceOf(tb, suitedhandletest.NewFSStubDelayed(tb, d, clk))
+		})
+	})
+
+	t.Run("NewFSStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Open with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Open-failing")
+			s := suitedhandletest.NewFSStubFailing(t, want)
+			_, r1 := fsStubOpen(t, s)
+			assert.ErrorIs(t, r1, want, "Open fails with the error of NewFSStubFailing")
+		})
+	})
+
+	t.Run("FSStubStrict", func(t *testing.T) {
+		t.Parallel()
+		stub.StrictBehaviour(t, func(tb assert.TB) fsStubInstance {
+			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubStrict()))
+		})
+	})
+
+	t.Run("FSStubDelegateTo", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes Open to the implementation", func(t *testing.T) {
+			t.Parallel()
+			inner := suitedhandletest.NewFSStub(t)
+			s := suitedhandletest.NewFSStub(t, suitedhandletest.FSStubDelegateTo(inner))
+			_, _ = fsStubOpen(t, s)
+			inner.OnOpen.AssertCalledOnce(t, "Open calls the implementation")
+		})
+
+		t.Run("fails Open with the error of the implementation", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Open-delegate")
+			inner := suitedhandletest.NewFSStub(t)
+			inner.OnOpen.Faults(want, 1)
+			s := suitedhandletest.NewFSStub(t, suitedhandletest.FSStubDelegateTo(inner))
+			_, r1 := fsStubOpen(t, s)
+			assert.ErrorIs(t, r1, want, "Open fails with the error of the implementation")
+		})
+	})
+
+	t.Run("FSStubWithClock", func(t *testing.T) {
+		t.Parallel()
+		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) fsStubInstance {
+			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubWithClock(clk)))
+		})
+	})
+
+	t.Run("FSStubWithRandSource", func(t *testing.T) {
+		t.Parallel()
+		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) fsStubInstance {
+			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubWithRandSource(src)))
+		})
+	})
+
+	t.Run("FSStubBenchMode", func(t *testing.T) {
+		t.Parallel()
+		stub.BenchModeBehaviour(t, func(tb assert.TB) fsStubInstance {
+			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubBenchMode()))
+		})
+	})
+
+	t.Run("FSStubWithLatency", func(t *testing.T) {
+		t.Parallel()
+		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) fsStubInstance {
+			return fsStubInstanceOf(
+				tb,
+				suitedhandletest.NewFSStub(
+					tb,
+					suitedhandletest.FSStubWithClock(clk),
+					suitedhandletest.FSStubWithLatency(d),
+				),
+			)
+		})
+	})
+
+	t.Run("FSStubFailing", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("fails Open with its error", func(t *testing.T) {
+			t.Parallel()
+			want := errors.New("Open-failing")
+			s := suitedhandletest.NewFSStub(t, suitedhandletest.FSStubFailing(want))
+			_, r1 := fsStubOpen(t, s)
+			assert.ErrorIs(t, r1, want, "Open fails with the error of FSStubFailing")
+		})
+	})
+
+	t.Run("WithFSOpen", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the function of Open", func(t *testing.T) {
+			t.Parallel()
+			called := false
+			s := suitedhandletest.NewFSStub(t, suitedhandletest.WithFSOpen(func(_ string) (suitedhandle.File, error) {
+				called = true
+				var z0 suitedhandle.File
+				var z1 error
+				return z0, z1
+			}))
+			_, _ = fsStubOpen(t, s)
+			assert.True(t, called, "WithFSOpen sets the function of Open")
+		})
+	})
+}
+
+// TestFSOpenStub checks the methods of FSOpenStub, which configures Open.
+func TestFSOpenStub(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Returns", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("sets the results of each call of Open", func(t *testing.T) {
+			t.Parallel()
+			s := suitedhandletest.NewFSStub(t)
+			want0, want1 := fsStubOpenPins()
+			s.OnOpen.Returns(want0, want1)
+			_, got1 := fsStubOpen(t, s)
+			assert.ErrorIs(t, got1, want1, "Open returns the error that Returns sets")
+		})
+
+		t.Run("configures Open for strict mode", func(t *testing.T) {
+			t.Parallel()
+			r := assert.NewRecorder()
+			s := suitedhandletest.NewFSStub(r)
+			s.OnOpen.Strict()
+			var want0 suitedhandle.File
+			var want1 error
+			s.OnOpen.Returns(want0, want1)
+			_, _ = fsStubOpen(t, s)
+			assert.False(t, r.Failed(), "strict mode accepts the call of Open")
+		})
+	})
+
+	t.Run("Func", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("passes the arguments of each call of Open to the function", func(t *testing.T) {
+			t.Parallel()
+			s := suitedhandletest.NewFSStub(t)
+			var got0 string
+			s.OnOpen.Func(func(p0 string) (suitedhandle.File, error) {
+				got0 = p0
+				var z0 suitedhandle.File
+				var z1 error
+				return z0, z1
+			})
+			_, _ = fsStubOpen(t, s)
+			a0 := fsStubOpenArgs(t)
+			assert.Equal(t, got0, a0, "the function receives Name")
+		})
+	})
+}
+
 // fileStubName calls Name of s with the samples of its arguments.
 func fileStubName(tb assert.TB, s *suitedhandletest.FileStub) string {
 	tb.Helper()
@@ -388,289 +673,4 @@ func TestFileCloseStub(t *testing.T) {
 	})
 }
 
-// fsStubOpenArgs returns the samples of the arguments of Open.
-func fsStubOpenArgs(tb assert.TB) string {
-	tb.Helper()
-	var a0 string
-	a0 = "Open-a"
-	return a0
-}
-
-// fsStubOpen calls Open of s with the samples of its arguments.
-func fsStubOpen(tb assert.TB, s *suitedhandletest.FSStub) (suitedhandle.File, error) {
-	tb.Helper()
-	a0 := fsStubOpenArgs(tb)
-	return s.Open(a0)
-}
-
-// fsStubOpenPins returns the samples of the results of Open, with a new
-// error as its error result.
-func fsStubOpenPins() (suitedhandle.File, error) {
-	var want0 suitedhandle.File
-	want1 := errors.New("Open-returns")
-	return want0, want1
-}
-
-// fsStubOpenSubject returns the subject of [stub.Behaviour] for Open. The
-// subject calls a new double that reports to tb.
-func fsStubOpenSubject(tb assert.TB) stub.Subject[suitedhandletest.FSOpenCall, suitedhandletest.FSOpenReturn] {
-	tb.Helper()
-	s := suitedhandletest.NewFSStub(tb)
-	return stub.Subject[suitedhandletest.FSOpenCall, suitedhandletest.FSOpenReturn]{
-		Stub: s.OnOpen.MethodStub,
-		Call: func() {
-			_, _ = fsStubOpen(tb, s)
-		},
-		Result: func() suitedhandletest.FSOpenReturn {
-			got0, got1 := fsStubOpen(tb, s)
-			return suitedhandletest.FSOpenReturn{Result: got0, Err: got1}
-		},
-		Override: func(mark func()) {
-			s.OnOpen.Func(func(_ string) (suitedhandle.File, error) {
-				mark()
-				var z0 suitedhandle.File
-				var z1 error
-				return z0, z1
-			})
-		},
-		Fails: func() error {
-			_, r1 := fsStubOpen(tb, s)
-			return r1
-		},
-	}
-}
-
-// fsStubInstance is the instance of a suitedhandletest.FSStub that the
-// checks of the constructors and the options drive.
-type fsStubInstance = stub.Instance[suitedhandletest.FSOpenCall]
-
-// fsStubInstanceOf returns the instance of s. The options apply to the
-// whole double, so the checks call Open alone.
-func fsStubInstanceOf(tb assert.TB, s *suitedhandletest.FSStub) fsStubInstance {
-	tb.Helper()
-	return fsStubInstance{
-		Stub: s.OnOpen.MethodStub,
-		Call: func() {
-			_, _ = fsStubOpen(tb, s)
-		},
-		Reset: s.ResetCalls,
-	}
-}
-
-// TestFSStub checks the methods, the constructors and the options of the
-// double FSStub.
-func TestFSStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Open", func(t *testing.T) {
-		t.Parallel()
-		stub.Behaviour(t, "Open", fsStubOpenSubject)
-
-		t.Run("records the arguments of the call", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			_, _ = fsStubOpen(t, s)
-			got := s.OnOpen.AssertCalledOnce(t, "Open records the call")
-			a0 := fsStubOpenArgs(t)
-			assert.Equal(t, got.Name, a0, "the call records Name")
-		})
-
-		t.Run("runs the OnRecord hook once for each call", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			var seen []suitedhandletest.FSOpenCall
-			s.OnOpen.OnRecord(func(c suitedhandletest.FSOpenCall) { seen = append(seen, c) })
-			_, _ = fsStubOpen(t, s)
-			_, _ = fsStubOpen(t, s)
-			assert.Length(t, seen, 2, "OnRecord runs once for each call of Open")
-		})
-	})
-
-	t.Run("ResetCalls", func(t *testing.T) {
-		t.Parallel()
-		stub.ResetBehaviour(t, func(tb assert.TB) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb))
-		})
-
-		t.Run("clears the recorded calls of Open", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			_, _ = fsStubOpen(t, s)
-			s.ResetCalls()
-			assert.Equal(t, s.OnOpen.CallCount(), 0, "ResetCalls clears the calls of Open")
-		})
-
-		t.Run("keeps the results of Returns of Open", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			want0, want1 := fsStubOpenPins()
-			s.OnOpen.Returns(want0, want1)
-			s.ResetCalls()
-			_, got1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, got1, want1, "ResetCalls keeps the error of Open")
-		})
-	})
-
-	t.Run("NewFSStubDelayed", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStubDelayed(tb, d, clk))
-		})
-	})
-
-	t.Run("NewFSStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Open with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Open-failing")
-			s := suitedhandletest.NewFSStubFailing(t, want)
-			_, r1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, r1, want, "Open fails with the error of NewFSStubFailing")
-		})
-	})
-
-	t.Run("FSStubStrict", func(t *testing.T) {
-		t.Parallel()
-		stub.StrictBehaviour(t, func(tb assert.TB) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubStrict()))
-		})
-	})
-
-	t.Run("FSStubDelegateTo", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes Open to the implementation", func(t *testing.T) {
-			t.Parallel()
-			inner := suitedhandletest.NewFSStub(t)
-			s := suitedhandletest.NewFSStub(t, suitedhandletest.FSStubDelegateTo(inner))
-			_, _ = fsStubOpen(t, s)
-			inner.OnOpen.AssertCalledOnce(t, "Open calls the implementation")
-		})
-
-		t.Run("fails Open with the error of the implementation", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Open-delegate")
-			inner := suitedhandletest.NewFSStub(t)
-			inner.OnOpen.Faults(want, 1)
-			s := suitedhandletest.NewFSStub(t, suitedhandletest.FSStubDelegateTo(inner))
-			_, r1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, r1, want, "Open fails with the error of the implementation")
-		})
-	})
-
-	t.Run("FSStubWithClock", func(t *testing.T) {
-		t.Parallel()
-		stub.ClockBehaviour(t, func(tb assert.TB, clk assert.Clock) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubWithClock(clk)))
-		})
-	})
-
-	t.Run("FSStubWithRandSource", func(t *testing.T) {
-		t.Parallel()
-		stub.RandSourceBehaviour(t, func(tb assert.TB, src rand.Source) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubWithRandSource(src)))
-		})
-	})
-
-	t.Run("FSStubBenchMode", func(t *testing.T) {
-		t.Parallel()
-		stub.BenchModeBehaviour(t, func(tb assert.TB) fsStubInstance {
-			return fsStubInstanceOf(tb, suitedhandletest.NewFSStub(tb, suitedhandletest.FSStubBenchMode()))
-		})
-	})
-
-	t.Run("FSStubWithLatency", func(t *testing.T) {
-		t.Parallel()
-		stub.LatencyBehaviour(t, func(tb assert.TB, d time.Duration, clk assert.Clock) fsStubInstance {
-			return fsStubInstanceOf(
-				tb,
-				suitedhandletest.NewFSStub(
-					tb,
-					suitedhandletest.FSStubWithClock(clk),
-					suitedhandletest.FSStubWithLatency(d),
-				),
-			)
-		})
-	})
-
-	t.Run("FSStubFailing", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("fails Open with its error", func(t *testing.T) {
-			t.Parallel()
-			want := errors.New("Open-failing")
-			s := suitedhandletest.NewFSStub(t, suitedhandletest.FSStubFailing(want))
-			_, r1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, r1, want, "Open fails with the error of FSStubFailing")
-		})
-	})
-
-	t.Run("WithFSOpen", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the function of Open", func(t *testing.T) {
-			t.Parallel()
-			called := false
-			s := suitedhandletest.NewFSStub(t, suitedhandletest.WithFSOpen(func(_ string) (suitedhandle.File, error) {
-				called = true
-				var z0 suitedhandle.File
-				var z1 error
-				return z0, z1
-			}))
-			_, _ = fsStubOpen(t, s)
-			assert.True(t, called, "WithFSOpen sets the function of Open")
-		})
-	})
-}
-
-// TestFSOpenStub checks the methods of FSOpenStub, which configures Open.
-func TestFSOpenStub(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Returns", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("sets the results of each call of Open", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			want0, want1 := fsStubOpenPins()
-			s.OnOpen.Returns(want0, want1)
-			_, got1 := fsStubOpen(t, s)
-			assert.ErrorIs(t, got1, want1, "Open returns the error that Returns sets")
-		})
-
-		t.Run("configures Open for strict mode", func(t *testing.T) {
-			t.Parallel()
-			r := assert.NewRecorder()
-			s := suitedhandletest.NewFSStub(r)
-			s.OnOpen.Strict()
-			var want0 suitedhandle.File
-			var want1 error
-			s.OnOpen.Returns(want0, want1)
-			_, _ = fsStubOpen(t, s)
-			assert.False(t, r.Failed(), "strict mode accepts the call of Open")
-		})
-	})
-
-	t.Run("Func", func(t *testing.T) {
-		t.Parallel()
-
-		t.Run("passes the arguments of each call of Open to the function", func(t *testing.T) {
-			t.Parallel()
-			s := suitedhandletest.NewFSStub(t)
-			var got0 string
-			s.OnOpen.Func(func(p0 string) (suitedhandle.File, error) {
-				got0 = p0
-				var z0 suitedhandle.File
-				var z1 error
-				return z0, z1
-			})
-			_, _ = fsStubOpen(t, s)
-			a0 := fsStubOpenArgs(t)
-			assert.Equal(t, got0, a0, "the function receives Name")
-		})
-	})
-}
-
-// dokimi:provenance sha256:ae88b2f289e7a1f44504d50ca722047c812bab4415d39e57d75a6481d8da1881
+// dokimi:provenance sha256:01b85000ecb1631b15b9e5e6e81b3ccec997c3ab7bbee14a302c040d0787f3d3

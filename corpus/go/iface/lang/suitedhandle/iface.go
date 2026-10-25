@@ -11,8 +11,8 @@ import "errors"
 // ErrNotFound reports a name that the file system does not have.
 var ErrNotFound = errors.New("suitedhandle: file not found")
 
-// File is an open file. The directive suite asks for its double, and the
-// method Open of [FS] returns it.
+// File is an open file under the directive suite alone. The method Open of
+// [FS] returns it, so it gets its double as a handle of FS.
 //
 //dokimi:suite
 //dokimi:out path=suitedhandletest/

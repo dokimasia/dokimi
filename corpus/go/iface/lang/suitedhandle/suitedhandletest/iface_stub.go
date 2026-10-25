@@ -13,6 +13,188 @@ import (
 	"go.dokimi.dev/stub"
 )
 
+// FSOpenCall records one call of FS.Open.
+type FSOpenCall struct {
+	Name   string
+	Result suitedhandle.File
+	Err    error
+}
+
+// FSOpenStub configures Open and records its calls. A fault armed through
+// it takes precedence over the function and the fixed results.
+type FSOpenStub struct {
+	*stub.MethodStub[FSOpenCall]
+
+	fn       func(string) (suitedhandle.File, error)
+	fallback *FSOpenReturn
+}
+
+// FSOpenReturn contains the fixed results of Open.
+type FSOpenReturn struct {
+	Result suitedhandle.File
+	Err    error
+}
+
+// Returns sets the results of every call of Open. A function and an
+// injected fault take precedence over them.
+func (s *FSOpenStub) Returns(result suitedhandle.File, err error) *FSOpenStub {
+	s.fallback = &FSOpenReturn{Result: result, Err: err}
+	return s
+}
+
+// Func sets the function that computes the results of Open from its
+// arguments. An injected fault takes precedence over it.
+func (s *FSOpenStub) Func(fn func(string) (suitedhandle.File, error)) *FSOpenStub {
+	s.fn = fn
+	return s
+}
+
+// The reference to stub.CompatV1 fails the build against another major
+// version of the runtime of doubles.
+var _ = stub.CompatV1
+
+// FSStubOption configures a [FSStub] at its construction.
+type FSStubOption func(*FSStub)
+
+// FSStubStrict returns the option that makes an unconfigured method fail
+// the test instead of returning its zero value.
+func FSStubStrict() FSStubOption {
+	return func(s *FSStub) { s.strict = true }
+}
+
+// FSStubDelegateTo returns the option that passes each call to impl. The
+// double still records the call.
+func FSStubDelegateTo(impl suitedhandle.FS) FSStubOption {
+	return func(s *FSStub) {
+		s.OnOpen.Func(impl.Open)
+	}
+}
+
+// FSStubWithClock returns the option that sets the clock of the double to
+// clk. The double takes the latency, the windows of the faults and the
+// instants of the calls from clk. A latency on a controlled clock costs no
+// real time.
+func FSStubWithClock(clk assert.Clock) FSStubOption {
+	return func(s *FSStub) { s.group.SetClock(clk) }
+}
+
+// FSStubWithRandSource returns the option that sets the random source of
+// the probabilistic faults to src. A seeded source repeats the faults of a
+// run.
+func FSStubWithRandSource(src rand.Source) FSStubOption {
+	return func(s *FSStub) { s.group.SetRandSource(src) }
+}
+
+// FSStubBenchMode returns the option that turns the recording of calls
+// off. The methods still return their results.
+func FSStubBenchMode() FSStubOption {
+	return func(s *FSStub) { s.group.BenchMode() }
+}
+
+// FSStubWithLatency returns the option that makes every method sleep d
+// before it returns. Without FSStubWithClock, d passes in real time.
+func FSStubWithLatency(d time.Duration) FSStubOption {
+	return func(s *FSStub) { s.group.SetLatency(d) }
+}
+
+// FSStubFailing returns the option that arms err on each method that can
+// fail. Each call of such a method then fails with err.
+func FSStubFailing(err error) FSStubOption {
+	return func(s *FSStub) {
+		s.OnOpen.Faults(err, 1)
+	}
+}
+
+// WithFSOpen returns the option that sets the function of Open.
+func WithFSOpen(fn func(string) (suitedhandle.File, error)) FSStubOption {
+	return func(s *FSStub) { s.OnOpen.Func(fn) }
+}
+
+// FSStub is a recording test double of FS. Each field On<Method>
+// configures its method. An unconfigured method records the call and
+// returns the zero values of its results.
+type FSStub struct {
+	OnOpen *FSOpenStub
+
+	// group contains the stub of each method.
+	group  *stub.Group
+	strict bool
+}
+
+// The compiler checks that FSStub implements FS.
+var _ suitedhandle.FS = (*FSStub)(nil)
+
+// NewFSStub returns a double of FS that reports its failures to tb and
+// applies opts. The double checks the expected counts of calls at the end
+// of the test. With a nil tb, the double reports nothing.
+func NewFSStub(tb assert.TB, opts ...FSStubOption) *FSStub {
+	s := &FSStub{
+		OnOpen: &FSOpenStub{MethodStub: stub.NewMethodStub[FSOpenCall](tb, "FS.Open")},
+	}
+	s.group = stub.NewGroup(
+		s.OnOpen.MethodStub,
+	)
+	for _, opt := range opts {
+		opt(s)
+	}
+	if s.strict {
+		s.group.StrictAll()
+	}
+	s.group.Bind(tb)
+	return s
+}
+
+// NewFSStubDelayed returns a double whose methods sleep d on clk before
+// they return. It applies opts after the clock and the latency.
+func NewFSStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...FSStubOption) *FSStub {
+	return NewFSStub(tb, append([]FSStubOption{
+		FSStubWithClock(clk),
+		FSStubWithLatency(d),
+	}, opts...)...)
+}
+
+// NewFSStubFailing returns a double on which each call of a method that
+// can fail fails with err. It applies opts after the failure.
+func NewFSStubFailing(tb assert.TB, err error, opts ...FSStubOption) *FSStub {
+	return NewFSStub(tb, append([]FSStubOption{FSStubFailing(err)}, opts...)...)
+}
+
+// ResetCalls clears the recorded calls, the counters of the faults and the
+// expected counts. It keeps the functions, the fixed results and the faults.
+func (s *FSStub) ResetCalls() {
+	s.group.Reset()
+}
+
+// invoke returns a call of the function of Func with the arguments, and nil
+// where no function is set.
+func (s *FSOpenStub) invoke(name string) func() FSOpenReturn {
+	if s.fn == nil {
+		return nil
+	}
+	return func() FSOpenReturn {
+		r0, r1 := s.fn(name)
+		return FSOpenReturn{Result: r0, Err: r1}
+	}
+}
+
+// Open records the call. An armed fault comes first, then the function of
+// Func, then the results of Returns, and then the zero values.
+func (s *FSStub) Open(name string) (suitedhandle.File, error) {
+	call := FSOpenCall{Name: name}
+	r := stub.Answer(s.OnOpen.MethodStub, &call, stub.Arms[FSOpenCall, FSOpenReturn]{
+		Invoke:   s.OnOpen.invoke(name),
+		Fallback: s.OnOpen.fallback,
+		Fault:    func(err error) FSOpenReturn { return FSOpenReturn{Err: err} },
+		Stamp: func(c *FSOpenCall, r FSOpenReturn) {
+			c.Result = r.Result
+			c.Err = r.Err
+		},
+	})
+	return r.Result, r.Err
+}
+
+// File is a handle that a method of FS returns.
+
 // FileNameCall records one call of File.Name.
 type FileNameCall struct {
 	Result string
@@ -257,184 +439,4 @@ func (s *FileStub) Close() error {
 	return r.Err
 }
 
-// FSOpenCall records one call of FS.Open.
-type FSOpenCall struct {
-	Name   string
-	Result suitedhandle.File
-	Err    error
-}
-
-// FSOpenStub configures Open and records its calls. A fault armed through
-// it takes precedence over the function and the fixed results.
-type FSOpenStub struct {
-	*stub.MethodStub[FSOpenCall]
-
-	fn       func(string) (suitedhandle.File, error)
-	fallback *FSOpenReturn
-}
-
-// FSOpenReturn contains the fixed results of Open.
-type FSOpenReturn struct {
-	Result suitedhandle.File
-	Err    error
-}
-
-// Returns sets the results of every call of Open. A function and an
-// injected fault take precedence over them.
-func (s *FSOpenStub) Returns(result suitedhandle.File, err error) *FSOpenStub {
-	s.fallback = &FSOpenReturn{Result: result, Err: err}
-	return s
-}
-
-// Func sets the function that computes the results of Open from its
-// arguments. An injected fault takes precedence over it.
-func (s *FSOpenStub) Func(fn func(string) (suitedhandle.File, error)) *FSOpenStub {
-	s.fn = fn
-	return s
-}
-
-// The reference to stub.CompatV1 fails the build against another major
-// version of the runtime of doubles.
-var _ = stub.CompatV1
-
-// FSStubOption configures a [FSStub] at its construction.
-type FSStubOption func(*FSStub)
-
-// FSStubStrict returns the option that makes an unconfigured method fail
-// the test instead of returning its zero value.
-func FSStubStrict() FSStubOption {
-	return func(s *FSStub) { s.strict = true }
-}
-
-// FSStubDelegateTo returns the option that passes each call to impl. The
-// double still records the call.
-func FSStubDelegateTo(impl suitedhandle.FS) FSStubOption {
-	return func(s *FSStub) {
-		s.OnOpen.Func(impl.Open)
-	}
-}
-
-// FSStubWithClock returns the option that sets the clock of the double to
-// clk. The double takes the latency, the windows of the faults and the
-// instants of the calls from clk. A latency on a controlled clock costs no
-// real time.
-func FSStubWithClock(clk assert.Clock) FSStubOption {
-	return func(s *FSStub) { s.group.SetClock(clk) }
-}
-
-// FSStubWithRandSource returns the option that sets the random source of
-// the probabilistic faults to src. A seeded source repeats the faults of a
-// run.
-func FSStubWithRandSource(src rand.Source) FSStubOption {
-	return func(s *FSStub) { s.group.SetRandSource(src) }
-}
-
-// FSStubBenchMode returns the option that turns the recording of calls
-// off. The methods still return their results.
-func FSStubBenchMode() FSStubOption {
-	return func(s *FSStub) { s.group.BenchMode() }
-}
-
-// FSStubWithLatency returns the option that makes every method sleep d
-// before it returns. Without FSStubWithClock, d passes in real time.
-func FSStubWithLatency(d time.Duration) FSStubOption {
-	return func(s *FSStub) { s.group.SetLatency(d) }
-}
-
-// FSStubFailing returns the option that arms err on each method that can
-// fail. Each call of such a method then fails with err.
-func FSStubFailing(err error) FSStubOption {
-	return func(s *FSStub) {
-		s.OnOpen.Faults(err, 1)
-	}
-}
-
-// WithFSOpen returns the option that sets the function of Open.
-func WithFSOpen(fn func(string) (suitedhandle.File, error)) FSStubOption {
-	return func(s *FSStub) { s.OnOpen.Func(fn) }
-}
-
-// FSStub is a recording test double of FS. Each field On<Method>
-// configures its method. An unconfigured method records the call and
-// returns the zero values of its results.
-type FSStub struct {
-	OnOpen *FSOpenStub
-
-	// group contains the stub of each method.
-	group  *stub.Group
-	strict bool
-}
-
-// The compiler checks that FSStub implements FS.
-var _ suitedhandle.FS = (*FSStub)(nil)
-
-// NewFSStub returns a double of FS that reports its failures to tb and
-// applies opts. The double checks the expected counts of calls at the end
-// of the test. With a nil tb, the double reports nothing.
-func NewFSStub(tb assert.TB, opts ...FSStubOption) *FSStub {
-	s := &FSStub{
-		OnOpen: &FSOpenStub{MethodStub: stub.NewMethodStub[FSOpenCall](tb, "FS.Open")},
-	}
-	s.group = stub.NewGroup(
-		s.OnOpen.MethodStub,
-	)
-	for _, opt := range opts {
-		opt(s)
-	}
-	if s.strict {
-		s.group.StrictAll()
-	}
-	s.group.Bind(tb)
-	return s
-}
-
-// NewFSStubDelayed returns a double whose methods sleep d on clk before
-// they return. It applies opts after the clock and the latency.
-func NewFSStubDelayed(tb assert.TB, d time.Duration, clk assert.Clock, opts ...FSStubOption) *FSStub {
-	return NewFSStub(tb, append([]FSStubOption{
-		FSStubWithClock(clk),
-		FSStubWithLatency(d),
-	}, opts...)...)
-}
-
-// NewFSStubFailing returns a double on which each call of a method that
-// can fail fails with err. It applies opts after the failure.
-func NewFSStubFailing(tb assert.TB, err error, opts ...FSStubOption) *FSStub {
-	return NewFSStub(tb, append([]FSStubOption{FSStubFailing(err)}, opts...)...)
-}
-
-// ResetCalls clears the recorded calls, the counters of the faults and the
-// expected counts. It keeps the functions, the fixed results and the faults.
-func (s *FSStub) ResetCalls() {
-	s.group.Reset()
-}
-
-// invoke returns a call of the function of Func with the arguments, and nil
-// where no function is set.
-func (s *FSOpenStub) invoke(name string) func() FSOpenReturn {
-	if s.fn == nil {
-		return nil
-	}
-	return func() FSOpenReturn {
-		r0, r1 := s.fn(name)
-		return FSOpenReturn{Result: r0, Err: r1}
-	}
-}
-
-// Open records the call. An armed fault comes first, then the function of
-// Func, then the results of Returns, and then the zero values.
-func (s *FSStub) Open(name string) (suitedhandle.File, error) {
-	call := FSOpenCall{Name: name}
-	r := stub.Answer(s.OnOpen.MethodStub, &call, stub.Arms[FSOpenCall, FSOpenReturn]{
-		Invoke:   s.OnOpen.invoke(name),
-		Fallback: s.OnOpen.fallback,
-		Fault:    func(err error) FSOpenReturn { return FSOpenReturn{Err: err} },
-		Stamp: func(c *FSOpenCall, r FSOpenReturn) {
-			c.Result = r.Result
-			c.Err = r.Err
-		},
-	})
-	return r.Result, r.Err
-}
-
-// dokimi:provenance sha256:a747d4f1f0363c55f35f396a186ed3a1a2c62decde3f75dc4fc2449b218881e9
+// dokimi:provenance sha256:540479cdfa9177068dad5b9c5f4477f3fe8e24884f47cfc120b49828676da00f

@@ -9,7 +9,9 @@ import (
 	"testing"
 
 	"go.dokimi.dev/assert"
+	golang "go.dokimi.dev/eidos/lang/go"
 	goannotate "go.dokimi.dev/eidos/lang/go/annotate"
+	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	"go.dokimi.dev/eidos/plugin/shape/catalog"
 	"go.dokimi.dev/eidos/sdk/authored"
 	"go.dokimi.dev/eidos/sdk/diag"
@@ -68,7 +70,9 @@ type generated struct {
 
 // fixture returns a fixture over the packages pkgs of the tree dir, loaded
 // under the context of tb, with the target of the plan and the plugin stub
-// p. The annotators of the composition stamp the fixture.
+// p. The annotators of the composition stamp the fixture. A fixture of the
+// target golang has the Go backend as its spoke, so a phase call previews the
+// package of each routed file.
 func fixture(tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pkgs ...string) *gentest.Fixture {
 	tb.Helper()
 
@@ -76,10 +80,14 @@ func fixture(tb assert.TB, target plugin.Target, dir string, p plugin.Plugin, pk
 		Dir:        dir,
 		Packages:   pkgs,
 		Target:     target,
+		Types:      spokes[target],
 		Plugins:    []plugin.Plugin{p},
 		Annotators: annotators(),
 	})
 }
+
+// spokes are the spokes of the fixtures by their target.
+var spokes = map[plugin.Target]plugin.TypeSpeller{golang.Target: gobackend.New()}
 
 // annotators returns the annotators of the composition: the authored samples
 // and witnesses, the facts of Go, the declared defaults, the names of the

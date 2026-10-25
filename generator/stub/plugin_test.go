@@ -21,7 +21,6 @@ import (
 	"go.dokimi.dev/dokimi/generator/stub"
 	"go.dokimi.dev/dokimi/generator/suite"
 	"go.dokimi.dev/dokimi/internal/gentest"
-	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // The trees, packages and modules that this spec alone reads, and the
@@ -38,6 +37,9 @@ const (
 	partitionPackage  = "example.com/shop/partition"
 	helpersPackage    = "example.com/shop/helpers"
 	suitedPackage     = "example.com/shop/suited"
+	wrapPackage       = "example.com/shop/wrap"
+	toolPackage       = "example.com/shop/lib/tool"
+	deepPackage       = "example.com/shop/lib/internal/deep"
 	shopPackage       = "shop"
 	bagName           = "Bag"
 	pairsName         = "Pairs"
@@ -75,16 +77,15 @@ func TestStub(t *testing.T) {
 			})
 		})
 
-		t.Run("runs after the annotate half of suite", func(t *testing.T) {
+		t.Run("runs after no capability", func(t *testing.T) {
 			t.Parallel()
 
 			ordered, orders := stub.New().(plugin.CapabilityProvider)
 			assert.True(t, orders, "stub declares its capabilities")
-			expect.Equal(t, ordered.After(), []plugin.Capability{weave.Suite},
-				"stub runs after the capability of suite where the composition contains suite")
+			expect.Empty(t, ordered.After(), "stub runs in any order with the suite generator")
 		})
 
-		t.Run("records one double of each interface and struct under the directive suite", func(t *testing.T) {
+		t.Run("records a double of a declaration under the directive suite alone only as a handle", func(t *testing.T) {
 			t.Parallel()
 
 			p := stub.New()
@@ -100,9 +101,26 @@ func TestStub(t *testing.T) {
 				subjects = append(subjects, m.Subject)
 			}
 			slices.Sort(subjects)
-			expect.Equal(t, subjects, []string{"Cashbox", "Journal", "Ledger", "Register"},
-				"a declaration under suite, stub or both has one double, also where another double returns it, and "+
-					"a function has none")
+			expect.Equal(t, subjects, []string{"Journal", "Ledger", "Register"},
+				"a declaration under stub has one double, a declaration under suite alone has one where a double "+
+					"returns it, and the struct Cashbox under suite alone has none")
+		})
+
+		t.Run("leaves the import of a method to the layout where the plan previews no package", func(t *testing.T) {
+			t.Parallel()
+
+			p := stub.New()
+			f := gentest.New(t, &gentest.Spec{
+				Dir: goTree, Packages: []string{wrapPackage, toolPackage, deepPackage}, Target: golang.Target,
+				Plugins: []plugin.Plugin{p}, Annotators: annotators(),
+			})
+			res := f.Generate(t, p)
+			assert.NoError(t, res.Err, "the generator runs whole")
+			subjects := make([]string, 0, 4)
+			for _, m := range gentest.List[stub.Model](res) {
+				subjects = append(subjects, m.Subject)
+			}
+			expect.Contains(t, subjects, "Wrapped", "stub records the double of Wrapped, and the layout refuses it")
 		})
 
 		t.Run("checks each double from outside its package", func(t *testing.T) {
@@ -1453,6 +1471,45 @@ func TestStub(t *testing.T) {
 					wantCode: stub.Unimplementable, wantAt: symbol.KindInterface, wantName: "Loose",
 					wantMsg: "Loose has the parameter x of run without a declared type, which a double cannot " +
 						"implement, so it has no double",
+				},
+				{
+					name:       "reports Unimplementable at a struct with a method that refers to an internal package",
+					giveTarget: golang.Target,
+					giveTree:   goTree,
+					givePkgs:   []string{wrapPackage, toolPackage, deepPackage},
+					wantCode:   stub.Unimplementable,
+					wantAt:     symbol.KindStruct,
+					wantName:   "Wrapped",
+					wantMsg: "Wrapped has the method Level, whose signature refers to deep.Level, which the file of " +
+						"its double in the package example.com/shop/wrap cannot import, so it has no double: golang: " +
+						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
+						"example.com/shop/wrap is outside it",
+				},
+				{
+					name:       "reports Unimplementable at an interface with a method that refers to an internal package",
+					giveTarget: golang.Target,
+					giveTree:   goTree,
+					givePkgs:   []string{wrapPackage, toolPackage, deepPackage},
+					wantCode:   stub.Unimplementable,
+					wantAt:     symbol.KindInterface,
+					wantName:   "Measured",
+					wantMsg: "Measured has the method Level, whose signature refers to deep.Level, which the file of " +
+						"its double in the package example.com/shop/wrap cannot import, so it has no double: golang: " +
+						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
+						"example.com/shop/wrap is outside it",
+				},
+				{
+					name:       "reports Unimplementable at a struct with a parameter that refers to an internal package",
+					giveTarget: golang.Target,
+					giveTree:   goTree,
+					givePkgs:   []string{wrapPackage, toolPackage, deepPackage},
+					wantCode:   stub.Unimplementable,
+					wantAt:     symbol.KindStruct,
+					wantName:   "Adjusted",
+					wantMsg: "Adjusted has the method Set, whose signature refers to deep.Level, which the file of " +
+						"its double in the package example.com/shop/wrap cannot import, so it has no double: golang: " +
+						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
+						"example.com/shop/wrap is outside it",
 				},
 				{
 					name:       "reports Unimplementable at an interface that is not exported",

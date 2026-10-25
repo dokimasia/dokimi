@@ -23,7 +23,6 @@ import (
 	"go.dokimi.dev/dokimi/annotator/fault"
 	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/internal/lang"
-	"go.dokimi.dev/dokimi/internal/weave"
 )
 
 // ID is the name of the plugin.
@@ -501,11 +500,7 @@ type invocation struct {
 }
 
 // New returns stub. stub records a [Model] into the family [Word] for each
-// interface, struct or class under [StubDirective], and for each interface and
-// struct on which the suite generator stamps the fact [weave.KeyDouble]. A
-// declaration under both directives gets one double. stub runs after the
-// capability [weave.Suite], so in a composition without the suite generator
-// the gate on the fact does not select a declaration. The template of the
+// interface, struct or class under [StubDirective]. The template of the
 // family writes the double in the conventions of the language of the plan.
 // stub records the [Checks] of each double into the family [Word] under the
 // tag [TestTag]. The template of that family writes a test of a double with a
@@ -548,23 +543,13 @@ func New() plugin.Generator {
 		Version(Version).
 		Provides(Capability).
 		Requires(fault.Capability).
-		After(weave.Suite).
 		Options(g.options).
 		Output(plugin.Output{Per: plugin.PerSource, Word: Word, Template: stubTemplate}).
 		Output(plugin.Output{Tag: TestTag, Per: plugin.PerSource, Word: Word, Template: testTemplate, External: true})
 	lang.Register(b, parts)
-	asked := sdk.HasKey(meta.Named[bool](weave.KeyDouble))
-	return b.Handle(
-		sdk.Directive(schema, sdk.Where(sdk.Not(asked), g.rules()...)),
-		sdk.Where(asked, g.rules()...),
-	).Generator()
-}
-
-// rules returns the rules of the doubles of an interface and of a struct.
-func (g *generator) rules() []sdk.Rule {
-	return []sdk.Rule{
+	return b.Handle(sdk.Directive(schema,
 		sdk.OnInterface(lang.Served(parts, g.generateInterface)), sdk.OnStruct(lang.Served(parts, g.generateStruct)),
-	}
+	)).Generator()
 }
 
 // generateInterface records the double of an interface under the directive,
@@ -718,8 +703,9 @@ func (in *invocation) modelOf(double *emit.Struct) Model {
 // implements. It leaves out a member at type level, a constructor of a
 // struct, and a field where the language does not type a value by its
 // members. It reports [IncompleteMembers] where the walk has a gap, and
-// [Unimplementable] at a member that a double cannot implement, and returns
-// false after either report.
+// [Unimplementable] at a member that a double cannot implement or whose
+// signature the file of the double cannot import, and returns false after
+// either report.
 func (in *invocation) walk() (members, bool) {
 	sub := in.sub
 	set, _ := in.b.MembersOf(sub.decl)
@@ -734,6 +720,9 @@ func (in *invocation) walk() (members, bool) {
 		case *node.Method:
 			if s.Level == symbol.LevelType || s.Constructs && sub.class {
 				continue
+			}
+			if !in.importable(s) {
+				return members{}, false
 			}
 			reason = unimplemented(s)
 			out.methods = append(out.methods, s)
@@ -759,6 +748,34 @@ func (in *invocation) walk() (members, bool) {
 		}
 	}
 	return out, true
+}
+
+// importable reports whether the file of the double can refer to each
+// parameter and each result of the method s. It reports [Unimplementable] at
+// the subject where the file cannot. It checks the package that the plan
+// previews for the file, and reports true where the plan previews no package,
+// because the layout then checks each reference itself.
+func (in *invocation) importable(s *node.Method) bool {
+	pkg, placed := in.e.File().Package()
+	if placed != nil {
+		return true
+	}
+	refs := make([]*node.TypeRef, 0, len(s.Params)+len(s.Returns))
+	for _, p := range s.Params {
+		refs = append(refs, p.Type)
+	}
+	for _, r := range s.Returns {
+		refs = append(refs, r.Type)
+	}
+	for _, ref := range refs {
+		if err := in.b.Importable(pkg, ref); err != nil {
+			in.m.Errorf(Unimplementable, "%s has the method %s, whose signature refers to %s, which the file of its "+
+				"double in the package %s cannot import, so it has no double: %v",
+				in.sub.name, s.Name, ref.Spelling, pkg.Package, err)
+			return false
+		}
+	}
+	return true
 }
 
 // contributor returns the name of the declaration that contributes the
@@ -1168,10 +1185,10 @@ func repeated(names []string) (string, bool) {
 
 // handles returns the subjects of the handles of the methods of the subject:
 // each interface of the package of the subject that a method returns. A
-// handle has neither the directive of stub nor the fact [weave.KeyDouble],
-// since stub writes the double of either through the rules of [New]. The
-// subject is the first producer of the handle, so two subjects that return
-// one handle write one double of it.
+// handle does not have the directive of stub, since stub writes the double of
+// such an interface through the rules of [New]. The subject is the first
+// producer of the handle, so two subjects that return one handle write one
+// double of it.
 func (in *invocation) handles(methods []*node.Method) []*subject {
 	var out []*subject
 	seen := map[symbol.Identity]bool{}
@@ -1183,9 +1200,7 @@ func (in *invocation) handles(methods []*node.Method) []*subject {
 				continue
 			}
 			seen[i.ID] = true
-			if i.ID.Package != in.sub.origin.Package || in.annotated(&i.ID) || in.suited(&i.ID) ||
-				in.producer(&i.ID) != in.sub.origin {
-
+			if i.ID.Package != in.sub.origin.Package || in.annotated(&i.ID) || in.producer(&i.ID) != in.sub.origin {
 				continue
 			}
 			out = append(out, &subject{
@@ -1201,13 +1216,6 @@ func (in *invocation) handles(methods []*node.Method) []*subject {
 // in either spelling.
 func (in *invocation) annotated(id *symbol.Identity) bool {
 	return slices.ContainsFunc(in.carriers(), func(d node.Declaration) bool { return d.Identity() == *id })
-}
-
-// suited reports whether the suite generator stamped the fact
-// [weave.KeyDouble] on the declaration id.
-func (in *invocation) suited(id *symbol.Identity) bool {
-	asked, _ := sdk.FactOf(in.m, *id, meta.Named[bool](weave.KeyDouble))
-	return asked
 }
 
 // producer returns the first producer of the handle id in identity order. A

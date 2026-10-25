@@ -81,24 +81,37 @@ func TestInput(t *testing.T) {
 		inputs := []struct {
 			name     string
 			giveDecl string
+			givePkgs []string
 			want     [][2]string
 		}{
 			{
 				name: "declares an implementation of each of two interfaces", giveDecl: "Router",
+				givePkgs: []string{pathsPackage, inputsPackage},
 				want: [][2]string{
 					{"RouterDepotInput", "Depot"}, {"RouterLedgerInput", "Ledger"}, {"RouterRowsInput", "Rows"},
 				},
 			},
 			{
 				name: "declares the implementation of an interface that a function takes", giveDecl: "Route",
-				want: [][2]string{{"RouteDepotInput", "Depot"}},
+				givePkgs: []string{pathsPackage, inputsPackage}, want: [][2]string{{"RouteDepotInput", "Depot"}},
+			},
+			{
+				name: "declares the implementation of each interface that the calls take at depth", giveDecl: "Courier",
+				givePkgs: []string{nestedPackage},
+				want:     [][2]string{{"CourierLabelerInput", "Labeler"}, {"CourierScaleInput", "Scale[int]"}},
+			},
+			{
+				name:     "does not declare an implementation whose methods the file of the suite cannot import",
+				giveDecl: "Tuned",
+				givePkgs: []string{wrapPackage, toolPackage, deepPackage},
+				want:     [][2]string{{"TunedNoteInput", "Note"}},
 			},
 		}
 		for _, tt := range inputs {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				got := generate(t, goTree, pathsPackage, inputsPackage).suites[tt.giveDecl]
+				got := generate(t, goTree, tt.givePkgs...).suites[tt.giveDecl]
 				names := make([][2]string, 0, len(got.Inputs))
 				for _, in := range got.Inputs {
 					names = append(names, [2]string{in.Name, spelled(in.Type)})

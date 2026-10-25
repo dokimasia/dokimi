@@ -156,10 +156,12 @@ const (
 // callables. Using are the enumerations that the calls take at some depth,
 // whose members the property runs and the benchmarks of the suite draw, and
 // Starts are the generators of the structs with a starting value that the
-// calls take. Dynamic reports that the calls take a value of the dynamic type,
-// Go's any, at some depth, which the property runs and the benchmarks draw
-// from a string, an int and a bool. Inputs are the implementations of the
-// interfaces that the callables take.
+// calls take. Generated are the generators of the function types and of the
+// interfaces that the calls take at some depth. Dynamic reports that the
+// calls take a value of the dynamic type, Go's any, at some depth, which the
+// property runs and the benchmarks draw from a string, an int and a bool.
+// Inputs are the implementations of the interfaces that the callables and the
+// generators take.
 type Suite struct {
 	Subject     *emit.TypeRef
 	Methods     *emit.Interface
@@ -171,6 +173,7 @@ type Suite struct {
 	Calls       []Call
 	Using       []Enumeration
 	Starts      []Start
+	Generated   []Generated
 	Inputs      []Input
 	Dynamic     bool
 }
@@ -974,8 +977,7 @@ func (g *generator) callsOf(k *caller, s *Suite, methods []*node.Method) {
 		s.Callables = append(s.Callables, c)
 		s.Calls = append(s.Calls, k.call(&c, method, &method.ID))
 	}
-	s.Using, s.Starts, s.Dynamic = k.overrides()
-	s.Inputs = k.inputs
+	k.overrides(s)
 	s.Checks = g.checksOf(k.m, &k.origin, s.Callables)
 	if len(methods) > 0 {
 		s.Names.Over = k.e.JoinName(overWord, s.Declaration)
@@ -1003,8 +1005,7 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 		Names: names, Callables: callables, Checks: g.checksOf(m, &f.ID, callables),
 		Calls: []Call{k.call(&callables[0], f, &f.ID)},
 	}
-	s.Using, s.Starts, s.Dynamic = k.overrides()
-	s.Inputs = k.inputs
+	k.overrides(&s)
 	write(e, &f.ID, &s)
 	return nil
 }

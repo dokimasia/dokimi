@@ -137,29 +137,22 @@ func (k *caller) call(c *Callable, sym symbol.Symbol, id *symbol.Identity) Call 
 // address of a value of its element type. A parameter of a function type
 // takes a generated function, and a parameter of an interface outside the
 // standard library an implementation whose methods are generated functions.
-// A channel that the callable receives from takes a closed channel of a
-// drawn list. A variadic parameter of functions or of such interfaces takes
-// no values.
+// A function type or an interface whose generated code refers to a type that
+// the file of the suite cannot import takes the generator of its
+// registration. A channel that the callable receives from takes a closed
+// channel of a drawn list. A variadic parameter of functions or of interfaces
+// outside the standard library does not take a value.
 //
 // Each parameter takes its own name where the name is free, and otherwise the
-// first free name of [naming.Unique]. A name is free where the generated call
-// declares no such name and imports no package of the name: the package of
-// the declaration, or the package of a type that a parameter takes. A
-// parameter without a name takes the name and the label a and its position,
-// as a0.
+// first free name of [naming.Unique]. A name is free where [caller.taken]
+// does not contain it. A parameter without a name takes the name and the
+// label a and its position, as a0.
 func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
-	taken := map[string]bool{}
-	for _, names := range [][]string{reserved, predeclared} {
-		for _, name := range names {
-			taken[name] = true
-		}
-	}
-	if pkg, found := k.m.Reader().PackageOf(k.origin); found {
-		taken[pkg.Name] = true
-	}
+	refs := make([]*node.TypeRef, 0, len(view.Params))
 	for _, p := range view.Params {
-		k.packages(p.Ref, taken)
+		refs = append(refs, p.Ref)
 	}
+	taken := k.taken(refs...)
 	out := make([]Param, 0, len(view.Params))
 	for i, p := range view.Params {
 		if p.Role == rules.ParamContext {
@@ -182,7 +175,7 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 			param.Omitted = true
 		case p.Variadic:
 			k.roots = append(k.roots, ref)
-		case under.Form == symbol.FormFunc:
+		case under.Form == symbol.FormFunc && k.importable(under):
 			param.Funcs = []Func{k.funcOf(under, name, label, taken)}
 		case strings.HasPrefix(under.Spelling, receiveSpelling):
 			param.Type, param.Receive = rules.EmitRef(under.Elems[0]), true
@@ -193,7 +186,7 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 			ref.Elems[0].Target.Name]:
 			param.Type, param.Address = rules.EmitRef(ref.Elems[0]), true
 			k.roots = append(k.roots, ref.Elems[0])
-		case implemented:
+		case implemented && k.implementable(ref, iface):
 			param.Input, param.Funcs = k.inputOf(ref, iface, name, label, taken)
 		default:
 			k.roots = append(k.roots, ref)
@@ -201,6 +194,62 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 		out = append(out, param)
 	}
 	return out
+}
+
+// taken returns the names that a generator of the suite does not declare for
+// a value of its own: the names that the generated call declares, the
+// predeclared types, and the name of each package that the generator can
+// spell. These packages are the package of the declaration and the packages
+// of the named types of refs. A local variable with such a name would hide
+// the package from a later spelling of a type.
+func (k *caller) taken(refs ...*node.TypeRef) map[string]bool {
+	taken := map[string]bool{}
+	for _, names := range [][]string{reserved, predeclared} {
+		for _, name := range names {
+			taken[name] = true
+		}
+	}
+	if pkg, found := k.m.Reader().PackageOf(k.origin); found {
+		taken[pkg.Name] = true
+	}
+	for _, ref := range refs {
+		k.packages(ref, taken)
+	}
+	return taken
+}
+
+// importable reports whether the file of the suite can refer to each type of
+// refs. It reports true where the plan does not preview the package of the
+// file, because the layout then checks each reference itself.
+func (k *caller) importable(refs ...*node.TypeRef) bool {
+	pkg, placed := k.e.File().Package()
+	if placed != nil {
+		return true
+	}
+	for _, ref := range refs {
+		if k.b.Importable(pkg, ref) != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// implementable reports whether the file of the suite can refer to the
+// interface iface at the type ref, and to each type of the signature of each
+// of its exported methods. The implementation of the interface spells each of
+// these types.
+func (k *caller) implementable(ref *node.TypeRef, iface *node.Interface) bool {
+	b := k.b
+	refs := []*node.TypeRef{ref}
+	for _, method := range methodsOf(&b, iface) {
+		for _, p := range method.Params {
+			refs = append(refs, p.Type)
+		}
+		for _, r := range method.Returns {
+			refs = append(refs, r.Type)
+		}
+	}
+	return k.importable(refs...)
 }
 
 // receiveSpelling opens the spelling of a channel that the callable receives

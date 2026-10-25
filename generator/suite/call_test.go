@@ -436,6 +436,32 @@ func TestCall(t *testing.T) {
 			expect.Equal(t, got.Params[1].Input, "PipelineFeedInput", "the feed takes the implementation of Feed")
 		})
 
+		registered := []struct {
+			name string
+			give string
+			want param
+		}{
+			{
+				name: "draws the value of an interface whose methods the file of the suite cannot import",
+				give: "Watch", want: param{name: "g", label: "g", spelling: "tool.Gauge"},
+			},
+			{
+				name: "draws the value of a function type whose signature the file of the suite cannot import",
+				give: "Turn", want: param{name: "d", label: "d", spelling: "tool.Dial"},
+			},
+		}
+		for _, tt := range registered {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := called(t, generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites["Tuned"], tt.give)
+				assert.Length(t, got.Params, 1, "the callable takes one input")
+				expect.Equal(t, paramOf(got.Params[0]), tt.want, "the call draws a value of the input")
+				expect.Equal(t, got.Params[0].Input, "", "the input takes the generator of its registration")
+				expect.Empty(t, got.Params[0].Funcs, "the call does not draw a function for the input")
+			})
+		}
+
 		omitted := []struct {
 			name string
 			give string

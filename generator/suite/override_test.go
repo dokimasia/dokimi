@@ -10,10 +10,12 @@ import (
 	"go.dokimi.dev/eidos/sdk/emit"
 
 	"go.dokimi.dev/dokimi/generator/suite"
+	"go.dokimi.dev/dokimi/internal/gentest"
 )
 
-// The calls of a suite override the generator of each enumeration and of each
-// struct with a starting value that their inputs take at some depth.
+// The calls of a suite override the generator of each enumeration, of each
+// struct with a starting value, of each function type and of each interface
+// that their inputs take at some depth.
 func TestOverride(t *testing.T) {
 	t.Parallel()
 
@@ -22,33 +24,38 @@ func TestOverride(t *testing.T) {
 
 		tests := []struct {
 			name     string
-			givePkg  string
+			givePkgs []string
 			giveDecl string
 			want     [][]string
 		}{
 			{
-				name: "records the members of each enumeration that the calls take", givePkg: meterPackage,
+				name: "records the members of each enumeration that the calls take", givePkgs: []string{meterPackage},
 				giveDecl: "Meter", want: [][]string{{"Grams", "Litres"}},
 			},
 			{
-				name: "records the members of each enumeration at each depth of the inputs", givePkg: callsPackage,
-				giveDecl: "Board",
-				want:     [][]string{{"Round", "Square"}, {"Light", "Dark"}, {"Red", "Blue"}, {"Warm", "Cool"}},
+				name:     "records the members of each enumeration at each depth of the inputs",
+				givePkgs: []string{callsPackage}, giveDecl: "Board",
+				want: [][]string{{"Round", "Square"}, {"Light", "Dark"}, {"Red", "Blue"}, {"Warm", "Cool"}},
 			},
 			{
-				name:    "records the members of an enumeration inside a result of a generated function",
-				givePkg: inputsPackage, giveDecl: "Pipeline", want: [][]string{{"Raw", "Cooked"}},
+				name:     "records the members of an enumeration inside a result of a generated function",
+				givePkgs: []string{inputsPackage}, giveDecl: "Pipeline", want: [][]string{{"Raw", "Cooked"}},
 			},
 			{
-				name: "records no enumeration for calls that take none", givePkg: storePackage, giveDecl: "Store",
-				want: [][]string{},
+				name: "records no enumeration for calls that take none", givePkgs: []string{storePackage},
+				giveDecl: "Store", want: [][]string{},
+			},
+			{
+				name:     "does not record an enumeration that the file of the suite cannot import",
+				givePkgs: []string{wrapPackage, toolPackage, deepPackage}, giveDecl: "Tuned",
+				want: [][]string{{"Percent", "Steps"}},
 			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
-				got := generate(t, goTree, tt.givePkg).suites[tt.giveDecl]
+				got := generate(t, goTree, tt.givePkgs...).suites[tt.giveDecl]
 				members := make([][]string, 0, len(got.Using))
 				for _, e := range got.Using {
 					names := make([]string, 0, len(e.Members))
@@ -151,7 +158,114 @@ func TestOverride(t *testing.T) {
 			got := generate(t, goTree, callsPackage).suites["Board"]
 			expect.Empty(t, got.Starts, "no struct that Board takes has a sample, a builder or a declared default")
 		})
+
+		t.Run("does not record the starting value of a type that the file of the suite cannot import",
+			func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites["Tuned"]
+				expect.Equal(t, startsOf(got.Starts), []start{{
+					name: "TunedSettingValues", spelling: "Setting", value: "composite Value", label: "setting",
+					fields: []string{"Value setting.value"},
+				}}, "the spec and the level of a tool are types of the internal package of the tree lib")
+			})
+
+		labeler := []fn{{
+			field: "OnLabel", signature: "(string) (r0 Receipt, r1 error)", index: "labelerLabelAt",
+			results: []result{
+				{name: "labelerLabelResults0", label: "labeler-label-0", spelling: "Receipt"},
+				{
+					name: "labelerLabelResults1", label: "labeler-label-1", spelling: "error", isError: true,
+					errors: []string{"ErrTorn"},
+				},
+			},
+		}}
+		generators := []struct {
+			name     string
+			givePkgs []string
+			giveDecl string
+			want     []generator
+		}{
+			{
+				name:     "records the generator of each function type and each interface at each depth of the inputs",
+				givePkgs: []string{nestedPackage}, giveDecl: "Courier",
+				want: []generator{
+					{spelling: "Labeler", input: "CourierLabelerInput", funcs: labeler},
+					{spelling: "func() error", funcs: []fn{{
+						signature: "() (r0 error)", index: "funcAt",
+						results: []result{{name: "funcResults", label: "func", spelling: "error", isError: true}},
+					}}},
+					{spelling: "Ack", funcs: []fn{{
+						signature: "(string) (r0 error)", index: "ackAt",
+						results: []result{{name: "ackResults", label: "ack", spelling: "error", isError: true}},
+					}}},
+					{spelling: "Scale[int]", input: "CourierScaleInput", funcs: []fn{{
+						field: "OnWeigh", signature: "() (r0 int)", index: "scaleWeighAt",
+						results: []result{{name: "scaleWeighResults", label: "scale-weigh", spelling: "int"}},
+					}}},
+					{spelling: "func()", funcs: []fn{{signature: "() ()"}}},
+				},
+			},
+			{
+				name:     "records the generator of an interface inside a result of a generated function",
+				givePkgs: []string{nestedPackage}, giveDecl: "Hire",
+				want: []generator{
+					{spelling: "Labeler", input: "HireLabelerInput", funcs: labeler},
+					{spelling: "func()", funcs: []fn{{signature: "() ()"}}},
+				},
+			},
+			{
+				name:     "records the generator of each type at depth that the file of the suite can import",
+				givePkgs: []string{wrapPackage, toolPackage, deepPackage}, giveDecl: "Tuned",
+				want: []generator{{spelling: "Note", input: "TunedNoteInput", funcs: []fn{{
+					field: "OnWrite", signature: "(string) (r0 error)", index: "noteWriteAt",
+					results: []result{
+						{name: "noteWriteResults", label: "note-write", spelling: "error", isError: true},
+					},
+				}}}},
+			},
+			{
+				name:     "does not record a generator for calls without a function type or an interface",
+				givePkgs: []string{storePackage}, giveDecl: "Store", want: []generator{},
+			},
+		}
+		for _, tt := range generators {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, goTree, tt.givePkgs...).suites[tt.giveDecl]
+				gens := make([]generator, 0, len(got.Generated))
+				for _, g := range got.Generated {
+					gens = append(gens, generator{spelling: spelled(g.Type), input: g.Input, funcs: fnsOf(g.Funcs)})
+				}
+				expect.Equal(t, gens, tt.want, "the suite generates the values of each such type once")
+			})
+		}
+
+		t.Run("leaves the import of a type at depth to the layout where the plan does not preview a package",
+			func(t *testing.T) {
+				t.Parallel()
+
+				p := suite.New()
+				s := specOf(goTree, p, wrapPackage, toolPackage, deepPackage)
+				s.Types = nil
+				got := recorded(t, gentest.New(t, s), p).suites["Tuned"]
+				spellings := make([]string, 0, len(got.Generated))
+				for _, g := range got.Generated {
+					spellings = append(spellings, spelled(g.Type))
+				}
+				expect.Equal(t, spellings, []string{
+					"deep.Probe", "Note", "func() deep.Level", "deep.Hook", "Dial", "Gauge", "Calibrator",
+				}, "the suite generates the values of each such type, and the layout checks its references")
+			})
 	})
+}
+
+// generator is the generator of the values of a function type or of an
+// interface, with the spelling of the type and its generated functions.
+type generator struct {
+	spelling, input string
+	funcs           []fn
 }
 
 // start is the generator of the values of a type with a starting value, with

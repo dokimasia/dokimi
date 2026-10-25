@@ -63,6 +63,23 @@ type StartField struct {
 	Label string
 }
 
+// Generated is the generator of the values of a function type, or of an
+// interface outside the standard library, that the calls of a suite take at
+// some depth of their inputs. Each property run and each benchmark of the
+// suite takes it for every value of the type.
+//
+// Type is the type. Funcs are the generated functions of a value: the one
+// function of a function type, or the function of each method of the
+// interface. Input is the name of the implementation of the interface that
+// the suite declares, and empty for a function type. The case of a value
+// draws the results of its functions, as the case of a call draws them for a
+// parameter of the type.
+type Generated struct {
+	Type  *emit.TypeRef
+	Input string
+	Funcs []Func
+}
+
 // valuesWord is the word that the name of the generator of a struct with a
 // starting value joins to the struct and the declaration of the suite.
 const valuesWord = "Values"
@@ -74,35 +91,45 @@ const (
 	propSkip = "-"
 )
 
-// overrides returns each enumeration and each struct with a starting value
-// that the roots of the calls take at some depth, in the order in which a
-// walk of the roots meets them, and whether the roots take a value of the
-// dynamic type, Go's any, at some depth. The walk enters the elements and the
-// type arguments of each type, the exported fields and the embedded types of
-// a struct, and the target of an alias. It leaves the types of the standard
-// library to the shape reader of the property engine, because the value sets
-// of the standard library include sets of flags, such as fs.FileMode, and
-// units, such as time.Duration.
-func (k *caller) overrides() ([]Enumeration, []Start, bool) {
-	w := walk{k: k, seen: map[symbol.Identity]bool{}, names: map[string]bool{}}
-	for _, root := range k.roots {
-		w.visit(root)
+// overrides records into the suite s each enumeration, each struct with a
+// starting value, and each function type and interface outside the standard
+// library that the roots of the calls take at some depth, in the order in
+// which a walk of the roots meets them. It records whether the roots take a
+// value of the dynamic type, Go's any, at some depth, and the implementations
+// of the interfaces that the calls and the generators take.
+//
+// The walk enters the elements and the type arguments of each type, the
+// exported fields and the embedded types of a struct, the target of an alias,
+// and the results of each generated function. It leaves the types of the
+// standard library to the shape reader of the property engine, because the
+// value sets of the standard library include sets of flags, such as
+// fs.FileMode, and units, such as time.Duration. It does not override a type
+// that the file of the suite cannot import, so a registration of the test
+// process states the generator of such a type.
+func (k *caller) overrides(s *Suite) {
+	w := walk{k: k, seen: map[symbol.Identity]bool{}, met: map[string]bool{}, names: map[string]bool{}}
+	for i := 0; i < len(k.roots); i++ {
+		w.visit(k.roots[i])
 	}
-	return w.enums, w.starts, w.dynamic
+	s.Using, s.Starts, s.Generated, s.Dynamic, s.Inputs = w.enums, w.starts, w.generated, w.dynamic, k.inputs
 }
 
 // walk is a walk of the types of the roots of the calls of a suite. seen
-// contains each declaration that the walk visited, and names the names of
-// the generators of the starting values. enums and starts are the
-// enumerations and the structs with a starting value that the walk met, and
+// contains each declaration that the walk visited, met the spelling of each
+// function type and each interface outside the standard library that it met,
+// and names the names of the generators of the starting values. enums,
+// starts and generated are the enumerations, the structs with a starting
+// value, and the function types and the interfaces that the walk overrides.
 // dynamic reports that it met the dynamic type.
 type walk struct {
-	k       *caller
-	seen    map[symbol.Identity]bool
-	names   map[string]bool
-	enums   []Enumeration
-	starts  []Start
-	dynamic bool
+	k         *caller
+	seen      map[symbol.Identity]bool
+	met       map[string]bool
+	names     map[string]bool
+	enums     []Enumeration
+	starts    []Start
+	generated []Generated
+	dynamic   bool
 }
 
 // visit visits the type ref and each type that it contains. A structural form
@@ -112,6 +139,9 @@ type walk struct {
 func (w *walk) visit(ref *node.TypeRef) {
 	if w.k.b.TypeOf(ref).Form == symbol.FormDynamic {
 		w.dynamic = true
+		return
+	}
+	if w.generate(ref) {
 		return
 	}
 	for _, elem := range ref.Elems {
@@ -127,6 +157,9 @@ func (w *walk) visit(ref *node.TypeRef) {
 	decl, _ := w.k.m.Reader().Lookup(ref.Target)
 	switch d := decl.(type) {
 	case *node.Enum:
+		if !w.k.importable(ref) {
+			return
+		}
 		members := make([]emit.Value, 0, len(d.Variants))
 		for _, v := range d.Variants {
 			members = append(members, emit.Name(v.ID))
@@ -152,14 +185,57 @@ func (w *walk) visit(ref *node.TypeRef) {
 	}
 }
 
+// generate reports whether ref is a function type or an interface outside the
+// standard library, and records the generator of the values of such a type
+// the first time that the walk meets it. The walk does not enter such a type.
+// A value of a function type is a generated function, and a value of an
+// interface is the implementation of the suite with a generated function of
+// each method. The results of these functions are roots of the walk. The
+// suite does not record a generator of a type whose generated code refers to
+// a type that the file of the suite cannot import.
+//
+// The name of the generated functions is the name of the type in camel case,
+// and their label the name in kebab case. A function type without a name
+// takes the name and the label func.
+func (w *walk) generate(ref *node.TypeRef) bool {
+	k := w.k
+	under := k.underlying(ref)
+	iface, implemented := k.implemented(ref)
+	if under.Form != symbol.FormFunc && !implemented {
+		return false
+	}
+	g := Generated{Type: rules.EmitRef(ref)}
+	spelling := g.Type.Spelling + "[" + spelledArgs(g.Type) + "]"
+	if w.met[spelling] {
+		return true
+	}
+	w.met[spelling] = true
+	word := ref.Target.Name
+	if word == "" {
+		word = funcWord
+	}
+	name, label, taken := naming.Camel(word), naming.Kebab(word), k.taken(ref)
+	switch {
+	case implemented && k.implementable(ref, iface):
+		g.Input, g.Funcs = k.inputOf(ref, iface, name, label, taken)
+	case !implemented && k.importable(ref, under):
+		g.Funcs = []Func{k.funcOf(under, name, label, taken)}
+	default:
+		return true
+	}
+	w.generated = append(w.generated, g)
+	return true
+}
+
 // startOf returns the generator of the values of the struct st at the type
 // ref, and false for a struct without a starting value. The starting value is
 // the authored sample of the struct, the value of its builder, or its value
 // with the declared defaults of its fields, in that order. A generic struct
-// takes the shape of the property engine alone. taken contains the names of
-// the generators of the suite, and startOf adds the name that it takes.
+// takes the shape of the property engine alone, and so does a struct that the
+// file of the suite cannot import. taken contains the names of the generators
+// of the suite, and startOf adds the name that it takes.
 func (k *caller) startOf(st *node.Struct, ref *node.TypeRef, taken map[string]bool) (Start, bool) {
-	if len(st.TypeParams) > 0 {
+	if len(st.TypeParams) > 0 || !k.importable(ref) {
 		return Start{}, false
 	}
 	s := Start{Type: rules.EmitRef(ref)}
@@ -192,11 +268,12 @@ func (k *caller) startOf(st *node.Struct, ref *node.TypeRef, taken map[string]bo
 // the type ref, whose value a case keeps or changes whole, and false for a
 // type without a starting value. The starting value is the authored sample of
 // the type, or its declared default. A transparent alias is the type of its
-// target, and a generic type takes the shape of the property engine alone.
-// taken contains the names of the generators of the suite, and wholeStartOf
-// adds the name that it takes.
+// target. A generic type takes the shape of the property engine alone, and so
+// does a type that the file of the suite cannot import. taken contains the
+// names of the generators of the suite, and wholeStartOf adds the name that
+// it takes.
 func (k *caller) wholeStartOf(d *node.Alias, ref *node.TypeRef, taken map[string]bool) (Start, bool) {
-	if !d.Defined || len(d.TypeParams) > 0 {
+	if !d.Defined || len(d.TypeParams) > 0 || !k.importable(ref) {
 		return Start{}, false
 	}
 	s := Start{Type: rules.EmitRef(ref), Whole: true}

@@ -34,9 +34,6 @@ const (
 	kitPackage      = "example.com/shop/kit"
 	kitTestPackage  = "example.com/shop/kit_test"
 	kittestPackage  = "example.com/shop/kit/kittest_test"
-	wrapPackage     = "example.com/shop/wrap"
-	toolPackage     = "example.com/shop/lib/tool"
-	deepPackage     = "example.com/shop/lib/internal/deep"
 	shopPackage     = "shop"
 	otherRegistrant = "other"
 )

@@ -777,7 +777,7 @@ var pipelineCodeValues = prop.Composite(func(c *prop.Case) Code {
 type pipelineFeedInputEmbedded = Feed
 
 // pipelineFeedInput is a Feed whose methods return the results that the
-// call generators of Pipeline draw for them, in turn.
+// generators of the suite of Pipeline draw for them, in turn.
 type pipelineFeedInput struct {
 	pipelineFeedInputEmbedded
 	onNext  func(a0 context.Context) (Item, bool, error)
@@ -811,7 +811,7 @@ func (in pipelineFeedInput) Close() error {
 type pipelineSourceInputEmbedded = Source[int]
 
 // pipelineSourceInput is a Source whose methods return the results that
-// the call generators of Pipeline draw for them, in turn.
+// the generators of the suite of Pipeline draw for them, in turn.
 type pipelineSourceInput struct {
 	pipelineSourceInputEmbedded
 	onRead func() int
@@ -827,7 +827,7 @@ func (in pipelineSourceInput) Read() int {
 type pipelineSourceInput0Embedded = Source[string]
 
 // pipelineSourceInput0 is a Source whose methods return the results that
-// the call generators of Pipeline draw for them, in turn.
+// the generators of the suite of Pipeline draw for them, in turn.
 type pipelineSourceInput0 struct {
 	pipelineSourceInput0Embedded
 	onRead func() string

@@ -49,6 +49,10 @@ const (
 	dualPackage        = "example.com/shop/dual"
 	ledgerPackage      = "example.com/shop/ledger"
 	loosePackage       = "example.com/shop/loose"
+	nestedPackage      = "example.com/shop/nested"
+	wrapPackage        = "example.com/shop/wrap"
+	toolPackage        = "example.com/shop/lib/tool"
+	deepPackage        = "example.com/shop/lib/internal/deep"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )

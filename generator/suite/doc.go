@@ -123,10 +123,13 @@
 // inputs of each call through the property engine of the assert library. A
 // context takes the context of the call, and a variadic parameter takes a
 // list. A pointer takes the address of a value, or a pointer that can be nil
-// under the mixin nil-safe. The members of each enumeration that the inputs
-// take at some depth replace the generator of the enumeration. The suite also
-// declares the planted defect of the ceilings: a subject whose callables spend
-// the cost that exceeds a ceiling.
+// under the mixin nil-safe. A function type takes a generated function, and an
+// interface outside the standard library takes an implementation of the suite
+// whose methods are generated functions. An enumeration takes one of its
+// members. These three rules apply at every depth of an input, and a type
+// that the file of the suite cannot import takes the generator of its
+// registration. The suite also declares the planted defect of the ceilings: a
+// subject whose callables spend the cost that exceeds a ceiling.
 //
 // The test of a subject declares a benchmark of each callable, such as the
 // level Get of BenchmarkStore. It declares a parallel benchmark, such as

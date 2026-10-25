@@ -135,13 +135,29 @@ var _ = conform.CompatV1
 {{- end}}
 		},
 {{- end}}
-{{- if or $c.Using $c.Starts $c.Dynamic}}
+{{- if or $c.Using $c.Starts $c.Generated $c.Dynamic}}
 		Using: []prop.Option{
 {{- range $c.Using}}
 			prop.Using(prop.SampledFrom({{range $i, $m := .Members}}{{if $i}}, {{end}}{{value $m}}{{end}})),
 {{- end}}
 {{- range $c.Starts}}
 			prop.Using({{suiteCamel .Name}}),
+{{- end}}
+{{- range $c.Generated}}
+{{- $drawn := false}}
+{{- range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}
+			prop.Using(prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) {{spell .Type}} {
+{{- range .Funcs}}{{template "suite.results" .}}{{end}}
+{{- if .Input}}
+				return {{suiteCamel .Input}}{
+{{- range .Funcs}}
+					{{suiteCamel .Field}}: {{template "suite.func" .}},
+{{- end}}
+				}
+{{- else}}
+				return {{template "suite.func" (index .Funcs 0)}}
+{{- end}}
+			})),
 {{- end}}
 {{- if $c.Dynamic}}
 			prop.Using(prop.Composite(func(c *prop.Case) any {
@@ -326,7 +342,7 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s is %s under the name of the field that %s embeds.` $embedded .Type.Spelling $input))}}
 {{- ""}}type {{$embedded}} = {{spell .Type}}
 
-{{docs (wrapdocs (printf `%s is a %s whose methods return the results that the call generators of %s draw for them, in turn.` $input .Type.Spelling $c.Declaration))}}
+{{docs (wrapdocs (printf `%s is a %s whose methods return the results that the generators of the suite of %s draw for them, in turn.` $input .Type.Spelling $c.Declaration))}}
 {{- ""}}type {{$input}} struct {
 	{{$embedded}}
 {{- range .Methods}}

@@ -19,7 +19,7 @@ import (
 	"go.dokimi.dev/dokimi/annotator/fault"
 )
 
-// Func is a function that a call generator writes for a parameter of a
+// Func is a function that a generator of the suite writes for a value of a
 // function type, or for a method of the implementation of an interface.
 // Signature is the signature of the function, whose parameters have no names
 // and whose results have the names r0, r1 and so on. Field is the field of
@@ -56,9 +56,10 @@ type Result struct {
 }
 
 // Input is the implementation of an interface that the suite declares for
-// the parameters of the interface. Name is the name of the implementation,
-// as StoreSourceInput, and the Go plan writes it as storeSourceInput. Type is
-// the interface at the type arguments of the parameters. Methods are the
+// each value of the interface that its calls take: a parameter, or a value at
+// some depth of an input. Name is the name of the implementation, as
+// StoreSourceInput, and the Go plan writes it as storeSourceInput. Type is
+// the interface at the type arguments of the values. Methods are the
 // exported methods of the interface, in the order of its member walk. The
 // implementation embeds the interface, so it has each other method as well.
 // Embedded is the alias of the interface that the implementation embeds, as
@@ -166,7 +167,7 @@ func (*caller) index(f *Func, name string, taken map[string]bool) string {
 
 // inputOf returns the name of the implementation of the interface iface at
 // the type ref, and the generated function of each method of the interface
-// for the parameter named name with the label label. The suite declares one
+// for the value named name with the label label. The suite declares one
 // implementation of each interface at its type arguments. The function of a
 // method takes the declared errors of the method for its error result.
 func (k *caller) inputOf(

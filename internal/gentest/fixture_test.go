@@ -10,6 +10,7 @@ import (
 
 	"go.dokimi.dev/assert"
 	golang "go.dokimi.dev/eidos/lang/go"
+	gobackend "go.dokimi.dev/eidos/lang/go/backend"
 	"go.dokimi.dev/eidos/lang/typescript"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/diag"
@@ -124,6 +125,18 @@ func TestFixture(t *testing.T) {
 
 			f := gentest.New(t, &gentest.Spec{Dir: goTree, Packages: []string{catalogPackage}, Target: golang.Target})
 			assert.Equal(t, f.Target, golang.Target, "a phase call of a generator runs under the target of the spec")
+		})
+
+		t.Run("sets the spoke of the plan of the spec", func(t *testing.T) {
+			t.Parallel()
+
+			spoke := gobackend.New()
+			f := gentest.New(t, &gentest.Spec{
+				Dir: goTree, Packages: []string{catalogPackage}, Target: golang.Target, Types: spoke,
+			})
+			assert.Equal(t, f.Types, plugin.TypeSpeller(spoke),
+				"a phase call of a generator translates types and previews routes through the spoke of the spec",
+				assert.ByIdentity())
 		})
 
 		t.Run("stamps the fixture through the annotators of the spec", func(t *testing.T) {

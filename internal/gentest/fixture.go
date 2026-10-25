@@ -52,6 +52,11 @@ type Spec struct {
 	// Target is the target of the plan of a generator's phase call. It is
 	// zero for an annotator.
 	Target plugin.Target
+	// Types is the spoke of the backend of the plan of a generator's phase
+	// call, such as the Go backend. A phase call translates types through it,
+	// and previews the package of a routed file where the spoke spells file
+	// names and derives packages. It is nil for an annotator.
+	Types plugin.TypeSpeller
 	// Plugins are the plugins whose keys the fixture registers and whose
 	// directives it validates, the plugin under test among them.
 	Plugins []plugin.Plugin
@@ -108,7 +113,7 @@ func New(tb assert.TB, s *Spec) *Fixture {
 		Plugins:   slices.Concat(s.Plugins, annotators(s.Annotators)),
 		Packages:  s.Packages,
 	})}
-	f.Target = s.Target
+	f.Target, f.Types = s.Target, s.Types
 	f.Graph.Freeze()
 	for pkg := range f.Graph.Packages() {
 		f.decls = slices.AppendSeq(f.decls, node.Declarations(pkg))

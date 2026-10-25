@@ -14,3 +14,4 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0003](0003-the-encode-of-an-enumeration-refuses-a-value-outside-the-variants.md) | The encode of an enumeration refuses a value outside the variants | Accepted |
 | [0004](0004-an-unexported-enumeration-has-unexported-members-and-no-checks.md) | An unexported enumeration has unexported members and no checks | Accepted |
 | [0005](0005-a-remote-error-type-has-the-message-of-another-process.md) | A remote error type has the message of another process | Accepted |
+| [0006](0006-a-check-that-counts-allocations-runs-outside-the-parallel-tests.md) | A check that counts allocations runs outside the parallel tests | Accepted |

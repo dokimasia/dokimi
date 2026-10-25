@@ -939,7 +939,7 @@ func TestOrderBuilder(t *testing.T) {
 			t.Parallel()
 
 			var seed Order
-			seed.Codes = Codes([]string{"Codes-a"})
+			seed.Codes = Codes{"Codes-a"}
 			seed.Marker = struct{}{}
 			got := NewOrderBuilderFrom(seed).Build()
 			expect.Equal(t, got.Codes, seed.Codes, "NewOrderBuilderFrom keeps Codes")
@@ -993,7 +993,7 @@ func TestOrderBuilder(t *testing.T) {
 			t.Parallel()
 
 			var want Codes
-			want = Codes([]string{"Codes-a"})
+			want = Codes{"Codes-a"}
 			got := NewOrderBuilder().WithCodes(want).Build()
 			assert.Equal(t, got.Codes, want, "WithCodes writes its argument to Codes")
 		})
@@ -1002,8 +1002,8 @@ func TestOrderBuilder(t *testing.T) {
 			t.Parallel()
 
 			var first, want Codes
-			first = Codes([]string{"Codes-a"})
-			want = Codes([]string{"Codes-b"})
+			first = Codes{"Codes-a"}
+			want = Codes{"Codes-b"}
 			got := NewOrderBuilder().WithCodes(first).WithCodes(want).Build()
 			assert.Equal(t, got.Codes, want, "the second call of WithCodes replaces the first")
 		})
@@ -1222,7 +1222,7 @@ func TestOrderBuilder(t *testing.T) {
 			t.Parallel()
 
 			var seed Order
-			seed.Codes = Codes([]string{"Codes-a"})
+			seed.Codes = Codes{"Codes-a"}
 			seed.Marker = struct{}{}
 			b := NewOrderBuilder()
 			b.Mutate(func(v *Order) { *v = seed })

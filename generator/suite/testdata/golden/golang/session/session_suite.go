@@ -105,8 +105,9 @@ func FuzzSessionsSuite[T Sessions](
 	conform.Fuzz(f, SessionsSuite(), callable, sessionsSubjects(newSubject), opts...)
 }
 
-// RunSessionsBudgets applies the allocation ceilings of Sessions, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunSessionsBudgets applies the allocation ceilings of Sessions and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunSessionsBudgets[T Sessions](
 	t *testing.T,
 	newSubject func(h *SessionsHandle) T,

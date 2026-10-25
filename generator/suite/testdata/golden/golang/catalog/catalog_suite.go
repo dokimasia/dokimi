@@ -121,8 +121,9 @@ func FuzzCatalogSuite[T CatalogMethods](
 	conform.Fuzz(f, CatalogSuite(), callable, catalogSubjects(newSubject), opts...)
 }
 
-// RunCatalogBudgets applies the allocation ceilings of Catalog, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunCatalogBudgets applies the allocation ceilings of Catalog and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunCatalogBudgets[T CatalogMethods](
 	t *testing.T,
 	newSubject func(h *CatalogHandle) T,

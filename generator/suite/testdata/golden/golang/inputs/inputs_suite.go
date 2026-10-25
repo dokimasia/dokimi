@@ -270,8 +270,9 @@ func FuzzPipelineSuite[T Pipeline](
 	conform.Fuzz(f, PipelineSuite(), callable, pipelineSubjects(newSubject), opts...)
 }
 
-// RunPipelineBudgets applies the allocation ceilings of Pipeline, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunPipelineBudgets applies the allocation ceilings of Pipeline and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunPipelineBudgets[T Pipeline](
 	t *testing.T,
 	newSubject func(h *PipelineHandle) T,

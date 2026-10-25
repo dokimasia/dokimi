@@ -101,8 +101,8 @@ func TestMeterSuite(t *testing.T) {
 	})
 }
 
-// TestMeterSuiteAllocs falsifies the allocation ceilings of the suite of
-// Meter.
+// TestMeterSuiteAllocs falsifies the allocation ceilings and the checks
+// that count allocations of the suite of Meter.
 func TestMeterSuiteAllocs(t *testing.T) {
 	t.Run("MeterSuite", func(t *testing.T) {
 		conform.FalsifyAllocs(t, MeterSuite())
@@ -116,8 +116,9 @@ func meterIdle(h *MeterHandle) Meter {
 }
 
 // TestMeterSuiteBudgets applies the allocation ceilings of the suite of
-// Meter to meterIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Meter to meterIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMeterSuiteBudgets(t *testing.T) {
 	RunMeterBudgets(
 		t,
@@ -259,15 +260,16 @@ func TestWeighSuite(t *testing.T) {
 	})
 }
 
-// TestWeighSuiteAllocs falsifies the allocation ceilings of the suite of
-// Weigh.
+// TestWeighSuiteAllocs falsifies the allocation ceilings and the checks
+// that count allocations of the suite of Weigh.
 func TestWeighSuiteAllocs(t *testing.T) {
 	t.Run("WeighSuite", func(t *testing.T) {
 		conform.FalsifyAllocs(t, WeighSuite())
 	})
 }
 
-// TestWeighAllocs applies the allocation ceiling of Weigh to Weigh.
+// TestWeighAllocs applies the allocation ceiling and the checks that count
+// allocations of Weigh to Weigh.
 func TestWeighAllocs(t *testing.T) {
 	RunWeighBudgets(t, Weigh)
 }

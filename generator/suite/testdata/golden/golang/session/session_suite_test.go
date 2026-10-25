@@ -93,14 +93,19 @@ func sessionsIdle(h *SessionsHandle) Sessions {
 }
 
 // TestSessionsSuiteBudgets applies the allocation ceilings of the suite of
-// Sessions to sessionsIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Sessions to sessionsIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestSessionsSuiteBudgets(t *testing.T) {
 	RunSessionsBudgets(
 		t,
 		sessionsIdle,
 		conform.Ceilings(SessionsChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(SessionsChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			SessionsChecks.Get.KeepsTheLastPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

@@ -74,8 +74,9 @@ func boardIdle(h *BoardHandle) Board {
 }
 
 // TestBoardSuiteBudgets applies the allocation ceilings of the suite of
-// Board to boardIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Board to boardIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestBoardSuiteBudgets(t *testing.T) {
 	RunBoardBudgets(
 		t,

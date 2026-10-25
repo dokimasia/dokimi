@@ -40,10 +40,11 @@ const Version = "0.1.0"
 // property run of the application. CheckDirective binds a function of a
 // consumer to a callable of a suite as a check. Its positional param
 // CallableParam contains the callable, and its param DefectParam contains the
-// name of the function of the planted defect. ExcuseDirective excuses a check
-// of the suite from the conformance test of a subject. Its positional param
-// IdentityParam contains the identity of the check, and its param ReasonParam
-// contains the reason.
+// name of the function of the planted defect. Its param CountedParam marks a
+// check that counts the allocations of the whole process. ExcuseDirective
+// excuses a check of the suite from the conformance test of a subject. Its
+// positional param IdentityParam contains the identity of the check, and its
+// param ReasonParam contains the reason.
 const (
 	SuiteDirective   directive.Name     = "suite"
 	SubjectDirective directive.Name     = "subject"
@@ -54,16 +55,18 @@ const (
 	CasesParam       directive.ParamKey = "cases"
 	CallableParam    directive.ParamKey = "callable"
 	DefectParam      directive.ParamKey = "defect"
+	CountedParam     directive.ParamKey = "counted"
 	IdentityParam    directive.ParamKey = "identity"
 	ReasonParam      directive.ParamKey = "reason"
 )
 
-// KeyDeclaration, KeyCallable, KeySegment, KeyStatement, KeyDefect and
-// KeyProperty are the keys of the facts that the annotate half stamps on the
-// function of each check that it binds. The facts contain the identity of the
-// declaration under [SuiteDirective], the name of the callable such as
-// Store.Get, the segment and the statement of the check, the identity of the
-// function of its planted defect, and whether the check is a property check.
+// KeyDeclaration, KeyCallable, KeySegment, KeyStatement, KeyDefect,
+// KeyProperty and KeyCounted are the keys of the facts that the annotate half
+// stamps on the function of each check that it binds. The facts contain the
+// identity of the declaration under [SuiteDirective], the name of the callable
+// such as Store.Get, the segment and the statement of the check, the identity
+// of the function of its planted defect, whether the check is a property
+// check, and whether it counts allocations.
 const (
 	KeyDeclaration meta.KeyName = "suite.declaration"
 	KeyCallable    meta.KeyName = "suite.callable"
@@ -71,6 +74,7 @@ const (
 	KeyStatement   meta.KeyName = "suite.statement"
 	KeyDefect      meta.KeyName = "suite.defect"
 	KeyProperty    meta.KeyName = "suite.property"
+	KeyCounted     meta.KeyName = "suite.counted"
 )
 
 // checksThat contains the words after the name of a check that open its doc
@@ -232,7 +236,8 @@ type Callable struct {
 // the first sentence of the doc comment of the function after the words
 // "checks that". Property reports that the function takes a case of the
 // property engine after the handle, so the suite passes it as the property of
-// the check.
+// the check. Counted reports that the check counts the allocations of the
+// whole process, so the runtime runs it with the allocation ceilings.
 type Check struct {
 	Apply     *emit.TypeRef
 	Defect    *emit.TypeRef
@@ -242,6 +247,7 @@ type Check struct {
 	Segment   string
 	Statement string
 	Property  bool
+	Counted   bool
 }
 
 // Conformance is the data of the record of one test of the family of the
@@ -262,25 +268,26 @@ type Check struct {
 // that the factory of a subject takes the handle of a check.
 //
 // SuiteAllocs is the name of the test that falsifies the allocation ceilings
-// of the suite, as TestStoreSuiteAllocs, and empty for the test of a subject
-// and for a suite without one. Allocs is the name of the test that applies
-// the allocation ceilings to a subject or to a function, as TestMemoryAllocs,
-// and empty where no allocation ceiling applies. Budgets is the name of the
-// test that applies the allocation ceilings of the suite of an interface or a
-// struct to its planted defect, as TestStoreSuiteBudgets, and empty for any
-// other test. Benchmark is the name of the benchmark of a subject, a function
-// or the suite of an interface or a struct, as BenchmarkMemory or
-// BenchmarkStoreSuite, and Parallel the name of its parallel benchmark, as
-// BenchmarkMemoryParallel. Parallel is empty where no callable admits
-// concurrent calls. Levels are the levels of the benchmarks of a subject or
-// of a suite, one for each callable. Ceilings are the budgets that the subject
-// states for its callables, in the order of their directives. Cases is the
-// number of valid cases of each property run that the subject states, and 0
-// for a subject without the param cases. The test passes it to the
-// applications whose property runs it sets: the checks and the allocation
-// ceilings. Identities are the identities of the checks of a suite, which
-// the test of the suite compares with the names of the callables, and empty
-// for the test of a subject.
+// and the checks that count allocations of the suite, as
+// TestStoreSuiteAllocs. It is empty for the test of a subject and for a suite
+// without either. Allocs is the name of the test that applies the allocation
+// ceilings and the checks that count allocations to a subject or to a
+// function, as TestMemoryAllocs, and empty where neither applies. Budgets is
+// the name of the test that applies the allocation ceilings of the suite of an
+// interface or a struct to its planted defect, as TestStoreSuiteBudgets, and
+// empty for any other test. Benchmark is the name of the benchmark of a
+// subject, a function or the suite of an interface or a struct, as
+// BenchmarkMemory or BenchmarkStoreSuite, and Parallel the name of its
+// parallel benchmark, as BenchmarkMemoryParallel. Parallel is empty where no
+// callable admits concurrent calls. Levels are the levels of the benchmarks of
+// a subject or of a suite, one for each callable. Ceilings are the budgets
+// that the subject states for its callables, in the order of their
+// directives. Cases is the number of valid cases of each property run that
+// the subject states, and 0 for a subject without the param cases. The test
+// passes it to the applications whose property runs it sets: the checks and
+// the allocation ceilings. Identities are the identities of the checks of a
+// suite, which the test of the suite compares with the names of the
+// callables, and empty for the test of a subject.
 //
 // The record of a conformance test is a struct with ten fields. Their types
 // refer, in this order, to the form of the application, as RunStoreSuite, to
@@ -426,10 +433,18 @@ var checkSchema = directive.Schema{
 		Doc: "the callable of a declaration under the directive suite, such as Store.Get, or store.Store.Get with " +
 			"the name of the package of the declaration",
 	}},
-	Params: []directive.ParamSpec{{
-		Key: DefectParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope, Required: true,
-		Doc: "the function that returns the planted defect of the check from the handle of the check",
-	}},
+	Params: []directive.ParamSpec{
+		{
+			Key: DefectParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+			Required: true,
+			Doc:      "the function that returns the planted defect of the check from the handle of the check",
+		},
+		{
+			Key: CountedParam, Type: directive.TypeBool,
+			Doc: "true for a check that counts the allocations of the whole process, such as with assert.MaxAllocs. " +
+				"The check runs with the allocation ceilings, in a test that does not run in parallel",
+		},
+	},
 	Doc: "binds the function to a callable of a suite as a check of the consumer, with its planted defect",
 }
 
@@ -467,6 +482,7 @@ type generator struct {
 	segment     meta.Key[string]
 	statement   meta.Key[string]
 	property    meta.Key[bool]
+	counted     meta.Key[bool]
 	allocs      meta.Key[int64]
 	bytes       meta.Key[int64]
 	latency     meta.Key[int64]
@@ -555,7 +571,7 @@ func (g *generator) register(r *meta.Registry) error {
 	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
 	}
-	var errs [13]error
+	var errs [14]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
@@ -583,6 +599,8 @@ func (g *generator) register(r *meta.Registry) error {
 		Name: weave.KeyDouble, Kinds: []symbol.Kind{symbol.KindInterface, symbol.KindStruct},
 		Doc: "asks the stub generator for the double of a declaration under the directive suite",
 	})
+	g.counted, errs[13] = meta.Register[bool](r, spec(KeyCounted,
+		"reports that the check counts the allocations of the whole process"))
 	return errors.Join(errs[:]...)
 }
 
@@ -635,6 +653,9 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper)
 	sdk.Stamp(st, g.defect, d.Params[DefectParam].Target)
 	if property {
 		sdk.Stamp(st, g.property, true)
+	}
+	if counted, _ := d.Param(CountedParam); counted.Bool {
+		sdk.Stamp(st, g.counted, true)
 	}
 	return nil
 }
@@ -786,6 +807,7 @@ type bound struct {
 	statement string
 	defect    symbol.Identity
 	property  bool
+	counted   bool
 }
 
 // boundTo returns the checks that the annotate half binds to the declaration
@@ -802,6 +824,7 @@ func (g *generator) boundTo(m sdk.Matcher, origin *symbol.Identity) []bound {
 		b.statement, _ = sdk.FactOf(m, id, g.statement)
 		b.defect, _ = sdk.FactOf(m, id, g.defect)
 		b.property, _ = sdk.FactOf(m, id, g.property)
+		b.counted, _ = sdk.FactOf(m, id, g.counted)
 		out = append(out, b)
 	}
 	return out
@@ -818,7 +841,7 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 		byCallable[b.callable] = append(byCallable[b.callable], Check{
 			Apply:  &emit.TypeRef{Spelling: b.fn.Name, Target: b.fn},
 			Defect: &emit.TypeRef{Spelling: b.defect.Name, Target: b.defect},
-			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Property: b.property,
+			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Property: b.property, Counted: b.counted,
 		})
 	}
 	var out []Check
@@ -1091,7 +1114,8 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		Test: e.JoinName(n.Suite, testWord), Declaration: s.Declaration, Builds: buildsSegment,
 		Receives: receivesSegment, Excusals: excused, Function: s.Func != nil,
 	}
-	allocated := slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Budget.Allocs != nil })
+	allocated := slices.ContainsFunc(s.Calls, func(c Call) bool { return c.Budget.Allocs != nil }) ||
+		slices.ContainsFunc(s.Checks, func(c Check) bool { return c.Counted })
 	if allocated {
 		test.SuiteAllocs = e.JoinName(allocsWord, test.Test)
 	}
@@ -1251,7 +1275,8 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, p part, e *sdk.Emitter) er
 	if !excused || !stated {
 		return nil
 	}
-	allocated := slices.ContainsFunc(ceilings, func(c Ceiling) bool { return c.Budget.Allocs != nil })
+	allocated := slices.ContainsFunc(ceilings, func(c Ceiling) bool { return c.Budget.Allocs != nil }) ||
+		slices.ContainsFunc(g.boundTo(m, &declared), func(b bound) bool { return b.counted })
 	levels := make([]Level, 0, len(methods))
 	for _, method := range methods {
 		allocated = allocated || g.budgetFact(m, &method.ID).Allocs != nil

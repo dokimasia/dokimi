@@ -115,8 +115,9 @@ func FuzzStoreSuite[T Store](
 	conform.Fuzz(f, StoreSuite(), callable, storeSubjects(newSubject), opts...)
 }
 
-// RunStoreBudgets applies the allocation ceilings of Store, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunStoreBudgets applies the allocation ceilings of Store and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunStoreBudgets[T Store](
 	t *testing.T,
 	newSubject func(h *StoreHandle) T,

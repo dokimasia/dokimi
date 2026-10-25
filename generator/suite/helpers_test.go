@@ -46,6 +46,7 @@ const (
 	speccedTestPackage = "example.com/shop/specced_test"
 	badBudgetPackage   = "example.com/shop/badbudget"
 	dualPackage        = "example.com/shop/dual"
+	ledgerPackage      = "example.com/shop/ledger"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )

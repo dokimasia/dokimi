@@ -290,8 +290,9 @@ func FuzzBoardSuite[T Board](
 	conform.Fuzz(f, BoardSuite(), callable, boardSubjects(newSubject), opts...)
 }
 
-// RunBoardBudgets applies the allocation ceilings of Board, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunBoardBudgets applies the allocation ceilings of Board and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunBoardBudgets[T Board](
 	t *testing.T,
 	newSubject func(h *BoardHandle) T,

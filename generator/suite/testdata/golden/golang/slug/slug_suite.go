@@ -97,8 +97,9 @@ func FuzzSlugSuite(f *testing.F, subject SlugFunc, opts ...SlugOption) {
 	conform.Fuzz(f, SlugSuite(), SlugChecks.Callable, slugSubjects(subject), opts...)
 }
 
-// RunSlugBudgets applies the allocation ceiling of Slug, and the ceilings
-// that opts add, to subject.
+// RunSlugBudgets applies the allocation ceiling of Slug and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to subject.
 func RunSlugBudgets(t *testing.T, subject SlugFunc, opts ...SlugOption) {
 	t.Helper()
 	conform.RunBudgets(t, SlugSuite(), slugSubjects(subject), opts...)

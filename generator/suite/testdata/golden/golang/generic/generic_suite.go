@@ -89,8 +89,9 @@ func FuzzCacheSuite[T Cache[int, int]](
 	conform.Fuzz(f, CacheSuite(), callable, cacheSubjects(newSubject), opts...)
 }
 
-// RunCacheBudgets applies the allocation ceilings of Cache, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunCacheBudgets applies the allocation ceilings of Cache and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunCacheBudgets[T Cache[int, int]](
 	t *testing.T,
 	newSubject func(h *CacheHandle) T,

@@ -91,8 +91,8 @@ func TestCatalogSuite(t *testing.T) {
 	})
 }
 
-// TestCatalogSuiteAllocs falsifies the allocation ceilings of the suite of
-// Catalog.
+// TestCatalogSuiteAllocs falsifies the allocation ceilings and the checks
+// that count allocations of the suite of Catalog.
 func TestCatalogSuiteAllocs(t *testing.T) {
 	t.Run("CatalogSuite", func(t *testing.T) {
 		conform.FalsifyAllocs(t, CatalogSuite())
@@ -106,13 +106,18 @@ func catalogIdle(h *CatalogHandle) CatalogMethods {
 }
 
 // TestCatalogSuiteBudgets applies the allocation ceilings of the suite of
-// Catalog to catalogIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Catalog to catalogIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestCatalogSuiteBudgets(t *testing.T) {
 	RunCatalogBudgets(
 		t,
 		catalogIdle,
 		conform.Ceilings(CatalogChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			CatalogChecks.Find.FindsTheAddedProduct(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -163,8 +168,8 @@ func TestCatalogConformsToCatalog(t *testing.T) {
 	RunCatalogSuite(t, New)
 }
 
-// TestCatalogConformsToCatalogAllocs applies the allocation ceilings of
-// the suite of Catalog to Catalog.
+// TestCatalogConformsToCatalogAllocs applies the allocation ceilings and
+// the checks that count allocations of the suite of Catalog to Catalog.
 func TestCatalogConformsToCatalogAllocs(t *testing.T) {
 	RunCatalogBudgets(t, func(*CatalogHandle) *Catalog { return New() })
 }

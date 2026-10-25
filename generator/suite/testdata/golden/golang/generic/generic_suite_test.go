@@ -74,8 +74,9 @@ func cacheIdle(h *CacheHandle) Cache[int, int] {
 }
 
 // TestCacheSuiteBudgets applies the allocation ceilings of the suite of
-// Cache to cacheIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Cache to cacheIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestCacheSuiteBudgets(t *testing.T) {
 	RunCacheBudgets(
 		t,

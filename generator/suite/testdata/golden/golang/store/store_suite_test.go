@@ -106,14 +106,23 @@ func storeIdle(h *StoreHandle) Store {
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
-// Store to storeIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Store to storeIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestStoreSuiteBudgets(t *testing.T) {
 	RunStoreBudgets(
 		t,
 		storeIdle,
 		conform.Ceilings(StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			StoreChecks.Get.KeepsTheItem(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.RefusesACancelledPut(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

@@ -15,8 +15,8 @@ func TestMeterConformsToMeter(t *testing.T) {
 	RunMeterSuite(t, New)
 }
 
-// TestMeterConformsToMeterAllocs applies the allocation ceilings of the
-// suite of Meter to Meter.
+// TestMeterConformsToMeterAllocs applies the allocation ceilings and the
+// checks that count allocations of the suite of Meter to Meter.
 func TestMeterConformsToMeterAllocs(t *testing.T) {
 	RunMeterBudgets(
 		t,
@@ -134,8 +134,8 @@ func TestPlainConformsToMeter(t *testing.T) {
 	)
 }
 
-// TestPlainConformsToMeterAllocs applies the allocation ceilings of the
-// suite of Meter to Plain.
+// TestPlainConformsToMeterAllocs applies the allocation ceilings and the
+// checks that count allocations of the suite of Meter to Plain.
 func TestPlainConformsToMeterAllocs(t *testing.T) {
 	RunMeterBudgets(
 		t,
@@ -269,8 +269,8 @@ func TestWarmedConformsToMeter(t *testing.T) {
 	RunMeterSuite(t, New)
 }
 
-// TestWarmedConformsToMeterAllocs applies the allocation ceilings of the
-// suite of Meter to Warmed.
+// TestWarmedConformsToMeterAllocs applies the allocation ceilings and the
+// checks that count allocations of the suite of Meter to Warmed.
 func TestWarmedConformsToMeterAllocs(t *testing.T) {
 	RunMeterBudgets(
 		t,

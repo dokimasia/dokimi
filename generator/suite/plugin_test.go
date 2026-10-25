@@ -1058,6 +1058,17 @@ func TestSuite(t *testing.T) {
 					wantBenchmark: "BenchmarkMemoryConformsToRouter",
 					wantParallel:  "BenchmarkMemoryConformsToRouterParallel",
 				},
+				{
+					name:     "names the falsification of the checks that count allocations of a suite",
+					givePkgs: []string{ledgerPackage}, give: "TestLedgerSuite",
+					wantSuiteAllocs: "TestLedgerSuiteAllocs", wantBudgets: "TestLedgerSuiteBudgets",
+					wantBenchmark: "BenchmarkLedgerSuite",
+				},
+				{
+					name:     "names the test of the checks that count allocations of a subject",
+					givePkgs: []string{ledgerPackage}, give: "TestBookConformsToLedger",
+					wantAllocs: "TestBookConformsToLedgerAllocs", wantBenchmark: "BenchmarkBookConformsToLedger",
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -1167,6 +1178,26 @@ func TestSuite(t *testing.T) {
 				Type: "SessionsGet", Method: "KeepsTheLastPut", Segment: "keeps-the-last-put",
 				Statement: "Get returns the session of the last Put of its ID", Property: true,
 			}}, "a check that takes a case of the property engine is a property check")
+		})
+
+		t.Run("binds a check that counts allocations to the callable of its directive", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, ledgerPackage)
+			got := recorded(t, f, p).suites["Ledger"]
+			expect.Equal(t, got.Checks, []suite.Check{
+				{
+					Apply: ref(t, f, "CreditsInPlace"), Defect: ref(t, f, "copiesBalances"), Field: "Credit",
+					Type: "LedgerCredit", Method: "CreditsInPlace", Segment: "credits-in-place",
+					Statement: "Credit allocates nothing once the account has a balance", Counted: true,
+				},
+				{
+					Apply: ref(t, f, "KeepsTheSum"), Defect: ref(t, f, "dropsCredits"), Field: "Balance",
+					Type: "LedgerBalance", Method: "KeepsTheSum", Segment: "keeps-the-sum",
+					Statement: "Balance returns the sum of the credits of the account",
+				},
+			}, "the param counted marks the check that counts allocations alone")
 		})
 
 		t.Run("binds a check of a consumer to a function", func(t *testing.T) {

@@ -46,6 +46,17 @@
 //	//dokimi:check Sessions.Get defect=keepsTheFirstPut
 //	func KeepsTheLastPut(h *SessionsHandle, c *prop.Case) { … }
 //
+// The param counted=true marks a check that counts the allocations of the
+// whole process, such as with assert.MaxAllocs. Such a check runs with the
+// allocation ceilings in TestStoreAllocs and TestStoreSuiteAllocs, which do
+// not run in parallel:
+//
+//	// CreditsInPlace checks that Credit allocates nothing once the account
+//	// has a balance.
+//	//
+//	//dokimi:check Ledger.Credit defect=copiesBalances counted=true
+//	func CreditsInPlace(h *LedgerHandle) { … }
+//
 // # Subjects
 //
 // A consumer applies the suite to a subject, and adds checks of its own:
@@ -120,9 +131,9 @@
 // level Get of BenchmarkStore. It declares a parallel benchmark, such as
 // BenchmarkStoreParallel, of each callable with the mixin concurrent or
 // concurrent-readers, and a test of the allocation ceilings, such as
-// TestStoreAllocs, where a budget states one. The test of a suite with an
-// allocation ceiling declares TestStoreSuiteAllocs, which falsifies the
-// ceilings. The test of the suite of a function declares the same parts for
+// TestStoreAllocs, where a budget states one or a check counts allocations.
+// The test of a suite with an allocation ceiling or a check that counts
+// allocations declares TestStoreSuiteAllocs, which falsifies both. The test of the suite of a function declares the same parts for
 // the function, such as BenchmarkSlug and TestSlugAllocs.
 //
 // # Kinds of declaration

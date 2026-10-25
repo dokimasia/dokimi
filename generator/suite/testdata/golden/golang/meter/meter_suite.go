@@ -161,8 +161,9 @@ func FuzzMeterSuite[T Meter](
 	conform.Fuzz(f, MeterSuite(), callable, meterSubjects(newSubject), opts...)
 }
 
-// RunMeterBudgets applies the allocation ceilings of Meter, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunMeterBudgets applies the allocation ceilings of Meter and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunMeterBudgets[T Meter](
 	t *testing.T,
 	newSubject func(h *MeterHandle) T,
@@ -363,8 +364,9 @@ func FuzzWeighSuite(f *testing.F, subject WeighFunc, opts ...WeighOption) {
 	conform.Fuzz(f, WeighSuite(), WeighChecks.Callable, weighSubjects(subject), opts...)
 }
 
-// RunWeighBudgets applies the allocation ceiling of Weigh, and the
-// ceilings that opts add, to subject.
+// RunWeighBudgets applies the allocation ceiling of Weigh and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to subject.
 func RunWeighBudgets(t *testing.T, subject WeighFunc, opts ...WeighOption) {
 	t.Helper()
 	conform.RunBudgets(t, WeighSuite(), weighSubjects(subject), opts...)

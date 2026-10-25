@@ -111,6 +111,9 @@ var _ = conform.CompatV1
 				Apply:     {{spell .Apply}},
 {{- end}}
 				Defect:    {{spell .Defect}},
+{{- if .Counted}}
+				Counted:   true,
+{{- end}}
 			},
 {{- end}}
 		},
@@ -164,7 +167,7 @@ var _ = conform.CompatV1
 	conform.Fuzz(f, {{$suite}}(), {{$checks}}.Callable, {{$subjects}}(subject), opts...)
 }
 
-{{docs (wrapdocs (printf `%s applies the allocation ceiling of %s, and the ceilings that opts add, to subject.` $budgets $c.Declaration))}}
+{{docs (wrapdocs (printf `%s applies the allocation ceiling of %s and its checks that count allocations, and the ceilings and the checks that opts add, to subject.` $budgets $c.Declaration))}}
 {{- ""}}func {{$budgets}}(t *testing.T, subject {{$s}}, opts ...{{$option}}) {
 	t.Helper()
 	conform.RunBudgets(t, {{$suite}}(), {{$subjects}}(subject), opts...)
@@ -209,7 +212,7 @@ var _ = conform.CompatV1
 	conform.Fuzz(f, {{$suite}}(), callable, {{$subjects}}(newSubject), opts...)
 }
 
-{{docs (wrapdocs (printf `%s applies the allocation ceilings of %s, and the ceilings that opts add, to a fresh subject of newSubject for each case.` $budgets $c.Declaration))}}
+{{docs (wrapdocs (printf `%s applies the allocation ceilings of %s and its checks that count allocations, and the ceilings and the checks that opts add, to a fresh subject of newSubject for each case.` $budgets $c.Declaration))}}
 {{- ""}}func {{$budgets}}[T {{$s}}](t *testing.T, newSubject func(h *{{$handle}}) T, opts ...{{$option}}) {
 	t.Helper()
 	conform.RunBudgets(t, {{$suite}}(), {{$subjects}}(newSubject), opts...)

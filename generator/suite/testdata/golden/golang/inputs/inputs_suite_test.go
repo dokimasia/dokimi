@@ -75,8 +75,9 @@ func pipelineIdle(h *PipelineHandle) Pipeline {
 }
 
 // TestPipelineSuiteBudgets applies the allocation ceilings of the suite of
-// Pipeline to pipelineIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Pipeline to pipelineIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestPipelineSuiteBudgets(t *testing.T) {
 	RunPipelineBudgets(
 		t,

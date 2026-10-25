@@ -51,8 +51,8 @@ func TestClockedConformsToStore(t *testing.T) {
 	)
 }
 
-// TestClockedConformsToStoreAllocs applies the allocation ceilings of the
-// suite of Store to Clocked.
+// TestClockedConformsToStoreAllocs applies the allocation ceilings and the
+// checks that count allocations of the suite of Store to Clocked.
 func TestClockedConformsToStoreAllocs(t *testing.T) {
 	RunStoreBudgets(
 		t,

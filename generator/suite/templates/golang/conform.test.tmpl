@@ -32,7 +32,7 @@
 {{- with $c.Allocs}}
 {{- $allocs := suitePascal .}}
 
-{{docs (wrapdocs (printf `%s applies the allocation ceilings of the suite of %s to %s.` $allocs $c.Declaration $c.Subject))}}
+{{docs (wrapdocs (printf `%s applies the allocation ceilings and the checks that count allocations of the suite of %s to %s.` $allocs $c.Declaration $c.Subject))}}
 {{- ""}}func {{$allocs}}(t *testing.T) {
 {{- if or $options $c.Cases}}
 	{{spell (index $refs 6).Type}}(
@@ -206,7 +206,7 @@
 {{- with $c.SuiteAllocs}}
 {{- $allocs := suitePascal .}}
 
-{{docs (wrapdocs (printf `%s falsifies the allocation ceilings of the suite of %s.` $allocs $c.Declaration))}}
+{{docs (wrapdocs (printf `%s falsifies the allocation ceilings and the checks that count allocations of the suite of %s.` $allocs $c.Declaration))}}
 {{- ""}}func {{$allocs}}(t *testing.T) {
 	t.Run("{{suitePascal $suite.Type.Spelling}}", func(t *testing.T) {
 		conform.FalsifyAllocs(t, {{spell $suite.Type}}())
@@ -221,7 +221,7 @@
 {{- with $c.Allocs}}
 {{- $allocs := suitePascal .}}
 
-{{docs (wrapdocs (printf `%s applies the allocation ceiling of %s to %s.` $allocs $c.Declaration $c.Declaration))}}
+{{docs (wrapdocs (printf `%s applies the allocation ceiling and the checks that count allocations of %s to %s.` $allocs $c.Declaration $c.Declaration))}}
 {{- ""}}func {{$allocs}}(t *testing.T) {
 	{{spell (index $refs 9).Type}}(t, {{$fn}})
 }
@@ -364,7 +364,8 @@ its applications on its planted defect with a spend of nothing, a subject that
 answers each call at once: the test of the allocation ceilings, a fuzz target
 of each callable and the benchmarks. The test of the allocation ceilings adds
 a ceiling of 0 to each level that Ceiled marks, which the planted defect
-falsifies first.
+falsifies first. It excuses every check of the suite, because a check that
+counts allocations runs with the ceilings.
 */}}
 {{- define "suite.idle"}}
 {{- $c := .Data}}
@@ -374,6 +375,7 @@ falsifies first.
 {{- $subject := spell (index $refs 5).Type}}
 {{- $checks := spell (index $refs 6).Type}}
 {{- $idle := printf "%sIdle" (suiteCamel $c.Declaration)}}
+{{- $zero := "the planted defect of a ceiling answers each call with its zero results"}}
 
 {{docs (wrapdocs (printf `%s returns the planted defect of a ceiling of %s with a spend of nothing, a subject that answers each call at once.` $idle $c.Declaration))}}
 {{- ""}}func {{$idle}}(h *{{$handle}}) {{$subject}} {
@@ -381,7 +383,7 @@ falsifies first.
 }
 {{- $budgets := suitePascal $c.Budgets}}
 
-{{docs (wrapdocs (printf `%s applies the allocation ceilings of the suite of %s to %s, and a ceiling of 0 to each callable without a budget whose calls build no input of their own.` $budgets $c.Declaration $idle))}}
+{{docs (wrapdocs (printf `%s applies the allocation ceilings of the suite of %s to %s with every check of the suite excused, and a ceiling of 0 to each callable without a budget whose calls build no input of their own.` $budgets $c.Declaration $idle))}}
 {{- ""}}func {{$budgets}}(t *testing.T) {
 	{{spell (index $refs 8).Type}}(
 		t,
@@ -390,6 +392,12 @@ falsifies first.
 {{- if .Ceiled}}
 		conform.Ceilings({{$checks}}.{{.Field}}.Callable, conform.Budget{Allocs: new(uint64(0))}),
 {{- end}}
+{{- end}}
+{{- range $c.Excusals}}
+		conform.Excuse(
+			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
+			{{printf "%q" $zero}},
+		),
 {{- end}}
 	)
 }
@@ -405,7 +413,7 @@ falsifies first.
 {{- range $c.Excusals}}
 		conform.Excuse(
 			{{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
-			"the planted defect of a ceiling answers each call with its zero results",
+			{{printf "%q" $zero}},
 		),
 {{- end}}
 	)

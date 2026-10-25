@@ -163,7 +163,8 @@ var streamConsumerIngestCalls = prop.Composite(
 type streamConsumerSourceInputEmbedded = streamconsumer.Source
 
 // streamConsumerSourceInput is a Source whose methods return the results
-// that the call generators of StreamConsumer draw for them, in turn.
+// that the generators of the suite of StreamConsumer draw for them, in
+// turn.
 type streamConsumerSourceInput struct {
 	streamConsumerSourceInputEmbedded
 	onNext func(a0 context.Context) (streamconsumer.Value, bool, error)
@@ -198,4 +199,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ac80c1cfe25f9b843f639f321c0bac656627a84e19d45dbd20e38078e38b25d1
+// dokimi:provenance sha256:6531965a3a488872352fa19d44e0f7deecc08539eb6de57058d96ea0e83f222c

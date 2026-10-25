@@ -234,7 +234,7 @@ var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, even
 type mixedMixedInputEmbedded = eventually.Mixed
 
 // mixedMixedInput is a Mixed whose methods return the results that the
-// call generators of Mixed draw for them, in turn.
+// generators of the suite of Mixed draw for them, in turn.
 type mixedMixedInput struct {
 	mixedMixedInputEmbedded
 	onPublish func(a0 context.Context, a1 string) error
@@ -305,4 +305,4 @@ func newMixedOver(_ *MixedHandle, spend func()) eventually.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:66038c14258c86cc3960b60c3e923affe5f7caf269e40208c8b5e9d179551da6
+// dokimi:provenance sha256:cd01a8b0525c4a85d80476a793a40800bd5222dd6eabd679a63978f7ccaddaaa

@@ -183,7 +183,7 @@ var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, crdt
 type mixedReplicaInputEmbedded = crdtmerge.Replica
 
 // mixedReplicaInput is a Replica whose methods return the results that the
-// call generators of Mixed draw for them, in turn.
+// generators of the suite of Mixed draw for them, in turn.
 type mixedReplicaInput struct {
 	mixedReplicaInputEmbedded
 	onItems func(a0 context.Context) ([]string, error)
@@ -230,4 +230,4 @@ func newMixedOver(_ *MixedHandle, spend func()) crdtmerge.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0d9dcdd2117a064ccb6cb9051078f6dd9ac3c7ea09a317787abd4343a41c8d5c
+// dokimi:provenance sha256:b87b6850d4801cf473cff12db199c7a94332a9aae0af33f3d1e77f1f554b5291

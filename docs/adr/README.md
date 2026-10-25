@@ -15,3 +15,6 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0004](0004-an-unexported-enumeration-has-unexported-members-and-no-checks.md) | An unexported enumeration has unexported members and no checks | Accepted |
 | [0005](0005-a-remote-error-type-has-the-message-of-another-process.md) | A remote error type has the message of another process | Accepted |
 | [0006](0006-a-check-that-counts-allocations-runs-outside-the-parallel-tests.md) | A check that counts allocations runs outside the parallel tests | Accepted |
+| [0007](0007-a-suite-does-not-ask-for-the-double-of-its-declaration.md) | A suite does not ask for the double of its declaration | Accepted |
+| [0008](0008-a-generator-checks-its-references-against-the-package-of-its-routed-file.md) | A generator checks its references against the package of its routed file | Accepted |
+| [0009](0009-a-suite-draws-a-value-of-any-type-and-the-pointer-shapes-of-the-property-engine.md) | A suite draws a value of any type and the pointer shapes of the property engine | Accepted |

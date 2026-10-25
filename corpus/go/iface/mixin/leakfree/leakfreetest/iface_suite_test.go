@@ -80,8 +80,9 @@ func mixedIdle(h *leakfreetest.MixedHandle) leakfree.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	leakfreetest.RunMixedBudgets(
 		t,
@@ -136,4 +137,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:8b7ec21bbcd1cd5b5ae9addd5d4e534cdfc72a57b35f63ebbbf1f8906ddac703
+// dokimi:provenance sha256:489f8e4676e87041752cf0a877df3f795b0b440b84ef44617247b25f877a0b63

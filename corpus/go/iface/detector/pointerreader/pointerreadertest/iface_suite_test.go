@@ -86,8 +86,9 @@ func pointerReaderIdle(h *pointerreadertest.PointerReaderHandle) pointerreader.P
 }
 
 // TestPointerReaderSuiteBudgets applies the allocation ceilings of the
-// suite of PointerReader to pointerReaderIdle, and a ceiling of 0 to each
-// callable without a budget whose calls build no input of their own.
+// suite of PointerReader to pointerReaderIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestPointerReaderSuiteBudgets(t *testing.T) {
 	pointerreadertest.RunPointerReaderBudgets(
 		t,
@@ -119,4 +120,4 @@ func BenchmarkPointerReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c6b7c6ffbda4c5a6b8d0408c5f1fae4cfb347c05812a8f1a20ce6f41c97b7a6d
+// dokimi:provenance sha256:cc28e67420d17da98d7a050c5d563708742cfb25f7269ec02b78a5f37f82e75a

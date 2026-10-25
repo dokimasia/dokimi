@@ -86,8 +86,9 @@ func paginatedReaderIdle(h *paginatedreadertest.PaginatedReaderHandle) paginated
 }
 
 // TestPaginatedReaderSuiteBudgets applies the allocation ceilings of the
-// suite of PaginatedReader to paginatedReaderIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of PaginatedReader to paginatedReaderIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestPaginatedReaderSuiteBudgets(t *testing.T) {
 	paginatedreadertest.RunPaginatedReaderBudgets(
 		t,
@@ -144,4 +145,4 @@ func BenchmarkPaginatedReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:50676728e4b0606698d7072587acdd9a59d352d5dffcf2492c94cc2691805b08
+// dokimi:provenance sha256:d1f251638b53ed41dcdb0221a590dee633b5abe7e6b6f05ca88293e4037b612d

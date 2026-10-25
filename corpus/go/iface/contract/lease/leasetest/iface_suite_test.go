@@ -81,8 +81,9 @@ func contractIdle(h *leasetest.ContractHandle) lease.Contract {
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
-// Contract to contractIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Contract to contractIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestContractSuiteBudgets(t *testing.T) {
 	leasetest.RunContractBudgets(
 		t,
@@ -123,4 +124,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:a435f077db502e40c57b700b02126149dd55897d20945f889cee964b96a1fc90
+// dokimi:provenance sha256:e4ebd4f7c807cc43edeeb8f2e5d2f76cb3853cea83bdefbde63d7382df62c89b

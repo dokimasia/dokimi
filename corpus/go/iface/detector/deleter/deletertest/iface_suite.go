@@ -83,8 +83,9 @@ func FuzzDeleterSuite[T deleter.Deleter](
 	conform.Fuzz(f, DeleterSuite(), callable, deleterSubjects(newSubject), opts...)
 }
 
-// RunDeleterBudgets applies the allocation ceilings of Deleter, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunDeleterBudgets applies the allocation ceilings of Deleter and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunDeleterBudgets[T deleter.Deleter](t *testing.T, newSubject func(h *DeleterHandle) T, opts ...DeleterOption) {
 	t.Helper()
 	conform.RunBudgets(t, DeleterSuite(), deleterSubjects(newSubject), opts...)
@@ -141,4 +142,4 @@ func newDeleterOver(_ *DeleterHandle, spend func()) deleter.Deleter {
 	return deleterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5a0dddcdb3a88b434134a79fc4ff073c278c9aaa49307bccd9610816cb1dbb40
+// dokimi:provenance sha256:382f02f9eb251dd9de84d1e9bdfd3603421cbeb28139ad9a474ddc10334c282d

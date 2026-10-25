@@ -87,9 +87,9 @@ func FuzzVoidLifecycleSuite[T voidlifecycle.VoidLifecycle](
 	conform.Fuzz(f, VoidLifecycleSuite(), callable, voidLifecycleSubjects(newSubject), opts...)
 }
 
-// RunVoidLifecycleBudgets applies the allocation ceilings of
-// VoidLifecycle, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// RunVoidLifecycleBudgets applies the allocation ceilings of VoidLifecycle
+// and its checks that count allocations, and the ceilings and the checks
+// that opts add, to a fresh subject of newSubject for each case.
 func RunVoidLifecycleBudgets[T voidlifecycle.VoidLifecycle](
 	t *testing.T,
 	newSubject func(h *VoidLifecycleHandle) T,
@@ -151,4 +151,4 @@ func newVoidLifecycleOver(_ *VoidLifecycleHandle, spend func()) voidlifecycle.Vo
 	return voidLifecycleOver{spend: spend}
 }
 
-// dokimi:provenance sha256:297f04d33942d1a15c61e1333a846f9948324e88b4751ec55409a64519c8e320
+// dokimi:provenance sha256:30a0d0fde9ae6311b3b8abea54a7dfd41ccb74488b20311752f683b2d3ee92f5

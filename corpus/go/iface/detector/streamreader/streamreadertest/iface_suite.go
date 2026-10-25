@@ -97,9 +97,9 @@ func FuzzStreamReaderSuite[T streamreader.StreamReader](
 	conform.Fuzz(f, StreamReaderSuite(), callable, streamReaderSubjects(newSubject), opts...)
 }
 
-// RunStreamReaderBudgets applies the allocation ceilings of StreamReader,
-// and the ceilings that opts add, to a fresh subject of newSubject for
-// each case.
+// RunStreamReaderBudgets applies the allocation ceilings of StreamReader
+// and its checks that count allocations, and the ceilings and the checks
+// that opts add, to a fresh subject of newSubject for each case.
 func RunStreamReaderBudgets[T streamreader.StreamReader](
 	t *testing.T,
 	newSubject func(h *StreamReaderHandle) T,
@@ -177,4 +177,4 @@ func newStreamReaderOver(_ *StreamReaderHandle, spend func()) streamreader.Strea
 	return streamReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:78534b4682c40984c836527ea1b6dfca8056d464b0322311495266aa60471900
+// dokimi:provenance sha256:cebb4ebdd6a972e8cc0f34d58b78054d3c7574e82cb97c563f9c43c8e81336dd

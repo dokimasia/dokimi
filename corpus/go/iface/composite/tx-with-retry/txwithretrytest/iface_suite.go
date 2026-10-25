@@ -109,9 +109,9 @@ func FuzzTxWithRetrySuite[T txwithretry.TxWithRetry](
 	conform.Fuzz(f, TxWithRetrySuite(), callable, txWithRetrySubjects(newSubject), opts...)
 }
 
-// RunTxWithRetryBudgets applies the allocation ceilings of TxWithRetry,
-// and the ceilings that opts add, to a fresh subject of newSubject for
-// each case.
+// RunTxWithRetryBudgets applies the allocation ceilings of TxWithRetry and
+// its checks that count allocations, and the ceilings and the checks that
+// opts add, to a fresh subject of newSubject for each case.
 func RunTxWithRetryBudgets[T txwithretry.TxWithRetry](
 	t *testing.T,
 	newSubject func(h *TxWithRetryHandle) T,
@@ -201,4 +201,4 @@ func newTxWithRetryOver(_ *TxWithRetryHandle, spend func()) txwithretry.TxWithRe
 	return txWithRetryOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c7ad80db10dd53c79ed4f69c4a71ffd7ce431943cc2d43eb56e95e6830736d9d
+// dokimi:provenance sha256:9971b6ea72bd2fb28b7e8df172054eb36692eb8c652c9d6c71e39d303af4e53d

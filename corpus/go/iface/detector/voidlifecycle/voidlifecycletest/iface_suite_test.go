@@ -86,8 +86,9 @@ func voidLifecycleIdle(h *voidlifecycletest.VoidLifecycleHandle) voidlifecycle.V
 }
 
 // TestVoidLifecycleSuiteBudgets applies the allocation ceilings of the
-// suite of VoidLifecycle to voidLifecycleIdle, and a ceiling of 0 to each
-// callable without a budget whose calls build no input of their own.
+// suite of VoidLifecycle to voidLifecycleIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestVoidLifecycleSuiteBudgets(t *testing.T) {
 	voidlifecycletest.RunVoidLifecycleBudgets(
 		t,
@@ -119,4 +120,4 @@ func BenchmarkVoidLifecycleSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3aa8b50c5c3131bc3a9d436189f6b1c0f62b800dcd64350cde1a7314e49ee82a
+// dokimi:provenance sha256:4f98d4e49647d5f0d6b90a2746c7eaf44a4f00562e30a6f81f0d6676dc161058

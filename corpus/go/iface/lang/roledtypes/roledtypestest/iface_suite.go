@@ -94,8 +94,9 @@ func FuzzStoreSuite[T roledtypes.Store](
 	conform.Fuzz(f, StoreSuite(), callable, storeSubjects(newSubject), opts...)
 }
 
-// RunStoreBudgets applies the allocation ceilings of Store, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunStoreBudgets applies the allocation ceilings of Store and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunStoreBudgets[T roledtypes.Store](t *testing.T, newSubject func(h *StoreHandle) T, opts ...StoreOption) {
 	t.Helper()
 	conform.RunBudgets(t, StoreSuite(), storeSubjects(newSubject), opts...)
@@ -190,4 +191,4 @@ func newStoreOver(_ *StoreHandle, spend func()) roledtypes.Store {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1ff27db063b54848f44d82a82e9927b57e895846251c2861d22cc6abd3585ed8
+// dokimi:provenance sha256:b2346439adb34a08600d702f92bc2053a242172f41ea663d6719ddf15f32a3bd

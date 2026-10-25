@@ -90,8 +90,9 @@ func FuzzFileSuite[T suitedhandle.File](
 	conform.Fuzz(f, FileSuite(), callable, fileSubjects(newSubject), opts...)
 }
 
-// RunFileBudgets applies the allocation ceilings of File, and the ceilings
-// that opts add, to a fresh subject of newSubject for each case.
+// RunFileBudgets applies the allocation ceilings of File and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunFileBudgets[T suitedhandle.File](t *testing.T, newSubject func(h *FileHandle) T, opts ...FileOption) {
 	t.Helper()
 	conform.RunBudgets(t, FileSuite(), fileSubjects(newSubject), opts...)
@@ -227,8 +228,9 @@ func FuzzFSSuite[T suitedhandle.FS](
 	conform.Fuzz(f, FSSuite(), callable, fsSubjects(newSubject), opts...)
 }
 
-// RunFSBudgets applies the allocation ceilings of FS, and the ceilings
-// that opts add, to a fresh subject of newSubject for each case.
+// RunFSBudgets applies the allocation ceilings of FS and its checks that
+// count allocations, and the ceilings and the checks that opts add, to a
+// fresh subject of newSubject for each case.
 func RunFSBudgets[T suitedhandle.FS](t *testing.T, newSubject func(h *FSHandle) T, opts ...FSOption) {
 	t.Helper()
 	conform.RunBudgets(t, FSSuite(), fsSubjects(newSubject), opts...)
@@ -286,4 +288,4 @@ func newFSOver(_ *FSHandle, spend func()) suitedhandle.FS {
 	return fsOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1db1fca8856c0f401728d7eb531f14a32f86d8806c6a886e2761d71c505e1d7f
+// dokimi:provenance sha256:cb8e1da3cd08df21b63ca97e410e25f668cba1a6e26a13f3030b24dce8c7956a

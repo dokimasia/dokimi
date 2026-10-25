@@ -109,8 +109,9 @@ func FuzzComposedSuite[T embedded.Composed](
 	conform.Fuzz(f, ComposedSuite(), callable, composedSubjects(newSubject), opts...)
 }
 
-// RunComposedBudgets applies the allocation ceilings of Composed, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunComposedBudgets applies the allocation ceilings of Composed and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunComposedBudgets[T embedded.Composed](
 	t *testing.T,
 	newSubject func(h *ComposedHandle) T,
@@ -202,4 +203,4 @@ func newComposedOver(_ *ComposedHandle, spend func()) embedded.Composed {
 	return composedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ae4dc8efdf15d70908bc48c4f794e196f24de7afe8bf3500c64860397ad215a7
+// dokimi:provenance sha256:3657c74cd4a6f03df0897b685ffc7636c29bb43a749c4af07d312bc59a76dfa5

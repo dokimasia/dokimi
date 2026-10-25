@@ -80,8 +80,9 @@ func catalogIdle(h *seededreadertest.CatalogHandle) seededreader.Catalog {
 }
 
 // TestCatalogSuiteBudgets applies the allocation ceilings of the suite of
-// Catalog to catalogIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Catalog to catalogIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestCatalogSuiteBudgets(t *testing.T) {
 	seededreadertest.RunCatalogBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkCatalogSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:61b2fc7faf598b2d521c9bc3ae20eb536b9a59fb4cef229115f207dd6cefffb8
+// dokimi:provenance sha256:c00d982030a3ba66c024aba57df0f6745d80abb717f750d8e6875cc2b8da6a77

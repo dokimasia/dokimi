@@ -80,8 +80,9 @@ func wideIdle(h *multireturntest.WideHandle) multireturn.Wide {
 }
 
 // TestWideSuiteBudgets applies the allocation ceilings of the suite of
-// Wide to wideIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Wide to wideIdle with every check of the suite excused, and a ceiling of
+// 0 to each callable without a budget whose calls build no input of their
+// own.
 func TestWideSuiteBudgets(t *testing.T) {
 	multireturntest.RunWideBudgets(
 		t,
@@ -136,4 +137,4 @@ func BenchmarkWideSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e910e949c80a088cf709d34b4a0e304dcd7c1869a20fd1bdab6498c4bedc7ca9
+// dokimi:provenance sha256:2ae3a88a7795599d73d1ae4785de4cda2b2d4a0f6d8a7366263d34ecf1338c81

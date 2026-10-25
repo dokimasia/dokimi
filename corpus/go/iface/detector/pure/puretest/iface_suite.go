@@ -79,8 +79,9 @@ func FuzzPureSuite[T pure.Pure](
 	conform.Fuzz(f, PureSuite(), callable, pureSubjects(newSubject), opts...)
 }
 
-// RunPureBudgets applies the allocation ceilings of Pure, and the ceilings
-// that opts add, to a fresh subject of newSubject for each case.
+// RunPureBudgets applies the allocation ceilings of Pure and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunPureBudgets[T pure.Pure](t *testing.T, newSubject func(h *PureHandle) T, opts ...PureOption) {
 	t.Helper()
 	conform.RunBudgets(t, PureSuite(), pureSubjects(newSubject), opts...)
@@ -137,4 +138,4 @@ func newPureOver(_ *PureHandle, spend func()) pure.Pure {
 	return pureOver{spend: spend}
 }
 
-// dokimi:provenance sha256:05a4e3286959208b73abc1e1250820478bf40890e191b437136fa6b80222eeef
+// dokimi:provenance sha256:e9164fac37da4df5c7f7cdb04a0a9d8cb3d8a1d5698785dfd6ea529305808056

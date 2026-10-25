@@ -80,8 +80,9 @@ func mixedIdle(h *xsssafetest.MixedHandle) xsssafe.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	xsssafetest.RunMixedBudgets(
 		t,
@@ -108,4 +109,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f9112ebbd5be781fd7aeb3c9e06ca7fc596c57ae9b3b82b41e366972ca5595ea
+// dokimi:provenance sha256:6fdff43b5243d3ad28e8b2fc86d3a7e2dd7bbca22c82a1f836dbbde2f6ff495c

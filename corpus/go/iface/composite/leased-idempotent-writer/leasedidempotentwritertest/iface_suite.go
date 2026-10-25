@@ -100,9 +100,9 @@ func FuzzLeasedWriterSuite[T leasedidempotentwriter.LeasedWriter](
 	conform.Fuzz(f, LeasedWriterSuite(), callable, leasedWriterSubjects(newSubject), opts...)
 }
 
-// RunLeasedWriterBudgets applies the allocation ceilings of LeasedWriter,
-// and the ceilings that opts add, to a fresh subject of newSubject for
-// each case.
+// RunLeasedWriterBudgets applies the allocation ceilings of LeasedWriter
+// and its checks that count allocations, and the ceilings and the checks
+// that opts add, to a fresh subject of newSubject for each case.
 func RunLeasedWriterBudgets[T leasedidempotentwriter.LeasedWriter](
 	t *testing.T,
 	newSubject func(h *LeasedWriterHandle) T,
@@ -184,4 +184,4 @@ func newLeasedWriterOver(_ *LeasedWriterHandle, spend func()) leasedidempotentwr
 	return leasedWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:eeb68f42297a45d215d26fc2f4692ccfff22eb21950187f85a3dc2ae8309ee85
+// dokimi:provenance sha256:c53a2085f4b06a1fc67076d90c3da1aee778701c25d5b9fe58f9356f2b42b1ad

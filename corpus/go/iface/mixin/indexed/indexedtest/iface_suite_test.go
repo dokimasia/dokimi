@@ -80,8 +80,9 @@ func rankedIdle(h *indexedtest.RankedHandle) indexed.Ranked {
 }
 
 // TestRankedSuiteBudgets applies the allocation ceilings of the suite of
-// Ranked to rankedIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Ranked to rankedIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestRankedSuiteBudgets(t *testing.T) {
 	indexedtest.RunRankedBudgets(
 		t,
@@ -136,4 +137,4 @@ func BenchmarkRankedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b3d51f186029a02d52867fe3c241ad7d47351355ccfe9db43e4625eaee1273b4
+// dokimi:provenance sha256:c6a7a1057f486b7cfe453b236e1773689d19a7f50a2751e4330db977e571e2d9

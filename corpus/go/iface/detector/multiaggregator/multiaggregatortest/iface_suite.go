@@ -88,8 +88,9 @@ func FuzzMultiAggregatorSuite[T multiaggregator.MultiAggregator](
 }
 
 // RunMultiAggregatorBudgets applies the allocation ceilings of
-// MultiAggregator, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// MultiAggregator and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunMultiAggregatorBudgets[T multiaggregator.MultiAggregator](
 	t *testing.T,
 	newSubject func(h *MultiAggregatorHandle) T,
@@ -154,4 +155,4 @@ func newMultiAggregatorOver(_ *MultiAggregatorHandle, spend func()) multiaggrega
 	return multiAggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7f202b5d8184e1a3991658caea0417cae5069c600bdff8aaea61fa63c2f66b0f
+// dokimi:provenance sha256:e89fcb37a32f86c659032b2e44a50c483ac9aef19c7d601923a38c0ee10285fe

@@ -88,8 +88,9 @@ func FuzzPoisonAccessorSuite[T poisonaccessor.PoisonAccessor](
 }
 
 // RunPoisonAccessorBudgets applies the allocation ceilings of
-// PoisonAccessor, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// PoisonAccessor and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunPoisonAccessorBudgets[T poisonaccessor.PoisonAccessor](
 	t *testing.T,
 	newSubject func(h *PoisonAccessorHandle) T,
@@ -153,4 +154,4 @@ func newPoisonAccessorOver(_ *PoisonAccessorHandle, spend func()) poisonaccessor
 	return poisonAccessorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:200c2e564fd0edbde2d2c21d4216afcb35b873988bd1207b3404cbe21affbf70
+// dokimi:provenance sha256:8a866cfe1c020c6bf3d9b17a4d3a85fae3592487c65b0dcec06a24e0776491b6

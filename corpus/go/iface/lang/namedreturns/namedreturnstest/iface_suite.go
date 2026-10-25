@@ -109,8 +109,9 @@ func FuzzServiceSuite[T namedreturns.Service](
 	conform.Fuzz(f, ServiceSuite(), callable, serviceSubjects(newSubject), opts...)
 }
 
-// RunServiceBudgets applies the allocation ceilings of Service, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunServiceBudgets applies the allocation ceilings of Service and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunServiceBudgets[T namedreturns.Service](
 	t *testing.T,
 	newSubject func(h *ServiceHandle) T,
@@ -206,4 +207,4 @@ func newServiceOver(_ *ServiceHandle, spend func()) namedreturns.Service {
 	return serviceOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3c219d889c945b99467468bd4ff1e767cceb4c3a4b888b6558d355dfa6ade774
+// dokimi:provenance sha256:b3b136cb506006ece54aefc70226e8118b1a69f92170b76ea451911c5fb63763

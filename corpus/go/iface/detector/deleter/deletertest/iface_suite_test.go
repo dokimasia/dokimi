@@ -80,8 +80,9 @@ func deleterIdle(h *deletertest.DeleterHandle) deleter.Deleter {
 }
 
 // TestDeleterSuiteBudgets applies the allocation ceilings of the suite of
-// Deleter to deleterIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Deleter to deleterIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestDeleterSuiteBudgets(t *testing.T) {
 	deletertest.RunDeleterBudgets(
 		t,
@@ -108,4 +109,4 @@ func BenchmarkDeleterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:896d43b05d5bd305a60583e72125e6b0464519a6eddb1de13a9849b6ba5e4dfe
+// dokimi:provenance sha256:f3d67c5b7c8e10ed78fdc94a44e3951c0fd7af3d8720f5bd1ed41d624d992f8a

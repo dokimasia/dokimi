@@ -80,8 +80,9 @@ func mixedIdle(h *concurrentreaderstest.MixedHandle) concurrentreaders.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	concurrentreaderstest.RunMixedBudgets(
 		t,
@@ -131,4 +132,4 @@ func BenchmarkMixedSuiteParallel(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b49d79517447e43bde00ae423a1b6b3cb6d3e17b7328abd7eb2164850e1879f6
+// dokimi:provenance sha256:29d064b300e8a21fc3b01e98437149e458b0414ee1eaa173f1f6392f0fea573c

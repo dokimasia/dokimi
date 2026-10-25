@@ -81,8 +81,9 @@ func txWithRetryIdle(h *txwithretrytest.TxWithRetryHandle) txwithretry.TxWithRet
 }
 
 // TestTxWithRetrySuiteBudgets applies the allocation ceilings of the suite
-// of TxWithRetry to txWithRetryIdle, and a ceiling of 0 to each callable
-// without a budget whose calls build no input of their own.
+// of TxWithRetry to txWithRetryIdle with every check of the suite excused,
+// and a ceiling of 0 to each callable without a budget whose calls build
+// no input of their own.
 func TestTxWithRetrySuiteBudgets(t *testing.T) {
 	txwithretrytest.RunTxWithRetryBudgets(
 		t,
@@ -139,4 +140,4 @@ func BenchmarkTxWithRetrySuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:bbc716966963e37a39d362f572e9546158531c522a70b250cd261906d7f1874f
+// dokimi:provenance sha256:144992f1b4f1d1fb465f6b1ef298f44076e56aa9d98ff45f3de1def3e5697548

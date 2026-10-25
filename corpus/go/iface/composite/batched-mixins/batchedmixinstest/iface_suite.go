@@ -124,8 +124,9 @@ func FuzzBatchedSuite[T batchedmixins.Batched](
 	conform.Fuzz(f, BatchedSuite(), callable, batchedSubjects(newSubject), opts...)
 }
 
-// RunBatchedBudgets applies the allocation ceilings of Batched, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunBatchedBudgets applies the allocation ceilings of Batched and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunBatchedBudgets[T batchedmixins.Batched](
 	t *testing.T,
 	newSubject func(h *BatchedHandle) T,
@@ -232,4 +233,4 @@ func newBatchedOver(_ *BatchedHandle, spend func()) batchedmixins.Batched {
 	return batchedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:e2dc9c4f03b4a3e47bce53611263782622ca396b1f4b6751b20c1b64ce94f8db
+// dokimi:provenance sha256:2be64b7a40af31a600541456c3a061bf10a12ffdeb8324f331992a33e76de7ff

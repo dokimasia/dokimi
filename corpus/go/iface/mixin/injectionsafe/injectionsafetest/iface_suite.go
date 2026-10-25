@@ -95,8 +95,9 @@ func FuzzMixedSuite[T injectionsafe.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
-// RunMixedBudgets applies the allocation ceilings of Mixed, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunMixedBudgets applies the allocation ceilings of Mixed and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T injectionsafe.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
 	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
@@ -170,4 +171,4 @@ func newMixedOver(_ *MixedHandle, spend func()) injectionsafe.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8e9c587f5f17957539e037e24d257a71b39d493df16f35a4927b6eb13ea18bd6
+// dokimi:provenance sha256:8076ab37716533227d2880c63e49957ea87e9ec84b0e3546fa0f55858b2ffa0e

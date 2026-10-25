@@ -89,8 +89,9 @@ func FuzzStreamConsumerSuite[T streamconsumer.StreamConsumer](
 }
 
 // RunStreamConsumerBudgets applies the allocation ceilings of
-// StreamConsumer, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// StreamConsumer and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunStreamConsumerBudgets[T streamconsumer.StreamConsumer](
 	t *testing.T,
 	newSubject func(h *StreamConsumerHandle) T,
@@ -197,4 +198,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:daf593dd4d294bf5f84f1c15e85859183007e448e75b73f693564ea733d1d65a
+// dokimi:provenance sha256:ac80c1cfe25f9b843f639f321c0bac656627a84e19d45dbd20e38078e38b25d1

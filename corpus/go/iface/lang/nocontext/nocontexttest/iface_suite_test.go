@@ -81,8 +81,9 @@ func calculatorIdle(h *nocontexttest.CalculatorHandle) nocontext.Calculator {
 }
 
 // TestCalculatorSuiteBudgets applies the allocation ceilings of the suite
-// of Calculator to calculatorIdle, and a ceiling of 0 to each callable
-// without a budget whose calls build no input of their own.
+// of Calculator to calculatorIdle with every check of the suite excused,
+// and a ceiling of 0 to each callable without a budget whose calls build
+// no input of their own.
 func TestCalculatorSuiteBudgets(t *testing.T) {
 	nocontexttest.RunCalculatorBudgets(
 		t,
@@ -137,4 +138,4 @@ func BenchmarkCalculatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6693864cb9f36734fff9c663e4d64a1c6197b508fc66bde3eff7d7d94bfb2b23
+// dokimi:provenance sha256:c57c56d3e95bd68e87b89f162b063cb2ea89979d66f9f22e86e9a7dde798da2c

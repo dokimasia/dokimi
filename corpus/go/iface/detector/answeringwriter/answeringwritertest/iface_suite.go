@@ -88,8 +88,9 @@ func FuzzAnsweringWriterSuite[T answeringwriter.AnsweringWriter](
 }
 
 // RunAnsweringWriterBudgets applies the allocation ceilings of
-// AnsweringWriter, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// AnsweringWriter and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunAnsweringWriterBudgets[T answeringwriter.AnsweringWriter](
 	t *testing.T,
 	newSubject func(h *AnsweringWriterHandle) T,
@@ -155,4 +156,4 @@ func newAnsweringWriterOver(_ *AnsweringWriterHandle, spend func()) answeringwri
 	return answeringWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1127cc1d7ff9009263e9139636d2d1e23d7447c8eea591fc332f0628c8e3bb56
+// dokimi:provenance sha256:e55bac75d489e64204c724c1cf77803225fbd9d3c562a22619561b61b3f900d1

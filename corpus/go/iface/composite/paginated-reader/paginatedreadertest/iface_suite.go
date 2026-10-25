@@ -101,8 +101,9 @@ func FuzzPaginatedReaderSuite[T paginatedreader.PaginatedReader](
 }
 
 // RunPaginatedReaderBudgets applies the allocation ceilings of
-// PaginatedReader, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// PaginatedReader and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunPaginatedReaderBudgets[T paginatedreader.PaginatedReader](
 	t *testing.T,
 	newSubject func(h *PaginatedReaderHandle) T,
@@ -185,4 +186,4 @@ func newPaginatedReaderOver(_ *PaginatedReaderHandle, spend func()) paginatedrea
 	return paginatedReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5d2917f5f14cdda559cc9aa93c7fd73fcbcc83f1f87d2cde2e1ee8cf852230cc
+// dokimi:provenance sha256:de1a7b4f894d2ba516862375de123a1a4129229468d6433882ae1a5d639a3e62

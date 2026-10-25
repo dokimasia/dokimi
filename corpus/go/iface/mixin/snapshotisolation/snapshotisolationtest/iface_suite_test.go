@@ -80,8 +80,9 @@ func mixedIdle(h *snapshotisolationtest.MixedHandle) snapshotisolation.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	snapshotisolationtest.RunMixedBudgets(
 		t,
@@ -136,4 +137,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:598e8f347fea1cc7beb15da3d3c32c1be9711d1a7a5496dc8c1cf5e6bf010840
+// dokimi:provenance sha256:f919c58e5d031a57b8c24769734db51907e28ea38f439eb8788d607f333992d4

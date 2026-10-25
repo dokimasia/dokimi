@@ -81,8 +81,9 @@ func multiReaderIdle(h *multireadertest.MultiReaderHandle) multireader.MultiRead
 }
 
 // TestMultiReaderSuiteBudgets applies the allocation ceilings of the suite
-// of MultiReader to multiReaderIdle, and a ceiling of 0 to each callable
-// without a budget whose calls build no input of their own.
+// of MultiReader to multiReaderIdle with every check of the suite excused,
+// and a ceiling of 0 to each callable without a budget whose calls build
+// no input of their own.
 func TestMultiReaderSuiteBudgets(t *testing.T) {
 	multireadertest.RunMultiReaderBudgets(
 		t,
@@ -117,4 +118,4 @@ func BenchmarkMultiReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:28675b144b198d2b74e1a9708146efe3b3006171fc55a44c5adb2b5b55659305
+// dokimi:provenance sha256:bd471ba0c67eed531af0a47b5ce6c40426fdd137f9bdab66867710d2ecc08a39

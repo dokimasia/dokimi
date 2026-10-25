@@ -80,8 +80,9 @@ func storeIdle(h *generictest.StoreHandle) generic.Store[int, int] {
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
-// Store to storeIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Store to storeIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestStoreSuiteBudgets(t *testing.T) {
 	generictest.RunStoreBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:74bc28c95692bdfe94b6f019c7f37962721123e119ac2a2a901d546269535475
+// dokimi:provenance sha256:3df45ce37bdd448fa42b52a7492a218574f92d4e8d462fbe2ccf9fdb74fe071a

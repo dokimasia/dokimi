@@ -83,9 +83,9 @@ func FuzzPredicateSuite[T predicate.Predicate](
 	conform.Fuzz(f, PredicateSuite(), callable, predicateSubjects(newSubject), opts...)
 }
 
-// RunPredicateBudgets applies the allocation ceilings of Predicate, and
-// the ceilings that opts add, to a fresh subject of newSubject for each
-// case.
+// RunPredicateBudgets applies the allocation ceilings of Predicate and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunPredicateBudgets[T predicate.Predicate](
 	t *testing.T,
 	newSubject func(h *PredicateHandle) T,
@@ -148,4 +148,4 @@ func newPredicateOver(_ *PredicateHandle, spend func()) predicate.Predicate {
 	return predicateOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f3ebb856d4f58637ae4125853ac9181f54b243443f751f5978f627cabdaaeabb
+// dokimi:provenance sha256:156493b8692aa0ce5437659f8b386cd43edb4a3eed4a81819e088274a50f6a23

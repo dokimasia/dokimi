@@ -100,8 +100,9 @@ func FuzzRankedSuite[T genericbound.Ranked[int, genericbound.Score]](
 	conform.Fuzz(f, RankedSuite(), callable, rankedSubjects(newSubject), opts...)
 }
 
-// RunRankedBudgets applies the allocation ceilings of Ranked, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunRankedBudgets applies the allocation ceilings of Ranked and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunRankedBudgets[T genericbound.Ranked[int, genericbound.Score]](
 	t *testing.T,
 	newSubject func(h *RankedHandle) T,
@@ -183,4 +184,4 @@ func newRankedOver(_ *RankedHandle, spend func()) genericbound.Ranked[int, gener
 	return rankedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:be39a7e3995671573c799b4b315494696c645f52789422efb6fa6b1f056be160
+// dokimi:provenance sha256:f2e4d3e8d68f0b392b8ce77ef8ba80d8ab3711455832a7331d0bf50f22c4b21a

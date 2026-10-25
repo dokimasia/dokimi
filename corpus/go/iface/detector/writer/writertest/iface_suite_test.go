@@ -80,8 +80,9 @@ func writerIdle(h *writertest.WriterHandle) writer.Writer {
 }
 
 // TestWriterSuiteBudgets applies the allocation ceilings of the suite of
-// Writer to writerIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Writer to writerIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestWriterSuiteBudgets(t *testing.T) {
 	writertest.RunWriterBudgets(
 		t,
@@ -108,4 +109,4 @@ func BenchmarkWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:960ed608e2caa614b9bf8b71f829f498c958b1e2dadb7f5deeab03f98169a6cd
+// dokimi:provenance sha256:1e7a12bd6c6dd921425ce614168d8aa2b125988f518eb6b37767d01abed822b9

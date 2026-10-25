@@ -80,8 +80,9 @@ func mixedIdle(h *sideeffecttest.MixedHandle) sideeffect.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	sideeffecttest.RunMixedBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:49003be8bfcef00b433cd0bb94a212fedb91ae32e493e0d8ccb8ff86d3292b34
+// dokimi:provenance sha256:b75f5d070c233fdda06e08a5d18f8d7932d609e42c92305dff8f64bc25a4dd89

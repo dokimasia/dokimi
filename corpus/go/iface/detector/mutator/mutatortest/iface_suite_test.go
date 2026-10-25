@@ -80,8 +80,9 @@ func mutatorIdle(h *mutatortest.MutatorHandle) mutator.Mutator {
 }
 
 // TestMutatorSuiteBudgets applies the allocation ceilings of the suite of
-// Mutator to mutatorIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Mutator to mutatorIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestMutatorSuiteBudgets(t *testing.T) {
 	mutatortest.RunMutatorBudgets(
 		t,
@@ -108,4 +109,4 @@ func BenchmarkMutatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e254d58524943f9e3c4c6e7526e950bb7e1acd63794c0b9621291b7da3ef58de
+// dokimi:provenance sha256:ac521bb35272dedc0f34a5572d44ff34660807c8babde4f6868bbba6b028d034

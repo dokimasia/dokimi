@@ -81,8 +81,9 @@ func aggregatorIdle(h *aggregatortest.AggregatorHandle) aggregator.Aggregator {
 }
 
 // TestAggregatorSuiteBudgets applies the allocation ceilings of the suite
-// of Aggregator to aggregatorIdle, and a ceiling of 0 to each callable
-// without a budget whose calls build no input of their own.
+// of Aggregator to aggregatorIdle with every check of the suite excused,
+// and a ceiling of 0 to each callable without a budget whose calls build
+// no input of their own.
 func TestAggregatorSuiteBudgets(t *testing.T) {
 	aggregatortest.RunAggregatorBudgets(
 		t,
@@ -109,4 +110,4 @@ func BenchmarkAggregatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2cd103b5e044f2c8994a2a73d6d6e74b71fc261c2b223fa094b04108d7729ecf
+// dokimi:provenance sha256:532894c90201448f44cbc243ac7c73b11bb00d4a6ef2a92ed0b68f5403246d94

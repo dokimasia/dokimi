@@ -83,9 +83,9 @@ func FuzzMultiReaderSuite[T multireader.MultiReader](
 	conform.Fuzz(f, MultiReaderSuite(), callable, multiReaderSubjects(newSubject), opts...)
 }
 
-// RunMultiReaderBudgets applies the allocation ceilings of MultiReader,
-// and the ceilings that opts add, to a fresh subject of newSubject for
-// each case.
+// RunMultiReaderBudgets applies the allocation ceilings of MultiReader and
+// its checks that count allocations, and the ceilings and the checks that
+// opts add, to a fresh subject of newSubject for each case.
 func RunMultiReaderBudgets[T multireader.MultiReader](
 	t *testing.T,
 	newSubject func(h *MultiReaderHandle) T,
@@ -151,4 +151,4 @@ func newMultiReaderOver(_ *MultiReaderHandle, spend func()) multireader.MultiRea
 	return multiReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:dbff8ee5a5ad7665552e228da3fea86df3378ea5b04456220d93866f7e7e4229
+// dokimi:provenance sha256:000f779bda43abcb7bacfa5151fd06b9de16e30c9b50bd409a41a3aadec24e46

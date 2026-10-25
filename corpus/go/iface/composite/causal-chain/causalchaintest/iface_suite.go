@@ -119,8 +119,9 @@ func FuzzLogSuite[T causalchain.Log](
 	conform.Fuzz(f, LogSuite(), callable, logSubjects(newSubject), opts...)
 }
 
-// RunLogBudgets applies the allocation ceilings of Log, and the ceilings
-// that opts add, to a fresh subject of newSubject for each case.
+// RunLogBudgets applies the allocation ceilings of Log and its checks that
+// count allocations, and the ceilings and the checks that opts add, to a
+// fresh subject of newSubject for each case.
 func RunLogBudgets[T causalchain.Log](t *testing.T, newSubject func(h *LogHandle) T, opts ...LogOption) {
 	t.Helper()
 	conform.RunBudgets(t, LogSuite(), logSubjects(newSubject), opts...)
@@ -212,4 +213,4 @@ func newLogOver(_ *LogHandle, spend func()) causalchain.Log {
 	return logOver{spend: spend}
 }
 
-// dokimi:provenance sha256:98434d716278c2ec35c96bdb9f7baa19e066cb23d18988e949d9671c72ace873
+// dokimi:provenance sha256:0da49d1aa3a39bc65d06d460fa621041fdf5fa76de05d9686fde2aa8241a2849

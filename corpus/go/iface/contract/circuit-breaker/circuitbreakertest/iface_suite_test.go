@@ -81,8 +81,9 @@ func contractIdle(h *circuitbreakertest.ContractHandle) circuitbreaker.Contract 
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
-// Contract to contractIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Contract to contractIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestContractSuiteBudgets(t *testing.T) {
 	circuitbreakertest.RunContractBudgets(
 		t,
@@ -109,4 +110,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:05b04f79ea6971cda1d74815112fbc56b518c3cc78366a9446415ec03949b1a9
+// dokimi:provenance sha256:ac5f2b5a93fdaf3751197d7d95dd85e2fd6dad2b0e400ee2680abd694eaad1b3

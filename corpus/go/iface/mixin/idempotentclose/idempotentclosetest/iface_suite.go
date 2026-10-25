@@ -96,8 +96,9 @@ func FuzzCloserSuite[T idempotentclose.Closer](
 	conform.Fuzz(f, CloserSuite(), callable, closerSubjects(newSubject), opts...)
 }
 
-// RunCloserBudgets applies the allocation ceilings of Closer, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunCloserBudgets applies the allocation ceilings of Closer and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunCloserBudgets[T idempotentclose.Closer](
 	t *testing.T,
 	newSubject func(h *CloserHandle) T,
@@ -174,4 +175,4 @@ func newCloserOver(_ *CloserHandle, spend func()) idempotentclose.Closer {
 	return closerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5f12a3f7c9e02f0bc6fa665fdc512533be624932d78ed1682af78a45d0335483
+// dokimi:provenance sha256:f087e9e65c2f5f8a4c9959ba032e7df5977187a88248ce9f3bc13bec2c71867d

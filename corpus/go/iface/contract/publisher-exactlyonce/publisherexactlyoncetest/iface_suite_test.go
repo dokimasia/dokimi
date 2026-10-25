@@ -85,8 +85,9 @@ func contractIdle(h *publisherexactlyoncetest.ContractHandle) publisherexactlyon
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
-// Contract to contractIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Contract to contractIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestContractSuiteBudgets(t *testing.T) {
 	publisherexactlyoncetest.RunContractBudgets(
 		t,
@@ -163,4 +164,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:827616a0e60bebb9670a77d1488af2dfb8a9bb1bebeb132b552ead91e21e2694
+// dokimi:provenance sha256:f8f305092972012082e20ff7e2cee07be9632de98c27f7bcc3f2d06a782957d7

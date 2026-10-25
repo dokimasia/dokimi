@@ -109,9 +109,9 @@ func FuzzCalculatorSuite[T nocontext.Calculator](
 	conform.Fuzz(f, CalculatorSuite(), callable, calculatorSubjects(newSubject), opts...)
 }
 
-// RunCalculatorBudgets applies the allocation ceilings of Calculator, and
-// the ceilings that opts add, to a fresh subject of newSubject for each
-// case.
+// RunCalculatorBudgets applies the allocation ceilings of Calculator and
+// its checks that count allocations, and the ceilings and the checks that
+// opts add, to a fresh subject of newSubject for each case.
 func RunCalculatorBudgets[T nocontext.Calculator](
 	t *testing.T,
 	newSubject func(h *CalculatorHandle) T,
@@ -207,4 +207,4 @@ func newCalculatorOver(_ *CalculatorHandle, spend func()) nocontext.Calculator {
 	return calculatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:4ea966a5a6e97bdf300dec9ac7e1e769a8119a5d8e62249a1972ccd85ef4139d
+// dokimi:provenance sha256:d966cfc4bd95c200bfcaf00e90c1f5addb40c4315adc8f734903ce70b1d217df

@@ -98,8 +98,9 @@ func batchedIdle(h *batchedmixinstest.BatchedHandle) batchedmixins.Batched {
 }
 
 // TestBatchedSuiteBudgets applies the allocation ceilings of the suite of
-// Batched to batchedIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Batched to batchedIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestBatchedSuiteBudgets(t *testing.T) {
 	batchedmixinstest.RunBatchedBudgets(
 		t,
@@ -107,6 +108,10 @@ func TestBatchedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(batchedmixinstest.BatchedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(batchedmixinstest.BatchedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(batchedmixinstest.BatchedChecks.List.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -175,4 +180,4 @@ func BenchmarkBatchedSuiteParallel(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5effba5cee6a883d98fb95814ca34216dca1521899e5c5b3edc12c4652b91601
+// dokimi:provenance sha256:cf7ad4d5952398f0899ea8cbe6ccc5497ed02d4a89ea09dc1ff3dccf4075c7f7

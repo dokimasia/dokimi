@@ -104,8 +104,9 @@ func FuzzWideSuite[T multireturn.Wide](
 	conform.Fuzz(f, WideSuite(), callable, wideSubjects(newSubject), opts...)
 }
 
-// RunWideBudgets applies the allocation ceilings of Wide, and the ceilings
-// that opts add, to a fresh subject of newSubject for each case.
+// RunWideBudgets applies the allocation ceilings of Wide and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunWideBudgets[T multireturn.Wide](t *testing.T, newSubject func(h *WideHandle) T, opts ...WideOption) {
 	t.Helper()
 	conform.RunBudgets(t, WideSuite(), wideSubjects(newSubject), opts...)
@@ -195,4 +196,4 @@ func newWideOver(_ *WideHandle, spend func()) multireturn.Wide {
 	return wideOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c215ebf6b715683df57fc32f5934684ddd2310f260e62319bd55cb805605532b
+// dokimi:provenance sha256:fff62b74bbd2ab130fb3e32401aec7ae8da5e93dcb3f7b8e925b65d505715501

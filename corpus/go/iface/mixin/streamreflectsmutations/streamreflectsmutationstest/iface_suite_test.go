@@ -80,8 +80,9 @@ func mixedIdle(h *streamreflectsmutationstest.MixedHandle) streamreflectsmutatio
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	streamreflectsmutationstest.RunMixedBudgets(
 		t,
@@ -150,4 +151,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:35a281cfcfe86656e4766b15b7c678ef34060b49213fe67c1131f7cc595f30e0
+// dokimi:provenance sha256:3f00a5b1f256a7f462021375dd397933c6ec35b3d6b5f75cb51a067abf5553e2

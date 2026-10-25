@@ -86,8 +86,9 @@ func answeringWriterIdle(h *answeringwritertest.AnsweringWriterHandle) answering
 }
 
 // TestAnsweringWriterSuiteBudgets applies the allocation ceilings of the
-// suite of AnsweringWriter to answeringWriterIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of AnsweringWriter to answeringWriterIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestAnsweringWriterSuiteBudgets(t *testing.T) {
 	answeringwritertest.RunAnsweringWriterBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkAnsweringWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7ab6da92c0f7845b15eafe5e5ec75a1f0ab87c514fefcc6ae63b82d4cad03b77
+// dokimi:provenance sha256:04c58499352774cc61a0a6e98d9de58cc44678310416f7cdd3a0f947bc614a12

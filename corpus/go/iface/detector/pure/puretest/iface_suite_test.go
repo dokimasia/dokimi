@@ -80,8 +80,9 @@ func pureIdle(h *puretest.PureHandle) pure.Pure {
 }
 
 // TestPureSuiteBudgets applies the allocation ceilings of the suite of
-// Pure to pureIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Pure to pureIdle with every check of the suite excused, and a ceiling of
+// 0 to each callable without a budget whose calls build no input of their
+// own.
 func TestPureSuiteBudgets(t *testing.T) {
 	puretest.RunPureBudgets(
 		t,
@@ -108,4 +109,4 @@ func BenchmarkPureSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5e2f450c2248757fc6574e4acb134996da17129456f78dc13ce8f1dacc0a1637
+// dokimi:provenance sha256:d2c0464a783c8bcffebbc9c7be715479d3e1b1fa2aa5c360bad7841bcbe103f9

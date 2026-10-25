@@ -80,8 +80,9 @@ func mixedIdle(h *commutativetest.MixedHandle) commutative.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	commutativetest.RunMixedBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:910f76e0a6f542303459557424d8fcce3b6185059b05e9145739f1d2f18b0e88
+// dokimi:provenance sha256:0c6fbfeca4a429ac6e14196f71b9cc453f6edff31b8f84e383fbc8dfec5f0140

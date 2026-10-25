@@ -80,8 +80,9 @@ func mixedIdle(h *timeawaretest.MixedHandle) timeaware.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	timeawaretest.RunMixedBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e27d50ddbcd8f43e24ffccf22c575b744586b654c2895b26af424a55489bdd09
+// dokimi:provenance sha256:ffa9352f89e380575294256196e3ba1995b52dd497fc7ab22f587b69f3612484

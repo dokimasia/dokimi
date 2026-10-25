@@ -96,8 +96,9 @@ func FuzzStreamSuite[T embeddedforeign.Stream](
 	conform.Fuzz(f, StreamSuite(), callable, streamSubjects(newSubject), opts...)
 }
 
-// RunStreamBudgets applies the allocation ceilings of Stream, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunStreamBudgets applies the allocation ceilings of Stream and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunStreamBudgets[T embeddedforeign.Stream](
 	t *testing.T,
 	newSubject func(h *StreamHandle) T,
@@ -175,4 +176,4 @@ func newStreamOver(_ *StreamHandle, spend func()) embeddedforeign.Stream {
 	return streamOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f82a8f98b4404b8a2a9b2e5a8b24b6af5e003f76d997b7c15277565a4637bb4b
+// dokimi:provenance sha256:d9a418327562ccf778017ace11ba912ab09a625c492cf7eac5ec3bb1c3e50b3c

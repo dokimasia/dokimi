@@ -80,8 +80,9 @@ func readerIdle(h *readertest.ReaderHandle) reader.Reader {
 }
 
 // TestReaderSuiteBudgets applies the allocation ceilings of the suite of
-// Reader to readerIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Reader to readerIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestReaderSuiteBudgets(t *testing.T) {
 	readertest.RunReaderBudgets(
 		t,
@@ -108,4 +109,4 @@ func BenchmarkReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e6ac07d2460e6e237c5831b344a80e4efaafed836c2139a56519d7a9fe73b366
+// dokimi:provenance sha256:03e3dcdac9a044aa2ebd146ce4451406aeb5353660250bd099eb5c35949161ad

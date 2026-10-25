@@ -80,8 +80,9 @@ func mixedIdle(h *scopetest.MixedHandle) scope.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	scopetest.RunMixedBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ca0967bc406f2ef273fdfd5e6d726ee857a1bb6b4c79559ce33bad62565537ff
+// dokimi:provenance sha256:0a6ccfb534a88ce0baa816c459e255284e5bfb257c86be4a492f091828a442ac

@@ -83,9 +83,9 @@ func FuzzAggregatorSuite[T aggregator.Aggregator](
 	conform.Fuzz(f, AggregatorSuite(), callable, aggregatorSubjects(newSubject), opts...)
 }
 
-// RunAggregatorBudgets applies the allocation ceilings of Aggregator, and
-// the ceilings that opts add, to a fresh subject of newSubject for each
-// case.
+// RunAggregatorBudgets applies the allocation ceilings of Aggregator and
+// its checks that count allocations, and the ceilings and the checks that
+// opts add, to a fresh subject of newSubject for each case.
 func RunAggregatorBudgets[T aggregator.Aggregator](
 	t *testing.T,
 	newSubject func(h *AggregatorHandle) T,
@@ -148,4 +148,4 @@ func newAggregatorOver(_ *AggregatorHandle, spend func()) aggregator.Aggregator 
 	return aggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:bf8478efde6cdd18b2a593e0fb54b03a2a28980333cf8a142800bc2065076e0d
+// dokimi:provenance sha256:0a29d22260553887dacff8a38f818945ed399802c4528b690d9b3036a76fe2dd

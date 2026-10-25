@@ -83,9 +83,9 @@ func FuzzBatchReaderSuite[T batchreader.BatchReader](
 	conform.Fuzz(f, BatchReaderSuite(), callable, batchReaderSubjects(newSubject), opts...)
 }
 
-// RunBatchReaderBudgets applies the allocation ceilings of BatchReader,
-// and the ceilings that opts add, to a fresh subject of newSubject for
-// each case.
+// RunBatchReaderBudgets applies the allocation ceilings of BatchReader and
+// its checks that count allocations, and the ceilings and the checks that
+// opts add, to a fresh subject of newSubject for each case.
 func RunBatchReaderBudgets[T batchreader.BatchReader](
 	t *testing.T,
 	newSubject func(h *BatchReaderHandle) T,
@@ -149,4 +149,4 @@ func newBatchReaderOver(_ *BatchReaderHandle, spend func()) batchreader.BatchRea
 	return batchReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:07180d37606649697afbeb53c22454878d44e5116dbe559de4e659c7ec29d542
+// dokimi:provenance sha256:f095298af32a1ddadcddd4e473cb3540ba395e6cf40c65aaa1cd40dd38506c77

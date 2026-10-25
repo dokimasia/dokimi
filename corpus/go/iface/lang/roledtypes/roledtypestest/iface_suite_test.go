@@ -80,8 +80,9 @@ func storeIdle(h *roledtypestest.StoreHandle) roledtypes.Store {
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
-// Store to storeIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Store to storeIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestStoreSuiteBudgets(t *testing.T) {
 	roledtypestest.RunStoreBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:56846e5c1e8e61859f26609d8be51db7b1d60df63441ed7d2dd1174ca5353f79
+// dokimi:provenance sha256:8817cb68d6978efcfc57b088c1b5f6530621c882e0e5af4a022444c4b27e5d2f

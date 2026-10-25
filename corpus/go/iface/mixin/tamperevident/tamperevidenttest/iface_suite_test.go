@@ -80,8 +80,9 @@ func mixedIdle(h *tamperevidenttest.MixedHandle) tamperevident.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	tamperevidenttest.RunMixedBudgets(
 		t,
@@ -136,4 +137,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:83c3c3e8fe24e102b2f477c2bcf8ad34c514e7fcfc48fb20e80d25f2099090ea
+// dokimi:provenance sha256:76ecf3c84ad55a8bd7771a6ccf2da927a0a1167741d2c7ab238da183dbf7396b

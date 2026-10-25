@@ -81,8 +81,9 @@ func predicateIdle(h *predicatetest.PredicateHandle) predicate.Predicate {
 }
 
 // TestPredicateSuiteBudgets applies the allocation ceilings of the suite
-// of Predicate to predicateIdle, and a ceiling of 0 to each callable
-// without a budget whose calls build no input of their own.
+// of Predicate to predicateIdle with every check of the suite excused, and
+// a ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestPredicateSuiteBudgets(t *testing.T) {
 	predicatetest.RunPredicateBudgets(
 		t,
@@ -109,4 +110,4 @@ func BenchmarkPredicateSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:4f8be0bfbff1f0ee65dd4a78a2e623e688e804d3191a5fe197b2de37383f231e
+// dokimi:provenance sha256:b03ceefe993f38416c0fb352870a2375a3c0c2d133ffa4036b3562c2175595cf

@@ -80,8 +80,9 @@ func fileIdle(h *suitedhandletest.FileHandle) suitedhandle.File {
 }
 
 // TestFileSuiteBudgets applies the allocation ceilings of the suite of
-// File to fileIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// File to fileIdle with every check of the suite excused, and a ceiling of
+// 0 to each callable without a budget whose calls build no input of their
+// own.
 func TestFileSuiteBudgets(t *testing.T) {
 	suitedhandletest.RunFileBudgets(
 		t,
@@ -188,8 +189,8 @@ func fsIdle(h *suitedhandletest.FSHandle) suitedhandle.FS {
 }
 
 // TestFSSuiteBudgets applies the allocation ceilings of the suite of FS to
-// fsIdle, and a ceiling of 0 to each callable without a budget whose calls
-// build no input of their own.
+// fsIdle with every check of the suite excused, and a ceiling of 0 to each
+// callable without a budget whose calls build no input of their own.
 func TestFSSuiteBudgets(t *testing.T) {
 	suitedhandletest.RunFSBudgets(
 		t,
@@ -215,4 +216,4 @@ func BenchmarkFSSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c1a5f4ffe9dd6729e1a76dff389554ab63dc334a1db39bcbba2928bc33adf021
+// dokimi:provenance sha256:63c7bd1239a00da6244b370b41a98b4bdabf1de6a92af8b3d8b77ab032f388a3

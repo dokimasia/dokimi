@@ -110,8 +110,9 @@ func FuzzMixedSuite[T boundedcache.Mixed](
 	conform.Fuzz(f, MixedSuite(), callable, mixedSubjects(newSubject), opts...)
 }
 
-// RunMixedBudgets applies the allocation ceilings of Mixed, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunMixedBudgets applies the allocation ceilings of Mixed and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
 func RunMixedBudgets[T boundedcache.Mixed](t *testing.T, newSubject func(h *MixedHandle) T, opts ...MixedOption) {
 	t.Helper()
 	conform.RunBudgets(t, MixedSuite(), mixedSubjects(newSubject), opts...)
@@ -221,4 +222,4 @@ func newMixedOver(_ *MixedHandle, spend func()) boundedcache.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:dff07755a484b20311020c7ff6dc1c15f3ff50d211ca4229c5de3f351895ea86
+// dokimi:provenance sha256:d32bcfeaf0d498c15d13543a83544a573c1f8c8b8a24fda3702d325c4e055ef8

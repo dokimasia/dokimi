@@ -87,9 +87,9 @@ func FuzzReaderNoErrorSuite[T readernoerror.ReaderNoError](
 	conform.Fuzz(f, ReaderNoErrorSuite(), callable, readerNoErrorSubjects(newSubject), opts...)
 }
 
-// RunReaderNoErrorBudgets applies the allocation ceilings of
-// ReaderNoError, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// RunReaderNoErrorBudgets applies the allocation ceilings of ReaderNoError
+// and its checks that count allocations, and the ceilings and the checks
+// that opts add, to a fresh subject of newSubject for each case.
 func RunReaderNoErrorBudgets[T readernoerror.ReaderNoError](
 	t *testing.T,
 	newSubject func(h *ReaderNoErrorHandle) T,
@@ -155,4 +155,4 @@ func newReaderNoErrorOver(_ *ReaderNoErrorHandle, spend func()) readernoerror.Re
 	return readerNoErrorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:21fc9920e6aec2b924f6fd5c28a322a98ead3cbd12e80a2fb1fb4d38eeb0aaf5
+// dokimi:provenance sha256:eb45ad79bb1f6478cba81327e07bb4334df921b105a3ee79e3e55f6ff91d21c1

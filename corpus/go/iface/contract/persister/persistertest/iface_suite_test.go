@@ -81,8 +81,9 @@ func contractIdle(h *persistertest.ContractHandle) persister.Contract {
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
-// Contract to contractIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Contract to contractIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestContractSuiteBudgets(t *testing.T) {
 	persistertest.RunContractBudgets(
 		t,
@@ -123,4 +124,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5042d7bb6520dd265e63409b3f6d0bd1249cf58c7ceec30f45486e2670fb96fc
+// dokimi:provenance sha256:5d158822af5b415d79aa1b706bea414439914fc90752e3699c77ae6207ec28b2

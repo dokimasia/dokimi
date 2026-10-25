@@ -85,8 +85,9 @@ func leasedWriterIdle(h *leasedidempotentwritertest.LeasedWriterHandle) leasedid
 }
 
 // TestLeasedWriterSuiteBudgets applies the allocation ceilings of the
-// suite of LeasedWriter to leasedWriterIdle, and a ceiling of 0 to each
-// callable without a budget whose calls build no input of their own.
+// suite of LeasedWriter to leasedWriterIdle with every check of the suite
+// excused, and a ceiling of 0 to each callable without a budget whose
+// calls build no input of their own.
 func TestLeasedWriterSuiteBudgets(t *testing.T) {
 	leasedidempotentwritertest.RunLeasedWriterBudgets(
 		t,
@@ -143,4 +144,4 @@ func BenchmarkLeasedWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ebb6db06b0e00e59871876f2c8044fce4f8353b831be5ba1aaf764fbf1c787e0
+// dokimi:provenance sha256:d31fbf750f15edaab4f8a0ae1973832a13246851811e6ced3d76c74f3640c556

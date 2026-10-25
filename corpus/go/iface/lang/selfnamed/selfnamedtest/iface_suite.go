@@ -97,8 +97,9 @@ func FuzzFilterSuite[T selfnamed.Filter](
 	conform.Fuzz(f, FilterSuite(), callable, filterSubjects(newSubject), opts...)
 }
 
-// RunFilterBudgets applies the allocation ceilings of Filter, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunFilterBudgets applies the allocation ceilings of Filter and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunFilterBudgets[T selfnamed.Filter](t *testing.T, newSubject func(h *FilterHandle) T, opts ...FilterOption) {
 	t.Helper()
 	conform.RunBudgets(t, FilterSuite(), filterSubjects(newSubject), opts...)
@@ -203,4 +204,4 @@ func newFilterOver(_ *FilterHandle, spend func()) selfnamed.Filter {
 	return filterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8086d55027834521b3057b74c04ef0ba9acc3983d7cee5729285d918087c225c
+// dokimi:provenance sha256:a7f924381993b603283f05a0edee0a6a22b1e21d1c4e63507e2ac74ccaf10a37

@@ -86,8 +86,9 @@ func streamConsumerIdle(h *streamconsumertest.StreamConsumerHandle) streamconsum
 }
 
 // TestStreamConsumerSuiteBudgets applies the allocation ceilings of the
-// suite of StreamConsumer to streamConsumerIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of StreamConsumer to streamConsumerIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestStreamConsumerSuiteBudgets(t *testing.T) {
 	streamconsumertest.RunStreamConsumerBudgets(
 		t,
@@ -118,4 +119,4 @@ func BenchmarkStreamConsumerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c70e2e7b37de0395307951f9926516b0d183401475766865f849a2258e933b22
+// dokimi:provenance sha256:bbcf7a62f8854c5e48131d0fd6ab013f5fa910f093fc4c4a8df881413fa2c949

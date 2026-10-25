@@ -80,8 +80,9 @@ func storeIdle(h *partnernamingtest.StoreHandle) partnernaming.Store {
 }
 
 // TestStoreSuiteBudgets applies the allocation ceilings of the suite of
-// Store to storeIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Store to storeIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestStoreSuiteBudgets(t *testing.T) {
 	partnernamingtest.RunStoreBudgets(
 		t,
@@ -178,4 +179,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:90436b4e8fbdc5c9851d561b1603136af8f46fbe97e0b311e15ab938ae2031c7
+// dokimi:provenance sha256:1fb46407cc30783173523836bf957ee392da6f26a283d72fa864ceb80657ba50

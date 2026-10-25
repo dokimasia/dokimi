@@ -96,8 +96,9 @@ func FuzzFinderSuite[T variadic.Finder](
 	conform.Fuzz(f, FinderSuite(), callable, finderSubjects(newSubject), opts...)
 }
 
-// RunFinderBudgets applies the allocation ceilings of Finder, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunFinderBudgets applies the allocation ceilings of Finder and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunFinderBudgets[T variadic.Finder](t *testing.T, newSubject func(h *FinderHandle) T, opts ...FinderOption) {
 	t.Helper()
 	conform.RunBudgets(t, FinderSuite(), finderSubjects(newSubject), opts...)
@@ -172,4 +173,4 @@ func newFinderOver(_ *FinderHandle, spend func()) variadic.Finder {
 	return finderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:36ccf5b70f3556f23835866e7d24ceebe0e4e925bdf849c2d23a3a7b3168e8fb
+// dokimi:provenance sha256:b6543ace515ef298716b6c3a76b7369e8c0e343d29c5c4479994e545e6dd45dd

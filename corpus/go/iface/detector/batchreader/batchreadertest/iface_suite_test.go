@@ -81,8 +81,9 @@ func batchReaderIdle(h *batchreadertest.BatchReaderHandle) batchreader.BatchRead
 }
 
 // TestBatchReaderSuiteBudgets applies the allocation ceilings of the suite
-// of BatchReader to batchReaderIdle, and a ceiling of 0 to each callable
-// without a budget whose calls build no input of their own.
+// of BatchReader to batchReaderIdle with every check of the suite excused,
+// and a ceiling of 0 to each callable without a budget whose calls build
+// no input of their own.
 func TestBatchReaderSuiteBudgets(t *testing.T) {
 	batchreadertest.RunBatchReaderBudgets(
 		t,
@@ -110,4 +111,4 @@ func BenchmarkBatchReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:0ac2e4804fa4ec426d0a49987c1bb9b59d60d67e9abe8fa2d894f4988fccb981
+// dokimi:provenance sha256:5a33d7d4e295ac2aa28c02fe283cb4fd88490787c941ac614bf83c0fc93fd468

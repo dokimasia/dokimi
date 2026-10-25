@@ -81,8 +81,9 @@ func lifecycleIdle(h *lifecycletest.LifecycleHandle) lifecycle.Lifecycle {
 }
 
 // TestLifecycleSuiteBudgets applies the allocation ceilings of the suite
-// of Lifecycle to lifecycleIdle, and a ceiling of 0 to each callable
-// without a budget whose calls build no input of their own.
+// of Lifecycle to lifecycleIdle with every check of the suite excused, and
+// a ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestLifecycleSuiteBudgets(t *testing.T) {
 	lifecycletest.RunLifecycleBudgets(
 		t,
@@ -109,4 +110,4 @@ func BenchmarkLifecycleSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6efccaaa92a6742439597d5d84342f8c6dea34c5086cf3211baace695d18dd1b
+// dokimi:provenance sha256:741ff795efb77e49e9d16e3ebc97a3e05c31dc135f9627cc024f8def3ff61175

@@ -80,8 +80,9 @@ func lookupIdle(h *lookuptest.LookupHandle) lookup.Lookup {
 }
 
 // TestLookupSuiteBudgets applies the allocation ceilings of the suite of
-// Lookup to lookupIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Lookup to lookupIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestLookupSuiteBudgets(t *testing.T) {
 	lookuptest.RunLookupBudgets(
 		t,
@@ -108,4 +109,4 @@ func BenchmarkLookupSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2674ce516ebf22d7fd38ee46896e31c871a89618f88d4f8180e4c5dc63f9c1b0
+// dokimi:provenance sha256:c0bc42a7fe51cadf8f27e4131d0db1f17e31b1d979db111976215d8f8bf6595a

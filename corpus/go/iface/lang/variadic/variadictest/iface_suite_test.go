@@ -80,8 +80,9 @@ func finderIdle(h *variadictest.FinderHandle) variadic.Finder {
 }
 
 // TestFinderSuiteBudgets applies the allocation ceilings of the suite of
-// Finder to finderIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Finder to finderIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestFinderSuiteBudgets(t *testing.T) {
 	variadictest.RunFinderBudgets(
 		t,
@@ -123,4 +124,4 @@ func BenchmarkFinderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:eef45f6c6bf7ee4b92540e36b83bc0ab7df519058de16a45a481b248fa07c507
+// dokimi:provenance sha256:2d53704af6d927fd8df76b1ea2db2522ab5707c961504e9522d01ae6a77a21ee

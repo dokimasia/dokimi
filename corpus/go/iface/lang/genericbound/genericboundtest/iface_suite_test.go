@@ -96,8 +96,9 @@ func rankedIdle(h *genericboundtest.RankedHandle) genericbound.Ranked[int, gener
 }
 
 // TestRankedSuiteBudgets applies the allocation ceilings of the suite of
-// Ranked to rankedIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Ranked to rankedIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestRankedSuiteBudgets(t *testing.T) {
 	genericboundtest.RunRankedBudgets(
 		t,
@@ -138,4 +139,4 @@ func BenchmarkRankedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f5b94248e953280edcdf7b77a7565dfbd2639701958cdbcfa87e6ba5eca272c7
+// dokimi:provenance sha256:e332290714843c95b6c475dfa6e4d263cc3202b4f7d1c6eed0fe4e1ee37ea06c

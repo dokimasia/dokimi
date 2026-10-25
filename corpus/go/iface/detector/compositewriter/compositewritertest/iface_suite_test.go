@@ -86,8 +86,9 @@ func compositeWriterIdle(h *compositewritertest.CompositeWriterHandle) composite
 }
 
 // TestCompositeWriterSuiteBudgets applies the allocation ceilings of the
-// suite of CompositeWriter to compositeWriterIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of CompositeWriter to compositeWriterIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestCompositeWriterSuiteBudgets(t *testing.T) {
 	compositewritertest.RunCompositeWriterBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkCompositeWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:13168fa625a2cc42cb4d9ab00a4b6f5a14dd3bb42de4fc12ae510ed332a47e45
+// dokimi:provenance sha256:22d7c603f63412b256dbc30d6af78069e8044654a1ac03545292867719a24df5

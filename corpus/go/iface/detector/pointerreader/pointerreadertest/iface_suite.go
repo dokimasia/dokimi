@@ -87,9 +87,9 @@ func FuzzPointerReaderSuite[T pointerreader.PointerReader](
 	conform.Fuzz(f, PointerReaderSuite(), callable, pointerReaderSubjects(newSubject), opts...)
 }
 
-// RunPointerReaderBudgets applies the allocation ceilings of
-// PointerReader, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// RunPointerReaderBudgets applies the allocation ceilings of PointerReader
+// and its checks that count allocations, and the ceilings and the checks
+// that opts add, to a fresh subject of newSubject for each case.
 func RunPointerReaderBudgets[T pointerreader.PointerReader](
 	t *testing.T,
 	newSubject func(h *PointerReaderHandle) T,
@@ -155,4 +155,4 @@ func newPointerReaderOver(_ *PointerReaderHandle, spend func()) pointerreader.Po
 	return pointerReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:db2005b9105dc913e1fdcda08762a3c2c507dd0248d8ab99d22f430bb17b1b36
+// dokimi:provenance sha256:942665b76dabcfaba3793b86e7c994487dbed3b49e8854be67824ce376b9aff5

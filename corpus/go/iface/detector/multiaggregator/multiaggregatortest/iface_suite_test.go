@@ -86,8 +86,9 @@ func multiAggregatorIdle(h *multiaggregatortest.MultiAggregatorHandle) multiaggr
 }
 
 // TestMultiAggregatorSuiteBudgets applies the allocation ceilings of the
-// suite of MultiAggregator to multiAggregatorIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of MultiAggregator to multiAggregatorIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestMultiAggregatorSuiteBudgets(t *testing.T) {
 	multiaggregatortest.RunMultiAggregatorBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkMultiAggregatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:4cace96b8ccd02ea97c0900d7a2b2bf75e460fa54d058651f1188bac4b0c452c
+// dokimi:provenance sha256:2107d4a7c26af4d3fe6f7d9faa4c34c93294c119fc5058d9387de235cc41ed5c

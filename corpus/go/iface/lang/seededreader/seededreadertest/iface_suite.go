@@ -99,8 +99,9 @@ func FuzzCatalogSuite[T seededreader.Catalog](
 	conform.Fuzz(f, CatalogSuite(), callable, catalogSubjects(newSubject), opts...)
 }
 
-// RunCatalogBudgets applies the allocation ceilings of Catalog, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunCatalogBudgets applies the allocation ceilings of Catalog and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunCatalogBudgets[T seededreader.Catalog](
 	t *testing.T,
 	newSubject func(h *CatalogHandle) T,
@@ -189,4 +190,4 @@ func newCatalogOver(_ *CatalogHandle, spend func()) seededreader.Catalog {
 	return catalogOver{spend: spend}
 }
 
-// dokimi:provenance sha256:eca2553d9f24f896f6ad0ebc48c97e6bd23a1023c52485c5b4fbddbb3f748313
+// dokimi:provenance sha256:0b4bb6cc228b37694a87aed029f8b52f5457add4ae2262e8283b1e06ec391981

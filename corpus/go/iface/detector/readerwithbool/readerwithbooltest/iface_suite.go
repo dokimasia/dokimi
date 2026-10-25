@@ -88,8 +88,9 @@ func FuzzReaderWithBoolSuite[T readerwithbool.ReaderWithBool](
 }
 
 // RunReaderWithBoolBudgets applies the allocation ceilings of
-// ReaderWithBool, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// ReaderWithBool and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunReaderWithBoolBudgets[T readerwithbool.ReaderWithBool](
 	t *testing.T,
 	newSubject func(h *ReaderWithBoolHandle) T,
@@ -155,4 +156,4 @@ func newReaderWithBoolOver(_ *ReaderWithBoolHandle, spend func()) readerwithbool
 	return readerWithBoolOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f198d373888c9cdfb6713a5ef738d4347b5f4a1e5f23b56f91a168169e3c7ee2
+// dokimi:provenance sha256:23b6534a1554fecfb7f9518b16573e65e9068cf8a390c33cd679c1e6bb55a51d

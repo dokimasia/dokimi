@@ -86,8 +86,9 @@ func multiArgWriterIdle(h *multiargwritertest.MultiArgWriterHandle) multiargwrit
 }
 
 // TestMultiArgWriterSuiteBudgets applies the allocation ceilings of the
-// suite of MultiArgWriter to multiArgWriterIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of MultiArgWriter to multiArgWriterIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestMultiArgWriterSuiteBudgets(t *testing.T) {
 	multiargwritertest.RunMultiArgWriterBudgets(
 		t,
@@ -138,4 +139,4 @@ func BenchmarkMultiArgWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c02f8c46d56a6f63d57a7e663988dcc621ec2480457a97355257256fb58eb535
+// dokimi:provenance sha256:ac321caa78b821fa711f8af3759ec05bae60216871e8986b952e5447ea2065e3

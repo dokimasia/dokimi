@@ -86,8 +86,9 @@ func readerWithBoolIdle(h *readerwithbooltest.ReaderWithBoolHandle) readerwithbo
 }
 
 // TestReaderWithBoolSuiteBudgets applies the allocation ceilings of the
-// suite of ReaderWithBool to readerWithBoolIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of ReaderWithBool to readerWithBoolIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestReaderWithBoolSuiteBudgets(t *testing.T) {
 	readerwithbooltest.RunReaderWithBoolBudgets(
 		t,
@@ -119,4 +120,4 @@ func BenchmarkReaderWithBoolSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:40bef63b0578472f658292003121e246c664349e56dd812e4d0277f419fcca26
+// dokimi:provenance sha256:3c847ee1ba45ba98ec9d02d573e68580140422c7da92e4413d0ee9d800a2477a

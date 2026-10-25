@@ -80,8 +80,9 @@ func mixedIdle(h *retrysucceedstest.MixedHandle) retrysucceeds.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	retrysucceedstest.RunMixedBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:784b4e8db592644882fecc7cfed7732e48c76d64824c15c12e12ebbfa89e9b47
+// dokimi:provenance sha256:4732a9dcd1b83c50dbfc21b8b4bd87495a22a75f668c85c04aef77d610735b53

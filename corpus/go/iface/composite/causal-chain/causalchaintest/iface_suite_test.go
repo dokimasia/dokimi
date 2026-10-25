@@ -112,14 +112,22 @@ func logIdle(h *causalchaintest.LogHandle) causalchain.Log {
 }
 
 // TestLogSuiteBudgets applies the allocation ceilings of the suite of Log
-// to logIdle, and a ceiling of 0 to each callable without a budget whose
-// calls build no input of their own.
+// to logIdle with every check of the suite excused, and a ceiling of 0 to
+// each callable without a budget whose calls build no input of their own.
 func TestLogSuiteBudgets(t *testing.T) {
 	causalchaintest.RunLogBudgets(
 		t,
 		logIdle,
 		conform.Ceilings(causalchaintest.LogChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(causalchaintest.LogChecks.Replay.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.KeepsTheBody(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -169,4 +177,4 @@ func BenchmarkLogSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:11b692f9a4648f2dc0be2daeb37441666e07514d5cd3823c24cfffccd200b6ac
+// dokimi:provenance sha256:9e51ff1ec81cd43a835b68dc10a71b526df68ca064be6c20e233a3914690d7e7

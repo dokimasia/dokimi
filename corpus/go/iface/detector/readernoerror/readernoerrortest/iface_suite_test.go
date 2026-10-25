@@ -86,8 +86,9 @@ func readerNoErrorIdle(h *readernoerrortest.ReaderNoErrorHandle) readernoerror.R
 }
 
 // TestReaderNoErrorSuiteBudgets applies the allocation ceilings of the
-// suite of ReaderNoError to readerNoErrorIdle, and a ceiling of 0 to each
-// callable without a budget whose calls build no input of their own.
+// suite of ReaderNoError to readerNoErrorIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestReaderNoErrorSuiteBudgets(t *testing.T) {
 	readernoerrortest.RunReaderNoErrorBudgets(
 		t,
@@ -119,4 +120,4 @@ func BenchmarkReaderNoErrorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:142b5787d9ef707789ed2987f30b37eeabcc2e0c6c37c819cebc8c9a8db23b61
+// dokimi:provenance sha256:882a7c831b340c9e1c0b6080a9d196916d5a3f668ea85b3b1a1beaddf76c352f

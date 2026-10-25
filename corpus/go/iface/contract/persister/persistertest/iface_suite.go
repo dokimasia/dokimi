@@ -99,8 +99,9 @@ func FuzzContractSuite[T persister.Contract](
 	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
-// RunContractBudgets applies the allocation ceilings of Contract, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunContractBudgets applies the allocation ceilings of Contract and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T persister.Contract](
 	t *testing.T,
 	newSubject func(h *ContractHandle) T,
@@ -194,4 +195,4 @@ func newContractOver(_ *ContractHandle, spend func()) persister.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f0dc87bc4b360ef084af885be1b056f43c05928d1c8334a931f3d8bf17d04516
+// dokimi:provenance sha256:0c6a5781fd3e3ca5f0f0f5043356daf6609d94c05c32bbe38472294c72e13b10

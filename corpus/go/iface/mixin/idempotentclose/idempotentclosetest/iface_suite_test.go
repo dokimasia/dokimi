@@ -80,8 +80,9 @@ func closerIdle(h *idempotentclosetest.CloserHandle) idempotentclose.Closer {
 }
 
 // TestCloserSuiteBudgets applies the allocation ceilings of the suite of
-// Closer to closerIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Closer to closerIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestCloserSuiteBudgets(t *testing.T) {
 	idempotentclosetest.RunCloserBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkCloserSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:13256336a08753e0898a08cf0d27d8f2ddaf783ef545beb6c1def45d41755854
+// dokimi:provenance sha256:8de3a6685b089f28361db2e93a28b08e5634574c88febc7a7fc8b542c6aff0d4

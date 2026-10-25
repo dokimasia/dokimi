@@ -88,8 +88,9 @@ func FuzzCompositeWriterSuite[T compositewriter.CompositeWriter](
 }
 
 // RunCompositeWriterBudgets applies the allocation ceilings of
-// CompositeWriter, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// CompositeWriter and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunCompositeWriterBudgets[T compositewriter.CompositeWriter](
 	t *testing.T,
 	newSubject func(h *CompositeWriterHandle) T,
@@ -155,4 +156,4 @@ func newCompositeWriterOver(_ *CompositeWriterHandle, spend func()) compositewri
 	return compositeWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:07b19a083d180f009bf326b3cab96d30f4dfbbd5fb308a9932864c56f9b887ce
+// dokimi:provenance sha256:5051304a277992e629e685f642a53d660c1ac7f90571cea62f52567cf1b85238

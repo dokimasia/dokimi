@@ -83,9 +83,9 @@ func FuzzLifecycleSuite[T lifecycle.Lifecycle](
 	conform.Fuzz(f, LifecycleSuite(), callable, lifecycleSubjects(newSubject), opts...)
 }
 
-// RunLifecycleBudgets applies the allocation ceilings of Lifecycle, and
-// the ceilings that opts add, to a fresh subject of newSubject for each
-// case.
+// RunLifecycleBudgets applies the allocation ceilings of Lifecycle and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunLifecycleBudgets[T lifecycle.Lifecycle](
 	t *testing.T,
 	newSubject func(h *LifecycleHandle) T,
@@ -147,4 +147,4 @@ func newLifecycleOver(_ *LifecycleHandle, spend func()) lifecycle.Lifecycle {
 	return lifecycleOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0a9c4167d8a0b9cff16386c2c17e916ce8a3c6a0ffa596cf963d1e830868e29c
+// dokimi:provenance sha256:e9613c1153eea32484a8ed2d8a4fcbe881a636ca8d2c0b05234ce18fcc7fad2d

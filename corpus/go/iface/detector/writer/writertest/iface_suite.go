@@ -78,8 +78,9 @@ func FuzzWriterSuite[T writer.Writer](
 	conform.Fuzz(f, WriterSuite(), callable, writerSubjects(newSubject), opts...)
 }
 
-// RunWriterBudgets applies the allocation ceilings of Writer, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunWriterBudgets applies the allocation ceilings of Writer and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunWriterBudgets[T writer.Writer](t *testing.T, newSubject func(h *WriterHandle) T, opts ...WriterOption) {
 	t.Helper()
 	conform.RunBudgets(t, WriterSuite(), writerSubjects(newSubject), opts...)
@@ -136,4 +137,4 @@ func newWriterOver(_ *WriterHandle, spend func()) writer.Writer {
 	return writerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:868c9c57f71225cfb7b8a696e8db5000ba27776e6e6c21f1a58db9a31723d8e2
+// dokimi:provenance sha256:396b4528b522df559e8b902e8b2b90342863254ecabb3eea39e45c5846bedf85

@@ -87,8 +87,9 @@ func FuzzLabellerSuite[T sampled.Labeller](
 	conform.Fuzz(f, LabellerSuite(), callable, labellerSubjects(newSubject), opts...)
 }
 
-// RunLabellerBudgets applies the allocation ceilings of Labeller, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunLabellerBudgets applies the allocation ceilings of Labeller and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunLabellerBudgets[T sampled.Labeller](
 	t *testing.T,
 	newSubject func(h *LabellerHandle) T,
@@ -172,4 +173,4 @@ func newLabellerOver(_ *LabellerHandle, spend func()) sampled.Labeller {
 	return labellerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c5dd7cacf190bad8d9a4a7455ffd0a27f5660ca90126ffa95679a50374f0a091
+// dokimi:provenance sha256:9de597874d76f6e22c4725650c92fe245a4cb8b377b2c9d1314e84f8bb6d36a7

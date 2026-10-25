@@ -99,8 +99,9 @@ func FuzzContractSuite[T batchwriter.Contract](
 	conform.Fuzz(f, ContractSuite(), callable, contractSubjects(newSubject), opts...)
 }
 
-// RunContractBudgets applies the allocation ceilings of Contract, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunContractBudgets applies the allocation ceilings of Contract and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunContractBudgets[T batchwriter.Contract](
 	t *testing.T,
 	newSubject func(h *ContractHandle) T,
@@ -193,4 +194,4 @@ func newContractOver(_ *ContractHandle, spend func()) batchwriter.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3fa5519188410b2eedd2048aeaf660ded334d49ca5113f7b68a2c801ada9cfba
+// dokimi:provenance sha256:3b4b21df579795ea36fb1dd6cd363c0f1259ea7c723d54ea511d4991acc43401

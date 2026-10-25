@@ -81,8 +81,9 @@ func contractIdle(h *sagatest.ContractHandle) saga.Contract {
 }
 
 // TestContractSuiteBudgets applies the allocation ceilings of the suite of
-// Contract to contractIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Contract to contractIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestContractSuiteBudgets(t *testing.T) {
 	sagatest.RunContractBudgets(
 		t,
@@ -166,4 +167,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:a9a569794bbcff85423ce283bb79cd4ea35e3e49a72b76516c1075dfc54e5173
+// dokimi:provenance sha256:42680ace4a86fec798898cedd8651ff550142cd71afeb5266f6840fe190c3935

@@ -101,8 +101,9 @@ func FuzzMultiArgWriterSuite[T multiargwriter.MultiArgWriter](
 }
 
 // RunMultiArgWriterBudgets applies the allocation ceilings of
-// MultiArgWriter, and the ceilings that opts add, to a fresh subject of
-// newSubject for each case.
+// MultiArgWriter and its checks that count allocations, and the ceilings
+// and the checks that opts add, to a fresh subject of newSubject for each
+// case.
 func RunMultiArgWriterBudgets[T multiargwriter.MultiArgWriter](
 	t *testing.T,
 	newSubject func(h *MultiArgWriterHandle) T,
@@ -187,4 +188,4 @@ func newMultiArgWriterOver(_ *MultiArgWriterHandle, spend func()) multiargwriter
 	return multiArgWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ef581c06d5ff06ac8b7b76dd9d225dc21fc8722187455dd8b6feec19178fed6c
+// dokimi:provenance sha256:a4c84355b600fa22c390ec92ef325f8d97b16c81ebc7961f65991c24383866cb

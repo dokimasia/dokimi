@@ -81,8 +81,9 @@ func streamReaderIdle(h *streamreadertest.StreamReaderHandle) streamreader.Strea
 }
 
 // TestStreamReaderSuiteBudgets applies the allocation ceilings of the
-// suite of StreamReader to streamReaderIdle, and a ceiling of 0 to each
-// callable without a budget whose calls build no input of their own.
+// suite of StreamReader to streamReaderIdle with every check of the suite
+// excused, and a ceiling of 0 to each callable without a budget whose
+// calls build no input of their own.
 func TestStreamReaderSuiteBudgets(t *testing.T) {
 	streamreadertest.RunStreamReaderBudgets(
 		t,
@@ -123,4 +124,4 @@ func BenchmarkStreamReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:03c0d8304e0a8efe4067bb31b35c12007f5701600c438816df16dfbb9d2c5d0d
+// dokimi:provenance sha256:74e5a874c7a385f8351212adce62af500861c0c9e91a20118a5f9ad438c574e3

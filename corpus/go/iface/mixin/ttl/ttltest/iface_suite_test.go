@@ -109,8 +109,8 @@ func TestMixedSuite(t *testing.T) {
 	})
 }
 
-// TestMixedSuiteAllocs falsifies the allocation ceilings of the suite of
-// Mixed.
+// TestMixedSuiteAllocs falsifies the allocation ceilings and the checks
+// that count allocations of the suite of Mixed.
 func TestMixedSuiteAllocs(t *testing.T) {
 	t.Run("MixedSuite", func(t *testing.T) {
 		conform.FalsifyAllocs(t, ttltest.MixedSuite())
@@ -124,13 +124,18 @@ func mixedIdle(h *ttltest.MixedHandle) ttl.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	ttltest.RunMixedBudgets(
 		t,
 		mixedIdle,
 		conform.Ceilings(ttltest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -173,4 +178,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:fb163c3b6a5350e9cc9f840d4992d61f7f6f72c44d1bf0ba4d9e6012de1db171
+// dokimi:provenance sha256:2f7398b156e4cac2e4b9538811b7f39b74ba39a9be0a6477f15227f12086e7db

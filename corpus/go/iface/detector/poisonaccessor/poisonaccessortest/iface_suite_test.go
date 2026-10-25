@@ -86,8 +86,9 @@ func poisonAccessorIdle(h *poisonaccessortest.PoisonAccessorHandle) poisonaccess
 }
 
 // TestPoisonAccessorSuiteBudgets applies the allocation ceilings of the
-// suite of PoisonAccessor to poisonAccessorIdle, and a ceiling of 0 to
-// each callable without a budget whose calls build no input of their own.
+// suite of PoisonAccessor to poisonAccessorIdle with every check of the
+// suite excused, and a ceiling of 0 to each callable without a budget
+// whose calls build no input of their own.
 func TestPoisonAccessorSuiteBudgets(t *testing.T) {
 	poisonaccessortest.RunPoisonAccessorBudgets(
 		t,
@@ -119,4 +120,4 @@ func BenchmarkPoisonAccessorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:246dbb788bb9d72122c9ce8cf09bc70fc3723076051755f2bc5709fae66d3e70
+// dokimi:provenance sha256:3a08d3ae5dcfb62f04114e0b19f64f30ce31487e43be841abc4fa85f61cdb3ae

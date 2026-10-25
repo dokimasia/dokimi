@@ -80,8 +80,9 @@ func serviceIdle(h *namedreturnstest.ServiceHandle) namedreturns.Service {
 }
 
 // TestServiceSuiteBudgets applies the allocation ceilings of the suite of
-// Service to serviceIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Service to serviceIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestServiceSuiteBudgets(t *testing.T) {
 	namedreturnstest.RunServiceBudgets(
 		t,
@@ -140,4 +141,4 @@ func BenchmarkServiceSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ce0314c0312177aba4023ca326e29e70699aa024f8937ca7fccce4e6858e32be
+// dokimi:provenance sha256:1bb9b2d420f07dd60ccada4b3478b8e2ddf58d2365a6de4d1352bf9abbf524ba

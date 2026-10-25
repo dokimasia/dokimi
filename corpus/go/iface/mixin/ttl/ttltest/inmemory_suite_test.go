@@ -27,8 +27,8 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 	)
 }
 
-// TestInMemoryConformsToMixedAllocs applies the allocation ceilings of the
-// suite of Mixed to InMemory.
+// TestInMemoryConformsToMixedAllocs applies the allocation ceilings and
+// the checks that count allocations of the suite of Mixed to InMemory.
 func TestInMemoryConformsToMixedAllocs(t *testing.T) {
 	ttltest.RunMixedBudgets(
 		t,
@@ -109,4 +109,4 @@ func FuzzInMemoryConformsToMixedRead(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:ff205d79a0c19af69d6709bfba567d9df7b1e63319933320a96e99143ab1a21d
+// dokimi:provenance sha256:80d32e542f9908fed33dfc36d56b9d5c6038b8b0c385f56d58c9c59e92b00c9b

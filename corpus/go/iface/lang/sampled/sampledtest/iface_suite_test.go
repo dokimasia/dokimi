@@ -81,8 +81,9 @@ func labellerIdle(h *sampledtest.LabellerHandle) sampled.Labeller {
 }
 
 // TestLabellerSuiteBudgets applies the allocation ceilings of the suite of
-// Labeller to labellerIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Labeller to labellerIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestLabellerSuiteBudgets(t *testing.T) {
 	sampledtest.RunLabellerBudgets(
 		t,
@@ -109,4 +110,4 @@ func BenchmarkLabellerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b26897cec79659b223d1f06f32bb682d26709cd885da5965867c64fa8b21019e
+// dokimi:provenance sha256:41888cea04d8fdf42df185eae44afbd60ceb38c6526b1d96b0497cd4865d50c0

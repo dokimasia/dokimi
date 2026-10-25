@@ -80,8 +80,9 @@ func filterIdle(h *selfnamedtest.FilterHandle) selfnamed.Filter {
 }
 
 // TestFilterSuiteBudgets applies the allocation ceilings of the suite of
-// Filter to filterIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Filter to filterIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestFilterSuiteBudgets(t *testing.T) {
 	selfnamedtest.RunFilterBudgets(
 		t,
@@ -121,4 +122,4 @@ func BenchmarkFilterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:4aee050d026c2aa6f5798b678029bdd6ae63ce0c6a33b8a2931880372fafbf2e
+// dokimi:provenance sha256:1b5f00ea1506ab74bd7c69190e5a74184771f3cb922a78a15e28de91941c7fa4

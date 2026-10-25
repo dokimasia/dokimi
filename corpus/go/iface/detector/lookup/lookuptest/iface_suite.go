@@ -79,8 +79,9 @@ func FuzzLookupSuite[T lookup.Lookup](
 	conform.Fuzz(f, LookupSuite(), callable, lookupSubjects(newSubject), opts...)
 }
 
-// RunLookupBudgets applies the allocation ceilings of Lookup, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunLookupBudgets applies the allocation ceilings of Lookup and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunLookupBudgets[T lookup.Lookup](t *testing.T, newSubject func(h *LookupHandle) T, opts ...LookupOption) {
 	t.Helper()
 	conform.RunBudgets(t, LookupSuite(), lookupSubjects(newSubject), opts...)
@@ -138,4 +139,4 @@ func newLookupOver(_ *LookupHandle, spend func()) lookup.Lookup {
 	return lookupOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3b27905d9a92c87d63eaea8777cbcd47c563e3f5012095ab0e1c135bb091f29e
+// dokimi:provenance sha256:0e732fdeb13378a2dad9eb26d000e8572f3510ae33b720a17a25dae27da8475f

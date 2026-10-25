@@ -80,8 +80,9 @@ func streamIdle(h *embeddedforeigntest.StreamHandle) embeddedforeign.Stream {
 }
 
 // TestStreamSuiteBudgets applies the allocation ceilings of the suite of
-// Stream to streamIdle, and a ceiling of 0 to each callable without a
-// budget whose calls build no input of their own.
+// Stream to streamIdle with every check of the suite excused, and a
+// ceiling of 0 to each callable without a budget whose calls build no
+// input of their own.
 func TestStreamSuiteBudgets(t *testing.T) {
 	embeddedforeigntest.RunStreamBudgets(
 		t,
@@ -122,4 +123,4 @@ func BenchmarkStreamSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:be2200814ce63da3a32a206de5397d944c242d6dfdc8173dae4ae17bccbf48ad
+// dokimi:provenance sha256:a192cb627fd31b3d358cc812d6cc0629fed3e3aeecc0869ed09aed249476f8a7

@@ -78,8 +78,9 @@ func FuzzReaderSuite[T reader.Reader](
 	conform.Fuzz(f, ReaderSuite(), callable, readerSubjects(newSubject), opts...)
 }
 
-// RunReaderBudgets applies the allocation ceilings of Reader, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunReaderBudgets applies the allocation ceilings of Reader and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunReaderBudgets[T reader.Reader](t *testing.T, newSubject func(h *ReaderHandle) T, opts ...ReaderOption) {
 	t.Helper()
 	conform.RunBudgets(t, ReaderSuite(), readerSubjects(newSubject), opts...)
@@ -137,4 +138,4 @@ func newReaderOver(_ *ReaderHandle, spend func()) reader.Reader {
 	return readerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:486d218f3d767613f9638e08e20c7cf53f94a0b699936a1878b9d64ceabe524e
+// dokimi:provenance sha256:5042c0258df22ea9fca367d20876d5fb0f7ce99b9804b1b5af4efedd71649ca7

@@ -83,8 +83,9 @@ func FuzzMutatorSuite[T mutator.Mutator](
 	conform.Fuzz(f, MutatorSuite(), callable, mutatorSubjects(newSubject), opts...)
 }
 
-// RunMutatorBudgets applies the allocation ceilings of Mutator, and the
-// ceilings that opts add, to a fresh subject of newSubject for each case.
+// RunMutatorBudgets applies the allocation ceilings of Mutator and its
+// checks that count allocations, and the ceilings and the checks that opts
+// add, to a fresh subject of newSubject for each case.
 func RunMutatorBudgets[T mutator.Mutator](t *testing.T, newSubject func(h *MutatorHandle) T, opts ...MutatorOption) {
 	t.Helper()
 	conform.RunBudgets(t, MutatorSuite(), mutatorSubjects(newSubject), opts...)
@@ -141,4 +142,4 @@ func newMutatorOver(_ *MutatorHandle, spend func()) mutator.Mutator {
 	return mutatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:76e4eb6bc6a45fd40451f957e246223933a61b9e1fd8315abc520ebfaf683f3c
+// dokimi:provenance sha256:0fc5ec12528330e90c288d8788d95524d0c2d3df62979b1d013873d9337ac71e

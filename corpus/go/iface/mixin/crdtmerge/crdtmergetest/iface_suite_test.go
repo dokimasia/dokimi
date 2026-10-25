@@ -80,8 +80,9 @@ func mixedIdle(h *crdtmergetest.MixedHandle) crdtmerge.Mixed {
 }
 
 // TestMixedSuiteBudgets applies the allocation ceilings of the suite of
-// Mixed to mixedIdle, and a ceiling of 0 to each callable without a budget
-// whose calls build no input of their own.
+// Mixed to mixedIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
 func TestMixedSuiteBudgets(t *testing.T) {
 	crdtmergetest.RunMixedBudgets(
 		t,
@@ -135,4 +136,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b3cafd783112ff6649da329d7dc23ffc6df4520f01364cad9d846228acb33ccf
+// dokimi:provenance sha256:7fa896f1158ee31fc6717dde59432f19889b27f4399ca510eb3c763f5a371747

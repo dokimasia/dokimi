@@ -53,6 +53,10 @@ func TestValue(t *testing.T) {
 				want: lifted{kind: emit.ValueLiteral, literal: emit.LiteralString, text: "Dam 1", read: true},
 			},
 			{
+				name: "returns the constant that the rules read from its name", give: "Named",
+				want: lifted{kind: emit.ValueName, read: true},
+			},
+			{
 				name: "returns the content of a text of a declared type of text", give: "Code",
 				want: lifted{kind: emit.ValueLiteral, literal: emit.LiteralString, text: "abc", read: true},
 			},

@@ -4,6 +4,9 @@ package values
 // Code is a declared type of text.
 type Code string
 
+// Street is the street of a default address.
+const Street = "Dam 2"
+
 // Count is a declared type of a number.
 type Count int
 
@@ -23,6 +26,7 @@ type (
 type Values struct {
 	Number int    `default:"7"`
 	Text   string `default:"Dam 1"`
+	Named  string `default:"Street"`
 	Code   Code   `default:"abc"`
 	Bad    int    `default:"nope"`
 	Count  Count  `default:"nope"`

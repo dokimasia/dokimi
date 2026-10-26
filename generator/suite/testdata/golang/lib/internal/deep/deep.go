@@ -2,10 +2,22 @@
 // tree lib import.
 package deep
 
+import "errors"
+
+// ErrWorn reports a worn tool.
+var ErrWorn = errors.New("deep: the tool is worn")
+
 // Level is the level of a tool, with a declared default.
 //
 //dokimi:default 3
 type Level int
+
+// High is the highest level of a tool. It is untyped, so Level is a defined
+// type without members.
+const High = 9
+
+// Wide is the widest pitch of a tool.
+const Wide = 12
 
 // Mode is the mode of a tool.
 type Mode int

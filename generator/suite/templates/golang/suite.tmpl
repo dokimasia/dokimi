@@ -144,20 +144,14 @@ var _ = conform.CompatV1
 			prop.Using({{suiteCamel .Name}}),
 {{- end}}
 {{- range $c.Generated}}
-{{- $drawn := false}}
-{{- range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}
-			prop.Using(prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) {{spell .Type}} {
-{{- range .Funcs}}{{template "suite.results" .}}{{end}}
-{{- if .Input}}
-				return {{suiteCamel .Input}}{
-{{- range .Funcs}}
-					{{suiteCamel .Field}}: {{template "suite.func" .}},
-{{- end}}
-				}
+{{- if .Leaves}}
+			prop.Using(prop.Recursive(prop.Just[{{spell .Type}}]({{template "suite.base" .}}),
+				func(prop.Generator[{{spell .Type}}]) prop.Generator[{{spell .Type}}] {
+					return {{template "suite.generated" .}}
+				}, prop.MaxLeaves({{.Leaves}}))),
 {{- else}}
-				return {{template "suite.func" (index .Funcs 0)}}
+			prop.Using({{template "suite.generated" .}}),
 {{- end}}
-			})),
 {{- end}}
 {{- if $c.Dynamic}}
 			prop.Using(prop.Composite(func(c *prop.Case) any {
@@ -307,10 +301,11 @@ var _ = conform.CompatV1
 {{- range $c.Starts}}
 {{- $start := suiteCamel .Name}}
 {{- $doc := printf `%s generates the values of %s that keep or change each field of its starting value.` $start .Type.Spelling}}
-{{- if .Whole}}{{$doc = printf `%s generates the values of %s that keep or change its starting value.` $start .Type.Spelling}}{{end}}
+{{- if .Whole}}{{$doc = printf `%s generates the values of %s that keep or change its starting value.` $start .Type.Spelling}}
+{{- else if not .Fields}}{{$doc = printf `%s generates the starting value of %s, which has no field to change.` $start .Type.Spelling}}{{end}}
 
 {{docs (wrapdocs $doc)}}
-{{- ""}}var {{$start}} = prop.Composite(func(c *prop.Case) {{spell .Type}} {
+{{- ""}}var {{$start}} = prop.Composite(func({{if or .Whole .Fields}}c {{end}}*prop.Case) {{spell .Type}} {
 {{- if .Whole}}
 	changed := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
 	if c.Draw(prop.Boolean(), {{printf "%q" (printf "%s.changed" .Label)}}) {
@@ -450,6 +445,55 @@ Each call takes a channel of its own, because a call drains its channel.
 	close(ch)
 	return ch
 }(){{end}}
+
+{{- /*
+suite.generated writes the generator of the values of a function type or of
+an interface at some depth of the inputs: the generated function of a value of
+the function type, or the implementation of the interface with a generated
+function of each method.
+*/}}
+{{- define "suite.generated"}}
+{{- $drawn := false}}
+{{- range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) {{spell .Type}} {
+{{- range .Funcs}}{{template "suite.results" .}}{{end}}
+{{- if .Input}}
+	return {{suiteCamel .Input}}{
+{{- range .Funcs}}
+		{{suiteCamel .Field}}: {{template "suite.func" .}},
+{{- end}}
+	}
+{{- else}}
+	return {{template "suite.func" (index .Funcs 0)}}
+{{- end}}
+}){{end}}
+
+{{- /*
+suite.base writes the base value of a recursive function type or interface:
+the function, or the implementation with a function of each method, that
+returns its zero results at once.
+*/}}
+{{- define "suite.base"}}
+{{- if .Input}}{{suiteCamel .Input}}{
+{{- range .Funcs}}
+	{{suiteCamel .Field}}: {{template "suite.end" .}},
+{{- end}}
+}{{else}}{{template "suite.end" (index .Funcs 0)}}{{end}}{{end}}
+
+{{- /*
+suite.end writes a function that returns its zero results at once, with the
+end error of each error result: the first declared error of its method, or
+conform.ErrGenerated.
+*/}}
+{{- define "suite.end"}}func({{params .Signature.Params}}){{results .Signature.Returns}} {
+{{- range .Results}}
+{{- if .Error}}
+	{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}conform.ErrGenerated{{end}}
+{{- end}}
+{{- end}}
+{{- if .Signature.Returns.Len}}
+	return
+{{- end}}
+}{{end}}
 
 {{- /*
 suite.results writes the draw of the list of each result of a generated

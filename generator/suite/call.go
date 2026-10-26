@@ -234,6 +234,16 @@ func (k *caller) importable(refs ...*node.TypeRef) bool {
 	return true
 }
 
+// referable reports whether the file of the suite can refer to each
+// declaration of the value v, such as the constant of a default, an error
+// value of the directive fault or the field of a struct that a default sets.
+// It reports true where the plan does not preview the package of the file, as
+// importable does.
+func (k *caller) referable(v *emit.Value) bool {
+	pkg, placed := k.e.File().Package()
+	return placed != nil || k.b.ImportableValue(pkg, *v) == nil
+}
+
 // implementable reports whether the file of the suite can refer to the
 // interface iface at the type ref, and to each type of the signature of each
 // of its exported methods. The implementation of the interface spells each of

@@ -42,6 +42,34 @@ type Tuned interface {
 	Turn(d tool.Dial)
 }
 
+// Limited is an interface under the directive suite whose callables take
+// values that refer to the internal package of the tree lib, or to
+// declarations that the package tool does not export.
+//
+//dokimi:suite
+type Limited interface {
+	// Limit limits the tool.
+	Limit(l tool.Limits)
+	// Grip grips the tool.
+	Grip(g tool.Grip)
+	// Clamp clamps the tool.
+	Clamp(c tool.Clamp)
+	// Frame frames the tool.
+	Frame(f tool.Frame)
+	// Mount mounts the tool.
+	Mount(m tool.Mount)
+	// Span spans the tool.
+	Span(s tool.Span)
+	// Pitch pitches the tool.
+	Pitch(p tool.Pitch)
+	// Measure measures the tool in the unit.
+	Measure(u tool.Unit)
+	// Phase moves the tool to the phase.
+	Phase(p tool.Phase)
+	// Sense senses the tool with the sensor.
+	Sense(s tool.Sensor) error
+}
+
 // Plain is a struct under the directive suite in the same file, whose
 // callables refer to no internal package.
 //

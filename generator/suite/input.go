@@ -253,12 +253,16 @@ func spelledArgs(ref *emit.TypeRef) string {
 // errorsOf returns the declared errors of the method id: the error values
 // that its directive fault lists, and otherwise the error value of each
 // mixin of the method that names one, such as the sentinel of the mixin
-// not-found. It returns nil for a method without declared errors.
+// not-found. Each source leaves out an error value that the file of the
+// suite cannot refer to, so a source without another value yields to the
+// next. errorsOf returns nil for a method without declared errors.
 func (k *caller) errorsOf(id *symbol.Identity) []emit.Value {
 	var out []emit.Value
 	listed, _ := sdk.FactOf(k.m, *id, meta.Named[[]symbol.Identity](fault.KeyErrors))
 	for _, e := range listed {
-		out = append(out, emit.Name(e))
+		if v := emit.Name(e); k.referable(&v) {
+			out = append(out, v)
+		}
 	}
 	if len(out) > 0 {
 		return out
@@ -274,8 +278,9 @@ func (k *caller) errorsOf(id *symbol.Identity) []emit.Value {
 			if p.Key != sentinelParam {
 				continue
 			}
-			if sentinel, stated := sdk.FactOf(k.m, *id, meta.Named[symbol.Identity](p.Fact)); stated {
-				out = append(out, emit.Name(sentinel))
+			sentinel, stated := sdk.FactOf(k.m, *id, meta.Named[symbol.Identity](p.Fact))
+			if v := emit.Name(sentinel); stated && k.referable(&v) {
+				out = append(out, v)
 			}
 		}
 	}

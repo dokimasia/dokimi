@@ -134,6 +134,19 @@ func TestInput(t *testing.T) {
 					"adds its sentinel alone")
 		})
 
+		t.Run("leaves out each declared error that the file of the suite cannot refer to", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites["Limited"], "Sense")
+			assert.Length(t, got.Params, 1, "Sense takes a sensor")
+			errs := make([][]string, 0, len(got.Params[0].Funcs))
+			for _, f := range fnsOf(got.Params[0].Funcs) {
+				errs = append(errs, f.results[len(f.results)-1].errors)
+			}
+			expect.Equal(t, errs, [][]string{nil, {"ErrJammed"}, nil},
+				"an error value of the internal package of the tree lib is no declared error of Sense, Probe or Read")
+		})
+
 		t.Run("takes no declared error from the sentinel of a contract", func(t *testing.T) {
 			t.Parallel()
 

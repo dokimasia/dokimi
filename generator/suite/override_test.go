@@ -50,6 +50,11 @@ func TestOverride(t *testing.T) {
 				givePkgs: []string{wrapPackage, toolPackage, deepPackage}, giveDecl: "Tuned",
 				want: [][]string{{"Percent", "Steps"}},
 			},
+			{
+				name:     "records only the members that the file of the suite can refer to",
+				givePkgs: []string{wrapPackage, toolPackage, deepPackage}, giveDecl: "Limited",
+				want: [][]string{{"Percent", "Steps"}},
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -124,10 +129,22 @@ func TestOverride(t *testing.T) {
 					fields: []string{"Count item.count", "Name item.name"},
 				},
 				{
-					name: "RouterItemValues0", spelling: "inputs.Item", seed: "NewItemBuilder", label: "item",
+					name: "RouterItemValues0", spelling: "inputs.Item", value: "composite Count", label: "item",
 					fields: []string{"ID item.id", "Count item.count", "Kind item.kind", "Base item.base"},
 				},
 			}, "two structs of one name take two generators, and a generic type or an alias takes none")
+		})
+
+		t.Run("takes the declared defaults of a struct of another package in place of its builder", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, pathsPackage, inputsPackage).suites["Router"]
+			seeds := map[string]string{}
+			for _, s := range startsOf(got.Starts) {
+				seeds[s.name] = s.seed + s.value
+			}
+			expect.Equal(t, seeds["RouterItemValues0"], "composite Count",
+				"the builder of inputs.Item is in the package inputs, and the suite of Router is in the package paths")
 		})
 
 		t.Run("records the starting value of each struct with one", func(t *testing.T) {
@@ -169,6 +186,69 @@ func TestOverride(t *testing.T) {
 					fields: []string{"Value setting.value"},
 				}}, "the spec and the level of a tool are types of the internal package of the tree lib")
 			})
+
+		starts := []struct {
+			name string
+			give string
+			want []start
+		}{
+			{
+				name: "leaves a field at its zero value where the file of the suite cannot refer to its default",
+				give: "LimitedLimitsValues",
+				want: []start{{
+					name: "LimitedLimitsValues", spelling: "tool.Limits", value: "composite Count", label: "limits",
+					fields: []string{"Level limits.level", "Count limits.count"},
+				}},
+			},
+			{
+				name: "takes the declared defaults where the file of the suite cannot refer to the authored sample",
+				give: "LimitedGripValues",
+				want: []start{{
+					name: "LimitedGripValues", spelling: "tool.Grip", value: "composite Force", label: "grip",
+					fields: []string{"Force grip.force"},
+				}},
+			},
+			{
+				name: "starts a struct without a field that the property engine reads from its zero value",
+				give: "LimitedClampValues",
+				want: []start{{name: "LimitedClampValues", spelling: "tool.Clamp", value: "composite", label: "clamp"}},
+			},
+			{
+				name: "starts a struct that embeds a type that its package does not export from its zero value",
+				give: "LimitedFrameValues",
+				want: []start{{name: "LimitedFrameValues", spelling: "tool.Frame", value: "composite", label: "frame"}},
+			},
+			{
+				name: "does not record the starting value of a struct whose embedded type the property engine reads",
+				give: "LimitedMountValues", want: []start{},
+			},
+			{
+				name: "takes the declared default of a defined type where the file of the suite cannot refer to its sample",
+				give: "LimitedSpanValues",
+				want: []start{{
+					name: "LimitedSpanValues", spelling: "tool.Span", value: "literal 8", label: "span", whole: true,
+				}},
+			},
+			{
+				name: "does not record a defined type whose declared default the file of the suite cannot refer to",
+				give: "LimitedPitchValues", want: []start{},
+			},
+		}
+		for _, tt := range starts {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := generate(t, goTree, wrapPackage, toolPackage, deepPackage).suites["Limited"]
+				named := []start{}
+				for _, s := range startsOf(got.Starts) {
+					if s.name == tt.give {
+						named = append(named, s)
+					}
+				}
+				expect.Equal(t, named, tt.want,
+					"the suite takes the first source of the value that its file can refer to")
+			})
+		}
 
 		labeler := []fn{{
 			field: "OnLabel", signature: "(string) (r0 Receipt, r1 error)", index: "labelerLabelAt",
@@ -242,6 +322,22 @@ func TestOverride(t *testing.T) {
 			})
 		}
 
+		t.Run("bounds the base values of each type whose generated results contain the type", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, nestedPackage).suites["Tracker"]
+			leaves := map[string]int{}
+			for _, g := range got.Generated {
+				leaves[spelled(g.Type)] = g.Leaves
+			}
+			expect.Equal(t, leaves, map[string]int{
+				"Node": 10, "Branch": 10, "Step": 10, "Ping": 10, "Pong": 10, "func()": 0, "Pair": 0, "Leaf": 0,
+				"Rally": 0, "Linker": 0,
+			}, "a result of the type, a field of a result, the result of a function type and two interfaces that "+
+				"return each other make a type recursive, and a receipt, a pair of leaves, a rally or a linker "+
+				"does not")
+		})
+
 		t.Run("leaves the import of a type at depth to the layout where the plan does not preview a package",
 			func(t *testing.T) {
 				t.Parallel()
@@ -257,6 +353,22 @@ func TestOverride(t *testing.T) {
 				expect.Equal(t, spellings, []string{
 					"deep.Probe", "Note", "func() deep.Level", "deep.Hook", "Dial", "Gauge", "Calibrator",
 				}, "the suite generates the values of each such type, and the layout checks its references")
+			})
+
+		t.Run("leaves the references of a value to the layout where the plan does not preview a package",
+			func(t *testing.T) {
+				t.Parallel()
+
+				p := suite.New()
+				s := specOf(goTree, p, wrapPackage, toolPackage, deepPackage)
+				s.Types = nil
+				got := recorded(t, gentest.New(t, s), p).suites["Limited"]
+				values := map[string]string{}
+				for _, start := range startsOf(got.Starts) {
+					values[start.name] = start.value
+				}
+				expect.Equal(t, values["LimitedLimitsValues"], "composite Level Count",
+					"the suite keeps the default of the internal package, and the layout checks its references")
 			})
 	})
 }

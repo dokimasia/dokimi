@@ -1,5 +1,40 @@
 # go.dokimi.dev/dokimi
 
+## 0.2.0
+
+### Minor Changes
+
+- 30c1768: Add the param `remote` of the directive `sentinel`, whose error types have no check of the message of the zero value and of the prefix, and the finding `UnknownRemote`.
+- e30629f: **Breaking:** Declare `Bench<X>SuiteParallel` only in the suite of a declaration with a concurrent callable.
+- e6175e9: Draw a value of `any` in a suite, and draw `*big.Int`, `*big.Rat` and `*time.Location` as the pointers that `prop` reads.
+- b066e19: Generate the surface of an unexported Go enumeration with unexported functions and error, as `parseState`, and without generated checks.
+- 40ab37e: **Breaking:** Name the allocation test, the benchmarks and the fuzz targets of a subject after the struct and its declaration, as `BenchmarkStoreConformsToStore`.
+- e1f4eea: Compare each identity of a check of a suite with its method in the level `<X>Checks` of the generated `Test<X>Suite`.
+- b066e19: **Breaking:** Return an error that wraps the error of the parse function from the generated `MarshalText` of a value that the validity method refuses.
+- 40ab37e: Let a struct take one directive `subject` for each declaration under the directive `suite`, and report `RepeatedSubject` at a second directive of one declaration.
+- 40ab37e: **Breaking:** Report `BadFactory` at a subject whose factory its package does not export, in place of a generated test inside the package.
+- e6175e9: Add the finding `Unimportable` of `suite` at a declaration with a callable whose signature the file of its suite cannot import.
+- 1533d9e: Add the param `counted` of the directive `check` to run a check that counts allocations with the allocation ceilings of its suite.
+- e30629f: Add `Test<X>SuiteBudgets`, `Fuzz<X>Suite<Callable>`, `Benchmark<X>Suite` and `Benchmark<X>SuiteParallel` to the generated test of the suite of an interface or a struct.
+- b638e24: **Breaking:** Write the double of a declaration under the directive `suite` only where the directive `stub` asks for it.
+- e30629f: Write the conformance test of a subject into its external test package when the factory of the directive `subject` is declared there.
+
+### Patch Changes
+
+- e1f4eea: Build the factory of each form of the application of a suite through `<x>Subjects`, so the checks of `Run<X>Suite` cover it.
+- 30c1768: Fix `sentinel` to leave the check of the prefix of a re-exported error value of another package to the package that declares it.
+- 5ad4cd7: Fix the suite to draw a generated function or an implementation for each value of a function type or an interface at every depth of an input.
+- 00d434d: Fix `stub` to write one double of a declaration under the directive `suite` that a method of another double returns.
+- e30629f: Fix `suite` to embed the subject type through an alias, so an interface with a method of its own name gets a suite that compiles.
+- 077dc00: Fix the generated doc comments of an enumeration to describe a failed parse as a text that does not match a declared variant.
+- 5ad4cd7: Fix the suite to leave each type that its file cannot import to a registration of the test process.
+- b638e24: Fix `stub` to report `Unimplementable` at a method whose signature the file of its double cannot import.
+- d068e26: Require the eidos modules at 01e3506c, which give each record of a unit the data of its own call.
+- c56c3cc: Require the eidos modules at 86dbe80e and assert v0.7.0, which complete the member walk of an embedded type of another module.
+- 53d5881: Require the eidos modules at e4ae6a9a, which resolve a factory of the external test package by its name alone.
+- 80207ae: Require eidos-core v0.8.0, eidos-sdk v0.6.0 and the other eidos releases of 2026-10-25.
+- e6175e9: Fix the directive `subject` to take a factory of the external test package of the directory of its directive `out`.
+
 ## 0.1.0
 
 ### Minor Changes

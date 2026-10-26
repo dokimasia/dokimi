@@ -1,5 +1,15 @@
 # go.dokimi.dev/dokimi
 
+## 0.2.1
+
+### Patch Changes
+
+- 62a5f68: Fix the suite to generate a recursive function type or interface through `prop.Recursive`, with at most 10 base values in one value.
+- 62a5f68: Fix the suite to leave out each sample, default, member and declared error that its file cannot refer to.
+- e4425ef: Require go.dokimi.dev/assert v0.8.0, eidos-core v0.9.0, eidos-sdk v0.7.0, eidos-lang-go v0.5.0 and the other eidos releases of 2026-10-26.
+- 62a5f68: Fix the suite to start a struct without a field that `prop` reads from its zero value.
+- 62a5f68: Fix the suite to take the builder of a struct of the package of its declaration alone.
+
 ## 0.2.0
 
 ### Minor Changes

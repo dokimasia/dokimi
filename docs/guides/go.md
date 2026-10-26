@@ -151,6 +151,20 @@ type Log struct {
 }
 ```
 
+The suite starts a struct without exported fields from its zero value. Pass `conform.Using` to an
+application to state other values of such a type, such as a resolution that only a registry
+builds. The generator of the option replaces the zero value in each run of the application:
+
+```go
+func TestApplier(t *testing.T) {
+	t.Parallel()
+
+	registry := resolved.NewRegistry(3)
+	resolvedtest.RunApplierSuite(t, memory.New,
+		conform.Using[resolved.Applier](prop.Just(registry.Resolve())))
+}
+```
+
 ### Parse an enumeration
 
 ```go

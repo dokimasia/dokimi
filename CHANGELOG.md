@@ -1,5 +1,11 @@
 # go.dokimi.dev/dokimi
 
+## 0.2.2
+
+### Patch Changes
+
+- c379e06: Require eidos-lang-go v0.5.1.
+
 ## 0.2.1
 
 ### Patch Changes

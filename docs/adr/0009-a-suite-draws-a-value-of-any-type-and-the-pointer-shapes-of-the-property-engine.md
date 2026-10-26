@@ -4,7 +4,7 @@ title: A suite draws a value of any type and the pointer shapes of the property 
 status: Accepted
 date: 2026-10-25
 supersedes: RFC-0006 in part
-superseded-by: none
+superseded-by: ADR-0012 in part
 rfc: 0006
 ---
 

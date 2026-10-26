@@ -18,3 +18,6 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0007](0007-a-suite-does-not-ask-for-the-double-of-its-declaration.md) | A suite does not ask for the double of its declaration | Accepted |
 | [0008](0008-a-generator-checks-its-references-against-the-package-of-its-routed-file.md) | A generator checks its references against the package of its routed file | Accepted |
 | [0009](0009-a-suite-draws-a-value-of-any-type-and-the-pointer-shapes-of-the-property-engine.md) | A suite draws a value of any type and the pointer shapes of the property engine | Accepted |
+| [0010](0010-a-suite-refers-only-to-declarations-that-its-file-can-import.md) | A suite refers only to declarations that its file can import | Accepted |
+| [0011](0011-a-suite-generates-a-recursive-interface-or-function-type-through-recursive.md) | A suite generates a recursive interface or function type through Recursive | Accepted |
+| [0012](0012-a-struct-without-exported-fields-takes-its-zero-value-and-an-application-adds-generators.md) | A struct without exported fields takes its zero value, and an application adds generators | Accepted |

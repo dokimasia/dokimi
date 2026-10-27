@@ -148,7 +148,9 @@ type Model struct {
 
 // Checks is the data of the record of the tests of one double, and the file
 // template of the tests reads it. It is the model of the double, as a type of
-// its own, so each family records the data of its own type.
+// its own, so each family records the data of its own type. Its methods are
+// the methods of the double that a test in another package can call, and
+// Fallible reports that one of them can fail.
 type Checks Model
 
 // Method is one method of a double.
@@ -510,18 +512,22 @@ type invocation struct {
 // method. The test of a double without a method builds the double under each
 // option, and checks that a reset keeps the sample of each property. The test
 // uses the double through the exported API of its package, so a Go file of
-// the family is in the external test package of its directory.
+// the family is in the external test package of its directory. The test
+// leaves out each method with package visibility, because another package
+// cannot call it.
 //
 // The methods of a double are the methods of the member walk of its subject,
-// without the members at type level and the constructors of a class. A
-// double declares the fields of its subject where the part of the language
-// types a value by its members. A method of a double of an interface returns
-// an interface of the package of the subject without the directive, called a
-// handle. Such a handle gets a double in the file of the double of the first
-// subject of the package whose method returns it. An out directive on that
-// subject moves the double of the handle with the double of the subject.
-// stub serves Go and TypeScript, the languages of its parts, and leaves a
-// declaration of another language alone.
+// without the members at type level, the constructors of a class and the
+// methods of a struct with package visibility. The double of an interface
+// implements a method with package visibility only in the package that
+// declares the method. A double declares the fields of its subject where the
+// part of the language types a value by its members. A method of a double of
+// an interface returns an interface of the package of the subject without the
+// directive, called a handle. Such a handle gets a double in the file of the
+// double of the first subject of the package whose method returns it. An out
+// directive on that subject moves the double of the handle with the double of
+// the subject. stub serves Go and TypeScript, the languages of its parts, and
+// leaves a declaration of another language alone.
 //
 // The stub of a method writes the helpers of the faults that the directive
 // fault on the method declares, which the annotator fault stamps. So stub
@@ -659,8 +665,25 @@ func (in *invocation) write() members {
 	for _, c := range calls {
 		test.Fields.Append(referent(&c.Target, c.Ref))
 	}
-	in.e.File(TestTag).Record(Checks(model), test)
+	in.e.File(TestTag).Record(checksOf(&model, walked.methods), test)
 	return walked
+}
+
+// checksOf returns the data of the tests of the double with the model m,
+// whose methods are the methods of the member walk in methods. The tests call
+// the double from another package, so they leave out each method with package
+// visibility. Fallible reports that a method of the tests can fail.
+func checksOf(m *Model, methods []*node.Method) Checks {
+	c := Checks(*m)
+	c.Methods, c.Fallible = nil, false
+	for i := range m.Methods {
+		if methods[i].Visibility == symbol.VisibilityPackage {
+			continue
+		}
+		c.Methods = append(c.Methods, m.Methods[i])
+		c.Fallible = c.Fallible || m.Methods[i].Fails
+	}
+	return c
 }
 
 // constructions returns the default results of the methods with each builder
@@ -701,8 +724,11 @@ func (in *invocation) modelOf(double *emit.Struct) Model {
 
 // walk returns the members of the member walk of the subject that its double
 // implements. It leaves out a member at type level, a constructor of a
-// struct, and a field where the language does not type a value by its
-// members. It reports [IncompleteMembers] where the walk has a gap, and
+// struct, a method of a struct with package visibility, and a field where the
+// language does not type a value by its members. The double of a struct is
+// not a value of the struct, and its checks call it from another package. So
+// the double implements only the methods that another package can call. walk
+// reports [IncompleteMembers] where the walk has a gap, and
 // [Unimplementable] at a member that a double cannot implement or whose
 // signature the file of the double cannot import, and returns false after
 // either report.
@@ -718,7 +744,7 @@ func (in *invocation) walk() (members, bool) {
 		var reason string
 		switch s := set.Members[i].Symbol.(type) {
 		case *node.Method:
-			if s.Level == symbol.LevelType || s.Constructs && sub.class {
+			if s.Level == symbol.LevelType || sub.class && (s.Constructs || s.Visibility == symbol.VisibilityPackage) {
 				continue
 			}
 			if !in.importable(s) {
@@ -750,15 +776,22 @@ func (in *invocation) walk() (members, bool) {
 	return out, true
 }
 
-// importable reports whether the file of the double can refer to each
-// parameter and each result of the method s. It reports [Unimplementable] at
-// the subject where the file cannot. It checks the package that the plan
-// previews for the file, and reports true where the plan previews no package,
-// because the layout then checks each reference itself.
+// importable reports whether the file of the double can implement the method
+// s and refer to each of its parameters and results. A double implements a
+// method with package visibility only in the package that declares the
+// method. importable reports [Unimplementable] at the subject where the file
+// cannot. It checks the package that the plan previews for the file, and
+// reports true where the plan previews no package, because the layout then
+// checks each reference itself.
 func (in *invocation) importable(s *node.Method) bool {
 	pkg, placed := in.e.File().Package()
 	if placed != nil {
 		return true
+	}
+	if s.Visibility == symbol.VisibilityPackage && s.ID.Package != pkg.Package {
+		in.m.Errorf(Unimplementable, "%s has the method %s that is not exported, which a double in the package %s "+
+			"cannot implement, so it has no double", in.sub.name, s.Name, pkg.Package)
+		return false
 	}
 	refs := make([]*node.TypeRef, 0, len(s.Params)+len(s.Returns))
 	for _, p := range s.Params {

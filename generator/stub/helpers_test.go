@@ -58,13 +58,14 @@ const (
 
 // generated is what stub records over one fixture: the model, the record of
 // each double, the names of the declarations that the record declares after
-// the double and the record of its tests, by the name of the subject, and the
-// findings of the run.
+// the double, the record of its tests and the data of its tests, by the name
+// of the subject, and the findings of the run.
 type generated struct {
 	models   map[string]stub.Model
 	doubles  map[string]*emit.Struct
 	beside   map[string][]string
 	tests    map[string]*emit.Struct
+	checks   map[string]stub.Checks
 	findings []diag.Diag
 }
 
@@ -119,6 +120,7 @@ func run(t *testing.T, p plugin.Generator, target plugin.Target, dir string, pkg
 		models:   map[string]stub.Model{},
 		doubles:  map[string]*emit.Struct{},
 		tests:    map[string]*emit.Struct{},
+		checks:   map[string]stub.Checks{},
 		findings: slices.Collect(res.Sink.All()),
 	}
 	subject := func(m stub.Model) string { return m.Subject }
@@ -129,6 +131,7 @@ func run(t *testing.T, p plugin.Generator, target plugin.Target, dir string, pkg
 	got.beside = gentest.Beside(res, subject)
 	for name, r := range gentest.Records(t, res, testTemplate, stub.TestTag, func(c stub.Checks) string { return c.Subject }) {
 		got.tests[name] = r.Decl
+		got.checks[name] = r.Data
 	}
 	return got
 }

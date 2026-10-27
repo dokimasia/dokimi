@@ -40,6 +40,8 @@ const (
 	wrapPackage       = "example.com/shop/wrap"
 	toolPackage       = "example.com/shop/lib/tool"
 	deepPackage       = "example.com/shop/lib/internal/deep"
+	counterPackage    = "example.com/shop/counter"
+	sealedPackage     = "example.com/shop/sealed"
 	shopPackage       = "shop"
 	bagName           = "Bag"
 	pairsName         = "Pairs"
@@ -291,6 +293,21 @@ func TestStub(t *testing.T) {
 					giveTarget: typescript.Target, giveTree: tsTree, givePkg: clockModule, giveSubject: clockName,
 					want: "Clock.now Clock.every Clock.stopper",
 				},
+				{
+					name:       "records a method of each exported method of a struct",
+					giveTarget: golang.Target, giveTree: goTree, givePkg: counterPackage, giveSubject: "Gauge",
+					want: "Gauge.Level",
+				},
+				{
+					name:       "leaves out an unexported method whose signature the file of the double cannot import",
+					giveTarget: golang.Target, giveTree: goTree, givePkg: counterPackage, giveSubject: "Counter",
+					want: "Counter.Inc Counter.Value",
+				},
+				{
+					name:       "records a method of each method of an interface with an unexported method",
+					giveTarget: golang.Target, giveTree: goTree, givePkg: counterPackage, giveSubject: "Tally",
+					want: "Tally.Total Tally.seal",
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -304,6 +321,25 @@ func TestStub(t *testing.T) {
 				})
 			}
 		}
+
+		t.Run("reports nothing at a struct with an unexported method of an unexported type", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, counterPackage)
+			expect.Empty(t, got.findings,
+				"the double of Counter leaves out add, whose parameter has the unexported type step")
+		})
+
+		t.Run("records each exported method of an interface as a method of its checks", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, golang.Target, goTree, counterPackage)
+			assert.Contains(t, got.checks, "Tally", "stub records the checks of the double of Tally")
+			expect.Equal(t, qualified(got.checks["Tally"].Methods), "Tally.Total",
+				"the checks leave out seal, which a test in another package cannot call")
+			expect.Equal(t, []bool{got.models["Tally"].Fallible, got.checks["Tally"].Fallible}, []bool{true, false},
+				"seal can fail, and no method of the checks can fail")
+		})
 
 		t.Run("records no field of a Go struct as a property of its double", func(t *testing.T) {
 			t.Parallel()
@@ -1398,6 +1434,12 @@ func TestStub(t *testing.T) {
 					wantMsg: "Nothing has no member that a double can implement, so it has no double",
 				},
 				{
+					name: "reports Empty at a struct without an exported method", giveTarget: golang.Target,
+					giveTree: goTree, givePkgs: []string{emptyPackage}, wantCode: stub.Empty,
+					wantAt: symbol.KindStruct, wantName: "Hollow",
+					wantMsg: "Hollow has no member that a double can implement, so it has no double",
+				},
+				{
 					name:       "reports Unimplementable at an interface with an index signature",
 					giveTarget: typescript.Target, giveTree: tsTree, givePkgs: []string{"indexed"},
 					wantCode: stub.Unimplementable, wantAt: symbol.KindInterface, wantName: "Indexed",
@@ -1510,6 +1552,28 @@ func TestStub(t *testing.T) {
 						"its double in the package example.com/shop/wrap cannot import, so it has no double: golang: " +
 						"example.com/shop/lib/internal/deep is internal to example.com/shop/lib, and the package " +
 						"example.com/shop/wrap is outside it",
+				},
+				{
+					name:       "reports Unimplementable at an interface with an unexported method under an out",
+					giveTarget: golang.Target,
+					giveTree:   goTree,
+					givePkgs:   []string{sealedPackage, counterPackage},
+					wantCode:   stub.Unimplementable,
+					wantAt:     symbol.KindInterface,
+					wantName:   "Moved",
+					wantMsg: "Moved has the method seal that is not exported, which a double in the package " +
+						"example.com/shop/sealed/sealedtest cannot implement, so it has no double",
+				},
+				{
+					name:       "reports Unimplementable at an interface that embeds an unexported method of another package",
+					giveTarget: golang.Target,
+					giveTree:   goTree,
+					givePkgs:   []string{sealedPackage, counterPackage},
+					wantCode:   stub.Unimplementable,
+					wantAt:     symbol.KindInterface,
+					wantName:   "Named",
+					wantMsg: "Named has the method seal that is not exported, which a double in the package " +
+						"example.com/shop/sealed cannot implement, so it has no double",
 				},
 				{
 					name:       "reports Unimplementable at an interface that is not exported",

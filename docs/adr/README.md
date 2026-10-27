@@ -21,3 +21,4 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0010](0010-a-suite-refers-only-to-declarations-that-its-file-can-import.md) | A suite refers only to declarations that its file can import | Accepted |
 | [0011](0011-a-suite-generates-a-recursive-interface-or-function-type-through-recursive.md) | A suite generates a recursive interface or function type through Recursive | Accepted |
 | [0012](0012-a-struct-without-exported-fields-takes-its-zero-value-and-an-application-adds-generators.md) | A struct without exported fields takes its zero value, and an application adds generators | Accepted |
+| [0013](0013-a-go-double-implements-an-unexported-method-only-for-an-interface.md) | A Go double implements an unexported method only for an interface, and its checks leave it out | Accepted |

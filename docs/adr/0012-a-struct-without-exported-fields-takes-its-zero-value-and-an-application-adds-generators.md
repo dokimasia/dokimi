@@ -4,7 +4,7 @@ title: A struct without exported fields takes its zero value, and an application
 status: Accepted
 date: 2026-10-26
 supersedes: RFC-0006 and ADR-0009 in part
-superseded-by: none
+superseded-by: RFC-0007 in part
 rfc: 0006
 ---
 

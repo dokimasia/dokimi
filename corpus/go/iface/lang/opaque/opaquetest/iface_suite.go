@@ -128,8 +128,7 @@ var storePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, opaq
 // storeSetValues generates the starting value of Set, which has no field
 // to change.
 var storeSetValues = prop.Composite(func(*prop.Case) opaque.Set {
-	value := opaque.Set{}
-	return value
+	return opaque.Set{}
 })
 
 // storeOverEmbedded is opaque.Store under the name of the field that
@@ -156,4 +155,4 @@ func newStoreOver(_ *StoreHandle, spend func()) opaque.Store {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7de1e3160e972073d1412b1d3211131fb7a5d0c63f9bdf2a7d9ad095e4353aee
+// dokimi:provenance sha256:88826b4b82ae88266ed0de08ba27783421acd57bdb7fb1dab5a5aad26b0d15d0

@@ -90,7 +90,7 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 			},
 		},
 		Using: []prop.Option{
-			prop.Using(prop.Recursive(prop.Just[recursive.Node](counterNodeInput{
+			prop.Using(prop.Recursive(prop.Just[recursive.Node](&counterNodeInput{
 				onName: func() (r0 string) {
 					return r0
 				},
@@ -104,7 +104,7 @@ func CounterSuite() conform.Suite[recursive.Counter] {
 						var nodeNameAt atomic.Int64
 						nodeChildrenResults := c.Draw(prop.List(prop.Of[[]recursive.Node]()), "node-children")
 						var nodeChildrenAt atomic.Int64
-						return counterNodeInput{
+						return &counterNodeInput{
 							onName: func() (r0 string) {
 								i := int(nodeNameAt.Add(1) - 1)
 								if i >= len(nodeNameResults) {
@@ -208,7 +208,7 @@ var counterNodesCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 	var rootNameAt atomic.Int64
 	rootChildrenResults := c.Draw(prop.List(prop.Of[[]recursive.Node]()), "root-children")
 	var rootChildrenAt atomic.Int64
-	root := counterNodeInput{
+	root := &counterNodeInput{
 		onName: func() (r0 string) {
 			i := int(rootNameAt.Add(1) - 1)
 			if i >= len(rootNameResults) {
@@ -252,8 +252,8 @@ var counterStepsCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 // counterNodeInput embeds.
 type counterNodeInputEmbedded = recursive.Node
 
-// counterNodeInput is a Node whose methods return the results that the
-// generators of the suite of Counter draw for them, in turn.
+// counterNodeInput implements Node. Its methods return the results that
+// the generators of the suite of Counter draw for them, in turn.
 type counterNodeInput struct {
 	counterNodeInputEmbedded
 	onName     func() string
@@ -300,4 +300,4 @@ func newCounterOver(_ *CounterHandle, spend func()) recursive.Counter {
 	return counterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1ab75ad788632206f050b2bc6c71a6d522ae1f98007325453a482ab1d54af558
+// dokimi:provenance sha256:92f6288f1dd550ca2ece3b8df1ad2ca718636bba47b613298033b6c2a910ac69

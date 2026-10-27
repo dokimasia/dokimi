@@ -180,7 +180,7 @@ var mixedSyncCalls = prop.Composite(func(c *prop.Case) func(context.Context, eve
 		"peer-items-1",
 	)
 	var peerItemsAt atomic.Int64
-	peer := mixedMixedInput{
+	peer := &mixedMixedInput{
 		onPublish: func(context.Context, string) (r0 error) {
 			i := int(peerPublishAt.Add(1) - 1)
 			if i >= len(peerPublishResults) {
@@ -233,8 +233,8 @@ var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, even
 // mixedMixedInput embeds.
 type mixedMixedInputEmbedded = eventually.Mixed
 
-// mixedMixedInput is a Mixed whose methods return the results that the
-// generators of the suite of Mixed draw for them, in turn.
+// mixedMixedInput implements Mixed. Its methods return the results that
+// the generators of the suite of Mixed draw for them, in turn.
 type mixedMixedInput struct {
 	mixedMixedInputEmbedded
 	onPublish func(a0 context.Context, a1 string) error
@@ -305,4 +305,4 @@ func newMixedOver(_ *MixedHandle, spend func()) eventually.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:cd01a8b0525c4a85d80476a793a40800bd5222dd6eabd679a63978f7ccaddaaa
+// dokimi:provenance sha256:0450e4e15a60e0f683a4330647db422e7ad62ea6d33d25f9f2bca38d888ca92c

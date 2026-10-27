@@ -164,7 +164,7 @@ var fitterLimitCalls = prop.Composite(func(c *prop.Case) func(context.Context, c
 var fitterSenseCalls = prop.Composite(func(c *prop.Case) func(context.Context, crosspackage.Fitter) error {
 	sSenseResults := c.Draw(prop.List(prop.SampledFrom[error](nil, part.ErrJammed)), "s-sense")
 	var sSenseAt atomic.Int64
-	s := fitterSensorInput{
+	s := &fitterSensorInput{
 		onSense: func() (r0 error) {
 			i := int(sSenseAt.Add(1) - 1)
 			if i >= len(sSenseResults) {
@@ -197,8 +197,8 @@ var fitterLimitsValues = prop.Composite(func(c *prop.Case) part.Limits {
 // that fitterSensorInput embeds.
 type fitterSensorInputEmbedded = part.Sensor
 
-// fitterSensorInput is a part.Sensor whose methods return the results that
-// the generators of the suite of Fitter draw for them, in turn.
+// fitterSensorInput implements part.Sensor. Its methods return the results
+// that the generators of the suite of Fitter draw for them, in turn.
 type fitterSensorInput struct {
 	fitterSensorInputEmbedded
 	onSense func() error
@@ -245,4 +245,4 @@ func newFitterOver(_ *FitterHandle, spend func()) crosspackage.Fitter {
 	return fitterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:141ce89d6788ba18c899ecec266972a41a36eb79920095228327098f7f76f2de
+// dokimi:provenance sha256:7274390029faa2bfcd2f3854956c7d9c7a0f212ba758d7bb173001b498fae5aa

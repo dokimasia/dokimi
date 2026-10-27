@@ -142,7 +142,7 @@ var filterDrainCalls = prop.Composite(func(c *prop.Case) func(context.Context, s
 		"src-source-1",
 	)
 	var srcSourceAt atomic.Int64
-	src := filterSourceInput{
+	src := &filterSourceInput{
 		onSource: func() (r0 string, r1 bool) {
 			i := int(srcSourceAt.Add(1) - 1)
 			if i >= len(srcSourceResults0) {
@@ -162,8 +162,8 @@ var filterDrainCalls = prop.Composite(func(c *prop.Case) func(context.Context, s
 // filterSourceInput embeds.
 type filterSourceInputEmbedded = selfnamed.Source
 
-// filterSourceInput is a Source whose methods return the results that the
-// generators of the suite of Filter draw for them, in turn.
+// filterSourceInput implements Source. Its methods return the results that
+// the generators of the suite of Filter draw for them, in turn.
 type filterSourceInput struct {
 	filterSourceInputEmbedded
 	onSource func() (string, bool)
@@ -204,4 +204,4 @@ func newFilterOver(_ *FilterHandle, spend func()) selfnamed.Filter {
 	return filterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:83c850e2f6fcc799d85232f2d76c68591c5df0938cfc0c5ed424528ce8f100e5
+// dokimi:provenance sha256:dca8de477ac1f33ba8c57b065841a95e790cc04ebcf837c24d936bc49061cb2f

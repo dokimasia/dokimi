@@ -98,7 +98,7 @@ func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 			prop.Using(prop.Composite(func(c *prop.Case) nested.Parcel {
 				parcelWeightResults := c.Draw(prop.List(prop.Of[int]()), "parcel-weight")
 				var parcelWeightAt atomic.Int64
-				return dispatcherParcelInput{
+				return &dispatcherParcelInput{
 					onWeight: func() (r0 int) {
 						i := int(parcelWeightAt.Add(1) - 1)
 						if i >= len(parcelWeightResults) {
@@ -230,8 +230,8 @@ var dispatcherWeightCalls = prop.Composite(func(*prop.Case) func(context.Context
 // dispatcherParcelInput embeds.
 type dispatcherParcelInputEmbedded = nested.Parcel
 
-// dispatcherParcelInput is a Parcel whose methods return the results that
-// the generators of the suite of Dispatcher draw for them, in turn.
+// dispatcherParcelInput implements Parcel. Its methods return the results
+// that the generators of the suite of Dispatcher draw for them, in turn.
 type dispatcherParcelInput struct {
 	dispatcherParcelInputEmbedded
 	onWeight func() int
@@ -278,4 +278,4 @@ func newDispatcherOver(_ *DispatcherHandle, spend func()) nested.Dispatcher {
 	return dispatcherOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6b5051b5d25a703bfe870a71947ee6de835326a1df93fcd3a44c8d04ed46e980
+// dokimi:provenance sha256:91ad47856473dc4d2dcad7157e1e1215845d36e9624a6fae67adb97ed629e516

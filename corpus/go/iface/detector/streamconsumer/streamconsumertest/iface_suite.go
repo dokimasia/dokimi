@@ -139,7 +139,7 @@ var streamConsumerIngestCalls = prop.Composite(
 			"src-next-2",
 		)
 		var srcNextAt atomic.Int64
-		src := streamConsumerSourceInput{
+		src := &streamConsumerSourceInput{
 			onNext: func(context.Context) (r0 streamconsumer.Value, r1 bool, r2 error) {
 				i := int(srcNextAt.Add(1) - 1)
 				if i >= len(srcNextResults0) {
@@ -162,9 +162,9 @@ var streamConsumerIngestCalls = prop.Composite(
 // that streamConsumerSourceInput embeds.
 type streamConsumerSourceInputEmbedded = streamconsumer.Source
 
-// streamConsumerSourceInput is a Source whose methods return the results
-// that the generators of the suite of StreamConsumer draw for them, in
-// turn.
+// streamConsumerSourceInput implements Source. Its methods return the
+// results that the generators of the suite of StreamConsumer draw for
+// them, in turn.
 type streamConsumerSourceInput struct {
 	streamConsumerSourceInputEmbedded
 	onNext func(a0 context.Context) (streamconsumer.Value, bool, error)
@@ -199,4 +199,4 @@ func newStreamConsumerOver(_ *StreamConsumerHandle, spend func()) streamconsumer
 	return streamConsumerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6531965a3a488872352fa19d44e0f7deecc08539eb6de57058d96ea0e83f222c
+// dokimi:provenance sha256:a9ac274dae37c3a85a4f3e7d6a90df25382446094fc8ee5a0df1d6c7046f48cb

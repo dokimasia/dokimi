@@ -147,8 +147,7 @@ var applierLimitCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 // applierResolutionValues generates the starting value of Resolution,
 // which has no field to change.
 var applierResolutionValues = prop.Composite(func(*prop.Case) resolved.Resolution {
-	value := resolved.Resolution{}
-	return value
+	return resolved.Resolution{}
 })
 
 // applierOverEmbedded is resolved.Applier under the name of the field that
@@ -181,4 +180,4 @@ func newApplierOver(_ *ApplierHandle, spend func()) resolved.Applier {
 	return applierOver{spend: spend}
 }
 
-// dokimi:provenance sha256:29cec89effe23c0721d9b1a0cb944f93960e10b3363857eae170e3ec0a843d30
+// dokimi:provenance sha256:59def65fb48189f8b2e1bb920d23dc3c5d6c18a51dcdd16bffcb6d8f687854f8

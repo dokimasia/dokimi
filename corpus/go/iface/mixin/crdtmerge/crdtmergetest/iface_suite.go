@@ -144,7 +144,7 @@ var mixedMergeCalls = prop.Composite(func(c *prop.Case) func(context.Context, cr
 		"peer-items-1",
 	)
 	var peerItemsAt atomic.Int64
-	peer := mixedReplicaInput{
+	peer := &mixedReplicaInput{
 		onItems: func(context.Context) (r0 []string, r1 error) {
 			i := int(peerItemsAt.Add(1) - 1)
 			if i >= len(peerItemsResults0) {
@@ -182,8 +182,8 @@ var mixedItemsCalls = prop.Composite(func(*prop.Case) func(context.Context, crdt
 // mixedReplicaInput embeds.
 type mixedReplicaInputEmbedded = crdtmerge.Replica
 
-// mixedReplicaInput is a Replica whose methods return the results that the
-// generators of the suite of Mixed draw for them, in turn.
+// mixedReplicaInput implements Replica. Its methods return the results
+// that the generators of the suite of Mixed draw for them, in turn.
 type mixedReplicaInput struct {
 	mixedReplicaInputEmbedded
 	onItems func(a0 context.Context) ([]string, error)
@@ -230,4 +230,4 @@ func newMixedOver(_ *MixedHandle, spend func()) crdtmerge.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b87b6850d4801cf473cff12db199c7a94332a9aae0af33f3d1e77f1f554b5291
+// dokimi:provenance sha256:25bccf7849e9632a434930e7dc9566e460261e4119d0621a37f7ad8dd4978f80

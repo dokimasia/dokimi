@@ -232,11 +232,12 @@ func (s *ArchiveSizeStub) invoke() func() ArchiveSizeReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *ArchiveStub) Size() int {
 	call := ArchiveSizeCall{}
-	r := stub.Answer(s.OnSize.MethodStub, &call, stub.Arms[ArchiveSizeCall, ArchiveSizeReturn]{
+	r := stub.Answer(s.OnSize.MethodStub, call, stub.Arms[ArchiveSizeCall, ArchiveSizeReturn]{
 		Invoke:   s.OnSize.invoke(),
 		Fallback: s.OnSize.fallback,
-		Stamp: func(c *ArchiveSizeCall, r ArchiveSizeReturn) {
+		Stamp: func(c ArchiveSizeCall, r ArchiveSizeReturn) ArchiveSizeCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -260,14 +261,15 @@ func (s *ArchiveStub) OpenLog(name string) (Log, error) {
 	call := ArchiveOpenLogCall{Name: name}
 	r := stub.Answer(
 		s.OnOpenLog.MethodStub,
-		&call,
+		call,
 		stub.Arms[ArchiveOpenLogCall, ArchiveOpenLogReturn]{
 			Invoke:   s.OnOpenLog.invoke(name),
 			Fallback: s.OnOpenLog.fallback,
 			Fault:    func(err error) ArchiveOpenLogReturn { return ArchiveOpenLogReturn{Err: err} },
-			Stamp: func(c *ArchiveOpenLogCall, r ArchiveOpenLogReturn) {
+			Stamp: func(c ArchiveOpenLogCall, r ArchiveOpenLogReturn) ArchiveOpenLogCall {
 				c.Result = r.Result
 				c.Err = r.Err
+				return c
 			},
 		},
 	)
@@ -447,12 +449,13 @@ func (s *LogAppendStub) invoke(line string) func() LogAppendReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *LogStub) Append(line string) error {
 	call := LogAppendCall{Line: line}
-	r := stub.Answer(s.OnAppend.MethodStub, &call, stub.Arms[LogAppendCall, LogAppendReturn]{
+	r := stub.Answer(s.OnAppend.MethodStub, call, stub.Arms[LogAppendCall, LogAppendReturn]{
 		Invoke:   s.OnAppend.invoke(line),
 		Fallback: s.OnAppend.fallback,
 		Fault:    func(err error) LogAppendReturn { return LogAppendReturn{Err: err} },
-		Stamp: func(c *LogAppendCall, r LogAppendReturn) {
+		Stamp: func(c LogAppendCall, r LogAppendReturn) LogAppendCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -813,13 +816,14 @@ func (s *ProducerOpenStub) invoke(ctx context.Context) func() ProducerOpenReturn
 // Func, then the results of Returns, and then the zero values.
 func (s *ProducerStub) Open(ctx context.Context) (Cursor, error) {
 	call := ProducerOpenCall{Ctx: ctx}
-	r := stub.Answer(s.OnOpen.MethodStub, &call, stub.Arms[ProducerOpenCall, ProducerOpenReturn]{
+	r := stub.Answer(s.OnOpen.MethodStub, call, stub.Arms[ProducerOpenCall, ProducerOpenReturn]{
 		Invoke:   s.OnOpen.invoke(ctx),
 		Fallback: s.OnOpen.fallback,
 		Fault:    func(err error) ProducerOpenReturn { return ProducerOpenReturn{Err: err} },
-		Stamp: func(c *ProducerOpenCall, r ProducerOpenReturn) {
+		Stamp: func(c ProducerOpenCall, r ProducerOpenReturn) ProducerOpenCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -843,12 +847,13 @@ func (s *ProducerStub) Resume(token string) Cursor {
 	call := ProducerResumeCall{Token: token}
 	r := stub.Answer(
 		s.OnResume.MethodStub,
-		&call,
+		call,
 		stub.Arms[ProducerResumeCall, ProducerResumeReturn]{
 			Invoke:   s.OnResume.invoke(token),
 			Fallback: s.OnResume.fallback,
-			Stamp: func(c *ProducerResumeCall, r ProducerResumeReturn) {
+			Stamp: func(c ProducerResumeCall, r ProducerResumeReturn) ProducerResumeCall {
 				c.Result = r.Result
+				return c
 			},
 		},
 	)
@@ -871,11 +876,12 @@ func (s *ProducerWatchStub) invoke() func() ProducerWatchReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *ProducerStub) Watch() Subscription {
 	call := ProducerWatchCall{}
-	r := stub.Answer(s.OnWatch.MethodStub, &call, stub.Arms[ProducerWatchCall, ProducerWatchReturn]{
+	r := stub.Answer(s.OnWatch.MethodStub, call, stub.Arms[ProducerWatchCall, ProducerWatchReturn]{
 		Invoke:   s.OnWatch.invoke(),
 		Fallback: s.OnWatch.fallback,
-		Stamp: func(c *ProducerWatchCall, r ProducerWatchReturn) {
+		Stamp: func(c ProducerWatchCall, r ProducerWatchReturn) ProducerWatchCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -899,12 +905,13 @@ func (s *ProducerStub) Nothing() Empty {
 	call := ProducerNothingCall{}
 	r := stub.Answer(
 		s.OnNothing.MethodStub,
-		&call,
+		call,
 		stub.Arms[ProducerNothingCall, ProducerNothingReturn]{
 			Invoke:   s.OnNothing.invoke(),
 			Fallback: s.OnNothing.fallback,
-			Stamp: func(c *ProducerNothingCall, r ProducerNothingReturn) {
+			Stamp: func(c ProducerNothingCall, r ProducerNothingReturn) ProducerNothingCall {
 				c.Result = r.Result
+				return c
 			},
 		},
 	)
@@ -929,12 +936,13 @@ func (s *ProducerStub) Elsewhere() other.Thing {
 	call := ProducerElsewhereCall{}
 	r := stub.Answer(
 		s.OnElsewhere.MethodStub,
-		&call,
+		call,
 		stub.Arms[ProducerElsewhereCall, ProducerElsewhereReturn]{
 			Invoke:   s.OnElsewhere.invoke(),
 			Fallback: s.OnElsewhere.fallback,
-			Stamp: func(c *ProducerElsewhereCall, r ProducerElsewhereReturn) {
+			Stamp: func(c ProducerElsewhereCall, r ProducerElsewhereReturn) ProducerElsewhereCall {
 				c.Result = r.Result
+				return c
 			},
 		},
 	)
@@ -1164,14 +1172,15 @@ func (s *CursorNextStub) invoke(ctx context.Context) func() CursorNextReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CursorStub) Next(ctx context.Context) (string, bool, error) {
 	call := CursorNextCall{Ctx: ctx}
-	r := stub.Answer(s.OnNext.MethodStub, &call, stub.Arms[CursorNextCall, CursorNextReturn]{
+	r := stub.Answer(s.OnNext.MethodStub, call, stub.Arms[CursorNextCall, CursorNextReturn]{
 		Invoke:   s.OnNext.invoke(ctx),
 		Fallback: s.OnNext.fallback,
 		Fault:    func(err error) CursorNextReturn { return CursorNextReturn{Err: err} },
-		Stamp: func(c *CursorNextCall, r CursorNextReturn) {
+		Stamp: func(c CursorNextCall, r CursorNextReturn) CursorNextCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result0, r.Result1, r.Err
@@ -1193,12 +1202,13 @@ func (s *CursorCloseStub) invoke(ctx context.Context) func() CursorCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CursorStub) Close(ctx context.Context) error {
 	call := CursorCloseCall{Ctx: ctx}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[CursorCloseCall, CursorCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[CursorCloseCall, CursorCloseReturn]{
 		Invoke:   s.OnClose.invoke(ctx),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) CursorCloseReturn { return CursorCloseReturn{Err: err} },
-		Stamp: func(c *CursorCloseCall, r CursorCloseReturn) {
+		Stamp: func(c CursorCloseCall, r CursorCloseReturn) CursorCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -1360,11 +1370,12 @@ func (s *ReaderReadStub) invoke() func() ReaderReadReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *ReaderStub) Read() Cursor {
 	call := ReaderReadCall{}
-	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[ReaderReadCall, ReaderReadReturn]{
+	r := stub.Answer(s.OnRead.MethodStub, call, stub.Arms[ReaderReadCall, ReaderReadReturn]{
 		Invoke:   s.OnRead.invoke(),
 		Fallback: s.OnRead.fallback,
-		Stamp: func(c *ReaderReadCall, r ReaderReadReturn) {
+		Stamp: func(c ReaderReadCall, r ReaderReadReturn) ReaderReadCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -1518,7 +1529,7 @@ func (s *SubscriptionCancelStub) invokeVoid() func() struct{} {
 // of Func, then the results of Returns, and then the zero values.
 func (s *SubscriptionStub) Cancel() {
 	call := SubscriptionCancelCall{}
-	stub.Answer(s.OnCancel.MethodStub, &call, stub.Arms[SubscriptionCancelCall, struct{}]{
+	stub.Answer(s.OnCancel.MethodStub, call, stub.Arms[SubscriptionCancelCall, struct{}]{
 		Invoke: s.OnCancel.invokeVoid(),
 	})
 }

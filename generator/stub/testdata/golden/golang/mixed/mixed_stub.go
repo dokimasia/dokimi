@@ -287,13 +287,14 @@ func (s *SessionStub) Prepare(ctx context.Context) error {
 	call := SessionPrepareCall{Ctx: ctx}
 	r := stub.Answer(
 		s.OnPrepare.MethodStub,
-		&call,
+		call,
 		stub.Arms[SessionPrepareCall, SessionPrepareReturn]{
 			Invoke:   s.OnPrepare.invoke(ctx),
 			Fallback: s.OnPrepare.fallback,
 			Fault:    func(err error) SessionPrepareReturn { return SessionPrepareReturn{Err: err} },
-			Stamp: func(c *SessionPrepareCall, r SessionPrepareReturn) {
+			Stamp: func(c SessionPrepareCall, r SessionPrepareReturn) SessionPrepareCall {
 				c.Err = r.Err
+				return c
 			},
 		},
 	)
@@ -318,18 +319,15 @@ func (s *SessionStub) Commit(ctx context.Context) error {
 	s.order.AssertAfter("Commit", "Prepare")
 	defer s.order.Record("Commit")
 	call := SessionCommitCall{Ctx: ctx}
-	r := stub.Answer(
-		s.OnCommit.MethodStub,
-		&call,
-		stub.Arms[SessionCommitCall, SessionCommitReturn]{
-			Invoke:   s.OnCommit.invoke(ctx),
-			Fallback: s.OnCommit.fallback,
-			Fault:    func(err error) SessionCommitReturn { return SessionCommitReturn{Err: err} },
-			Stamp: func(c *SessionCommitCall, r SessionCommitReturn) {
-				c.Err = r.Err
-			},
+	r := stub.Answer(s.OnCommit.MethodStub, call, stub.Arms[SessionCommitCall, SessionCommitReturn]{
+		Invoke:   s.OnCommit.invoke(ctx),
+		Fallback: s.OnCommit.fallback,
+		Fault:    func(err error) SessionCommitReturn { return SessionCommitReturn{Err: err} },
+		Stamp: func(c SessionCommitCall, r SessionCommitReturn) SessionCommitCall {
+			c.Err = r.Err
+			return c
 		},
-	)
+	})
 	return r.Err
 }
 
@@ -355,13 +353,14 @@ func (s *SessionStub) Old(key string) (string, error) {
 	}
 	defer s.order.Record("Old")
 	call := SessionOldCall{Key: key}
-	r := stub.Answer(s.OnOld.MethodStub, &call, stub.Arms[SessionOldCall, SessionOldReturn]{
+	r := stub.Answer(s.OnOld.MethodStub, call, stub.Arms[SessionOldCall, SessionOldReturn]{
 		Invoke:   s.OnOld.invoke(key),
 		Fallback: s.OnOld.fallback,
 		Fault:    func(err error) SessionOldReturn { return SessionOldReturn{Err: err} },
-		Stamp: func(c *SessionOldCall, r SessionOldReturn) {
+		Stamp: func(c SessionOldCall, r SessionOldReturn) SessionOldCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err

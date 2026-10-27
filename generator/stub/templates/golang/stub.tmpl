@@ -375,7 +375,7 @@ Func, then the results of Returns, and then the %s.` $m.Name (or (and $m.Default
 {{- end}}
 	{{$m.Record}} := {{$m.Call}}{{$ta}}{{"{"}}{{range $j, $p := $m.Params}}{{if $j}}, {{end}}{{$p.Field}}: {{$p.Name}}{{end}}{{"}"}}
 {{- if $m.Returns}}
-	{{$m.Answer}} := stub.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, &{{$m.Record}}, stub.Arms[{{$m.Call}}{{$ta}}, {{$m.Return}}{{$ta}}]{
+	{{$m.Answer}} := stub.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, {{$m.Record}}, stub.Arms[{{$m.Call}}{{$ta}}, {{$m.Return}}{{$ta}}]{
 		Invoke:   {{$m.Receiver}}.{{$m.Field}}.invoke({{template "stub.args" $m}}),
 		Fallback: {{$m.Receiver}}.{{$m.Field}}.fallback,
 {{- if ge $m.Err 0}}
@@ -389,15 +389,16 @@ Func, then the results of Returns, and then the %s.` $m.Name (or (and $m.Default
 			return {{$m.Return}}{{$ta}}{{"{"}}{{template "stub.defaults" $m}}{{"}"}}
 		},
 {{- end}}
-		Stamp: func(c *{{$m.Call}}{{$ta}}, r {{$m.Return}}{{$ta}}) {
+		Stamp: func(c {{$m.Call}}{{$ta}}, r {{$m.Return}}{{$ta}}) {{$m.Call}}{{$ta}} {
 {{- range $m.Returns}}
 			c.{{.Field}} = r.{{.Field}}
 {{- end}}
+			return c
 		},
 	})
 	return {{range $j, $r := $m.Returns}}{{if $j}}, {{end}}{{$m.Answer}}.{{$r.Field}}{{end}}
 {{- else}}
-	stub.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, &{{$m.Record}}, stub.Arms[{{$m.Call}}{{$ta}}, struct{}]{
+	stub.Answer({{$m.Receiver}}.{{$m.Field}}.MethodStub, {{$m.Record}}, stub.Arms[{{$m.Call}}{{$ta}}, struct{}]{
 		Invoke: {{$m.Receiver}}.{{$m.Field}}.invokeVoid({{template "stub.args" $m}}),
 	})
 {{- end}}

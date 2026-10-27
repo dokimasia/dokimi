@@ -552,7 +552,7 @@ func (s *EdgeSkipStub) invokeVoid(a0 string, e int) func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Skip(a0 string, e int) {
 	call := EdgeSkipCall{A0: a0, E: e}
-	stub.Answer(s.OnSkip.MethodStub, &call, stub.Arms[EdgeSkipCall, struct{}]{
+	stub.Answer(s.OnSkip.MethodStub, call, stub.Arms[EdgeSkipCall, struct{}]{
 		Invoke: s.OnSkip.invokeVoid(a0, e),
 	})
 }
@@ -573,13 +573,14 @@ func (s *EdgeReadStub) invoke() func() EdgeReadReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Read() (int, error) {
 	call := EdgeReadCall{}
-	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[EdgeReadCall, EdgeReadReturn]{
+	r := stub.Answer(s.OnRead.MethodStub, call, stub.Arms[EdgeReadCall, EdgeReadReturn]{
 		Invoke:   s.OnRead.invoke(),
 		Fallback: s.OnRead.fallback,
 		Fault:    func(err error) EdgeReadReturn { return EdgeReadReturn{Err: err} },
-		Stamp: func(c *EdgeReadCall, r EdgeReadReturn) {
+		Stamp: func(c EdgeReadCall, r EdgeReadReturn) EdgeReadCall {
 			c.R = r.R
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.R, r.Err
@@ -601,11 +602,12 @@ func (s *EdgeKeepStub) invoke(r int) func() EdgeKeepReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Keep(r int) int {
 	call := EdgeKeepCall{R: r}
-	r1 := stub.Answer(s.OnKeep.MethodStub, &call, stub.Arms[EdgeKeepCall, EdgeKeepReturn]{
+	r1 := stub.Answer(s.OnKeep.MethodStub, call, stub.Arms[EdgeKeepCall, EdgeKeepReturn]{
 		Invoke:   s.OnKeep.invoke(r),
 		Fallback: s.OnKeep.fallback,
-		Stamp: func(c *EdgeKeepCall, r EdgeKeepReturn) {
+		Stamp: func(c EdgeKeepCall, r EdgeKeepReturn) EdgeKeepCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r1.Result
@@ -627,12 +629,13 @@ func (s0 *EdgeUseStub) invoke(s string) func() EdgeUseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s0 *EdgeStub) Use(s string) error {
 	call := EdgeUseCall{S: s}
-	r := stub.Answer(s0.OnUse.MethodStub, &call, stub.Arms[EdgeUseCall, EdgeUseReturn]{
+	r := stub.Answer(s0.OnUse.MethodStub, call, stub.Arms[EdgeUseCall, EdgeUseReturn]{
 		Invoke:   s0.OnUse.invoke(s),
 		Fallback: s0.OnUse.fallback,
 		Fault:    func(err error) EdgeUseReturn { return EdgeUseReturn{Err: err} },
-		Stamp: func(c *EdgeUseCall, r EdgeUseReturn) {
+		Stamp: func(c EdgeUseCall, r EdgeUseReturn) EdgeUseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -654,13 +657,14 @@ func (s *EdgeRecordStub) invoke(call string) func() EdgeRecordReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Record(call string) (n int, err error) {
 	call0 := EdgeRecordCall{Call: call}
-	r := stub.Answer(s.OnRecord.MethodStub, &call0, stub.Arms[EdgeRecordCall, EdgeRecordReturn]{
+	r := stub.Answer(s.OnRecord.MethodStub, call0, stub.Arms[EdgeRecordCall, EdgeRecordReturn]{
 		Invoke:   s.OnRecord.invoke(call),
 		Fallback: s.OnRecord.fallback,
 		Fault:    func(err error) EdgeRecordReturn { return EdgeRecordReturn{Err: err} },
-		Stamp: func(c *EdgeRecordCall, r EdgeRecordReturn) {
+		Stamp: func(c EdgeRecordCall, r EdgeRecordReturn) EdgeRecordCall {
 			c.N = r.N
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.N, r.Err
@@ -682,13 +686,14 @@ func (s *EdgeClashStub) invoke() func() EdgeClashReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Clash() (string, error) {
 	call := EdgeClashCall{}
-	r := stub.Answer(s.OnClash.MethodStub, &call, stub.Arms[EdgeClashCall, EdgeClashReturn]{
+	r := stub.Answer(s.OnClash.MethodStub, call, stub.Arms[EdgeClashCall, EdgeClashReturn]{
 		Invoke:   s.OnClash.invoke(),
 		Fallback: s.OnClash.fallback,
 		Fault:    func(err error) EdgeClashReturn { return EdgeClashReturn{Err: err} },
-		Stamp: func(c *EdgeClashCall, r EdgeClashReturn) {
+		Stamp: func(c EdgeClashCall, r EdgeClashReturn) EdgeClashCall {
 			c.S = r.S
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.S, r.Err
@@ -711,7 +716,7 @@ func (s *EdgeShiftStub) invokeVoid(a00 string, a0 int) func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Shift(a00 string, a0 int) {
 	call := EdgeShiftCall{A00: a00, A0: a0}
-	stub.Answer(s.OnShift.MethodStub, &call, stub.Arms[EdgeShiftCall, struct{}]{
+	stub.Answer(s.OnShift.MethodStub, call, stub.Arms[EdgeShiftCall, struct{}]{
 		Invoke: s.OnShift.invokeVoid(a00, a0),
 	})
 }
@@ -732,13 +737,14 @@ func (s *EdgeFetchStub) invoke(a00 string) func() EdgeFetchReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Fetch(a00 string) (a0 int, err error) {
 	call := EdgeFetchCall{A00: a00}
-	r := stub.Answer(s.OnFetch.MethodStub, &call, stub.Arms[EdgeFetchCall, EdgeFetchReturn]{
+	r := stub.Answer(s.OnFetch.MethodStub, call, stub.Arms[EdgeFetchCall, EdgeFetchReturn]{
 		Invoke:   s.OnFetch.invoke(a00),
 		Fallback: s.OnFetch.fallback,
 		Fault:    func(err error) EdgeFetchReturn { return EdgeFetchReturn{Err: err} },
-		Stamp: func(c *EdgeFetchCall, r EdgeFetchReturn) {
+		Stamp: func(c EdgeFetchCall, r EdgeFetchReturn) EdgeFetchCall {
 			c.A0 = r.A0
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.A0, r.Err
@@ -773,7 +779,7 @@ func (s *EdgeStub) Wide(a, a10, a1, b, c, d, e, f, g, h, a100 int) {
 		H:    h,
 		A100: a100,
 	}
-	stub.Answer(s.OnWide.MethodStub, &call, stub.Arms[EdgeWideCall, struct{}]{
+	stub.Answer(s.OnWide.MethodStub, call, stub.Arms[EdgeWideCall, struct{}]{
 		Invoke: s.OnWide.invokeVoid(a, a10, a1, b, c, d, e, f, g, h, a100),
 	})
 }
@@ -794,12 +800,13 @@ func (s *EdgePairStub) invoke() func() EdgePairReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *EdgeStub) Pair() (aB, ab int) {
 	call := EdgePairCall{}
-	r := stub.Answer(s.OnPair.MethodStub, &call, stub.Arms[EdgePairCall, EdgePairReturn]{
+	r := stub.Answer(s.OnPair.MethodStub, call, stub.Arms[EdgePairCall, EdgePairReturn]{
 		Invoke:   s.OnPair.invoke(),
 		Fallback: s.OnPair.fallback,
-		Stamp: func(c *EdgePairCall, r EdgePairReturn) {
+		Stamp: func(c EdgePairCall, r EdgePairReturn) EdgePairCall {
 			c.AB = r.AB
 			c.Ab = r.Ab
+			return c
 		},
 	})
 	return r.AB, r.Ab

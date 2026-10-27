@@ -301,13 +301,14 @@ func (s *RepoGetStub[T]) invoke(id string) func() RepoGetReturn[T] {
 // Func, then the results of Returns, and then the zero values.
 func (s *RepoStub[T]) Get(id string) (T, error) {
 	call := RepoGetCall[T]{ID: id}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[RepoGetCall[T], RepoGetReturn[T]]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[RepoGetCall[T], RepoGetReturn[T]]{
 		Invoke:   s.OnGet.invoke(id),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) RepoGetReturn[T] { return RepoGetReturn[T]{Err: err} },
-		Stamp: func(c *RepoGetCall[T], r RepoGetReturn[T]) {
+		Stamp: func(c RepoGetCall[T], r RepoGetReturn[T]) RepoGetCall[T] {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -330,7 +331,7 @@ func (s *RepoPutStub[T]) invokeVoid(v T) func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *RepoStub[T]) Put(v T) {
 	call := RepoPutCall[T]{V: v}
-	stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[RepoPutCall[T], struct{}]{
+	stub.Answer(s.OnPut.MethodStub, call, stub.Arms[RepoPutCall[T], struct{}]{
 		Invoke: s.OnPut.invokeVoid(v),
 	})
 }
@@ -351,13 +352,14 @@ func (s *RepoListStub[T]) invoke() func() RepoListReturn[T] {
 // Func, then the results of Returns, and then the zero values.
 func (s *RepoStub[T]) List() ([]T, error) {
 	call := RepoListCall[T]{}
-	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[RepoListCall[T], RepoListReturn[T]]{
+	r := stub.Answer(s.OnList.MethodStub, call, stub.Arms[RepoListCall[T], RepoListReturn[T]]{
 		Invoke:   s.OnList.invoke(),
 		Fallback: s.OnList.fallback,
 		Fault:    func(err error) RepoListReturn[T] { return RepoListReturn[T]{Err: err} },
-		Stamp: func(c *RepoListCall[T], r RepoListReturn[T]) {
+		Stamp: func(c RepoListCall[T], r RepoListReturn[T]) RepoListCall[T] {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -379,11 +381,12 @@ func (s *RepoBoxedStub[T]) invoke() func() RepoBoxedReturn[T] {
 // Func, then the results of Returns, and then the zero values.
 func (s *RepoStub[T]) Boxed() Box[T] {
 	call := RepoBoxedCall[T]{}
-	r := stub.Answer(s.OnBoxed.MethodStub, &call, stub.Arms[RepoBoxedCall[T], RepoBoxedReturn[T]]{
+	r := stub.Answer(s.OnBoxed.MethodStub, call, stub.Arms[RepoBoxedCall[T], RepoBoxedReturn[T]]{
 		Invoke:   s.OnBoxed.invoke(),
 		Fallback: s.OnBoxed.fallback,
-		Stamp: func(c *RepoBoxedCall[T], r RepoBoxedReturn[T]) {
+		Stamp: func(c RepoBoxedCall[T], r RepoBoxedReturn[T]) RepoBoxedCall[T] {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -554,12 +557,13 @@ func (s *PairsStub[K1, V_]) All() map[K1]V_ {
 	call := PairsAllCall[K1, V_]{}
 	r := stub.Answer(
 		s.OnAll.MethodStub,
-		&call,
+		call,
 		stub.Arms[PairsAllCall[K1, V_], PairsAllReturn[K1, V_]]{
 			Invoke:   s.OnAll.invoke(),
 			Fallback: s.OnAll.fallback,
-			Stamp: func(c *PairsAllCall[K1, V_], r PairsAllReturn[K1, V_]) {
+			Stamp: func(c PairsAllCall[K1, V_], r PairsAllReturn[K1, V_]) PairsAllCall[K1, V_] {
 				c.Result = r.Result
+				return c
 			},
 		},
 	)
@@ -707,7 +711,7 @@ func (s *BagAddStub[K]) invokeVoid(k K) func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *BagStub[K]) Add(k K) {
 	call := BagAddCall[K]{K: k}
-	stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[BagAddCall[K], struct{}]{
+	stub.Answer(s.OnAdd.MethodStub, call, stub.Arms[BagAddCall[K], struct{}]{
 		Invoke: s.OnAdd.invokeVoid(k),
 	})
 }

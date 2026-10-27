@@ -374,11 +374,12 @@ func (s *TableNamesStub) invoke() func() TableNamesReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Names() iter.Seq[string] {
 	call := TableNamesCall{}
-	r := stub.Answer(s.OnNames.MethodStub, &call, stub.Arms[TableNamesCall, TableNamesReturn]{
+	r := stub.Answer(s.OnNames.MethodStub, call, stub.Arms[TableNamesCall, TableNamesReturn]{
 		Invoke:   s.OnNames.invoke(),
 		Fallback: s.OnNames.fallback,
-		Stamp: func(c *TableNamesCall, r TableNamesReturn) {
+		Stamp: func(c TableNamesCall, r TableNamesReturn) TableNamesCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -400,11 +401,12 @@ func (s *TableRowsStub) invoke(limit int) func() TableRowsReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Rows(limit int) iter.Seq2[Item, error] {
 	call := TableRowsCall{Limit: limit}
-	r := stub.Answer(s.OnRows.MethodStub, &call, stub.Arms[TableRowsCall, TableRowsReturn]{
+	r := stub.Answer(s.OnRows.MethodStub, call, stub.Arms[TableRowsCall, TableRowsReturn]{
 		Invoke:   s.OnRows.invoke(limit),
 		Fallback: s.OnRows.fallback,
-		Stamp: func(c *TableRowsCall, r TableRowsReturn) {
+		Stamp: func(c TableRowsCall, r TableRowsReturn) TableRowsCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -426,11 +428,12 @@ func (s *TableCountsStub) invoke() func() TableCountsReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Counts() iter.Seq2[string, int] {
 	call := TableCountsCall{}
-	r := stub.Answer(s.OnCounts.MethodStub, &call, stub.Arms[TableCountsCall, TableCountsReturn]{
+	r := stub.Answer(s.OnCounts.MethodStub, call, stub.Arms[TableCountsCall, TableCountsReturn]{
 		Invoke:   s.OnCounts.invoke(),
 		Fallback: s.OnCounts.fallback,
-		Stamp: func(c *TableCountsCall, r TableCountsReturn) {
+		Stamp: func(c TableCountsCall, r TableCountsReturn) TableCountsCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -452,11 +455,12 @@ func (s *TableTailStub) invoke() func() TableTailReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *TableStub) Tail() Lines {
 	call := TableTailCall{}
-	r := stub.Answer(s.OnTail.MethodStub, &call, stub.Arms[TableTailCall, TableTailReturn]{
+	r := stub.Answer(s.OnTail.MethodStub, call, stub.Arms[TableTailCall, TableTailReturn]{
 		Invoke:   s.OnTail.invoke(),
 		Fallback: s.OnTail.fallback,
-		Stamp: func(c *TableTailCall, r TableTailReturn) {
+		Stamp: func(c TableTailCall, r TableTailReturn) TableTailCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result

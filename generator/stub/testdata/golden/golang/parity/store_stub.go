@@ -296,13 +296,14 @@ func (s *StoreGetStub) invoke(ctx context.Context, id string) func() StoreGetRet
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Get(ctx context.Context, id string) (item string, err error) {
 	call := StoreGetCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[StoreGetCall, StoreGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[StoreGetCall, StoreGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, id),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) StoreGetReturn { return StoreGetReturn{Err: err} },
-		Stamp: func(c *StoreGetCall, r StoreGetReturn) {
+		Stamp: func(c StoreGetCall, r StoreGetReturn) StoreGetCall {
 			c.Item = r.Item
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Item, r.Err
@@ -324,13 +325,14 @@ func (s *StoreListStub) invoke() func() StoreListReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) List() ([]string, error) {
 	call := StoreListCall{}
-	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[StoreListCall, StoreListReturn]{
+	r := stub.Answer(s.OnList.MethodStub, call, stub.Arms[StoreListCall, StoreListReturn]{
 		Invoke:   s.OnList.invoke(),
 		Fallback: s.OnList.fallback,
 		Fault:    func(err error) StoreListReturn { return StoreListReturn{Err: err} },
-		Stamp: func(c *StoreListCall, r StoreListReturn) {
+		Stamp: func(c StoreListCall, r StoreListReturn) StoreListCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -353,7 +355,7 @@ func (s *StoreCloseStub) invokeVoid() func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Close() {
 	call := StoreCloseCall{}
-	stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[StoreCloseCall, struct{}]{
+	stub.Answer(s.OnClose.MethodStub, call, stub.Arms[StoreCloseCall, struct{}]{
 		Invoke: s.OnClose.invokeVoid(),
 	})
 }

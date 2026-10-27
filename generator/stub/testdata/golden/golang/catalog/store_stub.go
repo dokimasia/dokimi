@@ -443,13 +443,14 @@ func (s *StoreGetStub) invoke(ctx context.Context, id string) func() StoreGetRet
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Get(ctx context.Context, id string) (Item, error) {
 	call := StoreGetCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[StoreGetCall, StoreGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[StoreGetCall, StoreGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, id),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) StoreGetReturn { return StoreGetReturn{Err: err} },
-		Stamp: func(c *StoreGetCall, r StoreGetReturn) {
+		Stamp: func(c StoreGetCall, r StoreGetReturn) StoreGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -471,12 +472,13 @@ func (s *StorePutStub) invoke(a0 context.Context, a1 Item) func() StorePutReturn
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Put(a0 context.Context, a1 Item) error {
 	call := StorePutCall{A0: a0, A1: a1}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[StorePutCall, StorePutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[StorePutCall, StorePutReturn]{
 		Invoke:   s.OnPut.invoke(a0, a1),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) StorePutReturn { return StorePutReturn{Err: err} },
-		Stamp: func(c *StorePutCall, r StorePutReturn) {
+		Stamp: func(c StorePutCall, r StorePutReturn) StorePutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -498,11 +500,12 @@ func (s *StoreLenStub) invoke() func() StoreLenReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Len() int {
 	call := StoreLenCall{}
-	r := stub.Answer(s.OnLen.MethodStub, &call, stub.Arms[StoreLenCall, StoreLenReturn]{
+	r := stub.Answer(s.OnLen.MethodStub, call, stub.Arms[StoreLenCall, StoreLenReturn]{
 		Invoke:   s.OnLen.invoke(),
 		Fallback: s.OnLen.fallback,
-		Stamp: func(c *StoreLenCall, r StoreLenReturn) {
+		Stamp: func(c StoreLenCall, r StoreLenReturn) StoreLenCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -524,12 +527,13 @@ func (s *StoreLookupStub) invoke(key string) func() StoreLookupReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Lookup(key string) (item Item, ok bool) {
 	call := StoreLookupCall{Key: key}
-	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[StoreLookupCall, StoreLookupReturn]{
+	r := stub.Answer(s.OnLookup.MethodStub, call, stub.Arms[StoreLookupCall, StoreLookupReturn]{
 		Invoke:   s.OnLookup.invoke(key),
 		Fallback: s.OnLookup.fallback,
-		Stamp: func(c *StoreLookupCall, r StoreLookupReturn) {
+		Stamp: func(c StoreLookupCall, r StoreLookupReturn) StoreLookupCall {
 			c.Item = r.Item
 			c.Ok = r.Ok
+			return c
 		},
 	})
 	return r.Item, r.Ok
@@ -552,7 +556,7 @@ func (s *StoreLogStub) invokeVoid(format string, args ...string) func() struct{}
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Log(format string, args ...string) {
 	call := StoreLogCall{Format: format, Args: args}
-	stub.Answer(s.OnLog.MethodStub, &call, stub.Arms[StoreLogCall, struct{}]{
+	stub.Answer(s.OnLog.MethodStub, call, stub.Arms[StoreLogCall, struct{}]{
 		Invoke: s.OnLog.invokeVoid(format, args...),
 	})
 }
@@ -573,14 +577,15 @@ func (s0 *StoreSplitStub) invoke(s string) func() StoreSplitReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s0 *StoreStub) Split(s string) (string, string, error) {
 	call := StoreSplitCall{S: s}
-	r := stub.Answer(s0.OnSplit.MethodStub, &call, stub.Arms[StoreSplitCall, StoreSplitReturn]{
+	r := stub.Answer(s0.OnSplit.MethodStub, call, stub.Arms[StoreSplitCall, StoreSplitReturn]{
 		Invoke:   s0.OnSplit.invoke(s),
 		Fallback: s0.OnSplit.fallback,
 		Fault:    func(err error) StoreSplitReturn { return StoreSplitReturn{Err: err} },
-		Stamp: func(c *StoreSplitCall, r StoreSplitReturn) {
+		Stamp: func(c StoreSplitCall, r StoreSplitReturn) StoreSplitCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result0, r.Result1, r.Err
@@ -602,12 +607,13 @@ func (s *StoreCloseStub) invoke() func() StoreCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Close() error {
 	call := StoreCloseCall{}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[StoreCloseCall, StoreCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[StoreCloseCall, StoreCloseReturn]{
 		Invoke:   s.OnClose.invoke(),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) StoreCloseReturn { return StoreCloseReturn{Err: err} },
-		Stamp: func(c *StoreCloseCall, r StoreCloseReturn) {
+		Stamp: func(c StoreCloseCall, r StoreCloseReturn) StoreCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -858,11 +864,12 @@ func (s *ClockNowStub) invoke() func() ClockNowReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *ClockStub) Now() time.Time {
 	call := ClockNowCall{}
-	r := stub.Answer(s.OnNow.MethodStub, &call, stub.Arms[ClockNowCall, ClockNowReturn]{
+	r := stub.Answer(s.OnNow.MethodStub, call, stub.Arms[ClockNowCall, ClockNowReturn]{
 		Invoke:   s.OnNow.invoke(),
 		Fallback: s.OnNow.fallback,
-		Stamp: func(c *ClockNowCall, r ClockNowReturn) {
+		Stamp: func(c ClockNowCall, r ClockNowReturn) ClockNowCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -884,11 +891,12 @@ func (s *ClockZoneStub) invoke() func() ClockZoneReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *ClockStub) Zone() string {
 	call := ClockZoneCall{}
-	r := stub.Answer(s.OnZone.MethodStub, &call, stub.Arms[ClockZoneCall, ClockZoneReturn]{
+	r := stub.Answer(s.OnZone.MethodStub, call, stub.Arms[ClockZoneCall, ClockZoneReturn]{
 		Invoke:   s.OnZone.invoke(),
 		Fallback: s.OnZone.fallback,
-		Stamp: func(c *ClockZoneCall, r ClockZoneReturn) {
+		Stamp: func(c ClockZoneCall, r ClockZoneReturn) ClockZoneCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -910,11 +918,12 @@ func (s *ClockEveryStub) invoke(d time.Duration, fn func()) func() ClockEveryRet
 // Func, then the results of Returns, and then the zero values.
 func (s *ClockStub) Every(d time.Duration, fn func()) (stop func()) {
 	call := ClockEveryCall{D: d, Fn: fn}
-	r := stub.Answer(s.OnEvery.MethodStub, &call, stub.Arms[ClockEveryCall, ClockEveryReturn]{
+	r := stub.Answer(s.OnEvery.MethodStub, call, stub.Arms[ClockEveryCall, ClockEveryReturn]{
 		Invoke:   s.OnEvery.invoke(d, fn),
 		Fallback: s.OnEvery.fallback,
-		Stamp: func(c *ClockEveryCall, r ClockEveryReturn) {
+		Stamp: func(c ClockEveryCall, r ClockEveryReturn) ClockEveryCall {
 			c.Stop = r.Stop
+			return c
 		},
 	})
 	return r.Stop

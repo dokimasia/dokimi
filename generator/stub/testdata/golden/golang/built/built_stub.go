@@ -412,7 +412,7 @@ func (s *StoreGetStub) invoke(ctx context.Context, id string) func() StoreGetRet
 // Func, then the results of Returns, and then the default results.
 func (s *StoreStub) Get(ctx context.Context, id string) (Account, error) {
 	call := StoreGetCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[StoreGetCall, StoreGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[StoreGetCall, StoreGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, id),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) StoreGetReturn { return StoreGetReturn{Err: err} },
@@ -420,9 +420,10 @@ func (s *StoreStub) Get(ctx context.Context, id string) (Account, error) {
 			r0 := NewAccountBuilder().Build()
 			return StoreGetReturn{Result: r0}
 		},
-		Stamp: func(c *StoreGetCall, r StoreGetReturn) {
+		Stamp: func(c StoreGetCall, r StoreGetReturn) StoreGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -444,7 +445,7 @@ func (s *StoreFindStub) invoke(ctx context.Context, id string) func() StoreFindR
 // Func, then the results of Returns, and then the default results.
 func (s *StoreStub) Find(ctx context.Context, id string) (*Account, error) {
 	call := StoreFindCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnFind.MethodStub, &call, stub.Arms[StoreFindCall, StoreFindReturn]{
+	r := stub.Answer(s.OnFind.MethodStub, call, stub.Arms[StoreFindCall, StoreFindReturn]{
 		Invoke:   s.OnFind.invoke(ctx, id),
 		Fallback: s.OnFind.fallback,
 		Fault:    func(err error) StoreFindReturn { return StoreFindReturn{Err: err} },
@@ -452,9 +453,10 @@ func (s *StoreStub) Find(ctx context.Context, id string) (*Account, error) {
 			r0 := NewAccountBuilder().Build()
 			return StoreFindReturn{Result: &r0}
 		},
-		Stamp: func(c *StoreFindCall, r StoreFindReturn) {
+		Stamp: func(c StoreFindCall, r StoreFindReturn) StoreFindCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -476,16 +478,17 @@ func (s *StoreLookupStub) invoke(id string) func() StoreLookupReturn {
 // of Func, then the results of Returns, and then the default results.
 func (s *StoreStub) Lookup(id string) (Account, bool) {
 	call := StoreLookupCall{ID: id}
-	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[StoreLookupCall, StoreLookupReturn]{
+	r := stub.Answer(s.OnLookup.MethodStub, call, stub.Arms[StoreLookupCall, StoreLookupReturn]{
 		Invoke:   s.OnLookup.invoke(id),
 		Fallback: s.OnLookup.fallback,
 		Default: func() StoreLookupReturn {
 			r0 := NewAccountBuilder().Build()
 			return StoreLookupReturn{Result0: r0}
 		},
-		Stamp: func(c *StoreLookupCall, r StoreLookupReturn) {
+		Stamp: func(c StoreLookupCall, r StoreLookupReturn) StoreLookupCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
+			return c
 		},
 	})
 	return r.Result0, r.Result1
@@ -507,7 +510,7 @@ func (s *StoreListStub) invoke(ctx context.Context) func() StoreListReturn {
 // Func, then the results of Returns, and then the default results.
 func (s *StoreStub) List(ctx context.Context) (Page[Account], error) {
 	call := StoreListCall{Ctx: ctx}
-	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[StoreListCall, StoreListReturn]{
+	r := stub.Answer(s.OnList.MethodStub, call, stub.Arms[StoreListCall, StoreListReturn]{
 		Invoke:   s.OnList.invoke(ctx),
 		Fallback: s.OnList.fallback,
 		Fault:    func(err error) StoreListReturn { return StoreListReturn{Err: err} },
@@ -515,9 +518,10 @@ func (s *StoreStub) List(ctx context.Context) (Page[Account], error) {
 			r0 := NewPageBuilder[Account]().Build()
 			return StoreListReturn{Result: r0}
 		},
-		Stamp: func(c *StoreListCall, r StoreListReturn) {
+		Stamp: func(c StoreListCall, r StoreListReturn) StoreListCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -539,11 +543,12 @@ func (s *StoreNoteStub) invoke(id string) func() StoreNoteReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Note(id string) Note {
 	call := StoreNoteCall{ID: id}
-	r := stub.Answer(s.OnNote.MethodStub, &call, stub.Arms[StoreNoteCall, StoreNoteReturn]{
+	r := stub.Answer(s.OnNote.MethodStub, call, stub.Arms[StoreNoteCall, StoreNoteReturn]{
 		Invoke:   s.OnNote.invoke(id),
 		Fallback: s.OnNote.fallback,
-		Stamp: func(c *StoreNoteCall, r StoreNoteReturn) {
+		Stamp: func(c StoreNoteCall, r StoreNoteReturn) StoreNoteCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -565,11 +570,12 @@ func (s *StoreBillStub) invoke(id string) func() StoreBillReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Bill(id string) billing.Invoice {
 	call := StoreBillCall{ID: id}
-	r := stub.Answer(s.OnBill.MethodStub, &call, stub.Arms[StoreBillCall, StoreBillReturn]{
+	r := stub.Answer(s.OnBill.MethodStub, call, stub.Arms[StoreBillCall, StoreBillReturn]{
 		Invoke:   s.OnBill.invoke(id),
 		Fallback: s.OnBill.fallback,
-		Stamp: func(c *StoreBillCall, r StoreBillReturn) {
+		Stamp: func(c StoreBillCall, r StoreBillReturn) StoreBillCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result

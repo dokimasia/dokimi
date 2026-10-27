@@ -53,6 +53,8 @@ const (
 	wrapPackage        = "example.com/shop/wrap"
 	kindsPackage       = "example.com/shop/kinds"
 	durablePackage     = "example.com/shop/durable"
+	taggedPackage      = "example.com/shop/tagged"
+	locksPackage       = "example.com/shop/locks"
 	toolPackage        = "example.com/shop/lib/tool"
 	deepPackage        = "example.com/shop/lib/internal/deep"
 	suiteTemplate      = "suite.tmpl"

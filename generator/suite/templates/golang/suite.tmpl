@@ -117,6 +117,9 @@ var _ = conform.CompatV1
 {{- with .Options}}
 				Options:   {{spell .}},
 {{- end}}
+{{- with .Around}}
+				Around:    {{spell .}},
+{{- end}}
 {{- if .Counted}}
 				Counted:   true,
 {{- end}}
@@ -136,6 +139,9 @@ var _ = conform.CompatV1
 {{- end}}
 {{- if .Concurrent}}
 				Concurrent: true,
+{{- end}}
+{{- if .Waits}}
+				Waits: true,
 {{- end}}
 			},
 {{- end}}
@@ -307,6 +313,7 @@ var _ = conform.CompatV1
 {{- $context := false}}
 {{- range .Params}}
 {{- if .Context}}{{$context = true}}
+{{- else if .Sample}}
 {{- else if or .Funcs .Input}}{{range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}
 {{- else if not .Omitted}}{{$drawn = true}}
 {{- end}}
@@ -315,7 +322,9 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s generates the calls of %s with the inputs that each case draws.` (suiteCamel .Var) $name))}}
 {{- ""}}var {{suiteCamel .Var}} = prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) func(context.Context, {{$s}}) error {
 {{- range .Params}}
-{{- if or .Funcs .Input}}
+{{- if .Sample}}
+	{{.Name}} := {{if .Variadic}}[]{{spell .Type}}{ {{- value .Sample -}} }{{else}}{{value .Sample}}{{end}}
+{{- else if or .Funcs .Input}}
 {{- range .Funcs}}{{template "suite.results" .}}{{end}}
 {{- if .Input}}
 	{{.Name}} := &{{suiteCamel .Input}}{

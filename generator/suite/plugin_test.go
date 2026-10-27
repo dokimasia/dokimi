@@ -370,6 +370,74 @@ func TestSuite(t *testing.T) {
 			}
 		}
 
+		{
+			tests := []struct {
+				name         string
+				give         string
+				wantLevels   []suite.Level
+				wantParallel string
+			}{
+				{
+					name: "records no level of a callable that waits in the benchmarks of a subject",
+					give: "TestMutexConformsToLock",
+					wantLevels: []suite.Level{
+						{Field: "Release", Concurrent: true}, {Field: "Held"},
+					},
+					wantParallel: "BenchmarkMutexConformsToLockParallel",
+				},
+				{
+					name: "records no level of a subject whose callables each wait",
+					give: "TestTurnstileConformsToGate",
+				},
+				{
+					name: "records no level of a callable that waits in the benchmarks of a suite",
+					give: "TestLockSuite",
+					wantLevels: []suite.Level{
+						{Field: "Release", Concurrent: true, Ceiled: true}, {Field: "Held", Ceiled: true},
+					},
+					wantParallel: "BenchmarkLockSuiteParallel",
+				},
+				{name: "records no level of a suite whose callables each wait", give: "TestGateSuite"},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got, found := generate(t, goTree, locksPackage).tests[tt.give]
+					assert.True(t, found, "suite records the test "+tt.give)
+					expect.Equal(t, got.Data.Levels, tt.wantLevels, "each benchmark leaves out a callable that waits",
+						assert.EquateEmpty())
+					expect.Equal(t, got.Data.Parallel, tt.wantParallel,
+						"a parallel benchmark leaves out a concurrent callable that waits")
+				})
+			}
+		}
+
+		t.Run("records the fuzz target of each callable that waits", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, locksPackage).tests
+			expect.Equal(t, got["TestLockSuite"].Data.Targets, []suite.Target{
+				{Name: "FuzzLockSuiteAcquire", Field: "Acquire"},
+				{Name: "FuzzLockSuiteRelease", Field: "Release"},
+				{Name: "FuzzLockSuiteHeld", Field: "Held"},
+			}, "each case of a fuzz target builds a fresh subject")
+			expect.Equal(t, got["TestTurnstileConformsToGate"].Data.Targets,
+				[]suite.Target{{Name: "FuzzTurnstileConformsToGatePass", Field: "Pass"}},
+				"the subject keeps the fuzz target of a callable that waits")
+		})
+
+		t.Run("records no benchmark of a function that waits", func(t *testing.T) {
+			t.Parallel()
+
+			got, found := generate(t, goTree, locksPackage).tests["TestAwaitSuite"]
+			assert.True(t, found, "suite records the test of the suite of Await")
+			expect.Equal(t, [3]string{got.Data.Benchmark, got.Data.Parallel, got.Data.Allocs}, [3]string{},
+				"the test of a function that waits declares no benchmark and no allocation test")
+			expect.Equal(t, got.Data.Targets, []suite.Target{{Name: "FuzzAwait"}},
+				"the test of the function keeps its fuzz target")
+		})
+
 		t.Run("records the callables of an interface with its subject type", func(t *testing.T) {
 			t.Parallel()
 
@@ -660,6 +728,26 @@ func TestSuite(t *testing.T) {
 						"example.com/shop/wrap is outside it",
 				},
 				{
+					name: "reports Unimportable at an interface with a parameter whose sample the file of the suite " +
+						"cannot refer to",
+					givePkgs: []string{taggedPackage}, giveKind: symbol.KindInterface, give: "Leaves",
+					wantCode: suite.Unimportable,
+					wantMsg: "the parameter r of Hash has the sample leafRole, which the file of the suite in the " +
+						"package example.com/shop/tagged/taggedtest cannot refer to, so Leaves has no suite: golang: " +
+						"leafRole is not exported from example.com/shop/tagged, and the code is in " +
+						"example.com/shop/tagged/taggedtest",
+				},
+				{
+					name: "reports Unimportable at a function with a parameter whose sample the file of the suite " +
+						"cannot refer to",
+					givePkgs: []string{taggedPackage}, giveKind: symbol.KindFunction, give: "Leaf",
+					wantCode: suite.Unimportable,
+					wantMsg: "the parameter r of Leaf has the sample leafRole, which the file of the suite in the " +
+						"package example.com/shop/tagged/taggedtest cannot refer to, so Leaf has no suite: golang: " +
+						"leafRole is not exported from example.com/shop/tagged, and the code is in " +
+						"example.com/shop/tagged/taggedtest",
+				},
+				{
 					name: "reports Uninstantiable at a generic struct", givePkgs: []string{boxPackage},
 					giveKind: symbol.KindStruct, give: "Box", wantCode: suite.Uninstantiable,
 					wantMsg: "Box is a generic struct, so it has no suite",
@@ -799,6 +887,16 @@ func TestSuite(t *testing.T) {
 			s.Types = nil
 			_, found := recorded(t, gentest.New(t, s), p).suites["Wrapped"]
 			expect.True(t, found, "suite records the suite of Wrapped, and the layout refuses its interface")
+		})
+
+		t.Run("leaves the sample of a parameter to the layout where the plan previews no package", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			s := specOf(goTree, p, taggedPackage)
+			s.Types = nil
+			_, found := recorded(t, gentest.New(t, s), p).suites["Leaf"]
+			expect.True(t, found, "suite records the suite of Leaf, and the layout refuses the sample of its parameter")
 		})
 
 		t.Run("leaves the check of a factory to the layout where the plan previews no package", func(t *testing.T) {
@@ -1373,6 +1471,19 @@ func TestSuite(t *testing.T) {
 			}, "each check binds the doors of its planted defect and the options of its property run")
 		})
 
+		t.Run("binds the environment of a check", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, locksPackage)
+			got := recorded(t, f, p).suites["Lock"]
+			expect.Equal(t, got.Checks, []suite.Check{{
+				Apply: ref(t, f, "ReleaseEndsTheWait"), Defect: ref(t, f, "neverReleases"), Field: "Acquire",
+				Type: "LockAcquire", Method: "ReleaseEndsTheWait", Segment: "release-ends-the-wait",
+				Statement: "Release ends the wait of Acquire", Around: ref(t, f, "bubble"),
+			}}, "the check refers to the function of its environment")
+		})
+
 		t.Run("binds a check whose callable opens with the name of its package", func(t *testing.T) {
 			t.Parallel()
 
@@ -1615,6 +1726,49 @@ func TestSuite(t *testing.T) {
 					wantCode: suite.BadCheck,
 					wantMsg: "the options optionsOfThisPackage of OptionsOfThisPackage return the type []Option, and " +
 						"the options of a check return []prop.Option",
+				},
+				{
+					name:     "reports BadCheck at an environment of one parameter",
+					give:     "AroundOfOne",
+					wantCode: suite.BadCheck,
+					wantMsg: "the environment aroundOfOne of AroundOfOne takes 1 parameter, and the environment of a " +
+						"check takes a *testing.T and a func(*testing.T)",
+				},
+				{
+					name:     "reports BadCheck at an environment without a test",
+					give:     "AroundOfText",
+					wantCode: suite.BadCheck,
+					wantMsg: "the first parameter of the environment aroundOfText of AroundOfText has the type string, " +
+						"and the environment of a check takes a *testing.T and a func(*testing.T)",
+				},
+				{
+					name:     "reports BadCheck at an environment without a run",
+					give:     "AroundOfACount",
+					wantCode: suite.BadCheck,
+					wantMsg: "the second parameter of the environment aroundOfACount of AroundOfACount has the type " +
+						"int, and the environment of a check takes a *testing.T and a func(*testing.T)",
+				},
+				{
+					name:     "reports BadCheck at an environment whose run takes another parameter",
+					give:     "AroundOfACall",
+					wantCode: suite.BadCheck,
+					wantMsg: "the second parameter of the environment aroundOfACall of AroundOfACall has the type " +
+						"func(int), and the environment of a check takes a *testing.T and a func(*testing.T)",
+				},
+				{
+					name:     "reports BadCheck at an environment whose run returns a result",
+					give:     "AroundOfAFailingRun",
+					wantCode: suite.BadCheck,
+					wantMsg: "the second parameter of the environment aroundOfAFailingRun of AroundOfAFailingRun has " +
+						"the type func(*testing.T) error, and the environment of a check takes a *testing.T and a " +
+						"func(*testing.T)",
+				},
+				{
+					name:     "reports BadCheck at an environment with a result",
+					give:     "AroundOfAnError",
+					wantCode: suite.BadCheck,
+					wantMsg: "the environment aroundOfAnError of AroundOfAnError returns a result, and the environment " +
+						"of a check returns nothing",
 				},
 			}
 			for _, tt := range tests {

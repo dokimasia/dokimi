@@ -42,7 +42,9 @@ const Version = "0.1.0"
 // DefectParam contains the name of the function of the planted defect. Its
 // params ReferenceParam, SecondParam, RestartParam and CrashParam contain the
 // names of the functions of the doors of the planted defect. Its param
-// CountedParam marks a check that counts the allocations of the whole process.
+// CountedParam marks a check that counts the allocations of the whole process,
+// and its param AroundParam contains the name of the function that runs each
+// run of the check inside an environment, such as a testing/synctest bubble.
 // ExcuseDirective excuses a check of the suite from the conformance test of a
 // subject. Its positional param IdentityParam contains the identity of the
 // check, and its param ReasonParam contains the reason.
@@ -62,6 +64,7 @@ const (
 	RestartParam     directive.ParamKey = "restart"
 	CrashParam       directive.ParamKey = "crash"
 	CountedParam     directive.ParamKey = "counted"
+	AroundParam      directive.ParamKey = "around"
 	IdentityParam    directive.ParamKey = "identity"
 	ReasonParam      directive.ParamKey = "reason"
 )
@@ -74,9 +77,10 @@ const (
 // of the function of its planted defect, whether the check is a property
 // check, and whether it counts allocations. KeyOptions is the key of the fact
 // that contains the identity of the function of the options of the property
-// run of the check. KeyReference, KeySecond, KeyRestart and KeyCrash are the
-// keys of the facts that contain the identity of the function of each door of
-// the planted defect.
+// run of the check, and KeyAround the key of the fact that contains the
+// identity of the function of its environment. KeyReference, KeySecond,
+// KeyRestart and KeyCrash are the keys of the facts that contain the identity
+// of the function of each door of the planted defect.
 const (
 	KeyDeclaration meta.KeyName = "suite.declaration"
 	KeyCallable    meta.KeyName = "suite.callable"
@@ -86,6 +90,7 @@ const (
 	KeyProperty    meta.KeyName = "suite.property"
 	KeyCounted     meta.KeyName = "suite.counted"
 	KeyOptions     meta.KeyName = "suite.options"
+	KeyAround      meta.KeyName = "suite.around"
 	KeyReference   meta.KeyName = "suite.reference"
 	KeySecond      meta.KeyName = "suite.second"
 	KeyRestart     meta.KeyName = "suite.restart"
@@ -144,6 +149,14 @@ const (
 	propPackage = "go.dokimi.dev/assert/prop"
 	caseType    = "Case"
 	optionType  = "Option"
+)
+
+// testingPackage is the import path of the testing package. The function of
+// the environment of a check takes a pointer to its type testType and a
+// function of such a pointer, as synctest.Test does.
+const (
+	testingPackage = "testing"
+	testType       = "T"
 )
 
 // Word is the word of the family of the suites and of the family of their
@@ -317,11 +330,13 @@ type Callable struct {
 // are the doors of the planted defect in the order of the fields of
 // conform.Doors, and empty for a check without a door. Options refers to the
 // function of the options of the property run of the check, and is nil for a
-// check without options.
+// check without options. Around refers to the function of the environment of
+// the runs of the check, and is nil for a check without one.
 type Check struct {
 	Apply     *emit.TypeRef
 	Defect    *emit.TypeRef
 	Options   *emit.TypeRef
+	Around    *emit.TypeRef
 	Field     string
 	Type      string
 	Method    string
@@ -369,8 +384,11 @@ type Door struct {
 // subject, a function or the suite of an interface or a struct, as
 // BenchmarkMemory or BenchmarkStoreSuite, and Parallel the name of its
 // parallel benchmark, as BenchmarkMemoryParallel. Parallel is empty where no
-// callable admits concurrent calls. Levels are the levels of the benchmarks of
-// a subject or of a suite, one for each callable. Ceilings are the budgets
+// callable of a level admits concurrent calls. Levels are the levels of the
+// benchmarks of a subject or of a suite, one for each callable without the
+// mixin waits. A test without a level declares no benchmark, and the test of
+// the suite of a function that waits declares no benchmark and no allocation
+// test. Ceilings are the budgets
 // that the subject states for its callables, in the order of their
 // directives. Cases is the number of valid cases of each property run that
 // the subject states, and 0 for a subject without the param cases. The test
@@ -546,6 +564,11 @@ var checkSchema = directive.Schema{
 			Doc: "the function that returns the options of the property run of the check in an application, " +
 				"from a handle of the check",
 		},
+		{
+			Key: AroundParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+			Doc: "the function that runs each run of the check inside an environment, such as a testing/synctest " +
+				"bubble, from a *testing.T and the run, as synctest.Test does",
+		},
 	}, doorParams()...),
 	Doc: "binds the function to a callable of a suite as a check of the consumer, with its planted defect",
 }
@@ -603,6 +626,7 @@ type generator struct {
 	mean        meta.Key[int64]
 	warmup      meta.Key[int64]
 	options     meta.Key[symbol.Identity]
+	around      meta.Key[symbol.Identity]
 	doors       [len(doors)]meta.Key[symbol.Identity]
 }
 
@@ -631,10 +655,11 @@ type generator struct {
 // suite serves Go, the language of its part, and leaves a declaration of
 // another language alone. It reports [Uninstantiable] at a declaration whose
 // type parameters its suite cannot instantiate, [Unimportable] at a
-// declaration with a callable whose signature the file of its suite cannot
-// spell, [NoSuite] at a subject whose declaration has no directive suite,
-// [BadFactory] at a subject whose factory an application cannot call, and
-// [BadOptions] at a subject whose function of the options a test cannot call.
+// declaration with a callable whose signature or parameter samples the file
+// of its suite cannot spell, [NoSuite] at a subject whose declaration has no
+// directive suite, [BadFactory] at a subject whose factory an application
+// cannot call, and [BadOptions] at a subject whose function of the options a
+// test cannot call.
 // It reports [UnknownCallable] and [BadCheck] at the directive of a check that
 // it cannot bind, and [UnknownExcusal] at an excusal of a check that the suite
 // does not have.
@@ -678,7 +703,7 @@ func (g *generator) register(r *meta.Registry) error {
 	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
 	}
-	var errs [14 + len(doors)]error
+	var errs [15 + len(doors)]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
@@ -706,8 +731,10 @@ func (g *generator) register(r *meta.Registry) error {
 		"reports that the check counts the allocations of the whole process"))
 	g.options, errs[13] = meta.Register[symbol.Identity](r, spec(KeyOptions,
 		"contains the identity of the function of the options of the property run of the check"))
+	g.around, errs[14] = meta.Register[symbol.Identity](r, spec(KeyAround,
+		"contains the identity of the function that runs each run of the check inside an environment"))
 	for i, d := range doors {
-		g.doors[i], errs[14+i] = meta.Register[symbol.Identity](r, spec(d.key,
+		g.doors[i], errs[15+i] = meta.Register[symbol.Identity](r, spec(d.key,
 			"contains the identity of the function of the door "+string(d.param)+" of the planted defect of the check"))
 	}
 	return errors.Join(errs[:]...)
@@ -734,7 +761,7 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper)
 		return nil
 	}
 	property, ok := signed(m, d, fn)
-	if !ok || !doored(m, d, fn) || !optioned(m, d, fn, property) {
+	if !ok || !doored(m, d, fn) || !optioned(m, d, fn, property) || !arounded(m, d, fn) {
 		return nil
 	}
 	segment := naming.Kebab(fn.Name)
@@ -760,6 +787,9 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper)
 	}
 	if options, stated := d.Param(OptionsParam); stated {
 		sdk.Stamp(st, g.options, options.Target)
+	}
+	if around, stated := d.Param(AroundParam); stated {
+		sdk.Stamp(st, g.around, around.Target)
 	}
 	if property {
 		sdk.Stamp(st, g.property, true)
@@ -966,6 +996,54 @@ func optioned(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function, p
 	return false
 }
 
+// arounded reports whether the environment of the check fn has the signature
+// of synctest.Test. The function of the environment takes a *testing.T and a
+// func(*testing.T), and returns nothing. arounded reports [BadCheck] at the
+// directive d where the signature differs.
+func arounded(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) bool {
+	param, stated := d.Param(AroundParam)
+	if !stated {
+		return true
+	}
+	found, _ := m.Reader().Lookup(param.Target)
+	b := m.Rules()
+	view, _ := b.CallableOf(found)
+	name := param.Target.Name
+	const takes = "and the environment of a check takes a *testing.T and a func(*testing.T)"
+	switch {
+	case len(view.Params) != 2:
+		m.ErrorfAt(BadCheck, d.Pos, "the environment %s of %s takes %s, %s", name, fn.Name,
+			parameters(len(view.Params)), takes)
+	case !takesTest(view.Params[0].Ref):
+		m.ErrorfAt(BadCheck, d.Pos, "the first parameter of the environment %s of %s has the type %s, %s", name,
+			fn.Name, view.Params[0].Ref.Spelling, takes)
+	case !runsTest(view.Params[1].Ref):
+		m.ErrorfAt(BadCheck, d.Pos, "the second parameter of the environment %s of %s has the type %s, %s", name,
+			fn.Name, view.Params[1].Ref.Spelling, takes)
+	case len(view.Returns) > 0:
+		m.ErrorfAt(BadCheck, d.Pos, "the environment %s of %s returns a result, and the environment of a check "+
+			"returns nothing", name, fn.Name)
+	default:
+		return true
+	}
+	return false
+}
+
+// takesTest reports whether ref is a pointer to the test of the testing
+// package, whatever name the file gives the package.
+func takesTest(ref *node.TypeRef) bool {
+	return pointerTo(ref, testingPackage, testType)
+}
+
+// runsTest reports whether ref is a function type that takes a pointer to the
+// test of the testing package alone and returns nothing. Split is the index of
+// the first result of a function type and 0 for every other form, so any other
+// form has no parameter.
+func runsTest(ref *node.TypeRef) bool {
+	params, results := ref.Elems[:ref.Split], ref.Elems[ref.Split:]
+	return len(params) == 1 && len(results) == 0 && takesTest(params[0])
+}
+
 // listsOptions reports whether ref is a list of the options of the property
 // engine, whatever name the file gives the package of the engine.
 func listsOptions(ref *node.TypeRef) bool {
@@ -986,14 +1064,20 @@ func parameters(n int) string {
 }
 
 // takesCase reports whether ref is a pointer to the case of the property
-// engine, whatever name the file gives the package of the engine. Go spells a
-// pointer in the optional form, which has one child.
+// engine, whatever name the file gives the package of the engine.
 func takesCase(ref *node.TypeRef) bool {
+	return pointerTo(ref, propPackage, caseType)
+}
+
+// pointerTo reports whether ref is a pointer to the type named name of the
+// package pkg, whatever name the file gives the package. Go spells a pointer
+// in the optional form, which has one child.
+func pointerTo(ref *node.TypeRef, pkg, name string) bool {
 	if ref.Form != symbol.FormOptional {
 		return false
 	}
 	elem := ref.Elems[0]
-	return elem.Package == propPackage && elem.Spelling[strings.LastIndex(elem.Spelling, ".")+1:] == caseType
+	return elem.Package == pkg && elem.Spelling[strings.LastIndex(elem.Spelling, ".")+1:] == name
 }
 
 // bound is a check that the annotate half binds to a declaration: the
@@ -1007,6 +1091,7 @@ type bound struct {
 	statement string
 	defect    symbol.Identity
 	options   symbol.Identity
+	around    symbol.Identity
 	doors     [len(doors)]symbol.Identity
 	property  bool
 	counted   bool
@@ -1026,6 +1111,7 @@ func (g *generator) boundTo(m sdk.Matcher, origin *symbol.Identity) []bound {
 		b.statement, _ = sdk.FactOf(m, id, g.statement)
 		b.defect, _ = sdk.FactOf(m, id, g.defect)
 		b.options, _ = sdk.FactOf(m, id, g.options)
+		b.around, _ = sdk.FactOf(m, id, g.around)
 		for i := range doors {
 			b.doors[i], _ = sdk.FactOf(m, id, g.doors[i])
 		}
@@ -1050,15 +1136,18 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 				opened = append(opened, Door{Field: door.field, Func: &emit.TypeRef{Spelling: fn.Name, Target: fn}})
 			}
 		}
-		var options *emit.TypeRef
+		var options, around *emit.TypeRef
 		if fn := b.options; fn != (symbol.Identity{}) {
 			options = &emit.TypeRef{Spelling: fn.Name, Target: fn}
+		}
+		if fn := b.around; fn != (symbol.Identity{}) {
+			around = &emit.TypeRef{Spelling: fn.Name, Target: fn}
 		}
 		byCallable[b.callable] = append(byCallable[b.callable], Check{
 			Apply:  &emit.TypeRef{Spelling: b.fn.Name, Target: b.fn},
 			Defect: &emit.TypeRef{Spelling: b.defect.Name, Target: b.defect},
 			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Doors: opened, Options: options,
-			Property: b.property, Counted: b.counted,
+			Around: around, Property: b.property, Counted: b.counted,
 		})
 	}
 	var out []Check
@@ -1233,12 +1322,16 @@ func (g *generator) suiteOfFunction(m *sdk.FunctionMatch, _ part, e *sdk.Emitter
 		m.Errorf(Uninstantiable, "%s is a generic function, so it has no suite", f.Name)
 		return nil
 	}
+	b := m.Rules()
+	signature := &node.Method{ID: f.ID, Name: f.Name, Visibility: f.Visibility, Params: f.Params, Returns: f.Returns}
+	if unreferable(m, &b, e.File(), f.Name, []*node.Method{signature}) {
+		return nil
+	}
 	names := namesOf(e, f.Name)
 	names.Func = e.JoinName(funcWord, f.Name)
 	names.NewOver = e.JoinName(e.JoinName(overWord, f.Name), newWord)
-	signature := &node.Method{ID: f.ID, Name: f.Name, Visibility: f.Visibility, Params: f.Params, Returns: f.Returns}
 	callables := []Callable{{Name: f.Name, Type: e.JoinName(callableWord, f.Name)}}
-	k := caller{m: m, g: g, e: e, b: m.Rules(), origin: f.ID, decl: f.Name}
+	k := caller{m: m, g: g, e: e, b: b, origin: f.ID, decl: f.Name}
 	s := Suite{
 		Subject: &emit.TypeRef{Spelling: names.Func}, Func: sdk.Mirror(names.Func, signature), Declaration: f.Name,
 		Names: names, Callables: callables, Checks: g.checksOf(m, &f.ID, callables),
@@ -1351,7 +1444,9 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 			&emit.Field{Name: benchWord, Type: emitted(n.Bench)},
 		)
 		test.Targets = []Target{{Name: e.JoinName(s.Declaration, fuzzWord)}}
-		test.benchmarks(e, s.Declaration, allocated, s.Calls[0].Concurrent)
+		if !s.Calls[0].Waits {
+			test.benchmarks(e, s.Declaration, allocated, s.Calls[0].Concurrent)
+		}
 	} else if len(s.Calls) > 0 {
 		record.Fields.Append(
 			&emit.Field{Name: fuzzWord, Type: emitted(n.Fuzz)},
@@ -1389,8 +1484,9 @@ func identitiesOf(s *Suite) []Identity {
 // idle names the tests of the suite of an interface or a struct that apply the
 // fuzz form, the allocation ceilings and the benchmarks of the suite to its
 // planted defect with a spend of nothing, which answers each call at once. The
-// test has a level and a fuzz target for each call of calls, and a parallel
-// benchmark where a callable admits concurrent calls.
+// test has a fuzz target for each call of calls, and a level for each call
+// that does not wait. It has a parallel benchmark where a callable of a level
+// admits concurrent calls.
 func (c *Conformance) idle(e *sdk.Emitter, n *Names, calls []Call) {
 	c.Budgets = e.JoinName(budgetsWord, c.Test)
 	c.Benchmark = e.JoinName(n.Suite, benchmarkWord)
@@ -1398,11 +1494,14 @@ func (c *Conformance) idle(e *sdk.Emitter, n *Names, calls []Call) {
 	concurrent := false
 	for i := range calls {
 		call := &calls[i]
+		c.Targets = append(c.Targets, Target{Name: e.JoinName(call.Field, fuzz), Field: call.Field})
+		if call.Waits {
+			continue
+		}
 		builds := slices.ContainsFunc(call.Params, func(p Param) bool { return p.Input != "" || p.Receive })
 		c.Levels = append(c.Levels, Level{
 			Field: call.Field, Concurrent: call.Concurrent, Ceiled: call.Budget == Budget{} && !builds,
 		})
-		c.Targets = append(c.Targets, Target{Name: e.JoinName(call.Field, fuzz), Field: call.Field})
 		concurrent = concurrent || call.Concurrent
 	}
 	if concurrent {
@@ -1511,6 +1610,9 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	levels := make([]Level, 0, len(methods))
 	for _, method := range methods {
 		allocated = allocated || g.budgetFact(m, &method.ID).Allocs != nil
+		if mixed(m, &method.ID, shape.Waits) {
+			continue
+		}
 		concurrent := mixed(m, &method.ID, shape.Concurrent) || mixed(m, &method.ID, shape.ConcurrentReaders)
 		levels = append(levels, Level{Field: method.Name, Concurrent: concurrent})
 	}
@@ -1697,9 +1799,10 @@ func methodsOf(b *rules.Bound, decl symbol.Symbol) []*node.Method {
 // the code of the package of the file out cannot refer to, and returns true.
 // It checks the package that the plan previews for out. Where the plan
 // previews no package, the layout checks each reference itself, and
-// unimportable returns false. A function is its own callable, and its package
-// can refer to each type of its signature, so the suite of a function needs no
-// check.
+// unimportable returns false. It then checks the sample of each parameter, as
+// [unreferable] does. A function is its own callable, and its package can
+// refer to each type of its signature, so the suite of a function needs the
+// check of the samples alone.
 func unimportable(m sdk.SubjectMatch, b *rules.Bound, out *sdk.Out, decl string, methods []*node.Method) bool {
 	pkg, placed := out.Package()
 	if placed != nil {
@@ -1718,6 +1821,33 @@ func unimportable(m sdk.SubjectMatch, b *rules.Bound, out *sdk.Out, decl string,
 				m.Errorf(Unimportable, "the callable %s.%s refers to %s, which the file of the suite in the "+
 					"package %s cannot import, so %s has no suite: %v",
 					decl, method.Name, ref.Spelling, pkg.Package, decl, err)
+				return true
+			}
+		}
+	}
+	return unreferable(m, b, out, decl, methods)
+}
+
+// unreferable reports [Unimportable] at the declaration named decl where the
+// sample that a parameter of a callable of methods states on itself refers to
+// a declaration that the code of the package of the file out cannot refer to,
+// and returns true. It checks the package that the plan previews for out.
+// Where the plan previews no package, the layout checks each reference
+// itself, and unreferable returns false.
+func unreferable(m sdk.SubjectMatch, b *rules.Bound, out *sdk.Out, decl string, methods []*node.Method) bool {
+	pkg, placed := out.Package()
+	if placed != nil {
+		return false
+	}
+	for _, method := range methods {
+		for _, p := range method.Params {
+			// A parameter without a sample has the zero value, which refers to
+			// no declaration.
+			if err := b.ImportableValue(pkg, sampleOf(m, b, p, p.Type)); err != nil {
+				text, _ := sdk.FactOf(m, p.ID, meta.Named[string](meta.SampleKey))
+				m.Errorf(Unimportable, "the parameter %s of %s has the sample %s, which the file of the suite in "+
+					"the package %s cannot refer to, so %s has no suite: %v",
+					p.Name, method.Name, text, pkg.Package, decl, err)
 				return true
 			}
 		}

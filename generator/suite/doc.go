@@ -213,16 +213,18 @@
 // suite reports [Uninstantiable] at a declaration whose type parameters its
 // suite cannot instantiate, and [Unimportable] at a declaration with a
 // callable whose signature refers to a declaration that the file of its suite
-// cannot import. It reports [NoSuite] at a subject whose declaration has no
+// cannot import, or with a parameter whose sample the file cannot refer to.
+// It reports [NoSuite] at a subject whose declaration has no
 // directive suite, [BadFactory] at a subject whose factory the conformance
 // test cannot call, [BadOptions] at a subject whose function of the options
 // the conformance test cannot call, and [RepeatedSubject] at a second
 // directive subject of one declaration. It reports [UnknownCallable] at the
 // directive of a check whose callable it cannot find. It reports [BadCheck] at
 // the directive of a check without a statement or with the wrong signature, of
-// a check whose defect or door has the wrong signature, of a check of a
-// function with the segment of a check that the spec of the suite adds, and of
-// a check with the segment of a ceiling. It reports [UnknownExcusal] at an
+// a check whose defect, door, options or environment has the wrong signature,
+// of a check of a function with the segment of a check that the spec of the
+// suite adds, and of a check with the segment of a ceiling. It reports
+// [UnknownExcusal] at an
 // excusal whose identity does not match a check of the suite, and [BadBudget]
 // at a budget that no check of a suite applies. It reports [Ungenerated] at a
 // declaration whose calls take a type without a generator, as a Warning.

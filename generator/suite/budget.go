@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/directive"
 	"go.dokimi.dev/eidos/sdk/meta"
@@ -115,7 +116,9 @@ var budgetSchema = directive.Schema{
 // budgetOfMethod stamps the facts of the budget of a method of a declaration
 // under the directive suite. It reports [BadBudget] at the budget of a method
 // of another declaration and of a method that is not exported, because no
-// suite has such a callable.
+// suite has such a callable. It also reports the budget of a method with the
+// mixin waits, because a ceiling repeats the calls of its callable on one
+// subject.
 func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) error {
 	method := m.Method
 	name := method.ID.Owner + "." + method.Name
@@ -125,6 +128,8 @@ func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) 
 			method.ID.Owner, name)
 	case method.Visibility != symbol.VisibilityPublic:
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s is not exported, so its budget has no check", name)
+	case mixed(m, &method.ID, shape.Waits):
+		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s waits for another call, so its budget has no check", name)
 	default:
 		g.stamp(m, name, st)
 	}
@@ -132,15 +137,19 @@ func (g *generator) budgetOfMethod(m *sdk.MethodMatch, _ part, st *sdk.Stamper) 
 }
 
 // budgetOfFunction stamps the facts of the budget of a function under the
-// directive suite. It reports [BadBudget] at the budget of another function.
+// directive suite. It reports [BadBudget] at the budget of another function,
+// and at the budget of a function with the mixin waits.
 func (g *generator) budgetOfFunction(m *sdk.FunctionMatch, _ part, st *sdk.Stamper) error {
 	fn := m.Function
-	if !suited(m, &fn.ID) {
+	switch {
+	case !suited(m, &fn.ID):
 		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s has no directive suite, so the budget of %s has no check",
 			fn.Name, fn.Name)
-		return nil
+	case mixed(m, &fn.ID, shape.Waits):
+		m.ErrorfAt(BadBudget, m.Directive().Pos, "%s waits for another call, so its budget has no check", fn.Name)
+	default:
+		g.stamp(m, fn.Name, st)
 	}
-	g.stamp(m, fn.Name, st)
 	return nil
 }
 
@@ -323,7 +332,9 @@ func (b Budget) segments() []string {
 // of the declaration declared, in the order of the directives. methods are
 // the callables of the declaration. A budget of a subject names one callable
 // of the declaration, as in Store.Get, whose declaration states no budget,
-// and a subject states one budget of a callable. ceilingsOf reports
+// and a subject states one budget of a callable. A callable with the mixin
+// waits takes no budget, because a ceiling repeats its calls on one subject.
+// ceilingsOf reports
 // [BadBudget] at each budget otherwise, and at each mistake of the ceilings
 // that [budgetOf] reports. It returns false where it reports a budget. A
 // subject of a struct with several directives subject reads the budgets of
@@ -378,6 +389,10 @@ func (g *generator) ceilingsOf(
 		case written[callable] > 1:
 			m.ErrorfAt(BadBudget, d.Pos, "%s states %d budgets of %s, and a callable has one budget",
 				subject, written[callable], callable)
+			stated = false
+		case mixed(m, &methods[at].ID, shape.Waits):
+			m.ErrorfAt(BadBudget, d.Pos, "%s states a budget of %s, which waits for another call, so the budget "+
+				"has no check", subject, callable)
 			stated = false
 		case ofDeclaration != (Budget{}):
 			advice := ""

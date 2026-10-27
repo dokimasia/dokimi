@@ -1,10 +1,66 @@
 package bad
 
 import (
+	"testing"
+
 	"go.dokimi.dev/assert/prop"
 
 	"example.com/shop/store"
 )
+
+// AroundOfOne checks that Get returns the item inside an environment of one
+// parameter.
+//
+//dokimi:check store.Store.Get defect=broken around=aroundOfOne
+func AroundOfOne(h any) {}
+
+// AroundOfText checks that Get returns the item inside an environment of a
+// text.
+//
+//dokimi:check store.Store.Get defect=broken around=aroundOfText
+func AroundOfText(h any) {}
+
+// AroundOfACount checks that Get returns the item inside an environment of a
+// count.
+//
+//dokimi:check store.Store.Get defect=broken around=aroundOfACount
+func AroundOfACount(h any) {}
+
+// AroundOfACall checks that Get returns the item inside an environment whose
+// run takes a count.
+//
+//dokimi:check store.Store.Get defect=broken around=aroundOfACall
+func AroundOfACall(h any) {}
+
+// AroundOfAFailingRun checks that Get returns the item inside an environment
+// whose run returns an error.
+//
+//dokimi:check store.Store.Get defect=broken around=aroundOfAFailingRun
+func AroundOfAFailingRun(h any) {}
+
+// aroundOfACall takes a run of a count.
+func aroundOfACall(*testing.T, func(int)) {}
+
+// aroundOfAFailingRun takes a run that returns an error.
+func aroundOfAFailingRun(*testing.T, func(*testing.T) error) {}
+
+// AroundOfAnError checks that Get returns the item inside an environment that
+// returns an error.
+//
+//dokimi:check store.Store.Get defect=broken around=aroundOfAnError
+func AroundOfAnError(h any) {}
+
+// aroundOfOne takes the test alone.
+func aroundOfOne(*testing.T) {}
+
+// aroundOfText takes a text in place of the test.
+func aroundOfText(string, func(*testing.T)) {}
+
+// aroundOfACount takes a count in place of the run.
+func aroundOfACount(*testing.T, int) {}
+
+// aroundOfAnError returns an error.
+func aroundOfAnError(*testing.T, func(*testing.T)) error { return nil }
 
 // Empty is a declaration under the directive suite without callables.
 //

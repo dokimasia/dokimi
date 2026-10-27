@@ -215,6 +215,45 @@ func TestCall(t *testing.T) {
 				},
 				wantAssign: "_ =", wantReturns: "nil",
 			},
+			{
+				name: "takes the sample that a parameter states on itself", givePkg: taggedPackage, giveDecl: "Hasher",
+				give: "HashTagged",
+				wantParams: []param{
+					{name: "r", label: "r", spelling: "Role", sample: "Role(1)"},
+					{name: "data", label: "data", spelling: "[]byte"},
+				},
+				wantAssign: "_ =", wantReturns: "nil",
+			},
+			{
+				name: "takes the sample of a variadic parameter as its only element", givePkg: taggedPackage,
+				giveDecl: "Hasher", give: "HashRoles",
+				wantParams: []param{
+					{name: "roles", label: "roles", spelling: "Role", sample: "Role(2)", variadic: true},
+				},
+				wantAssign: "_ =", wantReturns: "nil",
+			},
+			{
+				name: "draws a parameter whose type has a sample", givePkg: taggedPackage, giveDecl: "Hasher",
+				give: "Truncate",
+				wantParams: []param{
+					{name: "d", label: "d", spelling: "[32]byte"}, {name: "n", label: "n", spelling: "Size"},
+				},
+				wantAssign: "_ =", wantReturns: "nil",
+			},
+			{
+				name: "takes the context of the case for a context with a sample", givePkg: taggedPackage,
+				giveDecl: "Hasher", give: "Seal",
+				wantParams: []param{{context: true}, {name: "d", label: "d", spelling: "[32]byte"}},
+			},
+			{
+				name: "takes the sample of a parameter of a function", givePkg: taggedPackage, giveDecl: "Digest",
+				give: "",
+				wantParams: []param{
+					{name: "r", label: "r", spelling: "Role", sample: "Role(3)"},
+					{name: "data", label: "data", spelling: "[]byte"},
+				},
+				wantAssign: "_ =", wantReturns: "nil",
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
@@ -294,6 +333,25 @@ func TestCall(t *testing.T) {
 
 				got := called(t, generate(t, goTree, meterPackage).suites[tt.giveDecl], tt.give)
 				expect.Equal(t, got.Concurrent, tt.want, "a parallel benchmark measures a concurrent callable")
+			})
+		}
+
+		waits := []struct {
+			name     string
+			giveDecl string
+			give     string
+			want     bool
+		}{
+			{name: "reports the mixin waits of a method", giveDecl: "Lock", give: "Acquire", want: true},
+			{name: "reports the mixin waits of a function", giveDecl: "Await", want: true},
+			{name: "reports no wait of a method without the mixin", giveDecl: "Lock", give: "Release"},
+		}
+		for _, tt := range waits {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := called(t, generate(t, goTree, locksPackage).suites[tt.giveDecl], tt.give)
+				expect.Equal(t, got.Waits, tt.want, "a benchmark and a ceiling leave out a call that waits")
 			})
 		}
 
@@ -557,18 +615,23 @@ func TestCall(t *testing.T) {
 	})
 }
 
-// param is a parameter of a call with the spelling of its type.
+// param is a parameter of a call with the spelling of its type. sample is the
+// conversion of the literal of its sample to the type, as Role(1), and empty
+// for a parameter without a sample.
 type param struct {
-	name, label, spelling      string
-	context, variadic, address bool
+	name, label, spelling, sample string
+	context, variadic, address    bool
 }
 
 // paramOf returns the parameter p with the spelling of its type and of the
-// arguments of the type.
+// arguments of the type, and the spelling of the literal of its sample.
 func paramOf(p suite.Param) param {
 	out := param{name: p.Name, label: p.Label, context: p.Context, variadic: p.Variadic, address: p.Address}
 	if p.Type != nil {
 		out.spelling = spelled(p.Type)
+	}
+	if p.Sample != nil {
+		out.sample = spelled(p.Sample.Type) + "(" + p.Sample.Inner.Text + ")"
 	}
 	return out
 }

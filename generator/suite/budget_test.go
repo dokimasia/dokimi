@@ -177,6 +177,16 @@ func TestBudget(t *testing.T) {
 				give:    "Loose",
 				wantMsg: []string{"Loose has no directive suite, so the budget of Loose has no check"},
 			},
+			{
+				name:     "reports BadBudget at a budget of a method that waits for another call",
+				giveKind: symbol.KindMethod, giveOwn: "Gauge", give: "Block",
+				wantMsg: []string{"Gauge.Block waits for another call, so its budget has no check"},
+			},
+			{
+				name:     "reports BadBudget at a budget of a function that waits for another call",
+				giveKind: symbol.KindFunction, give: "Doze",
+				wantMsg: []string{"Doze waits for another call, so its budget has no check"},
+			},
 		}
 		for _, tt := range findings {
 			t.Run(tt.name, func(t *testing.T) {
@@ -306,6 +316,11 @@ func TestBudget(t *testing.T) {
 			{
 				name: "reports BadBudget at a budget of a struct that is no subject", give: "Unbound",
 				wantMsg: []string{"Unbound has no directive subject, so its budget has no check"},
+			},
+			{
+				name: "reports BadBudget at a budget of a callable that waits for another call", give: "Patient",
+				wantMsg: []string{"Patient states a budget of Gauge.Block, which waits for another call, so the " +
+					"budget has no check"},
 			},
 		}
 		for _, tt := range subjects {

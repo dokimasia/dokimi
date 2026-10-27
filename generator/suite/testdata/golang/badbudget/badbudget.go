@@ -56,7 +56,24 @@ type Gauge interface {
 	//
 	//dokimi:budget warmup=10
 	Warm()
+	// Block waits for another call and states a budget.
+	//dokimi:mixin waits
+	//dokimi:budget allocs=1
+	Block()
 }
+
+// Patient states a budget of a callable that waits for another call.
+//
+//dokimi:subject Gauge new=NewGauge
+//dokimi:budget Gauge.Block allocs=1
+type Patient struct{ Gauge }
+
+// Doze waits for another call and states a budget.
+//
+//dokimi:suite
+//dokimi:mixin waits
+//dokimi:budget allocs=1
+func Doze() {}
 
 // Rewarmed states a budget of a callable whose declaration states a warm-up.
 //

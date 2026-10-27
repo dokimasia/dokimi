@@ -5,6 +5,7 @@ package suite
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"go.dokimi.dev/eidos/lang/naming"
@@ -32,10 +33,11 @@ import (
 // the result of the callable.
 //
 // Budget is the budget of the callable, and Concurrent reports that the
-// callable has the mixin concurrent or concurrent-readers. Over is the
-// signature of the callable in the planted defect of a ceiling, whose
-// parameters have no names and whose results have the names r0, r1 and so
-// on.
+// callable has the mixin concurrent or concurrent-readers. Waits reports that
+// the callable has the mixin waits, so no benchmark and no ceiling repeats its
+// calls on one subject. Over is the signature of the callable in the planted
+// defect of a ceiling, whose parameters have no names and whose results have
+// the names r0, r1 and so on.
 type Call struct {
 	Over       *emit.Method
 	Var        string
@@ -46,6 +48,7 @@ type Call struct {
 	Params     []Param
 	Budget     Budget
 	Concurrent bool
+	Waits      bool
 }
 
 // Param is one parameter of a call. Name is the name of the value that the
@@ -67,8 +70,14 @@ type Call struct {
 // interface that the suite declares, as StoreSourceInput, and empty for any
 // other parameter. Omitted reports a variadic parameter of functions or of
 // such interfaces, for which the call passes no values.
+//
+// Sample is the sample that the parameter states on itself, converted to
+// Type, and nil for a parameter without one. Each call takes the sample, and
+// the call generator draws no value for the parameter. A variadic parameter
+// passes the sample as its only element.
 type Param struct {
 	Type     *emit.TypeRef
+	Sample   *emit.Value
 	Name     string
 	Label    string
 	Input    string
@@ -123,30 +132,40 @@ func (k *caller) call(c *Callable, sym symbol.Symbol, id *symbol.Identity) Call 
 		name = k.e.JoinName(callsWord, view.Name)
 	}
 	assign, returns := results(&view)
+	var nodes []*node.Param
+	switch d := sym.(type) {
+	case *node.Method:
+		nodes = d.Params
+	case *node.Function:
+		nodes = d.Params
+	}
 	return Call{
-		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, mixed(k.m, id, shape.NilSafe), c.Name),
+		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, nodes, mixed(k.m, id, shape.NilSafe), c.Name),
 		Assign: assign, Returns: returns, Budget: k.g.budgetFact(k.m, id),
 		Concurrent: mixed(k.m, id, shape.Concurrent) || mixed(k.m, id, shape.ConcurrentReaders),
+		Waits:      mixed(k.m, id, shape.Waits),
 		Over:       k.over(&view, id),
 	}
 }
 
-// params returns the parameters of the callable of view, named callable. A
-// parameter whose generator is a generated function takes a generated
-// function, and a parameter whose generator is a generated implementation an
-// implementation whose methods are generated functions. A channel that the
-// callable receives from takes a closed channel of a drawn list. Under the
-// mixin nil-safe a pointer takes a pointer that can be nil. Otherwise a
-// pointer that the shape reader of the property engine reads takes the
-// address of a value of its element type. A variadic parameter of generated
-// values does not take a value. Any other parameter takes a drawn value,
-// whose type is a root of the overrides of the suite.
+// params returns the parameters of the callable of view, named callable.
+// nodes are the parameters of the node of the callable. A parameter in the
+// role context takes the context of the call. A parameter with a sample on
+// itself takes the sample. A parameter whose generator is a generated
+// function takes a generated function, and a parameter whose generator is a
+// generated implementation an implementation whose methods are generated
+// functions. A channel that the callable receives from takes a closed channel
+// of a drawn list. Under the mixin nil-safe a pointer takes a pointer that can
+// be nil. Otherwise a pointer that the shape reader of the property engine
+// reads takes the address of a value of its element type. A variadic
+// parameter of generated values does not take a value. Any other parameter
+// takes a drawn value, whose type is a root of the overrides of the suite.
 //
 // Each parameter takes its own name where the name is free, and otherwise the
 // first free name of [naming.Unique]. A name is free where [caller.taken]
 // does not contain it. A parameter without a name takes the name and the
 // label a and its position, as a0.
-func (k *caller) params(view *rules.Callable, nilSafe bool, callable string) []Param {
+func (k *caller) params(view *rules.Callable, nodes []*node.Param, nilSafe bool, callable string) []Param {
 	refs := make([]*node.TypeRef, 0, len(view.Params))
 	for _, p := range view.Params {
 		refs = append(refs, p.Ref)
@@ -167,6 +186,14 @@ func (k *caller) params(view *rules.Callable, nilSafe bool, callable string) []P
 		taken[name] = true
 		ref := k.instance(p.Ref)
 		param := Param{Type: rules.EmitRef(ref), Name: name, Label: label, Variadic: p.Variadic}
+		// The view of a callable shares the type reference of each parameter
+		// with the node of the parameter.
+		pos := slices.IndexFunc(nodes, func(n *node.Param) bool { return n.Type == p.Ref })
+		if sample := sampleOf(k.m, &k.b, nodes[pos], ref); !sample.IsZero() {
+			param.Sample = new(emit.Conversion(param.Type, sample))
+			out = append(out, param)
+			continue
+		}
 		at := root{ref: ref, callable: callable, at: []string{"its parameter " + base}}
 		under := k.underlying(ref)
 		src, _ := k.sourceOf(ref)
@@ -195,6 +222,18 @@ func (k *caller) params(view *rules.Callable, nilSafe bool, callable string) []P
 		out = append(out, param)
 	}
 	return out
+}
+
+// sampleOf returns the sample that the parameter p states on itself, as a
+// value of the type ref. It returns the zero value where p states none and
+// where no value derives from its sample. The view of eidos falls back to the
+// sample of the type of p, so sampleOf first reads whether p states one.
+func sampleOf(m sdk.Matcher, b *rules.Bound, p *node.Param, ref *node.TypeRef) emit.Value {
+	if _, stated := sdk.FactOf(m, p.ID, meta.Named[string](meta.SampleKey)); !stated {
+		return emit.Value{}
+	}
+	sample, _ := b.View().Authored(b.Source(), p.ID, ref)
+	return sample.Value
 }
 
 // taken returns the names that a generator of the suite does not declare for

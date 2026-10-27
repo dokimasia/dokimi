@@ -39,11 +39,14 @@ Each of these directives changes what a generator writes, and none of them gener
 | Start each builder from a declared value | `default:"1"` on a field, or `//dokimi:default "new"` on a defined type |
 | Start each builder from a function | `//dokimi:builder defaults=DefaultConfig` |
 | Give a type the value that the generated specs use | `//dokimi:sample value=DefaultNote()` |
+| Pass one value of a parameter in each generated call of its callable, such as the part of a domain that its contract admits | `//dokimi:sample value=0x01` on the line before the parameter |
 | Give a double helpers that fail a call with an error value of the package | `//dokimi:fault errors=[ErrNotFound]` on the method |
 | State a property that a suite checks | `//dokimi:mixin not-found sentinel=ErrNotFound`, `//dokimi:mixin concurrent` and the other mixins of the shape catalog, on the method |
+| Leave a callable that waits for another call out of each benchmark and budget, such as a lock whose `Acquire` waits for `Release` | `//dokimi:mixin waits` on the method or the function |
 | Add a check of your own to a suite | `//dokimi:check Store.Get defect=forgetful` on a function in the package of the generated suite, whose doc comment opens with "<Name> checks that" |
 | Give the planted defect of a check a restart, a crash, a reference or a second subject | `restart=forget`, `crash=tear`, `reference=` or `second=` beside `defect`. Each value is a function of the package of the check |
 | Require a share of the outcomes of a property check in each application | `options=machineOptions` beside `defect`, where `machineOptions` takes the handle and returns `[]prop.Option`, such as `prop.Require` |
+| Run each run of a check inside a `testing/synctest` bubble, also on its planted defect | `around=bubble` beside `defect`, where `bubble` takes a `*testing.T` and a `func(*testing.T)` and calls `synctest.Test` |
 | Pass the doors and other options of an application to the test of a subject | `//dokimi:subject store.Store new=New options=StoreOptions`, where `StoreOptions` returns the list of options |
 | Excuse a check that an implementation does not pass | `//dokimi:excuse Store.Get/keeps-the-item reason="…"` beside `subject` |
 | Cap the allocations, the bytes or the latency of a call | `//dokimi:budget allocs=1 bytes=96 p99=2us mean=1us warmup=500` on the method or the function |

@@ -58,16 +58,17 @@ var UnknownCallable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // the planted defect, and a crash the handle, the planted defect and a func()
 // of the call that it crashes. BadCheck also reports the options of a check
 // without a *prop.Case, and options that do not take the handle alone and
-// return a []prop.Option.
+// return a []prop.Option. It reports an environment of a check that does not
+// take a *testing.T and a func(*testing.T), or that returns a result.
 // BadCheck also reports a check of a function with the identity of a check
 // that the test of the suite adds to the forms of its application, and a
 // check with the segment of a ceiling of a budget, such as allocation-budget.
 // The finding is an Error at the function, and no suite binds the check.
 var BadCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 5,
-	Meaning: "a function under the directive check has no statement, it, its defect, a door of its defect or " +
-		"its options have another signature than a check, or it has the identity of a check that the test of its " +
-		"suite or a budget adds",
+	Meaning: "a function under the directive check has no statement, it, its defect, a door of its defect, " +
+		"its options or its environment have another signature than a check, or it has the identity of a check " +
+		"that the test of its suite or a budget adds",
 })
 
 // UnknownExcusal reports an excusal under the directive excuse whose identity
@@ -109,9 +110,13 @@ var RepeatedSubject = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // Unimportable reports an interface or a struct under the directive suite with
 // a callable whose signature refers to a declaration that the file of its
 // suite cannot import, such as a type of an internal package of another tree
-// that the struct promotes from an embedded type. The suite spells the
-// signature of each callable, so the finding is an Error at the declaration,
-// and suite records nothing for it.
+// that the struct promotes from an embedded type. It also reports a
+// declaration under the directive suite with a parameter whose sample refers
+// to a declaration that the file cannot refer to, such as an unexported
+// constant of a package whose suite the directive out routes into a kit. The
+// suite spells the signature of each callable and the sample of each
+// parameter, so the finding is an Error at the declaration, and suite records
+// nothing for it.
 var Unimportable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 9,
 	Meaning: "a callable of a declaration under the directive suite refers to a declaration that the file of its " +

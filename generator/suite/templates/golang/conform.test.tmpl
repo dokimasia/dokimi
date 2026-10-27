@@ -242,7 +242,7 @@
 	})
 }
 {{- end}}
-{{- if and (not $c.Function) $c.Levels}}
+{{- if and (not $c.Function) $c.Targets}}
 {{- template "suite.idle" $r}}
 {{- end}}
 {{- if $c.Function}}
@@ -399,10 +399,11 @@ test built last, by identity.
 suite.idle writes the tests of the suite of an interface or a struct that run
 its applications on its planted defect with a spend of nothing, a subject that
 answers each call at once: the test of the allocation ceilings, a fuzz target
-of each callable and the benchmarks. The test of the allocation ceilings adds
-a ceiling of 0 to each level that Ceiled marks, which the planted defect
-falsifies first. It excuses every check of the suite, because a check that
-counts allocations runs with the ceilings.
+of each callable and the benchmarks of the levels. A test without a level has
+no benchmark. The test of the allocation ceilings adds a ceiling of 0 to each
+level that Ceiled marks, which the planted defect falsifies first. It excuses
+every check of the suite, because a check that counts allocations runs with
+the ceilings.
 */}}
 {{- define "suite.idle"}}
 {{- $c := .Data}}
@@ -456,6 +457,7 @@ counts allocations runs with the ceilings.
 	)
 }
 {{- end}}
+{{- if $c.Levels}}
 {{- $benchmark := suitePascal $c.Benchmark}}
 
 {{docs (wrapdocs (printf `%s measures each callable of the suite of %s on %s.` $benchmark $c.Declaration $idle))}}
@@ -466,6 +468,7 @@ counts allocations runs with the ceilings.
 	})
 {{- end}}
 }
+{{- end}}
 {{- with $c.Parallel}}
 {{- $parallel := suitePascal .}}
 

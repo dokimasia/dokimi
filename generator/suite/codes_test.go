@@ -36,8 +36,8 @@ func TestCodes(t *testing.T) {
 		{
 			Name: "BadCheck", Give: suite.BadCheck, WantCode: "DOKIMISUITE-0005",
 			WantMeaning: "a function under the directive check has no statement, it, its defect, a door of its " +
-				"defect or its options have another signature than a check, or it has the identity of a check that " +
-				"the test of its suite or a budget adds",
+				"defect, its options or its environment have another signature than a check, or it has the identity " +
+				"of a check that the test of its suite or a budget adds",
 		},
 		{
 			Name: "UnknownExcusal", Give: suite.UnknownExcusal, WantCode: "DOKIMISUITE-0006",

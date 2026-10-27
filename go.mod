@@ -6,13 +6,13 @@ module go.dokimi.dev/dokimi
 go 1.27.3
 
 require (
-	go.dokimi.dev/assert v0.9.0
+	go.dokimi.dev/assert v0.10.0
 	go.dokimi.dev/eidos/cli v0.3.2
 	go.dokimi.dev/eidos/core v0.10.0
 	go.dokimi.dev/eidos/lang v0.4.0
 	go.dokimi.dev/eidos/lang/go v0.6.1
 	go.dokimi.dev/eidos/lang/typescript v0.4.4
-	go.dokimi.dev/eidos/plugin/shape v0.0.10
+	go.dokimi.dev/eidos/plugin/shape v0.1.0
 	go.dokimi.dev/eidos/sdk v0.7.1
 )
 

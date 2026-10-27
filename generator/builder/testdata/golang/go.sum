@@ -1,2 +1,2 @@
-go.dokimi.dev/assert v0.9.0 h1:OGkugoEEt9ep+mpBq/60zJLCmWXryxrk4RTOMDZNK1A=
-go.dokimi.dev/assert v0.9.0/go.mod h1:NeZvtoRhjUZSooEp8kN1mMakVUowb+EDKFR/YOUey2w=
+go.dokimi.dev/assert v0.10.0 h1:rRnsUk0oW+/kk9Br5Hk4pM3bywGBHJe5RmJYCjB4ufQ=
+go.dokimi.dev/assert v0.10.0/go.mod h1:NeZvtoRhjUZSooEp8kN1mMakVUowb+EDKFR/YOUey2w=

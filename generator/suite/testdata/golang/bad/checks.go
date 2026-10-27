@@ -122,8 +122,105 @@ func ReceivesTheFunction(h any) {}
 //dokimi:check store.Store.Get defect=broken
 func LatencyBudget(h any) {}
 
+// RestartsAlone checks that Get returns the item after a restart.
+//
+//dokimi:check store.Store.Get defect=broken restart=restartsAlone
+func RestartsAlone(h any) {}
+
+// CrashesWithoutTheCall checks that Put leaves the whole item after a crash.
+//
+//dokimi:check store.Store.Put defect=broken crash=crashesWithoutTheCall
+func CrashesWithoutTheCall(h any) {}
+
+// CrashesTheText checks that Put leaves the whole item after a crash of a text.
+//
+//dokimi:check store.Store.Put defect=broken crash=crashesText
+func CrashesTheText(h any) {}
+
+// ReferencesTwo checks that Get returns the item of the reference.
+//
+//dokimi:check store.Store.Get defect=broken reference=referencesTwo
+func ReferencesTwo(h any) {}
+
+// OptionsOfAnApply checks that Get returns the item under options.
+//
+//dokimi:check store.Store.Get defect=broken options=sharesOfAnApply
+func OptionsOfAnApply(h any) {}
+
+// OptionsWithoutTheHandle checks that Get returns each item.
+//
+//dokimi:check store.Store.Get defect=broken options=sharesWithoutTheHandle
+func OptionsWithoutTheHandle(h any, c *prop.Case) {}
+
+// OptionsOfTwo checks that Get returns each item under options and an error.
+//
+//dokimi:check store.Store.Get defect=broken options=sharesAndAnError
+func OptionsOfTwo(h any, c *prop.Case) {}
+
+// OptionsOfText checks that Get returns each item under the labels of text.
+//
+//dokimi:check store.Store.Get defect=broken options=labels
+func OptionsOfText(h any, c *prop.Case) {}
+
+// OptionsOfOne checks that Get returns each item under one option.
+//
+//dokimi:check store.Store.Get defect=broken options=oneShare
+func OptionsOfOne(h any, c *prop.Case) {}
+
+// OptionsOfCases checks that Get returns each item under cases of the
+// property engine.
+//
+//dokimi:check store.Store.Get defect=broken options=casesOfTheEngine
+func OptionsOfCases(h any, c *prop.Case) {}
+
+// OptionsOfThisPackage checks that Get returns each item under options of this
+// package.
+//
+//dokimi:check store.Store.Get defect=broken options=optionsOfThisPackage
+func OptionsOfThisPackage(h any, c *prop.Case) {}
+
+// Option is an option of this package, which has the name of the options of
+// the property engine.
+type Option struct{}
+
+// casesOfTheEngine returns cases of the property engine in place of options.
+func casesOfTheEngine(any) []prop.Case { return nil }
+
+// optionsOfThisPackage returns options of this package.
+func optionsOfThisPackage(any) []Option { return nil }
+
+// oneShare returns one option.
+func oneShare(any) prop.Option {
+	var share prop.Option
+	return share
+}
+
 // broken returns a store that breaks every check.
 func broken(any) store.Store { return nil }
+
+// sharesOfAnApply returns the options of a check without a property run.
+func sharesOfAnApply(any) []prop.Option { return nil }
+
+// sharesWithoutTheHandle returns options without the handle of the check.
+func sharesWithoutTheHandle() []prop.Option { return nil }
+
+// sharesAndAnError returns options and an error.
+func sharesAndAnError(any) ([]prop.Option, error) { return nil, nil }
+
+// labels returns the labels of the outcomes as text.
+func labels(any) []string { return nil }
+
+// restartsAlone returns a store without the planted defect that it restarts.
+func restartsAlone(any) store.Store { return nil }
+
+// crashesWithoutTheCall returns a store without the call that it crashes.
+func crashesWithoutTheCall(any, store.Store) store.Store { return nil }
+
+// crashesText returns a store after the crash of a text in place of a call.
+func crashesText(any, store.Store, string) store.Store { return nil }
+
+// referencesTwo returns a reference and an error.
+func referencesTwo(any) (store.Store, error) { return nil, nil }
 
 // shapeless returns a store without the handle of a check.
 func shapeless() store.Store { return nil }

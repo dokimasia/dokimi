@@ -52,15 +52,22 @@ var UnknownCallable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // states no statement, or whose signature or the signature of its defect is
 // not the signature of a check. A check takes the handle of its check, and a
 // property check also a *prop.Case after it. Its defect takes the handle and
-// returns the planted defect alone.
+// returns the planted defect alone. BadCheck also reports a door of the
+// defect with another signature than its door. Each door returns its subject
+// alone. A reference and a second take the handle, a restart the handle and
+// the planted defect, and a crash the handle, the planted defect and a func()
+// of the call that it crashes. BadCheck also reports the options of a check
+// without a *prop.Case, and options that do not take the handle alone and
+// return a []prop.Option.
 // BadCheck also reports a check of a function with the identity of a check
 // that the test of the suite adds to the forms of its application, and a
 // check with the segment of a ceiling of a budget, such as allocation-budget.
 // The finding is an Error at the function, and no suite binds the check.
 var BadCheck = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number: 5,
-	Meaning: "a function under the directive check has no statement, it or its defect has another signature " +
-		"than a check, or it has the identity of a check that the test of its suite or a budget adds",
+	Meaning: "a function under the directive check has no statement, it, its defect, a door of its defect or " +
+		"its options have another signature than a check, or it has the identity of a check that the test of its " +
+		"suite or a budget adds",
 })
 
 // UnknownExcusal reports an excusal under the directive excuse whose identity
@@ -124,4 +131,16 @@ var Unimportable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 var Ungenerated = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  10,
 	Meaning: "a type in the inputs of a callable of a declaration under the directive suite has no generator",
+})
+
+// BadOptions reports a subject whose function of the param options the
+// conformance test cannot call. The test calls the function without
+// arguments and passes its one result, a list, to the application. So the
+// function takes no parameter and returns one list, and the package of the
+// test can call it. The finding is an Error at the subject, and suite records
+// no conformance test for it.
+var BadOptions = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number: 11,
+	Meaning: "the function of the param options of the directive subject is not a function of the options of " +
+		"an application",
 })

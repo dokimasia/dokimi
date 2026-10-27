@@ -57,6 +57,25 @@
 //	//dokimi:check Ledger.Credit defect=copiesBalances counted=true
 //	func CreditsInPlace(h *LedgerHandle) { … }
 //
+// The param options of a property check contains the name of a function that
+// returns the options of its property run in an application, such as the
+// shares of prop.Require. The function takes a handle of the check, so the
+// options can depend on the subject:
+//
+//	//dokimi:check Store.Writer defect=admitsFencedCommits options=machineOptions
+//	func HistoriesAreLinearizable(h *StoreHandle, c *prop.Case) { … }
+//
+// The params reference, second, restart and crash give the planted defect of
+// a check its doors. Each contains the name of a function of the package of
+// the check. The falsification of the suite builds each handle on the defect
+// with these doors, such as a restart that forgets each item:
+//
+//	// KeepsTheItemAcrossARestart checks that Get returns the item that Put
+//	// stored before a restart.
+//	//
+//	//dokimi:check Store.Get defect=forgetsOnRestart restart=forget
+//	func KeepsTheItemAcrossARestart(h *StoreHandle) { … }
+//
 // # Subjects
 //
 // A consumer applies the suite to a subject, and adds checks of its own:
@@ -70,6 +89,13 @@
 // of the package of the test:
 //
 //	//dokimi:subject store.Store new=New
+//	type Store struct{ … }
+//
+// The param options contains the name of a function without parameters that
+// returns the options of the application, such as the doors of the subject.
+// Each test of the subject passes them after the options of its directives:
+//
+//	//dokimi:subject store.Store new=New options=Options
 //	type Store struct{ … }
 //
 // The test of a subject also declares a fuzz target of each callable, such as
@@ -189,10 +215,12 @@
 // callable whose signature refers to a declaration that the file of its suite
 // cannot import. It reports [NoSuite] at a subject whose declaration has no
 // directive suite, [BadFactory] at a subject whose factory the conformance
-// test cannot call, and [RepeatedSubject] at a second directive subject of
-// one declaration. It reports [UnknownCallable] at the directive of a check
-// whose callable it cannot find. It reports [BadCheck] at the directive of a
-// check without a statement or with the wrong signature, of a check of a
+// test cannot call, [BadOptions] at a subject whose function of the options
+// the conformance test cannot call, and [RepeatedSubject] at a second
+// directive subject of one declaration. It reports [UnknownCallable] at the
+// directive of a check whose callable it cannot find. It reports [BadCheck] at
+// the directive of a check without a statement or with the wrong signature, of
+// a check whose defect or door has the wrong signature, of a check of a
 // function with the segment of a check that the spec of the suite adds, and of
 // a check with the segment of a ceiling. It reports [UnknownExcusal] at an
 // excusal whose identity does not match a check of the suite, and [BadBudget]

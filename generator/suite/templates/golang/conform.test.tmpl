@@ -12,11 +12,24 @@
 {{- if not $c.FromHandle}}
 {{- $factory = printf "func(*%s) %s { return %s() }" (spell (index $refs 4).Type) (spell (index $refs 5).Type) $factory}}
 {{- end}}
+{{- $option := spell (index $refs 8).Type}}
+{{- $opts := ""}}
+{{- with $c.Options}}{{$opts = printf "%s()..." (spell .)}}{{end}}
 
 {{docs (wrapdocs (printf `%s applies the checks of the suite of %s to %s.` $test $c.Declaration $c.Subject))}}
 {{- ""}}func {{$test}}(t *testing.T) {
 	t.Parallel()
-{{- if or $c.Excusals $c.Cases}}
+{{- if and $c.Options (or $c.Excusals $c.Cases)}}
+
+	opts := append([]{{$option}}{
+{{- template "suite.cases" $r}}
+{{- template "suite.excusals" $r}}
+	}, {{$opts}})
+	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}}, opts...)
+{{- else if $c.Options}}
+
+	{{spell (index $refs 0).Type}}(t, {{spell (index $refs 1).Type}}, {{$opts}})
+{{- else if or $c.Excusals $c.Cases}}
 
 	{{spell (index $refs 0).Type}}(
 		t,
@@ -34,7 +47,16 @@
 
 {{docs (wrapdocs (printf `%s applies the allocation ceilings and the checks that count allocations of the suite of %s to %s.` $allocs $c.Declaration $c.Subject))}}
 {{- ""}}func {{$allocs}}(t *testing.T) {
-{{- if or $options $c.Cases}}
+{{- if and $c.Options (or $options $c.Cases)}}
+	opts := append([]{{$option}}{
+{{- template "suite.cases" $r}}
+{{- template "suite.ceilings" $r}}
+{{- template "suite.excusals" $r}}
+	}, {{$opts}})
+	{{spell (index $refs 6).Type}}(t, {{$factory}}, opts...)
+{{- else if $c.Options}}
+	{{spell (index $refs 6).Type}}(t, {{$factory}}, {{$opts}})
+{{- else if or $options $c.Cases}}
 	{{spell (index $refs 6).Type}}(
 		t,
 		{{$factory}},
@@ -55,7 +77,7 @@
 {{- template "suite.options" $r}}
 {{- range $c.Levels}}
 	b.Run("{{.Field}}", func(b *testing.B) {
-		{{spell (index $refs 7).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if $options}}, opts...{{end}})
+		{{spell (index $refs 7).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if or $options $c.Options}}, opts...{{end}})
 	})
 {{- end}}
 }
@@ -69,7 +91,7 @@
 {{- range $c.Levels}}
 {{- if .Concurrent}}
 	b.Run("{{.Field}}", func(b *testing.B) {
-		{{spell (index $refs 10).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if $options}}, opts...{{end}})
+		{{spell (index $refs 10).Type}}(b, {{$checks}}.{{.Field}}.Callable, {{$factory}}{{if or $options $c.Options}}, opts...{{end}})
 	})
 {{- end}}
 {{- end}}
@@ -80,7 +102,14 @@
 
 {{docs (wrapdocs (printf `%s fuzzes the property checks of %s.%s on %s.` $target $c.Declaration .Field $c.Subject))}}
 {{- ""}}func {{$target}}(f *testing.F) {
-{{- if $c.Excusals}}
+{{- if and $c.Options $c.Excusals}}
+	opts := append([]{{$option}}{
+{{- template "suite.excusals" $r}}
+	}, {{$opts}})
+	{{spell (index $refs 3).Type}}(f, {{$checks}}.{{.Field}}.Callable, {{$factory}}, opts...)
+{{- else if $c.Options}}
+	{{spell (index $refs 3).Type}}(f, {{$checks}}.{{.Field}}.Callable, {{$factory}}, {{$opts}})
+{{- else if $c.Excusals}}
 	{{spell (index $refs 3).Type}}(
 		f,
 		{{$checks}}.{{.Field}}.Callable,
@@ -267,13 +296,21 @@ none.
 
 {{- /*
 suite.options declares the options of the benchmarks of a subject as opts:
-each budget and each excusal of the subject, which every level of the
-benchmark passes to its call. It declares nothing for a subject without
-budgets and excusals.
+each budget and each excusal of the subject, then the list of the function of
+its options, which every level of the benchmark passes to its call. It
+declares nothing for a subject without budgets, excusals and options.
 */}}
 {{- define "suite.options"}}
-{{- if or .Data.Ceilings .Data.Excusals}}
-	opts := []{{spell (index .Decl.Fields.Items 8).Type}}{
+{{- $option := spell (index .Decl.Fields.Items 8).Type}}
+{{- if and .Data.Options (or .Data.Ceilings .Data.Excusals)}}
+	opts := append([]{{$option}}{
+{{- template "suite.ceilings" .}}
+{{- template "suite.excusals" .}}
+	}, {{spell .Data.Options}}()...)
+{{- else if .Data.Options}}
+	opts := {{spell .Data.Options}}()
+{{- else if or .Data.Ceilings .Data.Excusals}}
+	opts := []{{$option}}{
 {{- template "suite.ceilings" .}}
 {{- template "suite.excusals" .}}
 	}

@@ -52,6 +52,7 @@ const (
 	nestedPackage      = "example.com/shop/nested"
 	wrapPackage        = "example.com/shop/wrap"
 	kindsPackage       = "example.com/shop/kinds"
+	durablePackage     = "example.com/shop/durable"
 	toolPackage        = "example.com/shop/lib/tool"
 	deepPackage        = "example.com/shop/lib/internal/deep"
 	suiteTemplate      = "suite.tmpl"

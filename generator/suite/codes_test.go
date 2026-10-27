@@ -35,8 +35,9 @@ func TestCodes(t *testing.T) {
 		},
 		{
 			Name: "BadCheck", Give: suite.BadCheck, WantCode: "DOKIMISUITE-0005",
-			WantMeaning: "a function under the directive check has no statement, it or its defect has another " +
-				"signature than a check, or it has the identity of a check that the test of its suite or a budget adds",
+			WantMeaning: "a function under the directive check has no statement, it, its defect, a door of its " +
+				"defect or its options have another signature than a check, or it has the identity of a check that " +
+				"the test of its suite or a budget adds",
 		},
 		{
 			Name: "UnknownExcusal", Give: suite.UnknownExcusal, WantCode: "DOKIMISUITE-0006",
@@ -61,6 +62,11 @@ func TestCodes(t *testing.T) {
 			Name: "Ungenerated", Give: suite.Ungenerated, WantCode: "DOKIMISUITE-0010",
 			WantMeaning: "a type in the inputs of a callable of a declaration under the directive suite has no " +
 				"generator",
+		},
+		{
+			Name: "BadOptions", Give: suite.BadOptions, WantCode: "DOKIMISUITE-0011",
+			WantMeaning: "the function of the param options of the directive subject is not a function of the " +
+				"options of an application",
 		},
 	}
 	for _, c := range codes {

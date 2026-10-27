@@ -111,6 +111,12 @@ var _ = conform.CompatV1
 				Apply:     {{spell .Apply}},
 {{- end}}
 				Defect:    {{spell .Defect}},
+{{- with .Doors}}
+				Doors:     conform.Doors[{{$s}}]{{"{"}}{{range $i, $d := .}}{{if $i}}, {{end}}{{$d.Field}}: {{spell $d.Func}}{{end}}{{"}"}},
+{{- end}}
+{{- with .Options}}
+				Options:   {{spell .}},
+{{- end}}
 {{- if .Counted}}
 				Counted:   true,
 {{- end}}

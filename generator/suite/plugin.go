@@ -35,14 +35,17 @@ const Version = "0.1.0"
 // declaration. Its positional param DeclarationParam contains the name of the
 // declaration, and its param NewParam contains the name of the factory of the
 // subjects. Its param CasesParam contains the number of valid cases of each
-// property run of the application. CheckDirective binds a function of a
-// consumer to a callable of a suite as a check. Its positional param
-// CallableParam contains the callable, and its param DefectParam contains the
-// name of the function of the planted defect. Its param CountedParam marks a
-// check that counts the allocations of the whole process. ExcuseDirective
-// excuses a check of the suite from the conformance test of a subject. Its
-// positional param IdentityParam contains the identity of the check, and its
-// param ReasonParam contains the reason.
+// property run of the application, and its param OptionsParam the name of the
+// function that returns the options of the application. CheckDirective binds
+// a function of a consumer to a callable of a suite as a check. Its
+// positional param CallableParam contains the callable, and its param
+// DefectParam contains the name of the function of the planted defect. Its
+// params ReferenceParam, SecondParam, RestartParam and CrashParam contain the
+// names of the functions of the doors of the planted defect. Its param
+// CountedParam marks a check that counts the allocations of the whole process.
+// ExcuseDirective excuses a check of the suite from the conformance test of a
+// subject. Its positional param IdentityParam contains the identity of the
+// check, and its param ReasonParam contains the reason.
 const (
 	SuiteDirective   directive.Name     = "suite"
 	SubjectDirective directive.Name     = "subject"
@@ -51,8 +54,13 @@ const (
 	DeclarationParam directive.ParamKey = "declaration"
 	NewParam         directive.ParamKey = "new"
 	CasesParam       directive.ParamKey = "cases"
+	OptionsParam     directive.ParamKey = "options"
 	CallableParam    directive.ParamKey = "callable"
 	DefectParam      directive.ParamKey = "defect"
+	ReferenceParam   directive.ParamKey = "reference"
+	SecondParam      directive.ParamKey = "second"
+	RestartParam     directive.ParamKey = "restart"
+	CrashParam       directive.ParamKey = "crash"
 	CountedParam     directive.ParamKey = "counted"
 	IdentityParam    directive.ParamKey = "identity"
 	ReasonParam      directive.ParamKey = "reason"
@@ -64,7 +72,11 @@ const (
 // identity of the declaration under [SuiteDirective], the name of the callable
 // such as Store.Get, the segment and the statement of the check, the identity
 // of the function of its planted defect, whether the check is a property
-// check, and whether it counts allocations.
+// check, and whether it counts allocations. KeyOptions is the key of the fact
+// that contains the identity of the function of the options of the property
+// run of the check. KeyReference, KeySecond, KeyRestart and KeyCrash are the
+// keys of the facts that contain the identity of the function of each door of
+// the planted defect.
 const (
 	KeyDeclaration meta.KeyName = "suite.declaration"
 	KeyCallable    meta.KeyName = "suite.callable"
@@ -73,7 +85,52 @@ const (
 	KeyDefect      meta.KeyName = "suite.defect"
 	KeyProperty    meta.KeyName = "suite.property"
 	KeyCounted     meta.KeyName = "suite.counted"
+	KeyOptions     meta.KeyName = "suite.options"
+	KeyReference   meta.KeyName = "suite.reference"
+	KeySecond      meta.KeyName = "suite.second"
+	KeyRestart     meta.KeyName = "suite.restart"
+	KeyCrash       meta.KeyName = "suite.crash"
 )
+
+// door is one door of the planted defect of a check. Its param of the
+// directive check contains the name of the function of the door, and its key
+// is the key of the fact of that function. field is the field of
+// conform.Doors that the check of the suite sets. takes is the number of the
+// parameters of the function, and needs contains the words for the
+// parameters after the handle in the finding of another signature. A crash
+// takes the call that it crashes as its third parameter. doc is the doc of
+// the param.
+type door struct {
+	param directive.ParamKey
+	key   meta.KeyName
+	field string
+	needs string
+	doc   string
+	takes int
+}
+
+// doors are the doors of a planted defect in the order of the fields of
+// conform.Doors.
+var doors = [...]door{
+	{
+		param: ReferenceParam, key: KeyReference, field: "Reference", takes: 1, needs: " alone",
+		doc: "the function that returns a reference implementation from the handle of a check on the planted defect",
+	},
+	{
+		param: SecondParam, key: KeySecond, field: "Second", takes: 1, needs: " alone",
+		doc: "the function that returns a second subject from the handle of a check on the planted defect",
+	},
+	{
+		param: RestartParam, key: KeyRestart, field: "Restart", takes: 2, needs: " and the planted defect",
+		doc: "the function that returns the planted defect after a restart, from the handle of a check and the defect",
+	},
+	{
+		param: CrashParam, key: KeyCrash, field: "Crash", takes: 3,
+		needs: ", the planted defect and the call that it crashes",
+		doc: "the function that runs a call against the planted defect, crashes the medium of the defect during the " +
+			"call, and returns the defect as the crash left it",
+	},
+}
 
 // checksThat contains the words after the name of a check that open its doc
 // comment, as in "KeepsTheItem checks that Get returns the item".
@@ -81,10 +138,12 @@ const checksThat = " checks that"
 
 // propPackage is the import path of the property engine of the assert
 // library. A property check takes a pointer to its type caseType after the
-// handle of its check.
+// handle of its check, and the function of its options returns a list of its
+// type optionType.
 const (
 	propPackage = "go.dokimi.dev/assert/prop"
 	caseType    = "Case"
+	optionType  = "Option"
 )
 
 // Word is the word of the family of the suites and of the family of their
@@ -254,17 +313,31 @@ type Callable struct {
 // "checks that". Property reports that the function takes a case of the
 // property engine after the handle, so the suite passes it as the property of
 // the check. Counted reports that the check counts the allocations of the
-// whole process, so the runtime runs it with the allocation ceilings.
+// whole process, so the runtime runs it with the allocation ceilings. Doors
+// are the doors of the planted defect in the order of the fields of
+// conform.Doors, and empty for a check without a door. Options refers to the
+// function of the options of the property run of the check, and is nil for a
+// check without options.
 type Check struct {
 	Apply     *emit.TypeRef
 	Defect    *emit.TypeRef
+	Options   *emit.TypeRef
 	Field     string
 	Type      string
 	Method    string
 	Segment   string
 	Statement string
+	Doors     []Door
 	Property  bool
 	Counted   bool
+}
+
+// Door is one door of the planted defect of a check. Field is the field of
+// conform.Doors that the check of the suite sets, as Restart, and Func refers
+// to the function of the door.
+type Door struct {
+	Func  *emit.TypeRef
+	Field string
 }
 
 // Conformance is the data of the record of one test of the family of the
@@ -304,7 +377,10 @@ type Check struct {
 // passes it to the applications whose property runs it sets: the checks and
 // the allocation ceilings. Identities are the identities of the checks of a
 // suite, which the test of the suite compares with the names of the
-// callables, and empty for the test of a subject.
+// callables, and empty for the test of a subject. Options refers to the
+// function of the param options of the subject, whose list each test of the
+// subject passes after the options of its directives. It is nil for a subject
+// without the param and for the test of a suite.
 //
 // The record of a conformance test is a struct with ten fields. Their types
 // refer, in this order, to the form of the application, as RunStoreSuite, to
@@ -329,6 +405,7 @@ type Check struct {
 // allocation ceilings and to its benchmark. The layout of eidos qualifies each
 // reference to the suite by the package of the file of the suite.
 type Conformance struct {
+	Options     *emit.TypeRef
 	Test        string
 	Subject     string
 	Declaration string
@@ -411,9 +488,10 @@ var suiteSchema = directive.Schema{
 }
 
 // subjectSchema is the directive of a subject. eidos resolves the declaration
-// to a type that the file of the subject can see, and the factory to a
-// function in the scope of the subject. A struct takes one directive for each
-// declaration whose suite it passes, so the directive repeats.
+// to a type that the file of the subject can see, and the factory and the
+// function of the options to functions in the scope of the subject. A struct
+// takes one directive for each declaration whose suite it passes, so the
+// directive repeats.
 var subjectSchema = directive.Schema{
 	Name:       SubjectDirective,
 	Repeatable: true,
@@ -432,13 +510,19 @@ var subjectSchema = directive.Schema{
 			Key: CasesParam, Type: directive.TypeInt,
 			Doc: "the number of valid cases of each property run of the application, 100 without the param",
 		},
+		{
+			Key: OptionsParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+			Doc: "the function without parameters that returns the list of the options of the application, which " +
+				"each test of the subject passes after the options of the directives",
+		},
 	},
 	Doc: "generates the test that applies the checks of the suite of the declaration to the subject",
 }
 
 // checkSchema is the directive of a check of a consumer. suite resolves the
 // callable among the declarations under the directive suite, and eidos
-// resolves the defect to a function in the scope of the check.
+// resolves the defect and each door of the defect to a function in the scope
+// of the check.
 var checkSchema = directive.Schema{
 	Name: CheckDirective,
 	Positional: []directive.ParamSpec{{
@@ -446,7 +530,7 @@ var checkSchema = directive.Schema{
 		Doc: "the callable of a declaration under the directive suite, such as Store.Get, or store.Store.Get with " +
 			"the name of the package of the declaration",
 	}},
-	Params: []directive.ParamSpec{
+	Params: append([]directive.ParamSpec{
 		{
 			Key: DefectParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
 			Required: true,
@@ -457,8 +541,25 @@ var checkSchema = directive.Schema{
 			Doc: "true for a check that counts the allocations of the whole process, such as with assert.MaxAllocs. " +
 				"The check runs with the allocation ceilings, in a test that does not run in parallel",
 		},
-	},
+		{
+			Key: OptionsParam, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope,
+			Doc: "the function that returns the options of the property run of the check in an application, " +
+				"from a handle of the check",
+		},
+	}, doorParams()...),
 	Doc: "binds the function to a callable of a suite as a check of the consumer, with its planted defect",
+}
+
+// doorParams returns the param of the directive check for each door of the
+// planted defect.
+func doorParams() []directive.ParamSpec {
+	out := make([]directive.ParamSpec, 0, len(doors))
+	for _, d := range doors {
+		out = append(out, directive.ParamSpec{
+			Key: d.param, Type: directive.TypeReference, Resolution: directive.ResolveCallableInScope, Doc: d.doc,
+		})
+	}
+	return out
 }
 
 // excuseSchema is the directive of an excusal. A subject excuses each check
@@ -501,6 +602,8 @@ type generator struct {
 	latency     meta.Key[int64]
 	mean        meta.Key[int64]
 	warmup      meta.Key[int64]
+	options     meta.Key[symbol.Identity]
+	doors       [len(doors)]meta.Key[symbol.Identity]
 }
 
 // New returns suite, a plugin with an annotate half and a generate half. The
@@ -529,11 +632,12 @@ type generator struct {
 // another language alone. It reports [Uninstantiable] at a declaration whose
 // type parameters its suite cannot instantiate, [Unimportable] at a
 // declaration with a callable whose signature the file of its suite cannot
-// spell, [NoSuite] at a subject whose declaration has no directive suite, and
-// [BadFactory] at a subject whose factory an application cannot call. It
-// reports [UnknownCallable] and
-// [BadCheck] at the directive of a check that it cannot bind, and
-// [UnknownExcusal] at an excusal of a check that the suite does not have.
+// spell, [NoSuite] at a subject whose declaration has no directive suite,
+// [BadFactory] at a subject whose factory an application cannot call, and
+// [BadOptions] at a subject whose function of the options a test cannot call.
+// It reports [UnknownCallable] and [BadCheck] at the directive of a check that
+// it cannot bind, and [UnknownExcusal] at an excusal of a check that the suite
+// does not have.
 // suite records and stamps nothing for a declaration that it reports. Each
 // call returns a new plugin.
 func New() sdk.Dual {
@@ -574,7 +678,7 @@ func (g *generator) register(r *meta.Registry) error {
 	budgetKey := func(name meta.KeyName, doc string) meta.KeySpec {
 		return meta.KeySpec{Name: name, Kinds: []symbol.Kind{symbol.KindMethod, symbol.KindFunction}, Doc: doc}
 	}
-	var errs [13]error
+	var errs [14 + len(doors)]error
 	errs[0] = r.ClaimNamespace(KeyDeclaration.Namespace())
 	g.declaration, errs[1] = meta.Register[symbol.Identity](r, spec(KeyDeclaration,
 		"contains the identity of the declaration under the directive suite whose suite the check joins"))
@@ -600,6 +704,12 @@ func (g *generator) register(r *meta.Registry) error {
 		"contains the number of iterations that each benchmark of the callable runs before it measures"))
 	g.counted, errs[12] = meta.Register[bool](r, spec(KeyCounted,
 		"reports that the check counts the allocations of the whole process"))
+	g.options, errs[13] = meta.Register[symbol.Identity](r, spec(KeyOptions,
+		"contains the identity of the function of the options of the property run of the check"))
+	for i, d := range doors {
+		g.doors[i], errs[14+i] = meta.Register[symbol.Identity](r, spec(d.key,
+			"contains the identity of the function of the door "+string(d.param)+" of the planted defect of the check"))
+	}
 	return errors.Join(errs[:]...)
 }
 
@@ -624,7 +734,7 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper)
 		return nil
 	}
 	property, ok := signed(m, d, fn)
-	if !ok {
+	if !ok || !doored(m, d, fn) || !optioned(m, d, fn, property) {
 		return nil
 	}
 	segment := naming.Kebab(fn.Name)
@@ -643,6 +753,14 @@ func (g *generator) concludeCheck(m *sdk.FunctionMatch, _ part, st *sdk.Stamper)
 	sdk.Stamp(st, g.segment, segment)
 	sdk.Stamp(st, g.statement, statement)
 	sdk.Stamp(st, g.defect, d.Params[DefectParam].Target)
+	for i, door := range doors {
+		if opened, stated := d.Param(door.param); stated {
+			sdk.Stamp(st, g.doors[i], opened.Target)
+		}
+	}
+	if options, stated := d.Param(OptionsParam); stated {
+		sdk.Stamp(st, g.options, options.Target)
+	}
 	if property {
 		sdk.Stamp(st, g.property, true)
 	}
@@ -779,6 +897,94 @@ func signed(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) (pr
 	return false, false
 }
 
+// doored reports whether each door of the planted defect of the check fn has
+// the signature of its door. A door returns its subject alone. A reference
+// and a second take the handle of the check, a restart the handle and the
+// planted defect, and a crash the handle, the planted defect and the call that
+// it crashes, a function. doored reports [BadCheck] at the directive d where a
+// signature differs.
+func doored(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function) bool {
+	b := m.Rules()
+	for _, door := range doors {
+		param, stated := d.Param(door.param)
+		if !stated {
+			continue
+		}
+		found, _ := m.Reader().Lookup(param.Target)
+		view, _ := b.CallableOf(found)
+		name := param.Target.Name
+		switch {
+		case len(view.Params) != door.takes:
+			m.ErrorfAt(BadCheck, d.Pos, "the door %s %s of %s takes %s, and the door %s takes the handle of its "+
+				"check%s", door.param, name, fn.Name, parameters(len(view.Params)), door.param, door.needs)
+		case len(view.Returns) != 1:
+			m.ErrorfAt(BadCheck, d.Pos, "the door %s %s of %s returns %d results, and a door returns its subject "+
+				"alone", door.param, name, fn.Name, len(view.Returns))
+		case door.param == CrashParam && view.Params[2].Ref.Form != symbol.FormFunc:
+			m.ErrorfAt(BadCheck, d.Pos, "the third parameter of the door %s %s of %s has the type %s, and the door "+
+				"%s takes the call that it crashes as a func()", door.param, name, fn.Name,
+				view.Params[2].Ref.Spelling, door.param)
+		default:
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// optioned reports whether the options of the check fn have the signature of
+// the options of a property run. The options apply to the property run of a
+// check, so fn takes a case of the property engine, which property reports.
+// The function of the options takes the handle of the check and returns a
+// list of prop.Option. optioned reports [BadCheck] at the directive d where
+// the check or the signature differs.
+func optioned(m *sdk.FunctionMatch, d *directive.Directive, fn *node.Function, property bool) bool {
+	param, stated := d.Param(OptionsParam)
+	if !stated {
+		return true
+	}
+	found, _ := m.Reader().Lookup(param.Target)
+	b := m.Rules()
+	view, _ := b.CallableOf(found)
+	name := param.Target.Name
+	switch {
+	case !property:
+		m.ErrorfAt(BadCheck, d.Pos, "the options %s of %s apply to the property run of a check, and %s takes no "+
+			"*prop.Case", name, fn.Name, fn.Name)
+	case len(view.Params) != 1:
+		m.ErrorfAt(BadCheck, d.Pos, "the options %s of %s take %s, and the options of a check take the handle of "+
+			"its check alone", name, fn.Name, parameters(len(view.Params)))
+	case len(view.Returns) != 1:
+		m.ErrorfAt(BadCheck, d.Pos, "the options %s of %s return %d results, and the options of a check return "+
+			"[]prop.Option", name, fn.Name, len(view.Returns))
+	case !listsOptions(view.Returns[0].Ref):
+		m.ErrorfAt(BadCheck, d.Pos, "the options %s of %s return the type %s, and the options of a check return "+
+			"[]prop.Option", name, fn.Name, view.Returns[0].Ref.Spelling)
+	default:
+		return true
+	}
+	return false
+}
+
+// listsOptions reports whether ref is a list of the options of the property
+// engine, whatever name the file gives the package of the engine.
+func listsOptions(ref *node.TypeRef) bool {
+	if ref.Form != symbol.FormList {
+		return false
+	}
+	elem := ref.Elems[0]
+	return elem.Package == propPackage && elem.Spelling[strings.LastIndex(elem.Spelling, ".")+1:] == optionType
+}
+
+// parameters returns the count of n parameters, as 1 parameter or 2
+// parameters.
+func parameters(n int) string {
+	if n == 1 {
+		return "1 parameter"
+	}
+	return fmt.Sprintf("%d parameters", n)
+}
+
 // takesCase reports whether ref is a pointer to the case of the property
 // engine, whatever name the file gives the package of the engine. Go spells a
 // pointer in the optional form, which has one child.
@@ -792,12 +998,16 @@ func takesCase(ref *node.TypeRef) bool {
 
 // bound is a check that the annotate half binds to a declaration: the
 // function of the check and the facts that the annotate half stamps on it.
+// doors are the functions of the doors of the planted defect in the order of
+// [doors], and the zero identity for a door that the directive does not state.
 type bound struct {
 	fn        symbol.Identity
 	callable  string
 	segment   string
 	statement string
 	defect    symbol.Identity
+	options   symbol.Identity
+	doors     [len(doors)]symbol.Identity
 	property  bool
 	counted   bool
 }
@@ -815,6 +1025,10 @@ func (g *generator) boundTo(m sdk.Matcher, origin *symbol.Identity) []bound {
 		b.segment, _ = sdk.FactOf(m, id, g.segment)
 		b.statement, _ = sdk.FactOf(m, id, g.statement)
 		b.defect, _ = sdk.FactOf(m, id, g.defect)
+		b.options, _ = sdk.FactOf(m, id, g.options)
+		for i := range doors {
+			b.doors[i], _ = sdk.FactOf(m, id, g.doors[i])
+		}
 		b.property, _ = sdk.FactOf(m, id, g.property)
 		b.counted, _ = sdk.FactOf(m, id, g.counted)
 		out = append(out, b)
@@ -830,17 +1044,29 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 	checks := g.boundTo(m, origin)
 	for i := range checks {
 		b := &checks[i]
+		var opened []Door
+		for i, door := range doors {
+			if fn := b.doors[i]; fn != (symbol.Identity{}) {
+				opened = append(opened, Door{Field: door.field, Func: &emit.TypeRef{Spelling: fn.Name, Target: fn}})
+			}
+		}
+		var options *emit.TypeRef
+		if fn := b.options; fn != (symbol.Identity{}) {
+			options = &emit.TypeRef{Spelling: fn.Name, Target: fn}
+		}
 		byCallable[b.callable] = append(byCallable[b.callable], Check{
 			Apply:  &emit.TypeRef{Spelling: b.fn.Name, Target: b.fn},
 			Defect: &emit.TypeRef{Spelling: b.defect.Name, Target: b.defect},
-			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Property: b.property, Counted: b.counted,
+			Method: b.fn.Name, Segment: b.segment, Statement: b.statement, Doors: opened, Options: options,
+			Property: b.property, Counted: b.counted,
 		})
 	}
 	var out []Check
 	for _, c := range callables {
-		for _, check := range byCallable[c.Name] {
-			check.Field, check.Type = c.Field, c.Type
-			out = append(out, check)
+		bound := byCallable[c.Name]
+		for i := range bound {
+			bound[i].Field, bound[i].Type = c.Field, c.Type
+			out = append(out, bound[i])
 		}
 	}
 	return out
@@ -1104,7 +1330,8 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		&emit.Field{Name: checksWord, Type: emitted(n.Checks)},
 	)
 	excused := make([]Excusal, 0, len(s.Checks))
-	for _, c := range s.Checks {
+	for i := range s.Checks {
+		c := &s.Checks[i]
 		excused = append(excused, Excusal{Field: c.Field, Method: c.Method, Reason: aloneReason})
 	}
 	test := Conformance{
@@ -1147,8 +1374,8 @@ func identitiesOf(s *Suite) []Identity {
 	var out []Identity
 	for i := range s.Callables {
 		c := &s.Callables[i]
-		for _, check := range s.Checks {
-			if check.Field == c.Field {
+		for j := range s.Checks {
+			if check := &s.Checks[j]; check.Field == c.Field {
 				out = append(out, Identity{Field: c.Field, Method: check.Method, ID: c.Name + "/" + check.Segment})
 			}
 		}
@@ -1268,6 +1495,10 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 			return nil
 		}
 	}
+	options, called := optionsOf(m, e, &b, d)
+	if !called {
+		return nil
+	}
 	decl, _ := m.Reader().Lookup(declared)
 	methods := methodsOf(&b, decl)
 	excusals, excused := g.excusalsOf(m, &declared, methods)
@@ -1315,7 +1546,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	test := Conformance{
 		Test:    e.JoinName(conforms, testWord),
 		Subject: st.Name, Declaration: declared.Name, Excusals: excusals, Ceilings: ceilings, Targets: targets,
-		Levels: levels, FromHandle: len(view.Params) == 1,
+		Levels: levels, Options: options, FromHandle: len(view.Params) == 1,
 	}
 	if cases, stated := d.Param(CasesParam); stated {
 		test.Cases = cases.Int
@@ -1323,6 +1554,45 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	test.benchmarks(e, conforms, allocated, slices.ContainsFunc(levels, func(l Level) bool { return l.Concurrent }))
 	e.File(TestTag).Record(test, record)
 	return nil
+}
+
+// optionsOf returns the reference to the function of the param options of the
+// directive subject d, and nil for a directive without the param. The
+// function takes no parameter and returns one list, and the test of the
+// subject can call it. Otherwise optionsOf reports [BadOptions] at the subject
+// and returns false.
+func optionsOf(m *sdk.StructMatch, e *sdk.Emitter, b *rules.Bound, d *directive.Directive) (*emit.TypeRef, bool) {
+	param, stated := d.Param(OptionsParam)
+	if !stated {
+		return nil, true
+	}
+	fn, subject := param.Target, m.Struct.Name
+	found, _ := m.Reader().Lookup(fn)
+	view, _ := b.CallableOf(found)
+	switch {
+	case len(view.Params) > 0:
+		m.Errorf(BadOptions, "the function %s of the param options takes %s, so %s has no conformance test",
+			fn.Name, parameters(len(view.Params)), subject)
+		return nil, false
+	case len(view.Returns) != 1:
+		m.Errorf(BadOptions, "the function %s of the param options returns %d results, so %s has no conformance "+
+			"test", fn.Name, len(view.Returns), subject)
+		return nil, false
+	case view.Returns[0].Ref.Form != symbol.FormList:
+		m.Errorf(BadOptions, "the function %s of the param options returns the type %s, and the options of an "+
+			"application are a list, so %s has no conformance test", fn.Name, view.Returns[0].Ref.Spelling, subject)
+		return nil, false
+	}
+	// The test calls the function from the package of its routed file, as it
+	// calls the factory.
+	if pkg, placed := e.File(TestTag).Package(); placed == nil {
+		if err := b.Importable(pkg, &node.TypeRef{Spelling: fn.Name, Target: fn}); err != nil {
+			m.Errorf(BadOptions, "the conformance test of %s in the package %s cannot call the function %s of the "+
+				"param options, so %s has no conformance test: %v", subject, pkg.Package, fn.Name, subject, err)
+			return nil, false
+		}
+	}
+	return &emit.TypeRef{Spelling: fn.Name, Target: fn}, true
 }
 
 // firstSubject returns the first directive subject of the struct of m whose

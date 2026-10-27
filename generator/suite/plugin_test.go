@@ -67,6 +67,14 @@ func TestSuite(t *testing.T) {
 					name:    "returns from Keys the error of a key of the declaration registered with another type",
 					giveKey: suite.KeyDeclaration,
 				},
+				{
+					name:    "returns from Keys the error of the key of the count registered with another type",
+					giveKey: suite.KeyCounted,
+				},
+				{
+					name:    "returns from Keys the error of a key of a door registered with another type",
+					giveKey: suite.KeyCrash,
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -702,6 +710,38 @@ func TestSuite(t *testing.T) {
 					wantCode: suite.BadFactory,
 					wantMsg:  "the factory NewNothing returns 0 results, so Nothing has no conformance test",
 				},
+				{
+					name:     "reports BadOptions at a subject whose function of the options takes a parameter",
+					givePkgs: []string{storePackage, badPackage}, giveKind: symbol.KindStruct, give: "Configured",
+					wantCode: suite.BadOptions,
+					wantMsg: "the function Configure of the param options takes 1 parameter, so Configured has no " +
+						"conformance test",
+				},
+				{
+					name:     "reports BadOptions at a subject whose function of the options returns two results",
+					givePkgs: []string{storePackage, badPackage}, giveKind: symbol.KindStruct, give: "Doubled",
+					wantCode: suite.BadOptions,
+					wantMsg: "the function DoubledOptions of the param options returns 2 results, so Doubled has no " +
+						"conformance test",
+				},
+				{
+					name:     "reports BadOptions at a subject whose function of the options returns no list",
+					givePkgs: []string{storePackage, badPackage}, giveKind: symbol.KindStruct, give: "Single",
+					wantCode: suite.BadOptions,
+					wantMsg: "the function SingleOption of the param options returns the type any, and the options " +
+						"of an application are a list, so Single has no conformance test",
+				},
+				{
+					name:     "reports BadOptions at a subject with an unexported function of the options",
+					givePkgs: []string{storePackage, badPackage},
+					giveKind: symbol.KindStruct,
+					give:     "Secret",
+					wantCode: suite.BadOptions,
+					wantMsg: "the conformance test of Secret in the package example.com/shop/bad_test cannot call the " +
+						"function secretOptions of the param options, so Secret has no conformance test: golang: " +
+						"secretOptions is not exported from example.com/shop/bad, and the code is in " +
+						"example.com/shop/bad_test",
+				},
 			}
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
@@ -718,6 +758,17 @@ func TestSuite(t *testing.T) {
 				})
 			}
 		}
+
+		t.Run("records the function of the options of a subject", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, durablePackage)
+			got, found := recorded(t, f, p).tests["TestJournalConformsToKeeper"]
+			assert.True(t, found, "suite records the conformance test of Journal")
+			expect.Equal(t, got.Data.Options, ref(t, f, "JournalOptions"),
+				"the record refers to the function of the options of Journal")
+		})
 
 		t.Run("records the conformance of a subject under out with a factory of the external test package of its kit",
 			func(t *testing.T) {
@@ -759,6 +810,18 @@ func TestSuite(t *testing.T) {
 			_, found := recorded(t, gentest.New(t, s), p).tests["TestHiddenConformsToStore"]
 			expect.True(t, found, "suite records the conformance test of Hidden, and the layout refuses its factory")
 		})
+
+		t.Run("leaves the check of the function of the options to the layout where the plan previews no package",
+			func(t *testing.T) {
+				t.Parallel()
+
+				p := suite.New()
+				s := specOf(goTree, p, storePackage, badPackage)
+				s.Types = nil
+				_, found := recorded(t, gentest.New(t, s), p).tests["TestSecretConformsToStore"]
+				expect.True(t, found,
+					"suite records the conformance test of Secret, and the layout refuses its function of the options")
+			})
 
 		t.Run("records a fuzz target of each callable of a subject", func(t *testing.T) {
 			t.Parallel()
@@ -1277,6 +1340,39 @@ func TestSuite(t *testing.T) {
 			}}, "the check binds to the exported method of the struct")
 		})
 
+		t.Run("binds the doors of the planted defect and the options of the run of each check", func(t *testing.T) {
+			t.Parallel()
+
+			p := suite.New()
+			f := fixture(t, goTree, p, durablePackage)
+			got := recorded(t, f, p).suites["Keeper"]
+			expect.Equal(t, got.Checks, []suite.Check{
+				{
+					Apply: ref(t, f, "LeavesTheWholeValue"), Defect: ref(t, f, "tearsWrites"), Field: "Put",
+					Type: "KeeperPut", Method: "LeavesTheWholeValue", Segment: "leaves-the-whole-value",
+					Statement: "a crash during Put leaves the whole value or no value",
+					Doors: []suite.Door{
+						{Field: "Reference", Func: ref(t, f, "reference")},
+						{Field: "Second", Func: ref(t, f, "second")},
+						{Field: "Crash", Func: ref(t, f, "tear")},
+					},
+				},
+				{
+					Apply: ref(t, f, "KeepsEachPutAcrossARestart"), Defect: ref(t, f, "forgetsOnRestart"),
+					Field: "Get", Type: "KeeperGet", Method: "KeepsEachPutAcrossARestart",
+					Segment:   "keeps-each-put-across-a-restart",
+					Statement: "Get returns each value that Put stored before a restart",
+					Doors:     []suite.Door{{Field: "Restart", Func: ref(t, f, "forget")}},
+				},
+				{
+					Apply: ref(t, f, "KeepsTheLastPut"), Defect: ref(t, f, "keepsTheFirstPut"), Field: "Get",
+					Type: "KeeperGet", Method: "KeepsTheLastPut", Segment: "keeps-the-last-put",
+					Statement: "Get returns the value of the last Put of a key", Options: ref(t, f, "putShares"),
+					Property: true,
+				},
+			}, "each check binds the doors of its planted defect and the options of its property run")
+		})
+
 		t.Run("binds a check whose callable opens with the name of its package", func(t *testing.T) {
 			t.Parallel()
 
@@ -1442,6 +1538,83 @@ func TestSuite(t *testing.T) {
 					wantCode: suite.BadCheck,
 					wantMsg: "a budget of Store.Get adds the check Store.Get/latency-budget, so LatencyBudget is no " +
 						"check. Rename the function",
+				},
+				{
+					name:     "reports BadCheck at a door restart without the planted defect",
+					give:     "RestartsAlone",
+					wantCode: suite.BadCheck,
+					wantMsg: "the door restart restartsAlone of RestartsAlone takes 1 parameter, and the door restart " +
+						"takes the handle of its check and the planted defect",
+				},
+				{
+					name:     "reports BadCheck at a door crash without the call",
+					give:     "CrashesWithoutTheCall",
+					wantCode: suite.BadCheck,
+					wantMsg: "the door crash crashesWithoutTheCall of CrashesWithoutTheCall takes 2 parameters, and the " +
+						"door crash takes the handle of its check, the planted defect and the call that it crashes",
+				},
+				{
+					name:     "reports BadCheck at a door crash whose third parameter is no function",
+					give:     "CrashesTheText",
+					wantCode: suite.BadCheck,
+					wantMsg: "the third parameter of the door crash crashesText of CrashesTheText has the type string, " +
+						"and the door crash takes the call that it crashes as a func()",
+				},
+				{
+					name:     "reports BadCheck at a door reference of two results",
+					give:     "ReferencesTwo",
+					wantCode: suite.BadCheck,
+					wantMsg: "the door reference referencesTwo of ReferencesTwo returns 2 results, and a door returns " +
+						"its subject alone",
+				},
+				{
+					name:     "reports BadCheck at options of a check without a case",
+					give:     "OptionsOfAnApply",
+					wantCode: suite.BadCheck,
+					wantMsg: "the options sharesOfAnApply of OptionsOfAnApply apply to the property run of a check, " +
+						"and OptionsOfAnApply takes no *prop.Case",
+				},
+				{
+					name:     "reports BadCheck at options without the handle",
+					give:     "OptionsWithoutTheHandle",
+					wantCode: suite.BadCheck,
+					wantMsg: "the options sharesWithoutTheHandle of OptionsWithoutTheHandle take 0 parameters, and the " +
+						"options of a check take the handle of its check alone",
+				},
+				{
+					name:     "reports BadCheck at options of two results",
+					give:     "OptionsOfTwo",
+					wantCode: suite.BadCheck,
+					wantMsg: "the options sharesAndAnError of OptionsOfTwo return 2 results, and the options of a check " +
+						"return []prop.Option",
+				},
+				{
+					name:     "reports BadCheck at options of another type",
+					give:     "OptionsOfText",
+					wantCode: suite.BadCheck,
+					wantMsg: "the options labels of OptionsOfText return the type []string, and the options of a check " +
+						"return []prop.Option",
+				},
+				{
+					name:     "reports BadCheck at options of one option",
+					give:     "OptionsOfOne",
+					wantCode: suite.BadCheck,
+					wantMsg: "the options oneShare of OptionsOfOne return the type prop.Option, and the options of a " +
+						"check return []prop.Option",
+				},
+				{
+					name:     "reports BadCheck at options of another type of the property engine",
+					give:     "OptionsOfCases",
+					wantCode: suite.BadCheck,
+					wantMsg: "the options casesOfTheEngine of OptionsOfCases return the type []prop.Case, and the " +
+						"options of a check return []prop.Option",
+				},
+				{
+					name:     "reports BadCheck at options of an option of another package",
+					give:     "OptionsOfThisPackage",
+					wantCode: suite.BadCheck,
+					wantMsg: "the options optionsOfThisPackage of OptionsOfThisPackage return the type []Option, and " +
+						"the options of a check return []prop.Option",
 				},
 			}
 			for _, tt := range tests {

@@ -81,3 +81,48 @@ type Fetchless struct{}
 
 // NewFetchless returns a Fetchless.
 func NewFetchless() *Fetchless { return &Fetchless{} }
+
+// Configured is a subject whose function of the options takes a parameter.
+//
+//dokimi:subject store.Store new=NewConfigured options=Configure
+type Configured struct{}
+
+// NewConfigured returns a Configured.
+func NewConfigured() *Configured { return &Configured{} }
+
+// Configure returns the options of the level.
+func Configure(level int) []any { return []any{level} }
+
+// Doubled is a subject whose function of the options returns two results.
+//
+//dokimi:subject store.Store new=NewDoubled options=DoubledOptions
+type Doubled struct{}
+
+// NewDoubled returns a Doubled.
+func NewDoubled() *Doubled { return &Doubled{} }
+
+// DoubledOptions returns the options and an error.
+func DoubledOptions() ([]any, error) { return nil, nil }
+
+// Single is a subject whose function of the options returns one option.
+//
+//dokimi:subject store.Store new=NewSingle options=SingleOption
+type Single struct{}
+
+// NewSingle returns a Single.
+func NewSingle() *Single { return &Single{} }
+
+// SingleOption returns one option.
+func SingleOption() any { return nil }
+
+// Secret is a subject whose function of the options its package does not
+// export, so the external test package cannot call it.
+//
+//dokimi:subject store.Store new=NewSecret options=secretOptions
+type Secret struct{}
+
+// NewSecret returns a Secret.
+func NewSecret() *Secret { return &Secret{} }
+
+// secretOptions returns no option.
+func secretOptions() []any { return nil }

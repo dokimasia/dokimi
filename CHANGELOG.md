@@ -1,5 +1,23 @@
 # go.dokimi.dev/dokimi
 
+## 0.4.0
+
+### Minor Changes
+
+- b586ce9: Add the param `around` of the directive `check` to run each run of the check inside an environment, such as a `testing/synctest` bubble.
+- b586ce9: Leave each callable with the mixin `waits` out of the generated benchmarks and out of the allocation ceilings of the test of a suite.
+- b586ce9: Write `Waits: true` into the call of each callable with the mixin `waits` in a generated suite.
+- b586ce9: Pass the sample that a parameter states on itself in each generated call of its callable.
+- a5e2ee8: Release the binaries of the command `dokimi` and its Homebrew cask `dokimasia/tap/dokimi`.
+- b586ce9: Report `DOKIMISUITE-0007` at a budget of a callable with the mixin `waits`.
+- b586ce9: Report `DOKIMISUITE-0009` at a declaration with a parameter whose sample the file of its suite cannot refer to.
+- b586ce9: Report `DOKIMISUITE-0005` at a check whose environment does not take a `*testing.T` and a `func(*testing.T)`, or returns a result.
+
+### Patch Changes
+
+- 71136eb: Require go.dokimi.dev/assert v0.10.0.
+- 71136eb: Require eidos-plugin-shape v0.1.0.
+
 ## 0.3.0
 
 ### Minor Changes

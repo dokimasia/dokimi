@@ -8,28 +8,38 @@
 [![CI](https://github.com/dokimasia/dokimi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dokimasia/dokimi/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/dokimasia/dokimi)](https://github.com/dokimasia/dokimi/releases/latest)
 [![Go Reference](https://pkg.go.dev/badge/go.dokimi.dev/dokimi.svg)](https://pkg.go.dev/go.dokimi.dev/dokimi)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/dokimasia/dokimi/badge)](https://scorecard.dev/viewer/?uri=github.com/dokimasia/dokimi)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-dokimi generates the tests and the test helpers of your code from directives in its doc comments.
-Mark a declaration with a directive, such as `//dokimi:builder` on a struct, and run `dokimi run`.
-dokimi reads the code through [eidos](https://github.com/dokimasia/eidos) and writes the generated
-files beside it.
+dokimi generates the tests and the test helpers of your Go code from directives in its doc
+comments. It proves that each check of a generated suite can fail.
+
+For an interface marked `//dokimi:suite`, dokimi writes a conformance suite that every
+implementation of the interface must pass. A struct marked `//dokimi:builder` gets a fixture
+builder with its spec. The generated files are plain Go that `go test` runs.
 
 A test that cannot fail looks the same as a test that works, because both pass. dokimi pairs each
-check of a conformance suite with a planted defect. A planted defect is an implementation that is
-correct except for the one rule that its check verifies. The test of the suite applies each check
-to its planted defect and fails when the check passes on it.
+check of a suite with a planted defect. A planted defect is an implementation that is correct
+except for the one rule that its check verifies. `go test` applies each check to its planted defect
+and fails when the check passes on it.
+
+## Features
+
+- Conformance suites of interfaces, structs and functions, with fuzz targets, allocation budgets
+  and benchmarks for each method or function.
+- Checks that must each fail on a planted defect, so a check that cannot fail fails the test of
+  its suite.
+- Doubles that record each call, return the results that a test configures, and inject faults and
+  latency.
+- Fixture builders, the parse and print functions of enumerations, and the specs of error values.
+- Generated code that imports the runtime modules and the assertions alone, and runs under
+  `go test` without dokimi.
+- A gate for CI that fails the build on a generated file that is out of date.
+- Releases for Linux, macOS and Windows with signed checksums, SPDX SBOMs and build provenance.
 
 ## Install
 
-Each [release](https://github.com/dokimasia/dokimi/releases/latest) has archives for Linux, macOS
-and Windows on amd64 and arm64, deb, rpm and apk packages for Linux, and `checksums.txt` with the
-SHA-256 digest of each file. cosign signs `checksums.txt` without a key, and each archive and
-package has an SPDX SBOM. Download the archive for your system, check its digest, and put `dokimi`
-on your `PATH`. `gh attestation verify <file> --repo dokimasia/dokimi` checks the build provenance
-of a file.
-
-With Homebrew, install the cask of the tap:
+With Homebrew on macOS or Linux:
 
 ```sh
 brew install --cask dokimasia/tap/dokimi
@@ -38,12 +48,19 @@ brew install --cask dokimasia/tap/dokimi
 The cask installs the completions of bash, zsh and fish. The binary is not notarized, so on macOS
 the cask removes the quarantine attribute.
 
-To install the command from source, you need Go 1.27.3 or later and a C compiler, because dokimi
-parses TypeScript with the C grammar of tree-sitter:
+With Go 1.27.3 or later and a C compiler:
 
 ```sh
 go install go.dokimi.dev/dokimi/cmd/dokimi@latest
 ```
+
+The build needs the C compiler because dokimi parses TypeScript with the C grammar of tree-sitter.
+
+Each [release](https://github.com/dokimasia/dokimi/releases/latest) also has archives for Linux,
+macOS and Windows on amd64 and arm64, and deb, rpm and apk packages for Linux. `checksums.txt`
+contains the SHA-256 digest of each file, and cosign signs it without a key. Each archive and
+package has an SPDX SBOM. `gh attestation verify <file> --repo dokimasia/dokimi` checks the build
+provenance of a file.
 
 `dokimi version` prints the versions of the binary, of eidos and of each plugin.
 
@@ -123,48 +140,128 @@ the suite to an implementation in memory.
 `go.dokimi.dev/assert`, `go.dokimi.dev/conform` and `go.dokimi.dev/stub`, and `go mod tidy` adds
 them to `go.mod`.
 
-`TestStoreSuite` applies the check to `forgetful`. It passes only when the check fails there at the
-assertion whose message is `h.Statement()`. `TestStoreConformsToStore` then applies the check to
-the implementation in memory.
+`go test -v ./...` shows both runs of the check:
 
-Commit the generated files with the directives, and add `.dokimi/` to `.gitignore`. A run keeps
-its state in that directory. In CI, fail the build when a generated file is out of date:
-
-```sh
-dokimi run --check --strict ./...
+```text
+--- PASS: TestStoreConformsToStore (0.00s)
+    --- PASS: TestStoreConformsToStore/Get/returns-the-put-item (0.00s)
+--- PASS: TestStoreSuite (0.00s)
+    --- PASS: TestStoreSuite/StoreSuite (0.00s)
+        --- PASS: TestStoreSuite/StoreSuite/Get/returns-the-put-item (0.00s)
 ```
 
-`--check` does not write a file and reports each file that a run would change. `--strict` reports
-each warning as an error. Never edit a generated file, because a run refuses to write over a file
-that was edited after its stamp. Change the directive or the source instead, and run again.
+`TestStoreSuite` applies the check to `forgetful`. It passes only when the check fails there at the
+assertion whose message is `h.Statement()`. `TestStoreConformsToStore` applies the check to the
+implementation in memory.
 
-## What dokimi generates
+Commit the generated files with the directives, and add `.dokimi/` to `.gitignore`.
+
+## Generators
 
 | Directive | Put it on | dokimi writes |
 |---|---|---|
 | `suite` | An interface, a struct or a function | The suite, `Run<X>Suite`, the fuzz targets, the budgets, the benchmarks and the test that applies each check to its planted defect |
-| `check` | A function in the package of the suite | The binding of the function and its planted defect to a callable of the suite |
+| `check` | A function in the package of the suite | The binding of the function and its planted defect to a method or a function of the suite |
 | `subject` | The struct of an implementation | `Test<Impl>ConformsTo<X>`, the benchmarks, the fuzz targets, and the allocation test where a budget caps allocations |
 | `stub` | An interface or a struct | `<X>Stub`, which records each call, returns the configured results and injects faults and latency, and its spec |
 | `builder` | A struct | `New<X>Builder` with a setter of each field, `Mutate`, `Clone` and `Build`, and its spec |
 | `enum` | A defined type with constants | `Parse<X>`, `String`, `IsValid`, `<X>Values`, `MarshalText` and `UnmarshalText`, and their spec |
 | `sentinel` | The package clause | The spec of each error value and each error type |
 
-The [Go guide](docs/guides/go.md) shows an example of each generator and lists the directives that
-change what a generator writes, such as `out`, `budget`, `fault`, `mixin` and `excuse`.
+dokimi writes `<file>_<generator>.go` and `<file>_<generator>_test.go` beside the source, or into
+the package that `//dokimi:out` names. The [Go guide](docs/guides/go.md) lists the directives that
+change what a generator writes, such as `budget`, `fault`, `mixin` and `excuse`.
 
-## Languages
+### Build a test value
 
-dokimi runs one plan for each language. The plan of Go reads the Go packages of the module and
-runs every generator. The plan of TypeScript reads the TypeScript sources and runs `builder`,
-`stub`, `enum` and `sentinel`. Its output imports the packages `@dokimi/assert` and
-`@dokimi/runtime`. npm does not publish either package.
+```go
+//dokimi:out path=plaintest/
+package plain
 
-The key `sources` of a plan in `.dokimi.yaml` replaces the packages that the plan reads, and
-`enabled: false` turns the plan off:
+//dokimi:builder
+type Item struct {
+	ID    string
+	Tags  []string
+	Count int
+}
+```
+
+```go
+item := plaintest.NewItemBuilder().WithID("a").AppendTags("new").WithCount(2).Build()
+```
+
+### Replace a dependency
+
+```go
+store := storetest.NewStoreStub(t)
+store.OnGet.Returns("v", nil)
+store.OnPut.FaultsOnce(errBusy)
+```
+
+The double records each call. `FaultsOnce` fails the next call of Put with `errBusy`.
+
+### Parse an enumeration
+
+```go
+//dokimi:enum
+type Status int
+
+const (
+	Draft Status = iota + 1
+	Published
+	Archived
+)
+```
+
+```go
+s, err := ParseStatus("Published") // errors.Is(err, ErrUnknownStatus) for any other text
+s.String()                         // "Published"
+StatusValues()                     // Draft, Published and Archived
+```
+
+### Check the error values of a package
+
+```go
+//dokimi:sentinel prefix=kv
+package store
+
+var (
+	ErrNotFound = errors.New("kv: not found")
+	ErrConflict = errors.New("kv: conflict")
+)
+```
+
+The generated spec fails where a message does not open with `kv:`, where two messages are the same,
+and where one error value matches another.
+
+## Use dokimi in CI
+
+Run the gate of generation before the tests:
+
+```yaml
+- uses: actions/setup-go@v7
+  with:
+    go-version-file: go.mod
+- run: go install go.dokimi.dev/dokimi/cmd/dokimi@latest
+- run: dokimi run --check --strict ./...
+- run: go test ./...
+```
+
+`--check` does not write a file and reports each file that a run would change as an error.
+`--strict` reports each warning as an error. A generated file that is out of date fails the step:
+
+```text
+store/storetest/store_suite.go: error EID-0064: store/storetest/store_suite.go is out of date: plan "go" would have updated it (close)
+```
+
+## Configuration
+
+`.dokimi.yaml` at the root of the module configures a run:
 
 ```yaml
 version: 1
+policies:
+  golang.width: "120"
 plans:
   go:
     sources: {lang: golang, packages: [./internal/...]}
@@ -172,12 +269,49 @@ plans:
     enabled: false
 ```
 
-`dokimi schema` prints the JSON Schema of `.dokimi.yaml`.
+- `golang.width` is the width at which the generated Go wraps its lines. Set it to the width of
+  your linter.
+- The key `sources` of a plan replaces the packages that the plan reads, and `enabled: false` turns
+  the plan off.
+- The key `options` sets the options of each generator, such as `options.enum.parse-function`.
 
-## The runtime of the generated code
+`dokimi schema` prints the JSON Schema of the file, and `dokimi doctor` checks the file and the
+directives.
 
-The generated Go code imports the modules of [dokimi-go](https://github.com/dokimasia/dokimi-go)
-and the assertions of [assert-go](https://github.com/dokimasia/assert-go):
+## Commands
+
+| Command | What it does |
+|---|---|
+| `dokimi run [PATTERNS...]` | Generates the files of the directives in the packages of the patterns |
+| `dokimi watch` | Runs again after each change, until an interrupt |
+| `dokimi explain` | Prints what the last run recorded about a file, a declaration, a fact or a finding |
+| `dokimi doctor` | Checks the config, the sealed state and the directives |
+| `dokimi prune` | Removes the generated files that no plan produces |
+| `dokimi plan` | Prints the composition of each workspace without running it |
+| `dokimi schema` | Prints the JSON Schema of `.dokimi.yaml` |
+| `dokimi version` | Prints the versions of the binary, of eidos and of the plugins |
+| `dokimi completion SHELL` | Writes the completion script of bash, zsh, fish or PowerShell |
+
+Each option also reads an environment variable, such as `DOKIMI_STRICT` for `--strict`.
+`dokimi <command> --help` lists the options of a command.
+
+## How it works
+
+dokimi reads your code through the frontends of [eidos](https://github.com/dokimasia/eidos) and runs
+one plan for each language. Each generator turns the directives of a declaration into files, and
+the backend of the language writes them.
+
+- Each generated file opens with `// Code generated by dokimi. DO NOT EDIT.` and ends with a
+  provenance stamp. A run refuses to write over a file that was edited after its stamp. Change the
+  directive or the source instead, and run again.
+- A run records its state in `.dokimi/`, and the next run regenerates only what changed. A run
+  without that state writes the same bytes.
+- The test of a suite calls `conform.Falsify`, which applies each check to its planted defect. It
+  accepts a failure only at the assertion whose message is the statement of the check, so a check
+  that fails for another reason also fails the test.
+- `dokimi prune` removes the generated files whose directive you removed.
+
+The generated Go code imports these modules:
 
 | Module | Imported by |
 |---|---|
@@ -186,52 +320,89 @@ and the assertions of [assert-go](https://github.com/dokimasia/assert-go):
 | [`go.dokimi.dev/fault`](https://pkg.go.dev/go.dokimi.dev/fault) | The fault strategies of each double |
 | [`go.dokimi.dev/assert`](https://pkg.go.dev/go.dokimi.dev/assert) | Each spec and each check |
 
-Each generated suite refers to the function `conform.CompatV1`. A major version of conform renames
-that function, so a suite that dokimi wrote for another major version does not compile.
+[dokimi-go](https://github.com/dokimasia/dokimi-go) contains the first three, and
+[assert-go](https://github.com/dokimasia/assert-go) contains the assertions. Each generated suite
+refers to the function `conform.CompatV1`. A major version of conform renames that function, so a
+suite that dokimi wrote for another major version does not compile.
 
-## Command line
+## Comparison
 
-```text
-dokimi <command> [options]
+- **Mock generators.** gomock and mockery generate mocks of interfaces. dokimi generates the double
+  of an interface or a struct with fault strategies, such as a share of failing calls or a window
+  of time, and a latency. The spec of the double checks the double itself.
+- **stringer.** stringer generates the method `String` of a type with constants. The enumeration of
+  dokimi also has `Parse<X>`, `IsValid`, `<X>Values`, `MarshalText` and `UnmarshalText`, and their
+  spec.
+- **Property-based testing libraries.** rapid runs the properties that you write and shrinks each
+  failure. The property checks of a suite run on the property engine of assert-go. The suite also
+  applies each check to each implementation and proves that each check fails on its planted defect.
+- **Conformance helpers.** `fstest.TestFS` and `iotest.TestReader` of the standard library check one
+  interface each. dokimi writes the suite of each interface that you mark.
+
+## FAQ
+
+### Does a test need dokimi to run?
+
+No. The generated files import the runtime modules and the assertions alone, so `go test` runs
+them on a machine without the binary.
+
+### How does a planted defect differ from a mutant?
+
+A mutation tool such as [dokimi-mutate-go](https://github.com/dokimasia/mutate-go) changes an
+expression of your code and reports whether any test failed. The planted defect of a check breaks
+the one rule that the check verifies. Its run shows that this check fails for the reason that it
+states, and it costs one run of that check.
+
+### What if an implementation does not pass a check?
+
+Its test fails with the message of the assertion that failed. When the difference is intended,
+excuse the check with its reason beside the directive `subject`:
+
+```go
+//dokimi:subject store.Store new=New
+//dokimi:excuse Store.Get/returns-the-put-item reason="a replica returns the item of its last sync"
 ```
 
-| Command | What it does |
-|---|---|
-| `run` | Generates the output of each workspace and writes it |
-| `plan` | Prints the composition of each workspace without running it |
-| `explain` | Prints what the last run recorded about a file, a declaration, a fact or a finding |
-| `prune` | Removes the generated files that no plan produces |
-| `doctor` | Checks the config, the sealed state and the directives of each workspace |
-| `watch` | Runs each workspace again after each change, until an interrupt |
-| `version` | Prints the versions of the binary, of eidos and of the plugins of each workspace |
-| `schema` | Prints the JSON Schema of the config file |
-| `completion` | Writes the completion script of bash, zsh, fish or PowerShell |
+The test of the subject then skips the check and reports the reason.
 
-Each option also reads an environment variable, such as `DOKIMI_STRICT` for `--strict`.
-`dokimi <command> --help` lists the options of a command.
+### What if a generated file needs a change?
+
+Change the directive or the source, and run `dokimi run` again. A run refuses to write over a
+generated file that was edited after its stamp, and `dokimi run --overwrite-drift` writes over it.
+
+### Does dokimi generate TypeScript?
+
+The plan of TypeScript runs `builder`, `stub`, `enum` and `sentinel` on the TypeScript sources of a
+workspace. Its output imports the packages `@dokimi/assert` and `@dokimi/runtime`. npm does not
+publish either package.
+
+## Status
+
+dokimi is before its 1.0 release. A minor release can change the generated code, and the
+[changelog](CHANGELOG.md) starts each such entry with **Breaking:**. The binary builds with Go
+1.27.3 or later, and the generated code needs Go 1.27.2 or later. The runtime modules have
+versions of their own.
 
 ## Documentation
 
 | Directory | Contents |
 |---|---|
 | [docs/guides](docs/guides) | How to use dokimi in a project of one language |
-| [docs/rfc](docs/rfc) | The proposals and the argument behind them |
+| [docs/rfc](docs/rfc) | The proposals and their arguments |
 | [docs/adr](docs/adr) | The decisions and what they cost |
+| [corpus/go](corpus/go) | The fixtures of the generators, with the generated files beside each fixture |
 
-The corpus in [corpus/go](corpus/go) contains the fixtures of the generators, with the generated
-files beside each fixture. The examples of the Go guide come from it.
+## Get help and contribute
 
-## Development
+- To report a defect, open an issue with the
+  [bug report form](https://github.com/dokimasia/dokimi/issues/new?template=bug.yml).
+- To propose a capability, open an issue with the
+  [feature request form](https://github.com/dokimasia/dokimi/issues/new?template=feature.yml).
+- To change the code, read [CONTRIBUTING.md](CONTRIBUTING.md). The repository uses
+  [ergon](https://github.com/dokimasia/ergon) for its checks and its releases, and `make check`
+  runs the gate of every module.
 
-The repository uses [ergon](https://github.com/dokimasia/ergon) for its checks and its releases.
-[CONTRIBUTING.md](CONTRIBUTING.md) describes how to propose a change. The project follows the
-[Contributor Covenant 2.1](CODE_OF_CONDUCT.md).
-
-```sh
-make check   # the gate: lint, tests, race detector and vulnerability scan of every module
-make test    # the tests of every module
-make help    # every target
-```
+Everyone who takes part follows the [Contributor Covenant 2.1](CODE_OF_CONDUCT.md).
 
 ## Security
 
@@ -241,5 +412,5 @@ contains.
 
 ## License
 
-Dokimasia B.V. licenses dokimi under the Apache License 2.0. See [LICENSE](LICENSE) and
-[NOTICE](NOTICE).
+Dokimasia B.V. maintains dokimi and licenses it under the Apache License 2.0. See
+[LICENSE](LICENSE) and [NOTICE](NOTICE).

@@ -98,9 +98,9 @@ shape; everything conditional or partner-needing is the model tier's.
 
 ## Mixin axis (batch 2 — reviewed)
 
-All 60 fixtures are suite-wired and seated. Fifteen classifications
+All 62 fixtures are suite-wired and seated. Fifteen classifications
 gained a floor claim; the rest are the model tier's or the clock
-door's, each with its reason. Three of eidos's mixins owe
+door's, each with its reason. Four of eidos's mixins owe
 documentation rather than a check by their own vocabulary's word —
 they are reported apart from the unclaimed gaps, so a reader is not
 sent looking for a rule that is deliberately never coming.
@@ -126,7 +126,7 @@ sent looking for a rule that is deliberately never coming.
 | retrysucceeds | claimed | Converges within the declared `attempts=`; an unparsable bound refuses in the header naming the value. |
 | defaultonerror | claimed | The declared default beside the error, read from the result type's own `//testkit:default`. REPLACES the reader's zero-on-error licence — the two contradict on one method, and the authored statement wins. |
 | hooks | claimed | A hook installed through the named registrar must fire; the adapter synthesizes the callback from the registrar's own parameter types. |
-| errors, scope, deprecated | documentary | Their own eidos vocabulary says no check is owed: errors "derives nothing by design", scope "owes documentation, not a check" (partition carries the checkable half), deprecated is an annotation the header surfaces. Reported apart from the unclaimed. |
+| errors, scope, deprecated, waits | documentary | Their own eidos vocabulary says no check is owed: errors "derives nothing by design", scope "owes documentation, not a check" (partition carries the checkable half), deprecated is an annotation the header surfaces. waits keeps its callable out of each generated benchmark and budget, and the benchmarks of its fixture measure Release and Held alone. Reported apart from the unclaimed. |
 | ttl, ttlperwrite, timeout, scheduled, windowed, pointintime, timeaware, eventually | door | Time-reading claims; wait on the clock door. |
 | accumulates, associative, commutative, conservative | model tier | Algebraic folds: the claim is over regroupings and reorderings of a generated sequence, which the floor cannot draw. |
 | atomic | model tier | A failed write leaving no partial state needs a write that CAN fail; `read=` now names the observer the model tier reads through. |

@@ -1,5 +1,17 @@
 # go.dokimi.dev/dokimi
 
+## 0.5.0
+
+### Minor Changes
+
+- 6f2a905: **Breaking:** Pass each call of a Go double to `stub.Answer` by value, as go.dokimi.dev/stub v0.2.0 requires.
+
+### Patch Changes
+
+- 082136a: Fix the double of a Go struct to implement the exported methods of the struct alone.
+- 082136a: Fix the generated checks of a Go double to leave out the unexported methods of the double.
+- 082136a: Report `DOKIMISTUB-0003` at a Go interface with an unexported method that its double in another package cannot implement.
+
 ## 0.4.0
 
 ### Minor Changes

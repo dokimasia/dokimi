@@ -165,6 +165,16 @@ func TestApplier(t *testing.T) {
 }
 ```
 
+The suite gives each type in the inputs of a callable a value. It passes a closed channel of drawn
+elements for a receive channel and for a channel of both directions, so each receive returns. It
+passes the sink of the test for a send channel. The sink receives and discards each value until
+the test ends. It passes a `*conform.Bytes` over drawn bytes for an interface of the package `io`.
+dokimi reports the warning `DOKIMISUITE-0010` at the declaration of the suite for each type
+without a generator. An interface with an unexported method is such a type when the standard
+library declares it or when its package does not export an implementation. Register a generator of
+such a type with `prop.Register` in the test process and suppress the warning with
+`//dokimi:diag off=DOKIMISUITE-0010`.
+
 ### Parse an enumeration
 
 ```go

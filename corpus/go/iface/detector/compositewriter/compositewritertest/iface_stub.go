@@ -199,15 +199,16 @@ func (s *CompositeWriterSetStub) invoke(
 // Func, then the results of Returns, and then the zero values.
 func (s *CompositeWriterStub) Set(ctx context.Context, key string, v compositewriter.Value) error {
 	call := CompositeWriterSetCall{Ctx: ctx, Key: key, V: v}
-	r := stub.Answer(s.OnSet.MethodStub, &call, stub.Arms[CompositeWriterSetCall, CompositeWriterSetReturn]{
+	r := stub.Answer(s.OnSet.MethodStub, call, stub.Arms[CompositeWriterSetCall, CompositeWriterSetReturn]{
 		Invoke:   s.OnSet.invoke(ctx, key, v),
 		Fallback: s.OnSet.fallback,
 		Fault:    func(err error) CompositeWriterSetReturn { return CompositeWriterSetReturn{Err: err} },
-		Stamp: func(c *CompositeWriterSetCall, r CompositeWriterSetReturn) {
+		Stamp: func(c CompositeWriterSetCall, r CompositeWriterSetReturn) CompositeWriterSetCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:8b043b3678a621802ee05e40e19f5893c8141ff31baa8b8f4edba07f6f11098f
+// dokimi:provenance sha256:8772b0d7d546300b44cf703a3a3e4917dcfb6f0c0b4819fca2a5eb6232a9153e

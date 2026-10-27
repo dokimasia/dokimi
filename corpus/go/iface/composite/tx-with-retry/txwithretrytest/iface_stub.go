@@ -287,12 +287,13 @@ func (s *TxWithRetryBeginStub) invoke(ctx context.Context) func() TxWithRetryBeg
 // Func, then the results of Returns, and then the zero values.
 func (s *TxWithRetryStub) Begin(ctx context.Context) error {
 	call := TxWithRetryBeginCall{Ctx: ctx}
-	r := stub.Answer(s.OnBegin.MethodStub, &call, stub.Arms[TxWithRetryBeginCall, TxWithRetryBeginReturn]{
+	r := stub.Answer(s.OnBegin.MethodStub, call, stub.Arms[TxWithRetryBeginCall, TxWithRetryBeginReturn]{
 		Invoke:   s.OnBegin.invoke(ctx),
 		Fallback: s.OnBegin.fallback,
 		Fault:    func(err error) TxWithRetryBeginReturn { return TxWithRetryBeginReturn{Err: err} },
-		Stamp: func(c *TxWithRetryBeginCall, r TxWithRetryBeginReturn) {
+		Stamp: func(c TxWithRetryBeginCall, r TxWithRetryBeginReturn) TxWithRetryBeginCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -314,12 +315,13 @@ func (s *TxWithRetryCommitStub) invoke(ctx context.Context) func() TxWithRetryCo
 // of Func, then the results of Returns, and then the zero values.
 func (s *TxWithRetryStub) Commit(ctx context.Context) error {
 	call := TxWithRetryCommitCall{Ctx: ctx}
-	r := stub.Answer(s.OnCommit.MethodStub, &call, stub.Arms[TxWithRetryCommitCall, TxWithRetryCommitReturn]{
+	r := stub.Answer(s.OnCommit.MethodStub, call, stub.Arms[TxWithRetryCommitCall, TxWithRetryCommitReturn]{
 		Invoke:   s.OnCommit.invoke(ctx),
 		Fallback: s.OnCommit.fallback,
 		Fault:    func(err error) TxWithRetryCommitReturn { return TxWithRetryCommitReturn{Err: err} },
-		Stamp: func(c *TxWithRetryCommitCall, r TxWithRetryCommitReturn) {
+		Stamp: func(c TxWithRetryCommitCall, r TxWithRetryCommitReturn) TxWithRetryCommitCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -341,15 +343,16 @@ func (s *TxWithRetryRollbackStub) invoke(ctx context.Context) func() TxWithRetry
 // of Func, then the results of Returns, and then the zero values.
 func (s *TxWithRetryStub) Rollback(ctx context.Context) error {
 	call := TxWithRetryRollbackCall{Ctx: ctx}
-	r := stub.Answer(s.OnRollback.MethodStub, &call, stub.Arms[TxWithRetryRollbackCall, TxWithRetryRollbackReturn]{
+	r := stub.Answer(s.OnRollback.MethodStub, call, stub.Arms[TxWithRetryRollbackCall, TxWithRetryRollbackReturn]{
 		Invoke:   s.OnRollback.invoke(ctx),
 		Fallback: s.OnRollback.fallback,
 		Fault:    func(err error) TxWithRetryRollbackReturn { return TxWithRetryRollbackReturn{Err: err} },
-		Stamp: func(c *TxWithRetryRollbackCall, r TxWithRetryRollbackReturn) {
+		Stamp: func(c TxWithRetryRollbackCall, r TxWithRetryRollbackReturn) TxWithRetryRollbackCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:184c8c629f052a86637d468cd6d090379aa9d9cae62c9cd21ee81623ee9fb393
+// dokimi:provenance sha256:e8afaf1452b43409994520173dc2f41ba54671686d9620fd68a9e70aef9ad898

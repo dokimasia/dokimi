@@ -228,12 +228,13 @@ func (s *MixedRecordStub) invoke(ctx context.Context, key string) func() MixedRe
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Record(ctx context.Context, key string) error {
 	call := MixedRecordCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRecord.MethodStub, &call, stub.Arms[MixedRecordCall, MixedRecordReturn]{
+	r := stub.Answer(s.OnRecord.MethodStub, call, stub.Arms[MixedRecordCall, MixedRecordReturn]{
 		Invoke:   s.OnRecord.invoke(ctx, key),
 		Fallback: s.OnRecord.fallback,
 		Fault:    func(err error) MixedRecordReturn { return MixedRecordReturn{Err: err} },
-		Stamp: func(c *MixedRecordCall, r MixedRecordReturn) {
+		Stamp: func(c MixedRecordCall, r MixedRecordReturn) MixedRecordCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -255,16 +256,17 @@ func (s *MixedCountInStub) invoke(ctx context.Context, key string) func() MixedC
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) CountIn(ctx context.Context, key string) (int, error) {
 	call := MixedCountInCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnCountIn.MethodStub, &call, stub.Arms[MixedCountInCall, MixedCountInReturn]{
+	r := stub.Answer(s.OnCountIn.MethodStub, call, stub.Arms[MixedCountInCall, MixedCountInReturn]{
 		Invoke:   s.OnCountIn.invoke(ctx, key),
 		Fallback: s.OnCountIn.fallback,
 		Fault:    func(err error) MixedCountInReturn { return MixedCountInReturn{Err: err} },
-		Stamp: func(c *MixedCountInCall, r MixedCountInReturn) {
+		Stamp: func(c MixedCountInCall, r MixedCountInReturn) MixedCountInCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:e252ad8a2d84caec2c90ca6c60d39f114b7964c0681d8541c3fbb215d00fbd66
+// dokimi:provenance sha256:74d33d4bfa84d7240a3e0afb183b0c84e3ede9b7d118056d1cc792e7537b4641

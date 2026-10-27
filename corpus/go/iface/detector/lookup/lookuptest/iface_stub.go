@@ -169,16 +169,17 @@ func (s *LookupInspectStub) invoke(key string) func() LookupInspectReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *LookupStub) Inspect(key string) (lookup.Value, lookup.Meta, bool) {
 	call := LookupInspectCall{Key: key}
-	r := stub.Answer(s.OnInspect.MethodStub, &call, stub.Arms[LookupInspectCall, LookupInspectReturn]{
+	r := stub.Answer(s.OnInspect.MethodStub, call, stub.Arms[LookupInspectCall, LookupInspectReturn]{
 		Invoke:   s.OnInspect.invoke(key),
 		Fallback: s.OnInspect.fallback,
-		Stamp: func(c *LookupInspectCall, r LookupInspectReturn) {
+		Stamp: func(c LookupInspectCall, r LookupInspectReturn) LookupInspectCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
 			c.Result2 = r.Result2
+			return c
 		},
 	})
 	return r.Result0, r.Result1, r.Result2
 }
 
-// dokimi:provenance sha256:0657af9617923287cddd2d0a73c41a3af1100f6b226fbcc51443285d46566823
+// dokimi:provenance sha256:e1d2dd8632de51c5e496adf81d13dc9b24d21c20c769d9c949a6a481d275d07b

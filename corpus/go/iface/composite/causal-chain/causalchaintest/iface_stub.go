@@ -227,12 +227,13 @@ func (s *LogAppendStub) invoke(ctx context.Context, e causalchain.Entry) func() 
 // of Func, then the results of Returns, and then the zero values.
 func (s *LogStub) Append(ctx context.Context, e causalchain.Entry) error {
 	call := LogAppendCall{Ctx: ctx, E: e}
-	r := stub.Answer(s.OnAppend.MethodStub, &call, stub.Arms[LogAppendCall, LogAppendReturn]{
+	r := stub.Answer(s.OnAppend.MethodStub, call, stub.Arms[LogAppendCall, LogAppendReturn]{
 		Invoke:   s.OnAppend.invoke(ctx, e),
 		Fallback: s.OnAppend.fallback,
 		Fault:    func(err error) LogAppendReturn { return LogAppendReturn{Err: err} },
-		Stamp: func(c *LogAppendCall, r LogAppendReturn) {
+		Stamp: func(c LogAppendCall, r LogAppendReturn) LogAppendCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -254,16 +255,17 @@ func (s *LogReplayStub) invoke(ctx context.Context) func() LogReplayReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *LogStub) Replay(ctx context.Context) ([]causalchain.Entry, error) {
 	call := LogReplayCall{Ctx: ctx}
-	r := stub.Answer(s.OnReplay.MethodStub, &call, stub.Arms[LogReplayCall, LogReplayReturn]{
+	r := stub.Answer(s.OnReplay.MethodStub, call, stub.Arms[LogReplayCall, LogReplayReturn]{
 		Invoke:   s.OnReplay.invoke(ctx),
 		Fallback: s.OnReplay.fallback,
 		Fault:    func(err error) LogReplayReturn { return LogReplayReturn{Err: err} },
-		Stamp: func(c *LogReplayCall, r LogReplayReturn) {
+		Stamp: func(c LogReplayCall, r LogReplayReturn) LogReplayCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:23478d6af1c6d2d7187adcaa1802c31d38673140a7cd853b03fc014b8bb7362c
+// dokimi:provenance sha256:99a3d6f8946f433cce02c74c401c26f282e16c7ef9e4873fbbe2dacaf1dbdf2c

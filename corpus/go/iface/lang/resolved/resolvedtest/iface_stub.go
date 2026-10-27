@@ -229,12 +229,13 @@ func (s *ApplierApplyStub) invoke(ctx context.Context, req resolved.ApplyRequest
 // Func, then the results of Returns, and then the zero values.
 func (s *ApplierStub) Apply(ctx context.Context, req resolved.ApplyRequest) error {
 	call := ApplierApplyCall{Ctx: ctx, Req: req}
-	r := stub.Answer(s.OnApply.MethodStub, &call, stub.Arms[ApplierApplyCall, ApplierApplyReturn]{
+	r := stub.Answer(s.OnApply.MethodStub, call, stub.Arms[ApplierApplyCall, ApplierApplyReturn]{
 		Invoke:   s.OnApply.invoke(ctx, req),
 		Fallback: s.OnApply.fallback,
 		Fault:    func(err error) ApplierApplyReturn { return ApplierApplyReturn{Err: err} },
-		Stamp: func(c *ApplierApplyCall, r ApplierApplyReturn) {
+		Stamp: func(c ApplierApplyCall, r ApplierApplyReturn) ApplierApplyCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -256,16 +257,17 @@ func (s *ApplierLimitStub) invoke(ctx context.Context, key string) func() Applie
 // Func, then the results of Returns, and then the zero values.
 func (s *ApplierStub) Limit(ctx context.Context, key string) (int, error) {
 	call := ApplierLimitCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnLimit.MethodStub, &call, stub.Arms[ApplierLimitCall, ApplierLimitReturn]{
+	r := stub.Answer(s.OnLimit.MethodStub, call, stub.Arms[ApplierLimitCall, ApplierLimitReturn]{
 		Invoke:   s.OnLimit.invoke(ctx, key),
 		Fallback: s.OnLimit.fallback,
 		Fault:    func(err error) ApplierLimitReturn { return ApplierLimitReturn{Err: err} },
-		Stamp: func(c *ApplierLimitCall, r ApplierLimitReturn) {
+		Stamp: func(c ApplierLimitCall, r ApplierLimitReturn) ApplierLimitCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:d83c97b71a38f2d631405efcffa9189f44c0f67fbc975c58091d0f0f1f44ca92
+// dokimi:provenance sha256:aaed643382de6a70b39f7edb7d709acff2d33dc529f90b63a64d6aa3eddfb946

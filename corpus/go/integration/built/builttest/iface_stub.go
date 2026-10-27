@@ -410,7 +410,7 @@ func (s *LedgerGetStub) invoke(ctx context.Context, id string) func() LedgerGetR
 // Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) Get(ctx context.Context, id string) (built.Account, error) {
 	call := LedgerGetCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[LedgerGetCall, LedgerGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[LedgerGetCall, LedgerGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, id),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) LedgerGetReturn { return LedgerGetReturn{Err: err} },
@@ -418,9 +418,10 @@ func (s *LedgerStub) Get(ctx context.Context, id string) (built.Account, error) 
 			r0 := NewAccountBuilder().Build()
 			return LedgerGetReturn{Result: r0}
 		},
-		Stamp: func(c *LedgerGetCall, r LedgerGetReturn) {
+		Stamp: func(c LedgerGetCall, r LedgerGetReturn) LedgerGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -442,7 +443,7 @@ func (s *LedgerFindStub) invoke(ctx context.Context, id string) func() LedgerFin
 // Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) Find(ctx context.Context, id string) (*built.Account, error) {
 	call := LedgerFindCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnFind.MethodStub, &call, stub.Arms[LedgerFindCall, LedgerFindReturn]{
+	r := stub.Answer(s.OnFind.MethodStub, call, stub.Arms[LedgerFindCall, LedgerFindReturn]{
 		Invoke:   s.OnFind.invoke(ctx, id),
 		Fallback: s.OnFind.fallback,
 		Fault:    func(err error) LedgerFindReturn { return LedgerFindReturn{Err: err} },
@@ -450,9 +451,10 @@ func (s *LedgerStub) Find(ctx context.Context, id string) (*built.Account, error
 			r0 := NewAccountBuilder().Build()
 			return LedgerFindReturn{Result: &r0}
 		},
-		Stamp: func(c *LedgerFindCall, r LedgerFindReturn) {
+		Stamp: func(c LedgerFindCall, r LedgerFindReturn) LedgerFindCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -474,16 +476,17 @@ func (s *LedgerLookupStub) invoke(id string) func() LedgerLookupReturn {
 // of Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) Lookup(id string) (built.Account, bool) {
 	call := LedgerLookupCall{ID: id}
-	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[LedgerLookupCall, LedgerLookupReturn]{
+	r := stub.Answer(s.OnLookup.MethodStub, call, stub.Arms[LedgerLookupCall, LedgerLookupReturn]{
 		Invoke:   s.OnLookup.invoke(id),
 		Fallback: s.OnLookup.fallback,
 		Default: func() LedgerLookupReturn {
 			r0 := NewAccountBuilder().Build()
 			return LedgerLookupReturn{Result0: r0}
 		},
-		Stamp: func(c *LedgerLookupCall, r LedgerLookupReturn) {
+		Stamp: func(c LedgerLookupCall, r LedgerLookupReturn) LedgerLookupCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
+			return c
 		},
 	})
 	return r.Result0, r.Result1
@@ -505,7 +508,7 @@ func (s *LedgerListStub) invoke(ctx context.Context) func() LedgerListReturn {
 // Func, then the results of Returns, and then the default results.
 func (s *LedgerStub) List(ctx context.Context) (built.Page[built.Account], error) {
 	call := LedgerListCall{Ctx: ctx}
-	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[LedgerListCall, LedgerListReturn]{
+	r := stub.Answer(s.OnList.MethodStub, call, stub.Arms[LedgerListCall, LedgerListReturn]{
 		Invoke:   s.OnList.invoke(ctx),
 		Fallback: s.OnList.fallback,
 		Fault:    func(err error) LedgerListReturn { return LedgerListReturn{Err: err} },
@@ -513,9 +516,10 @@ func (s *LedgerStub) List(ctx context.Context) (built.Page[built.Account], error
 			r0 := NewPageBuilder[built.Account]().Build()
 			return LedgerListReturn{Result: r0}
 		},
-		Stamp: func(c *LedgerListCall, r LedgerListReturn) {
+		Stamp: func(c LedgerListCall, r LedgerListReturn) LedgerListCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -537,11 +541,12 @@ func (s *LedgerNoteStub) invoke(id string) func() LedgerNoteReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *LedgerStub) Note(id string) built.Note {
 	call := LedgerNoteCall{ID: id}
-	r := stub.Answer(s.OnNote.MethodStub, &call, stub.Arms[LedgerNoteCall, LedgerNoteReturn]{
+	r := stub.Answer(s.OnNote.MethodStub, call, stub.Arms[LedgerNoteCall, LedgerNoteReturn]{
 		Invoke:   s.OnNote.invoke(id),
 		Fallback: s.OnNote.fallback,
-		Stamp: func(c *LedgerNoteCall, r LedgerNoteReturn) {
+		Stamp: func(c LedgerNoteCall, r LedgerNoteReturn) LedgerNoteCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -563,14 +568,15 @@ func (s *LedgerBillStub) invoke(id string) func() LedgerBillReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *LedgerStub) Bill(id string) billing.Invoice {
 	call := LedgerBillCall{ID: id}
-	r := stub.Answer(s.OnBill.MethodStub, &call, stub.Arms[LedgerBillCall, LedgerBillReturn]{
+	r := stub.Answer(s.OnBill.MethodStub, call, stub.Arms[LedgerBillCall, LedgerBillReturn]{
 		Invoke:   s.OnBill.invoke(id),
 		Fallback: s.OnBill.fallback,
-		Stamp: func(c *LedgerBillCall, r LedgerBillReturn) {
+		Stamp: func(c LedgerBillCall, r LedgerBillReturn) LedgerBillCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:4e439d0618df65324fc9f32ea4499b06d6d7fed2c821da5c902b9cbad15280cc
+// dokimi:provenance sha256:ffa14094087fe80dd8d7e18c7a731279a2ede7ce2d8a7f118ac3dab19e27a82e

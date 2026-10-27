@@ -187,15 +187,16 @@ func (s *PoisonAccessorErrStub) invoke() func() PoisonAccessorErrReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *PoisonAccessorStub) Err() error {
 	call := PoisonAccessorErrCall{}
-	r := stub.Answer(s.OnErr.MethodStub, &call, stub.Arms[PoisonAccessorErrCall, PoisonAccessorErrReturn]{
+	r := stub.Answer(s.OnErr.MethodStub, call, stub.Arms[PoisonAccessorErrCall, PoisonAccessorErrReturn]{
 		Invoke:   s.OnErr.invoke(),
 		Fallback: s.OnErr.fallback,
 		Fault:    func(err error) PoisonAccessorErrReturn { return PoisonAccessorErrReturn{Err: err} },
-		Stamp: func(c *PoisonAccessorErrCall, r PoisonAccessorErrReturn) {
+		Stamp: func(c PoisonAccessorErrCall, r PoisonAccessorErrReturn) PoisonAccessorErrCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:fa98d4a4210028e07474b7288da4395396cd8560797a3f3ff941103b5cd08f1c
+// dokimi:provenance sha256:97f58b44fa4b5b328829d9d9839802bdea767ccc67d48161b5027ccdb4fd7fde

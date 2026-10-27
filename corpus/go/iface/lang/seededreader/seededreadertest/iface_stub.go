@@ -232,13 +232,14 @@ func (s *CatalogLookupStub) invoke(ctx context.Context, key seededreader.Key) fu
 // of Func, then the results of Returns, and then the zero values.
 func (s *CatalogStub) Lookup(ctx context.Context, key seededreader.Key) (seededreader.Body, error) {
 	call := CatalogLookupCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[CatalogLookupCall, CatalogLookupReturn]{
+	r := stub.Answer(s.OnLookup.MethodStub, call, stub.Arms[CatalogLookupCall, CatalogLookupReturn]{
 		Invoke:   s.OnLookup.invoke(ctx, key),
 		Fallback: s.OnLookup.fallback,
 		Fault:    func(err error) CatalogLookupReturn { return CatalogLookupReturn{Err: err} },
-		Stamp: func(c *CatalogLookupCall, r CatalogLookupReturn) {
+		Stamp: func(c CatalogLookupCall, r CatalogLookupReturn) CatalogLookupCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -260,16 +261,17 @@ func (s *CatalogLenStub) invoke(ctx context.Context) func() CatalogLenReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CatalogStub) Len(ctx context.Context) (int, error) {
 	call := CatalogLenCall{Ctx: ctx}
-	r := stub.Answer(s.OnLen.MethodStub, &call, stub.Arms[CatalogLenCall, CatalogLenReturn]{
+	r := stub.Answer(s.OnLen.MethodStub, call, stub.Arms[CatalogLenCall, CatalogLenReturn]{
 		Invoke:   s.OnLen.invoke(ctx),
 		Fallback: s.OnLen.fallback,
 		Fault:    func(err error) CatalogLenReturn { return CatalogLenReturn{Err: err} },
-		Stamp: func(c *CatalogLenCall, r CatalogLenReturn) {
+		Stamp: func(c CatalogLenCall, r CatalogLenReturn) CatalogLenCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:c97dc8fd2917ccbb7ca3d5d337fe79ca235b4f18844048e6afc19cde94ab8f1c
+// dokimi:provenance sha256:2c9157cfea10e2f7f95ba018a9787f825aba6db581b5f7234bc00dcee83ba79a

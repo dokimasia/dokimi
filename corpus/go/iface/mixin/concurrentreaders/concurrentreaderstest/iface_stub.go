@@ -229,13 +229,14 @@ func (s *MixedGetStub) invoke(ctx context.Context, key string) func() MixedGetRe
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Get(ctx context.Context, key string) (string, error) {
 	call := MixedGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[MixedGetCall, MixedGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
-		Stamp: func(c *MixedGetCall, r MixedGetReturn) {
+		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -257,15 +258,16 @@ func (s *MixedPutStub) invoke(ctx context.Context, key, value string) func() Mix
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Put(ctx context.Context, key, value string) error {
 	call := MixedPutCall{Ctx: ctx, Key: key, Value: value}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[MixedPutCall, MixedPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[MixedPutCall, MixedPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, key, value),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) MixedPutReturn { return MixedPutReturn{Err: err} },
-		Stamp: func(c *MixedPutCall, r MixedPutReturn) {
+		Stamp: func(c MixedPutCall, r MixedPutReturn) MixedPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:5e9c95a705773db6ba353ca669d89b8297a569cea9997b83742364fc3116e700
+// dokimi:provenance sha256:8e33041bead465664c3bc88a8b6e017943816545f209ae6abe6b1f32e61f480d

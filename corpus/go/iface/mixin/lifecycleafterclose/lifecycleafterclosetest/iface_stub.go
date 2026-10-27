@@ -224,12 +224,13 @@ func (s *MixedCloseStub) invoke(ctx context.Context) func() MixedCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Close(ctx context.Context) error {
 	call := MixedCloseCall{Ctx: ctx}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[MixedCloseCall, MixedCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[MixedCloseCall, MixedCloseReturn]{
 		Invoke:   s.OnClose.invoke(ctx),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) MixedCloseReturn { return MixedCloseReturn{Err: err} },
-		Stamp: func(c *MixedCloseCall, r MixedCloseReturn) {
+		Stamp: func(c MixedCloseCall, r MixedCloseReturn) MixedCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -251,15 +252,16 @@ func (s *MixedWorkStub) invoke(ctx context.Context) func() MixedWorkReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Work(ctx context.Context) error {
 	call := MixedWorkCall{Ctx: ctx}
-	r := stub.Answer(s.OnWork.MethodStub, &call, stub.Arms[MixedWorkCall, MixedWorkReturn]{
+	r := stub.Answer(s.OnWork.MethodStub, call, stub.Arms[MixedWorkCall, MixedWorkReturn]{
 		Invoke:   s.OnWork.invoke(ctx),
 		Fallback: s.OnWork.fallback,
 		Fault:    func(err error) MixedWorkReturn { return MixedWorkReturn{Err: err} },
-		Stamp: func(c *MixedWorkCall, r MixedWorkReturn) {
+		Stamp: func(c MixedWorkCall, r MixedWorkReturn) MixedWorkCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:f28240fb2972591f3b76554183acbe5a279d21b3d21524c3dc339f444c3428cf
+// dokimi:provenance sha256:893c3307008ee8636fc3160400f17e3cca5128149731cd1470e42b1212c47042

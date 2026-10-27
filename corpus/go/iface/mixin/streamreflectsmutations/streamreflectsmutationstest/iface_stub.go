@@ -302,11 +302,12 @@ func (s *MixedStreamStub) invoke(ctx context.Context) func() MixedStreamReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Stream(ctx context.Context) iter.Seq2[string, error] {
 	call := MixedStreamCall{Ctx: ctx}
-	r := stub.Answer(s.OnStream.MethodStub, &call, stub.Arms[MixedStreamCall, MixedStreamReturn]{
+	r := stub.Answer(s.OnStream.MethodStub, call, stub.Arms[MixedStreamCall, MixedStreamReturn]{
 		Invoke:   s.OnStream.invoke(ctx),
 		Fallback: s.OnStream.fallback,
-		Stamp: func(c *MixedStreamCall, r MixedStreamReturn) {
+		Stamp: func(c MixedStreamCall, r MixedStreamReturn) MixedStreamCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -328,12 +329,13 @@ func (s *MixedAddStub) invoke(ctx context.Context, item string) func() MixedAddR
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Add(ctx context.Context, item string) error {
 	call := MixedAddCall{Ctx: ctx, Item: item}
-	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[MixedAddCall, MixedAddReturn]{
+	r := stub.Answer(s.OnAdd.MethodStub, call, stub.Arms[MixedAddCall, MixedAddReturn]{
 		Invoke:   s.OnAdd.invoke(ctx, item),
 		Fallback: s.OnAdd.fallback,
 		Fault:    func(err error) MixedAddReturn { return MixedAddReturn{Err: err} },
-		Stamp: func(c *MixedAddCall, r MixedAddReturn) {
+		Stamp: func(c MixedAddCall, r MixedAddReturn) MixedAddCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -355,15 +357,16 @@ func (s *MixedRemoveStub) invoke(ctx context.Context, item string) func() MixedR
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Remove(ctx context.Context, item string) error {
 	call := MixedRemoveCall{Ctx: ctx, Item: item}
-	r := stub.Answer(s.OnRemove.MethodStub, &call, stub.Arms[MixedRemoveCall, MixedRemoveReturn]{
+	r := stub.Answer(s.OnRemove.MethodStub, call, stub.Arms[MixedRemoveCall, MixedRemoveReturn]{
 		Invoke:   s.OnRemove.invoke(ctx, item),
 		Fallback: s.OnRemove.fallback,
 		Fault:    func(err error) MixedRemoveReturn { return MixedRemoveReturn{Err: err} },
-		Stamp: func(c *MixedRemoveCall, r MixedRemoveReturn) {
+		Stamp: func(c MixedRemoveCall, r MixedRemoveReturn) MixedRemoveCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:95b0c68a724961de25a5bd5c275eb8f8bca7325d85a4fdc8001a3187d86ecbc2
+// dokimi:provenance sha256:00840619da44145f03d10a29c93e820f102617f365fec155ed0bc7a2b54b60ac

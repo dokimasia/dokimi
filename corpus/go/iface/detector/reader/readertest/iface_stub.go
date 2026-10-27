@@ -217,16 +217,17 @@ func (s *ReaderGetStub) invoke(ctx context.Context, key string) func() ReaderGet
 // Func, then the results of Returns, and then the zero values.
 func (s *ReaderStub) Get(ctx context.Context, key string) (reader.Value, error) {
 	call := ReaderGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[ReaderGetCall, ReaderGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[ReaderGetCall, ReaderGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) ReaderGetReturn { return ReaderGetReturn{Err: err} },
-		Stamp: func(c *ReaderGetCall, r ReaderGetReturn) {
+		Stamp: func(c ReaderGetCall, r ReaderGetReturn) ReaderGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:42f9fa3d70a53283abe8469e1faa825549846527d5ef9a9c1cdb907115e3f75e
+// dokimi:provenance sha256:5d566b5929ef87b86084f0fe2232e1b2a5d2e2d7e7c5be7807ebdc36112720f1

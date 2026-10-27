@@ -181,15 +181,16 @@ func (s *MixedStoreStub) invoke(ctx context.Context, v *nilsafe.Payload) func() 
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Store(ctx context.Context, v *nilsafe.Payload) error {
 	call := MixedStoreCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnStore.MethodStub, &call, stub.Arms[MixedStoreCall, MixedStoreReturn]{
+	r := stub.Answer(s.OnStore.MethodStub, call, stub.Arms[MixedStoreCall, MixedStoreReturn]{
 		Invoke:   s.OnStore.invoke(ctx, v),
 		Fallback: s.OnStore.fallback,
 		Fault:    func(err error) MixedStoreReturn { return MixedStoreReturn{Err: err} },
-		Stamp: func(c *MixedStoreCall, r MixedStoreReturn) {
+		Stamp: func(c MixedStoreCall, r MixedStoreReturn) MixedStoreCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:8243099bc5c3959acb5e47e5af00d5c78c32ec5414f4b66abf8cd49ba98c60a5
+// dokimi:provenance sha256:7dd07a709026df270b2be9aeba4a3b6c9471c0b0bd3eb8c3d9b7d11aa0a098c6

@@ -225,12 +225,13 @@ func (s *MixedOpenStub) invoke(ctx context.Context, name string) func() MixedOpe
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Open(ctx context.Context, name string) error {
 	call := MixedOpenCall{Ctx: ctx, Name: name}
-	r := stub.Answer(s.OnOpen.MethodStub, &call, stub.Arms[MixedOpenCall, MixedOpenReturn]{
+	r := stub.Answer(s.OnOpen.MethodStub, call, stub.Arms[MixedOpenCall, MixedOpenReturn]{
 		Invoke:   s.OnOpen.invoke(ctx, name),
 		Fallback: s.OnOpen.fallback,
 		Fault:    func(err error) MixedOpenReturn { return MixedOpenReturn{Err: err} },
-		Stamp: func(c *MixedOpenCall, r MixedOpenReturn) {
+		Stamp: func(c MixedOpenCall, r MixedOpenReturn) MixedOpenCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -252,15 +253,16 @@ func (s *MixedCauseStub) invoke(ctx context.Context) func() MixedCauseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Cause(ctx context.Context) error {
 	call := MixedCauseCall{Ctx: ctx}
-	r := stub.Answer(s.OnCause.MethodStub, &call, stub.Arms[MixedCauseCall, MixedCauseReturn]{
+	r := stub.Answer(s.OnCause.MethodStub, call, stub.Arms[MixedCauseCall, MixedCauseReturn]{
 		Invoke:   s.OnCause.invoke(ctx),
 		Fallback: s.OnCause.fallback,
 		Fault:    func(err error) MixedCauseReturn { return MixedCauseReturn{Err: err} },
-		Stamp: func(c *MixedCauseCall, r MixedCauseReturn) {
+		Stamp: func(c MixedCauseCall, r MixedCauseReturn) MixedCauseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:92aee88380f3ef33bf6842d695c70b245a9b3fce7a6109b22e8b40095b95b5fd
+// dokimi:provenance sha256:dc70969055a67f734982cb197d022389d979adb996fb4043d9843a942e8b329b

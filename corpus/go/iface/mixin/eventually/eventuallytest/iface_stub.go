@@ -316,12 +316,13 @@ func (s *MixedPublishStub) invoke(ctx context.Context, item string) func() Mixed
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Publish(ctx context.Context, item string) error {
 	call := MixedPublishCall{Ctx: ctx, Item: item}
-	r := stub.Answer(s.OnPublish.MethodStub, &call, stub.Arms[MixedPublishCall, MixedPublishReturn]{
+	r := stub.Answer(s.OnPublish.MethodStub, call, stub.Arms[MixedPublishCall, MixedPublishReturn]{
 		Invoke:   s.OnPublish.invoke(ctx, item),
 		Fallback: s.OnPublish.fallback,
 		Fault:    func(err error) MixedPublishReturn { return MixedPublishReturn{Err: err} },
-		Stamp: func(c *MixedPublishCall, r MixedPublishReturn) {
+		Stamp: func(c MixedPublishCall, r MixedPublishReturn) MixedPublishCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -343,12 +344,13 @@ func (s *MixedSettleStub) invoke(ctx context.Context) func() MixedSettleReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Settle(ctx context.Context) error {
 	call := MixedSettleCall{Ctx: ctx}
-	r := stub.Answer(s.OnSettle.MethodStub, &call, stub.Arms[MixedSettleCall, MixedSettleReturn]{
+	r := stub.Answer(s.OnSettle.MethodStub, call, stub.Arms[MixedSettleCall, MixedSettleReturn]{
 		Invoke:   s.OnSettle.invoke(ctx),
 		Fallback: s.OnSettle.fallback,
 		Fault:    func(err error) MixedSettleReturn { return MixedSettleReturn{Err: err} },
-		Stamp: func(c *MixedSettleCall, r MixedSettleReturn) {
+		Stamp: func(c MixedSettleCall, r MixedSettleReturn) MixedSettleCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -370,12 +372,13 @@ func (s *MixedSyncStub) invoke(ctx context.Context, peer eventually.Mixed) func(
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Sync(ctx context.Context, peer eventually.Mixed) error {
 	call := MixedSyncCall{Ctx: ctx, Peer: peer}
-	r := stub.Answer(s.OnSync.MethodStub, &call, stub.Arms[MixedSyncCall, MixedSyncReturn]{
+	r := stub.Answer(s.OnSync.MethodStub, call, stub.Arms[MixedSyncCall, MixedSyncReturn]{
 		Invoke:   s.OnSync.invoke(ctx, peer),
 		Fallback: s.OnSync.fallback,
 		Fault:    func(err error) MixedSyncReturn { return MixedSyncReturn{Err: err} },
-		Stamp: func(c *MixedSyncCall, r MixedSyncReturn) {
+		Stamp: func(c MixedSyncCall, r MixedSyncReturn) MixedSyncCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -397,16 +400,17 @@ func (s *MixedItemsStub) invoke(ctx context.Context) func() MixedItemsReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Items(ctx context.Context) ([]string, error) {
 	call := MixedItemsCall{Ctx: ctx}
-	r := stub.Answer(s.OnItems.MethodStub, &call, stub.Arms[MixedItemsCall, MixedItemsReturn]{
+	r := stub.Answer(s.OnItems.MethodStub, call, stub.Arms[MixedItemsCall, MixedItemsReturn]{
 		Invoke:   s.OnItems.invoke(ctx),
 		Fallback: s.OnItems.fallback,
 		Fault:    func(err error) MixedItemsReturn { return MixedItemsReturn{Err: err} },
-		Stamp: func(c *MixedItemsCall, r MixedItemsReturn) {
+		Stamp: func(c MixedItemsCall, r MixedItemsReturn) MixedItemsCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:143224dfcc65b71200848690bd5c5605d956091617ed95755fe71355f1190468
+// dokimi:provenance sha256:3642c7ce02c566c268dfdead1194513e677621a3bda2bb6c34183378a02cf63a

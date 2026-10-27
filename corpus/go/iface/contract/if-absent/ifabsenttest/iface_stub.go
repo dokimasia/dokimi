@@ -182,15 +182,16 @@ func (s *ContractPutStub) invoke(ctx context.Context, v ifabsent.Value) func() C
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Put(ctx context.Context, v ifabsent.Value) error {
 	call := ContractPutCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[ContractPutCall, ContractPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[ContractPutCall, ContractPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) ContractPutReturn { return ContractPutReturn{Err: err} },
-		Stamp: func(c *ContractPutCall, r ContractPutReturn) {
+		Stamp: func(c ContractPutCall, r ContractPutReturn) ContractPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:4ddb661cda9ab100c37da51d9d01c56e7c18df72da0379b9909654e664f1e53f
+// dokimi:provenance sha256:577983c4b88b6c8ef6900225e7e3daa295f3f22c64542505b8b5cf1a8f8b50e1

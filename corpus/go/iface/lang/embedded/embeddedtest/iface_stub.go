@@ -180,12 +180,13 @@ func (s *BasePingStub) invoke(ctx context.Context) func() BasePingReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *BaseStub) Ping(ctx context.Context) error {
 	call := BasePingCall{Ctx: ctx}
-	r := stub.Answer(s.OnPing.MethodStub, &call, stub.Arms[BasePingCall, BasePingReturn]{
+	r := stub.Answer(s.OnPing.MethodStub, call, stub.Arms[BasePingCall, BasePingReturn]{
 		Invoke:   s.OnPing.invoke(ctx),
 		Fallback: s.OnPing.fallback,
 		Fault:    func(err error) BasePingReturn { return BasePingReturn{Err: err} },
-		Stamp: func(c *BasePingCall, r BasePingReturn) {
+		Stamp: func(c BasePingCall, r BasePingReturn) BasePingCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -357,12 +358,13 @@ func (s *CloserCloseStub) invoke(ctx context.Context) func() CloserCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CloserStub) Close(ctx context.Context) error {
 	call := CloserCloseCall{Ctx: ctx}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
 		Invoke:   s.OnClose.invoke(ctx),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) CloserCloseReturn { return CloserCloseReturn{Err: err} },
-		Stamp: func(c *CloserCloseCall, r CloserCloseReturn) {
+		Stamp: func(c CloserCloseCall, r CloserCloseReturn) CloserCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -628,13 +630,14 @@ func (s *ComposedGetStub) invoke(ctx context.Context, key string) func() Compose
 // Func, then the results of Returns, and then the zero values.
 func (s *ComposedStub) Get(ctx context.Context, key string) (string, error) {
 	call := ComposedGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[ComposedGetCall, ComposedGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[ComposedGetCall, ComposedGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) ComposedGetReturn { return ComposedGetReturn{Err: err} },
-		Stamp: func(c *ComposedGetCall, r ComposedGetReturn) {
+		Stamp: func(c ComposedGetCall, r ComposedGetReturn) ComposedGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -656,12 +659,13 @@ func (s *ComposedPingStub) invoke(ctx context.Context) func() ComposedPingReturn
 // Func, then the results of Returns, and then the zero values.
 func (s *ComposedStub) Ping(ctx context.Context) error {
 	call := ComposedPingCall{Ctx: ctx}
-	r := stub.Answer(s.OnPing.MethodStub, &call, stub.Arms[ComposedPingCall, ComposedPingReturn]{
+	r := stub.Answer(s.OnPing.MethodStub, call, stub.Arms[ComposedPingCall, ComposedPingReturn]{
 		Invoke:   s.OnPing.invoke(ctx),
 		Fallback: s.OnPing.fallback,
 		Fault:    func(err error) ComposedPingReturn { return ComposedPingReturn{Err: err} },
-		Stamp: func(c *ComposedPingCall, r ComposedPingReturn) {
+		Stamp: func(c ComposedPingCall, r ComposedPingReturn) ComposedPingCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -683,15 +687,16 @@ func (s *ComposedCloseStub) invoke(ctx context.Context) func() ComposedCloseRetu
 // Func, then the results of Returns, and then the zero values.
 func (s *ComposedStub) Close(ctx context.Context) error {
 	call := ComposedCloseCall{Ctx: ctx}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[ComposedCloseCall, ComposedCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[ComposedCloseCall, ComposedCloseReturn]{
 		Invoke:   s.OnClose.invoke(ctx),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) ComposedCloseReturn { return ComposedCloseReturn{Err: err} },
-		Stamp: func(c *ComposedCloseCall, r ComposedCloseReturn) {
+		Stamp: func(c ComposedCloseCall, r ComposedCloseReturn) ComposedCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:599191712011b1c687ab4fb3f2946e855f76c11af3288535348703bb388e37b2
+// dokimi:provenance sha256:e8db976e1e84c3220ecbdbbb26c9fb3ff5dd4b736cd247420ea7922ca4531263

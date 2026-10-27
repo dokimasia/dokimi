@@ -276,12 +276,13 @@ func (s *ContractCampaignStub) invoke(ctx context.Context) func() ContractCampai
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Campaign(ctx context.Context) error {
 	call := ContractCampaignCall{Ctx: ctx}
-	r := stub.Answer(s.OnCampaign.MethodStub, &call, stub.Arms[ContractCampaignCall, ContractCampaignReturn]{
+	r := stub.Answer(s.OnCampaign.MethodStub, call, stub.Arms[ContractCampaignCall, ContractCampaignReturn]{
 		Invoke:   s.OnCampaign.invoke(ctx),
 		Fallback: s.OnCampaign.fallback,
 		Fault:    func(err error) ContractCampaignReturn { return ContractCampaignReturn{Err: err} },
-		Stamp: func(c *ContractCampaignCall, r ContractCampaignReturn) {
+		Stamp: func(c ContractCampaignCall, r ContractCampaignReturn) ContractCampaignCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -303,12 +304,13 @@ func (s *ContractResignStub) invoke(ctx context.Context) func() ContractResignRe
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Resign(ctx context.Context) error {
 	call := ContractResignCall{Ctx: ctx}
-	r := stub.Answer(s.OnResign.MethodStub, &call, stub.Arms[ContractResignCall, ContractResignReturn]{
+	r := stub.Answer(s.OnResign.MethodStub, call, stub.Arms[ContractResignCall, ContractResignReturn]{
 		Invoke:   s.OnResign.invoke(ctx),
 		Fallback: s.OnResign.fallback,
 		Fault:    func(err error) ContractResignReturn { return ContractResignReturn{Err: err} },
-		Stamp: func(c *ContractResignCall, r ContractResignReturn) {
+		Stamp: func(c ContractResignCall, r ContractResignReturn) ContractResignCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -330,14 +332,15 @@ func (s *ContractIsLeaderStub) invoke(ctx context.Context) func() ContractIsLead
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) IsLeader(ctx context.Context) bool {
 	call := ContractIsLeaderCall{Ctx: ctx}
-	r := stub.Answer(s.OnIsLeader.MethodStub, &call, stub.Arms[ContractIsLeaderCall, ContractIsLeaderReturn]{
+	r := stub.Answer(s.OnIsLeader.MethodStub, call, stub.Arms[ContractIsLeaderCall, ContractIsLeaderReturn]{
 		Invoke:   s.OnIsLeader.invoke(ctx),
 		Fallback: s.OnIsLeader.fallback,
-		Stamp: func(c *ContractIsLeaderCall, r ContractIsLeaderReturn) {
+		Stamp: func(c ContractIsLeaderCall, r ContractIsLeaderReturn) ContractIsLeaderCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:14e058e938d1bb19badf3e2007a7bdb4007d0f3df1f5293bc5b5d5415873029c
+// dokimi:provenance sha256:52ce3aa13ded99de329cfc7c89dcb8ef4157f9bce43089ec3ab20e0841558d4d

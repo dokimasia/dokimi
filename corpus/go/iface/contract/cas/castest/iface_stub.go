@@ -228,12 +228,13 @@ func (s *ContractPutStub) invoke(ctx context.Context, v cas.Value) func() Contra
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Put(ctx context.Context, v cas.Value) error {
 	call := ContractPutCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[ContractPutCall, ContractPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[ContractPutCall, ContractPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) ContractPutReturn { return ContractPutReturn{Err: err} },
-		Stamp: func(c *ContractPutCall, r ContractPutReturn) {
+		Stamp: func(c ContractPutCall, r ContractPutReturn) ContractPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -255,16 +256,17 @@ func (s *ContractGetStub) invoke(ctx context.Context) func() ContractGetReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Get(ctx context.Context) (cas.Value, error) {
 	call := ContractGetCall{Ctx: ctx}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[ContractGetCall, ContractGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[ContractGetCall, ContractGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) ContractGetReturn { return ContractGetReturn{Err: err} },
-		Stamp: func(c *ContractGetCall, r ContractGetReturn) {
+		Stamp: func(c ContractGetCall, r ContractGetReturn) ContractGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:fc158c1e37a62c8110d7f7cd881c94542eea51fb0a452d4b8ff48fd5b674cb8f
+// dokimi:provenance sha256:3b7cc8db8bd6ded11ee6f374416101290101e1c85e38fa60e69373087552def1

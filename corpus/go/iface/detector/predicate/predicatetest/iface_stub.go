@@ -171,14 +171,15 @@ func (s *PredicateIsEmptyStub) invoke() func() PredicateIsEmptyReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *PredicateStub) IsEmpty() bool {
 	call := PredicateIsEmptyCall{}
-	r := stub.Answer(s.OnIsEmpty.MethodStub, &call, stub.Arms[PredicateIsEmptyCall, PredicateIsEmptyReturn]{
+	r := stub.Answer(s.OnIsEmpty.MethodStub, call, stub.Arms[PredicateIsEmptyCall, PredicateIsEmptyReturn]{
 		Invoke:   s.OnIsEmpty.invoke(),
 		Fallback: s.OnIsEmpty.fallback,
-		Stamp: func(c *PredicateIsEmptyCall, r PredicateIsEmptyReturn) {
+		Stamp: func(c PredicateIsEmptyCall, r PredicateIsEmptyReturn) PredicateIsEmptyCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:2baca1a42bb6979d0f72608666e4ced0f1f0128ed0cc1dc751d7d191b317f764
+// dokimi:provenance sha256:de026f8107d86df3e71b765cf43f9fe82c05f99f2b201b232e9456e76b212e74

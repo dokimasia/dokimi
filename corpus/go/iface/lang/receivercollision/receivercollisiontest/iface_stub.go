@@ -258,12 +258,13 @@ func (s0 *StorePutStub) invoke(ctx context.Context, s receivercollision.Session)
 // Func, then the results of Returns, and then the zero values.
 func (s0 *StoreStub) Put(ctx context.Context, s receivercollision.Session) error {
 	call := StorePutCall{Ctx: ctx, S: s}
-	r := stub.Answer(s0.OnPut.MethodStub, &call, stub.Arms[StorePutCall, StorePutReturn]{
+	r := stub.Answer(s0.OnPut.MethodStub, call, stub.Arms[StorePutCall, StorePutReturn]{
 		Invoke:   s0.OnPut.invoke(ctx, s),
 		Fallback: s0.OnPut.fallback,
 		Fault:    func(err error) StorePutReturn { return StorePutReturn{Err: err} },
-		Stamp: func(c *StorePutCall, r StorePutReturn) {
+		Stamp: func(c StorePutCall, r StorePutReturn) StorePutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -285,13 +286,14 @@ func (s0 *StoreGetStub) invoke(ctx context.Context, s string) func() StoreGetRet
 // Func, then the results of Returns, and then the zero values.
 func (s0 *StoreStub) Get(ctx context.Context, s string) (receivercollision.Session, error) {
 	call := StoreGetCall{Ctx: ctx, S: s}
-	r := stub.Answer(s0.OnGet.MethodStub, &call, stub.Arms[StoreGetCall, StoreGetReturn]{
+	r := stub.Answer(s0.OnGet.MethodStub, call, stub.Arms[StoreGetCall, StoreGetReturn]{
 		Invoke:   s0.OnGet.invoke(ctx, s),
 		Fallback: s0.OnGet.fallback,
 		Fault:    func(err error) StoreGetReturn { return StoreGetReturn{Err: err} },
-		Stamp: func(c *StoreGetCall, r StoreGetReturn) {
+		Stamp: func(c StoreGetCall, r StoreGetReturn) StoreGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -314,9 +316,9 @@ func (s0 *StoreTouchStub) invokeVoid(ctx context.Context, s receivercollision.Se
 // Func, then the results of Returns, and then the zero values.
 func (s0 *StoreStub) Touch(ctx context.Context, s receivercollision.Session) {
 	call := StoreTouchCall{Ctx: ctx, S: s}
-	stub.Answer(s0.OnTouch.MethodStub, &call, stub.Arms[StoreTouchCall, struct{}]{
+	stub.Answer(s0.OnTouch.MethodStub, call, stub.Arms[StoreTouchCall, struct{}]{
 		Invoke: s0.OnTouch.invokeVoid(ctx, s),
 	})
 }
 
-// dokimi:provenance sha256:42330a2f441b856f4c18c9a28533e654e092dc24388b94637c38ac9a355e7b22
+// dokimi:provenance sha256:3244471ae73db32cf8450faef63bd7d61eecdeffed933ab657d08451d274fc3b

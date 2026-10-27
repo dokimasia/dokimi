@@ -414,12 +414,13 @@ func (s *StoreTouchStub) invoke(ctx context.Context, key string, weight int) fun
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Touch(ctx context.Context, key string, weight int) error {
 	call := StoreTouchCall{Ctx: ctx, Key: key, Weight: weight}
-	r := stub.Answer(s.OnTouch.MethodStub, &call, stub.Arms[StoreTouchCall, StoreTouchReturn]{
+	r := stub.Answer(s.OnTouch.MethodStub, call, stub.Arms[StoreTouchCall, StoreTouchReturn]{
 		Invoke:   s.OnTouch.invoke(ctx, key, weight),
 		Fallback: s.OnTouch.fallback,
 		Fault:    func(err error) StoreTouchReturn { return StoreTouchReturn{Err: err} },
-		Stamp: func(c *StoreTouchCall, r StoreTouchReturn) {
+		Stamp: func(c StoreTouchCall, r StoreTouchReturn) StoreTouchCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -441,13 +442,14 @@ func (s *StoreSeenStub) invoke(ctx context.Context, k string) func() StoreSeenRe
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Seen(ctx context.Context, k string) (int, error) {
 	call := StoreSeenCall{Ctx: ctx, K: k}
-	r := stub.Answer(s.OnSeen.MethodStub, &call, stub.Arms[StoreSeenCall, StoreSeenReturn]{
+	r := stub.Answer(s.OnSeen.MethodStub, call, stub.Arms[StoreSeenCall, StoreSeenReturn]{
 		Invoke:   s.OnSeen.invoke(ctx, k),
 		Fallback: s.OnSeen.fallback,
 		Fault:    func(err error) StoreSeenReturn { return StoreSeenReturn{Err: err} },
-		Stamp: func(c *StoreSeenCall, r StoreSeenReturn) {
+		Stamp: func(c StoreSeenCall, r StoreSeenReturn) StoreSeenCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -469,12 +471,13 @@ func (s *StoreMoveStub) invoke(ctx context.Context, from, to string) func() Stor
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Move(ctx context.Context, from, to string) error {
 	call := StoreMoveCall{Ctx: ctx, From: from, To: to}
-	r := stub.Answer(s.OnMove.MethodStub, &call, stub.Arms[StoreMoveCall, StoreMoveReturn]{
+	r := stub.Answer(s.OnMove.MethodStub, call, stub.Arms[StoreMoveCall, StoreMoveReturn]{
 		Invoke:   s.OnMove.invoke(ctx, from, to),
 		Fallback: s.OnMove.fallback,
 		Fault:    func(err error) StoreMoveReturn { return StoreMoveReturn{Err: err} },
-		Stamp: func(c *StoreMoveCall, r StoreMoveReturn) {
+		Stamp: func(c StoreMoveCall, r StoreMoveReturn) StoreMoveCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -496,13 +499,14 @@ func (s *StoreAtStub) invoke(ctx context.Context, where string) func() StoreAtRe
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) At(ctx context.Context, where string) (int, error) {
 	call := StoreAtCall{Ctx: ctx, Where: where}
-	r := stub.Answer(s.OnAt.MethodStub, &call, stub.Arms[StoreAtCall, StoreAtReturn]{
+	r := stub.Answer(s.OnAt.MethodStub, call, stub.Arms[StoreAtCall, StoreAtReturn]{
 		Invoke:   s.OnAt.invoke(ctx, where),
 		Fallback: s.OnAt.fallback,
 		Fault:    func(err error) StoreAtReturn { return StoreAtReturn{Err: err} },
-		Stamp: func(c *StoreAtCall, r StoreAtReturn) {
+		Stamp: func(c StoreAtCall, r StoreAtReturn) StoreAtCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -524,12 +528,13 @@ func (s *StoreEmitStub) invoke(ctx context.Context, id string) func() StoreEmitR
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Emit(ctx context.Context, id string) error {
 	call := StoreEmitCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnEmit.MethodStub, &call, stub.Arms[StoreEmitCall, StoreEmitReturn]{
+	r := stub.Answer(s.OnEmit.MethodStub, call, stub.Arms[StoreEmitCall, StoreEmitReturn]{
 		Invoke:   s.OnEmit.invoke(ctx, id),
 		Fallback: s.OnEmit.fallback,
 		Fault:    func(err error) StoreEmitReturn { return StoreEmitReturn{Err: err} },
-		Stamp: func(c *StoreEmitCall, r StoreEmitReturn) {
+		Stamp: func(c StoreEmitCall, r StoreEmitReturn) StoreEmitCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -551,16 +556,17 @@ func (s *StoreCountStub) invoke(ctx context.Context, bucket int) func() StoreCou
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Count(ctx context.Context, bucket int) (int, error) {
 	call := StoreCountCall{Ctx: ctx, Bucket: bucket}
-	r := stub.Answer(s.OnCount.MethodStub, &call, stub.Arms[StoreCountCall, StoreCountReturn]{
+	r := stub.Answer(s.OnCount.MethodStub, call, stub.Arms[StoreCountCall, StoreCountReturn]{
 		Invoke:   s.OnCount.invoke(ctx, bucket),
 		Fallback: s.OnCount.fallback,
 		Fault:    func(err error) StoreCountReturn { return StoreCountReturn{Err: err} },
-		Stamp: func(c *StoreCountCall, r StoreCountReturn) {
+		Stamp: func(c StoreCountCall, r StoreCountReturn) StoreCountCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:ff74dae1fd8654e1e8d45618bba4580f939e251e118c0cfba2a8aa4158cfcfc4
+// dokimi:provenance sha256:a22c89828cc5e227143fda298810da6df5449288d108ae89066923133b28e9fd

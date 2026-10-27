@@ -227,12 +227,13 @@ func (s *MixedApplyStub) invoke(ctx context.Context, d commutative.Delta) func()
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Apply(ctx context.Context, d commutative.Delta) error {
 	call := MixedApplyCall{Ctx: ctx, D: d}
-	r := stub.Answer(s.OnApply.MethodStub, &call, stub.Arms[MixedApplyCall, MixedApplyReturn]{
+	r := stub.Answer(s.OnApply.MethodStub, call, stub.Arms[MixedApplyCall, MixedApplyReturn]{
 		Invoke:   s.OnApply.invoke(ctx, d),
 		Fallback: s.OnApply.fallback,
 		Fault:    func(err error) MixedApplyReturn { return MixedApplyReturn{Err: err} },
-		Stamp: func(c *MixedApplyCall, r MixedApplyReturn) {
+		Stamp: func(c MixedApplyCall, r MixedApplyReturn) MixedApplyCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -254,16 +255,17 @@ func (s *MixedTotalStub) invoke(ctx context.Context) func() MixedTotalReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Total(ctx context.Context) (int, error) {
 	call := MixedTotalCall{Ctx: ctx}
-	r := stub.Answer(s.OnTotal.MethodStub, &call, stub.Arms[MixedTotalCall, MixedTotalReturn]{
+	r := stub.Answer(s.OnTotal.MethodStub, call, stub.Arms[MixedTotalCall, MixedTotalReturn]{
 		Invoke:   s.OnTotal.invoke(ctx),
 		Fallback: s.OnTotal.fallback,
 		Fault:    func(err error) MixedTotalReturn { return MixedTotalReturn{Err: err} },
-		Stamp: func(c *MixedTotalCall, r MixedTotalReturn) {
+		Stamp: func(c MixedTotalCall, r MixedTotalReturn) MixedTotalCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:9e25f77b38ebb0a70a9f7a0869b037e57fa848344e8a55523e9ce70972308ce7
+// dokimi:provenance sha256:b111bee4afdfe0c7c32029dc2dc8499dc194ea009e2994186e038b9da9496d30

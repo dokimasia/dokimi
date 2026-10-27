@@ -262,11 +262,12 @@ func (s *CalculatorAddStub) invoke(a, b int) func() CalculatorAddReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CalculatorStub) Add(a, b int) int {
 	call := CalculatorAddCall{A: a, B: b}
-	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[CalculatorAddCall, CalculatorAddReturn]{
+	r := stub.Answer(s.OnAdd.MethodStub, call, stub.Arms[CalculatorAddCall, CalculatorAddReturn]{
 		Invoke:   s.OnAdd.invoke(a, b),
 		Fallback: s.OnAdd.fallback,
-		Stamp: func(c *CalculatorAddCall, r CalculatorAddReturn) {
+		Stamp: func(c CalculatorAddCall, r CalculatorAddReturn) CalculatorAddCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -288,13 +289,14 @@ func (s *CalculatorDivideStub) invoke(a, b int) func() CalculatorDivideReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *CalculatorStub) Divide(a, b int) (int, error) {
 	call := CalculatorDivideCall{A: a, B: b}
-	r := stub.Answer(s.OnDivide.MethodStub, &call, stub.Arms[CalculatorDivideCall, CalculatorDivideReturn]{
+	r := stub.Answer(s.OnDivide.MethodStub, call, stub.Arms[CalculatorDivideCall, CalculatorDivideReturn]{
 		Invoke:   s.OnDivide.invoke(a, b),
 		Fallback: s.OnDivide.fallback,
 		Fault:    func(err error) CalculatorDivideReturn { return CalculatorDivideReturn{Err: err} },
-		Stamp: func(c *CalculatorDivideCall, r CalculatorDivideReturn) {
+		Stamp: func(c CalculatorDivideCall, r CalculatorDivideReturn) CalculatorDivideCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -317,9 +319,9 @@ func (s *CalculatorResetStub) invokeVoid() func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *CalculatorStub) Reset() {
 	call := CalculatorResetCall{}
-	stub.Answer(s.OnReset.MethodStub, &call, stub.Arms[CalculatorResetCall, struct{}]{
+	stub.Answer(s.OnReset.MethodStub, call, stub.Arms[CalculatorResetCall, struct{}]{
 		Invoke: s.OnReset.invokeVoid(),
 	})
 }
 
-// dokimi:provenance sha256:238098487d44a1b24a546d35d3c68ee96473c5cca027fdfd04e7e38a6735f281
+// dokimi:provenance sha256:68c0ab7d96fc9e865ccd45eb4ddb189adc36ccbdf1e70d8cacedf412cb8ff50d

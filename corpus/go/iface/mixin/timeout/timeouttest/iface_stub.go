@@ -181,15 +181,16 @@ func (s *MixedSlowStub) invoke(ctx context.Context, key string) func() MixedSlow
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Slow(ctx context.Context, key string) error {
 	call := MixedSlowCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnSlow.MethodStub, &call, stub.Arms[MixedSlowCall, MixedSlowReturn]{
+	r := stub.Answer(s.OnSlow.MethodStub, call, stub.Arms[MixedSlowCall, MixedSlowReturn]{
 		Invoke:   s.OnSlow.invoke(ctx, key),
 		Fallback: s.OnSlow.fallback,
 		Fault:    func(err error) MixedSlowReturn { return MixedSlowReturn{Err: err} },
-		Stamp: func(c *MixedSlowCall, r MixedSlowReturn) {
+		Stamp: func(c MixedSlowCall, r MixedSlowReturn) MixedSlowCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:079627243d4baa48bb02450b4f090220e851ac3a18ab40d26e32f25050bb5479
+// dokimi:provenance sha256:06711b4e68800cfc49303a46e1712ab3adb38a964cc382fc7bb586ea8d6b3b2a

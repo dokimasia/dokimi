@@ -186,15 +186,16 @@ func (s *LifecycleCloseStub) invoke(ctx context.Context) func() LifecycleCloseRe
 // Func, then the results of Returns, and then the zero values.
 func (s *LifecycleStub) Close(ctx context.Context) error {
 	call := LifecycleCloseCall{Ctx: ctx}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[LifecycleCloseCall, LifecycleCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[LifecycleCloseCall, LifecycleCloseReturn]{
 		Invoke:   s.OnClose.invoke(ctx),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) LifecycleCloseReturn { return LifecycleCloseReturn{Err: err} },
-		Stamp: func(c *LifecycleCloseCall, r LifecycleCloseReturn) {
+		Stamp: func(c LifecycleCloseCall, r LifecycleCloseReturn) LifecycleCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:b3904cdf5393e8b56890afb51133e546e811c20d5448d5ce1bd2afef15bb3d60
+// dokimi:provenance sha256:7071dfb4818cd39960c512b35ecf08254ba3f0159541055064e8e9a372a6d38d

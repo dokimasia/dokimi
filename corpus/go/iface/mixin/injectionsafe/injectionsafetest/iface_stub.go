@@ -229,12 +229,13 @@ func (s *MixedStoreStub) invoke(ctx context.Context, key, value string) func() M
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Store(ctx context.Context, key, value string) error {
 	call := MixedStoreCall{Ctx: ctx, Key: key, Value: value}
-	r := stub.Answer(s.OnStore.MethodStub, &call, stub.Arms[MixedStoreCall, MixedStoreReturn]{
+	r := stub.Answer(s.OnStore.MethodStub, call, stub.Arms[MixedStoreCall, MixedStoreReturn]{
 		Invoke:   s.OnStore.invoke(ctx, key, value),
 		Fallback: s.OnStore.fallback,
 		Fault:    func(err error) MixedStoreReturn { return MixedStoreReturn{Err: err} },
-		Stamp: func(c *MixedStoreCall, r MixedStoreReturn) {
+		Stamp: func(c MixedStoreCall, r MixedStoreReturn) MixedStoreCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -256,16 +257,17 @@ func (s *MixedLoadStub) invoke(ctx context.Context, key string) func() MixedLoad
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Load(ctx context.Context, key string) (string, error) {
 	call := MixedLoadCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnLoad.MethodStub, &call, stub.Arms[MixedLoadCall, MixedLoadReturn]{
+	r := stub.Answer(s.OnLoad.MethodStub, call, stub.Arms[MixedLoadCall, MixedLoadReturn]{
 		Invoke:   s.OnLoad.invoke(ctx, key),
 		Fallback: s.OnLoad.fallback,
 		Fault:    func(err error) MixedLoadReturn { return MixedLoadReturn{Err: err} },
-		Stamp: func(c *MixedLoadCall, r MixedLoadReturn) {
+		Stamp: func(c MixedLoadCall, r MixedLoadReturn) MixedLoadCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:8d477fc2e5b258469f21f23bcc8715ff396941f78fd44f5c172204dd1ce5c281
+// dokimi:provenance sha256:675111140dd1f439a3f8d1321517b0a42a0267a958aaa9e6ad10a0b75a3a273b

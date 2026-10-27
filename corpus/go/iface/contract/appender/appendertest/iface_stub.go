@@ -184,16 +184,17 @@ func (s *ContractRunStub) invoke(ctx context.Context, v appender.Value) func() C
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Run(ctx context.Context, v appender.Value) (int64, error) {
 	call := ContractRunCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnRun.MethodStub, &call, stub.Arms[ContractRunCall, ContractRunReturn]{
+	r := stub.Answer(s.OnRun.MethodStub, call, stub.Arms[ContractRunCall, ContractRunReturn]{
 		Invoke:   s.OnRun.invoke(ctx, v),
 		Fallback: s.OnRun.fallback,
 		Fault:    func(err error) ContractRunReturn { return ContractRunReturn{Err: err} },
-		Stamp: func(c *ContractRunCall, r ContractRunReturn) {
+		Stamp: func(c ContractRunCall, r ContractRunReturn) ContractRunCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:cf7ad5b2daa78e0200dcdfeb155b7a7f4d1c656ca7c5d87ddf55dfb3b7776b46
+// dokimi:provenance sha256:08fd9d288ad6d33a16617766ba41d87e29fc1ba38ca2b2845c7da120a106f610

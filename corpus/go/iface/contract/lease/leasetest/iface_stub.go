@@ -231,12 +231,13 @@ func (s *ContractAcquireStub) invoke(ctx context.Context, key string) func() Con
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Acquire(ctx context.Context, key string) error {
 	call := ContractAcquireCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnAcquire.MethodStub, &call, stub.Arms[ContractAcquireCall, ContractAcquireReturn]{
+	r := stub.Answer(s.OnAcquire.MethodStub, call, stub.Arms[ContractAcquireCall, ContractAcquireReturn]{
 		Invoke:   s.OnAcquire.invoke(ctx, key),
 		Fallback: s.OnAcquire.fallback,
 		Fault:    func(err error) ContractAcquireReturn { return ContractAcquireReturn{Err: err} },
-		Stamp: func(c *ContractAcquireCall, r ContractAcquireReturn) {
+		Stamp: func(c ContractAcquireCall, r ContractAcquireReturn) ContractAcquireCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -258,15 +259,16 @@ func (s *ContractReleaseStub) invoke(ctx context.Context, key string) func() Con
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Release(ctx context.Context, key string) error {
 	call := ContractReleaseCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRelease.MethodStub, &call, stub.Arms[ContractReleaseCall, ContractReleaseReturn]{
+	r := stub.Answer(s.OnRelease.MethodStub, call, stub.Arms[ContractReleaseCall, ContractReleaseReturn]{
 		Invoke:   s.OnRelease.invoke(ctx, key),
 		Fallback: s.OnRelease.fallback,
 		Fault:    func(err error) ContractReleaseReturn { return ContractReleaseReturn{Err: err} },
-		Stamp: func(c *ContractReleaseCall, r ContractReleaseReturn) {
+		Stamp: func(c ContractReleaseCall, r ContractReleaseReturn) ContractReleaseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:7c152dd52fdb89a24ed9bf130f1c0e839b52041343def4ed9e60e1c61dd10be4
+// dokimi:provenance sha256:be405561f52f59d5d3c0b5cf15d91cb81f1304e7bd23cbe85b11820544f46ca8

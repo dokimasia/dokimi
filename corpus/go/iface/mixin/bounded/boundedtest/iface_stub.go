@@ -227,12 +227,13 @@ func (s *MixedAddStub) invoke(ctx context.Context, item string) func() MixedAddR
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Add(ctx context.Context, item string) error {
 	call := MixedAddCall{Ctx: ctx, Item: item}
-	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[MixedAddCall, MixedAddReturn]{
+	r := stub.Answer(s.OnAdd.MethodStub, call, stub.Arms[MixedAddCall, MixedAddReturn]{
 		Invoke:   s.OnAdd.invoke(ctx, item),
 		Fallback: s.OnAdd.fallback,
 		Fault:    func(err error) MixedAddReturn { return MixedAddReturn{Err: err} },
-		Stamp: func(c *MixedAddCall, r MixedAddReturn) {
+		Stamp: func(c MixedAddCall, r MixedAddReturn) MixedAddCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -254,16 +255,17 @@ func (s *MixedListStub) invoke(ctx context.Context) func() MixedListReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) List(ctx context.Context) ([]string, error) {
 	call := MixedListCall{Ctx: ctx}
-	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[MixedListCall, MixedListReturn]{
+	r := stub.Answer(s.OnList.MethodStub, call, stub.Arms[MixedListCall, MixedListReturn]{
 		Invoke:   s.OnList.invoke(ctx),
 		Fallback: s.OnList.fallback,
 		Fault:    func(err error) MixedListReturn { return MixedListReturn{Err: err} },
-		Stamp: func(c *MixedListCall, r MixedListReturn) {
+		Stamp: func(c MixedListCall, r MixedListReturn) MixedListCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:a8026a7fd73c8522d808040069e2ef7a6926293a875ed0afc0a12c1038c854fe
+// dokimi:provenance sha256:c38bec86ff56ccf566bf8618212b771f6f6235e5f504ac91285a98ed4a42b6d3

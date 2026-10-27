@@ -274,12 +274,13 @@ func (s *MixedDeleteStub) invoke(ctx context.Context, key string) func() MixedDe
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Delete(ctx context.Context, key string) error {
 	call := MixedDeleteCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnDelete.MethodStub, &call, stub.Arms[MixedDeleteCall, MixedDeleteReturn]{
+	r := stub.Answer(s.OnDelete.MethodStub, call, stub.Arms[MixedDeleteCall, MixedDeleteReturn]{
 		Invoke:   s.OnDelete.invoke(ctx, key),
 		Fallback: s.OnDelete.fallback,
 		Fault:    func(err error) MixedDeleteReturn { return MixedDeleteReturn{Err: err} },
-		Stamp: func(c *MixedDeleteCall, r MixedDeleteReturn) {
+		Stamp: func(c MixedDeleteCall, r MixedDeleteReturn) MixedDeleteCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -301,12 +302,13 @@ func (s *MixedPutStub) invoke(ctx context.Context, key, value string) func() Mix
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Put(ctx context.Context, key, value string) error {
 	call := MixedPutCall{Ctx: ctx, Key: key, Value: value}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[MixedPutCall, MixedPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[MixedPutCall, MixedPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, key, value),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) MixedPutReturn { return MixedPutReturn{Err: err} },
-		Stamp: func(c *MixedPutCall, r MixedPutReturn) {
+		Stamp: func(c MixedPutCall, r MixedPutReturn) MixedPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -328,16 +330,17 @@ func (s *MixedReadStub) invoke(ctx context.Context, key string) func() MixedRead
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Read(ctx context.Context, key string) (string, error) {
 	call := MixedReadCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[MixedReadCall, MixedReadReturn]{
+	r := stub.Answer(s.OnRead.MethodStub, call, stub.Arms[MixedReadCall, MixedReadReturn]{
 		Invoke:   s.OnRead.invoke(ctx, key),
 		Fallback: s.OnRead.fallback,
 		Fault:    func(err error) MixedReadReturn { return MixedReadReturn{Err: err} },
-		Stamp: func(c *MixedReadCall, r MixedReadReturn) {
+		Stamp: func(c MixedReadCall, r MixedReadReturn) MixedReadCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:d05ed6598069d8ec97b18be28f9147e29fdb8042ed7328a324dcf6ea97c4ee62
+// dokimi:provenance sha256:21863650fefa15ddb8d11691d9cfcb3300013917c80f421054fa8ce782e4f7ac

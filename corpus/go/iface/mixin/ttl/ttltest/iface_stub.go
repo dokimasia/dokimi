@@ -228,12 +228,13 @@ func (s *MixedPutStub) invoke(ctx context.Context, v ttl.Value) func() MixedPutR
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Put(ctx context.Context, v ttl.Value) error {
 	call := MixedPutCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[MixedPutCall, MixedPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[MixedPutCall, MixedPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) MixedPutReturn { return MixedPutReturn{Err: err} },
-		Stamp: func(c *MixedPutCall, r MixedPutReturn) {
+		Stamp: func(c MixedPutCall, r MixedPutReturn) MixedPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -255,16 +256,17 @@ func (s *MixedReadStub) invoke(ctx context.Context, key string) func() MixedRead
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Read(ctx context.Context, key string) (ttl.Value, error) {
 	call := MixedReadCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[MixedReadCall, MixedReadReturn]{
+	r := stub.Answer(s.OnRead.MethodStub, call, stub.Arms[MixedReadCall, MixedReadReturn]{
 		Invoke:   s.OnRead.invoke(ctx, key),
 		Fallback: s.OnRead.fallback,
 		Fault:    func(err error) MixedReadReturn { return MixedReadReturn{Err: err} },
-		Stamp: func(c *MixedReadCall, r MixedReadReturn) {
+		Stamp: func(c MixedReadCall, r MixedReadReturn) MixedReadCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:e1d46ecd0a26b145bdd1570edfeb4432ab7a39a243401e069dece89fc10ddaa5
+// dokimi:provenance sha256:07fafdbb7d82dcf2e09f2b9b8ce6b01798334a4f1684ab4f25fe5f2b12d8b885

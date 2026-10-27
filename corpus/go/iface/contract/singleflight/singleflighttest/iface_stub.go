@@ -233,13 +233,14 @@ func (s *ContractRunStub) invoke(ctx context.Context, key string, compute func()
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Run(ctx context.Context, key string, compute func() string) (string, error) {
 	call := ContractRunCall{Ctx: ctx, Key: key, Compute: compute}
-	r := stub.Answer(s.OnRun.MethodStub, &call, stub.Arms[ContractRunCall, ContractRunReturn]{
+	r := stub.Answer(s.OnRun.MethodStub, call, stub.Arms[ContractRunCall, ContractRunReturn]{
 		Invoke:   s.OnRun.invoke(ctx, key, compute),
 		Fallback: s.OnRun.fallback,
 		Fault:    func(err error) ContractRunReturn { return ContractRunReturn{Err: err} },
-		Stamp: func(c *ContractRunCall, r ContractRunReturn) {
+		Stamp: func(c ContractRunCall, r ContractRunReturn) ContractRunCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -261,16 +262,17 @@ func (s *ContractFlightsStub) invoke(ctx context.Context) func() ContractFlights
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Flights(ctx context.Context) (int, error) {
 	call := ContractFlightsCall{Ctx: ctx}
-	r := stub.Answer(s.OnFlights.MethodStub, &call, stub.Arms[ContractFlightsCall, ContractFlightsReturn]{
+	r := stub.Answer(s.OnFlights.MethodStub, call, stub.Arms[ContractFlightsCall, ContractFlightsReturn]{
 		Invoke:   s.OnFlights.invoke(ctx),
 		Fallback: s.OnFlights.fallback,
 		Fault:    func(err error) ContractFlightsReturn { return ContractFlightsReturn{Err: err} },
-		Stamp: func(c *ContractFlightsCall, r ContractFlightsReturn) {
+		Stamp: func(c ContractFlightsCall, r ContractFlightsReturn) ContractFlightsCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:592bac8447374084c980f1e461d45e574e4478bc49e13a138f77f438b95a10f8
+// dokimi:provenance sha256:3ac9dc70e70f85e97cdd817ca9f04842d23f8ac6a21fe8a8b86f2d1bbe69072e

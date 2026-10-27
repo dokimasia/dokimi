@@ -175,14 +175,15 @@ func (s *PointerReaderFindStub) invoke(ctx context.Context, key string) func() P
 // Func, then the results of Returns, and then the zero values.
 func (s *PointerReaderStub) Find(ctx context.Context, key string) *pointerreader.Value {
 	call := PointerReaderFindCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnFind.MethodStub, &call, stub.Arms[PointerReaderFindCall, PointerReaderFindReturn]{
+	r := stub.Answer(s.OnFind.MethodStub, call, stub.Arms[PointerReaderFindCall, PointerReaderFindReturn]{
 		Invoke:   s.OnFind.invoke(ctx, key),
 		Fallback: s.OnFind.fallback,
-		Stamp: func(c *PointerReaderFindCall, r PointerReaderFindReturn) {
+		Stamp: func(c PointerReaderFindCall, r PointerReaderFindReturn) PointerReaderFindCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:b7f521bff5b701795064ca2ad3aaf9cf95874e6f975aa369700c5d446cfcc404
+// dokimi:provenance sha256:09ae22cd021133b1356cf36bb4460b7909e4b9b7da6632bc01f25f9adf336ec9

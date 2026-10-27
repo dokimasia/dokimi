@@ -178,14 +178,15 @@ func (s *ReaderNoErrorLookupStub) invoke(ctx context.Context, key string) func()
 // of Func, then the results of Returns, and then the zero values.
 func (s *ReaderNoErrorStub) Lookup(ctx context.Context, key string) readernoerror.Value {
 	call := ReaderNoErrorLookupCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[ReaderNoErrorLookupCall, ReaderNoErrorLookupReturn]{
+	r := stub.Answer(s.OnLookup.MethodStub, call, stub.Arms[ReaderNoErrorLookupCall, ReaderNoErrorLookupReturn]{
 		Invoke:   s.OnLookup.invoke(ctx, key),
 		Fallback: s.OnLookup.fallback,
-		Stamp: func(c *ReaderNoErrorLookupCall, r ReaderNoErrorLookupReturn) {
+		Stamp: func(c ReaderNoErrorLookupCall, r ReaderNoErrorLookupReturn) ReaderNoErrorLookupCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:6a0d0d362a254de3995a2860626a667244306d2ab534920e354c6a749210e88c
+// dokimi:provenance sha256:18acb31d72d98199fd7a4b5f7bea1b2ec543556680aafdb94fea31ef9a89b124

@@ -230,13 +230,14 @@ func (s *MixedProcessStub) invoke(ctx context.Context, input string) func() Mixe
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Process(ctx context.Context, input string) (string, error) {
 	call := MixedProcessCall{Ctx: ctx, Input: input}
-	r := stub.Answer(s.OnProcess.MethodStub, &call, stub.Arms[MixedProcessCall, MixedProcessReturn]{
+	r := stub.Answer(s.OnProcess.MethodStub, call, stub.Arms[MixedProcessCall, MixedProcessReturn]{
 		Invoke:   s.OnProcess.invoke(ctx, input),
 		Fallback: s.OnProcess.fallback,
 		Fault:    func(err error) MixedProcessReturn { return MixedProcessReturn{Err: err} },
-		Stamp: func(c *MixedProcessCall, r MixedProcessReturn) {
+		Stamp: func(c MixedProcessCall, r MixedProcessReturn) MixedProcessCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -258,16 +259,17 @@ func (s *MixedNewInputStub) invoke(ctx context.Context) func() MixedNewInputRetu
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) NewInput(ctx context.Context) (string, error) {
 	call := MixedNewInputCall{Ctx: ctx}
-	r := stub.Answer(s.OnNewInput.MethodStub, &call, stub.Arms[MixedNewInputCall, MixedNewInputReturn]{
+	r := stub.Answer(s.OnNewInput.MethodStub, call, stub.Arms[MixedNewInputCall, MixedNewInputReturn]{
 		Invoke:   s.OnNewInput.invoke(ctx),
 		Fallback: s.OnNewInput.fallback,
 		Fault:    func(err error) MixedNewInputReturn { return MixedNewInputReturn{Err: err} },
-		Stamp: func(c *MixedNewInputCall, r MixedNewInputReturn) {
+		Stamp: func(c MixedNewInputCall, r MixedNewInputReturn) MixedNewInputCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:203328d91b70b29b478f87984b0df68a7a56954861663340d379c34422cef602
+// dokimi:provenance sha256:2a67825f463ae218b536d83a0a47f814f92badd7bb4f950cd7eba295da094f8c

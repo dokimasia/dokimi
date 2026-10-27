@@ -240,12 +240,13 @@ func (s *MultiArgWriterSetStub) invoke(ctx context.Context, key, body, mime stri
 // Func, then the results of Returns, and then the zero values.
 func (s *MultiArgWriterStub) Set(ctx context.Context, key, body, mime string) error {
 	call := MultiArgWriterSetCall{Ctx: ctx, Key: key, Body: body, Mime: mime}
-	r := stub.Answer(s.OnSet.MethodStub, &call, stub.Arms[MultiArgWriterSetCall, MultiArgWriterSetReturn]{
+	r := stub.Answer(s.OnSet.MethodStub, call, stub.Arms[MultiArgWriterSetCall, MultiArgWriterSetReturn]{
 		Invoke:   s.OnSet.invoke(ctx, key, body, mime),
 		Fallback: s.OnSet.fallback,
 		Fault:    func(err error) MultiArgWriterSetReturn { return MultiArgWriterSetReturn{Err: err} },
-		Stamp: func(c *MultiArgWriterSetCall, r MultiArgWriterSetReturn) {
+		Stamp: func(c MultiArgWriterSetCall, r MultiArgWriterSetReturn) MultiArgWriterSetCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -267,16 +268,17 @@ func (s *MultiArgWriterGetStub) invoke(ctx context.Context, key string) func() M
 // Func, then the results of Returns, and then the zero values.
 func (s *MultiArgWriterStub) Get(ctx context.Context, key string) (string, error) {
 	call := MultiArgWriterGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[MultiArgWriterGetCall, MultiArgWriterGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MultiArgWriterGetCall, MultiArgWriterGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) MultiArgWriterGetReturn { return MultiArgWriterGetReturn{Err: err} },
-		Stamp: func(c *MultiArgWriterGetCall, r MultiArgWriterGetReturn) {
+		Stamp: func(c MultiArgWriterGetCall, r MultiArgWriterGetReturn) MultiArgWriterGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:ae69b5db58e7c78db9b6093d349cc37487f8c06328f028555b8418e91ff9e35d
+// dokimi:provenance sha256:559883e36ebfdb7c2b4dbe28b6502dd74c675dadaa018ea1e31a3ccc28419908

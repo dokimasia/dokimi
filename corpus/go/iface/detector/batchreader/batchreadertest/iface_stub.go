@@ -197,16 +197,17 @@ func (s *BatchReaderGetAllStub) invoke(ctx context.Context, keys ...string) func
 // of Func, then the results of Returns, and then the zero values.
 func (s *BatchReaderStub) GetAll(ctx context.Context, keys ...string) ([]batchreader.Value, error) {
 	call := BatchReaderGetAllCall{Ctx: ctx, Keys: keys}
-	r := stub.Answer(s.OnGetAll.MethodStub, &call, stub.Arms[BatchReaderGetAllCall, BatchReaderGetAllReturn]{
+	r := stub.Answer(s.OnGetAll.MethodStub, call, stub.Arms[BatchReaderGetAllCall, BatchReaderGetAllReturn]{
 		Invoke:   s.OnGetAll.invoke(ctx, keys...),
 		Fallback: s.OnGetAll.fallback,
 		Fault:    func(err error) BatchReaderGetAllReturn { return BatchReaderGetAllReturn{Err: err} },
-		Stamp: func(c *BatchReaderGetAllCall, r BatchReaderGetAllReturn) {
+		Stamp: func(c BatchReaderGetAllCall, r BatchReaderGetAllReturn) BatchReaderGetAllCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:4a17d50a961fac0eb5b5a51d37a111611278357c8ab5ed811c0b037695bb657b
+// dokimi:provenance sha256:dba3eb00f10e9ebdee4a52322430fda206cc56ea5cab1e32b977e91da645e829

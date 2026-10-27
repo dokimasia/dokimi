@@ -231,13 +231,14 @@ func (s *ContractFetchStub) invoke(ctx context.Context, cur pagination.Cursor) f
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Fetch(ctx context.Context, cur pagination.Cursor) (pagination.Page, error) {
 	call := ContractFetchCall{Ctx: ctx, Cur: cur}
-	r := stub.Answer(s.OnFetch.MethodStub, &call, stub.Arms[ContractFetchCall, ContractFetchReturn]{
+	r := stub.Answer(s.OnFetch.MethodStub, call, stub.Arms[ContractFetchCall, ContractFetchReturn]{
 		Invoke:   s.OnFetch.invoke(ctx, cur),
 		Fallback: s.OnFetch.fallback,
 		Fault:    func(err error) ContractFetchReturn { return ContractFetchReturn{Err: err} },
-		Stamp: func(c *ContractFetchCall, r ContractFetchReturn) {
+		Stamp: func(c ContractFetchCall, r ContractFetchReturn) ContractFetchCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -259,15 +260,16 @@ func (s *ContractPutStub) invoke(ctx context.Context, v pagination.Value) func()
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Put(ctx context.Context, v pagination.Value) error {
 	call := ContractPutCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[ContractPutCall, ContractPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[ContractPutCall, ContractPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) ContractPutReturn { return ContractPutReturn{Err: err} },
-		Stamp: func(c *ContractPutCall, r ContractPutReturn) {
+		Stamp: func(c ContractPutCall, r ContractPutReturn) ContractPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:d3a1ec96649f736691142b74c882fd1ac4c4a9c1f7f736d67397439223370506
+// dokimi:provenance sha256:389616cd3d49f80c5ce7c082bdc396a0e81e759e236daa6488f96f2ff7928171

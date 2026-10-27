@@ -181,15 +181,16 @@ func (s *MixedConnectStub) invoke(ctx context.Context, dsn string) func() MixedC
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Connect(ctx context.Context, dsn string) error {
 	call := MixedConnectCall{Ctx: ctx, Dsn: dsn}
-	r := stub.Answer(s.OnConnect.MethodStub, &call, stub.Arms[MixedConnectCall, MixedConnectReturn]{
+	r := stub.Answer(s.OnConnect.MethodStub, call, stub.Arms[MixedConnectCall, MixedConnectReturn]{
 		Invoke:   s.OnConnect.invoke(ctx, dsn),
 		Fallback: s.OnConnect.fallback,
 		Fault:    func(err error) MixedConnectReturn { return MixedConnectReturn{Err: err} },
-		Stamp: func(c *MixedConnectCall, r MixedConnectReturn) {
+		Stamp: func(c MixedConnectCall, r MixedConnectReturn) MixedConnectCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:3d8e8c111c3bf7b9d6844d6546265cee88ebb2ce9badb3ef21d6c43797bcd014
+// dokimi:provenance sha256:ca1b97d8f02424a665a7d057549eb3acf5fde2eda3834d00b9b569d3cf1175b0

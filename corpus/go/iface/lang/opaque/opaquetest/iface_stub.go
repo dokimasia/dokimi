@@ -181,15 +181,16 @@ func (s *StorePutStub) invoke(ctx context.Context, req *opaque.PutRequest) func(
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Put(ctx context.Context, req *opaque.PutRequest) error {
 	call := StorePutCall{Ctx: ctx, Req: req}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[StorePutCall, StorePutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[StorePutCall, StorePutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, req),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) StorePutReturn { return StorePutReturn{Err: err} },
-		Stamp: func(c *StorePutCall, r StorePutReturn) {
+		Stamp: func(c StorePutCall, r StorePutReturn) StorePutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:917da11b97c5ae2e0020a6d6dcd96e7e7a48bbc8b3b657d383d166f42a1d2160
+// dokimi:provenance sha256:7e7ebc0c0bc89515a62349de4d0c31bbe6970d929094b087159666cc5a1c2b98

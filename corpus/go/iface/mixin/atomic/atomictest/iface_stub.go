@@ -228,12 +228,13 @@ func (s *MixedWriteStub) invoke(ctx context.Context, e atomic.Entry) func() Mixe
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Write(ctx context.Context, e atomic.Entry) error {
 	call := MixedWriteCall{Ctx: ctx, E: e}
-	r := stub.Answer(s.OnWrite.MethodStub, &call, stub.Arms[MixedWriteCall, MixedWriteReturn]{
+	r := stub.Answer(s.OnWrite.MethodStub, call, stub.Arms[MixedWriteCall, MixedWriteReturn]{
 		Invoke:   s.OnWrite.invoke(ctx, e),
 		Fallback: s.OnWrite.fallback,
 		Fault:    func(err error) MixedWriteReturn { return MixedWriteReturn{Err: err} },
-		Stamp: func(c *MixedWriteCall, r MixedWriteReturn) {
+		Stamp: func(c MixedWriteCall, r MixedWriteReturn) MixedWriteCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -255,16 +256,17 @@ func (s *MixedReadStub) invoke(ctx context.Context, key string) func() MixedRead
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Read(ctx context.Context, key string) (atomic.Entry, error) {
 	call := MixedReadCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[MixedReadCall, MixedReadReturn]{
+	r := stub.Answer(s.OnRead.MethodStub, call, stub.Arms[MixedReadCall, MixedReadReturn]{
 		Invoke:   s.OnRead.invoke(ctx, key),
 		Fallback: s.OnRead.fallback,
 		Fault:    func(err error) MixedReadReturn { return MixedReadReturn{Err: err} },
-		Stamp: func(c *MixedReadCall, r MixedReadReturn) {
+		Stamp: func(c MixedReadCall, r MixedReadReturn) MixedReadCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:ce644f11aca3de31201bc7a577790c6635659a73027c1d3f94e7198dc9dd5c56
+// dokimi:provenance sha256:656869315d7116aab5328007015160363d4d5f63e332828bc9eb4ec396dc993b

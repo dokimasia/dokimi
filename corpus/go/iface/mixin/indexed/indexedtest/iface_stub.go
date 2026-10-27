@@ -274,12 +274,13 @@ func (s *RankedAddStub) invoke(ctx context.Context, v indexed.Value) func() Rank
 // Func, then the results of Returns, and then the zero values.
 func (s *RankedStub) Add(ctx context.Context, v indexed.Value) error {
 	call := RankedAddCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[RankedAddCall, RankedAddReturn]{
+	r := stub.Answer(s.OnAdd.MethodStub, call, stub.Arms[RankedAddCall, RankedAddReturn]{
 		Invoke:   s.OnAdd.invoke(ctx, v),
 		Fallback: s.OnAdd.fallback,
 		Fault:    func(err error) RankedAddReturn { return RankedAddReturn{Err: err} },
-		Stamp: func(c *RankedAddCall, r RankedAddReturn) {
+		Stamp: func(c RankedAddCall, r RankedAddReturn) RankedAddCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -301,13 +302,14 @@ func (s *RankedLenStub) invoke(ctx context.Context) func() RankedLenReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *RankedStub) Len(ctx context.Context) (int, error) {
 	call := RankedLenCall{Ctx: ctx}
-	r := stub.Answer(s.OnLen.MethodStub, &call, stub.Arms[RankedLenCall, RankedLenReturn]{
+	r := stub.Answer(s.OnLen.MethodStub, call, stub.Arms[RankedLenCall, RankedLenReturn]{
 		Invoke:   s.OnLen.invoke(ctx),
 		Fallback: s.OnLen.fallback,
 		Fault:    func(err error) RankedLenReturn { return RankedLenReturn{Err: err} },
-		Stamp: func(c *RankedLenCall, r RankedLenReturn) {
+		Stamp: func(c RankedLenCall, r RankedLenReturn) RankedLenCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -329,16 +331,17 @@ func (s *RankedAtStub) invoke(ctx context.Context, i int) func() RankedAtReturn 
 // Func, then the results of Returns, and then the zero values.
 func (s *RankedStub) At(ctx context.Context, i int) (indexed.Value, error) {
 	call := RankedAtCall{Ctx: ctx, I: i}
-	r := stub.Answer(s.OnAt.MethodStub, &call, stub.Arms[RankedAtCall, RankedAtReturn]{
+	r := stub.Answer(s.OnAt.MethodStub, call, stub.Arms[RankedAtCall, RankedAtReturn]{
 		Invoke:   s.OnAt.invoke(ctx, i),
 		Fallback: s.OnAt.fallback,
 		Fault:    func(err error) RankedAtReturn { return RankedAtReturn{Err: err} },
-		Stamp: func(c *RankedAtCall, r RankedAtReturn) {
+		Stamp: func(c RankedAtCall, r RankedAtReturn) RankedAtCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:a168aabb937ea6f702ac813495233fad0f43a38a8b678a563a73c20a32632058
+// dokimi:provenance sha256:05c7a267f7e7da0abffd5d5bf55688e1f0af23f993456296b85f0f6d87b4b4aa

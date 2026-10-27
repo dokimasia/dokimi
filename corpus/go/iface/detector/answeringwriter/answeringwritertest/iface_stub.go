@@ -198,16 +198,17 @@ func (s *AnsweringWriterPutStub) invoke(ctx context.Context, v answeringwriter.V
 // Func, then the results of Returns, and then the zero values.
 func (s *AnsweringWriterStub) Put(ctx context.Context, v answeringwriter.Value) (answeringwriter.Value, error) {
 	call := AnsweringWriterPutCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[AnsweringWriterPutCall, AnsweringWriterPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[AnsweringWriterPutCall, AnsweringWriterPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) AnsweringWriterPutReturn { return AnsweringWriterPutReturn{Err: err} },
-		Stamp: func(c *AnsweringWriterPutCall, r AnsweringWriterPutReturn) {
+		Stamp: func(c AnsweringWriterPutCall, r AnsweringWriterPutReturn) AnsweringWriterPutCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:23d1ed214e9767c4369f65e6ede5adeebfcef2d893122bf9323d3e6e758b011e
+// dokimi:provenance sha256:e28ecf709991a9bd06a5edd13f0f7dcd0f4af206f0149fd979496005b35ea5a5

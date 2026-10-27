@@ -165,14 +165,15 @@ func (s *MixedDeriveStub) invoke(input string) func() MixedDeriveReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Derive(input string) string {
 	call := MixedDeriveCall{Input: input}
-	r := stub.Answer(s.OnDerive.MethodStub, &call, stub.Arms[MixedDeriveCall, MixedDeriveReturn]{
+	r := stub.Answer(s.OnDerive.MethodStub, call, stub.Arms[MixedDeriveCall, MixedDeriveReturn]{
 		Invoke:   s.OnDerive.invoke(input),
 		Fallback: s.OnDerive.fallback,
-		Stamp: func(c *MixedDeriveCall, r MixedDeriveReturn) {
+		Stamp: func(c MixedDeriveCall, r MixedDeriveReturn) MixedDeriveCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:c0640551dd1326fc06507521c196b90ac7d3a08949ca711e2cd9f0310f3c8379
+// dokimi:provenance sha256:53bb392962dfa568fefb5a01a771d9bcddae5f045052448bf9f07295a1e19724

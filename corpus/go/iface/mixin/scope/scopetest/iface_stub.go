@@ -231,12 +231,13 @@ func (s *MixedSetStub) invoke(ctx context.Context, scope, key, value string) fun
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Set(ctx context.Context, scope, key, value string) error {
 	call := MixedSetCall{Ctx: ctx, Scope: scope, Key: key, Value: value}
-	r := stub.Answer(s.OnSet.MethodStub, &call, stub.Arms[MixedSetCall, MixedSetReturn]{
+	r := stub.Answer(s.OnSet.MethodStub, call, stub.Arms[MixedSetCall, MixedSetReturn]{
 		Invoke:   s.OnSet.invoke(ctx, scope, key, value),
 		Fallback: s.OnSet.fallback,
 		Fault:    func(err error) MixedSetReturn { return MixedSetReturn{Err: err} },
-		Stamp: func(c *MixedSetCall, r MixedSetReturn) {
+		Stamp: func(c MixedSetCall, r MixedSetReturn) MixedSetCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -258,16 +259,17 @@ func (s *MixedGetStub) invoke(ctx context.Context, scope, key string) func() Mix
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Get(ctx context.Context, scope, key string) (string, error) {
 	call := MixedGetCall{Ctx: ctx, Scope: scope, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[MixedGetCall, MixedGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, scope, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
-		Stamp: func(c *MixedGetCall, r MixedGetReturn) {
+		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:cd539d7f5925c202e46395bc56e33a498cdbecf331c70af67236044461765333
+// dokimi:provenance sha256:8e91a18cc7a67241a1d4c78a4b52e8e1aabc99887f443ad33dffd17a61c5d47b

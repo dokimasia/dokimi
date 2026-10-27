@@ -229,12 +229,13 @@ func (s *ContractRunStub) invoke(ctx context.Context, key string) func() Contrac
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Run(ctx context.Context, key string) error {
 	call := ContractRunCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRun.MethodStub, &call, stub.Arms[ContractRunCall, ContractRunReturn]{
+	r := stub.Answer(s.OnRun.MethodStub, call, stub.Arms[ContractRunCall, ContractRunReturn]{
 		Invoke:   s.OnRun.invoke(ctx, key),
 		Fallback: s.OnRun.fallback,
 		Fault:    func(err error) ContractRunReturn { return ContractRunReturn{Err: err} },
-		Stamp: func(c *ContractRunCall, r ContractRunReturn) {
+		Stamp: func(c ContractRunCall, r ContractRunReturn) ContractRunCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -256,16 +257,17 @@ func (s *ContractStateStub) invoke(ctx context.Context, key string) func() Contr
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) State(ctx context.Context, key string) (string, error) {
 	call := ContractStateCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnState.MethodStub, &call, stub.Arms[ContractStateCall, ContractStateReturn]{
+	r := stub.Answer(s.OnState.MethodStub, call, stub.Arms[ContractStateCall, ContractStateReturn]{
 		Invoke:   s.OnState.invoke(ctx, key),
 		Fallback: s.OnState.fallback,
 		Fault:    func(err error) ContractStateReturn { return ContractStateReturn{Err: err} },
-		Stamp: func(c *ContractStateCall, r ContractStateReturn) {
+		Stamp: func(c ContractStateCall, r ContractStateReturn) ContractStateCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:9789a034b1d62f6b71060f04389c56bf960250506c229c09d7fd9516f86b64b2
+// dokimi:provenance sha256:488922e7f287e4df3bf44d811ccb1c20386ad7fd3966891913127732f317c422

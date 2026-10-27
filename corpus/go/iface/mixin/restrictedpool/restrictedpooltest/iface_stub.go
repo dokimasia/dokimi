@@ -233,12 +233,13 @@ func (s *StorePutStub) invoke(
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Put(ctx context.Context, key restrictedpool.Key, body restrictedpool.Body) error {
 	call := StorePutCall{Ctx: ctx, Key: key, Body: body}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[StorePutCall, StorePutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[StorePutCall, StorePutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, key, body),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) StorePutReturn { return StorePutReturn{Err: err} },
-		Stamp: func(c *StorePutCall, r StorePutReturn) {
+		Stamp: func(c StorePutCall, r StorePutReturn) StorePutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -260,16 +261,17 @@ func (s *StoreGetStub) invoke(ctx context.Context, key restrictedpool.Key) func(
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Get(ctx context.Context, key restrictedpool.Key) (restrictedpool.Body, error) {
 	call := StoreGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[StoreGetCall, StoreGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[StoreGetCall, StoreGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) StoreGetReturn { return StoreGetReturn{Err: err} },
-		Stamp: func(c *StoreGetCall, r StoreGetReturn) {
+		Stamp: func(c StoreGetCall, r StoreGetReturn) StoreGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:5fdc97fae11d74d625535a53730211bb68d4280798fa9e7347fedac1b96bbf4c
+// dokimi:provenance sha256:05d8a4305346e195a71b12fef0839ec69bb64ac6f6eef5353b599111dede49a8

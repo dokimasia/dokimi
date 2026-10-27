@@ -223,12 +223,13 @@ func (s *MixedFailStub) invoke(ctx context.Context) func() MixedFailReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Fail(ctx context.Context) error {
 	call := MixedFailCall{Ctx: ctx}
-	r := stub.Answer(s.OnFail.MethodStub, &call, stub.Arms[MixedFailCall, MixedFailReturn]{
+	r := stub.Answer(s.OnFail.MethodStub, call, stub.Arms[MixedFailCall, MixedFailReturn]{
 		Invoke:   s.OnFail.invoke(ctx),
 		Fallback: s.OnFail.fallback,
 		Fault:    func(err error) MixedFailReturn { return MixedFailReturn{Err: err} },
-		Stamp: func(c *MixedFailCall, r MixedFailReturn) {
+		Stamp: func(c MixedFailCall, r MixedFailReturn) MixedFailCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -250,15 +251,16 @@ func (s *MixedProbeStub) invoke() func() MixedProbeReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Probe() error {
 	call := MixedProbeCall{}
-	r := stub.Answer(s.OnProbe.MethodStub, &call, stub.Arms[MixedProbeCall, MixedProbeReturn]{
+	r := stub.Answer(s.OnProbe.MethodStub, call, stub.Arms[MixedProbeCall, MixedProbeReturn]{
 		Invoke:   s.OnProbe.invoke(),
 		Fallback: s.OnProbe.fallback,
 		Fault:    func(err error) MixedProbeReturn { return MixedProbeReturn{Err: err} },
-		Stamp: func(c *MixedProbeCall, r MixedProbeReturn) {
+		Stamp: func(c MixedProbeCall, r MixedProbeReturn) MixedProbeCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:4534358140a8528b57b1131020fd06c538cbdeac487dba9bc8c8d084ebcf8eaa
+// dokimi:provenance sha256:266388deb05d2756fe7ec44ec85714e20eceb6025a54d0da0f67f73e9e512d0b

@@ -207,19 +207,20 @@ func (s *MultiReaderStub) GetWithMeta(ctx context.Context, key string) (multirea
 	call := MultiReaderGetWithMetaCall{Ctx: ctx, Key: key}
 	r := stub.Answer(
 		s.OnGetWithMeta.MethodStub,
-		&call,
+		call,
 		stub.Arms[MultiReaderGetWithMetaCall, MultiReaderGetWithMetaReturn]{
 			Invoke:   s.OnGetWithMeta.invoke(ctx, key),
 			Fallback: s.OnGetWithMeta.fallback,
 			Fault:    func(err error) MultiReaderGetWithMetaReturn { return MultiReaderGetWithMetaReturn{Err: err} },
-			Stamp: func(c *MultiReaderGetWithMetaCall, r MultiReaderGetWithMetaReturn) {
+			Stamp: func(c MultiReaderGetWithMetaCall, r MultiReaderGetWithMetaReturn) MultiReaderGetWithMetaCall {
 				c.Result0 = r.Result0
 				c.Result1 = r.Result1
 				c.Err = r.Err
+				return c
 			},
 		},
 	)
 	return r.Result0, r.Result1, r.Err
 }
 
-// dokimi:provenance sha256:f55e624189bfc5e208d518ed5b0170e28ae99b9f44441b52baf099c4d543b803
+// dokimi:provenance sha256:310a249967745e5fd20a19818a82a6b5d5037cc296556dca12d4097be8ccb6be

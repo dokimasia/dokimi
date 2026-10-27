@@ -210,12 +210,13 @@ func (s *MixedFireStub) invoke(ctx context.Context, event string) func() MixedFi
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Fire(ctx context.Context, event string) error {
 	call := MixedFireCall{Ctx: ctx, Event: event}
-	r := stub.Answer(s.OnFire.MethodStub, &call, stub.Arms[MixedFireCall, MixedFireReturn]{
+	r := stub.Answer(s.OnFire.MethodStub, call, stub.Arms[MixedFireCall, MixedFireReturn]{
 		Invoke:   s.OnFire.invoke(ctx, event),
 		Fallback: s.OnFire.fallback,
 		Fault:    func(err error) MixedFireReturn { return MixedFireReturn{Err: err} },
-		Stamp: func(c *MixedFireCall, r MixedFireReturn) {
+		Stamp: func(c MixedFireCall, r MixedFireReturn) MixedFireCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -238,9 +239,9 @@ func (s *MixedOnEventStub) invokeVoid(fn func(event string)) func() struct{} {
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) OnEvent(fn func(event string)) {
 	call := MixedOnEventCall{Fn: fn}
-	stub.Answer(s.OnOnEvent.MethodStub, &call, stub.Arms[MixedOnEventCall, struct{}]{
+	stub.Answer(s.OnOnEvent.MethodStub, call, stub.Arms[MixedOnEventCall, struct{}]{
 		Invoke: s.OnOnEvent.invokeVoid(fn),
 	})
 }
 
-// dokimi:provenance sha256:6cf43912fead31de9135b278c1711d1342d0724fb8dfa37d18dd04e4567422cb
+// dokimi:provenance sha256:27263bf87fdbfe274fab0d7f13068493da8bd92878728c20805703ec1f51a061

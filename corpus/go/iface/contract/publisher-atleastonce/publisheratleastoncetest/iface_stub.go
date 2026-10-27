@@ -236,12 +236,13 @@ func (s *ContractPublishStub) invoke(ctx context.Context, v publisheratleastonce
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Publish(ctx context.Context, v publisheratleastonce.Value) error {
 	call := ContractPublishCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPublish.MethodStub, &call, stub.Arms[ContractPublishCall, ContractPublishReturn]{
+	r := stub.Answer(s.OnPublish.MethodStub, call, stub.Arms[ContractPublishCall, ContractPublishReturn]{
 		Invoke:   s.OnPublish.invoke(ctx, v),
 		Fallback: s.OnPublish.fallback,
 		Fault:    func(err error) ContractPublishReturn { return ContractPublishReturn{Err: err} },
-		Stamp: func(c *ContractPublishCall, r ContractPublishReturn) {
+		Stamp: func(c ContractPublishCall, r ContractPublishReturn) ContractPublishCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -263,16 +264,17 @@ func (s *ContractSubscribeStub) invoke(ctx context.Context) func() ContractSubsc
 // function of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Subscribe(ctx context.Context) (<-chan publisheratleastonce.Value, error) {
 	call := ContractSubscribeCall{Ctx: ctx}
-	r := stub.Answer(s.OnSubscribe.MethodStub, &call, stub.Arms[ContractSubscribeCall, ContractSubscribeReturn]{
+	r := stub.Answer(s.OnSubscribe.MethodStub, call, stub.Arms[ContractSubscribeCall, ContractSubscribeReturn]{
 		Invoke:   s.OnSubscribe.invoke(ctx),
 		Fallback: s.OnSubscribe.fallback,
 		Fault:    func(err error) ContractSubscribeReturn { return ContractSubscribeReturn{Err: err} },
-		Stamp: func(c *ContractSubscribeCall, r ContractSubscribeReturn) {
+		Stamp: func(c ContractSubscribeCall, r ContractSubscribeReturn) ContractSubscribeCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:c2451021573cd0a8b311f2890d63458b5f973b3b3036271e9975fcedcb5930a1
+// dokimi:provenance sha256:7e0fe1e052c1a7438c3e8c3f727ab4ef548eab78a773b808f785f7f61aa6847e

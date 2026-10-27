@@ -230,12 +230,13 @@ func (s *StorePutStub) invoke(ctx context.Context, a validated.Account) func() S
 // Func, then the results of Returns, and then the zero values.
 func (s *StoreStub) Put(ctx context.Context, a validated.Account) error {
 	call := StorePutCall{Ctx: ctx, A: a}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[StorePutCall, StorePutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[StorePutCall, StorePutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, a),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) StorePutReturn { return StorePutReturn{Err: err} },
-		Stamp: func(c *StorePutCall, r StorePutReturn) {
+		Stamp: func(c StorePutCall, r StorePutReturn) StorePutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -257,7 +258,7 @@ func (s *StoreGetStub) invoke(ctx context.Context, id string) func() StoreGetRet
 // Func, then the results of Returns, and then the default results.
 func (s *StoreStub) Get(ctx context.Context, id string) (validated.Account, error) {
 	call := StoreGetCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[StoreGetCall, StoreGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[StoreGetCall, StoreGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, id),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) StoreGetReturn { return StoreGetReturn{Err: err} },
@@ -265,12 +266,13 @@ func (s *StoreStub) Get(ctx context.Context, id string) (validated.Account, erro
 			r0 := NewAccountBuilder().Build()
 			return StoreGetReturn{Result: r0}
 		},
-		Stamp: func(c *StoreGetCall, r StoreGetReturn) {
+		Stamp: func(c StoreGetCall, r StoreGetReturn) StoreGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:a3dd96148945fe792f16b5de3ca2280da2b426e582ef740ae1a7be38d674957f
+// dokimi:provenance sha256:2d9235fe964d48639297e4b4b5593a33ed3a7acfce760cd62f212a7220edf899

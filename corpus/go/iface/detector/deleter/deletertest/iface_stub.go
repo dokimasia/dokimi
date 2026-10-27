@@ -182,15 +182,16 @@ func (s *DeleterDeleteStub) invoke(ctx context.Context, key string) func() Delet
 // of Func, then the results of Returns, and then the zero values.
 func (s *DeleterStub) Delete(ctx context.Context, key string) error {
 	call := DeleterDeleteCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnDelete.MethodStub, &call, stub.Arms[DeleterDeleteCall, DeleterDeleteReturn]{
+	r := stub.Answer(s.OnDelete.MethodStub, call, stub.Arms[DeleterDeleteCall, DeleterDeleteReturn]{
 		Invoke:   s.OnDelete.invoke(ctx, key),
 		Fallback: s.OnDelete.fallback,
 		Fault:    func(err error) DeleterDeleteReturn { return DeleterDeleteReturn{Err: err} },
-		Stamp: func(c *DeleterDeleteCall, r DeleterDeleteReturn) {
+		Stamp: func(c DeleterDeleteCall, r DeleterDeleteReturn) DeleterDeleteCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:0716997b619baf1c713a5085cba4324da1dfadd0750cbb61ea56bd2965f77add
+// dokimi:provenance sha256:7154035e892589846b73274ddc6ec2b15d65ba43f079953e1b603ab69e2fd295

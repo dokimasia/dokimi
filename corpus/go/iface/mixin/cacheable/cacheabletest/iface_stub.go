@@ -183,16 +183,17 @@ func (s *MixedGetStub) invoke(ctx context.Context, key string) func() MixedGetRe
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Get(ctx context.Context, key string) (string, error) {
 	call := MixedGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[MixedGetCall, MixedGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
-		Stamp: func(c *MixedGetCall, r MixedGetReturn) {
+		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:8d43df241634c1883d95d77a3027ca13fae616a616379219b5feb12cbae8cf2a
+// dokimi:provenance sha256:2e8bdb7c9b00ce24286accdbc79e5dc69b530b276ec3980e95a520c6ee9859b2

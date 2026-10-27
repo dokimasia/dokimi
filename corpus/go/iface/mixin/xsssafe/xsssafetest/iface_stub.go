@@ -183,16 +183,17 @@ func (s *MixedRenderStub) invoke(ctx context.Context, in string) func() MixedRen
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Render(ctx context.Context, in string) (string, error) {
 	call := MixedRenderCall{Ctx: ctx, In: in}
-	r := stub.Answer(s.OnRender.MethodStub, &call, stub.Arms[MixedRenderCall, MixedRenderReturn]{
+	r := stub.Answer(s.OnRender.MethodStub, call, stub.Arms[MixedRenderCall, MixedRenderReturn]{
 		Invoke:   s.OnRender.invoke(ctx, in),
 		Fallback: s.OnRender.fallback,
 		Fault:    func(err error) MixedRenderReturn { return MixedRenderReturn{Err: err} },
-		Stamp: func(c *MixedRenderCall, r MixedRenderReturn) {
+		Stamp: func(c MixedRenderCall, r MixedRenderReturn) MixedRenderCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:f0baba5d049cf9dc8654812199ba1ef2e84286b5a8ffe2137f1a50ab371a7d5e
+// dokimi:provenance sha256:3573617f9d751a0d2079db6f9aa11079cab2c39bb7483e82052217aa4f0243dc

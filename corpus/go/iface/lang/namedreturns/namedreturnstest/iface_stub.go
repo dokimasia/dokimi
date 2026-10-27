@@ -286,13 +286,14 @@ func (s *ServiceNamedStub) invoke(ctx context.Context, id string) func() Service
 // Func, then the results of Returns, and then the zero values.
 func (s *ServiceStub) Named(ctx context.Context, id string) (item string, err error) {
 	call := ServiceNamedCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnNamed.MethodStub, &call, stub.Arms[ServiceNamedCall, ServiceNamedReturn]{
+	r := stub.Answer(s.OnNamed.MethodStub, call, stub.Arms[ServiceNamedCall, ServiceNamedReturn]{
 		Invoke:   s.OnNamed.invoke(ctx, id),
 		Fallback: s.OnNamed.fallback,
 		Fault:    func(err error) ServiceNamedReturn { return ServiceNamedReturn{Err: err} },
-		Stamp: func(c *ServiceNamedCall, r ServiceNamedReturn) {
+		Stamp: func(c ServiceNamedCall, r ServiceNamedReturn) ServiceNamedCall {
 			c.Item = r.Item
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Item, r.Err
@@ -314,13 +315,14 @@ func (s *ServiceUnnamedStub) invoke(ctx context.Context, id string) func() Servi
 // of Func, then the results of Returns, and then the zero values.
 func (s *ServiceStub) Unnamed(ctx context.Context, id string) (string, error) {
 	call := ServiceUnnamedCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnUnnamed.MethodStub, &call, stub.Arms[ServiceUnnamedCall, ServiceUnnamedReturn]{
+	r := stub.Answer(s.OnUnnamed.MethodStub, call, stub.Arms[ServiceUnnamedCall, ServiceUnnamedReturn]{
 		Invoke:   s.OnUnnamed.invoke(ctx, id),
 		Fallback: s.OnUnnamed.fallback,
 		Fault:    func(err error) ServiceUnnamedReturn { return ServiceUnnamedReturn{Err: err} },
-		Stamp: func(c *ServiceUnnamedCall, r ServiceUnnamedReturn) {
+		Stamp: func(c ServiceUnnamedCall, r ServiceUnnamedReturn) ServiceUnnamedCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -344,18 +346,19 @@ func (s *ServiceStub) PartiallyNamed(ctx context.Context, id string) (string, er
 	call := ServicePartiallyNamedCall{Ctx: ctx, ID: id}
 	r := stub.Answer(
 		s.OnPartiallyNamed.MethodStub,
-		&call,
+		call,
 		stub.Arms[ServicePartiallyNamedCall, ServicePartiallyNamedReturn]{
 			Invoke:   s.OnPartiallyNamed.invoke(ctx, id),
 			Fallback: s.OnPartiallyNamed.fallback,
 			Fault:    func(err error) ServicePartiallyNamedReturn { return ServicePartiallyNamedReturn{Err: err} },
-			Stamp: func(c *ServicePartiallyNamedCall, r ServicePartiallyNamedReturn) {
+			Stamp: func(c ServicePartiallyNamedCall, r ServicePartiallyNamedReturn) ServicePartiallyNamedCall {
 				c.Item = r.Item
 				c.Err = r.Err
+				return c
 			},
 		},
 	)
 	return r.Item, r.Err
 }
 
-// dokimi:provenance sha256:2b84cd24a4df1d6ea4b61e21e71f1b94699840e81ca3c14d5d77c80d4391fbd2
+// dokimi:provenance sha256:4a8f6429b05da313e1b4cfeef2c2e8b267c9f97cfeda8707d5bb389d0ff6ae9e

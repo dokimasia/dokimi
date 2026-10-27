@@ -281,15 +281,16 @@ func (s *WideQuadStub) invoke(ctx context.Context, id string) func() WideQuadRet
 // Func, then the results of Returns, and then the zero values.
 func (s *WideStub) Quad(ctx context.Context, id string) (string, int, bool, error) {
 	call := WideQuadCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnQuad.MethodStub, &call, stub.Arms[WideQuadCall, WideQuadReturn]{
+	r := stub.Answer(s.OnQuad.MethodStub, call, stub.Arms[WideQuadCall, WideQuadReturn]{
 		Invoke:   s.OnQuad.invoke(ctx, id),
 		Fallback: s.OnQuad.fallback,
 		Fault:    func(err error) WideQuadReturn { return WideQuadReturn{Err: err} },
-		Stamp: func(c *WideQuadCall, r WideQuadReturn) {
+		Stamp: func(c WideQuadCall, r WideQuadReturn) WideQuadCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
 			c.Result2 = r.Result2
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result0, r.Result1, r.Result2, r.Err
@@ -311,13 +312,14 @@ func (s *WideTripleStub) invoke(ctx context.Context, id string) func() WideTripl
 // of Func, then the results of Returns, and then the zero values.
 func (s *WideStub) Triple(ctx context.Context, id string) (string, int, bool) {
 	call := WideTripleCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnTriple.MethodStub, &call, stub.Arms[WideTripleCall, WideTripleReturn]{
+	r := stub.Answer(s.OnTriple.MethodStub, call, stub.Arms[WideTripleCall, WideTripleReturn]{
 		Invoke:   s.OnTriple.invoke(ctx, id),
 		Fallback: s.OnTriple.fallback,
-		Stamp: func(c *WideTripleCall, r WideTripleReturn) {
+		Stamp: func(c WideTripleCall, r WideTripleReturn) WideTripleCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
 			c.Result2 = r.Result2
+			return c
 		},
 	})
 	return r.Result0, r.Result1, r.Result2
@@ -339,15 +341,16 @@ func (s *WideNoErrorStub) invoke(ctx context.Context, id string) func() WideNoEr
 // of Func, then the results of Returns, and then the zero values.
 func (s *WideStub) NoError(ctx context.Context, id string) (string, int) {
 	call := WideNoErrorCall{Ctx: ctx, ID: id}
-	r := stub.Answer(s.OnNoError.MethodStub, &call, stub.Arms[WideNoErrorCall, WideNoErrorReturn]{
+	r := stub.Answer(s.OnNoError.MethodStub, call, stub.Arms[WideNoErrorCall, WideNoErrorReturn]{
 		Invoke:   s.OnNoError.invoke(ctx, id),
 		Fallback: s.OnNoError.fallback,
-		Stamp: func(c *WideNoErrorCall, r WideNoErrorReturn) {
+		Stamp: func(c WideNoErrorCall, r WideNoErrorReturn) WideNoErrorCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
+			return c
 		},
 	})
 	return r.Result0, r.Result1
 }
 
-// dokimi:provenance sha256:00c7ca405f54d579c37f00ca8634ec4e623edf4000a4f155f3cb55761159bc3a
+// dokimi:provenance sha256:3e6c152580d25a44049172a64e9d1471509a1ffa0c965196987f5c5e4efee575

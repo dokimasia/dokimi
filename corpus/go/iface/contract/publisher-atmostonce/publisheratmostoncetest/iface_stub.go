@@ -236,12 +236,13 @@ func (s *ContractPublishStub) invoke(ctx context.Context, v publisheratmostonce.
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Publish(ctx context.Context, v publisheratmostonce.Value) error {
 	call := ContractPublishCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPublish.MethodStub, &call, stub.Arms[ContractPublishCall, ContractPublishReturn]{
+	r := stub.Answer(s.OnPublish.MethodStub, call, stub.Arms[ContractPublishCall, ContractPublishReturn]{
 		Invoke:   s.OnPublish.invoke(ctx, v),
 		Fallback: s.OnPublish.fallback,
 		Fault:    func(err error) ContractPublishReturn { return ContractPublishReturn{Err: err} },
-		Stamp: func(c *ContractPublishCall, r ContractPublishReturn) {
+		Stamp: func(c ContractPublishCall, r ContractPublishReturn) ContractPublishCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -263,16 +264,17 @@ func (s *ContractSubscribeStub) invoke(ctx context.Context) func() ContractSubsc
 // function of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Subscribe(ctx context.Context) (<-chan publisheratmostonce.Value, error) {
 	call := ContractSubscribeCall{Ctx: ctx}
-	r := stub.Answer(s.OnSubscribe.MethodStub, &call, stub.Arms[ContractSubscribeCall, ContractSubscribeReturn]{
+	r := stub.Answer(s.OnSubscribe.MethodStub, call, stub.Arms[ContractSubscribeCall, ContractSubscribeReturn]{
 		Invoke:   s.OnSubscribe.invoke(ctx),
 		Fallback: s.OnSubscribe.fallback,
 		Fault:    func(err error) ContractSubscribeReturn { return ContractSubscribeReturn{Err: err} },
-		Stamp: func(c *ContractSubscribeCall, r ContractSubscribeReturn) {
+		Stamp: func(c ContractSubscribeCall, r ContractSubscribeReturn) ContractSubscribeCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:c9adcdbcf3ac535650f07a17c9e7104ffc0202647ab365ed2e88f0b8c931b4b6
+// dokimi:provenance sha256:8744291f1c3610ed113a9a00141e29f02a6c0da5a0282ab5c6d8e3f7b6c9fb97

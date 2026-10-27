@@ -274,12 +274,13 @@ func (s *MixedAcquireStub) invoke(ctx context.Context) func() MixedAcquireReturn
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Acquire(ctx context.Context) error {
 	call := MixedAcquireCall{Ctx: ctx}
-	r := stub.Answer(s.OnAcquire.MethodStub, &call, stub.Arms[MixedAcquireCall, MixedAcquireReturn]{
+	r := stub.Answer(s.OnAcquire.MethodStub, call, stub.Arms[MixedAcquireCall, MixedAcquireReturn]{
 		Invoke:   s.OnAcquire.invoke(ctx),
 		Fallback: s.OnAcquire.fallback,
 		Fault:    func(err error) MixedAcquireReturn { return MixedAcquireReturn{Err: err} },
-		Stamp: func(c *MixedAcquireCall, r MixedAcquireReturn) {
+		Stamp: func(c MixedAcquireCall, r MixedAcquireReturn) MixedAcquireCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -301,12 +302,13 @@ func (s *MixedReleaseStub) invoke(ctx context.Context) func() MixedReleaseReturn
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Release(ctx context.Context) error {
 	call := MixedReleaseCall{Ctx: ctx}
-	r := stub.Answer(s.OnRelease.MethodStub, &call, stub.Arms[MixedReleaseCall, MixedReleaseReturn]{
+	r := stub.Answer(s.OnRelease.MethodStub, call, stub.Arms[MixedReleaseCall, MixedReleaseReturn]{
 		Invoke:   s.OnRelease.invoke(ctx),
 		Fallback: s.OnRelease.fallback,
 		Fault:    func(err error) MixedReleaseReturn { return MixedReleaseReturn{Err: err} },
-		Stamp: func(c *MixedReleaseCall, r MixedReleaseReturn) {
+		Stamp: func(c MixedReleaseCall, r MixedReleaseReturn) MixedReleaseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -328,16 +330,17 @@ func (s *MixedOutstandingStub) invoke(ctx context.Context) func() MixedOutstandi
 // function of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Outstanding(ctx context.Context) (int, error) {
 	call := MixedOutstandingCall{Ctx: ctx}
-	r := stub.Answer(s.OnOutstanding.MethodStub, &call, stub.Arms[MixedOutstandingCall, MixedOutstandingReturn]{
+	r := stub.Answer(s.OnOutstanding.MethodStub, call, stub.Arms[MixedOutstandingCall, MixedOutstandingReturn]{
 		Invoke:   s.OnOutstanding.invoke(ctx),
 		Fallback: s.OnOutstanding.fallback,
 		Fault:    func(err error) MixedOutstandingReturn { return MixedOutstandingReturn{Err: err} },
-		Stamp: func(c *MixedOutstandingCall, r MixedOutstandingReturn) {
+		Stamp: func(c MixedOutstandingCall, r MixedOutstandingReturn) MixedOutstandingCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:4e58978865fc8050c842440291bad68b250e7939883b5464f0a16d0ed5ed25e7
+// dokimi:provenance sha256:b69c342489ba0d27561872e3ef9b2e060f97c8cd3a65c1a939953c98aab541c2

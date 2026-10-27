@@ -228,12 +228,13 @@ func (s *MixedTouchStub) invoke(ctx context.Context, key string) func() MixedTou
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Touch(ctx context.Context, key string) error {
 	call := MixedTouchCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnTouch.MethodStub, &call, stub.Arms[MixedTouchCall, MixedTouchReturn]{
+	r := stub.Answer(s.OnTouch.MethodStub, call, stub.Arms[MixedTouchCall, MixedTouchReturn]{
 		Invoke:   s.OnTouch.invoke(ctx, key),
 		Fallback: s.OnTouch.fallback,
 		Fault:    func(err error) MixedTouchReturn { return MixedTouchReturn{Err: err} },
-		Stamp: func(c *MixedTouchCall, r MixedTouchReturn) {
+		Stamp: func(c MixedTouchCall, r MixedTouchReturn) MixedTouchCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -255,16 +256,17 @@ func (s *MixedAgeOfStub) invoke(ctx context.Context, key string) func() MixedAge
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) AgeOf(ctx context.Context, key string) (int64, error) {
 	call := MixedAgeOfCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnAgeOf.MethodStub, &call, stub.Arms[MixedAgeOfCall, MixedAgeOfReturn]{
+	r := stub.Answer(s.OnAgeOf.MethodStub, call, stub.Arms[MixedAgeOfCall, MixedAgeOfReturn]{
 		Invoke:   s.OnAgeOf.invoke(ctx, key),
 		Fallback: s.OnAgeOf.fallback,
 		Fault:    func(err error) MixedAgeOfReturn { return MixedAgeOfReturn{Err: err} },
-		Stamp: func(c *MixedAgeOfCall, r MixedAgeOfReturn) {
+		Stamp: func(c MixedAgeOfCall, r MixedAgeOfReturn) MixedAgeOfCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:7811883aa3e1e8d5b394bd9ab7771f3ccbd60ebe49ea855eb0d751b701c6ee68
+// dokimi:provenance sha256:2dd8bd370f4e70e98b4193897d37b7440e760f483aa34610a8677c1728bc67f0

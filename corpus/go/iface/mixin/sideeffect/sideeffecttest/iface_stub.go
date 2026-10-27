@@ -229,12 +229,13 @@ func (s *MixedTouchStub) invoke(ctx context.Context, key string) func() MixedTou
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Touch(ctx context.Context, key string) error {
 	call := MixedTouchCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnTouch.MethodStub, &call, stub.Arms[MixedTouchCall, MixedTouchReturn]{
+	r := stub.Answer(s.OnTouch.MethodStub, call, stub.Arms[MixedTouchCall, MixedTouchReturn]{
 		Invoke:   s.OnTouch.invoke(ctx, key),
 		Fallback: s.OnTouch.fallback,
 		Fault:    func(err error) MixedTouchReturn { return MixedTouchReturn{Err: err} },
-		Stamp: func(c *MixedTouchCall, r MixedTouchReturn) {
+		Stamp: func(c MixedTouchCall, r MixedTouchReturn) MixedTouchCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -256,16 +257,17 @@ func (s *MixedObservedStub) invoke(ctx context.Context, key string) func() Mixed
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Observed(ctx context.Context, key string) (int, error) {
 	call := MixedObservedCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnObserved.MethodStub, &call, stub.Arms[MixedObservedCall, MixedObservedReturn]{
+	r := stub.Answer(s.OnObserved.MethodStub, call, stub.Arms[MixedObservedCall, MixedObservedReturn]{
 		Invoke:   s.OnObserved.invoke(ctx, key),
 		Fallback: s.OnObserved.fallback,
 		Fault:    func(err error) MixedObservedReturn { return MixedObservedReturn{Err: err} },
-		Stamp: func(c *MixedObservedCall, r MixedObservedReturn) {
+		Stamp: func(c MixedObservedCall, r MixedObservedReturn) MixedObservedCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:a6e8f3c9f1cd604011f4571f0b5a6a23a387de07adb134920b3bfd440ecb366f
+// dokimi:provenance sha256:e6e965d7b1c347771697a2f27df41cf0bc0e9207e59b4700ba4ae784feb684f3

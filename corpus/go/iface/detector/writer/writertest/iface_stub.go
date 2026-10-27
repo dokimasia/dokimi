@@ -181,15 +181,16 @@ func (s *WriterPutStub) invoke(ctx context.Context, v writer.Value) func() Write
 // Func, then the results of Returns, and then the zero values.
 func (s *WriterStub) Put(ctx context.Context, v writer.Value) error {
 	call := WriterPutCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[WriterPutCall, WriterPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[WriterPutCall, WriterPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) WriterPutReturn { return WriterPutReturn{Err: err} },
-		Stamp: func(c *WriterPutCall, r WriterPutReturn) {
+		Stamp: func(c WriterPutCall, r WriterPutReturn) WriterPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:4cbe0201abecf9e3c07c4eacb48773d5f0600dd79bb0adb98f6ad34b89a8c9a5
+// dokimi:provenance sha256:5432e086b928ca0343ea8a8068d2e843507f02ee1d0dfcdfa9ad81ceb3ff6c90

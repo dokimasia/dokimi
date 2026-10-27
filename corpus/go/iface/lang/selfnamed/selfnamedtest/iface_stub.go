@@ -208,11 +208,12 @@ func (s *FilterFilterStub) invoke(item string) func() FilterFilterReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *FilterStub) Filter(item string) bool {
 	call := FilterFilterCall{Item: item}
-	r := stub.Answer(s.OnFilter.MethodStub, &call, stub.Arms[FilterFilterCall, FilterFilterReturn]{
+	r := stub.Answer(s.OnFilter.MethodStub, call, stub.Arms[FilterFilterCall, FilterFilterReturn]{
 		Invoke:   s.OnFilter.invoke(item),
 		Fallback: s.OnFilter.fallback,
-		Stamp: func(c *FilterFilterCall, r FilterFilterReturn) {
+		Stamp: func(c FilterFilterCall, r FilterFilterReturn) FilterFilterCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -234,14 +235,15 @@ func (s *FilterDrainStub) invoke(src selfnamed.Source) func() FilterDrainReturn 
 // Func, then the results of Returns, and then the zero values.
 func (s *FilterStub) Drain(src selfnamed.Source) int {
 	call := FilterDrainCall{Src: src}
-	r := stub.Answer(s.OnDrain.MethodStub, &call, stub.Arms[FilterDrainCall, FilterDrainReturn]{
+	r := stub.Answer(s.OnDrain.MethodStub, call, stub.Arms[FilterDrainCall, FilterDrainReturn]{
 		Invoke:   s.OnDrain.invoke(src),
 		Fallback: s.OnDrain.fallback,
-		Stamp: func(c *FilterDrainCall, r FilterDrainReturn) {
+		Stamp: func(c FilterDrainCall, r FilterDrainReturn) FilterDrainCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:6a2d3b2d1ec8d19477a642b2ffe6c84cfa4a0188afc13cc7c161c72e60292cac
+// dokimi:provenance sha256:8578a64c91019c8251fe8b170b066a678742a854eefcb5daa4bc093190bba6b3

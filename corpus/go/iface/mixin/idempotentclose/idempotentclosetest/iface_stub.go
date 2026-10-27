@@ -226,12 +226,13 @@ func (s *CloserCloseStub) invoke(ctx context.Context) func() CloserCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CloserStub) Close(ctx context.Context) error {
 	call := CloserCloseCall{Ctx: ctx}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
 		Invoke:   s.OnClose.invoke(ctx),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) CloserCloseReturn { return CloserCloseReturn{Err: err} },
-		Stamp: func(c *CloserCloseCall, r CloserCloseReturn) {
+		Stamp: func(c CloserCloseCall, r CloserCloseReturn) CloserCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -253,16 +254,17 @@ func (s *CloserStatsStub) invoke(ctx context.Context) func() CloserStatsReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CloserStub) Stats(ctx context.Context) (int, error) {
 	call := CloserStatsCall{Ctx: ctx}
-	r := stub.Answer(s.OnStats.MethodStub, &call, stub.Arms[CloserStatsCall, CloserStatsReturn]{
+	r := stub.Answer(s.OnStats.MethodStub, call, stub.Arms[CloserStatsCall, CloserStatsReturn]{
 		Invoke:   s.OnStats.invoke(ctx),
 		Fallback: s.OnStats.fallback,
 		Fault:    func(err error) CloserStatsReturn { return CloserStatsReturn{Err: err} },
-		Stamp: func(c *CloserStatsCall, r CloserStatsReturn) {
+		Stamp: func(c CloserStatsCall, r CloserStatsReturn) CloserStatsCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:e9f2b4336eed964fef71a1d836dc8e578a6bde5c42afe7f750dcf07bf40910a0
+// dokimi:provenance sha256:0bfdfd7abf4f230dacf34705f02c97cd84511fc6da273b4a3ca85ea732b60e64

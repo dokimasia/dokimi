@@ -234,13 +234,14 @@ func (s *MixedStub) Old(ctx context.Context, key string) (string, error) {
 		tb.Logf("Mixed.Old is deprecated")
 	}
 	call := MixedOldCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnOld.MethodStub, &call, stub.Arms[MixedOldCall, MixedOldReturn]{
+	r := stub.Answer(s.OnOld.MethodStub, call, stub.Arms[MixedOldCall, MixedOldReturn]{
 		Invoke:   s.OnOld.invoke(ctx, key),
 		Fallback: s.OnOld.fallback,
 		Fault:    func(err error) MixedOldReturn { return MixedOldReturn{Err: err} },
-		Stamp: func(c *MixedOldCall, r MixedOldReturn) {
+		Stamp: func(c MixedOldCall, r MixedOldReturn) MixedOldCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -262,16 +263,17 @@ func (s *MixedNewStub) invoke(ctx context.Context, key string) func() MixedNewRe
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) New(ctx context.Context, key string) (string, error) {
 	call := MixedNewCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnNew.MethodStub, &call, stub.Arms[MixedNewCall, MixedNewReturn]{
+	r := stub.Answer(s.OnNew.MethodStub, call, stub.Arms[MixedNewCall, MixedNewReturn]{
 		Invoke:   s.OnNew.invoke(ctx, key),
 		Fallback: s.OnNew.fallback,
 		Fault:    func(err error) MixedNewReturn { return MixedNewReturn{Err: err} },
-		Stamp: func(c *MixedNewCall, r MixedNewReturn) {
+		Stamp: func(c MixedNewCall, r MixedNewReturn) MixedNewCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:e59222bd0aa15139d67c914437bbb9692e27c97eb09788c81b7830716750ee76
+// dokimi:provenance sha256:d9ccf4b98407f93a14e1190331c73baee238bc652f068a98fc2e17c6779527a2

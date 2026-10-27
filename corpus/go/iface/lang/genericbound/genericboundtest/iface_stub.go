@@ -238,13 +238,14 @@ func (s *RankedRankStub[K, V]) invoke(ctx context.Context, key K) func() RankedR
 // Func, then the results of Returns, and then the zero values.
 func (s *RankedStub[K, V]) Rank(ctx context.Context, key K) (V, error) {
 	call := RankedRankCall[K, V]{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRank.MethodStub, &call, stub.Arms[RankedRankCall[K, V], RankedRankReturn[K, V]]{
+	r := stub.Answer(s.OnRank.MethodStub, call, stub.Arms[RankedRankCall[K, V], RankedRankReturn[K, V]]{
 		Invoke:   s.OnRank.invoke(ctx, key),
 		Fallback: s.OnRank.fallback,
 		Fault:    func(err error) RankedRankReturn[K, V] { return RankedRankReturn[K, V]{Err: err} },
-		Stamp: func(c *RankedRankCall[K, V], r RankedRankReturn[K, V]) {
+		Stamp: func(c RankedRankCall[K, V], r RankedRankReturn[K, V]) RankedRankCall[K, V] {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -266,15 +267,16 @@ func (s *RankedResetStub[K, V]) invoke(ctx context.Context) func() RankedResetRe
 // Func, then the results of Returns, and then the zero values.
 func (s *RankedStub[K, V]) Reset(ctx context.Context) error {
 	call := RankedResetCall[K, V]{Ctx: ctx}
-	r := stub.Answer(s.OnReset.MethodStub, &call, stub.Arms[RankedResetCall[K, V], RankedResetReturn[K, V]]{
+	r := stub.Answer(s.OnReset.MethodStub, call, stub.Arms[RankedResetCall[K, V], RankedResetReturn[K, V]]{
 		Invoke:   s.OnReset.invoke(ctx),
 		Fallback: s.OnReset.fallback,
 		Fault:    func(err error) RankedResetReturn[K, V] { return RankedResetReturn[K, V]{Err: err} },
-		Stamp: func(c *RankedResetCall[K, V], r RankedResetReturn[K, V]) {
+		Stamp: func(c RankedResetCall[K, V], r RankedResetReturn[K, V]) RankedResetCall[K, V] {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:4c479f2b7072a95a27a19fe5adcdf92ee4635db8989ab51994066a7573667d93
+// dokimi:provenance sha256:7dcc24a462ac548ffa45ba10959cdfe063b7719682f802403ec40fbc87592236

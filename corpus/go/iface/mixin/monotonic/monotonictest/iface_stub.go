@@ -226,13 +226,14 @@ func (s *MixedVersionStub) invoke(ctx context.Context) func() MixedVersionReturn
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Version(ctx context.Context) (int64, error) {
 	call := MixedVersionCall{Ctx: ctx}
-	r := stub.Answer(s.OnVersion.MethodStub, &call, stub.Arms[MixedVersionCall, MixedVersionReturn]{
+	r := stub.Answer(s.OnVersion.MethodStub, call, stub.Arms[MixedVersionCall, MixedVersionReturn]{
 		Invoke:   s.OnVersion.invoke(ctx),
 		Fallback: s.OnVersion.fallback,
 		Fault:    func(err error) MixedVersionReturn { return MixedVersionReturn{Err: err} },
-		Stamp: func(c *MixedVersionCall, r MixedVersionReturn) {
+		Stamp: func(c MixedVersionCall, r MixedVersionReturn) MixedVersionCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -254,15 +255,16 @@ func (s *MixedAdvanceStub) invoke(ctx context.Context) func() MixedAdvanceReturn
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Advance(ctx context.Context) error {
 	call := MixedAdvanceCall{Ctx: ctx}
-	r := stub.Answer(s.OnAdvance.MethodStub, &call, stub.Arms[MixedAdvanceCall, MixedAdvanceReturn]{
+	r := stub.Answer(s.OnAdvance.MethodStub, call, stub.Arms[MixedAdvanceCall, MixedAdvanceReturn]{
 		Invoke:   s.OnAdvance.invoke(ctx),
 		Fallback: s.OnAdvance.fallback,
 		Fault:    func(err error) MixedAdvanceReturn { return MixedAdvanceReturn{Err: err} },
-		Stamp: func(c *MixedAdvanceCall, r MixedAdvanceReturn) {
+		Stamp: func(c MixedAdvanceCall, r MixedAdvanceReturn) MixedAdvanceCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:ab950b50fba8779ad50acc15e431901f9985bee94238cd89422db9dec0b7878d
+// dokimi:provenance sha256:5b8fe955d8220b8ff4dc53c1c30bf7f86d07b375b5867524a4516bcd3eb64c5e

@@ -187,15 +187,16 @@ func (s *LabellerApplyStub) invoke(
 // Func, then the results of Returns, and then the zero values.
 func (s *LabellerStub) Apply(ctx context.Context, tag sampled.Tag, level sampled.Level) error {
 	call := LabellerApplyCall{Ctx: ctx, Tag: tag, Level: level}
-	r := stub.Answer(s.OnApply.MethodStub, &call, stub.Arms[LabellerApplyCall, LabellerApplyReturn]{
+	r := stub.Answer(s.OnApply.MethodStub, call, stub.Arms[LabellerApplyCall, LabellerApplyReturn]{
 		Invoke:   s.OnApply.invoke(ctx, tag, level),
 		Fallback: s.OnApply.fallback,
 		Fault:    func(err error) LabellerApplyReturn { return LabellerApplyReturn{Err: err} },
-		Stamp: func(c *LabellerApplyCall, r LabellerApplyReturn) {
+		Stamp: func(c LabellerApplyCall, r LabellerApplyReturn) LabellerApplyCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:19d792656d5dc1df6f8745727f201ab2a2a0976db273cc7b0aa5d4c126609c90
+// dokimi:provenance sha256:3bf4461a02e33a1887cb53c5a6a7f17e17dda37218b23021fb357b17afadc379

@@ -371,12 +371,13 @@ func (s *ContractStepStub) invoke(ctx context.Context, v saga.Value) func() Cont
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Step(ctx context.Context, v saga.Value) error {
 	call := ContractStepCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnStep.MethodStub, &call, stub.Arms[ContractStepCall, ContractStepReturn]{
+	r := stub.Answer(s.OnStep.MethodStub, call, stub.Arms[ContractStepCall, ContractStepReturn]{
 		Invoke:   s.OnStep.invoke(ctx, v),
 		Fallback: s.OnStep.fallback,
 		Fault:    func(err error) ContractStepReturn { return ContractStepReturn{Err: err} },
-		Stamp: func(c *ContractStepCall, r ContractStepReturn) {
+		Stamp: func(c ContractStepCall, r ContractStepReturn) ContractStepCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -398,12 +399,13 @@ func (s *ContractCompensateStub) invoke(ctx context.Context, v saga.Value) func(
 // function of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Compensate(ctx context.Context, v saga.Value) error {
 	call := ContractCompensateCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnCompensate.MethodStub, &call, stub.Arms[ContractCompensateCall, ContractCompensateReturn]{
+	r := stub.Answer(s.OnCompensate.MethodStub, call, stub.Arms[ContractCompensateCall, ContractCompensateReturn]{
 		Invoke:   s.OnCompensate.invoke(ctx, v),
 		Fallback: s.OnCompensate.fallback,
 		Fault:    func(err error) ContractCompensateReturn { return ContractCompensateReturn{Err: err} },
-		Stamp: func(c *ContractCompensateCall, r ContractCompensateReturn) {
+		Stamp: func(c ContractCompensateCall, r ContractCompensateReturn) ContractCompensateCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -425,12 +427,13 @@ func (s *ContractShipStub) invoke(ctx context.Context, v saga.Value) func() Cont
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Ship(ctx context.Context, v saga.Value) error {
 	call := ContractShipCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnShip.MethodStub, &call, stub.Arms[ContractShipCall, ContractShipReturn]{
+	r := stub.Answer(s.OnShip.MethodStub, call, stub.Arms[ContractShipCall, ContractShipReturn]{
 		Invoke:   s.OnShip.invoke(ctx, v),
 		Fallback: s.OnShip.fallback,
 		Fault:    func(err error) ContractShipReturn { return ContractShipReturn{Err: err} },
-		Stamp: func(c *ContractShipCall, r ContractShipReturn) {
+		Stamp: func(c ContractShipCall, r ContractShipReturn) ContractShipCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -452,12 +455,13 @@ func (s *ContractUndoShipStub) invoke(ctx context.Context, v saga.Value) func() 
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) UndoShip(ctx context.Context, v saga.Value) error {
 	call := ContractUndoShipCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnUndoShip.MethodStub, &call, stub.Arms[ContractUndoShipCall, ContractUndoShipReturn]{
+	r := stub.Answer(s.OnUndoShip.MethodStub, call, stub.Arms[ContractUndoShipCall, ContractUndoShipReturn]{
 		Invoke:   s.OnUndoShip.invoke(ctx, v),
 		Fallback: s.OnUndoShip.fallback,
 		Fault:    func(err error) ContractUndoShipReturn { return ContractUndoShipReturn{Err: err} },
-		Stamp: func(c *ContractUndoShipCall, r ContractUndoShipReturn) {
+		Stamp: func(c ContractUndoShipCall, r ContractUndoShipReturn) ContractUndoShipCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -479,16 +483,17 @@ func (s *ContractStateStub) invoke(ctx context.Context) func() ContractStateRetu
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) State(ctx context.Context) (string, error) {
 	call := ContractStateCall{Ctx: ctx}
-	r := stub.Answer(s.OnState.MethodStub, &call, stub.Arms[ContractStateCall, ContractStateReturn]{
+	r := stub.Answer(s.OnState.MethodStub, call, stub.Arms[ContractStateCall, ContractStateReturn]{
 		Invoke:   s.OnState.invoke(ctx),
 		Fallback: s.OnState.fallback,
 		Fault:    func(err error) ContractStateReturn { return ContractStateReturn{Err: err} },
-		Stamp: func(c *ContractStateCall, r ContractStateReturn) {
+		Stamp: func(c ContractStateCall, r ContractStateReturn) ContractStateCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:0bf1d2eeacf3950d0b87bc378dcee18f058d9bab246ed905b5a9125cbc4345c7
+// dokimi:provenance sha256:a490f3432d5b40a47d268e72f3eb9ce534bf498b03950f947f2203caeab41e95

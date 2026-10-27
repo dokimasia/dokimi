@@ -267,12 +267,13 @@ func (s *StreamReaderAddStub) invoke(ctx context.Context, v streamreader.Value) 
 // Func, then the results of Returns, and then the zero values.
 func (s *StreamReaderStub) Add(ctx context.Context, v streamreader.Value) error {
 	call := StreamReaderAddCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[StreamReaderAddCall, StreamReaderAddReturn]{
+	r := stub.Answer(s.OnAdd.MethodStub, call, stub.Arms[StreamReaderAddCall, StreamReaderAddReturn]{
 		Invoke:   s.OnAdd.invoke(ctx, v),
 		Fallback: s.OnAdd.fallback,
 		Fault:    func(err error) StreamReaderAddReturn { return StreamReaderAddReturn{Err: err} },
-		Stamp: func(c *StreamReaderAddCall, r StreamReaderAddReturn) {
+		Stamp: func(c StreamReaderAddCall, r StreamReaderAddReturn) StreamReaderAddCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -294,14 +295,15 @@ func (s *StreamReaderListStub) invoke(ctx context.Context) func() StreamReaderLi
 // Func, then the results of Returns, and then the zero values.
 func (s *StreamReaderStub) List(ctx context.Context) iter.Seq2[streamreader.Value, error] {
 	call := StreamReaderListCall{Ctx: ctx}
-	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[StreamReaderListCall, StreamReaderListReturn]{
+	r := stub.Answer(s.OnList.MethodStub, call, stub.Arms[StreamReaderListCall, StreamReaderListReturn]{
 		Invoke:   s.OnList.invoke(ctx),
 		Fallback: s.OnList.fallback,
-		Stamp: func(c *StreamReaderListCall, r StreamReaderListReturn) {
+		Stamp: func(c StreamReaderListCall, r StreamReaderListReturn) StreamReaderListCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:1595f5f4f0429a49650b6d65a18fd256acbf96c4a97a55db9fedb5b2d959e020
+// dokimi:provenance sha256:149b0f76f6d3037936d19824ea32d445a06155494c7a4511fe6cad317ad0bc07

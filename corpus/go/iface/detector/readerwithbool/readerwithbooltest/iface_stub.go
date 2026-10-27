@@ -182,15 +182,16 @@ func (s *ReaderWithBoolLoadStub) invoke(ctx context.Context, key string) func() 
 // Func, then the results of Returns, and then the zero values.
 func (s *ReaderWithBoolStub) Load(ctx context.Context, key string) (readerwithbool.Value, bool) {
 	call := ReaderWithBoolLoadCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnLoad.MethodStub, &call, stub.Arms[ReaderWithBoolLoadCall, ReaderWithBoolLoadReturn]{
+	r := stub.Answer(s.OnLoad.MethodStub, call, stub.Arms[ReaderWithBoolLoadCall, ReaderWithBoolLoadReturn]{
 		Invoke:   s.OnLoad.invoke(ctx, key),
 		Fallback: s.OnLoad.fallback,
-		Stamp: func(c *ReaderWithBoolLoadCall, r ReaderWithBoolLoadReturn) {
+		Stamp: func(c ReaderWithBoolLoadCall, r ReaderWithBoolLoadReturn) ReaderWithBoolLoadCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
+			return c
 		},
 	})
 	return r.Result0, r.Result1
 }
 
-// dokimi:provenance sha256:11db339f6b6ec3a26d3f23d8bd5222480836ff684a9df03ee589b91e8afb7668
+// dokimi:provenance sha256:73128a001bf29afd138a2997d2b5d6470f2950405039ab386cec932e5e1ae07f

@@ -158,9 +158,9 @@ func (s *VoidLifecycleStopStub) invokeVoid() func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *VoidLifecycleStub) Stop() {
 	call := VoidLifecycleStopCall{}
-	stub.Answer(s.OnStop.MethodStub, &call, stub.Arms[VoidLifecycleStopCall, struct{}]{
+	stub.Answer(s.OnStop.MethodStub, call, stub.Arms[VoidLifecycleStopCall, struct{}]{
 		Invoke: s.OnStop.invokeVoid(),
 	})
 }
 
-// dokimi:provenance sha256:8bd2b0bbc5a7afdd4057bb5bbf9b41331d94ba1b7c4f3d4b15529e1d0f7933d9
+// dokimi:provenance sha256:853713259d912ad2fc945b7db912b21cad6d2838e7328129636e1a32cee195cb

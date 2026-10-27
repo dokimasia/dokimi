@@ -278,12 +278,13 @@ func (s *ContractStoreStub) invoke(ctx context.Context, key string, v cache.Valu
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Store(ctx context.Context, key string, v cache.Value) error {
 	call := ContractStoreCall{Ctx: ctx, Key: key, V: v}
-	r := stub.Answer(s.OnStore.MethodStub, &call, stub.Arms[ContractStoreCall, ContractStoreReturn]{
+	r := stub.Answer(s.OnStore.MethodStub, call, stub.Arms[ContractStoreCall, ContractStoreReturn]{
 		Invoke:   s.OnStore.invoke(ctx, key, v),
 		Fallback: s.OnStore.fallback,
 		Fault:    func(err error) ContractStoreReturn { return ContractStoreReturn{Err: err} },
-		Stamp: func(c *ContractStoreCall, r ContractStoreReturn) {
+		Stamp: func(c ContractStoreCall, r ContractStoreReturn) ContractStoreCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -305,13 +306,14 @@ func (s *ContractLookupStub) invoke(ctx context.Context, key string) func() Cont
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Lookup(ctx context.Context, key string) (cache.Value, error) {
 	call := ContractLookupCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnLookup.MethodStub, &call, stub.Arms[ContractLookupCall, ContractLookupReturn]{
+	r := stub.Answer(s.OnLookup.MethodStub, call, stub.Arms[ContractLookupCall, ContractLookupReturn]{
 		Invoke:   s.OnLookup.invoke(ctx, key),
 		Fallback: s.OnLookup.fallback,
 		Fault:    func(err error) ContractLookupReturn { return ContractLookupReturn{Err: err} },
-		Stamp: func(c *ContractLookupCall, r ContractLookupReturn) {
+		Stamp: func(c ContractLookupCall, r ContractLookupReturn) ContractLookupCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -333,16 +335,17 @@ func (s *ContractFetchStub) invoke(ctx context.Context, key string) func() Contr
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Fetch(ctx context.Context, key string) (cache.Value, error) {
 	call := ContractFetchCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnFetch.MethodStub, &call, stub.Arms[ContractFetchCall, ContractFetchReturn]{
+	r := stub.Answer(s.OnFetch.MethodStub, call, stub.Arms[ContractFetchCall, ContractFetchReturn]{
 		Invoke:   s.OnFetch.invoke(ctx, key),
 		Fallback: s.OnFetch.fallback,
 		Fault:    func(err error) ContractFetchReturn { return ContractFetchReturn{Err: err} },
-		Stamp: func(c *ContractFetchCall, r ContractFetchReturn) {
+		Stamp: func(c ContractFetchCall, r ContractFetchReturn) ContractFetchCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:f77685031c78f872375a1e04f8cb5193b3e5227359e35c42ce4b1e2aeec7a070
+// dokimi:provenance sha256:c7ff985812e306e0496be3931af5533356e63b8c4fbb8d3f4eada65b136f3a01

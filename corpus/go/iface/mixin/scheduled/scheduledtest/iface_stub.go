@@ -227,12 +227,13 @@ func (s *MixedAtStub) invoke(ctx context.Context, after time.Duration) func() Mi
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) At(ctx context.Context, after time.Duration) error {
 	call := MixedAtCall{Ctx: ctx, After: after}
-	r := stub.Answer(s.OnAt.MethodStub, &call, stub.Arms[MixedAtCall, MixedAtReturn]{
+	r := stub.Answer(s.OnAt.MethodStub, call, stub.Arms[MixedAtCall, MixedAtReturn]{
 		Invoke:   s.OnAt.invoke(ctx, after),
 		Fallback: s.OnAt.fallback,
 		Fault:    func(err error) MixedAtReturn { return MixedAtReturn{Err: err} },
-		Stamp: func(c *MixedAtCall, r MixedAtReturn) {
+		Stamp: func(c MixedAtCall, r MixedAtReturn) MixedAtCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -254,16 +255,17 @@ func (s *MixedFiredStub) invoke(ctx context.Context) func() MixedFiredReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Fired(ctx context.Context) (int, error) {
 	call := MixedFiredCall{Ctx: ctx}
-	r := stub.Answer(s.OnFired.MethodStub, &call, stub.Arms[MixedFiredCall, MixedFiredReturn]{
+	r := stub.Answer(s.OnFired.MethodStub, call, stub.Arms[MixedFiredCall, MixedFiredReturn]{
 		Invoke:   s.OnFired.invoke(ctx),
 		Fallback: s.OnFired.fallback,
 		Fault:    func(err error) MixedFiredReturn { return MixedFiredReturn{Err: err} },
-		Stamp: func(c *MixedFiredCall, r MixedFiredReturn) {
+		Stamp: func(c MixedFiredCall, r MixedFiredReturn) MixedFiredCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:ff8d0f7235eae103f1edff1c4079442bda70b9983bcb6b4a6f3bc1f1a61784b5
+// dokimi:provenance sha256:7cabcc3c168f7e0452f86d6df3b57899e4dfb7f7f30afb24831941087f786e70

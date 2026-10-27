@@ -285,12 +285,13 @@ func (s *ContractPublishStub) invoke(ctx context.Context, v publisherredeliver.V
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Publish(ctx context.Context, v publisherredeliver.Value) error {
 	call := ContractPublishCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPublish.MethodStub, &call, stub.Arms[ContractPublishCall, ContractPublishReturn]{
+	r := stub.Answer(s.OnPublish.MethodStub, call, stub.Arms[ContractPublishCall, ContractPublishReturn]{
 		Invoke:   s.OnPublish.invoke(ctx, v),
 		Fallback: s.OnPublish.fallback,
 		Fault:    func(err error) ContractPublishReturn { return ContractPublishReturn{Err: err} },
-		Stamp: func(c *ContractPublishCall, r ContractPublishReturn) {
+		Stamp: func(c ContractPublishCall, r ContractPublishReturn) ContractPublishCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -312,12 +313,13 @@ func (s *ContractRepublishStub) invoke(ctx context.Context, v publisherredeliver
 // function of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Republish(ctx context.Context, v publisherredeliver.Value) error {
 	call := ContractRepublishCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnRepublish.MethodStub, &call, stub.Arms[ContractRepublishCall, ContractRepublishReturn]{
+	r := stub.Answer(s.OnRepublish.MethodStub, call, stub.Arms[ContractRepublishCall, ContractRepublishReturn]{
 		Invoke:   s.OnRepublish.invoke(ctx, v),
 		Fallback: s.OnRepublish.fallback,
 		Fault:    func(err error) ContractRepublishReturn { return ContractRepublishReturn{Err: err} },
-		Stamp: func(c *ContractRepublishCall, r ContractRepublishReturn) {
+		Stamp: func(c ContractRepublishCall, r ContractRepublishReturn) ContractRepublishCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -339,16 +341,17 @@ func (s *ContractSubscribeStub) invoke(ctx context.Context) func() ContractSubsc
 // function of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Subscribe(ctx context.Context) (<-chan publisherredeliver.Value, error) {
 	call := ContractSubscribeCall{Ctx: ctx}
-	r := stub.Answer(s.OnSubscribe.MethodStub, &call, stub.Arms[ContractSubscribeCall, ContractSubscribeReturn]{
+	r := stub.Answer(s.OnSubscribe.MethodStub, call, stub.Arms[ContractSubscribeCall, ContractSubscribeReturn]{
 		Invoke:   s.OnSubscribe.invoke(ctx),
 		Fallback: s.OnSubscribe.fallback,
 		Fault:    func(err error) ContractSubscribeReturn { return ContractSubscribeReturn{Err: err} },
-		Stamp: func(c *ContractSubscribeCall, r ContractSubscribeReturn) {
+		Stamp: func(c ContractSubscribeCall, r ContractSubscribeReturn) ContractSubscribeCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:b6d1712df24ed4247496e6844d324c2af78fe50f1a133c1377b22e86f98ff3ae
+// dokimi:provenance sha256:2265de955e39f59743b082eb3246d4eee9e439a4a9bbc34a8256ba134fda0518

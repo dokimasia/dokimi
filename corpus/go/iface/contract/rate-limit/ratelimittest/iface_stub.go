@@ -182,15 +182,16 @@ func (s *ContractRunStub) invoke(ctx context.Context, key string) func() Contrac
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Run(ctx context.Context, key string) error {
 	call := ContractRunCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRun.MethodStub, &call, stub.Arms[ContractRunCall, ContractRunReturn]{
+	r := stub.Answer(s.OnRun.MethodStub, call, stub.Arms[ContractRunCall, ContractRunReturn]{
 		Invoke:   s.OnRun.invoke(ctx, key),
 		Fallback: s.OnRun.fallback,
 		Fault:    func(err error) ContractRunReturn { return ContractRunReturn{Err: err} },
-		Stamp: func(c *ContractRunCall, r ContractRunReturn) {
+		Stamp: func(c ContractRunCall, r ContractRunReturn) ContractRunCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:b5c4f9cd8db5a8ab3115c9da98d7fd13c6050e0a13ab1d7a992124a78c3602f8
+// dokimi:provenance sha256:8494f0a2ae22d222157afbc67114f73cb2f8e63fc74552e691a44628e563bb45

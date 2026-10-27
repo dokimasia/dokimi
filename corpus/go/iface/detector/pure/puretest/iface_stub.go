@@ -164,14 +164,15 @@ func (s *PureDescribeStub) invoke() func() PureDescribeReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *PureStub) Describe() string {
 	call := PureDescribeCall{}
-	r := stub.Answer(s.OnDescribe.MethodStub, &call, stub.Arms[PureDescribeCall, PureDescribeReturn]{
+	r := stub.Answer(s.OnDescribe.MethodStub, call, stub.Arms[PureDescribeCall, PureDescribeReturn]{
 		Invoke:   s.OnDescribe.invoke(),
 		Fallback: s.OnDescribe.fallback,
-		Stamp: func(c *PureDescribeCall, r PureDescribeReturn) {
+		Stamp: func(c PureDescribeCall, r PureDescribeReturn) PureDescribeCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:d14bbb1772cc983b907503e6f9aed555f7835d83d157d402280a7b15952b00fd
+// dokimi:provenance sha256:9292dd3ac4d6d4de10edbadb1e865d316bc246b4925e85db0d3c77546ed29a7d

@@ -227,13 +227,14 @@ func (s *StreamReadStub) invoke(ctx context.Context, key string) func() StreamRe
 // Func, then the results of Returns, and then the zero values.
 func (s *StreamStub) Read(ctx context.Context, key string) (string, error) {
 	call := StreamReadCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[StreamReadCall, StreamReadReturn]{
+	r := stub.Answer(s.OnRead.MethodStub, call, stub.Arms[StreamReadCall, StreamReadReturn]{
 		Invoke:   s.OnRead.invoke(ctx, key),
 		Fallback: s.OnRead.fallback,
 		Fault:    func(err error) StreamReadReturn { return StreamReadReturn{Err: err} },
-		Stamp: func(c *StreamReadCall, r StreamReadReturn) {
+		Stamp: func(c StreamReadCall, r StreamReadReturn) StreamReadCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -255,15 +256,16 @@ func (s *StreamCloseStub) invoke() func() StreamCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *StreamStub) Close() error {
 	call := StreamCloseCall{}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[StreamCloseCall, StreamCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[StreamCloseCall, StreamCloseReturn]{
 		Invoke:   s.OnClose.invoke(),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) StreamCloseReturn { return StreamCloseReturn{Err: err} },
-		Stamp: func(c *StreamCloseCall, r StreamCloseReturn) {
+		Stamp: func(c StreamCloseCall, r StreamCloseReturn) StreamCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:4130e1a7ae2f14068bd767bd114971e6f490c6386130558f36d20af3f9cb60e2
+// dokimi:provenance sha256:4717bf01bf80db662460c4f6c3020ff3bb067558c25ebc75f8cdd9fa77b7b569

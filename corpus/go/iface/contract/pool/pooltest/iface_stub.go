@@ -274,13 +274,14 @@ func (s *ContractGetStub) invoke(ctx context.Context) func() ContractGetReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Get(ctx context.Context) (pool.Value, error) {
 	call := ContractGetCall{Ctx: ctx}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[ContractGetCall, ContractGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[ContractGetCall, ContractGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) ContractGetReturn { return ContractGetReturn{Err: err} },
-		Stamp: func(c *ContractGetCall, r ContractGetReturn) {
+		Stamp: func(c ContractGetCall, r ContractGetReturn) ContractGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -302,12 +303,13 @@ func (s *ContractPutStub) invoke(ctx context.Context, v pool.Value) func() Contr
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Put(ctx context.Context, v pool.Value) error {
 	call := ContractPutCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[ContractPutCall, ContractPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[ContractPutCall, ContractPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, v),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) ContractPutReturn { return ContractPutReturn{Err: err} },
-		Stamp: func(c *ContractPutCall, r ContractPutReturn) {
+		Stamp: func(c ContractPutCall, r ContractPutReturn) ContractPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -329,16 +331,17 @@ func (s *ContractStatsStub) invoke(ctx context.Context) func() ContractStatsRetu
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Stats(ctx context.Context) (pool.Stats, error) {
 	call := ContractStatsCall{Ctx: ctx}
-	r := stub.Answer(s.OnStats.MethodStub, &call, stub.Arms[ContractStatsCall, ContractStatsReturn]{
+	r := stub.Answer(s.OnStats.MethodStub, call, stub.Arms[ContractStatsCall, ContractStatsReturn]{
 		Invoke:   s.OnStats.invoke(ctx),
 		Fallback: s.OnStats.fallback,
 		Fault:    func(err error) ContractStatsReturn { return ContractStatsReturn{Err: err} },
-		Stamp: func(c *ContractStatsCall, r ContractStatsReturn) {
+		Stamp: func(c ContractStatsCall, r ContractStatsReturn) ContractStatsCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:0e6e67f88e732a27fdb4e054e6ec9e1e6956f0a02c73cb2456d0d394b075ba17
+// dokimi:provenance sha256:ce8f8e4b23bc120637ef549a95b988712517add853b8eaecae5c3363a744a198

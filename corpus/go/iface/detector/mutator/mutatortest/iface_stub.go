@@ -155,9 +155,9 @@ func (s *MutatorTouchStub) invokeVoid(ctx context.Context, key string) func() st
 // Func, then the results of Returns, and then the zero values.
 func (s *MutatorStub) Touch(ctx context.Context, key string) {
 	call := MutatorTouchCall{Ctx: ctx, Key: key}
-	stub.Answer(s.OnTouch.MethodStub, &call, stub.Arms[MutatorTouchCall, struct{}]{
+	stub.Answer(s.OnTouch.MethodStub, call, stub.Arms[MutatorTouchCall, struct{}]{
 		Invoke: s.OnTouch.invokeVoid(ctx, key),
 	})
 }
 
-// dokimi:provenance sha256:b93d2e7f91971538ab0a0c17cf0043dadfccea2a43fdbe76ce379c420ffd5520
+// dokimi:provenance sha256:a72c15728141c32c27a2ab090a36a2b8985d4319e02faf6f113fa503e7f7a6fb

@@ -227,12 +227,13 @@ func (s *MixedBumpStub) invoke(ctx context.Context, key string) func() MixedBump
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Bump(ctx context.Context, key string) error {
 	call := MixedBumpCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnBump.MethodStub, &call, stub.Arms[MixedBumpCall, MixedBumpReturn]{
+	r := stub.Answer(s.OnBump.MethodStub, call, stub.Arms[MixedBumpCall, MixedBumpReturn]{
 		Invoke:   s.OnBump.invoke(ctx, key),
 		Fallback: s.OnBump.fallback,
 		Fault:    func(err error) MixedBumpReturn { return MixedBumpReturn{Err: err} },
-		Stamp: func(c *MixedBumpCall, r MixedBumpReturn) {
+		Stamp: func(c MixedBumpCall, r MixedBumpReturn) MixedBumpCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -254,16 +255,17 @@ func (s *MixedCountStub) invoke(ctx context.Context) func() MixedCountReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Count(ctx context.Context) (int, error) {
 	call := MixedCountCall{Ctx: ctx}
-	r := stub.Answer(s.OnCount.MethodStub, &call, stub.Arms[MixedCountCall, MixedCountReturn]{
+	r := stub.Answer(s.OnCount.MethodStub, call, stub.Arms[MixedCountCall, MixedCountReturn]{
 		Invoke:   s.OnCount.invoke(ctx),
 		Fallback: s.OnCount.fallback,
 		Fault:    func(err error) MixedCountReturn { return MixedCountReturn{Err: err} },
-		Stamp: func(c *MixedCountCall, r MixedCountReturn) {
+		Stamp: func(c MixedCountCall, r MixedCountReturn) MixedCountCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:a0087f7279b24c43a9a2a375b6590c38e1f408a9aceca55c3d14e482f2e8add5
+// dokimi:provenance sha256:b23425730fa9e3b0b6a7ff856c167531627fcd0c9cb974a337797a480fbcb5d1

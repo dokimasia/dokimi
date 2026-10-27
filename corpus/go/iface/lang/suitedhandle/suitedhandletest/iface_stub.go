@@ -181,13 +181,14 @@ func (s *FSOpenStub) invoke(name string) func() FSOpenReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *FSStub) Open(name string) (suitedhandle.File, error) {
 	call := FSOpenCall{Name: name}
-	r := stub.Answer(s.OnOpen.MethodStub, &call, stub.Arms[FSOpenCall, FSOpenReturn]{
+	r := stub.Answer(s.OnOpen.MethodStub, call, stub.Arms[FSOpenCall, FSOpenReturn]{
 		Invoke:   s.OnOpen.invoke(name),
 		Fallback: s.OnOpen.fallback,
 		Fault:    func(err error) FSOpenReturn { return FSOpenReturn{Err: err} },
-		Stamp: func(c *FSOpenCall, r FSOpenReturn) {
+		Stamp: func(c FSOpenCall, r FSOpenReturn) FSOpenCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -402,11 +403,12 @@ func (s *FileNameStub) invoke() func() FileNameReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *FileStub) Name() string {
 	call := FileNameCall{}
-	r := stub.Answer(s.OnName.MethodStub, &call, stub.Arms[FileNameCall, FileNameReturn]{
+	r := stub.Answer(s.OnName.MethodStub, call, stub.Arms[FileNameCall, FileNameReturn]{
 		Invoke:   s.OnName.invoke(),
 		Fallback: s.OnName.fallback,
-		Stamp: func(c *FileNameCall, r FileNameReturn) {
+		Stamp: func(c FileNameCall, r FileNameReturn) FileNameCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
@@ -428,15 +430,16 @@ func (s *FileCloseStub) invoke() func() FileCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *FileStub) Close() error {
 	call := FileCloseCall{}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[FileCloseCall, FileCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[FileCloseCall, FileCloseReturn]{
 		Invoke:   s.OnClose.invoke(),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) FileCloseReturn { return FileCloseReturn{Err: err} },
-		Stamp: func(c *FileCloseCall, r FileCloseReturn) {
+		Stamp: func(c FileCloseCall, r FileCloseReturn) FileCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:540479cdfa9177068dad5b9c5f4477f3fe8e24884f47cfc120b49828676da00f
+// dokimi:provenance sha256:4b15cd434b1a6de6de4dcfcac86954fa271fc5ed05d5dabbfbae1c446ab86342

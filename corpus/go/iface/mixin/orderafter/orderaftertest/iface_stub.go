@@ -232,12 +232,13 @@ func (s *MixedStub) Commit(ctx context.Context) error {
 	s.order.AssertAfter("Commit", "Prepare")
 	defer s.order.Record("Commit")
 	call := MixedCommitCall{Ctx: ctx}
-	r := stub.Answer(s.OnCommit.MethodStub, &call, stub.Arms[MixedCommitCall, MixedCommitReturn]{
+	r := stub.Answer(s.OnCommit.MethodStub, call, stub.Arms[MixedCommitCall, MixedCommitReturn]{
 		Invoke:   s.OnCommit.invoke(ctx),
 		Fallback: s.OnCommit.fallback,
 		Fault:    func(err error) MixedCommitReturn { return MixedCommitReturn{Err: err} },
-		Stamp: func(c *MixedCommitCall, r MixedCommitReturn) {
+		Stamp: func(c MixedCommitCall, r MixedCommitReturn) MixedCommitCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -260,15 +261,16 @@ func (s *MixedPrepareStub) invoke(ctx context.Context) func() MixedPrepareReturn
 func (s *MixedStub) Prepare(ctx context.Context) error {
 	defer s.order.Record("Prepare")
 	call := MixedPrepareCall{Ctx: ctx}
-	r := stub.Answer(s.OnPrepare.MethodStub, &call, stub.Arms[MixedPrepareCall, MixedPrepareReturn]{
+	r := stub.Answer(s.OnPrepare.MethodStub, call, stub.Arms[MixedPrepareCall, MixedPrepareReturn]{
 		Invoke:   s.OnPrepare.invoke(ctx),
 		Fallback: s.OnPrepare.fallback,
 		Fault:    func(err error) MixedPrepareReturn { return MixedPrepareReturn{Err: err} },
-		Stamp: func(c *MixedPrepareCall, r MixedPrepareReturn) {
+		Stamp: func(c MixedPrepareCall, r MixedPrepareReturn) MixedPrepareCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:7459c0121c4de7edaa492982d6ac4230ab392627187ad98be98e67a819fd791d
+// dokimi:provenance sha256:55312f8f6c2084c2f5fdfe5f6b99f3146f3a7601c4986a4b58d8963f82b818a3

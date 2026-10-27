@@ -190,16 +190,17 @@ func (s *AggregatorCountStub) invoke(ctx context.Context) func() AggregatorCount
 // Func, then the results of Returns, and then the zero values.
 func (s *AggregatorStub) Count(ctx context.Context) (int, error) {
 	call := AggregatorCountCall{Ctx: ctx}
-	r := stub.Answer(s.OnCount.MethodStub, &call, stub.Arms[AggregatorCountCall, AggregatorCountReturn]{
+	r := stub.Answer(s.OnCount.MethodStub, call, stub.Arms[AggregatorCountCall, AggregatorCountReturn]{
 		Invoke:   s.OnCount.invoke(ctx),
 		Fallback: s.OnCount.fallback,
 		Fault:    func(err error) AggregatorCountReturn { return AggregatorCountReturn{Err: err} },
-		Stamp: func(c *AggregatorCountCall, r AggregatorCountReturn) {
+		Stamp: func(c AggregatorCountCall, r AggregatorCountReturn) AggregatorCountCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:98b035cef4d6b0c0862e39a8ca8380a6a91ca5f08e5bb45b14c070e2ffc3077f
+// dokimi:provenance sha256:38deade5e6b025068a924dd7c720f01c0db777bcd29d3dbaf6f4a1fffc4bcb33

@@ -274,12 +274,13 @@ func (s *MixedRecordStub) invoke(ctx context.Context, e snapshotisolation.Entry)
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Record(ctx context.Context, e snapshotisolation.Entry) error {
 	call := MixedRecordCall{Ctx: ctx, E: e}
-	r := stub.Answer(s.OnRecord.MethodStub, &call, stub.Arms[MixedRecordCall, MixedRecordReturn]{
+	r := stub.Answer(s.OnRecord.MethodStub, call, stub.Arms[MixedRecordCall, MixedRecordReturn]{
 		Invoke:   s.OnRecord.invoke(ctx, e),
 		Fallback: s.OnRecord.fallback,
 		Fault:    func(err error) MixedRecordReturn { return MixedRecordReturn{Err: err} },
-		Stamp: func(c *MixedRecordCall, r MixedRecordReturn) {
+		Stamp: func(c MixedRecordCall, r MixedRecordReturn) MixedRecordCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -301,13 +302,14 @@ func (s *MixedHistoryStub) invoke(ctx context.Context) func() MixedHistoryReturn
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) History(ctx context.Context) ([]snapshotisolation.Entry, error) {
 	call := MixedHistoryCall{Ctx: ctx}
-	r := stub.Answer(s.OnHistory.MethodStub, &call, stub.Arms[MixedHistoryCall, MixedHistoryReturn]{
+	r := stub.Answer(s.OnHistory.MethodStub, call, stub.Arms[MixedHistoryCall, MixedHistoryReturn]{
 		Invoke:   s.OnHistory.invoke(ctx),
 		Fallback: s.OnHistory.fallback,
 		Fault:    func(err error) MixedHistoryReturn { return MixedHistoryReturn{Err: err} },
-		Stamp: func(c *MixedHistoryCall, r MixedHistoryReturn) {
+		Stamp: func(c MixedHistoryCall, r MixedHistoryReturn) MixedHistoryCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -329,16 +331,17 @@ func (s *MixedGetStub) invoke(ctx context.Context, key string) func() MixedGetRe
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Get(ctx context.Context, key string) (snapshotisolation.Entry, error) {
 	call := MixedGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[MixedGetCall, MixedGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
 		Fault:    func(err error) MixedGetReturn { return MixedGetReturn{Err: err} },
-		Stamp: func(c *MixedGetCall, r MixedGetReturn) {
+		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:fd4996ba8676ae68c332b63213d822e6af905c8f3a0f3c02cb6a6368515f0abe
+// dokimi:provenance sha256:bfab04ad67d30178e134827ee5713a1ae015fe53910684bbc295f6137801f86f

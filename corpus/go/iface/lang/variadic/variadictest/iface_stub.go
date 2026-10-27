@@ -237,13 +237,14 @@ func (s *FinderFindStub) invoke(ctx context.Context, keys ...string) func() Find
 // Func, then the results of Returns, and then the zero values.
 func (s *FinderStub) Find(ctx context.Context, keys ...string) ([]string, error) {
 	call := FinderFindCall{Ctx: ctx, Keys: keys}
-	r := stub.Answer(s.OnFind.MethodStub, &call, stub.Arms[FinderFindCall, FinderFindReturn]{
+	r := stub.Answer(s.OnFind.MethodStub, call, stub.Arms[FinderFindCall, FinderFindReturn]{
 		Invoke:   s.OnFind.invoke(ctx, keys...),
 		Fallback: s.OnFind.fallback,
 		Fault:    func(err error) FinderFindReturn { return FinderFindReturn{Err: err} },
-		Stamp: func(c *FinderFindCall, r FinderFindReturn) {
+		Stamp: func(c FinderFindCall, r FinderFindReturn) FinderFindCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -269,16 +270,17 @@ func (s *FinderFindWithLimitStub) invoke(
 // function of Func, then the results of Returns, and then the zero values.
 func (s *FinderStub) FindWithLimit(ctx context.Context, limit int, keys ...string) ([]string, error) {
 	call := FinderFindWithLimitCall{Ctx: ctx, Limit: limit, Keys: keys}
-	r := stub.Answer(s.OnFindWithLimit.MethodStub, &call, stub.Arms[FinderFindWithLimitCall, FinderFindWithLimitReturn]{
+	r := stub.Answer(s.OnFindWithLimit.MethodStub, call, stub.Arms[FinderFindWithLimitCall, FinderFindWithLimitReturn]{
 		Invoke:   s.OnFindWithLimit.invoke(ctx, limit, keys...),
 		Fallback: s.OnFindWithLimit.fallback,
 		Fault:    func(err error) FinderFindWithLimitReturn { return FinderFindWithLimitReturn{Err: err} },
-		Stamp: func(c *FinderFindWithLimitCall, r FinderFindWithLimitReturn) {
+		Stamp: func(c FinderFindWithLimitCall, r FinderFindWithLimitReturn) FinderFindWithLimitCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:47001a4e5c4f769748e4f5f493dc17f87c34f97acf8068c67f943d357ee5b77b
+// dokimi:provenance sha256:c880d322052bc71f44a8212520ff4e8c4d469c4ca6e2c9afb059db04b0fe93eb

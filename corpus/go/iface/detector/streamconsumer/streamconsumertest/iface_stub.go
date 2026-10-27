@@ -184,14 +184,15 @@ func (s *SourceNextStub) invoke(ctx context.Context) func() SourceNextReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *SourceStub) Next(ctx context.Context) (streamconsumer.Value, bool, error) {
 	call := SourceNextCall{Ctx: ctx}
-	r := stub.Answer(s.OnNext.MethodStub, &call, stub.Arms[SourceNextCall, SourceNextReturn]{
+	r := stub.Answer(s.OnNext.MethodStub, call, stub.Arms[SourceNextCall, SourceNextReturn]{
 		Invoke:   s.OnNext.invoke(ctx),
 		Fallback: s.OnNext.fallback,
 		Fault:    func(err error) SourceNextReturn { return SourceNextReturn{Err: err} },
-		Stamp: func(c *SourceNextCall, r SourceNextReturn) {
+		Stamp: func(c SourceNextCall, r SourceNextReturn) SourceNextCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result0, r.Result1, r.Err
@@ -383,16 +384,17 @@ func (s *StreamConsumerIngestStub) invoke(
 // of Func, then the results of Returns, and then the zero values.
 func (s *StreamConsumerStub) Ingest(ctx context.Context, src streamconsumer.Source) (int, error) {
 	call := StreamConsumerIngestCall{Ctx: ctx, Src: src}
-	r := stub.Answer(s.OnIngest.MethodStub, &call, stub.Arms[StreamConsumerIngestCall, StreamConsumerIngestReturn]{
+	r := stub.Answer(s.OnIngest.MethodStub, call, stub.Arms[StreamConsumerIngestCall, StreamConsumerIngestReturn]{
 		Invoke:   s.OnIngest.invoke(ctx, src),
 		Fallback: s.OnIngest.fallback,
 		Fault:    func(err error) StreamConsumerIngestReturn { return StreamConsumerIngestReturn{Err: err} },
-		Stamp: func(c *StreamConsumerIngestCall, r StreamConsumerIngestReturn) {
+		Stamp: func(c StreamConsumerIngestCall, r StreamConsumerIngestReturn) StreamConsumerIngestCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:a504d21ff7220f7d9000e6a095f82ba05968dc3637056e46a01e45f09433d8bc
+// dokimi:provenance sha256:d43438cda8b465ad830ddb538bcabbf0990c7d9732f92ff94733eb3b56d55062

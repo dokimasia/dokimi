@@ -278,12 +278,13 @@ func (s *MixedPutStub) invoke(
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Put(ctx context.Context, key boundedcache.Key, value boundedcache.Value) error {
 	call := MixedPutCall{Ctx: ctx, Key: key, Value: value}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[MixedPutCall, MixedPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[MixedPutCall, MixedPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, key, value),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) MixedPutReturn { return MixedPutReturn{Err: err} },
-		Stamp: func(c *MixedPutCall, r MixedPutReturn) {
+		Stamp: func(c MixedPutCall, r MixedPutReturn) MixedPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -305,12 +306,13 @@ func (s *MixedGetStub) invoke(ctx context.Context, key boundedcache.Key) func() 
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Get(ctx context.Context, key boundedcache.Key) (boundedcache.Value, bool) {
 	call := MixedGetCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnGet.MethodStub, &call, stub.Arms[MixedGetCall, MixedGetReturn]{
+	r := stub.Answer(s.OnGet.MethodStub, call, stub.Arms[MixedGetCall, MixedGetReturn]{
 		Invoke:   s.OnGet.invoke(ctx, key),
 		Fallback: s.OnGet.fallback,
-		Stamp: func(c *MixedGetCall, r MixedGetReturn) {
+		Stamp: func(c MixedGetCall, r MixedGetReturn) MixedGetCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
+			return c
 		},
 	})
 	return r.Result0, r.Result1
@@ -332,16 +334,17 @@ func (s *MixedLenStub) invoke(ctx context.Context) func() MixedLenReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Len(ctx context.Context) (int, error) {
 	call := MixedLenCall{Ctx: ctx}
-	r := stub.Answer(s.OnLen.MethodStub, &call, stub.Arms[MixedLenCall, MixedLenReturn]{
+	r := stub.Answer(s.OnLen.MethodStub, call, stub.Arms[MixedLenCall, MixedLenReturn]{
 		Invoke:   s.OnLen.invoke(ctx),
 		Fallback: s.OnLen.fallback,
 		Fault:    func(err error) MixedLenReturn { return MixedLenReturn{Err: err} },
-		Stamp: func(c *MixedLenCall, r MixedLenReturn) {
+		Stamp: func(c MixedLenCall, r MixedLenReturn) MixedLenCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:09ebf865c91bc9f24900609b27d2df7fdbf2376f83099245645f786834541dc4
+// dokimi:provenance sha256:e32677a1cf011fa98ea8d57f044d37c06423314178ae98d8cf20abe2073e95f3

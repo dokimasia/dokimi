@@ -242,12 +242,13 @@ func (s *LeasedWriterAcquireStub) invoke(ctx context.Context, key string) func()
 // of Func, then the results of Returns, and then the zero values.
 func (s *LeasedWriterStub) Acquire(ctx context.Context, key string) error {
 	call := LeasedWriterAcquireCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnAcquire.MethodStub, &call, stub.Arms[LeasedWriterAcquireCall, LeasedWriterAcquireReturn]{
+	r := stub.Answer(s.OnAcquire.MethodStub, call, stub.Arms[LeasedWriterAcquireCall, LeasedWriterAcquireReturn]{
 		Invoke:   s.OnAcquire.invoke(ctx, key),
 		Fallback: s.OnAcquire.fallback,
 		Fault:    func(err error) LeasedWriterAcquireReturn { return LeasedWriterAcquireReturn{Err: err} },
-		Stamp: func(c *LeasedWriterAcquireCall, r LeasedWriterAcquireReturn) {
+		Stamp: func(c LeasedWriterAcquireCall, r LeasedWriterAcquireReturn) LeasedWriterAcquireCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -269,15 +270,16 @@ func (s *LeasedWriterReleaseStub) invoke(ctx context.Context, key string) func()
 // of Func, then the results of Returns, and then the zero values.
 func (s *LeasedWriterStub) Release(ctx context.Context, key string) error {
 	call := LeasedWriterReleaseCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRelease.MethodStub, &call, stub.Arms[LeasedWriterReleaseCall, LeasedWriterReleaseReturn]{
+	r := stub.Answer(s.OnRelease.MethodStub, call, stub.Arms[LeasedWriterReleaseCall, LeasedWriterReleaseReturn]{
 		Invoke:   s.OnRelease.invoke(ctx, key),
 		Fallback: s.OnRelease.fallback,
 		Fault:    func(err error) LeasedWriterReleaseReturn { return LeasedWriterReleaseReturn{Err: err} },
-		Stamp: func(c *LeasedWriterReleaseCall, r LeasedWriterReleaseReturn) {
+		Stamp: func(c LeasedWriterReleaseCall, r LeasedWriterReleaseReturn) LeasedWriterReleaseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:009752617e8797358c1e0e7930efa95bf953598ed95d05dcf1d161a036b4a858
+// dokimi:provenance sha256:0890911b4bd1349b56b4075934e700898859229bb55a473dca5376b447a514e7

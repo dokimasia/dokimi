@@ -196,17 +196,18 @@ func (s *MultiAggregatorStatsStub) invoke(ctx context.Context) func() MultiAggre
 // Func, then the results of Returns, and then the zero values.
 func (s *MultiAggregatorStub) Stats(ctx context.Context) (int, int, error) {
 	call := MultiAggregatorStatsCall{Ctx: ctx}
-	r := stub.Answer(s.OnStats.MethodStub, &call, stub.Arms[MultiAggregatorStatsCall, MultiAggregatorStatsReturn]{
+	r := stub.Answer(s.OnStats.MethodStub, call, stub.Arms[MultiAggregatorStatsCall, MultiAggregatorStatsReturn]{
 		Invoke:   s.OnStats.invoke(ctx),
 		Fallback: s.OnStats.fallback,
 		Fault:    func(err error) MultiAggregatorStatsReturn { return MultiAggregatorStatsReturn{Err: err} },
-		Stamp: func(c *MultiAggregatorStatsCall, r MultiAggregatorStatsReturn) {
+		Stamp: func(c MultiAggregatorStatsCall, r MultiAggregatorStatsReturn) MultiAggregatorStatsCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result0, r.Result1, r.Err
 }
 
-// dokimi:provenance sha256:adbde57eb224d47358e9b331bb1a24330c17e7ac649f412e0738be2f02cb09c3
+// dokimi:provenance sha256:aff45ea21c6db63cd3b040bb06ec4c7cb0a342a429992dbd276502c233692494

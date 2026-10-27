@@ -178,15 +178,16 @@ func (s *CloserCloseStub) invoke() func() CloserCloseReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *CloserStub) Close() error {
 	call := CloserCloseCall{}
-	r := stub.Answer(s.OnClose.MethodStub, &call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
+	r := stub.Answer(s.OnClose.MethodStub, call, stub.Arms[CloserCloseCall, CloserCloseReturn]{
 		Invoke:   s.OnClose.invoke(),
 		Fallback: s.OnClose.fallback,
 		Fault:    func(err error) CloserCloseReturn { return CloserCloseReturn{Err: err} },
-		Stamp: func(c *CloserCloseCall, r CloserCloseReturn) {
+		Stamp: func(c CloserCloseCall, r CloserCloseReturn) CloserCloseCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:eceeee918c28319a12a34deded7289aec22873a5a09d4ca0b72fb65f23884091
+// dokimi:provenance sha256:9ebe52976a7136eee1ff91fc561c0ece025cdf66dd05df2952ada495481057e9

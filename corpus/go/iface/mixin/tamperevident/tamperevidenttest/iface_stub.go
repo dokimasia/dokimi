@@ -269,12 +269,13 @@ func (s *MixedStoreStub) invoke(ctx context.Context, body string) func() MixedSt
 // Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Store(ctx context.Context, body string) error {
 	call := MixedStoreCall{Ctx: ctx, Body: body}
-	r := stub.Answer(s.OnStore.MethodStub, &call, stub.Arms[MixedStoreCall, MixedStoreReturn]{
+	r := stub.Answer(s.OnStore.MethodStub, call, stub.Arms[MixedStoreCall, MixedStoreReturn]{
 		Invoke:   s.OnStore.invoke(ctx, body),
 		Fallback: s.OnStore.fallback,
 		Fault:    func(err error) MixedStoreReturn { return MixedStoreReturn{Err: err} },
-		Stamp: func(c *MixedStoreCall, r MixedStoreReturn) {
+		Stamp: func(c MixedStoreCall, r MixedStoreReturn) MixedStoreCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -296,12 +297,13 @@ func (s *MixedCorruptStub) invoke(ctx context.Context) func() MixedCorruptReturn
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Corrupt(ctx context.Context) error {
 	call := MixedCorruptCall{Ctx: ctx}
-	r := stub.Answer(s.OnCorrupt.MethodStub, &call, stub.Arms[MixedCorruptCall, MixedCorruptReturn]{
+	r := stub.Answer(s.OnCorrupt.MethodStub, call, stub.Arms[MixedCorruptCall, MixedCorruptReturn]{
 		Invoke:   s.OnCorrupt.invoke(ctx),
 		Fallback: s.OnCorrupt.fallback,
 		Fault:    func(err error) MixedCorruptReturn { return MixedCorruptReturn{Err: err} },
-		Stamp: func(c *MixedCorruptCall, r MixedCorruptReturn) {
+		Stamp: func(c MixedCorruptCall, r MixedCorruptReturn) MixedCorruptCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -323,15 +325,16 @@ func (s *MixedVerifyStub) invoke(ctx context.Context) func() MixedVerifyReturn {
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Verify(ctx context.Context) error {
 	call := MixedVerifyCall{Ctx: ctx}
-	r := stub.Answer(s.OnVerify.MethodStub, &call, stub.Arms[MixedVerifyCall, MixedVerifyReturn]{
+	r := stub.Answer(s.OnVerify.MethodStub, call, stub.Arms[MixedVerifyCall, MixedVerifyReturn]{
 		Invoke:   s.OnVerify.invoke(ctx),
 		Fallback: s.OnVerify.fallback,
 		Fault:    func(err error) MixedVerifyReturn { return MixedVerifyReturn{Err: err} },
-		Stamp: func(c *MixedVerifyCall, r MixedVerifyReturn) {
+		Stamp: func(c MixedVerifyCall, r MixedVerifyReturn) MixedVerifyCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:779a43564d82d462d97e0c0672d88eeedacdf543951c192cb3183aa9befbeb1a
+// dokimi:provenance sha256:a7b00fc0d6c13519df23e81dcff3643205d21e51aca003cf51953b3d390b3304

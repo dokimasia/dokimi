@@ -245,13 +245,14 @@ func (s *PaginatedReaderFetchStub) invoke(ctx context.Context, cursor int) func(
 // Func, then the results of Returns, and then the zero values.
 func (s *PaginatedReaderStub) Fetch(ctx context.Context, cursor int) (paginatedreader.Page, error) {
 	call := PaginatedReaderFetchCall{Ctx: ctx, Cursor: cursor}
-	r := stub.Answer(s.OnFetch.MethodStub, &call, stub.Arms[PaginatedReaderFetchCall, PaginatedReaderFetchReturn]{
+	r := stub.Answer(s.OnFetch.MethodStub, call, stub.Arms[PaginatedReaderFetchCall, PaginatedReaderFetchReturn]{
 		Invoke:   s.OnFetch.invoke(ctx, cursor),
 		Fallback: s.OnFetch.fallback,
 		Fault:    func(err error) PaginatedReaderFetchReturn { return PaginatedReaderFetchReturn{Err: err} },
-		Stamp: func(c *PaginatedReaderFetchCall, r PaginatedReaderFetchReturn) {
+		Stamp: func(c PaginatedReaderFetchCall, r PaginatedReaderFetchReturn) PaginatedReaderFetchCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -273,15 +274,16 @@ func (s *PaginatedReaderAddStub) invoke(ctx context.Context, v paginatedreader.V
 // Func, then the results of Returns, and then the zero values.
 func (s *PaginatedReaderStub) Add(ctx context.Context, v paginatedreader.Value) error {
 	call := PaginatedReaderAddCall{Ctx: ctx, V: v}
-	r := stub.Answer(s.OnAdd.MethodStub, &call, stub.Arms[PaginatedReaderAddCall, PaginatedReaderAddReturn]{
+	r := stub.Answer(s.OnAdd.MethodStub, call, stub.Arms[PaginatedReaderAddCall, PaginatedReaderAddReturn]{
 		Invoke:   s.OnAdd.invoke(ctx, v),
 		Fallback: s.OnAdd.fallback,
 		Fault:    func(err error) PaginatedReaderAddReturn { return PaginatedReaderAddReturn{Err: err} },
-		Stamp: func(c *PaginatedReaderAddCall, r PaginatedReaderAddReturn) {
+		Stamp: func(c PaginatedReaderAddCall, r PaginatedReaderAddReturn) PaginatedReaderAddCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:1f85387d90826d024e2b386c8c4c9419cc51d6e0b1b49947b6099a405da0de30
+// dokimi:provenance sha256:8d3ad0da535b115cf3a5be64717422694a6f4e108cff029f40c4da301050dfe1

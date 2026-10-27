@@ -232,13 +232,14 @@ func (s *ContractWatchStub) invoke(ctx context.Context, key string) func() Contr
 // Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Watch(ctx context.Context, key string) (watcher.Subscription, error) {
 	call := ContractWatchCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnWatch.MethodStub, &call, stub.Arms[ContractWatchCall, ContractWatchReturn]{
+	r := stub.Answer(s.OnWatch.MethodStub, call, stub.Arms[ContractWatchCall, ContractWatchReturn]{
 		Invoke:   s.OnWatch.invoke(ctx, key),
 		Fallback: s.OnWatch.fallback,
 		Fault:    func(err error) ContractWatchReturn { return ContractWatchReturn{Err: err} },
-		Stamp: func(c *ContractWatchCall, r ContractWatchReturn) {
+		Stamp: func(c ContractWatchCall, r ContractWatchReturn) ContractWatchCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -260,12 +261,13 @@ func (s *ContractTriggerStub) invoke(ctx context.Context, key string, v watcher.
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Trigger(ctx context.Context, key string, v watcher.Value) error {
 	call := ContractTriggerCall{Ctx: ctx, Key: key, V: v}
-	r := stub.Answer(s.OnTrigger.MethodStub, &call, stub.Arms[ContractTriggerCall, ContractTriggerReturn]{
+	r := stub.Answer(s.OnTrigger.MethodStub, call, stub.Arms[ContractTriggerCall, ContractTriggerReturn]{
 		Invoke:   s.OnTrigger.invoke(ctx, key, v),
 		Fallback: s.OnTrigger.fallback,
 		Fault:    func(err error) ContractTriggerReturn { return ContractTriggerReturn{Err: err} },
-		Stamp: func(c *ContractTriggerCall, r ContractTriggerReturn) {
+		Stamp: func(c ContractTriggerCall, r ContractTriggerReturn) ContractTriggerCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -462,12 +464,13 @@ func (s *SubscriptionNextStub) invoke(timeout time.Duration) func() Subscription
 // Func, then the results of Returns, and then the zero values.
 func (s *SubscriptionStub) Next(timeout time.Duration) (watcher.Value, bool) {
 	call := SubscriptionNextCall{Timeout: timeout}
-	r := stub.Answer(s.OnNext.MethodStub, &call, stub.Arms[SubscriptionNextCall, SubscriptionNextReturn]{
+	r := stub.Answer(s.OnNext.MethodStub, call, stub.Arms[SubscriptionNextCall, SubscriptionNextReturn]{
 		Invoke:   s.OnNext.invoke(timeout),
 		Fallback: s.OnNext.fallback,
-		Stamp: func(c *SubscriptionNextCall, r SubscriptionNextReturn) {
+		Stamp: func(c SubscriptionNextCall, r SubscriptionNextReturn) SubscriptionNextCall {
 			c.Result0 = r.Result0
 			c.Result1 = r.Result1
+			return c
 		},
 	})
 	return r.Result0, r.Result1
@@ -490,9 +493,9 @@ func (s *SubscriptionStopStub) invokeVoid() func() struct{} {
 // Func, then the results of Returns, and then the zero values.
 func (s *SubscriptionStub) Stop() {
 	call := SubscriptionStopCall{}
-	stub.Answer(s.OnStop.MethodStub, &call, stub.Arms[SubscriptionStopCall, struct{}]{
+	stub.Answer(s.OnStop.MethodStub, call, stub.Arms[SubscriptionStopCall, struct{}]{
 		Invoke: s.OnStop.invokeVoid(),
 	})
 }
 
-// dokimi:provenance sha256:c8d04ff7afaa945cc628f3b68dfd9a4beadf113c51b7de3164dfaa783bff3241
+// dokimi:provenance sha256:39e6100ad2666dded0d2924eac664ad5cc91e338cedccecf6e26f2fcdc94645a

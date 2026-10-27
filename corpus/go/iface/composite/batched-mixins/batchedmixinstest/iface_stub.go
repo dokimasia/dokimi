@@ -276,12 +276,13 @@ func (s *BatchedPutStub) invoke(ctx context.Context, key, value string) func() B
 // Func, then the results of Returns, and then the zero values.
 func (s *BatchedStub) Put(ctx context.Context, key, value string) error {
 	call := BatchedPutCall{Ctx: ctx, Key: key, Value: value}
-	r := stub.Answer(s.OnPut.MethodStub, &call, stub.Arms[BatchedPutCall, BatchedPutReturn]{
+	r := stub.Answer(s.OnPut.MethodStub, call, stub.Arms[BatchedPutCall, BatchedPutReturn]{
 		Invoke:   s.OnPut.invoke(ctx, key, value),
 		Fallback: s.OnPut.fallback,
 		Fault:    func(err error) BatchedPutReturn { return BatchedPutReturn{Err: err} },
-		Stamp: func(c *BatchedPutCall, r BatchedPutReturn) {
+		Stamp: func(c BatchedPutCall, r BatchedPutReturn) BatchedPutCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -303,13 +304,14 @@ func (s *BatchedReadStub) invoke(ctx context.Context, key string) func() Batched
 // Func, then the results of Returns, and then the zero values.
 func (s *BatchedStub) Read(ctx context.Context, key string) (string, error) {
 	call := BatchedReadCall{Ctx: ctx, Key: key}
-	r := stub.Answer(s.OnRead.MethodStub, &call, stub.Arms[BatchedReadCall, BatchedReadReturn]{
+	r := stub.Answer(s.OnRead.MethodStub, call, stub.Arms[BatchedReadCall, BatchedReadReturn]{
 		Invoke:   s.OnRead.invoke(ctx, key),
 		Fallback: s.OnRead.fallback,
 		Fault:    func(err error) BatchedReadReturn { return BatchedReadReturn{Err: err} },
-		Stamp: func(c *BatchedReadCall, r BatchedReadReturn) {
+		Stamp: func(c BatchedReadCall, r BatchedReadReturn) BatchedReadCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -331,16 +333,17 @@ func (s *BatchedListStub) invoke(ctx context.Context) func() BatchedListReturn {
 // Func, then the results of Returns, and then the zero values.
 func (s *BatchedStub) List(ctx context.Context) ([]string, error) {
 	call := BatchedListCall{Ctx: ctx}
-	r := stub.Answer(s.OnList.MethodStub, &call, stub.Arms[BatchedListCall, BatchedListReturn]{
+	r := stub.Answer(s.OnList.MethodStub, call, stub.Arms[BatchedListCall, BatchedListReturn]{
 		Invoke:   s.OnList.invoke(ctx),
 		Fallback: s.OnList.fallback,
 		Fault:    func(err error) BatchedListReturn { return BatchedListReturn{Err: err} },
-		Stamp: func(c *BatchedListCall, r BatchedListReturn) {
+		Stamp: func(c BatchedListCall, r BatchedListReturn) BatchedListCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:473b782c318a4c3bebe3497ed4873b0178135ab7170b64652025f643e9d7f192
+// dokimi:provenance sha256:3961e7a976abe39bb674b1fe5bc043f0054535280ed24d4a3b3c47016019829c

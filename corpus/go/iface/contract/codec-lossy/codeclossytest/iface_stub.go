@@ -233,13 +233,14 @@ func (s *ContractEncodeStub) invoke(ctx context.Context, in string) func() Contr
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Encode(ctx context.Context, in string) (string, error) {
 	call := ContractEncodeCall{Ctx: ctx, In: in}
-	r := stub.Answer(s.OnEncode.MethodStub, &call, stub.Arms[ContractEncodeCall, ContractEncodeReturn]{
+	r := stub.Answer(s.OnEncode.MethodStub, call, stub.Arms[ContractEncodeCall, ContractEncodeReturn]{
 		Invoke:   s.OnEncode.invoke(ctx, in),
 		Fallback: s.OnEncode.fallback,
 		Fault:    func(err error) ContractEncodeReturn { return ContractEncodeReturn{Err: err} },
-		Stamp: func(c *ContractEncodeCall, r ContractEncodeReturn) {
+		Stamp: func(c ContractEncodeCall, r ContractEncodeReturn) ContractEncodeCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -261,16 +262,17 @@ func (s *ContractDecodeStub) invoke(ctx context.Context, in string) func() Contr
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Decode(ctx context.Context, in string) (string, error) {
 	call := ContractDecodeCall{Ctx: ctx, In: in}
-	r := stub.Answer(s.OnDecode.MethodStub, &call, stub.Arms[ContractDecodeCall, ContractDecodeReturn]{
+	r := stub.Answer(s.OnDecode.MethodStub, call, stub.Arms[ContractDecodeCall, ContractDecodeReturn]{
 		Invoke:   s.OnDecode.invoke(ctx, in),
 		Fallback: s.OnDecode.fallback,
 		Fault:    func(err error) ContractDecodeReturn { return ContractDecodeReturn{Err: err} },
-		Stamp: func(c *ContractDecodeCall, r ContractDecodeReturn) {
+		Stamp: func(c ContractDecodeCall, r ContractDecodeReturn) ContractDecodeCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
 }
 
-// dokimi:provenance sha256:327a943e7201d9de5d912e1f083fc89fa401d3d846293fb6f9e3f93328636b7e
+// dokimi:provenance sha256:6dfd0235a39a19c30dde71d1e05289e3efff3a2390f264dff8199e67c97a57d6

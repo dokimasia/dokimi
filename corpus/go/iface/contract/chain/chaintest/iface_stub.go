@@ -275,12 +275,13 @@ func (s *ContractAppendStub) invoke(ctx context.Context, e chain.Entry) func() C
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Append(ctx context.Context, e chain.Entry) error {
 	call := ContractAppendCall{Ctx: ctx, E: e}
-	r := stub.Answer(s.OnAppend.MethodStub, &call, stub.Arms[ContractAppendCall, ContractAppendReturn]{
+	r := stub.Answer(s.OnAppend.MethodStub, call, stub.Arms[ContractAppendCall, ContractAppendReturn]{
 		Invoke:   s.OnAppend.invoke(ctx, e),
 		Fallback: s.OnAppend.fallback,
 		Fault:    func(err error) ContractAppendReturn { return ContractAppendReturn{Err: err} },
-		Stamp: func(c *ContractAppendCall, r ContractAppendReturn) {
+		Stamp: func(c ContractAppendCall, r ContractAppendReturn) ContractAppendCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
@@ -302,13 +303,14 @@ func (s *ContractReplayStub) invoke(ctx context.Context) func() ContractReplayRe
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Replay(ctx context.Context) ([]chain.Entry, error) {
 	call := ContractReplayCall{Ctx: ctx}
-	r := stub.Answer(s.OnReplay.MethodStub, &call, stub.Arms[ContractReplayCall, ContractReplayReturn]{
+	r := stub.Answer(s.OnReplay.MethodStub, call, stub.Arms[ContractReplayCall, ContractReplayReturn]{
 		Invoke:   s.OnReplay.invoke(ctx),
 		Fallback: s.OnReplay.fallback,
 		Fault:    func(err error) ContractReplayReturn { return ContractReplayReturn{Err: err} },
-		Stamp: func(c *ContractReplayCall, r ContractReplayReturn) {
+		Stamp: func(c ContractReplayCall, r ContractReplayReturn) ContractReplayCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -330,15 +332,16 @@ func (s *ContractVerifyStub) invoke(ctx context.Context) func() ContractVerifyRe
 // of Func, then the results of Returns, and then the zero values.
 func (s *ContractStub) Verify(ctx context.Context) error {
 	call := ContractVerifyCall{Ctx: ctx}
-	r := stub.Answer(s.OnVerify.MethodStub, &call, stub.Arms[ContractVerifyCall, ContractVerifyReturn]{
+	r := stub.Answer(s.OnVerify.MethodStub, call, stub.Arms[ContractVerifyCall, ContractVerifyReturn]{
 		Invoke:   s.OnVerify.invoke(ctx),
 		Fallback: s.OnVerify.fallback,
 		Fault:    func(err error) ContractVerifyReturn { return ContractVerifyReturn{Err: err} },
-		Stamp: func(c *ContractVerifyCall, r ContractVerifyReturn) {
+		Stamp: func(c ContractVerifyCall, r ContractVerifyReturn) ContractVerifyCall {
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Err
 }
 
-// dokimi:provenance sha256:2b742a69afb08fc3b2eb06130afad8eddb8b594e9529c0dfd3aa29913b0a734f
+// dokimi:provenance sha256:4aec8dfde1932cf89fea2cb5e89d781f2a81ccd3b76f2794a09af9c161b60d3d

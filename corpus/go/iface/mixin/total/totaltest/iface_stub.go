@@ -228,13 +228,14 @@ func (s *MixedClassifyStub) invoke(ctx context.Context, in string) func() MixedC
 // of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Classify(ctx context.Context, in string) (string, error) {
 	call := MixedClassifyCall{Ctx: ctx, In: in}
-	r := stub.Answer(s.OnClassify.MethodStub, &call, stub.Arms[MixedClassifyCall, MixedClassifyReturn]{
+	r := stub.Answer(s.OnClassify.MethodStub, call, stub.Arms[MixedClassifyCall, MixedClassifyReturn]{
 		Invoke:   s.OnClassify.invoke(ctx, in),
 		Fallback: s.OnClassify.fallback,
 		Fault:    func(err error) MixedClassifyReturn { return MixedClassifyReturn{Err: err} },
-		Stamp: func(c *MixedClassifyCall, r MixedClassifyReturn) {
+		Stamp: func(c MixedClassifyCall, r MixedClassifyReturn) MixedClassifyCall {
 			c.Result = r.Result
 			c.Err = r.Err
+			return c
 		},
 	})
 	return r.Result, r.Err
@@ -256,14 +257,15 @@ func (s *MixedNormalizeStub) invoke(in string) func() MixedNormalizeReturn {
 // function of Func, then the results of Returns, and then the zero values.
 func (s *MixedStub) Normalize(in string) string {
 	call := MixedNormalizeCall{In: in}
-	r := stub.Answer(s.OnNormalize.MethodStub, &call, stub.Arms[MixedNormalizeCall, MixedNormalizeReturn]{
+	r := stub.Answer(s.OnNormalize.MethodStub, call, stub.Arms[MixedNormalizeCall, MixedNormalizeReturn]{
 		Invoke:   s.OnNormalize.invoke(in),
 		Fallback: s.OnNormalize.fallback,
-		Stamp: func(c *MixedNormalizeCall, r MixedNormalizeReturn) {
+		Stamp: func(c MixedNormalizeCall, r MixedNormalizeReturn) MixedNormalizeCall {
 			c.Result = r.Result
+			return c
 		},
 	})
 	return r.Result
 }
 
-// dokimi:provenance sha256:a33f4412b42b4cf5688f3f1ed7e24a36139461efc0335da12959447938fe1c1f
+// dokimi:provenance sha256:fd5865030fef7407a28b01d306605d97efa3d55264af7d706f978790246d867f

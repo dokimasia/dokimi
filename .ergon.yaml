@@ -310,13 +310,26 @@ go:
   # homebrew, true for a cask in homebrew.tap; license, the license of the repository when empty;
   # cgo, true for a command that builds with cgo, whose C code the zig of tools compiles for every
   # platform.
-  binaries: []
+  binaries:
+    - name: dokimi
+      module: .
+      main: ./cmd/dokimi
+      description: Generates the tests and test helpers of Go and TypeScript code from directives
+      license: ""
+      platforms: []
+      packages:
+        - deb
+        - rpm
+        - apk
+      completions: true
+      homebrew: true
+      cgo: true
   # The options of the casks of the commands under binaries whose homebrew is true.
   homebrew:
     # The repository of the Homebrew tap on GitHub, as owner/name, to which the job homebrew of
     # release.yml commits each cask, with a token of the GitHub App of ERGON_APP_CLIENT_ID and
     # ERGON_APP_PRIVATE_KEY.
-    tap: ""
+    tap: dokimasia/homebrew-tap
   # The pin of setup-go, the runners and the versions of Go of the job check-go, and its limit in
   # minutes. Empty runners select every runner of the section github, and empty versions the version
   # of go.work.

@@ -79,7 +79,7 @@
     {
       "path": ".github/workflows/release.yml",
       "producer": "github",
-      "sha256": "1d5eddbb6be33eae308d36d58ccd5f6182ca9244b9efec6870d2b16daf6ce070"
+      "sha256": "3412d77690b39d0be632bfdd3f8fac96b97cccef1775e6ce95562f04e0692a8b"
     },
     {
       "path": ".github/workflows/security.yml",
@@ -102,6 +102,11 @@
       "producer": "go",
       "local": "a1620aed27a236bdd37545c820dc17238e069c14268e7b092514f58f938ad8da",
       "sha256": "5538fcabf4adbb53009c1f00dd3d2159e829a2419c368c9dfd550802a677c7a9"
+    },
+    {
+      "path": ".goreleaser.yaml",
+      "producer": "go",
+      "sha256": "8510065168717b290b0715e2bbeb220ab83b9248a127e3d7747d3800a544ddfe"
     },
     {
       "path": ".markdownlint.yml",

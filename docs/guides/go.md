@@ -42,6 +42,9 @@ Each of these directives changes what a generator writes, and none of them gener
 | Give a double helpers that fail a call with an error value of the package | `//dokimi:fault errors=[ErrNotFound]` on the method |
 | State a property that a suite checks | `//dokimi:mixin not-found sentinel=ErrNotFound`, `//dokimi:mixin concurrent` and the other mixins of the shape catalog, on the method |
 | Add a check of your own to a suite | `//dokimi:check Store.Get defect=forgetful` on a function in the package of the generated suite, whose doc comment opens with "<Name> checks that" |
+| Give the planted defect of a check a restart, a crash, a reference or a second subject | `restart=forget`, `crash=tear`, `reference=` or `second=` beside `defect`. Each value is a function of the package of the check |
+| Require a share of the outcomes of a property check in each application | `options=machineOptions` beside `defect`, where `machineOptions` takes the handle and returns `[]prop.Option`, such as `prop.Require` |
+| Pass the doors and other options of an application to the test of a subject | `//dokimi:subject store.Store new=New options=StoreOptions`, where `StoreOptions` returns the list of options |
 | Excuse a check that an implementation does not pass | `//dokimi:excuse Store.Get/keeps-the-item reason="…"` beside `subject` |
 | Cap the allocations, the bytes or the latency of a call | `//dokimi:budget allocs=1 bytes=96 p99=2us mean=1us warmup=500` on the method or the function |
 | Take the text of each constant from its trailing comment | `//dokimi:enum text=comment` |

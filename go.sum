@@ -52,8 +52,8 @@ github.com/tree-sitter/tree-sitter-ruby v0.23.1 h1:T/NKHUA+iVbHM440hFx+lzVOzS4dV
 github.com/tree-sitter/tree-sitter-ruby v0.23.1/go.mod h1:kUS4kCCQloFcdX6sdpr8p6r2rogbM6ZjTox5ZOQy8cA=
 github.com/tree-sitter/tree-sitter-rust v0.24.2 h1:NL4nF67ib21RMzzfvkmXlVwe45vvhW10DVyO+D0z/W0=
 github.com/tree-sitter/tree-sitter-rust v0.24.2/go.mod h1:hfeGWic9BAfgTrc7Xf6FaOAguCFJRo3RBbs7QJ6D7MI=
-go.dokimi.dev/assert v0.8.0 h1:sY7okErI+eALOD45mIkalwSr+zzM7a1M3FhlwyrnGG8=
-go.dokimi.dev/assert v0.8.0/go.mod h1:NeZvtoRhjUZSooEp8kN1mMakVUowb+EDKFR/YOUey2w=
+go.dokimi.dev/assert v0.9.0 h1:OGkugoEEt9ep+mpBq/60zJLCmWXryxrk4RTOMDZNK1A=
+go.dokimi.dev/assert v0.9.0/go.mod h1:NeZvtoRhjUZSooEp8kN1mMakVUowb+EDKFR/YOUey2w=
 go.dokimi.dev/eidos/cli v0.3.2 h1:KCoDan4kCGjnCPhQ/VZApFA3uN6uoA4nkrlIYSY7yew=
 go.dokimi.dev/eidos/cli v0.3.2/go.mod h1:jwV6amCuFdVm3bLqyPqiId3jxADIe3DTOyTfchSvx20=
 go.dokimi.dev/eidos/core v0.10.0 h1:+/I8BQ75p7MGr1qZy/LKHndYE/McOqoAz3ACt42xqrM=

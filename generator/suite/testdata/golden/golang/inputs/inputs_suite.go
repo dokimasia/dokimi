@@ -235,6 +235,9 @@ func PipelineSuite() conform.Suite[Pipeline] {
 			prop.Using(pipelineNoteValues),
 			prop.Using(pipelineTagValues),
 			prop.Using(pipelineCodeValues),
+			prop.Using(prop.Composite(func(c *prop.Case) io.Reader {
+				return conform.NewBytes(c.Draw(prop.Of[[]byte](), "reader"))
+			})),
 		},
 	}
 }
@@ -338,7 +341,7 @@ var pipelinePumpCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 		"from-close",
 	)
 	var fromCloseAt atomic.Int64
-	from := pipelineFeedInput{
+	from := &pipelineFeedInput{
 		onNext: func(context.Context) (r0 Item, r1 bool, r2 error) {
 			i := int(fromNextAt.Add(1) - 1)
 			if i >= len(fromNextResults0) {
@@ -410,7 +413,7 @@ var pipelineMergeCalls = prop.Composite(func(c *prop.Case) func(context.Context,
 		"left-close",
 	)
 	var leftCloseAt atomic.Int64
-	left := pipelineFeedInput{
+	left := &pipelineFeedInput{
 		onNext: func(context.Context) (r0 Item, r1 bool, r2 error) {
 			i := int(leftNextAt.Add(1) - 1)
 			if i >= len(leftNextResults0) {
@@ -473,7 +476,7 @@ var pipelineMergeCalls = prop.Composite(func(c *prop.Case) func(context.Context,
 		"right-close",
 	)
 	var rightCloseAt atomic.Int64
-	right := pipelineFeedInput{
+	right := &pipelineFeedInput{
 		onNext: func(context.Context) (r0 Item, r1 bool, r2 error) {
 			i := int(rightNextAt.Add(1) - 1)
 			if i >= len(rightNextResults0) {
@@ -624,7 +627,7 @@ var pipelinePutCalls = prop.Composite(func(c *prop.Case) func(context.Context, P
 var pipelineCountCalls = prop.Composite(func(c *prop.Case) func(context.Context, Pipeline) error {
 	intsReadResults := c.Draw(prop.List(prop.Of[int]()), "ints-read")
 	var intsReadAt atomic.Int64
-	ints := pipelineSourceInput{
+	ints := &pipelineSourceInput{
 		onRead: func() (r0 int) {
 			i := int(intsReadAt.Add(1) - 1)
 			if i >= len(intsReadResults) {
@@ -635,7 +638,7 @@ var pipelineCountCalls = prop.Composite(func(c *prop.Case) func(context.Context,
 	}
 	textsReadResults := c.Draw(prop.List(prop.Of[string]()), "texts-read")
 	var textsReadAt atomic.Int64
-	texts := pipelineSourceInput0{
+	texts := &pipelineSourceInput0{
 		onRead: func() (r0 string) {
 			i := int(textsReadAt.Add(1) - 1)
 			if i >= len(textsReadResults) {
@@ -776,8 +779,8 @@ var pipelineCodeValues = prop.Composite(func(c *prop.Case) Code {
 // pipelineFeedInput embeds.
 type pipelineFeedInputEmbedded = Feed
 
-// pipelineFeedInput is a Feed whose methods return the results that the
-// generators of the suite of Pipeline draw for them, in turn.
+// pipelineFeedInput implements Feed. Its methods return the results that
+// the generators of the suite of Pipeline draw for them, in turn.
 type pipelineFeedInput struct {
 	pipelineFeedInputEmbedded
 	onNext  func(a0 context.Context) (Item, bool, error)
@@ -810,8 +813,8 @@ func (in pipelineFeedInput) Close() error {
 // pipelineSourceInput embeds.
 type pipelineSourceInputEmbedded = Source[int]
 
-// pipelineSourceInput is a Source whose methods return the results that
-// the generators of the suite of Pipeline draw for them, in turn.
+// pipelineSourceInput implements Source. Its methods return the results
+// that the generators of the suite of Pipeline draw for them, in turn.
 type pipelineSourceInput struct {
 	pipelineSourceInputEmbedded
 	onRead func() int
@@ -826,8 +829,8 @@ func (in pipelineSourceInput) Read() int {
 // pipelineSourceInput0 embeds.
 type pipelineSourceInput0Embedded = Source[string]
 
-// pipelineSourceInput0 is a Source whose methods return the results that
-// the generators of the suite of Pipeline draw for them, in turn.
+// pipelineSourceInput0 implements Source. Its methods return the results
+// that the generators of the suite of Pipeline draw for them, in turn.
 type pipelineSourceInput0 struct {
 	pipelineSourceInput0Embedded
 	onRead func() string

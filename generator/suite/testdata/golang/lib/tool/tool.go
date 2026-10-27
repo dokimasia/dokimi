@@ -151,6 +151,10 @@ type Sensor interface {
 	Read(key string) (int, error)
 }
 
+// Shaped is the shape of a tool, a defined type over a shape of the internal
+// package of the tree lib.
+type Shaped deep.Shape
+
 // Request is the request of a tool. Each type of the internal package of the
 // tree lib, and each type whose value refers to one, is on one field alone.
 type Request struct {
@@ -166,4 +170,7 @@ type Request struct {
 	Dial       Dial
 	Gauge      Gauge
 	Calibrator Calibrator
+	Levels     <-chan deep.Level
+	Depth      interface{ Depth() deep.Level }
+	Shaped     Shaped
 }

@@ -2,6 +2,7 @@ package nested
 
 import (
 	"context"
+	"io"
 	"sync/atomic"
 	"testing"
 
@@ -70,7 +71,7 @@ func CourierSuite() conform.Suite[Courier] {
 					"labeler-label-1",
 				)
 				var labelerLabelAt atomic.Int64
-				return courierLabelerInput{
+				return &courierLabelerInput{
 					onLabel: func(string) (r0 Receipt, r1 error) {
 						i := int(labelerLabelAt.Add(1) - 1)
 						if i >= len(labelerLabelResults0) {
@@ -115,7 +116,7 @@ func CourierSuite() conform.Suite[Courier] {
 			prop.Using(prop.Composite(func(c *prop.Case) Scale[int] {
 				scaleWeighResults := c.Draw(prop.List(prop.Of[int]()), "scale-weigh")
 				var scaleWeighAt atomic.Int64
-				return courierScaleInput{
+				return &courierScaleInput{
 					onWeigh: func() (r0 int) {
 						i := int(scaleWeighAt.Add(1) - 1)
 						if i >= len(scaleWeighResults) {
@@ -127,6 +128,9 @@ func CourierSuite() conform.Suite[Courier] {
 			})),
 			prop.Using(prop.Composite(func(*prop.Case) func() {
 				return func() {}
+			})),
+			prop.Using(prop.Composite(func(c *prop.Case) io.Reader {
+				return conform.NewBytes(c.Draw(prop.Of[[]byte](), "reader"))
 			})),
 		},
 	}
@@ -217,8 +221,8 @@ var courierSendCalls = prop.Composite(func(c *prop.Case) func(context.Context, C
 // courierLabelerInput embeds.
 type courierLabelerInputEmbedded = Labeler
 
-// courierLabelerInput is a Labeler whose methods return the results that
-// the generators of the suite of Courier draw for them, in turn.
+// courierLabelerInput implements Labeler. Its methods return the results
+// that the generators of the suite of Courier draw for them, in turn.
 type courierLabelerInput struct {
 	courierLabelerInputEmbedded
 	onLabel func(a0 string) (Receipt, error)
@@ -233,8 +237,8 @@ func (in courierLabelerInput) Label(a0 string) (Receipt, error) {
 // courierScaleInput embeds.
 type courierScaleInputEmbedded = Scale[int]
 
-// courierScaleInput is a Scale whose methods return the results that the
-// generators of the suite of Courier draw for them, in turn.
+// courierScaleInput implements Scale. Its methods return the results that
+// the generators of the suite of Courier draw for them, in turn.
 type courierScaleInput struct {
 	courierScaleInputEmbedded
 	onWeigh func() int
@@ -403,7 +407,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 			},
 		},
 		Using: []prop.Option{
-			prop.Using(prop.Recursive(prop.Just[Node](trackerNodeInput{
+			prop.Using(prop.Recursive(prop.Just[Node](&trackerNodeInput{
 				onName: func() (r0 string) {
 					return r0
 				},
@@ -429,7 +433,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 							"node-children-1",
 						)
 						var nodeChildrenAt atomic.Int64
-						return trackerNodeInput{
+						return &trackerNodeInput{
 							onName: func() (r0 string) {
 								i := int(nodeNameAt.Add(1) - 1)
 								if i >= len(nodeNameResults) {
@@ -449,7 +453,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 						}
 					})
 				}, prop.MaxLeaves(10))),
-			prop.Using(prop.Recursive(prop.Just[Branch](trackerBranchInput{
+			prop.Using(prop.Recursive(prop.Just[Branch](&trackerBranchInput{
 				onNext: func() (r0 Hop) {
 					return r0
 				},
@@ -458,7 +462,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 					return prop.Composite(func(c *prop.Case) Branch {
 						branchNextResults := c.Draw(prop.List(prop.Of[Hop]()), "branch-next")
 						var branchNextAt atomic.Int64
-						return trackerBranchInput{
+						return &trackerBranchInput{
 							onNext: func() (r0 Hop) {
 								i := int(branchNextAt.Add(1) - 1)
 								if i >= len(branchNextResults) {
@@ -485,7 +489,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 						}
 					})
 				}, prop.MaxLeaves(10))),
-			prop.Using(prop.Recursive(prop.Just[Pong](trackerPongInput{
+			prop.Using(prop.Recursive(prop.Just[Pong](&trackerPongInput{
 				onPing: func() (r0 Ping) {
 					return r0
 				},
@@ -494,7 +498,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 					return prop.Composite(func(c *prop.Case) Pong {
 						pongPingResults := c.Draw(prop.List(prop.Of[Ping]()), "pong-ping")
 						var pongPingAt atomic.Int64
-						return trackerPongInput{
+						return &trackerPongInput{
 							onPing: func() (r0 Ping) {
 								i := int(pongPingAt.Add(1) - 1)
 								if i >= len(pongPingResults) {
@@ -513,7 +517,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 				var pairLeftAt atomic.Int64
 				pairRightResults := c.Draw(prop.List(prop.Of[Leaf]()), "pair-right")
 				var pairRightAt atomic.Int64
-				return trackerPairInput{
+				return &trackerPairInput{
 					onLeft: func() (r0 Leaf) {
 						i := int(pairLeftAt.Add(1) - 1)
 						if i >= len(pairLeftResults) {
@@ -533,7 +537,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 			prop.Using(prop.Composite(func(c *prop.Case) Rally {
 				rallyServeResults := c.Draw(prop.List(prop.Of[Ping]()), "rally-serve")
 				var rallyServeAt atomic.Int64
-				return trackerRallyInput{
+				return &trackerRallyInput{
 					onServe: func() (r0 Ping) {
 						i := int(rallyServeAt.Add(1) - 1)
 						if i >= len(rallyServeResults) {
@@ -546,7 +550,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 			prop.Using(prop.Composite(func(c *prop.Case) Linker {
 				linkerLinkResults := c.Draw(prop.List(prop.Of[Chain]()), "linker-link")
 				var linkerLinkAt atomic.Int64
-				return trackerLinkerInput{
+				return &trackerLinkerInput{
 					onLink: func() (r0 Chain) {
 						i := int(linkerLinkAt.Add(1) - 1)
 						if i >= len(linkerLinkResults) {
@@ -556,7 +560,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 					},
 				}
 			})),
-			prop.Using(prop.Recursive(prop.Just[Ping](trackerPingInput{
+			prop.Using(prop.Recursive(prop.Just[Ping](&trackerPingInput{
 				onPong: func() (r0 Pong) {
 					return r0
 				},
@@ -565,7 +569,7 @@ func TrackerSuite() conform.Suite[Tracker] {
 					return prop.Composite(func(c *prop.Case) Ping {
 						pingPongResults := c.Draw(prop.List(prop.Of[Pong]()), "ping-pong")
 						var pingPongAt atomic.Int64
-						return trackerPingInput{
+						return &trackerPingInput{
 							onPong: func() (r0 Pong) {
 								i := int(pingPongAt.Add(1) - 1)
 								if i >= len(pingPongResults) {
@@ -669,7 +673,7 @@ var trackerRouteCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 		"root-children-1",
 	)
 	var rootChildrenAt atomic.Int64
-	root := trackerNodeInput{
+	root := &trackerNodeInput{
 		onName: func() (r0 string) {
 			i := int(rootNameAt.Add(1) - 1)
 			if i >= len(rootNameResults) {
@@ -698,7 +702,7 @@ var trackerRouteCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 var trackerFollowCalls = prop.Composite(func(c *prop.Case) func(context.Context, Tracker) error {
 	bNextResults := c.Draw(prop.List(prop.Of[Hop]()), "b-next")
 	var bNextAt atomic.Int64
-	b := trackerBranchInput{
+	b := &trackerBranchInput{
 		onNext: func() (r0 Hop) {
 			i := int(bNextAt.Add(1) - 1)
 			if i >= len(bNextResults) {
@@ -736,7 +740,7 @@ var trackerWalkCalls = prop.Composite(func(c *prop.Case) func(context.Context, T
 var trackerVolleyCalls = prop.Composite(func(c *prop.Case) func(context.Context, Tracker) error {
 	pPongResults := c.Draw(prop.List(prop.Of[Pong]()), "p-pong")
 	var pPongAt atomic.Int64
-	p := trackerPingInput{
+	p := &trackerPingInput{
 		onPong: func() (r0 Pong) {
 			i := int(pPongAt.Add(1) - 1)
 			if i >= len(pPongResults) {
@@ -764,7 +768,7 @@ var trackerTrackCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 		"l-label-1",
 	)
 	var lLabelAt atomic.Int64
-	l := trackerLabelerInput{
+	l := &trackerLabelerInput{
 		onLabel: func(string) (r0 Receipt, r1 error) {
 			i := int(lLabelAt.Add(1) - 1)
 			if i >= len(lLabelResults0) {
@@ -815,8 +819,8 @@ var trackerLinkCalls = prop.Composite(func(c *prop.Case) func(context.Context, T
 // trackerNodeInput embeds.
 type trackerNodeInputEmbedded = Node
 
-// trackerNodeInput is a Node whose methods return the results that the
-// generators of the suite of Tracker draw for them, in turn.
+// trackerNodeInput implements Node. Its methods return the results that
+// the generators of the suite of Tracker draw for them, in turn.
 type trackerNodeInput struct {
 	trackerNodeInputEmbedded
 	onName     func() string
@@ -837,8 +841,8 @@ func (in trackerNodeInput) Children() ([]Node, error) {
 // trackerBranchInput embeds.
 type trackerBranchInputEmbedded = Branch
 
-// trackerBranchInput is a Branch whose methods return the results that the
-// generators of the suite of Tracker draw for them, in turn.
+// trackerBranchInput implements Branch. Its methods return the results
+// that the generators of the suite of Tracker draw for them, in turn.
 type trackerBranchInput struct {
 	trackerBranchInputEmbedded
 	onNext func() Hop
@@ -853,8 +857,8 @@ func (in trackerBranchInput) Next() Hop {
 // trackerPingInput embeds.
 type trackerPingInputEmbedded = Ping
 
-// trackerPingInput is a Ping whose methods return the results that the
-// generators of the suite of Tracker draw for them, in turn.
+// trackerPingInput implements Ping. Its methods return the results that
+// the generators of the suite of Tracker draw for them, in turn.
 type trackerPingInput struct {
 	trackerPingInputEmbedded
 	onPong func() Pong
@@ -869,8 +873,8 @@ func (in trackerPingInput) Pong() Pong {
 // trackerLabelerInput embeds.
 type trackerLabelerInputEmbedded = Labeler
 
-// trackerLabelerInput is a Labeler whose methods return the results that
-// the generators of the suite of Tracker draw for them, in turn.
+// trackerLabelerInput implements Labeler. Its methods return the results
+// that the generators of the suite of Tracker draw for them, in turn.
 type trackerLabelerInput struct {
 	trackerLabelerInputEmbedded
 	onLabel func(a0 string) (Receipt, error)
@@ -885,8 +889,8 @@ func (in trackerLabelerInput) Label(a0 string) (Receipt, error) {
 // trackerPongInput embeds.
 type trackerPongInputEmbedded = Pong
 
-// trackerPongInput is a Pong whose methods return the results that the
-// generators of the suite of Tracker draw for them, in turn.
+// trackerPongInput implements Pong. Its methods return the results that
+// the generators of the suite of Tracker draw for them, in turn.
 type trackerPongInput struct {
 	trackerPongInputEmbedded
 	onPing func() Ping
@@ -901,8 +905,8 @@ func (in trackerPongInput) Ping() Ping {
 // trackerPairInput embeds.
 type trackerPairInputEmbedded = Pair
 
-// trackerPairInput is a Pair whose methods return the results that the
-// generators of the suite of Tracker draw for them, in turn.
+// trackerPairInput implements Pair. Its methods return the results that
+// the generators of the suite of Tracker draw for them, in turn.
 type trackerPairInput struct {
 	trackerPairInputEmbedded
 	onLeft  func() Leaf
@@ -923,8 +927,8 @@ func (in trackerPairInput) Right() Leaf {
 // trackerRallyInput embeds.
 type trackerRallyInputEmbedded = Rally
 
-// trackerRallyInput is a Rally whose methods return the results that the
-// generators of the suite of Tracker draw for them, in turn.
+// trackerRallyInput implements Rally. Its methods return the results that
+// the generators of the suite of Tracker draw for them, in turn.
 type trackerRallyInput struct {
 	trackerRallyInputEmbedded
 	onServe func() Ping
@@ -939,8 +943,8 @@ func (in trackerRallyInput) Serve() Ping {
 // trackerLinkerInput embeds.
 type trackerLinkerInputEmbedded = Linker
 
-// trackerLinkerInput is a Linker whose methods return the results that the
-// generators of the suite of Tracker draw for them, in turn.
+// trackerLinkerInput implements Linker. Its methods return the results
+// that the generators of the suite of Tracker draw for them, in turn.
 type trackerLinkerInput struct {
 	trackerLinkerInputEmbedded
 	onLink func() Chain
@@ -1064,7 +1068,7 @@ func HireSuite() conform.Suite[HireFunc] {
 					"labeler-label-1",
 				)
 				var labelerLabelAt atomic.Int64
-				return hireLabelerInput{
+				return &hireLabelerInput{
 					onLabel: func(string) (r0 Receipt, r1 error) {
 						i := int(labelerLabelAt.Add(1) - 1)
 						if i >= len(labelerLabelResults0) {
@@ -1151,8 +1155,8 @@ var hireCalls = prop.Composite(func(c *prop.Case) func(context.Context, HireFunc
 // hireLabelerInput embeds.
 type hireLabelerInputEmbedded = Labeler
 
-// hireLabelerInput is a Labeler whose methods return the results that the
-// generators of the suite of Hire draw for them, in turn.
+// hireLabelerInput implements Labeler. Its methods return the results that
+// the generators of the suite of Hire draw for them, in turn.
 type hireLabelerInput struct {
 	hireLabelerInputEmbedded
 	onLabel func(a0 string) (Receipt, error)

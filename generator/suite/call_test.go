@@ -501,6 +501,48 @@ func TestCall(t *testing.T) {
 			expect.False(t, got.Params[0].Receive, "a channel that the callable sends to takes no list")
 		})
 
+		kinds := []struct {
+			name     string
+			giveDecl string
+			give     string
+			want     []param
+		}{
+			{
+				name: "draws a stream for a channel of both directions", giveDecl: "Router", give: "Pass",
+				want: []param{{name: "both", label: "both", spelling: "chan string"}},
+			},
+			{
+				name:     "draws the value of a pointer of a constructor of the standard library",
+				giveDecl: "Std",
+				give:     "Log",
+				want: []param{
+					{name: "l", label: "l", spelling: "*slog.Logger"},
+					{name: "o", label: "o", spelling: "*log.Logger"},
+				},
+			},
+			{
+				name: "draws the address of a struct of the standard library without a readable field", giveDecl: "Std",
+				give: "Lock", want: []param{{name: "mu", label: "mu", spelling: "sync.Mutex", address: true}},
+			},
+			{
+				name: "draws an error for a parameter of the type error", giveDecl: "Std", give: "Fail",
+				want: []param{{name: "err0", label: "err", spelling: "error"}},
+			},
+		}
+		for _, tt := range kinds {
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				got := called(t, generate(t, goTree, kindsPackage).suites[tt.giveDecl], tt.give)
+				params := make([]param, 0, len(got.Params))
+				for _, p := range got.Params {
+					params = append(params, paramOf(p))
+					expect.False(t, p.Receive, "the call passes the drawn value")
+				}
+				expect.Equal(t, params, tt.want, "the call draws each input of the callable")
+			})
+		}
+
 		t.Run("passes the elements of a variadic function type as its list", func(t *testing.T) {
 			t.Parallel()
 

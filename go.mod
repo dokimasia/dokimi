@@ -8,9 +8,9 @@ go 1.27.3
 require (
 	go.dokimi.dev/assert v0.8.0
 	go.dokimi.dev/eidos/cli v0.3.1
-	go.dokimi.dev/eidos/core v0.9.0
+	go.dokimi.dev/eidos/core v0.9.1-0.20261027000306-2ef5400dfb56
 	go.dokimi.dev/eidos/lang v0.3.2
-	go.dokimi.dev/eidos/lang/go v0.5.1
+	go.dokimi.dev/eidos/lang/go v0.5.2-0.20261027000306-2ef5400dfb56
 	go.dokimi.dev/eidos/lang/typescript v0.4.2
 	go.dokimi.dev/eidos/plugin/shape v0.0.9
 	go.dokimi.dev/eidos/sdk v0.7.0

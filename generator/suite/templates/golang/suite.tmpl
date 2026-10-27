@@ -135,7 +135,7 @@ var _ = conform.CompatV1
 {{- end}}
 		},
 {{- end}}
-{{- if or $c.Using $c.Starts $c.Generated $c.Dynamic}}
+{{- if or $c.Using $c.Starts $c.Generated $c.Variants $c.Streams $c.Readers $c.Constants $c.Dynamic $c.Errors}}
 		Using: []prop.Option{
 {{- range $c.Using}}
 			prop.Using(prop.SampledFrom({{range $i, $m := .Members}}{{if $i}}, {{end}}{{value $m}}{{end}})),
@@ -145,13 +145,39 @@ var _ = conform.CompatV1
 {{- end}}
 {{- range $c.Generated}}
 {{- if .Leaves}}
-			prop.Using(prop.Recursive(prop.Just[{{spell .Type}}]({{template "suite.base" .}}),
+			prop.Using(prop.Recursive({{template "suite.basis" .}},
 				func(prop.Generator[{{spell .Type}}]) prop.Generator[{{spell .Type}}] {
 					return {{template "suite.generated" .}}
 				}, prop.MaxLeaves({{.Leaves}}))),
 {{- else}}
 			prop.Using({{template "suite.generated" .}}),
 {{- end}}
+{{- end}}
+{{- range $c.Variants}}
+{{- $interface := spell .Type}}
+			prop.Using(prop.OneOf(
+{{- range .Members}}
+				prop.Composite(func(c *prop.Case) {{$interface}} {
+{{- if .Address}}
+					v := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+					return &v
+{{- else}}
+					return c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
+{{- end}}
+				}),
+{{- end}}
+			)),
+{{- end}}
+{{- range $c.Streams}}
+			prop.Using(conform.Stream[{{spell .Type}}](prop.Of[{{spell .Elem}}]())),
+{{- end}}
+{{- range $c.Readers}}
+			prop.Using(prop.Composite(func(c *prop.Case) {{spell .Type}} {
+				return {{if .Wrap.Kind}}{{value .Wrap}}({{end}}conform.NewBytes(c.Draw(prop.Of[[]byte](), {{printf "%q" .Label}})){{if .Wrap.Kind}}){{end}}
+			})),
+{{- end}}
+{{- range $c.Constants}}
+			prop.Using(prop.Composite(func(*prop.Case) {{spell .Type}} { return {{value .Value}} })),
 {{- end}}
 {{- if $c.Dynamic}}
 			prop.Using(prop.Composite(func(c *prop.Case) any {
@@ -163,6 +189,16 @@ var _ = conform.CompatV1
 				}
 				return c.Draw(prop.Boolean(), "any.bool")
 			})),
+{{- end}}
+{{- if $c.Errors}}
+			prop.Using(prop.SampledFrom[error](nil, conform.ErrGenerated)),
+{{- end}}
+		},
+{{- end}}
+{{- with $c.Sinks}}
+		Sinks: []conform.Sink{
+{{- range .}}
+			conform.SinkOf[{{spell .}}](),
 {{- end}}
 		},
 {{- end}}
@@ -265,7 +301,7 @@ var _ = conform.CompatV1
 {{- $context := false}}
 {{- range .Params}}
 {{- if .Context}}{{$context = true}}
-{{- else if .Funcs}}{{range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}
+{{- else if or .Funcs .Input}}{{range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}
 {{- else if not .Omitted}}{{$drawn = true}}
 {{- end}}
 {{- end}}
@@ -273,10 +309,10 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s generates the calls of %s with the inputs that each case draws.` (suiteCamel .Var) $name))}}
 {{- ""}}var {{suiteCamel .Var}} = prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) func(context.Context, {{$s}}) error {
 {{- range .Params}}
-{{- if .Funcs}}
+{{- if or .Funcs .Input}}
 {{- range .Funcs}}{{template "suite.results" .}}{{end}}
 {{- if .Input}}
-	{{.Name}} := {{suiteCamel .Input}}{
+	{{.Name}} := &{{suiteCamel .Input}}{
 {{- range .Funcs}}
 		{{suiteCamel .Field}}: {{template "suite.func" .}},
 {{- end}}
@@ -312,10 +348,10 @@ var _ = conform.CompatV1
 		return changed
 	}
 	return {{value .Value}}
+{{- else if not .Fields}}
+	return {{if .Seed}}{{spell .Seed}}().Build(){{else}}{{value .Value}}{{end}}
 {{- else}}
-{{- if .Fields}}
 	changed := c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" .Label}})
-{{- end}}
 {{- if .Seed}}
 	value := {{spell .Seed}}().Build()
 {{- else}}
@@ -337,7 +373,7 @@ var _ = conform.CompatV1
 {{docs (wrapdocs (printf `%s is %s under the name of the field that %s embeds.` $embedded .Type.Spelling $input))}}
 {{- ""}}type {{$embedded}} = {{spell .Type}}
 
-{{docs (wrapdocs (printf `%s is a %s whose methods return the results that the generators of the suite of %s draw for them, in turn.` $input .Type.Spelling $c.Declaration))}}
+{{docs (wrapdocs (printf `%s implements %s. Its methods return the results that the generators of the suite of %s draw for them, in turn.` $input .Type.Spelling $c.Declaration))}}
 {{- ""}}type {{$input}} struct {
 	{{$embedded}}
 {{- range .Methods}}
@@ -449,15 +485,16 @@ Each call takes a channel of its own, because a call drains its channel.
 {{- /*
 suite.generated writes the generator of the values of a function type or of
 an interface at some depth of the inputs: the generated function of a value of
-the function type, or the implementation of the interface with a generated
-function of each method.
+the function type, or the address of the implementation of the interface with
+a generated function of each method. A struct of function fields is not
+comparable, and its address is.
 */}}
 {{- define "suite.generated"}}
 {{- $drawn := false}}
 {{- range .Funcs}}{{if .Results}}{{$drawn = true}}{{end}}{{end}}prop.Composite(func({{if $drawn}}c {{end}}*prop.Case) {{spell .Type}} {
 {{- range .Funcs}}{{template "suite.results" .}}{{end}}
 {{- if .Input}}
-	return {{suiteCamel .Input}}{
+	return &{{suiteCamel .Input}}{
 {{- range .Funcs}}
 		{{suiteCamel .Field}}: {{template "suite.func" .}},
 {{- end}}
@@ -468,26 +505,45 @@ function of each method.
 }){{end}}
 
 {{- /*
+suite.basis writes the generator of the base value of a recursive function
+type or interface. A base whose functions return a channel takes the end
+value of each channel result when the case draws it, and any other base is
+one value.
+*/}}
+{{- define "suite.basis"}}
+{{- $ends := false}}
+{{- $sinks := false}}
+{{- range .Funcs}}{{range .Results}}{{if .End}}{{$ends = true}}{{end}}{{if .Sink}}{{$sinks = true}}{{end}}{{end}}{{end}}
+{{- if $ends}}prop.Composite(func({{if $sinks}}c {{end}}*prop.Case) {{spell .Type}} {
+{{- range .Funcs}}{{template "suite.ends" .}}{{end}}
+	return {{template "suite.base" .}}
+}){{else}}prop.Just[{{spell .Type}}]({{template "suite.base" .}}){{end}}
+{{- end}}
+
+{{- /*
 suite.base writes the base value of a recursive function type or interface:
-the function, or the implementation with a function of each method, that
-returns its zero results at once.
+the function, or the address of the implementation with a function of each
+method, that returns its end values at once.
 */}}
 {{- define "suite.base"}}
-{{- if .Input}}{{suiteCamel .Input}}{
+{{- if .Input}}&{{suiteCamel .Input}}{
 {{- range .Funcs}}
 	{{suiteCamel .Field}}: {{template "suite.end" .}},
 {{- end}}
 }{{else}}{{template "suite.end" (index .Funcs 0)}}{{end}}{{end}}
 
 {{- /*
-suite.end writes a function that returns its zero results at once, with the
-end error of each error result: the first declared error of its method, or
-conform.ErrGenerated.
+suite.end writes a function that returns its end values at once: the end
+error of each error result, which is the first declared error of its method
+or conform.ErrGenerated, the end value of each channel result, and the zero
+value of any other result.
 */}}
 {{- define "suite.end"}}func({{params .Signature.Params}}){{results .Signature.Returns}} {
 {{- range .Results}}
 {{- if .Error}}
 	{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}conform.ErrGenerated{{end}}
+{{- else if .End}}
+	{{.Return}} = {{.End}}
 {{- end}}
 {{- end}}
 {{- if .Signature.Returns.Len}}
@@ -497,8 +553,9 @@ conform.ErrGenerated.
 
 {{- /*
 suite.results writes the draw of the list of each result of a generated
-function, and the counter of its calls. Each list after the first has the
-length of the first, so the lists hold the results of the same calls.
+function, the end value of each channel result, and the counter of its
+calls. Each list after the first has the length of the first, so the lists
+hold the results of the same calls.
 */}}
 {{- define "suite.results"}}
 {{- $first := ""}}
@@ -510,8 +567,23 @@ length of the first, so the lists hold the results of the same calls.
 	{{.Name}} := c.Draw(prop.List({{template "suite.value" .}}), {{printf "%q" .Label}})
 {{- end}}
 {{- end}}
+{{- template "suite.ends" .}}
 {{- with .Index}}{{use "sync/atomic"}}
 	var {{.}} atomic.Int64
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.ends writes the end value of each channel result of a generated
+function: a closed channel without elements for a receive channel and a
+channel of both directions, and the drawn sink of the test for a send
+channel.
+*/}}
+{{- define "suite.ends"}}
+{{- range .Results}}
+{{- if .End}}
+	{{.End}} := {{if .Sink}}c.Draw(prop.Of[{{spell .Type}}](), {{printf "%q" (printf "%s-end" .Label)}}){{else}}conform.Closed[{{spell .Type}}](){{end}}
+{{- end}}
 {{- end}}
 {{- end}}
 
@@ -527,9 +599,10 @@ or conform.ErrGenerated without them.
 
 {{- /*
 suite.func writes a generated function, which returns the drawn results of
-its calls in turn. After the last of them it returns the zero results, with
-the end error of each error result: the first declared error of its method,
-or conform.ErrGenerated.
+its calls in turn. After the last of them it returns its end values: the end
+error of each error result, which is the first declared error of its method
+or conform.ErrGenerated, the end value of each channel result, and the zero
+value of any other result.
 */}}
 {{- define "suite.func"}}func({{params .Signature.Params}}){{results .Signature.Returns}} {
 {{- with .Index}}
@@ -538,6 +611,8 @@ or conform.ErrGenerated.
 {{- range $.Results}}
 {{- if .Error}}
 			{{.Return}} = {{with .Errors}}{{value (index . 0)}}{{else}}conform.ErrGenerated{{end}}
+{{- else if .End}}
+			{{.Return}} = {{.End}}
 {{- end}}
 {{- end}}
 			return

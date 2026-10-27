@@ -110,3 +110,18 @@ var Unimportable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Meaning: "a callable of a declaration under the directive suite refers to a declaration that the file of its " +
 		"suite cannot import",
 })
+
+// Ungenerated reports a type in the inputs of a callable that no generator of
+// the suite covers. An interface with an unexported method is such a type when
+// the standard library declares it, or when its package does not export an
+// implementation that the file of the suite can import. A struct with two
+// fields of one JSON name is such a type. So is a type of a kind that the
+// property engine refuses, when its generated code refers to a declaration
+// that the file cannot import. Each run of the
+// callable fails before its first case until the test process registers a
+// generator of the type. The finding is a Warning at the declaration, and
+// suite records the suite of the declaration.
+var Ungenerated = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  10,
+	Meaning: "a type in the inputs of a callable of a declaration under the directive suite has no generator",
+})

@@ -41,3 +41,21 @@ type Probe interface {
 
 // Hook runs at the level of a tool.
 type Hook func() error
+
+// Shape is the shape of a tool. Its method area is not exported, so the
+// package deep alone implements it.
+type Shape interface {
+	// Area returns the area of the shape.
+	Area() int
+	area()
+}
+
+// Square is the shape of a square tool.
+type Square struct {
+	Side int
+}
+
+// Area returns the area of the square.
+func (s Square) Area() int { return s.Side * s.Side }
+
+func (Square) area() {}

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	golang "go.dokimi.dev/eidos/lang/go"
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk"
@@ -111,7 +110,7 @@ type caller struct {
 	typeParams []*node.TypeParam
 	witnesses  []*node.TypeRef
 	inputs     []Input
-	roots      []*node.TypeRef
+	roots      []root
 }
 
 // call returns the call of the callable c. sym is the method or the function
@@ -125,29 +124,29 @@ func (k *caller) call(c *Callable, sym symbol.Symbol, id *symbol.Identity) Call 
 	}
 	assign, returns := results(&view)
 	return Call{
-		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, mixed(k.m, id, shape.NilSafe)),
+		Var: name, Field: c.Field, Type: c.Type, Params: k.params(&view, mixed(k.m, id, shape.NilSafe), c.Name),
 		Assign: assign, Returns: returns, Budget: k.g.budgetFact(k.m, id),
 		Concurrent: mixed(k.m, id, shape.Concurrent) || mixed(k.m, id, shape.ConcurrentReaders),
 		Over:       k.over(&view, id),
 	}
 }
 
-// params returns the parameters of the callable of view. Under the mixin
-// nil-safe a pointer takes a pointer that can be nil, and otherwise the
-// address of a value of its element type. A parameter of a function type
-// takes a generated function, and a parameter of an interface outside the
-// standard library an implementation whose methods are generated functions.
-// A function type or an interface whose generated code refers to a type that
-// the file of the suite cannot import takes the generator of its
-// registration. A channel that the callable receives from takes a closed
-// channel of a drawn list. A variadic parameter of functions or of interfaces
-// outside the standard library does not take a value.
+// params returns the parameters of the callable of view, named callable. A
+// parameter whose generator is a generated function takes a generated
+// function, and a parameter whose generator is a generated implementation an
+// implementation whose methods are generated functions. A channel that the
+// callable receives from takes a closed channel of a drawn list. Under the
+// mixin nil-safe a pointer takes a pointer that can be nil. Otherwise a
+// pointer that the shape reader of the property engine reads takes the
+// address of a value of its element type. A variadic parameter of generated
+// values does not take a value. Any other parameter takes a drawn value,
+// whose type is a root of the overrides of the suite.
 //
 // Each parameter takes its own name where the name is free, and otherwise the
 // first free name of [naming.Unique]. A name is free where [caller.taken]
 // does not contain it. A parameter without a name takes the name and the
 // label a and its position, as a0.
-func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
+func (k *caller) params(view *rules.Callable, nilSafe bool, callable string) []Param {
 	refs := make([]*node.TypeRef, 0, len(view.Params))
 	for _, p := range view.Params {
 		refs = append(refs, p.Ref)
@@ -168,28 +167,30 @@ func (k *caller) params(view *rules.Callable, nilSafe bool) []Param {
 		taken[name] = true
 		ref := k.instance(p.Ref)
 		param := Param{Type: rules.EmitRef(ref), Name: name, Label: label, Variadic: p.Variadic}
+		at := root{ref: ref, callable: callable, at: []string{"its parameter " + base}}
 		under := k.underlying(ref)
-		iface, implemented := k.implemented(ref)
+		src, _ := k.sourceOf(ref)
+		iface, ifaceRef, isInterface := k.interfaceOf(ref)
 		switch {
-		case p.Variadic && (under.Form == symbol.FormFunc || implemented):
+		case p.Variadic && src == sourceGenerated:
 			param.Omitted = true
 		case p.Variadic:
-			k.roots = append(k.roots, ref)
-		case under.Form == symbol.FormFunc && k.importable(under):
-			param.Funcs = []Func{k.funcOf(under, name, label, taken)}
-		case strings.HasPrefix(under.Spelling, receiveSpelling):
+			k.roots = append(k.roots, at)
+		case src == sourceGenerated && isInterface:
+			param.Input, param.Funcs = k.inputOf(ifaceRef, iface, inputWordOf(ref, iface), name, label, taken, at)
+		case src == sourceGenerated:
+			param.Funcs = []Func{k.funcOf(under, name, label, taken, at, ref.Spelling)}
+		case under.Form == symbol.FormStream && receives(under.Spelling):
 			param.Type, param.Receive = rules.EmitRef(under.Elems[0]), true
 			param.Name = naming.Unique(taken, base+valuesWord)
 			taken[param.Name] = true
-			k.roots = append(k.roots, under.Elems[0])
-		case ref.Form == symbol.FormOptional && !nilSafe && !pointerShapes[ref.Elems[0].Target.Package+"."+
-			ref.Elems[0].Target.Name]:
+			k.roots = append(k.roots, at.to(under.Elems[0], "an element of "+ref.Spelling))
+		case ref.Form == symbol.FormOptional && !nilSafe && src == sourceEngine &&
+			!pointerShapes[qualified(&ref.Elems[0].Target)]:
 			param.Type, param.Address = rules.EmitRef(ref.Elems[0]), true
-			k.roots = append(k.roots, ref.Elems[0])
-		case implemented && k.implementable(ref, iface):
-			param.Input, param.Funcs = k.inputOf(ref, iface, name, label, taken)
+			k.roots = append(k.roots, at.to(ref.Elems[0], "the target of "+ref.Spelling))
 		default:
-			k.roots = append(k.roots, ref)
+			k.roots = append(k.roots, at)
 		}
 		out = append(out, param)
 	}
@@ -261,10 +262,6 @@ func (k *caller) implementable(ref *node.TypeRef, iface *node.Interface) bool {
 	}
 	return k.importable(refs...)
 }
-
-// receiveSpelling opens the spelling of a channel that the callable receives
-// from, and the spelling of no other type.
-const receiveSpelling = "<-chan"
 
 // pointerShapes are the types, by their package and name, whose pointer the
 // shape reader of the property engine reads as a value of its own shape: a
@@ -357,10 +354,14 @@ const aliasDepth = 8
 
 // underlying returns the type that ref refers to through its aliases and its
 // defined types, such as the function type of a defined function type, at the
-// type arguments of ref. A structural form has no target, so the lookup
-// finds no declaration of it.
+// type arguments of ref. A structural form has no target, so the lookup does
+// not find a declaration of it. unsafe.Pointer is a type of its own, which
+// the package unsafe declares as a pointer for its documentation alone.
 func (k *caller) underlying(ref *node.TypeRef) *node.TypeRef {
 	for range aliasDepth {
+		if is(&ref.Target, unsafePackage, pointerType) {
+			return ref
+		}
 		decl, _ := k.m.Reader().Lookup(ref.Target)
 		alias, is := decl.(*node.Alias)
 		if !is {
@@ -369,22 +370,6 @@ func (k *caller) underlying(ref *node.TypeRef) *node.TypeRef {
 		ref = rules.Substitute(alias.Target, alias.TypeParams, ref.Args)
 	}
 	return ref
-}
-
-// implemented returns the interface that the type ref refers to, where the
-// interface is outside the standard library. A call generator takes an
-// implementation of such an interface whose methods return generated
-// results. An interface of the standard library, such as io.Reader, takes
-// the generator of its registration. A structural form and a builtin have no
-// target, and [golang.Standard] reports the empty package of such a target as
-// a package of the standard library.
-func (k *caller) implemented(ref *node.TypeRef) (*node.Interface, bool) {
-	if golang.Standard(ref.Target.Package) {
-		return nil, false
-	}
-	decl, _ := k.m.Reader().Lookup(ref.Target)
-	iface, is := decl.(*node.Interface)
-	return iface, is
 }
 
 // mixed reports whether the shape catalog stamps the mixin n on the callable

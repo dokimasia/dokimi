@@ -123,13 +123,39 @@
 // inputs of each call through the property engine of the assert library. A
 // context takes the context of the call, and a variadic parameter takes a
 // list. A pointer takes the address of a value, or a pointer that can be nil
-// under the mixin nil-safe. A function type takes a generated function, and an
-// interface outside the standard library takes an implementation of the suite
-// whose methods are generated functions. An enumeration takes one of its
-// members. These three rules apply at every depth of an input, and a type
-// that the file of the suite cannot import takes the generator of its
-// registration. The suite also declares the planted defect of the ceilings: a
-// subject whose callables spend the cost that exceeds a ceiling.
+// under the mixin nil-safe. A channel that the callable receives from takes a
+// closed channel of a drawn list, which each call builds.
+//
+// The suite gives every type in the inputs a generator, at every depth of an
+// input. The shape reader of the property engine reads data: numbers,
+// strings, lists, maps, pointers, structs with a readable field and the times
+// of the standard library. The suite states the generator of each other type
+// through prop.Using:
+//
+//   - An enumeration takes one of its members.
+//   - A struct with a sample, a builder or declared defaults takes its
+//     starting value, and a struct without a readable field its zero value.
+//   - A function type takes a generated function. An interface whose methods
+//     are all exported takes the address of an implementation of the suite,
+//     whose methods are generated functions.
+//   - An interface with an unexported method takes one of the implementations
+//     that its package exports. An interface of the standard library with an
+//     unexported method has no generator.
+//   - A receive channel and a channel of both directions take a closed
+//     channel of a drawn list. A send channel takes the sink of the test.
+//   - An interface of the package io takes a *conform.Bytes over drawn bytes,
+//     and a *bufio.Reader reads them.
+//   - error takes nil or conform.ErrGenerated, context.Context takes
+//     context.Background(), and unsafe.Pointer takes nil. A logger of log and
+//     of log/slog discards its output, and a *bufio.Writer writes into
+//     io.Discard.
+//   - any takes a string, an int or a bool.
+//
+// A generated function returns its drawn results in turn, and then its end
+// values: the end error of an error result, a closed channel for a receive
+// channel or a channel of both directions, and the sink for a send channel.
+// The suite also declares the planted defect of the ceilings: a subject whose
+// callables spend the cost that exceeds a ceiling.
 //
 // The test of a subject declares a benchmark of each callable, such as the
 // level Get of BenchmarkStore. It declares a parallel benchmark, such as
@@ -170,12 +196,13 @@
 // function with the segment of a check that the spec of the suite adds, and of
 // a check with the segment of a ceiling. It reports [UnknownExcusal] at an
 // excusal whose identity does not match a check of the suite, and [BadBudget]
-// at a budget that no check of a suite applies.
+// at a budget that no check of a suite applies. It reports [Ungenerated] at a
+// declaration whose calls take a type without a generator, as a Warning.
 //
 // # Dependency position
 //
 // The package imports the package internal/lang of the module, the root
-// package of the Go satellite in golang.go and call.go, the package naming of
+// package of the Go satellite in golang.go and source.go, the package naming of
 // eidos-lang, the package shape of the shape plugin of eidos, the root, diag,
 // directive, emit, meta, node, plugin, rules, store and symbol packages of the
 // SDK facade of eidos, and the Go stdlib.

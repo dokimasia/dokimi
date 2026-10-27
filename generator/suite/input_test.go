@@ -74,8 +74,76 @@ func TestInput(t *testing.T) {
 
 			got := called(t, generate(t, goTree, inputsPackage).suites["Pipeline"], "Copy")
 			assert.Length(t, got.Params, 1, "Copy takes a reader")
-			expect.Equal(t, got.Params[0].Input, "", "a reader of the standard library takes its registration")
+			expect.Equal(t, got.Params[0].Input, "", "a reader of io takes the reader of drawn bytes")
 			expect.Equal(t, spelled(got.Params[0].Type), "io.Reader", "the call draws a value of the reader")
+		})
+
+		t.Run("declares an implementation of an interface of the standard library", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, kindsPackage).suites["Std"], "From")
+			assert.Length(t, got.Params, 1, "From takes a reader from")
+			expect.Equal(t, got.Params[0].Input, "StdReaderFromInput",
+				"an interface of io without the methods of a reader of bytes takes a generated implementation")
+		})
+
+		t.Run("declares an implementation of each interface without a declaration of its own", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, kindsPackage).suites["Odd"]
+			names := make([][2]string, 0, len(got.Inputs))
+			for _, in := range got.Inputs {
+				names = append(names, [2]string{in.Name, spelled(in.Type)})
+			}
+			expect.Equal(t, names, [][2]string{
+				{"OddStringerInput", "fmt.Stringer"},
+				{"OddAnythingInput", "any"},
+				{"OddInterfaceInput", "interface {\n\t\tNamer\n\t\tSize() int\n\t\tReset()\n\t}"},
+			}, "a defined type implements the interface that it refers to, and an inline interface its own body")
+		})
+
+		t.Run("declares the methods of the types that an inline interface embeds", func(t *testing.T) {
+			t.Parallel()
+
+			got := generate(t, goTree, kindsPackage).suites["Odd"]
+			assert.Length(t, got.Inputs, 3, "the suite of Odd declares three implementations")
+			methods := make([][2]string, 0, len(got.Inputs[2].Methods))
+			for _, m := range got.Inputs[2].Methods {
+				methods = append(methods, [2]string{m.Field, signature(m.Method)})
+			}
+			expect.Equal(t, methods, [][2]string{
+				{"OnSize", "Size() (int)"}, {"OnReset", "Reset() ()"}, {"OnName", "Name() (string)"},
+			}, "the implementation has the methods of the body and the method of the embedded Namer")
+		})
+
+		t.Run("takes the end value of each channel after its drawn results", func(t *testing.T) {
+			t.Parallel()
+
+			got := called(t, generate(t, goTree, kindsPackage).suites["Router"], "Watch")
+			assert.Length(t, got.Params, 1, "Watch takes a source")
+			expect.Equal(t, fnsOf(got.Params[0].Funcs), []fn{
+				{
+					field: "OnUpdates", signature: "() (r0 <-chan string)", index: "sUpdatesAt",
+					results: []result{{
+						name: "sUpdatesResults", label: "s-updates", spelling: "<-chan string", end: "sUpdatesEnd",
+					}},
+				},
+				{
+					field: "OnResults", signature: "() (r0 chan<- string)", index: "sResultsAt",
+					results: []result{{
+						name: "sResultsResults", label: "s-results", spelling: "chan<- string", end: "sResultsEnd",
+						sink: true,
+					}},
+				},
+				{
+					field:     "OnPipe",
+					signature: "() (r0 chan string)",
+					index:     "sPipeAt",
+					results: []result{
+						{name: "sPipeResults", label: "s-pipe", spelling: "chan string", end: "sPipeEnd"},
+					},
+				},
+			}, "a receive channel and a channel of both directions end closed, and a send channel ends at the sink")
 		})
 
 		inputs := []struct {

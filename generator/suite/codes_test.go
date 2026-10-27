@@ -57,6 +57,11 @@ func TestCodes(t *testing.T) {
 			WantMeaning: "a callable of a declaration under the directive suite refers to a declaration that the " +
 				"file of its suite cannot import",
 		},
+		{
+			Name: "Ungenerated", Give: suite.Ungenerated, WantCode: "DOKIMISUITE-0010",
+			WantMeaning: "a type in the inputs of a callable of a declaration under the directive suite has no " +
+				"generator",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

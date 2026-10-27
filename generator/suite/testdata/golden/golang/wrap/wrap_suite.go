@@ -79,7 +79,7 @@ func TunedSuite() conform.Suite[Tuned] {
 					"note-write",
 				)
 				var noteWriteAt atomic.Int64
-				return tunedNoteInput{
+				return &tunedNoteInput{
 					onWrite: func(string) (r0 error) {
 						i := int(noteWriteAt.Add(1) - 1)
 						if i >= len(noteWriteResults) {
@@ -199,7 +199,7 @@ var tunedSettingValues = prop.Composite(func(c *prop.Case) tool.Setting {
 // tunedNoteInput embeds.
 type tunedNoteInputEmbedded = tool.Note
 
-// tunedNoteInput is a Note whose methods return the results that the
+// tunedNoteInput implements Note. Its methods return the results that the
 // generators of the suite of Tuned draw for them, in turn.
 type tunedNoteInput struct {
 	tunedNoteInputEmbedded
@@ -582,7 +582,7 @@ var limitedSenseCalls = prop.Composite(func(c *prop.Case) func(context.Context, 
 		"s-read-1",
 	)
 	var sReadAt atomic.Int64
-	s := limitedSensorInput{
+	s := &limitedSensorInput{
 		onSense: func() (r0 error) {
 			i := int(sSenseAt.Add(1) - 1)
 			if i >= len(sSenseResults) {
@@ -642,15 +642,13 @@ var limitedGripValues = prop.Composite(func(c *prop.Case) tool.Grip {
 // limitedClampValues generates the starting value of tool.Clamp, which has
 // no field to change.
 var limitedClampValues = prop.Composite(func(*prop.Case) tool.Clamp {
-	value := tool.Clamp{}
-	return value
+	return tool.Clamp{}
 })
 
 // limitedFrameValues generates the starting value of tool.Frame, which has
 // no field to change.
 var limitedFrameValues = prop.Composite(func(*prop.Case) tool.Frame {
-	value := tool.Frame{}
-	return value
+	return tool.Frame{}
 })
 
 // limitedSpanValues generates the values of tool.Span that keep or change
@@ -667,8 +665,9 @@ var limitedSpanValues = prop.Composite(func(c *prop.Case) tool.Span {
 // that limitedSensorInput embeds.
 type limitedSensorInputEmbedded = tool.Sensor
 
-// limitedSensorInput is a tool.Sensor whose methods return the results
-// that the generators of the suite of Limited draw for them, in turn.
+// limitedSensorInput implements tool.Sensor. Its methods return the
+// results that the generators of the suite of Limited draw for them, in
+// turn.
 type limitedSensorInput struct {
 	limitedSensorInputEmbedded
 	onSense func() error

@@ -51,6 +51,7 @@ const (
 	loosePackage       = "example.com/shop/loose"
 	nestedPackage      = "example.com/shop/nested"
 	wrapPackage        = "example.com/shop/wrap"
+	kindsPackage       = "example.com/shop/kinds"
 	toolPackage        = "example.com/shop/lib/tool"
 	deepPackage        = "example.com/shop/lib/internal/deep"
 	suiteTemplate      = "suite.tmpl"
@@ -179,11 +180,12 @@ type fn struct {
 }
 
 // result is the list of one result of a generated function, with the
-// spelling of its type and the names of its declared errors.
+// spelling of its type, the names of its declared errors and the variable
+// of the end value of a channel.
 type result struct {
-	name, label, spelling string
-	errors                []string
-	isError               bool
+	name, label, spelling, end string
+	errors                     []string
+	isError, sink              bool
 }
 
 // fnsOf returns each function of funcs with the signature of its literal and
@@ -193,13 +195,28 @@ func fnsOf(funcs []suite.Func) []fn {
 	for _, f := range funcs {
 		got := fn{field: f.Field, signature: signature(f.Signature), index: f.Index}
 		for _, r := range f.Results {
-			res := result{name: r.Name, label: r.Label, spelling: spelled(r.Type), isError: r.Error}
+			res := result{
+				name: r.Name, label: r.Label, spelling: spelled(r.Type), end: r.End, isError: r.Error, sink: r.Sink,
+			}
 			for _, e := range r.Errors {
 				res.errors = append(res.errors, e.Callee.Name)
 			}
 			got.results = append(got.results, res)
 		}
 		out = append(out, got)
+	}
+	return out
+}
+
+// ungenerated returns the message of each finding Ungenerated of got about a
+// callable of the declaration named decl, in the order of the findings. The
+// message of the finding opens with the callable.
+func ungenerated(got generated, decl string) []string {
+	var out []string
+	for _, d := range got.findings {
+		if d.Code == suite.Ungenerated && (strings.HasPrefix(d.Msg, decl+".") || strings.HasPrefix(d.Msg, decl+" ")) {
+			out = append(out, d.Msg)
+		}
 	}
 	return out
 }

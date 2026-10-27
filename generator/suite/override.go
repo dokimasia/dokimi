@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 
-	golang "go.dokimi.dev/eidos/lang/go"
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/sdk"
 	"go.dokimi.dev/eidos/sdk/emit"
@@ -91,6 +90,58 @@ type Generated struct {
 	Leaves int
 }
 
+// Variants is the generator of the values of an interface with an unexported
+// method, which no code outside its package can implement. Type is the
+// interface. Members are the implementations that the package of the
+// interface exports and the file of the suite can import, in the order of
+// their identities. Each property run and each benchmark of the suite draws
+// one of them for each value of the interface.
+type Variants struct {
+	Type    *emit.TypeRef
+	Members []Variant
+}
+
+// Variant is one implementation of the interface of a [Variants]. Type is the
+// implementation, and Label the label of its draw: the name of the
+// implementation in kebab case. Address reports an implementation whose
+// pointer alone has the methods of the interface, so the generator returns
+// the address of the drawn value.
+type Variant struct {
+	Type    *emit.TypeRef
+	Label   string
+	Address bool
+}
+
+// Stream is the generator of the values of a channel that a subject receives
+// from: a receive channel or a channel of both directions. Type is the
+// channel type, and Elem the type of its elements. A value is a closed
+// channel with a drawn list of elements in its buffer.
+type Stream struct {
+	Type *emit.TypeRef
+	Elem *emit.TypeRef
+}
+
+// Reader is the generator of the values of a type that reads drawn bytes: an
+// interface of the package io whose methods *conform.Bytes has, and
+// *bufio.Reader. Type is the type, and Label the label of the draw of the
+// bytes. Wrap is the function that takes the *conform.Bytes, as
+// bufio.NewReader, and the zero value for an interface of io.
+type Reader struct {
+	Type  *emit.TypeRef
+	Wrap  emit.Value
+	Label string
+}
+
+// Constant is the generator of one fixed value of a type, which each case
+// builds again: nil for unsafe.Pointer, context.Background() for
+// context.Context, and the value of a constructor of the standard library
+// for a type whose zero value and nil fail at their first use. Type is the
+// type, and Value the value.
+type Constant struct {
+	Type  *emit.TypeRef
+	Value emit.Value
+}
+
 // recursiveLeaves is the most base values of one value of a recursive type.
 // A value of a tree of nodes with 10 bases costs 119 µs and 494 allocations to
 // draw, a tenth of the cost under the default of 100 bases of the property
@@ -108,169 +159,281 @@ const (
 	propSkip = "-"
 )
 
-// overrides records into the suite s each enumeration, each struct with a
-// starting value, and each function type and interface outside the standard
-// library that the roots of the calls take at some depth, in the order in
-// which a walk of the roots meets them. It records whether the roots take a
-// value of the dynamic type, Go's any, at some depth, and the implementations
-// of the interfaces that the calls and the generators take.
+// root is a type of the drawn values of a call, which the overrides of the
+// suite walk. callable is the name of the callable whose call draws the
+// value, as Placer.Place. at is the path from the type to the parameter of
+// the callable, as "a result of Timer.C" and then "its parameter clock".
+type root struct {
+	ref      *node.TypeRef
+	callable string
+	at       []string
+}
+
+// to returns the root of the type ref that a value of the type of r
+// contains. hop is the step from the type of r to ref in the path of a
+// finding.
+func (r root) to(ref *node.TypeRef, hop string) root {
+	return root{ref: ref, callable: r.callable, at: append([]string{hop}, r.at...)}
+}
+
+// overrides records into the suite s the generator of each type that the
+// roots of the calls take at some depth and that the shape reader of the
+// property engine does not read, in the order in which a walk of the roots
+// meets them. [caller.sourceOf] returns the generator of each type. The suite
+// records the enumerations, the structs with a starting value, the generated
+// functions and implementations, the variants of the interfaces with an
+// unexported method, the streams, the readers of drawn bytes, the constants
+// and the sinks. It records whether the roots take a value of the dynamic
+// type and an error, and the implementations of the interfaces that the
+// calls and the generators take. It reports [Ungenerated] for each type
+// without a generator, once, at the first path that the walk meets.
 //
-// The walk enters the elements and the type arguments of each type, the
-// exported fields and the embedded types of a struct, the target of an alias,
-// and the results of each generated function. It leaves the types of the
-// standard library to the shape reader of the property engine, because the
-// value sets of the standard library include sets of flags, such as
-// fs.FileMode, and units, such as time.Duration. It does not override a type
-// that the file of the suite cannot import, so a registration of the test
-// process states the generator of such a type. It also leaves out each value
-// that refers to a declaration that the file cannot refer to, such as a
-// member of an enumeration that its package does not export.
+// The walk enters the elements and the type arguments of each type that the
+// shape reader reads, the exported fields and the embedded types of a struct
+// and the target of an alias. It enters the elements of a stream, the
+// implementations of the variants of an interface and the results of each
+// generated function.
 func (k *caller) overrides(s *Suite) {
-	w := walk{k: k, seen: map[symbol.Identity]bool{}, met: map[string]bool{}, names: map[string]bool{}}
+	w := walk{k: k, met: map[string]bool{}, names: map[string]bool{}}
 	for i := 0; i < len(k.roots); i++ {
 		w.visit(k.roots[i])
 	}
-	s.Using, s.Starts, s.Generated, s.Dynamic, s.Inputs = w.enums, w.starts, w.generated, w.dynamic, k.inputs
+	s.Using, s.Starts, s.Generated, s.Variants = w.enums, w.starts, w.generated, w.variants
+	s.Streams, s.Readers, s.Constants, s.Sinks = w.streams, w.readers, w.constants, w.sinks
+	s.Dynamic, s.Errors, s.Inputs = w.dynamic, w.errors, k.inputs
 }
 
-// walk is a walk of the types of the roots of the calls of a suite. seen
-// contains each declaration that the walk visited, met the spelling of each
-// function type and each interface outside the standard library that it met,
-// and names the names of the generators of the starting values. enums,
-// starts and generated are the enumerations, the structs with a starting
-// value, and the function types and the interfaces that the walk overrides.
-// dynamic reports that it met the dynamic type.
+// walk is a walk of the types of the roots of the calls of a suite. met
+// contains the key of each type that the walk visited, and names the names
+// of the generators of the starting values. The other fields are the
+// overrides that the walk records, as [Suite] states them.
 type walk struct {
 	k         *caller
-	seen      map[symbol.Identity]bool
 	met       map[string]bool
 	names     map[string]bool
 	enums     []Enumeration
 	starts    []Start
 	generated []Generated
+	variants  []Variants
+	streams   []Stream
+	readers   []Reader
+	constants []Constant
+	sinks     []*emit.TypeRef
 	dynamic   bool
+	errors    bool
 }
 
-// visit visits the type ref and each type that it contains. A structural form
-// has no target, and [golang.Standard] reports the empty package of such a
-// target as a package of the standard library, so the walk declares nothing
-// for it. The dynamic type contains no type.
-func (w *walk) visit(ref *node.TypeRef) {
-	if w.k.b.TypeOf(ref).Form == symbol.FormDynamic {
+// visit records the generator of the type of r, and visits each type that a
+// value of the type contains, once for each type.
+func (w *walk) visit(r root) {
+	k := w.k
+	ref := r.ref
+	key := k.typeKey(ref)
+	if w.met[key] {
+		return
+	}
+	w.met[key] = true
+	src, reason := k.sourceOf(ref)
+	switch src {
+	case sourceDynamic:
 		w.dynamic = true
-		return
+	case sourceError:
+		w.errors = true
+	case sourceNone:
+		k.m.Warnf(Ungenerated, "%s takes %s in %s. %s. Each run of %s fails before its first case until the test "+
+			"process registers a generator of %s", r.callable, ref.Spelling, strings.Join(r.at, " in "), reason,
+			r.callable, ref.Spelling)
+	case sourceGenerated:
+		w.generate(r)
+	case sourceVariants:
+		w.vary(r)
+	case sourceStream:
+		elem := k.underlying(ref).Elems[0]
+		w.streams = append(w.streams, Stream{Type: rules.EmitRef(ref), Elem: rules.EmitRef(elem)})
+		w.visit(r.to(elem, "an element of "+ref.Spelling))
+	case sourceSink:
+		w.sinks = append(w.sinks, rules.EmitRef(ref))
+	case sourceBytes:
+		w.readers = append(w.readers, k.readerOf(ref))
+	case sourceConstant:
+		w.constants = append(w.constants, Constant{Type: rules.EmitRef(ref), Value: k.constantOf(ref)})
+	case sourceEngine:
+		if !k.shaped(ref) {
+			w.enter(r, src)
+		}
+	default:
+		w.enter(r, src)
 	}
-	if w.generate(ref) {
-		return
-	}
-	for _, elem := range ref.Elems {
-		w.visit(elem)
+}
+
+// enter visits the elements and the type arguments of the type of r, records
+// its enumeration or its starting value, and visits the parts of its
+// declaration. src is the generator of the type: the shape reader, the
+// members of an enumeration or a starting value.
+func (w *walk) enter(r root, src source) {
+	k := w.k
+	ref := r.ref
+	for i, elem := range ref.Elems {
+		w.visit(r.to(elem, hopOf(ref, i)))
 	}
 	for _, arg := range ref.Args {
-		w.visit(arg)
+		w.visit(r.to(arg, "a type argument of "+ref.Spelling))
 	}
-	if w.seen[ref.Target] || golang.Standard(ref.Target.Package) {
-		return
+	decl := k.declOf(ref)
+	switch src {
+	case sourceMembers:
+		enum, _ := decl.(*node.Enum)
+		w.enums = append(w.enums, Enumeration{Members: k.membersOf(enum, ref)})
+	case sourceStart:
+		w.starts = append(w.starts, k.starting(ref, w.names))
+	default:
+		// The shape reader reads the type, and the walk enters its parts.
 	}
-	w.seen[ref.Target] = true
-	decl, _ := w.k.m.Reader().Lookup(ref.Target)
-	switch d := decl.(type) {
-	case *node.Enum:
-		if !w.k.importable(ref) {
-			return
-		}
-		members := make([]emit.Value, 0, len(d.Variants))
-		for _, v := range d.Variants {
-			if member := emit.Name(v.ID); w.k.referable(&member) {
-				members = append(members, member)
-			}
-		}
-		if len(members) > 0 {
-			w.enums = append(w.enums, Enumeration{Members: members})
-		}
-	case *node.Struct:
-		if start, started := w.k.startOf(d, ref, w.names); started {
-			w.starts = append(w.starts, start)
-		}
-	case *node.Alias:
-		if start, started := w.k.wholeStartOf(d, ref, w.names); started {
-			w.starts = append(w.starts, start)
-		}
+	for _, p := range partsOf(decl, ref) {
+		w.visit(r.to(p.ref, p.hop))
 	}
-	for _, part := range partsOf(decl, ref) {
-		w.visit(part)
+}
+
+// hopOf returns the hop from the structural type ref to its child at the
+// position i: a key or a value of a map, the target of a pointer, a field of
+// an inline struct, and an element of a list or an array.
+func hopOf(ref *node.TypeRef, i int) string {
+	switch {
+	case ref.Form == symbol.FormMap && i == 0:
+		return "a key of " + ref.Spelling
+	case ref.Form == symbol.FormMap:
+		return "a value of " + ref.Spelling
+	case ref.Form == symbol.FormOptional:
+		return "the target of " + ref.Spelling
+	case ref.Form == symbol.FormInline:
+		return "a field of " + ref.Spelling
 	}
+	return "an element of " + ref.Spelling
+}
+
+// typeKey returns the key of the type ref in the walk: the identity of its
+// target with the spellings of its type arguments, and the spelling of a
+// type without a target.
+func (*caller) typeKey(ref *node.TypeRef) string {
+	t := rules.EmitRef(ref)
+	if ref.Target.IsZero() {
+		return keyOf(t)
+	}
+	return ref.Target.String() + "[" + spelledArgs(t) + "]"
+}
+
+// inner is a type that a value of a declaration contains, with the hop from
+// the declaration to the type in the path of a finding.
+type inner struct {
+	ref *node.TypeRef
+	hop string
 }
 
 // partsOf returns the types that a value of the declaration decl at the type
 // ref contains, at the type arguments of ref: the exported fields and the
 // embedded types of a struct, and the target of an alias.
-func partsOf(decl symbol.Symbol, ref *node.TypeRef) []*node.TypeRef {
+func partsOf(decl symbol.Symbol, ref *node.TypeRef) []inner {
 	switch d := decl.(type) {
 	case *node.Struct:
-		out := make([]*node.TypeRef, 0, len(d.Fields)+len(d.Embeds))
+		out := make([]inner, 0, len(d.Fields)+len(d.Embeds))
 		for _, f := range d.Fields {
 			if f.Visibility == symbol.VisibilityPublic {
-				out = append(out, rules.Substitute(f.Type, d.TypeParams, ref.Args))
+				out = append(out, inner{
+					ref: rules.Substitute(f.Type, d.TypeParams, ref.Args),
+					hop: "the field " + f.Name + " of " + ref.Spelling,
+				})
 			}
 		}
 		for _, embed := range d.Embeds {
-			out = append(out, rules.Substitute(embed.Ref, d.TypeParams, ref.Args))
+			out = append(out, inner{
+				ref: rules.Substitute(embed.Ref, d.TypeParams, ref.Args),
+				hop: "the embedded field " + embeddedName(embed.Ref) + " of " + ref.Spelling,
+			})
 		}
 		return out
 	case *node.Alias:
-		return []*node.TypeRef{rules.Substitute(d.Target, d.TypeParams, ref.Args)}
+		return []inner{{ref: rules.Substitute(d.Target, d.TypeParams, ref.Args), hop: "the target of " + ref.Spelling}}
 	}
 	return nil
 }
 
-// generate reports whether ref is a function type or an interface outside the
-// standard library, and records the generator of the values of such a type
-// the first time that the walk meets it. The walk does not enter such a type.
-// A value of a function type is a generated function, and a value of an
-// interface is the implementation of the suite with a generated function of
-// each method. The results of these functions are roots of the walk. The
-// suite does not record a generator of a type whose generated code refers to
-// a type that the file of the suite cannot import.
+// generate records the generator of the values of the function type or the
+// interface of r. A value of a function type is a generated function, and a
+// value of an interface is the address of the implementation of the suite,
+// with a generated function of each method. The results of these functions
+// are roots of the walk.
 //
 // The name of the generated functions is the name of the type in camel case,
 // and their label the name in kebab case. A function type without a name
-// takes the name and the label func.
-func (w *walk) generate(ref *node.TypeRef) bool {
+// takes the name and the label func, and an interface without a name the
+// name and the label interface.
+func (w *walk) generate(r root) {
 	k := w.k
-	under := k.underlying(ref)
-	iface, implemented := k.implemented(ref)
-	if under.Form != symbol.FormFunc && !implemented {
-		return false
-	}
+	ref := r.ref
 	g := Generated{Type: rules.EmitRef(ref)}
-	key := keyOf(g.Type)
-	if w.met[key] {
-		return true
-	}
-	w.met[key] = true
+	iface, under, isInterface := k.interfaceOf(ref)
 	word := ref.Target.Name
-	if word == "" {
+	switch {
+	case word != "":
+	case isInterface:
+		word = interfaceWord
+	default:
 		word = funcWord
 	}
 	name, label, taken := naming.Camel(word), naming.Kebab(word), k.taken(ref)
-	switch {
-	case implemented && k.implementable(ref, iface):
-		g.Input, g.Funcs = k.inputOf(ref, iface, name, label, taken)
-	case !implemented && k.importable(ref, under):
-		g.Funcs = []Func{k.funcOf(under, name, label, taken)}
-	default:
-		return true
+	if isInterface {
+		g.Input, g.Funcs = k.inputOf(under, iface, inputWordOf(ref, iface), name, label, taken, r)
+	} else {
+		g.Funcs = []Func{k.funcOf(k.underlying(ref), name, label, taken, r, ref.Spelling)}
 	}
-	if k.recursive(ref, key) {
+	if k.recursive(ref, keyOf(g.Type)) {
 		g.Leaves = recursiveLeaves
 	}
 	w.generated = append(w.generated, g)
-	return true
 }
 
-// keyOf returns the key of the function type or the interface t in the walk:
-// its spelling with the spellings of its type arguments.
+// vary records the variants of the interface of r, and visits each of its
+// implementations.
+func (w *walk) vary(r root) {
+	k := w.k
+	iface, under, _ := k.interfaceOf(r.ref)
+	v := Variants{Type: rules.EmitRef(r.ref), Members: k.variantsOf(under, iface)}
+	w.variants = append(w.variants, v)
+	for _, m := range v.Members {
+		w.visit(r.to(&node.TypeRef{Spelling: m.Type.Spelling, Target: m.Type.Target},
+			"the implementation "+m.Type.Spelling+" of "+r.ref.Spelling))
+	}
+}
+
+// readerOf returns the generator of the values of the type ref, whose values
+// read drawn bytes. A *bufio.Reader wraps the bytes in its constructor. The
+// label of the draw of the bytes is the name of the type in kebab case.
+func (k *caller) readerOf(ref *node.TypeRef) Reader {
+	under := k.underlying(ref)
+	r := Reader{Type: rules.EmitRef(ref), Label: naming.Kebab(under.Target.Name)}
+	if under.Form == symbol.FormOptional {
+		r.Label, r.Wrap = naming.Kebab(under.Elems[0].Target.Name), bufferedReader
+	}
+	return r
+}
+
+// constantOf returns the fixed value of the type ref: nil for unsafe.Pointer,
+// context.Background() for context.Context, and the value of the constructor
+// of a pointer of the standard library.
+func (k *caller) constantOf(ref *node.TypeRef) emit.Value {
+	under := k.underlying(ref)
+	switch {
+	case under.Form == symbol.FormOptional:
+		return constructed[qualified(&under.Elems[0].Target)]
+	case is(&under.Target, contextPackage, contextType):
+		return emit.Call(stdIdentity(contextPackage, "Background", symbol.KindFunction))
+	}
+	return emit.Literal(emit.LiteralNil, "")
+}
+
+// keyOf returns the key of the function type or the interface t in the
+// search of a recursion: its spelling with the spellings of its type
+// arguments.
 func keyOf(t *emit.TypeRef) string {
 	return t.Spelling + "[" + spelledArgs(t) + "]"
 }
@@ -279,20 +442,19 @@ func keyOf(t *emit.TypeRef) string {
 // of the type ref contain the type with the key target, at some depth. The
 // search enters the elements of each type, the exported fields and the
 // embedded types of a struct and the target of an alias at the type arguments
-// of the type, and the results of each other function type and interface
-// outside the standard library that it meets.
+// of the type, and the results of each other generated type that it meets.
 func (k *caller) recursive(ref *node.TypeRef, target string) bool {
-	s := search{k: k, target: target, met: map[string]bool{}, seen: map[symbol.Identity]bool{}}
+	s := search{k: k, target: target, met: map[string]bool{}, seen: map[string]bool{}}
 	return slices.ContainsFunc(k.resultsOf(ref), s.contains)
 }
 
-// search is a search for the function type or the interface with the key
-// target. met contains the key of each function type and interface that the
-// search entered, and seen each declaration that it entered.
+// search is a search for the generated type with the key target. met
+// contains the key of each generated type that the search entered, and seen
+// the key of each declaration that it entered.
 type search struct {
 	k      *caller
 	met    map[string]bool
-	seen   map[symbol.Identity]bool
+	seen   map[string]bool
 	target string
 }
 
@@ -300,8 +462,7 @@ type search struct {
 // search.
 func (s *search) contains(ref *node.TypeRef) bool {
 	k := s.k
-	under := k.underlying(ref)
-	if _, implemented := k.implemented(ref); under.Form == symbol.FormFunc || implemented {
+	if src, _ := k.sourceOf(ref); src == sourceGenerated {
 		key := keyOf(rules.EmitRef(ref))
 		if key == s.target {
 			return true
@@ -315,29 +476,28 @@ func (s *search) contains(ref *node.TypeRef) bool {
 	if slices.ContainsFunc(ref.Elems, s.contains) {
 		return true
 	}
-	//dokimi:mutate-skip lcr-left: a declaration of the standard library has no part that the workspace declares, so its parts never contain the type of the search
-	if s.seen[ref.Target] || golang.Standard(ref.Target.Package) {
+	key := k.typeKey(ref)
+	if s.seen[key] {
 		return false
 	}
-	s.seen[ref.Target] = true
-	decl, _ := k.m.Reader().Lookup(ref.Target)
-	return slices.ContainsFunc(partsOf(decl, ref), s.contains)
+	s.seen[key] = true
+	return slices.ContainsFunc(partsOf(k.declOf(ref), ref), func(p inner) bool { return s.contains(p.ref) })
 }
 
 // resultsOf returns the types of the results of the generated functions of a
 // value of the function type or the interface at the type ref.
 func (k *caller) resultsOf(ref *node.TypeRef) []*node.TypeRef {
-	iface, implemented := k.implemented(ref)
-	if !implemented {
-		under := k.underlying(ref)
-		return under.Elems[under.Split:]
+	iface, under, isInterface := k.interfaceOf(ref)
+	if !isInterface {
+		fn := k.underlying(ref)
+		return fn.Elems[fn.Split:]
 	}
 	b := k.b
 	var out []*node.TypeRef
 	for _, method := range methodsOf(&b, iface) {
 		view, _ := b.CallableOf(method)
 		for _, r := range view.Returns {
-			out = append(out, rules.Substitute(r.Ref, iface.TypeParams, ref.Args))
+			out = append(out, rules.Substitute(r.Ref, iface.TypeParams, under.Args))
 		}
 	}
 	return out
@@ -351,18 +511,25 @@ func (k *caller) resultsOf(ref *node.TypeRef) []*node.TypeRef {
 // builder applies to a struct of the
 // package of the declaration alone, because the template finds the builder by
 // the name of its constructor, which is unique in one package. A struct
-// without a field that the shape reader of the
-// property engine reads starts from its zero value, because code outside its
-// package builds no other value without a constructor. A generic struct takes
-// the shape of the property engine alone, and so does a struct that the file
-// of the suite cannot import. taken contains the names of the generators of
-// the suite, and startOf adds the name that it takes.
+// without a field that the shape reader of the property engine reads starts
+// from its zero value, because code outside its package builds no other value
+// without a constructor. A struct of the standard library and a generic
+// struct at the type arguments of ref start so too, and so does a struct that
+// ref refers to through an alias or a defined type. Such a struct with a
+// readable field takes the shape of the property engine alone, and so does a
+// struct that the file of the suite cannot import. taken contains the names
+// of the generators of the suite, and startOf adds the name that it takes.
 func (k *caller) startOf(st *node.Struct, ref *node.TypeRef, taken map[string]bool) (Start, bool) {
-	if len(st.TypeParams) > 0 || !k.importable(ref) {
+	if !k.importable(ref) {
 		return Start{}, false
 	}
 	s := Start{Type: rules.EmitRef(ref)}
-	if sample, _ := k.b.View().Authored(k.b.Source(), st.ID, ref); sample.OK() && k.referable(&sample.Value) {
+	if len(st.TypeParams) > 0 || ref.Target != st.ID {
+		if !k.unreadable(st) {
+			return Start{}, false
+		}
+		s.Value = emit.Composite(rules.EmitRef(ref))
+	} else if sample, _ := k.b.View().Authored(k.b.Source(), st.ID, ref); sample.OK() && k.referable(&sample.Value) {
 		s.Value = sample.Value
 	} else if seed, built := k.seedOf(st); built {
 		s.Seed = &emit.TypeRef{Spelling: seed, Target: st.ID, Emitted: true}
@@ -385,6 +552,26 @@ func (k *caller) startOf(st *node.Struct, ref *node.TypeRef, taken map[string]bo
 		}
 	}
 	return s, true
+}
+
+// starting returns the generator of the values of the type ref, whose source
+// is a starting value: the whole value of a defined type, the starting value
+// of a struct, or the zero value of an inline struct without a readable
+// field. taken contains the names of the generators of the suite, and
+// starting adds the name that it takes.
+func (k *caller) starting(ref *node.TypeRef, taken map[string]bool) Start {
+	if d, aliased := k.declOf(ref).(*node.Alias); aliased {
+		if s, started := k.wholeStartOf(d, ref, taken); started {
+			return s
+		}
+	}
+	if st, isStruct := k.declOf(k.underlying(ref)).(*node.Struct); isStruct {
+		s, _ := k.startOf(st, ref, taken)
+		return s
+	}
+	s := Start{Type: rules.EmitRef(ref), Value: emit.Composite(rules.EmitRef(ref))}
+	k.name(&s, structWord, taken)
+	return s
 }
 
 // seedOf returns the name of the constructor of the builder of the struct st

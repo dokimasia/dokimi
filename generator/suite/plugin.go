@@ -157,9 +157,16 @@ const (
 // whose members the property runs and the benchmarks of the suite draw, and
 // Starts are the generators of the structs with a starting value that the
 // calls take. Generated are the generators of the function types and of the
-// interfaces that the calls take at some depth. Dynamic reports that the
+// interfaces that the calls take at some depth. Variants are the generators
+// of the interfaces with an unexported method, Streams the generators of the
+// channels that a subject receives from, Readers the generators of the types
+// that read drawn bytes, and Constants the generators of the types that take
+// one fixed value. Sinks are the send channel types that the calls take,
+// which the runtime gives the sink of each test. Dynamic reports that the
 // calls take a value of the dynamic type, Go's any, at some depth, which the
 // property runs and the benchmarks draw from a string, an int and a bool.
+// Errors reports that the calls take an error outside the results of a
+// generated function, which they draw from nil and conform.ErrGenerated.
 // Inputs are the implementations of the interfaces that the callables and the
 // generators take.
 type Suite struct {
@@ -174,8 +181,14 @@ type Suite struct {
 	Using       []Enumeration
 	Starts      []Start
 	Generated   []Generated
+	Variants    []Variants
+	Streams     []Stream
+	Readers     []Reader
+	Constants   []Constant
+	Sinks       []*emit.TypeRef
 	Inputs      []Input
 	Dynamic     bool
+	Errors      bool
 }
 
 // Names are the names of the declarations of the suite of a declaration such

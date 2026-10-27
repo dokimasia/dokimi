@@ -30,8 +30,9 @@ import (
 // without results.
 //
 // The function returns the results of the lists in turn. After the last of
-// them it returns the zero results, with the end error of each error result,
-// so a caller that reads until an end stops.
+// them it returns the end value of each result, so a caller that reads until
+// an end stops: the end error of an error result, the end value of a channel
+// result, and the zero value of any other result.
 type Func struct {
 	Signature *emit.Method
 	Field     string
@@ -46,13 +47,22 @@ type Func struct {
 // and the errors of Errors: the declared errors of its method. The end error
 // of the result is the first of Errors, and conform.ErrGenerated for an error
 // result without declared errors.
+//
+// End is the name of the variable of the end value of a channel result, and
+// empty for any other result. The case of the function takes the end value
+// when it draws the lists. The end value of a receive channel and of a
+// channel of both directions is a closed channel without elements. Sink
+// reports a send channel, whose end value is the sink of the test, which the
+// case draws.
 type Result struct {
 	Type   *emit.TypeRef
 	Name   string
 	Label  string
 	Return string
+	End    string
 	Errors []emit.Value
 	Error  bool
+	Sink   bool
 }
 
 // Input is the implementation of an interface that the suite declares for
@@ -84,11 +94,12 @@ type InputMethod struct {
 
 // The words that the names of the parts of a generated function and of an
 // implementation of an interface join: the counter of the calls of the
-// function, the list of each of its results, the implementation, and the
-// field of the function of each method.
+// function, the list of each of its results, the end value of a channel
+// result, the implementation, and the field of the function of each method.
 const (
 	atWord      = "At"
 	resultsWord = "Results"
+	endWord     = "End"
 	inputWord   = "Input"
 	onWord      = "On"
 )
@@ -99,10 +110,12 @@ const sentinelParam = "sentinel"
 
 // funcOf returns the generated function of a value of the function type ref.
 // name and label are the name and the label of the value. taken contains the
-// names of the call generator, and funcOf adds the names of the lists and of
-// the counter of the function. The results of the function type are roots of
-// the overrides of the suite.
-func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]bool) Func {
+// names of the call generator, and funcOf adds the names of the lists, of
+// the end values and of the counter of the function. The results of the
+// function type are roots of the overrides of the suite, inside the value of
+// the root from. owner is the spelling of the function type in the path of
+// a result.
+func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]bool, from root, owner string) Func {
 	f := Func{Signature: &emit.Method{}}
 	for _, p := range ref.Elems[:ref.Split] {
 		param := &emit.Param{Type: rules.EmitRef(p)}
@@ -113,7 +126,7 @@ func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]
 	}
 	returns := ref.Elems[ref.Split:]
 	for i, r := range returns {
-		res := k.result(r, name, label, i, len(returns), nil, taken)
+		res := k.result(from.to(r, "a result of "+owner), name, label, i, len(returns), nil, taken)
 		f.Signature.Returns.Append(&emit.Return{Name: res.Return, Type: res.Type})
 		f.Results = append(f.Results, res)
 	}
@@ -126,29 +139,32 @@ func (k *caller) funcOf(ref *node.TypeRef, name, label string, taken map[string]
 const variadicSpelling = "..."
 
 // result returns the list of the result at the position i of n results of
-// the generated function name with the label label. A function of one result
-// names its list after itself, and a function of more results adds the
-// position to the name and to the label of each list. errs are the declared
-// errors of an error result. A result of another type is a root of the
-// overrides of the suite.
-func (k *caller) result(
-	ref *node.TypeRef, name, label string, i, n int, errs []emit.Value, taken map[string]bool,
-) Result {
+// the generated function name with the label label. at is the root of the
+// type of the result. A function of one result names its list after itself,
+// and a function of more results adds the position to the name and to the
+// label of each list. A channel result also names its end value. errs are
+// the declared errors of an error result. A result of another type is a root
+// of the overrides of the suite.
+func (k *caller) result(at root, name, label string, i, n int, errs []emit.Value, taken map[string]bool) Result {
 	r := Result{
-		Type: rules.EmitRef(ref), Label: label, Return: "r" + strconv.Itoa(i),
-		Error: k.b.TypeOf(ref).Ref == rules.WellKnownError,
+		Type: rules.EmitRef(at.ref), Label: label, Return: "r" + strconv.Itoa(i),
+		Error: k.b.TypeOf(at.ref).Ref == rules.WellKnownError,
 	}
-	base := name + resultsWord
+	position := ""
 	if n > 1 {
-		base += strconv.Itoa(i)
-		r.Label += "-" + strconv.Itoa(i)
+		position = strconv.Itoa(i)
+		r.Label += "-" + position
 	}
-	r.Name = naming.Unique(taken, base)
+	r.Name = naming.Unique(taken, name+resultsWord+position)
 	taken[r.Name] = true
+	if under := k.underlying(at.ref); under.Form == symbol.FormStream {
+		r.End, r.Sink = naming.Unique(taken, name+endWord+position), sends(under.Spelling)
+		taken[r.End] = true
+	}
 	if r.Error {
 		r.Errors = errs
 	} else {
-		k.roots = append(k.roots, ref)
+		k.roots = append(k.roots, at)
 	}
 	return r
 }
@@ -167,15 +183,18 @@ func (*caller) index(f *Func, name string, taken map[string]bool) string {
 
 // inputOf returns the name of the implementation of the interface iface at
 // the type ref, and the generated function of each method of the interface
-// for the value named name with the label label. The suite declares one
-// implementation of each interface at its type arguments. The function of a
-// method takes the declared errors of the method for its error result.
+// for the value named name with the label label. word is the word of the
+// name of the implementation. The suite declares one implementation of each
+// interface at its type arguments. The function of a method takes the
+// declared errors of the method for its error result. The results of the
+// methods are roots of the overrides of the suite, inside the value of the
+// root from.
 func (k *caller) inputOf(
-	ref *node.TypeRef, iface *node.Interface, name, label string, taken map[string]bool,
+	ref *node.TypeRef, iface *node.Interface, word, name, label string, taken map[string]bool, from root,
 ) (string, []Func) {
 	b := k.b
 	methods := methodsOf(&b, iface)
-	in := k.input(ref, iface, methods)
+	in := k.input(ref, iface, word, methods)
 	funcs := make([]Func, 0, len(methods))
 	for i, method := range methods {
 		view, _ := b.CallableOf(method)
@@ -190,8 +209,9 @@ func (k *caller) inputOf(
 		}
 		errs := k.errorsOf(&method.ID)
 		for j, r := range view.Returns {
-			res := k.result(rules.Substitute(r.Ref, iface.TypeParams, ref.Args), fn,
-				label+"-"+naming.Kebab(method.Name), j, len(view.Returns), errs, taken)
+			typ := rules.Substitute(r.Ref, iface.TypeParams, ref.Args)
+			at := from.to(typ, "a result of "+ref.Spelling+"."+method.Name)
+			res := k.result(at, fn, label+"-"+naming.Kebab(method.Name), j, len(view.Returns), errs, taken)
 			f.Signature.Returns.Append(&emit.Return{Name: res.Return, Type: res.Type})
 			f.Results = append(f.Results, res)
 		}
@@ -201,12 +221,25 @@ func (k *caller) inputOf(
 	return in.Name, funcs
 }
 
+// inputWordOf returns the word of the name of the implementation of the
+// interface it, which the type ref refers to: the name of the interface, the
+// name of the defined type of an interface without a name, or Interface.
+func inputWordOf(ref *node.TypeRef, it *node.Interface) string {
+	switch {
+	case it.Name != "":
+		return it.Name
+	case ref.Target.Name != "":
+		return ref.Target.Name
+	}
+	return interfaceWord
+}
+
 // input returns the implementation of the interface iface at the type ref,
 // whose methods are the methods of the interface. It declares the
 // implementation where the suite has none of the interface at the type
-// arguments of ref. The name of a second implementation of one interface ends
-// with a number.
-func (k *caller) input(ref *node.TypeRef, iface *node.Interface, methods []*node.Method) *Input {
+// arguments of ref. word is the word of its name. The name of a second
+// implementation of one interface ends with a number.
+func (k *caller) input(ref *node.TypeRef, iface *node.Interface, word string, methods []*node.Method) *Input {
 	typ := rules.EmitRef(ref)
 	for i := range k.inputs {
 		if k.inputs[i].Type.Spelling == typ.Spelling && spelledArgs(k.inputs[i].Type) == spelledArgs(typ) {
@@ -217,7 +250,7 @@ func (k *caller) input(ref *node.TypeRef, iface *node.Interface, methods []*node
 	for i := range k.inputs {
 		taken[k.inputs[i].Name] = true
 	}
-	in := Input{Type: typ, Name: naming.Unique(taken, k.e.JoinName(inputWord, k.e.JoinName(iface.Name, k.decl)))}
+	in := Input{Type: typ, Name: naming.Unique(taken, k.e.JoinName(inputWord, k.e.JoinName(word, k.decl)))}
 	in.Embedded = k.e.JoinName(embeddedWord, in.Name)
 	for _, method := range methods {
 		view, _ := k.b.CallableOf(method)

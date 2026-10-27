@@ -1,5 +1,29 @@
 # go.dokimi.dev/dokimi
 
+## 0.3.0
+
+### Minor Changes
+
+- 50ef79f: Add the params `reference`, `second`, `restart` and `crash` of the directive `check` to give a planted defect its doors.
+- 50ef79f: Add the error `DOKIMISUITE-0011` for a subject whose function of the options its tests cannot call.
+- 50ef79f: Add the param `options` of the directive `check` to state the options of the property run of a check.
+- 50ef79f: Add the param `options` of the directive `subject` to pass the options of an application to each test of a subject.
+- 76749dd: Add the Warning `DOKIMISUITE-0010` for a type in the inputs of a suite without a generator.
+- 76749dd: Draw nil or `conform.ErrGenerated` for an error, `context.Background()` for a context, nil for `unsafe.Pointer`, and a discarding logger or writer for `*log.Logger`, `*slog.Logger` and `*bufio.Writer`.
+- 76749dd: Draw one of the exported implementations of each interface with an unexported method in the inputs of a suite.
+- 76749dd: Return a closed channel or the sink of the test from a generated function after its drawn results.
+- 76749dd: Generate a closed stream for each channel that a subject receives from in the inputs of a suite, and the sink of the test for each send channel.
+- 76749dd: Generate an implementation of each interface of the standard library in the inputs of a suite, and a `*conform.Bytes` for each interface of `io` that it implements.
+- 9d599ed: **Breaking:** Keep the plural s of an acronym with the acronym in generated names, such as the field `IDs` of a stub for a parameter `ids` in place of `Ids`.
+- 76749dd: Return the address of each generated implementation of an interface, so its value is comparable.
+- 76749dd: Start each struct without a readable field from its zero value, also a struct of the standard library and a generic struct.
+
+### Patch Changes
+
+- 44fbf9a: Require go.dokimi.dev/assert v0.9.0.
+- 76749dd: Require eidos-core v0.10.0, eidos-sdk v0.7.1, eidos-lang v0.3.3, eidos-lang-go v0.6.0, eidos-lang-typescript v0.4.3, eidos-plugin-shape v0.0.10 and eidos-cli v0.3.2.
+- 9d599ed: Require eidos-lang v0.4.0, eidos-lang-go v0.6.1 and eidos-lang-typescript v0.4.4.
+
 ## 0.2.2
 
 ### Patch Changes

@@ -16,3 +16,5 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0005](0005-the-package-structure-of-dokimi.md) | The package structure of dokimi | Draft |
 | [0006](0006-generated-inputs-fuzz-targets-benchmarks-and-budgets.md) | Generated inputs, fuzz targets, benchmarks and budgets | Accepted |
 | [0007](0007-the-value-of-every-input-type.md) | The value of every type in the inputs of a suite | Accepted |
+| [0008](0008-the-doors-of-a-subject-and-of-a-planted-defect.md) | The doors of a subject and of a planted defect | Accepted |
+| [0009](0009-the-options-of-the-property-run-of-a-check.md) | The options of the property run of a check | Accepted |

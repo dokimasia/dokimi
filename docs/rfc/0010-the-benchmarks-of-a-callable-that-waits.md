@@ -2,7 +2,7 @@
 rfc: 0010
 title: The benchmarks of a callable that waits for another call
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-27
 updated: 2026-10-27
 discussion: https://github.com/dokimasia/dokimi/issues/33
@@ -64,7 +64,7 @@ Every implementation of such a callable waits, so the wait is a property of the 
 
 | Component | Change |
 |---|---|
-| The shape catalog of eidos | The documentary mixin `waits`, which dokimasia/eidos#94 requests |
+| The shape catalog of eidos | The documentary mixin `waits` of eidos-plugin-shape v0.1.0 |
 | `conform.Call[S]` | The field `Waits` |
 | `conform.Bench` and `conform.BenchParallel` | A problem for a call with `Waits` |
 | The problems of an application | A budget of a call with `Waits`, and a ceiling of `Ceilings` for such a call |
@@ -83,7 +83,7 @@ The mixin is documentary, as `deprecated` is. It documents the callable and lice
 Campaign(ctx context.Context, s shard.Scope) (Leadership, error)
 ```
 
-dokimasia/eidos#94 requests this spec:
+eidos-plugin-shape v0.1.0 states this spec:
 
 ```yaml
 name: waits
@@ -186,7 +186,7 @@ The TypeScript runtime and the template tree of its suites do not exist yet. The
 
 ### Migration
 
-The change adds a mixin, a field, the cases of existing problems and a case of an existing code. A declaration without the mixin generates the same files as before. eidos releases the mixin first and conform releases the field second. The suite generator follows both releases.
+The change adds a mixin, a field, the cases of existing problems and a case of an existing code. A declaration without the mixin generates the same files as before. eidos-plugin-shape v0.1.0 contains the mixin. A generated suite with the field `Waits` requires a release of conform with the field.
 
 ## Alternatives considered
 
@@ -230,7 +230,7 @@ The generator leaves the callable out, and conform has no field `Waits`.
 
 - **No measurement of the callable.** A callable with `waits` has no benchmark and no budget. No generated test measures its cost per call or its allocations on a real subject.
 - **A callable that waits in some states.** The dequeue of a queue waits only while the queue is empty, and it still loses its benchmark in every state.
-- **Releases of eidos and conform first.** The generator waits for a release of eidos with the mixin and a release of conform with the field.
+- **A release of conform first.** A generated suite with the field `Waits` compiles only against a release of conform with the field.
 - **One line for each callable.** Each waiting callable needs a directive line, and its call in the generated suite one field.
 
 ## Open questions

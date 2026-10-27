@@ -2,7 +2,7 @@
 rfc: 0011
 title: The environment of the runs of a check
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-27
 updated: 2026-10-27
 discussion: https://github.com/dokimasia/dokimi-go/issues/17
@@ -56,7 +56,7 @@ The planted defect of such a check can also leave goroutines blocked by design. 
 | The application of a check in conform | Runs the check inside `Around` |
 | The falsification and the isolation in conform | Run the check inside `Around` on the test of the falsification |
 | `conform.Fuzz` | Leaves out a check with `Around` |
-| assert-go | A property with `Around` under `Rejects` and on a `Recorder`, which dokimasia/assert-go#75 requests |
+| assert-go | A property with `Around` under `Rejects` and on a `Recorder` of `WithTest`, which assert v0.10.0 runs |
 | The directive `check` | The param `around` |
 | The code `BadCheck` | The signature of the function of `around` |
 | The template of the suites | The field `Around` of each check with the param |
@@ -87,16 +87,16 @@ The signature is the signature of `synctest.Test` and of the wrapper of `prop.Ar
 | Run | A check with `Apply` | A check with `Property` |
 |---|---|---|
 | An application: `Run`, `RunBudgets` and `Check.Run` | conform calls `Around` with the test of the check. It builds the handle on the test that `Around` hands `run` | conform passes `prop.Around` with `Around` after the options of the run |
-| Falsification: `Falsify`, `FalsifyAllocs`, `Check.Falsify` and the falsification of a check that `With` adds | conform calls `Around` with the test of the falsification. It calls `Rejects` on the test that `Around` hands `run` | conform passes `prop.Around` with `Around`, and the run under `Rejects` finds the test of the falsification |
+| Falsification: `Falsify`, `FalsifyAllocs`, `Check.Falsify` and the falsification of a check that `With` adds | conform calls `Around` with the test of the falsification. It calls `Rejects` on the test that `Around` hands `run`. A skip of that test skips the test of the falsification | conform passes `prop.Around` with `Around`, and the run under `Rejects` finds the test of the falsification |
 | The isolation of another planted defect | conform calls `Around` of the other check with the test of the falsification. It runs the check on a `Recorder` with the context of the test that `Around` hands `run` | conform passes `prop.Around` with `Around` of the other check, on a `Recorder` that takes the test of the falsification |
 | A fuzz target | Left out | Left out |
 
-The property runs under falsification and under the isolation need dokimasia/assert-go#75. That request makes a property with `Around` run inside the wrapper under the seat of `Rejects`, and on a `Recorder` that takes a test.
+The property runs under falsification and under the isolation need assert v0.10.0. It runs a property with `Around` inside the wrapper under the seat of `Rejects`, and on a `Recorder` that takes a test.
 
-The test that `Around` receives is the first `*testing.T` of the chain of the seat, as for `prop.Around`. `Check.Run` and `Check.Falsify` on a seat without one end with a fault that wraps `ErrConfig`:
+The test that `Around` receives is the first `*testing.T` of the chain of the seat: the seat and each seat that its method `Unwrap` returns, or the test of a `Recorder` of `WithTest`. `Check.Run` and `Check.Falsify` on a seat without one end with a fault that wraps `ErrConfig`:
 
 ```text
-conform: the check Valuer.Value/returns-one runs inside Around, and the seat is no *testing.T and wraps none
+conform: the application has an invalid setting: the check Valuer.Value/returns-one runs inside Around, and the seat is no *testing.T and wraps none
 ```
 
 `Options` runs before the run and outside `Around`, as before. A check that states `prop.Around` among its options and the field `Around` runs inside the field, because conform passes the field after the options.
@@ -158,7 +158,7 @@ The TypeScript runtime and its template tree do not exist yet. Their parts take 
 | The environment fails in an application | The test of the check fails with the message of the environment | Make the subject end its goroutines, or correct the check |
 | The environment fails on a planted defect before the check fails at its statement | The test of the falsification fails as a failure outside an assertion | Change the defect or the check, so that the statement fails first |
 | A function of `around` with another signature | `BadCheck` at the directive. The check is not bound | Correct the function |
-| `Around` returns without a call of `run`, or calls it twice | The fault of `prop.Around` for a property check. conform ends an `Apply` check with the same fault | Call `run` once |
+| `Around` returns without a call of `run`, or calls it twice | The fault of `prop.Around` for a property check. conform ends an `Apply` check with a fault of the same reason, such as `conform: Around of Valuer.Value/returns-one: the wrapper returned without calling run`. The isolation of another planted defect gives the check no verdict | Call `run` once |
 
 ### Verification
 
@@ -168,7 +168,7 @@ The TypeScript runtime and its template tree do not exist yet. Their parts take 
 
 ### Migration
 
-The change adds a field, a param and a case of an existing code, so no existing call breaks. A check without `Around` runs as before. conform implements the property runs under falsification and under the isolation once assert-go releases dokimasia/assert-go#75, and the suite generator follows the release of conform.
+The change adds a field, a param and a case of an existing code, so no existing call breaks. A check without `Around` runs as before. conform requires assert v0.10.0. The suite generator writes the field `Around` into a suite, so the suite requires a release of conform with the field.
 
 ## Alternatives considered
 
@@ -210,7 +210,6 @@ A fuzz target runs a check with `Around` inside it.
 
 ## Drawbacks
 
-- **A wait on assert-go.** The property runs under falsification and under the isolation need dokimasia/assert-go#75 before conform can implement them.
 - **No fuzz target.** A check with `Around` does not run under the fuzzer.
 - **Blocked goroutines for the rest of the process.** conform recovers the panic of a bubble with blocked goroutines. Those goroutines remain in the test process until the process ends.
 - **A bubble per case.** Each case of a property check with `Around` starts a bubble of its own. We have not measured what a bubble costs.

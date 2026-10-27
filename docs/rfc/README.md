@@ -18,5 +18,6 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0007](0007-the-value-of-every-input-type.md) | The value of every type in the inputs of a suite | Accepted |
 | [0008](0008-the-doors-of-a-subject-and-of-a-planted-defect.md) | The doors of a subject and of a planted defect | Accepted |
 | [0009](0009-the-options-of-the-property-run-of-a-check.md) | The options of the property run of a check | Accepted |
-| [0010](0010-the-benchmarks-of-a-callable-that-waits.md) | The benchmarks of a callable that waits for another call | Draft |
-| [0011](0011-the-environment-of-a-check.md) | The environment of the runs of a check | Draft |
+| [0010](0010-the-benchmarks-of-a-callable-that-waits.md) | The benchmarks of a callable that waits for another call | Accepted |
+| [0011](0011-the-environment-of-a-check.md) | The environment of the runs of a check | Accepted |
+| [0012](0012-the-sample-of-a-parameter.md) | The sample of a parameter in the generated calls | Accepted |

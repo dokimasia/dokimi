@@ -42,6 +42,8 @@ const (
 	deepPackage       = "example.com/shop/lib/internal/deep"
 	counterPackage    = "example.com/shop/counter"
 	sealedPackage     = "example.com/shop/sealed"
+	fieldedPackage    = "example.com/shop/fielded"
+	fieldedModule     = "fielded"
 	shopPackage       = "shop"
 	bagName           = "Bag"
 	pairsName         = "Pairs"
@@ -340,6 +342,40 @@ func TestStub(t *testing.T) {
 			expect.Equal(t, []bool{got.models["Tally"].Fallible, got.checks["Tally"].Fallible}, []bool{true, false},
 				"seal can fail, and no method of the checks can fail")
 		})
+
+		{
+			tests := []struct {
+				name       string
+				giveTarget plugin.Target
+				giveTree   string
+				givePkg    string
+				want       []string
+			}{
+				{
+					name:       "names the field of each Go method after the template of the param field",
+					giveTarget: golang.Target, giveTree: goTree, givePkg: fieldedPackage,
+					want: []string{"NodeStub", "OnNodeStub"},
+				},
+				{
+					name:       "names the member of each TypeScript method after the template of the param field",
+					giveTarget: typescript.Target, giveTree: tsTree, givePkg: fieldedModule,
+					want: []string{"nodeStub", "onNodeStub"},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+
+					got := generate(t, tt.giveTarget, tt.giveTree, tt.givePkg).models["Cell"]
+					fields := make([]string, 0, len(got.Methods))
+					for i := range got.Methods {
+						fields = append(fields, got.Methods[i].Field)
+					}
+					expect.Equal(t, fields, tt.want,
+						"the template gives Node and OnNode fields that differ from the method OnNode")
+				})
+			}
+		}
 
 		t.Run("records no field of a Go struct as a property of its double", func(t *testing.T) {
 			t.Parallel()
@@ -1574,6 +1610,20 @@ func TestStub(t *testing.T) {
 					wantName:   "Named",
 					wantMsg: "Named has the method seal that is not exported, which a double in the package " +
 						"example.com/shop/sealed cannot implement, so it has no double",
+				},
+				{
+					name: "reports BadField at a param field without the name of the method", giveTarget: golang.Target,
+					giveTree: goTree, givePkgs: []string{fieldedPackage}, wantCode: stub.BadField,
+					wantAt: symbol.KindStruct, wantName: "Fixed",
+					wantMsg: `the param field of Fixed is not the name template of a field: the name template "Stub" ` +
+						"does not use {{.Method}}, so it has no double",
+				},
+				{
+					name: "reports BadField at a param field with another action", giveTarget: golang.Target,
+					giveTree: goTree, givePkgs: []string{fieldedPackage}, wantCode: stub.BadField,
+					wantAt: symbol.KindStruct, wantName: "Named",
+					wantMsg: `the param field of Named is not the name template of a field: the name template ` +
+						`"On{{.Name}}" has an action other than {{.Method}}, so it has no double`,
 				},
 				{
 					name:       "reports Unimplementable at an interface that is not exported",

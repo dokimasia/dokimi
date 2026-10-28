@@ -39,6 +39,10 @@ func TestCodes(t *testing.T) {
 			Name: "Incomparable", Give: stub.Incomparable, WantCode: "DOKIMISTUB-0006",
 			WantMeaning: "a partition fault needs a parameter whose arguments compare with a key",
 		},
+		{
+			Name: "BadField", Give: stub.BadField, WantCode: "DOKIMISTUB-0007",
+			WantMeaning: "the param field of a double needs a name template that uses {{.Method}}",
+		},
 	}
 	for _, c := range codes {
 		t.Run(c.Name, func(t *testing.T) {

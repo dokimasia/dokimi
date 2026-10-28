@@ -17,8 +17,7 @@ import (
 	"go.dokimi.dev/eidos/sdk/symbol"
 )
 
-// The member that configures a method joins typescriptOn and the name of the
-// method. The one result of a method is in the field typescriptResult of its
+// The one result of a method is in the field typescriptResult of its
 // call, and the error that fails a call in the field typescriptFailure. The
 // template of the tests imports the doubles from the module that moduleHelper
 // returns: the name of its file without testSuffix, in its own directory.
@@ -29,7 +28,6 @@ import (
 // a function of an asynchronous method through awaitableHelper. Such a
 // function returns its result or a value of promiseLike.
 const (
-	typescriptOn      = "on"
 	typescriptResult  = "result"
 	typescriptFailure = "error"
 	moduleHelper      = "stubModule"
@@ -133,16 +131,19 @@ func (typescriptPart) receiver(m *emit.Method, _ []*emit.TypeParam, _ string) *e
 func (typescriptPart) constraint(sdk.Matcher, *symbol.Identity) bool { return false }
 
 // names returns the names of a TypeScript method of a double. The member that
-// configures the method is on followed by the name of the method in Pascal
-// case, such as onGet for get and onFindById for findById. A field of the call
+// configures the method is the name that field renders for the name of the
+// method in PascalCase, in camelCase, such as onGet for get and onFindById for
+// findById under the default of [FieldParam]. A field of the call
 // has the name of its parameter. A TypeScript method returns one value at
 // most, so the call records its result in the field result, and the setter
 // Returns takes it as result. The method declares no names of its result. A
 // TypeScript method fails by a throw, so the call records the error of a
 // fault or of a function in the field error.
-func (typescriptPart) names(method string, params []string, _ []rules.ReturnView, _ map[string]bool) Names {
+func (typescriptPart) names(field []string, method string, params []string, _ []rules.ReturnView,
+	_ map[string]bool,
+) Names {
 	return Names{
-		Field:   typescriptOn + typescriptCaser.Pascal(method),
+		Field:   fieldName(field, typescriptCaser.Pascal(method), typescriptCaser.Camel, typescriptCaser.Pascal),
 		Failure: typescriptFailure,
 		Args:    params,
 		Results: []string{typescriptResult},

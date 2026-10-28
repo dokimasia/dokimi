@@ -60,8 +60,9 @@
 // walk, [Unimplementable] at a declaration with a member that a double
 // cannot implement or that the file of its double cannot refer to,
 // [Collision] at a declaration whose double would have two members of one
-// name, and [Empty] at a declaration without a member. stub does not record a
-// declaration that it reports. stub also reports [Incomparable] at a
+// name, [Empty] at a declaration without a member, and [BadField] at a
+// declaration whose param field is not the name template of a field. stub
+// does not record a declaration that it reports. stub also reports [Incomparable] at a
 // declaration with a partition fault that cannot compare the arguments of
 // its parameter, and records the double without the helpers of the
 // partition.
@@ -69,9 +70,9 @@
 // # Dependency position
 //
 // The package imports the annotator fault, the generator builder and the
-// package internal/lang of the module, the root packages of the Go and the
-// TypeScript satellites in golang.go and typescript.go, the package naming of
-// eidos-lang, the shape catalog of eidos, the root, diag, directive, emit,
-// meta, node, plugin, rules and symbol packages of the SDK facade of eidos,
-// and the Go stdlib.
+// packages internal/lang and internal/nametemplate of the module, the root
+// packages of the Go and the TypeScript satellites in golang.go and
+// typescript.go, the package naming of eidos-lang, the shape catalog of
+// eidos, the root, diag, directive, emit, meta, node, plugin, rules and
+// symbol packages of the SDK facade of eidos, and the Go stdlib.
 package stub

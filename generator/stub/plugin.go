@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"go.dokimi.dev/eidos/lang/naming"
 	"go.dokimi.dev/eidos/plugin/shape"
@@ -23,6 +24,7 @@ import (
 	"go.dokimi.dev/dokimi/annotator/fault"
 	"go.dokimi.dev/dokimi/generator/builder"
 	"go.dokimi.dev/dokimi/internal/lang"
+	"go.dokimi.dev/dokimi/internal/nametemplate"
 )
 
 // ID is the name of the plugin.
@@ -38,6 +40,19 @@ const Capability plugin.Capability = "stub"
 
 // StubDirective puts an interface, a struct or a class under stub.
 const StubDirective directive.Name = "stub"
+
+// FieldParam is the param of [StubDirective] whose name template names the
+// field that configures each method of a double, as in field={{.Method}}Stub.
+// The only action of the template is {{.Method}}, the name of the method in
+// PascalCase, and the template uses it at least once. DefaultField is its
+// default, which gives the method Get the field OnGet.
+const (
+	FieldParam   directive.ParamKey = "field"
+	DefaultField string             = "On{{.Method}}"
+)
+
+// methodField is the one field that the template of [FieldParam] reads.
+const methodField = "Method"
 
 // Word is the word of the family of the doubles and of the family of their
 // tests, and the default of the option suffix. TestTag is the tag of the
@@ -401,9 +416,10 @@ type part interface {
 	// template writes the interface of the methods of the double.
 	delegate(value *emit.TypeRef, class bool) *emit.TypeRef
 	// names returns the names of the method of a double named method, with
-	// the parameters named params and the returns rs. taken are the names
-	// of the parameters and the receiver of the methods of the double.
-	names(method string, params []string, rs []rules.ReturnView, taken map[string]bool) Names
+	// the parameters named params and the returns rs. field contains the
+	// texts around the actions of the template of [FieldParam], and taken the
+	// names of the parameters and the receiver of the methods of the double.
+	names(field []string, method string, params []string, rs []rules.ReturnView, taken map[string]bool) Names
 	// declarations returns the declarations that the templates of the
 	// language write beside the struct of the double with the model m,
 	// where the checks of the double refer to them through the package of
@@ -450,6 +466,10 @@ var parts = []part{golangPart{}, typescriptPart{}}
 // schema is the directive of stub.
 var schema = directive.Schema{
 	Name: StubDirective,
+	Params: []directive.ParamSpec{{
+		Key: FieldParam, Type: directive.TypeString, Default: DefaultField,
+		Doc: "the name template of the field that configures each method of the double, such as {{.Method}}Stub",
+	}},
 	Doc: "generates a recording double of the declaration, which records each call, returns the results that the " +
 		"test configures and injects faults, and the test of the double",
 }
@@ -491,7 +511,8 @@ type members struct {
 
 // invocation is the state of one double. It contains the match of the
 // subject, the part of the language of the subject, the emitter, the subject,
-// the rules of the language and the suffix of the names of the doubles.
+// the rules of the language and the suffix of the names of the doubles. field
+// contains the texts around the actions of the template of [FieldParam].
 type invocation struct {
 	m      sdk.SubjectMatch
 	p      part
@@ -499,6 +520,7 @@ type invocation struct {
 	sub    *subject
 	b      rules.Bound
 	suffix string
+	field  []string
 }
 
 // New returns stub. stub records a [Model] into the family [Word] for each
@@ -537,9 +559,10 @@ type invocation struct {
 // parameters, [IncompleteMembers] at a declaration with a gap in its member
 // walk, [Unimplementable] at a declaration with a member that a double cannot
 // implement or that the file of its double cannot refer to, [Collision] at a
-// declaration whose double would have two members of one name, and [Empty] at
-// a declaration without a member. stub records nothing for a declaration that
-// it reports. stub also reports [Incomparable] at a declaration with a
+// declaration whose double would have two members of one name, [Empty] at a
+// declaration without a member, and [BadField] at a declaration whose param
+// [FieldParam] is not the name template of a field. stub records nothing for
+// a declaration that it reports. stub also reports [Incomparable] at a declaration with a
 // partition fault that cannot compare the arguments of its parameter, and
 // records the double without the partition helpers. Each call returns a new
 // plugin.
@@ -605,6 +628,17 @@ func (in *invocation) write() members {
 		in.m.Errorf(Unimplementable, "%s is not exported, so the file of its double cannot refer to it", sub.name)
 		return members{}
 	}
+	template := in.m.Directive().Params[FieldParam].Str
+	field, err := nametemplate.Segments(template, methodField)
+	if len(field) == 1 {
+		err = fmt.Errorf("the name template %q does not use {{.%s}}", template, methodField)
+	}
+	if err != nil {
+		in.m.Errorf(BadField, "the param field of %s is not the name template of a field: %v, so it has no double",
+			sub.name, err)
+		return members{}
+	}
+	in.field = field
 	walked, complete := in.walk()
 	if !complete {
 		return members{}
@@ -900,7 +934,7 @@ func (in *invocation) methodOf(method *node.Method, mirrored *emit.Method, from 
 	}
 	c.Receiver = naming.Unique(taken, receiverName)
 	taken[c.Receiver] = true
-	named := in.p.names(method.Name, names, view.Returns, taken)
+	named := in.p.names(in.field, method.Name, names, view.Returns, taken)
 	c.Field, c.Failure, c.Named = named.Field, named.Failure, named.Named
 	for i, p := range params {
 		variadic := p.Variadic != symbol.VariadicNone
@@ -1146,6 +1180,28 @@ func samples(test *emit.Struct, origin *symbol.Identity, prefix string, names []
 		Body: emit.Body{Stmts: body},
 	})
 	return test.Methods.Len() - 1
+}
+
+// fieldName returns the name that the texts field of the template of
+// [FieldParam] render for the method, the name of a method in PascalCase. It
+// joins the texts by the method. It writes each piece through first until the
+// name has a character, and each later piece through rest.
+func fieldName(field []string, method string, first, rest func(string) string) string {
+	var b strings.Builder
+	write := func(piece string) {
+		if b.Len() == 0 {
+			b.WriteString(first(piece))
+			return
+		}
+		b.WriteString(rest(piece))
+	}
+	for i, text := range field {
+		if i > 0 {
+			write(method)
+		}
+		write(text)
+	}
+	return b.String()
 }
 
 // locals returns the n locals that join local and a position, such as a0 and

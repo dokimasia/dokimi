@@ -18,12 +18,10 @@ import (
 	"go.dokimi.dev/eidos/sdk/symbol"
 )
 
-// The member that configures a method joins golangOn and the name of the
-// method. A result without a name is golangErr for the error and
-// golangResult for the one other result. Where a method has two or more other
-// results, each is golangResult with its position among them.
+// A result without a name is golangErr for the error and golangResult for the
+// one other result. Where a method has two or more other results, each is
+// golangResult with its position among them.
 const (
-	golangOn     = "On"
 	golangErr    = "Err"
 	golangResult = "Result"
 )
@@ -102,8 +100,9 @@ func (golangPart) constraint(m sdk.Matcher, id *symbol.Identity) bool {
 }
 
 // names returns the names of a Go method of a double. The member that
-// configures the method is On followed by the exported name of the method,
-// such as OnGet for Get. A field of the call has the exported name of its
+// configures the method is the name that field renders for the exported name
+// of the method, in PascalCase, such as OnGet for Get under the default of
+// [FieldParam]. A field of the call has the exported name of its
 // parameter, such as ID for id, so a test in another package reads the field.
 // The fields of the results follow [golangResults], and a method returns its
 // results as a value of a type of its own. A parameter of the setter Returns
@@ -111,8 +110,13 @@ func (golangPart) constraint(m sdk.Matcher, id *symbol.Identity) bool {
 // of the double declare the names of the results where [golangNamed] reports
 // it. The error of a Go method is a result, so a call has no field of a
 // failure.
-func (golangPart) names(method string, params []string, rs []rules.ReturnView, taken map[string]bool) Names {
-	n := Names{Field: golangOn + naming.Pascal(method), Grouped: true, Named: golangNamed(rs, taken)}
+func (golangPart) names(field []string, method string, params []string, rs []rules.ReturnView,
+	taken map[string]bool,
+) Names {
+	n := Names{
+		Field:   fieldName(field, naming.Pascal(method), naming.Pascal, naming.Pascal),
+		Grouped: true, Named: golangNamed(rs, taken),
+	}
 	for _, p := range params {
 		n.Args = append(n.Args, naming.Pascal(p))
 	}

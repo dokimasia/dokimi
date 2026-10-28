@@ -30,11 +30,12 @@ var IncompleteMembers = diag.MustRegister(CodePrefix, diag.CodeSpec{
 // Unimplementable reports a declaration with a member that a double cannot
 // implement: a method with type parameters, an index signature, a construct
 // signature, an accessor, a member with a computed name such as
-// [Symbol.iterator], a member of a class that is not public, or a member
-// without a declared type. It also reports a declaration that the file of its
-// double cannot refer to, such as a TypeScript interface that is not
-// exported. The finding is an Error at the declaration, and stub does not
-// write a double of it.
+// [Symbol.iterator], a member of a class that is not public, an unexported Go
+// method of another package than the double, or a member without a declared
+// type. It also reports a declaration that the file of its double cannot
+// refer to, such as a TypeScript interface that is not exported, and a method
+// whose signature refers to a type that the file cannot import. The finding
+// is an Error at the declaration, and stub does not write a double of it.
 var Unimplementable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  3,
 	Meaning: "a double cannot implement a member of its declaration, or cannot refer to the declaration",
@@ -66,4 +67,14 @@ var Empty = diag.MustRegister(CodePrefix, diag.CodeSpec{
 var Incomparable = diag.MustRegister(CodePrefix, diag.CodeSpec{
 	Number:  6,
 	Meaning: "a partition fault needs a parameter whose arguments compare with a key",
+})
+
+// BadField reports a declaration whose param field of the directive stub is
+// not the name template of a field: a template that does not parse, that has
+// an action other than {{.Method}} or that does not use {{.Method}}. The
+// finding is an Error at the declaration, and stub does not write a double of
+// it.
+var BadField = diag.MustRegister(CodePrefix, diag.CodeSpec{
+	Number:  7,
+	Meaning: "the param field of a double needs a name template that uses {{.Method}}",
 })

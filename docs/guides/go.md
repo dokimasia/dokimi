@@ -41,6 +41,7 @@ Each of these directives changes what a generator writes, and none of them gener
 | Give a type the value that the generated specs use | `//dokimi:sample value=DefaultNote()` |
 | Pass one value of a parameter in each generated call of its callable, such as the part of a domain that its contract admits | `//dokimi:sample value=0x01` on the line before the parameter |
 | Give a double helpers that fail a call with an error value of the package | `//dokimi:fault errors=[ErrNotFound]` on the method |
+| Name the field that configures each method of a double, such as for a subject with the methods `Node` and `OnNode` | `//dokimi:stub field={{.Method}}Stub`, which gives `Node` the field `NodeStub` in place of `OnNode` |
 | State a property that a suite checks | `//dokimi:mixin not-found sentinel=ErrNotFound`, `//dokimi:mixin concurrent` and the other mixins of the shape catalog, on the method |
 | Leave a callable that waits for another call out of each benchmark and budget, such as a lock whose `Acquire` waits for `Release` | `//dokimi:mixin waits` on the method or the function |
 | Add a check of your own to a suite | `//dokimi:check Store.Get defect=forgetful` on a function in the package of the generated suite, whose doc comment opens with "<Name> checks that" |

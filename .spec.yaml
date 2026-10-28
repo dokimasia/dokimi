@@ -1,0 +1,13 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The conformance spec, which each runtime vendors from a release of dokimi with spec. spec manifest
+# writes spec/manifest.json.
+definition:
+  repo: dokimasia/dokimi
+  root: spec
+  manifest: manifest.json
+  languages: [go, typescript]
+  files: [VERSION, "*.json", "schemas/*.json"]
+  implementations:
+    - {repo: dokimasia/dokimi-go, languages: [go]}

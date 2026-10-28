@@ -1,0 +1,587 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The probes: the procedures of the checks. Each runtime implements every probe, and the probe
+# asserts through the assert library of its language.
+probes:
+  survives:
+    summary: A call returns without a panic.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [panicked]
+    vacuous: Never, because every call either returns or panics.
+    since: 1.0.0
+  under-cancelled:
+    summary: A call with a cancelled context returns an error.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [ignored-cancel]
+    vacuous: Never, because the probe cancels the context itself.
+    since: 1.0.0
+  zero-beside-error:
+    summary: A call that fails returns the zero value of its result.
+    inputs:
+      - {name: call, kind: call}
+      - {name: zero, kind: value}
+    reasons: [value-beside-error]
+    vacuous: No call fails, with the sample inputs or with a cancelled context.
+    since: 1.0.0
+  zero-pair-beside-error:
+    summary: A call that fails returns the zero value of each of its two results.
+    inputs:
+      - {name: call, kind: call}
+      - {name: zero, kind: value}
+    reasons: [value-beside-error]
+    vacuous: No call fails, with the sample inputs or with a cancelled context.
+    since: 1.0.0
+  zero-beside-false:
+    summary: A call that returns a false presence flag returns the zero value of its result.
+    inputs:
+      - {name: call, kind: call}
+      - {name: zero, kind: value}
+    reasons: [value-beside-false]
+    vacuous: The call returns a true presence flag for an input that nothing stored.
+    since: 1.0.0
+  zero-pair-beside-false:
+    summary: A call that returns a false presence flag returns the zero value of each of its two results.
+    inputs:
+      - {name: call, kind: call}
+      - {name: zero, kind: value}
+    reasons: [value-beside-false]
+    vacuous: The call returns a true presence flag for an input that nothing stored.
+    since: 1.0.0
+  nil-beside-a-miss:
+    summary: A read of an input that nothing stored returns nil.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [non-nil-miss]
+    vacuous: Never, because the subject is fresh and nothing stored the input.
+    since: 1.0.0
+  zero-beside-a-miss:
+    summary: A read of an input that nothing stored returns the zero value.
+    inputs:
+      - {name: call, kind: call}
+      - {name: zero, kind: value}
+    reasons: [non-zero-miss]
+    vacuous: Never, because the subject is fresh and nothing stored the input.
+    since: 1.0.0
+  repeat-agrees:
+    summary: Two calls with the same inputs return the same value.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [unstable-repeat]
+    vacuous: The first call fails.
+    since: 1.0.0
+  survives-repeat:
+    summary: A second call returns without a panic after a first call.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [panicked-repeat]
+    vacuous: The first call panics, which is the failure of the check of a single call.
+    since: 1.0.0
+  reports-sentinel:
+    summary: A read of an input that nothing stored fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [wrong-sentinel]
+    vacuous: Never, because the subject is fresh and nothing stored the input.
+    since: 1.0.0
+  repeat-is-quiet:
+    summary: A second identical call succeeds after a first call that succeeded.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [refused-repeat]
+    vacuous: The first call fails.
+    since: 1.0.0
+  write-then-read:
+    summary: A read after a write returns the value of the write.
+    inputs:
+      - {name: read, kind: call}
+      - {name: write, kind: call}
+    reasons: [unobserved-write]
+    vacuous: The write fails.
+    since: 1.0.0
+  pinned-across-write:
+    summary: Two reads of one snapshot return the same value across a write between them.
+    inputs:
+      - {name: read, kind: call}
+      - {name: write, kind: call}
+    reasons: [unpinned-read]
+    vacuous: The first read or the write fails.
+    since: 1.0.0
+  no-element-twice:
+    summary: One drain after two writes returns each element at most once.
+    inputs:
+      - {name: drain, kind: call}
+      - {name: write, kind: call}
+    reasons: [repeated-element]
+    vacuous: The drain returns fewer than two elements.
+    since: 1.0.0
+  drains-in-one-order:
+    summary: Two drains after two writes return the elements in the same order.
+    inputs:
+      - {name: drain, kind: call}
+      - {name: write, kind: call}
+    reasons: [reordered-drain]
+    vacuous: The first drain returns fewer than two elements.
+    since: 1.0.0
+  gains-what-went-in:
+    summary: A drain gains exactly the elements that two writes wrote since the drain before it.
+    inputs:
+      - {name: drain, kind: call}
+      - {name: write, kind: call}
+    reasons: [miscounted-drain]
+    vacuous: A write fails.
+    since: 1.0.0
+  keeps-what-went-in:
+    summary: A drain gains at least the elements that two writes wrote since the drain before it.
+    inputs:
+      - {name: drain, kind: call}
+      - {name: write, kind: call}
+    reasons: [shrunk-drain]
+    vacuous: A write fails.
+    since: 1.0.0
+  never-decreases:
+    summary: The second result of a call is at least the first.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [regressed]
+    vacuous: The first call fails.
+    since: 1.0.0
+  reads-never-regress:
+    summary: A second read after a write returns a version that is at least the version of the first read.
+    inputs:
+      - {name: read, kind: call}
+      - {name: write, kind: call}
+      - {name: version, kind: projection}
+    reasons: [regressed]
+    vacuous: The write or the first read fails.
+    since: 1.0.0
+  writes-advance:
+    summary: A write after a read has a version above the version that the read returned.
+    inputs:
+      - {name: read, kind: call}
+      - {name: write, kind: call}
+      - {name: version, kind: projection}
+    reasons: [unordered-write]
+    vacuous: The first write or the read fails.
+    since: 1.0.0
+  escapes-the-unsafe:
+    summary: A call with the declared unsafe value returns an output that does not contain it.
+    inputs:
+      - {name: call, kind: call}
+      - {name: unsafe, kind: value}
+    reasons: [unescaped-output]
+    vacuous: The call fails.
+    since: 1.0.0
+  accepts-the-edge:
+    summary: A call with the declared input at the edge of the domain succeeds.
+    inputs:
+      - {name: call, kind: call}
+      - {name: edge, kind: value}
+    reasons: [refused-the-edge]
+    vacuous: Never, because the input is the declared edge.
+    since: 1.0.0
+  refuses-the-invalid:
+    summary: A call with the value that the declared validator refuses fails.
+    inputs:
+      - {name: call, kind: call}
+      - {name: validate, kind: call}
+      - {name: invalid, kind: value}
+    reasons: [unscreened-write]
+    vacuous: The validator accepts the declared invalid value.
+    since: 1.0.0
+  reports-sealed:
+    summary: A call after the close fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: call}
+      - {name: close, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [alive-after-close]
+    vacuous: The close fails.
+    since: 1.0.0
+  refuses-early:
+    summary: A call on a fresh subject, before its declared predecessor, fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [accepted-early]
+    vacuous: Never, because the subject is fresh and the predecessor has not run.
+    since: 1.0.0
+  works-after:
+    summary: A call after its declared predecessor succeeds.
+    inputs:
+      - {name: call, kind: call}
+      - {name: ready, kind: call}
+    reasons: [never-ready]
+    vacuous: The predecessor fails.
+    since: 1.0.0
+  settles-then-observes:
+    summary: The named observation changes after a call and the settle that follows it.
+    inputs:
+      - {name: call, kind: call}
+      - {name: settle, kind: call}
+      - {name: observe, kind: call}
+    reasons: [unsettled-effect]
+    vacuous: The call or the settle fails.
+    since: 1.0.0
+  returns-within:
+    summary: A call returns before the clock of the run passes its declared budget.
+    inputs:
+      - {name: call, kind: call}
+      - {name: budget, kind: duration}
+      - {name: clock, kind: clock}
+    reasons: [overran-budget]
+    vacuous: Never, because the probe advances the clock past the budget.
+    since: 1.0.0
+  counts-within-window:
+    summary: A count includes an occurrence inside the declared window and not after it.
+    inputs:
+      - {name: call, kind: call}
+      - {name: count, kind: call}
+      - {name: window, kind: duration}
+      - {name: clock, kind: clock}
+    reasons: [misread-window]
+    vacuous: The call fails.
+    since: 1.0.0
+  runs-on-schedule:
+    summary: A registered task has not run halfway to its instant and has run once the clock passes it.
+    inputs:
+      - {name: call, kind: call}
+      - {name: count, kind: call}
+      - {name: clock, kind: clock}
+    reasons: [off-schedule]
+    vacuous: The registration fails.
+    since: 1.0.0
+  moves-with-the-clock:
+    summary: A result changes once the clock moves in doubling steps far enough.
+    inputs:
+      - {name: call, kind: call}
+      - {name: put, kind: call}
+      - {name: clock, kind: clock}
+    reasons: [unmoved-by-the-clock]
+    vacuous: The establishing write or the first call fails.
+    since: 1.0.0
+  steady-while-the-clock-stops:
+    summary: Two calls return the same value while the clock does not move.
+    inputs:
+      - {name: call, kind: call}
+      - {name: put, kind: call}
+      - {name: clock, kind: clock}
+    reasons: [drifted-without-clock]
+    vacuous: The establishing write or the first call fails.
+    since: 1.0.0
+  expires-after:
+    summary: A read of a written entry fails with the declared sentinel once the clock passes its lifetime.
+    inputs:
+      - {name: read, kind: call}
+      - {name: write, kind: call}
+      - {name: lifetime, kind: duration}
+      - {name: sentinel, kind: error}
+      - {name: clock, kind: clock}
+    reasons: [not-expired]
+    vacuous: The write fails, or the read fails before the clock moves.
+    since: 1.0.0
+  removes-on-delete:
+    summary: A read of a written key fails with the declared sentinel after its delete.
+    inputs:
+      - {name: call, kind: call}
+      - {name: put, kind: call}
+      - {name: read, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [readable-after-delete]
+    vacuous: The write or the delete fails.
+    since: 1.0.0
+  moves-observation:
+    summary: The named observation changes after a call.
+    inputs:
+      - {name: call, kind: call}
+      - {name: observe, kind: call}
+    reasons: [unmoved-observation]
+    vacuous: The call fails.
+    since: 1.0.0
+  remains-poisoned:
+    summary: Each call after the induced failure fails.
+    inputs:
+      - {name: call, kind: call}
+      - {name: induce, kind: call}
+    reasons: [healthy-after-induce]
+    vacuous: Never, because the probe induces the failure itself.
+    since: 1.0.0
+  detects-tamper:
+    summary: The verify of a value fails after its tamper.
+    inputs:
+      - {name: call, kind: call}
+      - {name: verify, kind: call}
+      - {name: tamper, kind: call}
+    reasons: [silent-tamper]
+    vacuous: The call fails, or the verify fails before the tamper.
+    since: 1.0.0
+  converges-after:
+    summary: A call inside an open transaction succeeds within the declared attempts.
+    inputs:
+      - {name: call, kind: call}
+      - {name: begin, kind: call}
+      - {name: attempts, kind: count}
+    reasons: [never-converged]
+    vacuous: The begin fails.
+    since: 1.0.0
+  succeeds-within:
+    summary: A call succeeds within the declared attempts.
+    inputs:
+      - {name: call, kind: call}
+      - {name: attempts, kind: count}
+    reasons: [never-converged]
+    vacuous: Never, because the probe makes every attempt.
+    since: 1.0.0
+  runs-the-hook:
+    summary: A call runs the hook that the registrar installed before it.
+    inputs:
+      - {name: call, kind: call}
+      - {name: register, kind: hook}
+    reasons: [hook-not-run]
+    vacuous: The registrar or the call fails.
+    since: 1.0.0
+  each-call-compounds:
+    summary: Each of two calls changes the named observation.
+    inputs:
+      - {name: call, kind: call}
+      - {name: observe, kind: call}
+    reasons: [uncompounded]
+    vacuous: A call fails.
+    since: 1.0.0
+  keeps-partitions-apart:
+    summary: A read in one partition after writes in two partitions returns the value of its own partition.
+    inputs:
+      - {name: write, kind: call}
+      - {name: read, kind: call}
+    reasons: [crossed-partitions]
+    vacuous: A write fails.
+    since: 1.0.0
+  replays-in-stamp-order:
+    summary: The replay after two appends returns the entries in the order of their stamps.
+    inputs:
+      - {name: call, kind: call}
+      - {name: replay, kind: call}
+    reasons: [unordered-history]
+    vacuous: An append fails.
+    since: 1.0.0
+  replay-grows:
+    summary: The replay after an admitted append has one entry more than the replay before it.
+    inputs:
+      - {name: call, kind: call}
+      - {name: replay, kind: call}
+    reasons: [replay-not-grown]
+    vacuous: The append fails, or the replay fails before it.
+    since: 1.0.0
+  repeat-ascends:
+    summary: The second of two appends returns a position above the first.
+    inputs:
+      - {name: call, kind: call}
+    reasons: [not-ascending]
+    vacuous: The first append fails.
+    since: 1.0.0
+  round-trips:
+    summary: The inverse returns the value that went into the forward call.
+    inputs:
+      - {name: call, kind: call}
+      - {name: inverse, kind: call}
+    reasons: [broken-round-trip]
+    vacuous: The forward call fails.
+    since: 1.0.0
+  refuses-the-second-write:
+    summary: A second write meets the condition that the first write established and fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [unguarded-write]
+    vacuous: The first write fails.
+    since: 1.0.0
+  refuses-what-the-predicate-rejects:
+    summary: A write of a value that the predicate rejects fails.
+    inputs:
+      - {name: call, kind: call}
+      - {name: match, kind: call}
+    reasons: [unmatched-write]
+    vacuous: The predicate accepts both values.
+    since: 1.0.0
+  seals-after-close:
+    summary: A second settlement or a call after the close of a handle fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: call}
+      - {name: close, kind: call}
+      - {name: after, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [alive-after-close]
+    vacuous: The call opens no handle, or the close fails.
+    since: 1.0.0
+  refuses-past-the-burst:
+    summary: A call after the declared burst fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: call}
+      - {name: burst, kind: count}
+      - {name: sentinel, kind: error}
+    reasons: [past-the-burst]
+    vacuous: A call inside the burst fails.
+    since: 1.0.0
+  resigns-leadership:
+    summary: The leadership read reports no leadership after a campaign and its resign.
+    inputs:
+      - {name: call, kind: call}
+      - {name: resign, kind: call}
+      - {name: leading, kind: predicate}
+    reasons: [still-leading]
+    vacuous: The campaign or the resign fails.
+    since: 1.0.0
+  rolls-back-on-failure:
+    summary: A read after a scope whose body wrote and then failed fails with the declared sentinel.
+    inputs:
+      - {name: call, kind: scope}
+      - {name: write, kind: call}
+      - {name: read, kind: call}
+      - {name: sentinel, kind: error}
+    reasons: [not-rolled-back]
+    vacuous: The scope does not run its body, or the write inside it fails.
+    since: 1.0.0
+  agrees-with-the-backing:
+    summary: The cache returns the value that its backing returns, after an establishing write.
+    inputs:
+      - {name: call, kind: call}
+      - {name: backing, kind: call}
+      - {name: put, kind: call}
+    reasons: [cache-disagrees]
+    vacuous: The establishing write or the read of the backing fails.
+    since: 1.0.0
+  takes-back-what-it-lent:
+    summary: The put accepts the value that the get lent.
+    inputs:
+      - {name: call, kind: call}
+      - {name: put, kind: call}
+    reasons: [unreturned-loan]
+    vacuous: The get lends nothing.
+    since: 1.0.0
+  continues-from-the-cursor:
+    summary: A read with the cursor of the first page returns another page.
+    inputs:
+      - {name: call, kind: call}
+      - {name: cursor, kind: projection}
+    reasons: [repeated-page]
+    vacuous: The first page returns no cursor.
+    since: 1.0.0
+  compensates-the-step:
+    summary: The compensation accepts the step that the call applied.
+    inputs:
+      - {name: call, kind: call}
+      - {name: compensate, kind: call}
+    reasons: [uncompensated-step]
+    vacuous: The step fails.
+    since: 1.0.0
+  refused-leaves-nothing:
+    summary: The reader finds nothing after a write of the declared refused value fails.
+    inputs:
+      - {name: call, kind: call}
+      - {name: reader, kind: call}
+      - {name: refused, kind: value}
+      - {name: zero, kind: value}
+    reasons: [partial-write]
+    vacuous: The write of the refused value succeeds.
+    since: 1.0.0
+  second-write-replaces:
+    summary: A read after two writes for one key returns the value of the second write.
+    inputs:
+      - {name: call, kind: call}
+      - {name: read, kind: call}
+    reasons: [unreplaced-write]
+    vacuous: A write fails.
+    since: 1.0.0
+  lists-the-members:
+    summary: The list of the variants contains each variant once, in the order of the declaration.
+    inputs:
+      - {name: members, kind: values}
+    reasons: [misordered-members]
+    vacuous: Never, because the probe compares the whole list.
+    since: 1.0.0
+  names-differ:
+    summary: Each variant renders its declared text, and no two variants and no value outside them render one text.
+    inputs:
+      - {name: members, kind: values}
+      - {name: name, kind: call}
+    reasons: [shared-text]
+    vacuous: Never, because the probe renders every variant.
+    since: 1.0.0
+  judges-validity:
+    summary: Each variant is valid, and a value outside the variants is not.
+    inputs:
+      - {name: members, kind: values}
+    reasons: [misjudged-validity]
+    vacuous: Never, because the probe judges every variant.
+    since: 1.0.0
+  parses-each-text:
+    summary: The text of each variant parses to the variant, and the text of no variant fails with the error of the parse function.
+    inputs:
+      - {name: members, kind: values}
+      - {name: parse, kind: call}
+    reasons: [unparsed-text]
+    vacuous: Never, because the probe parses the text of every variant.
+    since: 1.0.0
+  encodes-each-variant:
+    summary: Each variant encodes its own text.
+    inputs:
+      - {name: members, kind: values}
+    reasons: [mismarshalled-text]
+    vacuous: Never, because the probe encodes every variant.
+    since: 1.0.0
+  decodes-each-text:
+    summary: The text of each variant decodes to the variant, and the text of no variant fails to decode.
+    inputs:
+      - {name: members, kind: values}
+    reasons: [unmarshalled-wrong]
+    vacuous: Never, because the probe decodes the text of every variant.
+    since: 1.0.0
+  messages-differ:
+    summary: Each error value has a message with the opening, and no message equals or opens with the whole message of another.
+    inputs:
+      - {name: values, kind: values}
+      - {name: opening, kind: value}
+    reasons: [wrong-message]
+    vacuous: Never, because the probe reads every error value.
+    since: 1.0.0
+  errors-differ:
+    summary: No error value matches another error value of the package or of a package under no-overlap-with.
+    inputs:
+      - {name: values, kind: values}
+      - {name: neighbours, kind: values}
+    reasons: [shared-identity]
+    vacuous: Never, because the probe compares every pair of error values.
+    since: 1.0.0
+  type-message:
+    summary: The message of a value of each error type opens with the opening and contains each member of text.
+    inputs:
+      - {name: types, kind: values}
+      - {name: opening, kind: value}
+    reasons: [wrong-message]
+    vacuous: Never, because the probe reads a value of every error type.
+    since: 1.0.0
+  compares-with-identity:
+    summary: The hook Is of an error type that compares itself agrees with the identity of the language on each error value.
+    inputs:
+      - {name: types, kind: values}
+      - {name: values, kind: values}
+    reasons: [disagreeing-is]
+    vacuous: Never, because the gate selects a type that compares itself.
+    since: 1.0.0
+  returns-the-cause:
+    summary: An error type with a cause returns the cause that the check gives it.
+    inputs:
+      - {name: causes, kind: values}
+    reasons: [lost-cause]
+    vacuous: Never, because the gate selects a type with a cause.
+    since: 1.0.0
+  types-differ:
+    summary: No value of an error type matches another error type of the package.
+    inputs:
+      - {name: types, kind: values}
+    reasons: [shared-identity]
+    vacuous: Never, because the probe compares every pair of error types.
+    since: 1.0.0

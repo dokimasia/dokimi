@@ -6,6 +6,7 @@ module go.dokimi.dev/dokimi
 go 1.27.3
 
 require (
+	github.com/google/jsonschema-go v0.4.3
 	go.dokimi.dev/assert v0.11.0
 	go.dokimi.dev/eidos/cli v0.3.4-0.20261028193000-482b0bb71472
 	go.dokimi.dev/eidos/core v0.11.1-0.20261028193000-482b0bb71472
@@ -14,6 +15,7 @@ require (
 	go.dokimi.dev/eidos/lang/typescript v0.4.6-0.20261028193000-482b0bb71472
 	go.dokimi.dev/eidos/plugin/shape v0.1.2-0.20261028193000-482b0bb71472
 	go.dokimi.dev/eidos/sdk v0.7.3-0.20261028193000-482b0bb71472
+	go.yaml.in/yaml/v3 v3.0.5
 )
 
 require (
@@ -27,7 +29,6 @@ require (
 	go.dokimi.dev/eidos/declarative v0.1.11-0.20261028193000-482b0bb71472 // indirect
 	go.stealthscale.io/cli v0.7.0 // indirect
 	go.stealthscale.io/cli/yaml v0.1.7 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect

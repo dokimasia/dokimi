@@ -1,0 +1,253 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The forms of the planted defects. The template tree of each language writes a form as a type that
+# wraps a fresh subject and overrides what changes names: callable for the callable of the check,
+# partner:<name> for a partner of its claim, or a part of an enumeration or of the errors of a
+# package.
+forms:
+  panics:
+    changes: callable
+    does: The callable panics or throws on every call.
+    min-steps: 1
+    since: 1.0.0
+  panics-on-repeat:
+    changes: callable
+    does: The callable returns on its first call and panics or throws on every later call.
+    min-steps: 2
+    since: 1.0.0
+  succeeds-always:
+    changes: callable
+    does: The callable returns the zero value of each value result and no error on every call, and does nothing else.
+    min-steps: 1
+    since: 1.0.0
+  fails-always:
+    changes: callable
+    does: The callable fails on every call with an error that no directive declares.
+    min-steps: 1
+    since: 1.0.0
+  reports-another-error:
+    changes: callable
+    does: The callable fails with an error that no directive declares.
+    min-steps: 1
+    since: 1.0.0
+  refuses-repeat:
+    changes: callable
+    does: The callable succeeds on its first call and fails on every later call.
+    min-steps: 2
+    since: 1.0.0
+  value-beside:
+    changes: callable
+    does: A failed call returns the second sample of the value instead of the zero value.
+    min-steps: 1
+    since: 1.0.0
+  values-beside:
+    changes: callable
+    does: A failed call returns the second sample of each value instead of the zero values.
+    min-steps: 1
+    since: 1.0.0
+  value-beside-a-false-flag:
+    changes: callable
+    does: A call that returns a false presence flag returns the second sample of the value.
+    min-steps: 1
+    since: 1.0.0
+  values-beside-a-false-flag:
+    changes: callable
+    does: A call that returns a false presence flag returns the second sample of each value.
+    min-steps: 1
+    since: 1.0.0
+  invents-a-pointer:
+    changes: callable
+    does: The callable returns a pointer to the second sample where nothing was stored.
+    min-steps: 1
+    since: 1.0.0
+  invents-a-value:
+    changes: callable
+    does: The callable returns the second sample where nothing was stored.
+    min-steps: 1
+    since: 1.0.0
+  drifts:
+    changes: callable
+    does: The callable returns the zero value on its first call and the second sample on every later call.
+    min-steps: 2
+    since: 1.0.0
+  descends:
+    changes: callable
+    does: The callable returns the second sample on its first call and the zero value on every later call.
+    min-steps: 2
+    since: 1.0.0
+  version-descends:
+    changes: callable
+    does: The callable returns a value whose version is 1 on its first call and 0 on every later call.
+    min-steps: 3
+    since: 1.0.0
+  answers-a-sample:
+    changes: callable
+    does: The callable returns the second sample and no error, whatever the state of the subject.
+    min-steps: 1
+    since: 1.0.0
+  forgets-writes:
+    changes: partner:write
+    does: The partner returns success and stores nothing.
+    min-steps: 2
+    since: 1.0.0
+  stores-nothing:
+    changes: callable
+    does: The callable returns success and stores nothing.
+    min-steps: 2
+    since: 1.0.0
+  drains-twice:
+    changes: callable
+    does: The drain returns its first element twice.
+    min-steps: 2
+    since: 1.0.0
+  reorders-drain:
+    changes: callable
+    does: The drain returns its elements in one order on its first call and in the reverse order on every later call.
+    min-steps: 3
+    since: 1.0.0
+  drains-nothing:
+    changes: callable
+    does: The drain returns no element.
+    min-steps: 2
+    since: 1.0.0
+  echoes:
+    changes: callable
+    does: The callable returns its input unchanged.
+    min-steps: 1
+    since: 1.0.0
+  accepts-the-invalid:
+    changes: callable
+    does: The validator refuses the declared invalid value, and the callable accepts it.
+    min-steps: 2
+    since: 1.0.0
+  observation-unmoved:
+    changes: partner:observe
+    does: The observation returns the zero value on every call.
+    min-steps: 2
+    since: 1.0.0
+  verify-silent:
+    changes: partner:verify
+    does: The verify returns no error on every call.
+    min-steps: 3
+    since: 1.0.0
+  count-drifts:
+    changes: partner:count
+    does: The count returns the zero value on its first call and the second sample on every later call.
+    min-steps: 3
+    since: 1.0.0
+  slow:
+    changes: callable
+    does: The callable waits on the clock of the run for longer than its declared budget before it returns.
+    min-steps: 1
+    since: 1.0.0
+  read-survives-delete:
+    changes: partner:read
+    does: The read returns the second sample and no error, also after a delete.
+    min-steps: 3
+    since: 1.0.0
+  swallows-hooks:
+    changes: partner:register
+    does: The registrar accepts a hook and never installs it.
+    min-steps: 2
+    since: 1.0.0
+  replays-reversed:
+    changes: partner:replay
+    does: The replay returns the entries newest first.
+    min-steps: 3
+    since: 1.0.0
+  opens-a-live-handle:
+    changes: callable
+    does: The callable returns a handle whose calls succeed also after its close.
+    min-steps: 3
+    since: 1.0.0
+  leads-on:
+    changes: partner:is-leader
+    does: The leadership read reports leadership on every call.
+    min-steps: 3
+    since: 1.0.0
+  keeps-failed-writes:
+    changes: partner:read
+    does: The read finds what a failed scope wrote.
+    min-steps: 2
+    since: 1.0.0
+  put-refuses:
+    changes: partner:put
+    does: The put fails on every call.
+    min-steps: 2
+    since: 1.0.0
+  compensation-refuses:
+    changes: partner:compensate
+    does: The compensation fails on every call.
+    min-steps: 2
+    since: 1.0.0
+  files-refused-write:
+    changes: partner:reader
+    does: The reader returns the refused value and no error.
+    min-steps: 2
+    since: 1.0.0
+  serves-one-page:
+    changes: callable
+    does: The read ignores its cursor and returns the first page to every caller.
+    min-steps: 2
+    since: 1.0.0
+  drops-a-variant:
+    changes: values
+    does: The list of the variants lacks the last variant.
+    min-steps: 1
+    since: 1.0.0
+  shares-a-text:
+    changes: name
+    does: The second variant renders the text of the first variant.
+    min-steps: 1
+    since: 1.0.0
+  rejects-a-variant:
+    changes: valid
+    does: The last variant is not valid.
+    min-steps: 1
+    since: 1.0.0
+  parses-to-the-first:
+    changes: parse
+    does: Every text parses to the first variant without an error.
+    min-steps: 1
+    since: 1.0.0
+  encodes-the-first-text:
+    changes: encode
+    does: Every variant encodes the text of the first variant.
+    min-steps: 1
+    since: 1.0.0
+  decodes-to-the-first:
+    changes: decode
+    does: Every text decodes to the first variant without an error.
+    min-steps: 1
+    since: 1.0.0
+  repeats-a-message:
+    changes: error-values
+    does: The second error value has the message of the first error value.
+    min-steps: 1
+    since: 1.0.0
+  repeated-error:
+    changes: error-values
+    does: The second error value is the first error value.
+    min-steps: 1
+    since: 1.0.0
+  drops-the-opening:
+    changes: error-types
+    does: The message of the error type lacks the opening of the package.
+    min-steps: 1
+    since: 1.0.0
+  matches-everything:
+    changes: error-types
+    does: The hook Is of the error type matches every error.
+    min-steps: 1
+    since: 1.0.0
+  loses-the-cause:
+    changes: error-types
+    does: The error type returns no cause.
+    min-steps: 1
+    since: 1.0.0
+  matches-other-types:
+    changes: error-types
+    does: The error type matches a value of another error type of the package.
+    min-steps: 1
+    since: 1.0.0

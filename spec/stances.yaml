@@ -1,0 +1,165 @@
+# Copyright Dokimasia B.V. 2026
+# SPDX-License-Identifier: Apache-2.0
+
+# The stances, and the stance of each classification of the shape catalog that licenses no claim
+# and that no claim binds as a partner.
+stances:
+  silent:
+    meaning: The classification implies nothing that a check could falsify, such as a call that returns nothing.
+    closes: Nothing.
+    since: 1.0.0
+  needs:
+    meaning: The claim needs a machinery that the run does not supply.
+    closes: The param machineries on the declaration, or a runtime that supplies the machinery.
+    since: 1.0.0
+  declines:
+    meaning: dokimi could build the check and rules it out because of its cost.
+    closes: A cheaper check.
+    since: 1.0.0
+  blocked:
+    meaning: The check would read a part of the declaration that no generator can read.
+    closes: A change of the vocabulary of the shape catalog.
+    since: 1.0.0
+  gap:
+    meaning: The classification implies something that no claim witnesses.
+    closes: A new claim in the spec.
+    since: 1.0.0
+unclaimed:
+  shape:writer:
+    stance: silent
+    note: A write is an input of the other checks, and its result is an error alone.
+  shape:composite-writer:
+    stance: silent
+    note: A write is an input of the other checks, and its result is an error alone.
+  shape:multi-arg-writer:
+    stance: silent
+    note: A write is an input of the other checks, and its result is an error alone.
+  shape:mutator:
+    stance: silent
+    note: A mutation is an input of the other checks, and its result is an error alone.
+  shape:deleter:
+    stance: silent
+    note: A delete is an input of the other checks, and its result is an error alone.
+  shape:closer:
+    stance: silent
+    note: A close returns nothing that a check could compare.
+  shape:lifecycle:
+    stance: silent
+    note: A lifecycle call returns nothing that a check could compare.
+  mixin:deprecated:
+    stance: silent
+    note: The mixin documents the callable.
+  mixin:errors:
+    stance: silent
+    note: The mixin documents the errors of the callable.
+  mixin:scope:
+    stance: silent
+    note: The mixin documents the scope of the callable.
+  mixin:integration-only:
+    stance: silent
+    note: The mixin documents that the callable needs a real dependency.
+  mixin:sample:
+    stance: silent
+    note: The mixin documents the sample of a value.
+  mixin:waits:
+    stance: silent
+    note: The mixin documents that the callable can wait for another call.
+  mixin:concurrent:
+    stance: needs
+    note: The claims of the mixin need concurrent callers.
+  mixin:concurrent-readers:
+    stance: needs
+    note: The claims of the mixin need concurrent callers.
+  mixin:atomic:
+    stance: needs
+    note: The claims of the mixin need concurrent callers.
+  mixin:serializable:
+    stance: needs
+    note: The claims of the mixin need concurrent callers.
+  mixin:snapshot-isolation:
+    stance: needs
+    note: The claims of the mixin need concurrent callers.
+  contract:single-flight/fn:
+    stance: needs
+    note: The claims of the contract need concurrent callers.
+  mixin:associative:
+    stance: needs
+    note: The claims of the mixin need generated sequences.
+  mixin:commutative:
+    stance: needs
+    note: The claims of the mixin need generated sequences.
+  mixin:bounded:
+    stance: needs
+    note: The claims of the mixin need generated sequences.
+  mixin:conservative:
+    stance: needs
+    note: The claims of the mixin need generated sequences.
+  mixin:crdt-merge:
+    stance: needs
+    note: The claims of the mixin need generated sequences.
+  mixin:stream-reflects-mutations:
+    stance: needs
+    note: The claims of the mixin need generated sequences.
+  contract:outbox/append:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:outbox/subscribe:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:publisher/publish:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:publisher/subscribe:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:publisher/redeliver:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:watcher/watch:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:watcher/trigger:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:workflow/fn:
+    stance: needs
+    note: The claims of the contract need generated sequences.
+  contract:circuit-breaker/fn:
+    stance: needs
+    note: The claims of the contract need a call that fails on demand.
+  mixin:durable:
+    stance: needs
+    note: The claims of the mixin need a killable process or a breakable medium.
+  mixin:default-on-error:
+    stance: blocked
+    note: The mixin declares no default value for a check to compare.
+  shape:batch-reader:
+    stance: gap
+    note: No claim states what a batch read returns for a key that it does not find.
+  shape:stream-reader:
+    stance: gap
+    note: No claim states what a stream returns after its end.
+  shape:poison-accessor:
+    stance: gap
+    note: No claim states what the accessor of a poisoned subject returns.
+  mixin:indexed:
+    stance: gap
+    note: No claim states that a read by index returns the element at that index.
+  mixin:leak-free:
+    stance: gap
+    note: No claim states that the callable leaves no goroutine or task behind.
+  mixin:sticky:
+    stance: gap
+    note: No claim states that a value stays once the callable set it.
+  mixin:wrapped-via:
+    stance: gap
+    note: No claim states that the error of the callable wraps the declared error.
+  contract:chain/verify:
+    stance: gap
+    note: No claim states that the verify of a chain refuses a chain that an append did not produce.
+  contract:lease/release:
+    stance: gap
+    note: No claim states that a released lease is granted again.
+  contract:pool/stats:
+    stance: gap
+    note: No claim states that the stats of a pool count each loan and each return.

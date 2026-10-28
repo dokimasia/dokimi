@@ -75,9 +75,9 @@
 //
 // # Dependency position
 //
-// The package imports the package internal/lang of the module, the root
-// packages of the Go and the TypeScript satellites in golang.go and
-// typescript.go, the package naming of eidos-lang, the root, diag,
-// directive, emit, node, plugin, rules and symbol packages of the SDK
+// The package imports the packages internal/lang and internal/nametemplate
+// of the module, the root packages of the Go and the TypeScript satellites in
+// golang.go and typescript.go, the package naming of eidos-lang, the root,
+// diag, directive, emit, node, plugin, rules and symbol packages of the SDK
 // facade of eidos, and the Go stdlib.
 package enum

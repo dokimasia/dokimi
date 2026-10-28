@@ -52,7 +52,7 @@ func TestNameTemplate(t *testing.T) {
 				name: "refuses a template without the name of the enumeration", give: "Parse",
 				wantErr: `enum: the name template "Parse" does not use {{.Enum}}`,
 			},
-			{name: "refuses the empty template", give: "", wantErr: "enum: the name template is empty"},
+			{name: "refuses the empty template", give: "", wantErr: `enum: the name template "" is empty`},
 			{
 				name: "refuses a field other than Enum", give: "Parse{{.Name}}",
 				wantErr: `enum: the name template "Parse{{.Name}}" has an action other than {{.Enum}}`,

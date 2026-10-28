@@ -4,7 +4,7 @@ title: A suite does not ask for the double of its declaration
 status: Accepted
 date: 2026-10-25
 supersedes: RFC-0003 in part
-superseded-by: none
+superseded-by: ADR-0015 in part
 rfc: 0003
 ---
 

@@ -23,3 +23,5 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0012](0012-a-struct-without-exported-fields-takes-its-zero-value-and-an-application-adds-generators.md) | A struct without exported fields takes its zero value, and an application adds generators | Accepted |
 | [0013](0013-a-go-double-implements-an-unexported-method-only-for-an-interface.md) | A Go double implements an unexported method only for an interface, and its checks leave it out | Accepted |
 | [0014](0014-the-directive-stub-takes-the-name-template-of-the-field-of-each-method.md) | The directive stub takes the name template of the field of each method | Accepted |
+| [0015](0015-a-derived-check-is-falsified-on-a-wrapper-of-a-fresh-subject.md) | A derived check is falsified on a wrapper of a fresh subject of its application | Accepted |
+| [0016](0016-the-checks-of-enumerations-and-errors-are-claims-of-the-conformance-spec.md) | The checks of enumerations and errors are claims of the conformance spec | Accepted |

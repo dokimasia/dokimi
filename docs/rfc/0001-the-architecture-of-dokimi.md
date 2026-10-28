@@ -24,7 +24,7 @@ dokimi defines what an implementation must do to conform to a shape, and it gene
 
 The binary reads source code through eidos and writes the tests in the language of the source. Each generated check calls a probe of the runtime of its language, and the probe asserts through the assert library of that language. The tests run under the test runner of the language and write the records that assert-spec defines. A mutation run of the tests writes the records that mutate-spec defines. Each run uploads its results to the service of dokimi, which shows what each suite claims, what it proved and what it refused.
 
-Beside the checks, dokimi generates doubles, fixture builders, verified fakes, benchmarks and fuzz targets. Its tiers exercise a contract under a controlled clock, under faults on demand, under generated sequences against a reference implementation, under concurrent callers and under crashes and broken storage. This RFC sets the purpose, the concepts, the components and the invariants of dokimi. It also gives a verdict for each capability and each language.
+Beside the checks, dokimi generates doubles, fixture builders, verified fakes, benchmarks and fuzz targets. Its checks exercise a contract under a controlled clock, under faults on demand, under generated sequences against a reference implementation, under concurrent callers and under crashes and broken storage. This RFC sets the purpose, the concepts, the components and the invariants of dokimi. It also gives a verdict for each capability and each language.
 
 ## Motivation
 
@@ -112,13 +112,12 @@ dokimi does not derive a check from the behaviour of an implementation, because 
 | Control | A correct implementation that differs from the subject. Every check that it does not excuse must pass on it |
 | Refusal | A licensed claim whose gate is false for a callable. The generated file lists it with its reason and remedy |
 | Stance | The reason why a classification has no check, such as a machinery that the run does not supply |
-| Machinery | What a run must supply before a check can exercise its claim, such as a clock that the run advances |
-| Tier | The machineries that a generator supplies |
+| Machinery | What a run must supply before a check can exercise its claim, such as a clock that the run advances. A declaration states each machinery that its consumer supplies, such as a reference implementation |
 | Vacuous check | A check that ran on a subject and never exercised its claim |
 | Verified fake | A generated in-memory implementation of a declaration that passes the suite of the declaration |
 | Budget | A declared limit on the time or the allocations of a callable, which a benchmark turns into a check |
 | Suite record | The record of one application of a suite: the result and the reason code of each check, the refusals and the unclaimed classifications |
-| Bundle | The artifacts that the test runner writes for a run, with the call records of assert-spec, the suite records of dokimi and the trace files of the tiers |
+| Bundle | The artifacts that the test runner writes for a run, with the call records of assert-spec, the suite records of dokimi and the trace files of the simulations |
 | Service | The hosted product that stores the bundles and uploads of runs and shows them |
 
 ### From source to service
@@ -230,7 +229,7 @@ The conformance spec defines the conformance of shapes. assert-spec and mutate-s
 | Invariant | Enforced by |
 |---|---|
 | Every check comes with a planted defect, and falsification fails when the check passes on it | The suite generator writes the defect. The runtime runs falsification |
-| Falsification matches a failure by its reason code and never by its text | The test handle of each runtime, and the corpus |
+| Falsification proves a derived check by its reason code and an authored check by the contract of its failure record, and never by the text of a failure | The test handle of each runtime, and the corpus |
 | Every refused claim and every classification without a check appears in the generated file and in the suite record, with a remedy or a stance | The suite generator and the runtime |
 | Every classification of the shape catalog has a claim or a stance | A test of the conformance spec |
 | A check that runs on a subject without exercising its claim fails the run | The suite engine of each runtime |
@@ -245,7 +244,7 @@ The conformance spec defines the conformance of shapes. assert-spec and mutate-s
 
 ### Capabilities
 
-Each capability above the suite tier has a design of its own. The verdicts follow.
+Each capability beyond the checks of a single caller has a design of its own. The verdicts follow.
 
 #### What dokimi generates from
 
@@ -264,6 +263,8 @@ Each capability above the suite tier has a design of its own. The verdicts follo
 | Suites of checks with planted defects | In | They are the purpose of dokimi | — |
 | Typed doubles with fault injection | In | A planted defect is a double with one method replaced, and consumers test their callers against doubles | — |
 | Fixture builders | In | Checks and the tests of consumers need values of the declared structs | — |
+| Deterministic simulations of systems of sans-IO machines | In | A system of machines that apply one event at a time fails under orders of events and faults that no check of one machine produces. A simulation chooses those orders as choices of a case, so a failure shrinks and replays | A simulation passes a system whose production runtime fails a run that the simulation can produce |
+| The workloads and checkers of a simulation against a real cluster | In | A system of real binaries in any language, over a real network stack and kernel, fails in ways that no simulation of its machines produces. The same specs and checkers read a history that a timed run of the cluster records | The checkers of a real run find no defect that the simulation of the same system misses |
 | Verified fakes | In | A downstream team runs a fast substitute in its CI, and the suite of the declaration enforces its fidelity | A team passes against the fake and fails against the real implementation on a behaviour that the contract covers |
 | Benchmarks of each callable with derived inputs | In | The service shows their trends. A declared budget, through the benchmark ceilings of assert-spec, turns a benchmark into a check that a planted defect can falsify | A budget check on a planted defect cannot fail without flaking |
 | Fuzz targets from the claims of a suite | In | A suite exercises each claim on the samples of eidos. A fuzzer searches the inputs that the samples miss, and the planted defect still proves each fuzzed claim | Fuzzed claims find no defect in the corpus that the samples miss |
@@ -276,7 +277,7 @@ Each capability above the suite tier has a design of its own. The verdicts follo
 
 | Capability | Verdict | Reason | Reverses when |
 |---|---|---|---|
-| A single caller and a clock that the run advances | In | These are the suite tier | — |
+| A single caller and a clock that the run advances | In | The runtime supplies both to every check of a suite | — |
 | Clock skew, drift, rollback and bounded uncertainty | In | A protocol that waits out the uncertainty of a clock needs a check of the wait | Injected skew fails correct subjects without revealing a defect |
 | Calls that fail on demand | In | Claims about retries, latched failures and rollback need a call that fails when the check asks for it | The faults that a runtime can inject produce checks that no deployment can trigger |
 | Generated sequences judged against a reference implementation | In | Claims about histories, such as read-after-write, are statements about sequences. A reference that is separate from the subject gives expected values that do not come from the subject | A claim about histories needs a hand-written mapping per interface between the declaration and the reference |
@@ -329,6 +330,7 @@ Each capability above the suite tier has a design of its own. The verdicts follo
 | Interface conformance, proven green, the depth of each law across a fleet, the parity matrix and certification queries | In | Only the suite records of dokimi contain what a suite claims, at which depth and in which language | Pilot teams read proven green as coverage |
 | A comment on each pull request with the claims that it adds and loses | In | A lost claim is attributed to a person, a date and a reason | — |
 | A quarantine of flaky checks that expires, with a ticket and the replay seed | In | A property that fails once in a thousand runs usually reports a real race | — |
+| Debugging that steps back and forth through a trace | In | The simulation of sans-IO machines records the step, the clock and the faults of every process of a run | A person who debugs a failed simulation reads the shrunk trace and never steps through it |
 | A single headline score | Out | Deleting hard checks raises it | — |
 
 #### Outside the scope
@@ -338,8 +340,7 @@ Each capability above the suite tier has a design of its own. The verdicts follo
 | Repair that merges its own patch | Out | The suite that approved a patch cannot check it, and patches that delete the feature pass their suites | A verification step proves the law that the patch claims to fix |
 | A digital twin of production | Out | A prediction from a simulation of production needs a faithful model of production, which nobody has | — |
 | Proofs of conformance in zero knowledge | Out | A proof of a test run states that the tests passed, which a signature over the bundle states already | — |
-| A matrix of Byzantine faults | Out | It needs a simulated network to inject into | A simulated network exists and a consumer runs a consensus protocol |
-| Debugging that steps back and forth through a trace | Out | No multi-node trace exists to show | A simulated environment records multi-node traces |
+| A matrix of Byzantine faults | Out | The simulation of sans-IO machines drops, delays, duplicates and forges messages. A Byzantine fault is a machine that breaks its protocol on purpose, and no consumer runs a consensus protocol that must survive one | A consumer runs a consensus protocol in a simulated system |
 | Concolic execution | Out | It needs a symbolic model of the runtime of each language. Generation guided by vacuous checks exercises many of the same states | Guided generation proves insufficient |
 | Export of claims to a model checker | Out | The mapping from the claims to the model fails without a sign | The mapping can be checked against the implementation |
 
@@ -422,7 +423,7 @@ testkit keeps its repository, and its plugins move to the SDK of the new eidos.
 - **Every probe in every runtime.** Each runtime implements in host code every probe of the conformance spec, a suite engine, a double runtime, the fault strategies and a writer of suite records. The corpus checks each runtime against the spec.
 - **A sync of the conformance spec in every runtime.** Each runtime vendors the conformance spec of a release of dokimi, and a new probe needs an implementation in each runtime.
 - **Requests to assert-spec.** A probe that needs an assertion that assert-spec lacks waits for the RFC process of assert-spec and an implementation in each assert library.
-- **A template tree per generator and language.** Each generator needs a template tree for each target language. The suite, stub, builder, enum and sentinel generators with eight targets need 40 trees, and each generator above the suite tier adds eight more.
+- **A template tree per generator and language.** Each generator needs a template tree for each target language. The suite, stub, builder, enum and sentinel generators with eight targets need 40 trees, and each new generator, such as `fake` and `sim`, adds eight more. The machineries beyond a single caller are claims of the suite, so they add templates to the trees of the suite and no tree of their own.
 - **Falsification doubles the run time of a suite.** Each check runs against the subject and against its planted defect.
 - **A dependency on the API of eidos.** Each breaking release of eidos is a release of dokimi.
 - **Generated files in the repository of the consumer.** Each regeneration produces a diff to review.

@@ -203,15 +203,15 @@ corpus/<lang>/
 
 - The families are `enum`, `errors`, `iface`, `integration` and `struct`. The family `iface` has the groups `composite`, `contract`, `detector`, `lang` and `mixin`, and the other families have no group.
 - A fixture has the same path, the same declarations and the same files in every language. The tree shows the names of Go, and TypeScript names the same files `iface.ts`, `checks.ts`, `inmemory.ts`, `inmemory.suite.test.ts` and `inmemory.test.ts`.
-- A fixture that a language cannot state, such as a Go channel in TypeScript, has the file `absent.md` in its directory of that language. The file states the reason.
+- A fixture that a language cannot state, such as a Go channel in TypeScript, has an entry with the stance `blocked` and the reason in the overlay of that language, `corpus/<language>/overlay.yaml`, as RFC-0017 states.
 - dokimi writes the generated files of each fixture into its routed directory. The generation gate fails while a committed file differs from a fresh run.
 
 The corpus applies each suite in full:
 
 - Each fixture with the directive `suite` has the subject `inmemory.go`. The directive `subject` writes the test of a subject whose constructor takes no arguments, and `inmemory_test.go` applies the suite to a subject that reads the clock or another door of the handle.
-- The generated falsification test of each suite proves every check of the suite, the checks of the fixture among them.
+- The generated falsification test of each suite proves the checks of the fixture and the ceilings, and each application to a subject or a control proves the derived checks of the suite, as ADR-0015 decides.
 - Every check runs on a subject of the fixture. An excusal contains the reason why the subject cannot pass the check.
-- Each shape family has a control, a second correct implementation to which the corpus applies the suite of the family.
+- Each shape family has a control, a second correct implementation to which the corpus applies the suite of the family through the same application as a subject.
 - A fixture of the corpus uses each part of the contract of a suite: the directives `subject`, `check` and `excuse`, the options `With`, `Excuse`, `Reference`, `Second` and `Restartable`, and both forms of the application.
 - The tests of the corpus run every statement of the generated suites, as they run every statement of the generated doubles.
 
@@ -242,7 +242,7 @@ The corpus applies each suite in full:
 | `plugin.go` does not import a satellite of eidos, and `<lang>.go` imports the root package of its own satellite alone | depguard |
 | Every generator declares a template tree for golang and for typescript | The Build of the composition |
 | Each family of a generator claims its files through a template of each target | The template lint of plugintest |
-| Every fixture of a corpus has the same path in the corpus of every other language, or the file `absent.md` | A test of the root package, which walks every corpus |
+| Every fixture of a corpus has the same path in the corpus of every other language, or an entry in the overlay of the language | A test of the root package, which walks every corpus |
 | The goldens of both plans equal a fresh run | workspacetest |
 | A generated test passes in its language | The toolchain adapters |
 | Each check of a suite of the corpus fails on its planted defect, and runs on a subject or has an excusal with a reason | The generated falsification tests and the tests of the corpus |
@@ -255,7 +255,7 @@ The corpus applies each suite in full:
 |---|---|---|
 | `plugin.go` imports a satellite | depguard fails the lint | Move the code of that language into `<lang>.go` |
 | A generator lacks the tree of a target | The Build of the composition fails and names the plugin and the target | Add the tree |
-| A fixture of one corpus is missing in another | The test of the corpus fails and names the fixture and the language | Add the fixture, or `absent.md` with the reason |
+| A fixture of one corpus is missing in another | The test of the corpus fails and names the fixture and the language | Add the fixture, or an entry with the stance `blocked` and the reason in the overlay of the language |
 | The goldens differ from a fresh run | workspacetest fails with the difference | Review the difference, then update the goldens with `-update` |
 | A generated TypeScript test cannot import `@dokimi/assert` | The toolchain check fails | Release `@dokimi/assert` |
 | A toolchain is missing on a machine | The check skips there with its reason, and CI requires it | Install the toolchain |

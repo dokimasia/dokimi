@@ -7,7 +7,7 @@ created: 2026-10-19
 updated: 2026-10-22
 discussion: none
 supersedes: none
-superseded-by: ADR-0001, ADR-0002, ADR-0006, ADR-0007, ADR-0008 and RFC-0008 in part
+superseded-by: ADR-0001, ADR-0002, ADR-0006, ADR-0007, ADR-0008, ADR-0015, RFC-0008, RFC-0013 and RFC-0014 in part
 produces-adr: tbd
 ---
 
@@ -315,9 +315,10 @@ In eidos, the rules of Go and TypeScript assign the roles and forms of their col
 
 ```go
 // Derive returns the checks of one declaration, with its refusals, its
-// unclaimed classifications and its entailment edges. tier and runtime are
-// the machineries that the suite tier and the runtime of the target supply.
-func Derive(decl []Facts, table []spec.Claim, tier, runtime []spec.MachineryID) Suite
+// unclaimed classifications and its entailment edges. suite and runtime
+// are the machineries that the suite generator and the runtime of the
+// target supply.
+func Derive(decl []Facts, table []spec.Claim, suite, runtime []spec.MachineryID) Suite
 
 // Suite is the derivation of one declaration.
 type Suite struct {
@@ -366,7 +367,7 @@ type Edge struct {
 `Derive` visits the callables in the order of the declaration and the claims in the order of `claims.yaml`:
 
 1. For each claim with a licence of the callable and without its `Unless` mixin, it tests the gates. When every gate passes, it binds the inputs. When a binding needs a parameter or a role that the classification does not supply, the claim refuses with the name of the missing parameter. Each claim that binds becomes a check.
-2. A claim whose machinery the tier or the runtime does not supply does not become a check. Its classification is unclaimed with the stance `needs`, unless another claim of the classification binds.
+2. A claim whose machinery the suite generator or the runtime does not supply does not become a check. Its classification is unclaimed with the stance `needs`, unless another claim of the classification binds.
 3. Each classification of the callable without a bound or a refused claim is unclaimed. Its entry in the section `unclaimed` of the conformance spec has its stance and note.
 4. Each check whose claim entails another claim that bound on the same callable adds an edge.
 

@@ -33,7 +33,7 @@ Each generated value starts from the starting value of its type: its authored sa
 
 ## Motivation
 
-A check of the suite tier passes the two samples of each type to its call, so it misses a subject that fails at other inputs:
+A check of a single caller passes the two samples of each type to its call, so it misses a subject that fails at other inputs:
 
 - a store that truncates keys of more than 255 bytes
 - a parser that panics on an empty document
@@ -66,7 +66,7 @@ The property engine derives a generator from the shape of any type, and two type
 |---|---|
 | Call generator | A generator of the property engine that dokimi writes for each callable. Each of its values is a call of the callable with arguments that the case generated |
 | Starting value | The simplest generated value of a type: its authored sample, the value of its builder, its declared default or the simplest value of its shape, in that order |
-| Sample binding | The binding of the inputs of a claim to the samples of eidos. The suite tier runs it |
+| Sample binding | The binding of the inputs of a claim to the samples of eidos. Every check of a single caller runs it |
 | Generated binding | The binding of the same claim to generated inputs, under the machinery `generated-inputs` |
 | Property check | A check whose body runs once for each case of the property engine. A generated binding and a check of a consumer that takes a case are property checks |
 | Ceiling | One limit of a budget: the allocations, the bytes, the p99 latency or the mean latency of one call |
@@ -80,7 +80,7 @@ The conformance spec gains two machineries:
 | `generated-inputs` | Inputs of the calls of a check that the property engine generates and shrinks |
 | `a-benchmark-run` | A run of the benchmarks of the test runner, such as `go test -bench` or `vitest bench` |
 
-`generated-inputs` is deeper than `nothing-beyond-a-caller` and shallower than `generated-sequences`. Under `generated-sequences` the engine also chooses the calls, and the model tier that supplies it has a design of its own. The sample binding of a claim whose law has the depth `generated-inputs` witnesses the law at its shallow end, and the suite record marks that check as shallow.
+`generated-inputs` is deeper than `nothing-beyond-a-caller` and shallower than `generated-sequences`. Under `generated-sequences` the engine also chooses the calls, and the claims of that machinery have a design of their own. The sample binding of a claim whose law has the depth `generated-inputs` witnesses the law at its shallow end, and the suite record marks that check as shallow.
 
 ### The values of parameters
 
@@ -646,8 +646,8 @@ The benchmarks, the allocation ceilings and the property checks each need one of
 | A benchmark that prepares the subject through a declared partner | Out | The declarations do not state a relation between the value of a write and the key of a read | The shape catalog states that relation |
 | A committed baseline of benchmark results | Out | A measurement of one machine fails on another. The service compares the runs of one class of runners | CI runs the benchmarks on a dedicated runner that repeats within the threshold |
 | Classes of complexity over the sizes of inputs | Out | The generated inputs of a run vary in size, and a fit of latencies flakes on shared runners | A consumer needs a ceiling for each element of an input |
-| Sequences of calls that the engine chooses | In, in the model tier | The model tier judges sequences against a reference implementation | — |
-| Comparisons with a reference or a second subject over generated inputs | In, in the model tier | A comparison of one call is a sequence of one call | — |
+| Sequences of calls that the engine chooses | In, as claims of the machinery `generated-sequences` | The judges of a history and the comparison with a reference implementation run over generated sequences | — |
+| Comparisons with a reference or a second subject over generated inputs | In, as claims of the machinery `generated-sequences` | A comparison of one call is a sequence of one call | — |
 
 ## Alternatives considered
 

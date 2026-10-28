@@ -6,14 +6,14 @@ module go.dokimi.dev/dokimi
 go 1.27.3
 
 require (
-	go.dokimi.dev/assert v0.10.0
-	go.dokimi.dev/eidos/cli v0.3.3-0.20261028090121-83dc1f97d02c
-	go.dokimi.dev/eidos/core v0.10.1-0.20261028090121-83dc1f97d02c
-	go.dokimi.dev/eidos/lang v0.4.1-0.20261028090121-83dc1f97d02c
-	go.dokimi.dev/eidos/lang/go v0.6.2-0.20261028090121-83dc1f97d02c
-	go.dokimi.dev/eidos/lang/typescript v0.4.5-0.20261028090121-83dc1f97d02c
-	go.dokimi.dev/eidos/plugin/shape v0.1.1-0.20261028090121-83dc1f97d02c
-	go.dokimi.dev/eidos/sdk v0.7.2-0.20261028090121-83dc1f97d02c
+	go.dokimi.dev/assert v0.11.0
+	go.dokimi.dev/eidos/cli v0.3.4-0.20261028193000-482b0bb71472
+	go.dokimi.dev/eidos/core v0.11.1-0.20261028193000-482b0bb71472
+	go.dokimi.dev/eidos/lang v0.4.2-0.20261028193000-482b0bb71472
+	go.dokimi.dev/eidos/lang/go v0.6.3-0.20261028193000-482b0bb71472
+	go.dokimi.dev/eidos/lang/typescript v0.4.6-0.20261028193000-482b0bb71472
+	go.dokimi.dev/eidos/plugin/shape v0.1.2-0.20261028193000-482b0bb71472
+	go.dokimi.dev/eidos/sdk v0.7.3-0.20261028193000-482b0bb71472
 )
 
 require (
@@ -24,7 +24,7 @@ require (
 	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/tailscale/hujson v0.0.0-20260727124030-b80ff77dac4f // indirect
 	github.com/tree-sitter/go-tree-sitter v0.25.0 // indirect
-	go.dokimi.dev/eidos/declarative v0.1.10-0.20261028090121-83dc1f97d02c // indirect
+	go.dokimi.dev/eidos/declarative v0.1.11-0.20261028193000-482b0bb71472 // indirect
 	go.stealthscale.io/cli v0.7.0 // indirect
 	go.stealthscale.io/cli/yaml v0.1.7 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect

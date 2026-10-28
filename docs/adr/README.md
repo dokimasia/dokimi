@@ -25,3 +25,4 @@ Each ADR records one decision and what it cost. Once an ADR is accepted, do not 
 | [0014](0014-the-directive-stub-takes-the-name-template-of-the-field-of-each-method.md) | The directive stub takes the name template of the field of each method | Accepted |
 | [0015](0015-a-derived-check-is-falsified-on-a-wrapper-of-a-fresh-subject.md) | A derived check is falsified on a wrapper of a fresh subject of its application | Accepted |
 | [0016](0016-the-checks-of-enumerations-and-errors-are-claims-of-the-conformance-spec.md) | The checks of enumerations and errors are claims of the conformance spec | Accepted |
+| [0017](0017-the-corpus-isolates-the-planted-defects-of-derived-checks.md) | The corpus isolates the planted defects of derived checks | Accepted |

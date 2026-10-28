@@ -4,7 +4,7 @@ title: The suite generator
 author: Roy Klopper <roy.klopper@stealthscale.io>
 status: Accepted
 created: 2026-10-19
-updated: 2026-10-22
+updated: 2026-10-28
 discussion: none
 supersedes: none
 superseded-by: ADR-0001, ADR-0002, ADR-0006, ADR-0007, ADR-0008, ADR-0015, RFC-0008, RFC-0013 and RFC-0014 in part
@@ -377,83 +377,83 @@ The tests of `Derive` build facts as values and run without eidos or a language,
 
 ### The claims
 
-The claims of the suite generator in the conformance spec restate the claims that testkit derives for Go over the facts of eidos. Every claim needs the machinery `nothing-beyond-a-caller`, except the six claims marked with a clock, which need `a-clock-the-run-advances`.
+The claims of the suite generator in the conformance spec restate the claims that testkit derives for Go over the facts of eidos. Every claim needs the machinery `nothing-beyond-a-caller`, except the six claims marked with a clock, which need `clock-the-run-advances`.
 
 | Claim | Licence | Gates | Probe | Reason code | Law |
 |---|---|---|---|---|---|
 | `smoke` | Every callable | — | `survives` | `panicked` | `no-panic-on-any-input` |
-| `cancel` | A parameter in the role context | cancellation, failure | `under-cancelled` | `ignored-cancel` | `a-cancelled-context-is-reported` |
+| `cancel` | A parameter in the role context | cancellation, failure | `under-cancelled` | `ignored-cancel` | `cancelled-context-is-reported` |
 | `zero-on-error` | Shapes reader, aggregator, answering-writer and stream-consumer, without the mixin default-on-error | failure, one-value, value-samples | `zero-beside-error` | `value-beside-error` | `no-value-beside-an-error` |
 | `zeroes-on-error` | Shapes multi-reader and multi-aggregator | failure, two-values, value-samples | `zero-pair-beside-error` | `value-beside-error` | `no-value-beside-an-error` |
 | `zero-on-miss` | Shape reader-with-bool | presence-flag, one-value, value-samples | `zero-beside-false` | `value-beside-false` | `no-value-beside-a-false-flag` |
 | `zeroes-on-miss` | Shape lookup | presence-flag, two-values, value-samples | `zero-pair-beside-false` | `value-beside-false` | `no-value-beside-a-false-flag` |
-| `nil-on-miss` | Shape pointer-reader | one-value, optional-value | `nil-on-miss` | `non-nil-miss` | `a-miss-returns-the-zero` |
-| `miss-is-zero` | Shape reader-no-error | one-value, value-samples | `miss-is-zero` | `non-zero-miss` | `a-miss-returns-the-zero` |
-| `deterministic` | Shape computation | one-value, value-samples | `repeat-agrees` | `unstable-repeat` | `a-repeat-returns-alike` |
-| `predicate` | Shape predicate | one-value | `repeat-agrees` | `unstable-repeat` | `a-repeat-returns-alike` |
-| `repeat-survives` | Shape void-lifecycle | no-value | `survives-repeat` | `panicked-repeat` | `a-repeated-call-survives` |
-| `miss` | Mixin not-found | failure, one-value | `reports-sentinel` | `wrong-sentinel` | `a-miss-reports-the-declared-sentinel` |
-| `idempotent` | Mixin idempotent | cancellation, failure | `repeat-is-quiet` | `refused-repeat` | `a-repeat-is-accepted` |
-| `cacheable` | Mixin cacheable | one-value | `repeat-agrees` | `unstable-repeat` | `a-repeat-returns-alike` |
-| `pure` | Mixin pure | one-value | `repeat-agrees` | `unstable-repeat` | `a-repeat-returns-alike` |
-| `read-after-write` | Mixin read-after-write | cancellation, one-value | `write-then-read` | `unobserved-write` | `a-read-returns-the-write-before-it` |
-| `causal` | Mixin causal | cancellation, one-value | `write-then-read` | `unobserved-write` | `a-read-observes-its-causal-past` |
-| `read-your-writes` | Mixin read-your-writes | cancellation, one-value | `write-then-read` | `unobserved-write` | `a-read-observes-its-own-writes` |
+| `nil-on-miss` | Shape pointer-reader | one-value, optional-value | `nil-beside-a-miss` | `non-nil-miss` | `miss-returns-the-zero` |
+| `miss-is-zero` | Shape reader-no-error | one-value, value-samples | `zero-beside-a-miss` | `non-zero-miss` | `miss-returns-the-zero` |
+| `deterministic` | Shape computation | one-value, value-samples | `repeat-agrees` | `unstable-repeat` | `repeat-returns-alike` |
+| `predicate` | Shape predicate | one-value | `repeat-agrees` | `unstable-repeat` | `repeat-returns-alike` |
+| `repeat-survives` | Shape void-lifecycle | no-value | `survives-repeat` | `panicked-repeat` | `repeated-call-survives` |
+| `miss` | Mixin not-found | failure, one-value | `reports-sentinel` | `wrong-sentinel` | `miss-reports-the-declared-sentinel` |
+| `idempotent` | Mixin idempotent | cancellation, failure | `repeat-is-quiet` | `refused-repeat` | `repeat-is-accepted` |
+| `cacheable` | Mixin cacheable | one-value | `repeat-agrees` | `unstable-repeat` | `repeat-returns-alike` |
+| `pure` | Mixin pure | one-value | `repeat-agrees` | `unstable-repeat` | `repeat-returns-alike` |
+| `read-after-write` | Mixin read-after-write | cancellation, one-value | `write-then-read` | `unobserved-write` | `read-returns-the-write-before-it` |
+| `causal` | Mixin causal | cancellation, one-value | `write-then-read` | `unobserved-write` | `read-observes-its-causal-past` |
+| `read-your-writes` | Mixin read-your-writes | cancellation, one-value | `write-then-read` | `unobserved-write` | `read-observes-its-own-writes` |
 | `monotonic-writes` | Mixin monotonic-writes | cancellation, one-value | `write-then-read` | `unobserved-write` | `writes-apply-in-issue-order` |
-| `point-in-time` | Mixin point-in-time | cancellation, one-value | `pinned-across-write` | `unpinned-read` | `a-read-keeps-its-snapshot` |
+| `point-in-time` | Mixin point-in-time | cancellation, one-value | `pinned-across-write` | `unpinned-read` | `read-keeps-its-snapshot` |
 | `no-duplicates` | Mixin no-duplicates | cancellation, list-value | `no-element-twice` | `repeated-element` | `no-element-is-drained-twice` |
 | `stable-order` | Mixin stable-order | cancellation, list-value | `drains-in-one-order` | `reordered-drain` | `two-drains-agree-on-order` |
-| `permutation` | Mixin permutation | cancellation, list-value | `gains-what-went-in` | `miscounted-drain` | `a-drain-gains-exactly-what-went-in` |
-| `over-match` | Mixin over-match | cancellation, list-value | `keeps-what-went-in` | `shrunk-drain` | `a-drain-keeps-what-went-in` |
+| `permutation` | Mixin permutation | cancellation, list-value | `gains-what-went-in` | `miscounted-drain` | `drain-gains-exactly-what-went-in` |
+| `over-match` | Mixin over-match | cancellation, list-value | `keeps-what-went-in` | `shrunk-drain` | `drain-keeps-what-went-in` |
 | `monotonic` | Mixin monotonic | one-value, ordered-value, value-samples | `never-decreases` | `regressed` | `results-never-decrease` |
 | `monotonic-reads` | Mixin monotonic-reads | cancellation, one-value, value-samples | `reads-never-regress` | `regressed` | `reads-never-go-backwards` |
-| `writes-follow-reads` | Mixin writes-follow-reads | cancellation, one-value, value-samples | `writes-advance` | `unordered-write` | `a-write-follows-the-read-before-it` |
-| `xss-safe` | Mixin xss-safe | cancellation, one-value | `escapes-the-unsafe` | `unescaped-output` | `the-unsafe-value-does-not-survive` |
-| `injection-safe` | Mixin injection-safe | cancellation, failure | `write-then-read` | `unobserved-write` | `the-unsafe-value-is-kept-as-data` |
-| `total` | Mixin total | — | `accepts-the-edge` | `refused-the-edge` | `the-call-accepts-its-declared-domain` |
-| `validates` | Mixin validates | cancellation, failure | `refuses-the-invalid` | `unscreened-write` | `the-declared-invalid-value-is-refused` |
-| `nil-safe` | Mixin nil-safe | optional-input | `survives` | `panicked` | `a-nil-argument-is-accepted` |
+| `writes-follow-reads` | Mixin writes-follow-reads | cancellation, one-value, value-samples | `writes-advance` | `unordered-write` | `write-follows-the-read-before-it` |
+| `xss-safe` | Mixin xss-safe | cancellation, one-value | `escapes-the-unsafe` | `unescaped-output` | `unsafe-value-does-not-survive` |
+| `injection-safe` | Mixin injection-safe | cancellation, failure | `write-then-read` | `unobserved-write` | `unsafe-value-is-kept-as-data` |
+| `total` | Mixin total | — | `accepts-the-edge` | `refused-the-edge` | `call-accepts-its-declared-domain` |
+| `validates` | Mixin validates | cancellation, failure | `refuses-the-invalid` | `unscreened-write` | `declared-invalid-value-is-refused` |
+| `nil-safe` | Mixin nil-safe | optional-input | `survives` | `panicked` | `nil-argument-is-accepted` |
 | `lifecycle-after-close` | Mixin lifecycle-after-close | cancellation, failure | `reports-sealed` | `alive-after-close` | `work-after-close-is-refused` |
-| `order-after` | Mixin order-after | cancellation, failure | `refuses-early` | `accepted-early` | `the-call-refuses-before-its-predecessor` |
-| `ready-after` | Mixin order-after | cancellation, failure | `works-after` | `never-ready` | `the-call-works-after-its-predecessor` |
-| `settles` | Mixin eventually | cancellation, failure | `settles-then-observes` | `unsettled-effect` | `an-effect-arrives-once-settled` |
-| `within` (clock) | Mixin timeout | cancellation, failure | `returns-within` | `overran-budget` | `a-call-returns-within-its-budget` |
-| `windowed` (clock) | Mixin windowed | cancellation, failure | `counts-within-window` | `misread-window` | `a-count-covers-a-bounded-window` |
-| `scheduled` (clock) | Mixin scheduled | cancellation, failure | `runs-on-schedule` | `off-schedule` | `a-task-runs-once-its-instant-passes` |
-| `time-aware` (clock) | Mixin time-aware | cancellation, one-value | `moves-with-the-clock` | `unmoved-by-the-clock` | `a-result-depends-on-the-clock` |
-| `steady` (clock) | Mixin time-aware | cancellation, one-value | `steady-while-the-clock-stops` | `drifted-without-clock` | `a-result-is-stable-while-the-clock-stops` |
-| `expires` (clock) | Mixin ttl | cancellation, one-value | `expires-after` | `not-expired` | `an-entry-lapses-on-the-clock` |
-| `delete-removes` | Mixin delete-removes | cancellation, failure | `removes-on-delete` | `readable-after-delete` | `a-delete-makes-the-key-unreadable` |
-| `side-effect` | Mixin side-effect | cancellation, failure | `moves-observation` | `unmoved-observation` | `the-call-moves-the-named-observation` |
-| `poisonable` | Mixin poisonable | failure | `remains-poisoned` | `healthy-after-induce` | `an-induced-failure-latches` |
-| `tamper-evident` | Mixin tamper-evident | cancellation, failure | `detects-tamper` | `silent-tamper` | `a-tamper-is-detected` |
-| `retry-succeeds-tx` | Mixin retry-succeeds with contract tx | cancellation, failure | `converges-after` | `never-converged` | `the-call-converges-once-its-scope-is-open` |
-| `retry-succeeds` | Mixin retry-succeeds | cancellation, failure | `succeeds-within` | `never-converged` | `the-call-converges-within-the-declared-attempts` |
-| `hooks` | Mixin hooks | cancellation, failure | `runs-the-hook` | `hook-not-run` | `a-registered-hook-runs` |
+| `order-after` | Mixin order-after | cancellation, failure | `refuses-early` | `accepted-early` | `call-refuses-before-its-predecessor` |
+| `ready-after` | Mixin order-after | cancellation, failure | `works-after` | `never-ready` | `call-works-after-its-predecessor` |
+| `settles` | Mixin eventually | cancellation, failure | `settles-then-observes` | `unsettled-effect` | `effect-arrives-once-settled` |
+| `within` (clock) | Mixin timeout | cancellation, failure | `returns-within` | `overran-budget` | `call-returns-within-its-budget` |
+| `windowed` (clock) | Mixin windowed | cancellation, failure | `counts-within-window` | `misread-window` | `count-covers-a-bounded-window` |
+| `scheduled` (clock) | Mixin scheduled | cancellation, failure | `runs-on-schedule` | `off-schedule` | `task-runs-once-its-instant-passes` |
+| `time-aware` (clock) | Mixin time-aware | cancellation, one-value | `moves-with-the-clock` | `unmoved-by-the-clock` | `result-depends-on-the-clock` |
+| `steady` (clock) | Mixin time-aware | cancellation, one-value | `steady-while-the-clock-stops` | `drifted-without-clock` | `result-is-stable-while-the-clock-stops` |
+| `expires` (clock) | Mixin ttl | cancellation, one-value | `expires-after` | `not-expired` | `entry-lapses-on-the-clock` |
+| `delete-removes` | Mixin delete-removes | cancellation, failure | `removes-on-delete` | `readable-after-delete` | `delete-makes-the-key-unreadable` |
+| `side-effect` | Mixin side-effect | cancellation, failure | `moves-observation` | `unmoved-observation` | `call-moves-the-named-observation` |
+| `poisonable` | Mixin poisonable | failure | `remains-poisoned` | `healthy-after-induce` | `induced-failure-latches` |
+| `tamper-evident` | Mixin tamper-evident | cancellation, failure | `detects-tamper` | `silent-tamper` | `tamper-is-detected` |
+| `retry-succeeds-tx` | Mixin retry-succeeds with contract tx | cancellation, failure | `converges-after` | `never-converged` | `call-converges-once-its-scope-is-open` |
+| `retry-succeeds` | Mixin retry-succeeds | cancellation, failure | `succeeds-within` | `never-converged` | `call-converges-within-the-declared-attempts` |
+| `hooks` | Mixin hooks | cancellation, failure | `runs-the-hook` | `hook-not-run` | `registered-hook-runs` |
 | `accumulates` | Mixin accumulates | cancellation, failure | `each-call-compounds` | `uncompounded` | `repeated-calls-compound` |
 | `partition` | Mixin partition | cancellation, failure | `keeps-partitions-apart` | `crossed-partitions` | `one-partition-does-not-serve-another` |
-| `persister` | Contract persister, role writer | cancellation, one-value | `write-then-read` | `unobserved-write` | `a-read-returns-the-write-before-it` |
-| `chain-causal` | Contract chain, role append, with mixin causal | cancellation, failure | `replays-in-stamp-order` | `unordered-history` | `a-history-replays-in-its-stamped-order` |
-| `chain` | Contract chain, role append | cancellation, failure | `replay-grows` | `replay-not-grown` | `an-admitted-entry-grows-the-replay` |
-| `appender` | Contract appender, role fn | one-value, ordered-value, value-samples | `repeat-ascends` | `not-ascending` | `an-append-returns-above-the-last` |
-| `codec` | Contract codec, role forward | cancellation, one-value | `round-trips` | `broken-round-trip` | `an-encoding-survives-its-round-trip` |
-| `if-absent` | Contract if-absent, role writer | cancellation, failure | `refuses-the-second-write` | `unguarded-write` | `a-write-is-refused-where-its-key-exists` |
-| `lease` | Contract lease, role acquire | cancellation, failure | `refuses-the-second-write` | `unguarded-write` | `a-granted-lease-is-not-granted-twice` |
-| `cas` | Contract cas, role writer | cancellation, failure | `refuses-the-second-write` | `unguarded-write` | `a-write-is-refused-on-a-stale-version` |
-| `if-match` | Contract if-match, role writer | cancellation, failure | `refuses-what-the-predicate-rejects` | `unmatched-write` | `a-write-is-refused-where-the-predicate-rejects-it` |
+| `persister` | Contract persister, role writer | cancellation, one-value | `write-then-read` | `unobserved-write` | `read-returns-the-write-before-it` |
+| `chain-causal` | Contract chain, role append, with mixin causal | cancellation, failure | `replays-in-stamp-order` | `unordered-history` | `history-replays-in-its-stamped-order` |
+| `chain` | Contract chain, role append | cancellation, failure | `replay-grows` | `replay-not-grown` | `admitted-entry-grows-the-replay` |
+| `appender` | Contract appender, role fn | one-value, ordered-value, value-samples | `repeat-ascends` | `not-ascending` | `append-returns-above-the-last` |
+| `codec` | Contract codec, role forward | cancellation, one-value | `round-trips` | `broken-round-trip` | `encoding-survives-its-round-trip` |
+| `if-absent` | Contract if-absent, role writer | cancellation, failure | `refuses-the-second-write` | `unguarded-write` | `write-is-refused-where-its-key-exists` |
+| `lease` | Contract lease, role acquire | cancellation, failure | `refuses-the-second-write` | `unguarded-write` | `granted-lease-is-not-granted-twice` |
+| `cas` | Contract cas, role writer | cancellation, failure | `refuses-the-second-write` | `unguarded-write` | `write-is-refused-on-a-stale-version` |
+| `if-match` | Contract if-match, role writer | cancellation, failure | `refuses-what-the-predicate-rejects` | `unmatched-write` | `write-is-refused-where-the-predicate-rejects-it` |
 | `cursor` | Contract cursor, role next | cancellation, failure | `reports-sealed` | `alive-after-close` | `work-after-close-is-refused` |
 | `cursor-open` | Contract cursor, role open | cancellation, failure | `seals-after-close` | `alive-after-close` | `work-after-close-is-refused` |
-| `rate-limit` | Contract rate-limit, role fn | cancellation, failure | `refuses-past-the-burst` | `past-the-burst` | `the-burst-is-spent-then-refused` |
+| `rate-limit` | Contract rate-limit, role fn | cancellation, failure | `refuses-past-the-burst` | `past-the-burst` | `burst-is-spent-then-refused` |
 | `leader-election` | Contract leader-election, role campaign | cancellation, failure | `resigns-leadership` | `still-leading` | `resigned-leadership-is-released` |
-| `transaction` | Contract transaction, role fn | cancellation, failure | `rolls-back-on-failure` | `not-rolled-back` | `a-failed-scope-leaves-nothing` |
-| `cache` | Contract cache, role cache | cancellation, one-value | `agrees-with-the-backing` | `cache-disagrees` | `the-cache-agrees-with-its-backing` |
-| `tx` | Contract tx, role begin | cancellation, failure | `seals-after-close` | `alive-after-close` | `a-settled-transaction-is-not-settled-again` |
-| `pool` | Contract pool, role get | cancellation, one-value | `takes-back-what-it-lent` | `unreturned-loan` | `a-borrowed-value-is-taken-back` |
-| `pagination` | Contract pagination, role reader | cancellation, one-value | `continues-from-the-cursor` | `repeated-page` | `a-walk-resumes-where-it-left-off` |
-| `saga` | Contract saga, role step | cancellation, failure | `compensates-the-step` | `uncompensated-step` | `a-compensation-accepts-its-step` |
-| `batch-writer` | Contract batch-writer, role writer | cancellation, failure | `refused-leaves-nothing` | `partial-write` | `a-refused-write-leaves-nothing` |
-| `updater` | Contract updater, role writer | cancellation, failure | `second-write-replaces` | `unreplaced-write` | `a-second-write-replaces-the-first` |
-| `upserter` | Contract upserter, role writer | cancellation, failure | `second-write-replaces` | `unreplaced-write` | `a-repeated-write-keeps-one-key` |
+| `transaction` | Contract transaction, role fn | cancellation, failure | `rolls-back-on-failure` | `not-rolled-back` | `failed-scope-leaves-nothing` |
+| `cache` | Contract cache, role cache | cancellation, one-value | `agrees-with-the-backing` | `cache-disagrees` | `cache-agrees-with-its-backing` |
+| `tx` | Contract tx, role begin | cancellation, failure | `seals-after-close` | `alive-after-close` | `settled-transaction-is-not-settled-again` |
+| `pool` | Contract pool, role get | cancellation, one-value | `takes-back-what-it-lent` | `unreturned-loan` | `borrowed-value-is-taken-back` |
+| `pagination` | Contract pagination, role reader | cancellation, one-value | `continues-from-the-cursor` | `repeated-page` | `walk-resumes-where-it-left-off` |
+| `saga` | Contract saga, role step | cancellation, failure | `compensates-the-step` | `uncompensated-step` | `compensation-accepts-its-step` |
+| `batch-writer` | Contract batch-writer, role writer | cancellation, failure | `refused-leaves-nothing` | `partial-write` | `refused-write-leaves-nothing` |
+| `updater` | Contract updater, role writer | cancellation, failure | `second-write-replaces` | `unreplaced-write` | `second-write-replaces-the-first` |
+| `upserter` | Contract upserter, role writer | cancellation, failure | `second-write-replaces` | `unreplaced-write` | `repeated-write-keeps-one-key` |
 
 The table has 73 claims, 59 probes, 54 reason codes and 64 laws. The claim `repeat-survives` entails `smoke`.
 
@@ -621,10 +621,10 @@ A check takes a handle. The handle implements the seat of the assert library: `a
 |---|---|---|
 | `Subject()` | The subject of the check, built once | Every check |
 | `New()` | A fresh subject from the same source | `generated-sequences` and `concurrent-callers` |
-| `Reference()` | A fresh reference implementation | `a-reference-implementation` |
-| `Second()` | A fresh second subject | `a-second-subject` |
-| `Restart(s)` | The subject `s` after a restart of its process | `a-killable-process-or-breakable-medium` |
-| `Clock()` and `Advance(d)` | The controlled clock of the check, and its advance | `a-clock-the-run-advances` |
+| `Reference()` | A fresh reference implementation | `reference-implementation` |
+| `Second()` | A fresh second subject | `second-subject` |
+| `Restart(s)` | The subject `s` after a restart of its process | `killable-process-or-breakable-medium` |
+| `Clock()` and `Advance(d)` | The controlled clock of the check, and its advance | `clock-the-run-advances` |
 | `Statement()` | The statement of the check | Every check |
 
 Under falsification `Subject()` and `New()` return the planted defect of the check. The consumer supplies the reference, the second subject and the restart through the options. A check that calls a door without its option ends with a fault that wraps `conform.ErrOption`. The message of the fault contains the option to pass.
@@ -842,7 +842,7 @@ The derivation binds eleven claims, and the header of `session_suite.go` lists t
 | `Store.Get/zero-on-error` | The shape reader | `nothing-beyond-a-caller` |
 | `Store.Get/miss` | The mixin not-found | `nothing-beyond-a-caller` |
 | `Store.Get/read-after-write` | The mixin read-after-write | `nothing-beyond-a-caller` |
-| `Store.Get/expires` | The mixin ttl | `a-clock-the-run-advances` |
+| `Store.Get/expires` | The mixin ttl | `clock-the-run-advances` |
 | `Store.Delete/smoke` and `Store.Delete/cancel` | Every callable, and the parameter in the role context | `nothing-beyond-a-caller` |
 | `Store.Delete/delete-removes` | The mixin delete-removes | `nothing-beyond-a-caller` |
 

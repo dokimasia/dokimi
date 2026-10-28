@@ -42,7 +42,7 @@ level: 2
 declarations:
   Mixed:
     checks:
-      mixed.read/expires: {claim: expires, law: an-entry-lapses-on-the-clock, reason: unexpired}
+      mixed.read/expires: {claim: expires, law: entry-lapses-on-the-clock, reason: unexpired}
       mixed.read/zero-on-error: {claim: zero-on-error, law: no-value-beside-an-error, reason: value-beside-error}
     refusals: []
     unclaimed:

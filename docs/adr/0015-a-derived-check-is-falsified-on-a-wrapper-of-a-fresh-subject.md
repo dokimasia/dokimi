@@ -4,7 +4,7 @@ title: A derived check is falsified on a wrapper of a fresh subject of its appli
 status: Accepted
 date: 2026-10-28
 supersedes: RFC-0003 and ADR-0007 in part
-superseded-by: none
+superseded-by: ADR-0017 in part
 rfc: 0014
 ---
 

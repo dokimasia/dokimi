@@ -42,7 +42,7 @@ The world runs as actions of a machine of `stateful` and records the calls of it
 
 ## Scope
 
-The directives and the generator `sim` with its Go template tree, the module `go.dokimi.dev/sim`, the machinery `a-simulated-system` and the five claims of the rules of a runtime in the spec, and a fixture of the corpus.
+The directives and the generator `sim` with its Go template tree, the module `go.dokimi.dev/sim`, the machinery `simulated-system` and the five claims of the rules of a runtime in the spec, and a fixture of the corpus.
 
 ## Not in this milestone
 

@@ -2,7 +2,7 @@
 rfc: 0002
 title: The conformance spec
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-19
 updated: 2026-10-28
 discussion: none
@@ -22,7 +22,7 @@ produces-adr: tbd
 
 The conformance spec defines what an implementation must do to conform to a shape, a mixin or a contract of the shape catalog of eidos. It contains the laws, the claims that each classification licenses, the gates of each claim, the probes with their inputs and reason codes, the machineries and the stances. It also fixes the grammar of a check identity, the suite record of a run and the contract between a generated file and its runtime.
 
-assert-spec defines assertions over values and callables, and it defines no shape. Each probe asserts through assertions of assert-spec, and its entry in the conformance spec has the assertion behind each of its reason codes. A run writes the call records of assert-spec and the suite records of the conformance spec into the artifact of its test runner.
+assert-spec defines assertions over values and callables, and it defines no shape. Each probe asserts through the assert library of its language, which implements assert-spec. A run writes the call records of assert-spec and the suite records of the conformance spec into the artifact of its test runner.
 
 People edit the YAML files of the directory `spec/` in the dokimi repository, and `go generate` renders them into JSON files, Go constants and a manifest of SHA-256 digests. The binary embeds the JSON files. Each runtime vendors them from a release tag of dokimi and checks its copy against the manifest.
 
@@ -57,17 +57,16 @@ The conformance spec uses these parts of assert-spec:
 
 | Part of assert-spec | Use in the conformance spec |
 |---|---|
-| `assertions.json` | The assertions of each probe. A test of the package `spec` resolves each one |
+| The assertions | The assertions that the probes of each runtime call through its assert library |
 | The failure record | The failure of a check in its suite record |
 | The call record | The calls of each probe in a recorded run |
-| The controlled clock | The machinery `a-clock-the-run-advances` |
-| The property engine | The machinery `generated-sequences`, and the fuzz targets of the claims of a suite |
+| The controlled clock | The machinery `clock-the-run-advances` |
+| The property engine | The machineries `generated-inputs` and `generated-sequences`, and the fuzz targets of the claims of a suite |
 | The machines | The machinery `generated-sequences`, whose actions the judges of a history and the comparison with a reference implementation run |
 | `linearizable`, `serializable` and `snapshot-isolation` | The machinery `concurrent-callers`, which records a history and checks it |
 | The benchmark ceilings and `max-allocs` | The budgets of a callable |
-| The overlay of each language | The refusal of a claim in a language whose overlay declares an assertion of its probe absent |
 
-The overlay is the source of truth for what a language lacks. The overlay of TypeScript declares `bench-max-allocs` absent, because V8 does not count allocations per iteration. A claim whose probe asserts `bench-max-allocs` refuses in TypeScript, and the refusal contains the reason and the remedy of the overlay entry.
+The conformance spec does not vendor assert-spec. A probe is host code in each runtime, so the build of the runtime fails on a call of an assertion that its assert library lacks. The spec does not state which probes a language implements.
 
 ### Layout
 
@@ -88,12 +87,11 @@ spec/
 ├── schemas/           a JSON Schema for each rendered file and for the suite record
 ├── manifest.json      the SHA-256 digest of each file that a runtime vendors, which spec manifest writes
 ├── spec.go            the package spec, which embeds the JSON files and decodes them
-├── names.gen.go       a Go constant for each entry and for each assertion of assert-spec
-├── assert-spec/       the vendored copy of assert-spec
+├── names.gen.go       a Go constant for each entry
 └── mutate-spec/       the vendored copy of mutate-spec
 ```
 
-`go generate ./spec` renders each YAML file into its JSON file and writes `names.gen.go`, and `spec manifest` writes `manifest.json`. The gate of dokimi runs both and fails when they change a file. The rendered JSON files are committed, because the runtimes read them and do not parse YAML. The manifest has entries for the files of the conformance spec alone, so a runtime does not vendor the copies of assert-spec and mutate-spec.
+`go generate ./spec` renders each YAML file into its JSON file and writes `names.gen.go`, and `spec manifest` writes `manifest.json`. The gate of dokimi runs both and fails when they change a file. The rendered JSON files are committed, because the runtimes read them and do not parse YAML. The manifest has entries for the files of the conformance spec alone, so a runtime does not vendor the copy of mutate-spec.
 
 ### Identifiers
 
@@ -104,7 +102,7 @@ id := word ("-" word)*
 word := [a-z][a-z0-9]*
 ```
 
-An identifier is unique within its file. The identifier of a removed entry is never used again. Each runtime writes an identifier in the casing of its language: `zero-beside-error` is `ZeroBesideError` in Go, `zeroBesideError` in TypeScript and `zero_beside_error` in Rust and Python.
+An identifier is unique across the files of the spec, because each runtime declares the constants of every kind of entry in one namespace. An identifier does not start with the article `a`, `an` or `the`, so that `read-returns-the-write-before-it` is `ReadReturnsTheWriteBeforeIt` in Go. The identifier of a removed entry is never used again. Each runtime writes an identifier in the casing of its language: `zero-beside-error` is `ZeroBesideError` in Go, `zeroBesideError` in TypeScript and `zero_beside_error` in Rust and Python.
 
 ### Laws
 
@@ -135,7 +133,7 @@ claims:
       - shape: answering-writer
       - shape: stream-consumer
     unless: default-on-error
-    gates: [failure, value-beside-error, one-value, value-samples]
+    gates: [failure, returns-beside-error, one-value, value-samples]
     law: no-value-beside-an-error
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the zero value beside an error"
@@ -150,7 +148,7 @@ claims:
     since: 1.0.0
 ```
 
-The identifier of a claim is the segment of each check of the claim. `generator` is the generator that binds the claim: `suite`, `enum`, `sentinel` or `sim`. The derivation of the binary reads the claims, and no runtime reads them.
+The identifier of a claim is the segment of each check of the claim. `generator` is the generator that binds the claim: `suite`, `enum`, `sentinel` or `sim`. The derivation of the binary reads the claims. A runtime does not read a claim at run time. The constant generator of each runtime reads only the identifiers of the claims.
 
 A claim of `enum`, `sentinel` or `sim` has no licences. The subject of a claim of `enum` is an enumeration, the subject of a claim of `sentinel` is the errors of a package, and the subject of a claim of `sim` is a machine interface under the directive `sim`. Such a claim binds to each subject of its generator and takes its inputs from the subject:
 
@@ -180,11 +178,11 @@ A claim of `suite` binds to a callable, or to the whole declaration when it sets
 | `licences[].needs-param` | A param of the classification that the directive must set, such as `attempts` of the mixin `retry-succeeds` |
 | `licences[].with` | A second classification that the same callable must have. A licence with `with` licenses a composite |
 | `licences[].conflicts` | Classifications whose presence on the callable withdraws the licence |
-| `unless` | A mixin whose presence on the callable withdraws every licence of the claim |
+| `unless` | A mixin whose presence on the callable withdraws every licence of the claim. For a claim of `enum` or `sentinel`, a param of the directive and the value that withdraws the claim, such as `{param: prefix, value: "off"}` of the directive `sentinel` |
 | `scope` | `callable`, the default, or `declaration` |
 | `machineries` | The machineries that the check needs. The first is the deepest |
 | `partners` | The other callables that the probe calls, each found by a mode |
-| `inputs.<name>.from` | `callable`, `partner`, `sample`, `zero`, `param` or `clock` for a claim of `suite`. `members`, `name` or `parse` for a claim of `enum`. `error-values`, `error-types` or `causes` for a claim of `sentinel` |
+| `inputs.<name>.from` | `callable`, `partner`, `sample`, `zero`, `param` or `clock` for a claim of `suite`. `members`, `name`, `parse` or `param` for a claim of `enum`. `error-values`, `error-types`, `causes` or `param` for a claim of `sentinel`, where `param` reads a param of the directive, such as `no-overlap-with` |
 | `defect.form` | The identifier of a form in `defects.yaml` |
 | `entails` | The claims on the same callable whose laws the law of this claim implies |
 
@@ -201,7 +199,7 @@ claims:
     gates: [cancellation, one-value]
     partners:
       write: {mode: named, param: write}
-    law: a-read-returns-the-write-before-it
+    law: read-returns-the-write-before-it
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns what {write} stored before it"
     probe: write-then-read
@@ -225,7 +223,7 @@ claims:
 | `rewriter` | A `reader` partner of a licensed callable that the probe calls twice, with the same field as `interposed` |
 | `establishing` | The one other callable of the declaration that has the classification of the entry, such as `{mode: establishing, shape: writer}`, and takes every binding of the licensed callable. An example is the writer that puts the subject of a reader into a state |
 
-A mode binds exactly one callable or the claim refuses. No match refuses with the gate `partner`, and two matches refuse with the gate `one-partner`. Both remedies name the param that selects the partner. A param of the directive on the licensed callable that names a callable takes precedence over every mode.
+A mode binds exactly one callable or the claim refuses. No match refuses with the gate `partner-found`, and two matches refuse with the gate `one-partner`. Both remedies name the param that selects the partner. A param of the directive on the licensed callable that names a callable takes precedence over every mode.
 
 ### Defect forms
 
@@ -254,11 +252,11 @@ The template tree of each language writes a form as a type that wraps a fresh su
 - **Down.** The deeper check fails on the planted defect of the shallower check. Otherwise the deeper law does not contain the shallower one.
 - **Up.** The shallower check passes on the planted defect of the deeper check. Otherwise the two checks are equivalent, and the shallower one is redundant.
 
-A failure of either direction fails the falsification test of the deeper check with the identities of both checks. A test of the package `spec` rejects an `entails` that names a claim without a licence in common, and a cycle of `entails`.
+A failure of either direction fails the falsification of the deeper check with the identities of both checks. The falsification test of a suite checks the pairs of the checks of the consumer. An application checks the pairs of the derived checks under the option `isolate`, which the corpus passes for each control. A test of the package `spec` rejects an `entails` that names a claim without a licence in common, and a cycle of `entails`.
 
 ### Gates
 
-A gate is a condition on the facts of the subject of a claim: a callable for `suite`, an enumeration for `enum` and the errors of a package for `sentinel`. The derivation implements each gate once for every language. Each gate in the spec has its condition, the reason of a refusal and the remedy:
+A gate is a condition on the facts of the subject of a claim: a callable for `suite`, an enumeration for `enum`, the errors of a package for `sentinel` and a machine interface for `sim`. The derivation implements each gate once for every language. Each gate in the spec has its condition, the reason of a refusal and the remedy:
 
 ```yaml
 gates:
@@ -284,13 +282,12 @@ probes:
         kind: call
       - name: zero
         kind: value
-    asserts: [equal]
     reasons: [value-beside-error]
     vacuous: No call fails, with the sample inputs or with a cancelled context.
     since: 1.0.0
 ```
 
-`asserts` lists the assertions that the probe calls, and `reasons` lists the reason codes that it reports. Before each assertion the probe sets the reason code of a failure of that assertion on its handle, so one assertion can report two reasons at two places of a probe. The handle fails a check whose probe sets a reason that the entry of the probe does not list. `vacuous` is the condition under which the probe reports that it did not exercise its claim.
+`reasons` lists the reason codes that the probe reports. Before each assertion the probe sets the reason code of a failure of that assertion on its handle, so one assertion can report two reasons at two places of a probe. The handle fails a check whose probe sets a reason that the entry of the probe does not list. `vacuous` is the condition under which the probe reports that it did not exercise its claim.
 
 Each input has a kind from a closed list. The template tree of each language passes each kind in one form:
 
@@ -337,16 +334,16 @@ type Store interface { /* ... */ }
 | Machinery | What the run supplies | Supplied by | Param |
 |---|---|---|---|
 | `nothing-beyond-a-caller` | A fixed sequence of calls on one subject, with derived inputs | The runtime | — |
-| `a-clock-the-run-advances` | The controlled clock of the assert library, which the check advances | The runtime | — |
+| `clock-the-run-advances` | The controlled clock of the assert library, which the check advances | The runtime | — |
 | `generated-inputs` | Inputs of the calls of a check that the property engine generates and shrinks | The runtime | — |
-| `a-benchmark-run` | A run of the benchmarks of the test runner, such as `go test -bench` or `vitest bench` | The runtime | — |
+| `benchmark-run` | A run of the benchmarks of the test runner, such as `go test -bench` or `vitest bench` | The runtime | — |
 | `generated-sequences` | Sequences of calls that the property engine produces and shrinks | The runtime | — |
 | `concurrent-callers` | Calls from several callers at once, recorded as a history | The runtime | — |
-| `a-call-that-fails-on-demand` | A subject whose dependencies fail when the check asks for it | The consumer | `faults` |
-| `a-reference-implementation` | A second implementation that gives the expected results | The consumer | `reference` |
-| `a-second-subject` | Another implementation that receives the same calls | The consumer | `second` |
-| `a-killable-process-or-breakable-medium` | A process that the run can kill, and storage that the run can break | The consumer | `medium` |
-| `a-simulated-system` | Every machine of a system on one goroutine, with virtual clocks, faults at the network, the dependencies and the processes, and a trace of every step | The generator `sim` | — |
+| `call-that-fails-on-demand` | A subject whose dependencies fail when the check asks for it | The consumer | `faults` |
+| `reference-implementation` | A second implementation that gives the expected results | The consumer | `reference` |
+| `second-subject` | Another implementation that receives the same calls | The consumer | `second` |
+| `killable-process-or-breakable-medium` | A process that the run can kill, and storage that the run can break | The consumer | `medium` |
+| `simulated-system` | Every machine of a system on one goroutine, with virtual clocks, faults at the network, the dependencies and the processes, and a trace of every step | The generator `sim` | — |
 
 A licensed claim that needs a machinery of the consumer that the declaration does not state has no check and no refusal. The generator lists its classification under the unclaimed classifications with the stance `needs` and a note that names the param. A declaration that states a machinery gets the check, and an application without the door of the machinery fails the check with the name of the option, as every door of conform does.
 
@@ -373,7 +370,7 @@ unclaimed:
     note: The claims of the mixin need concurrent callers.
 ```
 
-A test of the package `spec` walks every classification of the shape catalog of eidos. Each classification must be the licence of a claim or have an entry in `unclaimed`.
+A test of the package `spec` walks every classification of the shape catalog of eidos. Each classification must be the licence of a claim, a role of a contract that a claim of the same contract binds as a partner, or an entry in `unclaimed`. The role `backing` of the contract `cache` is such a partner: the claim `cache` calls it to compare the cache with its backing.
 
 ### Check identity
 
@@ -385,9 +382,9 @@ identity := declaration ["." callable] "/" segment ["#" case]
 
 `declaration` and `callable` are the names of the declaration and the callable as the source declares them, such as `Store.Read` in Go and `Store.read` in TypeScript. A check of a claim with the scope `declaration`, such as `Store/agrees-with-the-reference`, has no callable. A check of an enumeration or of the errors of a package has no callable either. Its declaration is the enumeration or the name of the package. The name of a TypeScript module is the name of its file without the extensions. `segment` is the identifier of the claim, and `case` separates two bindings of one claim on one callable.
 
-To join checks across languages, the key form splits each name into words at an underscore, at a hyphen and before an upper-case letter that follows a lower-case letter or a digit. It writes the words in lower case and joins them with hyphens. `Store.ReadAll/zero-on-error` in Go, `Store.readAll/zero-on-error` in TypeScript and `Store.read_all/zero-on-error` in Rust all have the key `store.read-all/zero-on-error`. Two callables of one declaration with the same key fail generation.
+To join checks across languages, the key form splits each name into words with `naming.Words` of eidos. It writes the words in lower case and joins them with hyphens. `naming.Words` splits at a separator, between a lower-case and an upper-case letter, before the last upper-case letter of a run that a lower-case letter follows, and before an upper-case letter that follows a digit. `Store.ReadAll/zero-on-error` in Go, `Store.readAll/zero-on-error` in TypeScript and `Store.read_all/zero-on-error` in Rust all have the key `store.read-all/zero-on-error`. `HTTPServer` in Go, `httpServer` in TypeScript and `http_server` in Rust all have the key `http-server`. Two callables of one declaration with the same key fail generation.
 
-The test runner of each language runs each check as a test of its own, named by the identity of the check. The call records of a check belong to that test. The run record of mutate-spec contains the names of the tests that detected each mutant, so a mutant maps to the checks that detected it.
+The test runner of each language runs each check as a test of its own, named by the identity of the check. The call records of a check belong to that test. The field `tests` of a killed mutant in the run record of mutate-spec names the tests that failed on it, so a mutant maps to the checks that detected it. A run that stops at the first failure names one of those checks.
 
 ### The suite record
 
@@ -396,7 +393,7 @@ A suite has two applications, and each writes a suite record:
 - The falsification test applies every check of the consumer and every ceiling to its planted defect.
 - The application to a subject first falsifies each derived check on its planted defect over a fresh subject, and then applies every check to the subject. It writes a falsification record and a record of the subject.
 
-The corpus applies each suite to its controls through the application to a subject, so a control is a subject whose record the corpus judges.
+The corpus applies each suite to its controls through the application to a subject, so a control is a subject whose record the corpus judges. With the option `isolate`, the application also runs every other derived check on each planted defect and checks each depth pair. The application to the subject of a consumer does not isolate its defects. A defect of that subject would fail the other checks on every planted defect that wraps it.
 
 A runtime writes the suite record into the artifact of the test runner beside the call records of its assert library, in the form that assert-spec gives the call records of the language. In Go the key is `dokimi.suite.<seq>`, where `seq` numbers the suite records of one test from 1. A record that does not fit one event is split as assert-spec splits a call record: over consecutive events with the same key, whose values join into the record. In TypeScript the record is an element of the array under the key `dokimi.suite` in the meta of the test. The entry `records` of the overlay of each language in assert-spec describes where that artifact keeps the records of a test. `schemas/suite.schema.json` describes the format:
 
@@ -407,7 +404,8 @@ A runtime writes the suite record into the artifact of the test runner beside th
   "generator": {"name": "dokimi", "version": "v0.1.0"},
   "runtime": {"name": "go.dokimi.dev/conform", "version": "v0.1.0"},
   "seed": "0x5f3a1c9e27d4b860",
-  "application": "falsification",
+  "application": "subject",
+  "subject": "InMemory",
   "checks": [
     {
       "identity": "Store.Read/zero-on-error",
@@ -416,14 +414,13 @@ A runtime writes the suite record into the artifact of the test runner beside th
       "law": "no-value-beside-an-error",
       "machineries": ["nothing-beyond-a-caller"],
       "shallow": false,
-      "result": "proven",
-      "reason": "value-beside-error"
+      "result": "pass"
     },
     {
       "identity": "Store.Read/keeps-the-item",
       "key": "store.read/keeps-the-item",
       "authored": true,
-      "result": "proven"
+      "result": "pass"
     }
   ],
   "refusals": [
@@ -450,12 +447,14 @@ A runtime writes the suite record into the artifact of the test runner beside th
 | `spec` | The version of the conformance spec that the runtime implements |
 | `application` | `falsification` or `subject` |
 | `subject` | The name of the subject that the consumer passed to the application, for the application `subject` |
+| `seed` | The seed of the run, as `0x` and 16 hexadecimal digits |
 | `ended` | The fault that ended the application before its last check, absent when every check ran |
 | `checks[].authored` | True for a check of the directive `check`. Such a check has no `claim`, `law`, `machineries` or `reason` |
-| `checks[].result` | `pass`, `fail`, `vacuous`, `excused`, `skipped` or `unchecked` for a subject. `proven`, `passed`, `wrong-reason`, `vacuous` or `unchecked` for falsification |
+| `checks[].result` | `pass`, `fail`, `vacuous`, `excused`, `skipped` or `unchecked` for a subject. `proven`, `passed`, `wrong-reason`, `vacuous`, `unchecked`, `not-isolated`, `not-deeper` or `equivalent` for falsification |
+| `checks[].other` | The identity of the other check of a result `not-isolated`, `not-deeper` or `equivalent` |
 | `checks[].why` | The reason of `unchecked`, `skipped` or `excused` |
 | `checks[].cases` | The number of valid cases of a property check |
-| `checks[].seed` | The seed of the run of a property check, as a decimal string |
+| `checks[].seed` | The seed of the run of a property check, as `0x` and 16 hexadecimal digits |
 | `checks[].counterexample` | The values of the smallest failing case by label, as the typed literals of assert-spec |
 | `checks[].reason` | The reason code that the probe reported |
 | `checks[].failure` | The failure record of assert-spec for the assertion that failed, on `fail` and on `wrong-reason` |
@@ -471,8 +470,11 @@ The results of falsification:
 | `passed` | Passed |
 | `wrong-reason` | Failed with another reason code, or at an assertion with another contract |
 | `vacuous` | Did not exercise its claim |
+| `not-isolated` | Failed with the reason code of its claim, and another check that does not share the defect also failed on it |
+| `not-deeper` | Failed with the reason code of its claim. The check is the deeper check of an edge, and it passed on the planted defect of the shallower check |
+| `equivalent` | Failed with the reason code of its claim. The check is the deeper check of an edge, and the shallower check also failed on its planted defect |
 
-On every result other than `proven` the falsification test fails with a message that contains the identity of the check, the reason code of its claim and the reason code that the probe reported.
+On every result other than `proven` the falsification test fails with a message that contains the identity of the check, the reason code of its claim and the reason code that the probe reported. A result `not-isolated`, `not-deeper` or `equivalent` also names the other check.
 
 An allocation ceiling that the build or the run does not check reports `unchecked`, as RFC-0006 states, on a subject and in falsification.
 
@@ -482,9 +484,10 @@ The results of a subject:
 |---|---|
 | `pass` | Passed and engaged its claim |
 | `fail` | Failed |
-| `vacuous` | Passed and never engaged its claim |
+| `vacuous` | Passed and never engaged its claim. The application fails the check |
 | `excused` | An excusal of the consumer covers it |
 | `skipped` | Skipped because the environment lacks what the check needs, such as direct I/O, and no excusal covers it |
+| `unchecked` | An allocation ceiling that the build or the run does not check |
 
 A reader skips each field that its version of the schema lacks, and it shows an unknown member of an enumeration as unknown instead of mapping it to another member.
 
@@ -498,9 +501,9 @@ Falsification does not take the seed of the run for a property check. It runs th
 
 ### The contract between a generated file and its runtime
 
-A generated file and its runtime agree on a compatibility constant, the names of the probes, the constants of the spec and the reason codes:
+A generated file and its runtime agree on a compatibility function, the names of the probes, the constants of the spec and the reason codes:
 
-1. **A compatibility constant.** Each package of a runtime that generated files import exports a constant whose name contains the major version of its module, such as the function `stub.CompatV1` in Go. Every generated file refers to the constant of the major version that the generator targets. A major version of a runtime renames the constant. A mismatch fails the build of the consumer in Go, Rust, Java, Kotlin and C#, and the type check or the module load in TypeScript. In Python and PHP it fails the import of the generated file.
+1. **A compatibility function.** Each package of a runtime that generated files import exports a function whose name contains the major version of its module, such as `conform.CompatV1` and `stub.CompatV1` in Go. Every generated file refers to the function of the major version that the generator targets. A major version of a runtime renames the function. A mismatch fails the build of the consumer in Go, Rust, Java, Kotlin and C#, and the type check or the module load in TypeScript. In Python and PHP it fails the import of the generated file.
 2. **Probe names.** A generated check calls each probe by its identifier in the casing of the language. With a runtime that implements an older spec without the probe, the build or the import fails at that call.
 3. **Constants.** Each runtime generates the constants of the entries of the spec from its vendored copy. Generated files refer to those constants, so a file that refers to an entry that the runtime lacks fails the build or the import.
 4. **Reason codes.** A probe asserts through the assert library of its language. It passes the library a test handle of the runtime instead of the test itself, and it sets the reason code of each assertion on the handle before the assertion. The handle receives the failure record of each failed assertion and records the reason code that was set. Falsification reads the recorded code and never the text of the failure.
@@ -516,17 +519,19 @@ Each runtime implements the same parts in the conventions of its language:
 | The constants of the spec | The package `spec`, such as `spec.ErrorsDiffer` and `spec.SharedIdentity` | The module `spec`, such as `probes.errorsDiffer` and `reasons.sharedIdentity` |
 | A check | `conform.Check[S]`: the identity and the key, the statement, the claim with its law and machinery, the reason of its defect, a function that applies the check through its handle, and a function that returns its planted defect as a subject of the type `S`. Its methods `Run` and `Falsify` apply the check on any seat to a subject and to its planted defect | `Check<S>`, with the same fields and functions |
 | The checks of one declaration | `conform.Suite[S]`: the language, the package, the declaration, the checks, the refusals and the unclaimed classifications | `Suite<S>` |
-| The test handle | `*conform.Handle[S]`, which implements `assert.TB`, `assert.Reporter` and `assert.Clocked`, returns the seat of its check from `Unwrap`, and builds the subjects of its check. `Fresh` returns a fresh subject of the factory also under falsification, for a planted defect to wrap | `Handle<S>`, which implements `Seat`, with `fresh` |
+| The test handle | `*conform.Handle[S]`, which implements `assert.TB`, `assert.Reporter`, `assert.Clocked` and `assert.Observer`, returns the seat of its check from `Unwrap`, and builds the subjects of its check. `Fresh` returns a fresh subject of the factory also under falsification, for a planted defect to wrap. `Expect` sets the reason code of the assertions that a probe calls next | `Handle<S>`, which implements `Seat` with `observeCall`, with `fresh` and `expect` |
 | The name of a callable | `conform.Callable[S]`, whose method `Check` returns the identity `conform.ID[S]` of a check of the callable | `Callable<S>`, with the function `check` |
 | A probe | A function of the package `probe`, such as `probe.ErrorsDiffer(h, values)` | A function of the module `probe`, such as `errorsDiffer(h, values)` |
 | A named value | `conform.Named[T]` | `Named<T>` |
 | The application to a subject | `conform.Run(t, suite, newSubject, opts...)`, where `newSubject` builds a fresh subject from the handle of each check. The generated `RunStoreSuite` and `RunStoreSuiteFromHandle` of RFC-0003 call it | `run(suite, newSubject, options)`, which the generated `runStoreSuite` and `runStoreSuiteFromHandle` call |
-| The options of an application | `conform.With`, `conform.Excuse`, `conform.Reference`, `conform.Second`, `conform.Restartable`, `conform.Crashable`, `conform.Faultable` and `conform.Durable` | `Options<S>` |
+| The options of an application | `conform.With`, `conform.Excuse`, `conform.Reference`, `conform.Second`, `conform.Restartable`, `conform.Crashable`, `conform.Cases`, `conform.Using`, `conform.Ceilings` and `conform.Isolate`. The RFC of each machinery of the consumer adds the option of its door | `Options<S>`, with `isolate` |
 | The falsification | `conform.Falsify(t, suite)` | `falsify(suite)` |
 
-The module `go.dokimi.dev/conform` contains the packages `conform`, `spec` and `probe` of the Go runtime, as RFC-0005 states. `Run` and `Falsify` run each check as a test of its own, named by the identity of the check. Each check gets a handle of its own, and the probe reads the statement of the check from it. `Run` fails a derived check whose planted defect does not fail it with the reason of its claim, and a check that fails on its subject. `Falsify` fails a check of the consumer whose planted defect does not fail it at its statement, and a ceiling that its defect does not break. Each writes the suite record of its application. The subject of a suite is the implementation that the factory of the consumer returns. The subject of the checks of errors is a value of a type that the generated test declares, with the errors of the package.
+The module `go.dokimi.dev/conform` contains the packages `conform`, `spec` and `probe` of the Go runtime, as RFC-0005 states. `Run` and `Falsify` run each check as a test of its own, named by the identity of the check. Each check gets a handle of its own, and the probe reads the statement of the check from it. `Run` fails a derived check whose planted defect does not fail it with the reason of its claim, and a check that fails on its subject. Under `Isolate`, `Run` also fails a derived check whose planted defect fails another check, and an edge that fails in either direction. `Falsify` fails a check of the consumer whose planted defect does not fail it at its statement, and a ceiling that its defect does not break. Each writes the suite record of its application. The subject of a suite is the implementation that the factory of the consumer returns. The subject of the checks of errors is a value of a type that the generated test declares, with the errors of the package.
 
 ### The package spec
+
+The package `spec` of the module `go.dokimi.dev/dokimi` decodes every file of the spec for the derivation. The package `spec` of each runtime, such as `go.dokimi.dev/conform/spec`, declares the identifier types and the constants alone, from its vendored copy.
 
 ```go
 // Package spec contains the conformance spec of dokimi: the laws, claims,
@@ -536,6 +541,9 @@ package spec
 
 // LawID identifies a law. names.gen.go declares one constant for each.
 type LawID string
+
+// ClaimID identifies a claim. It is the segment of each check of the claim.
+type ClaimID string
 
 // GateID identifies a gate.
 type GateID string
@@ -552,8 +560,11 @@ type MachineryID string
 // StanceID identifies a stance.
 type StanceID string
 
-// AssertionID identifies an assertion of the vendored copy of assert-spec.
-type AssertionID string
+// DefectFormID identifies a form of a planted defect.
+type DefectFormID string
+
+// ReferenceFormID identifies a reference form of a verified fake.
+type ReferenceFormID string
 
 // InputKind is the kind of an input of a probe.
 type InputKind string
@@ -569,9 +580,6 @@ type Probe struct {
 	ID      ProbeID
 	Summary string
 	Inputs  []Input
-
-	// Asserts lists the assertions that the probe calls.
-	Asserts []AssertionID
 
 	// Reasons lists the reason codes that the probe reports.
 	Reasons []ReasonID
@@ -594,16 +602,15 @@ func ProbeOf(id ProbeID) (Probe, bool)
 func Version() string
 ```
 
-The package declares the same pair of functions for laws, claims, gates, reason codes, machineries and stances. It decodes the embedded files on the first call. A test of the package validates each embedded file against its schema and resolves these references:
+The package declares the same pair of functions for laws, claims, gates, reason codes, defect forms, reference forms, machineries and stances. It decodes the embedded files on the first call. A test of the package validates each embedded file against its schema and resolves these references:
 
 - the law, the gates, the probe, the reason code, the defect form and the machineries of each claim
 - the reason code of each claim, against the reasons of its probe
 - each classification of a claim and each param that a licence or a partner names, against the shape catalog of eidos
 - each input of a claim, against the inputs of its probe
 - each claim of `entails`, against the licences of the claim, with no cycle
-- each assertion of a probe, against the vendored copy of assert-spec
 - the depth of each law and each law of `distinct-from`
-- every classification of the shape catalog, against the claims and the entries of `unclaimed`
+- every classification of the shape catalog, against the licences and the partners of the claims and the entries of `unclaimed`
 
 ### Vendoring
 
@@ -615,6 +622,7 @@ dokimi is the repository of a definition. Its `.spec.yaml` declares the files th
 definition:
   repo: dokimasia/dokimi
   root: spec
+  manifest: manifest.json
   languages: [go, typescript]
   files: [VERSION, "*.json", "schemas/*.json"]
   implementations:
@@ -644,7 +652,7 @@ implements:
 | `spec propose` | The job `propose-spec` of the nightly workflow of a runtime | Opens a pull request that updates the copy to the newest release |
 | `spec try` | dokimi | Writes the working tree of the spec into the checkout of each runtime beside dokimi and runs its tests |
 
-dokimi is also an implementation of assert-spec, with a copy under `spec/assert-spec` that follows its main branch. mutate-spec is not a definition of the program `spec`, so dokimi vendors it with the scripts `tools/spec-sync.sh` and `tools/spec-check.sh` of mutate-spec, as mutate-go does. Each runtime requires the release of its assert library that implements the version of assert-spec in the copy of dokimi.
+mutate-spec is not a definition of the program `spec`, so dokimi vendors it with the scripts `tools/spec-sync.sh` and `tools/spec-check.sh` of mutate-spec, as mutate-go does. Each runtime requires a release of its assert library that has every assertion that its probes call.
 
 ### Versioning
 
@@ -665,13 +673,13 @@ dokimi is also an implementation of assert-spec, with a copy under `spec/assert-
 | Invariant | Enforced by |
 |---|---|
 | Every rendered file matches its YAML file, its schema and the digest of the manifest | The generate step of the gate of dokimi, and a test of the package spec |
-| Every reference of an entry resolves in the spec, in the vendored copy of assert-spec and in the shape catalog of eidos | A test of the package spec |
+| Every reference of an entry resolves in the spec and in the shape catalog of eidos | A test of the package spec |
 | A probe reports only the reason codes that its entry lists | The test handle of each runtime |
 | Every classification of the shape catalog has a claim or a stance | A test of the package spec |
 | A vendored copy matches its manifest, and its commit is a release of dokimi | `spec check` in the gate of each runtime, and `spec check --remote` in its CI |
 | Falsification proves a derived check by its reason code and an authored check by the contract of its failure record, and never by the text of a failure | The test handle of each runtime, and the corpus |
 | A proof of a property check gives the same result on every run | The seed from the key of the check, and the corpus |
-| A generated file and its runtime agree on their major version | The compatibility constant |
+| A generated file and its runtime agree on their major version | The compatibility function |
 | Every suite record contains its seed | The runtime of each language |
 
 ### Failure handling
@@ -680,15 +688,14 @@ dokimi is also an implementation of assert-spec, with a copy under `spec/assert-
 |---|---|---|
 | A YAML file has an entry that its schema rejects | The test of the package spec fails | Correct the entry |
 | An entry refers to a law, gate, probe, reason code, machinery or classification that does not exist | The test of the package spec fails and reports the reference | Add the entry, or correct the reference |
-| The entry of a probe refers to an assertion that the vendored copy of assert-spec lacks | The test of the package spec fails | Add the assertion through the RFC process of assert-spec, then vendor the new definition |
+| A probe calls an assertion that the assert library of its runtime lacks | The build of the runtime fails | Add the assertion through the RFC process of assert-spec, and require the release of the assert library that implements it |
 | A rendered file, `names.gen.go` or the manifest is stale | The generate step fails the gate of dokimi | Run `go generate ./spec` and commit the result |
 | A vendored file differs from its digest | `spec check` fails the gate of the runtime | Run `spec sync --locked` |
 | A newer release of dokimi has another spec | `spec propose` opens a pull request in the runtime | Implement the new entries on the branch of the pull request |
 | A generated file calls a probe that the runtime lacks | The build or the import of the consumer fails | Upgrade the runtime |
-| A generated file and its runtime differ in their major version | The compatibility constant fails the build or the import | Upgrade the older side |
+| A generated file and its runtime differ in their major version | The compatibility function fails the build or the import | Upgrade the older side |
 | A probe asserts without setting a reason code first | The handle records the failure without a code, and falsification reports `wrong-reason` | Fix the probe |
 | A probe sets a reason code that its entry does not list | The handle fails the check with the probe and the code | Fix the probe or its entry |
-| The overlay of a language declares an assertion of a probe absent | Each claim of the probe refuses in that language with the reason of the overlay entry | None in dokimi. The overlay contains the reason |
 
 ## Alternatives considered
 
@@ -753,7 +760,7 @@ The runtime writes a JSON report of its own into a directory, apart from the art
 - **A declaration of each machinery of the consumer.** A declaration that wants the checks of a reference, of faults, of a second subject or of a medium states the machinery with the param `machineries`. Without it the claims are unclaimed with the stance `needs`.
 - **New assertions wait on assert-spec.** A probe that needs an assertion that assert-spec lacks waits for an RFC of assert-spec, an entry in the overlay of each language and an implementation in each assert library.
 - **Two copies of each entry in dokimi.** The YAML file and its rendered JSON file are both committed. The generate step keeps them equal.
-- **A YAML library in the dokimi module.** The renderer reads YAML, so the module requires a YAML library that the binary does not use at run time.
+- **A YAML library and a JSON Schema validator in the dokimi module.** The renderer reads YAML, and the test of the package `spec` validates each rendered file. The module requires `go.yaml.in/yaml/v3` and `github.com/google/jsonschema-go`, which the binary does not use at run time. The renderer infers each schema from the Go types of the package `spec` with `jsonschema.For`, and the test validates each rendered file with `Resolved.Validate`.
 
 ## Open questions
 
@@ -769,6 +776,7 @@ None.
 | The vendoring scripts of mutate-spec | <https://github.com/dokimasia/mutate-spec/tree/main/tools> |
 | The failure record of assert-spec | <https://github.com/dokimasia/assert-spec/blob/main/spec/failure.md> |
 | The recording of a run in assert-spec | <https://github.com/dokimasia/assert-spec/blob/main/spec/recording.md> |
-| The overlays of assert-spec | <https://github.com/dokimasia/assert-spec/blob/main/spec/overlays.md> |
 | mutate-spec: a mutation run and its record | <https://github.com/dokimasia/mutate-spec/blob/main/docs/rfc/0002-a-mutation-run-and-its-record.md> |
+| The request to name every test that kills a mutant | <https://github.com/dokimasia/mutate-spec/issues/36> |
+| `naming.Words` of eidos | <https://github.com/dokimasia/eidos/blob/main/eidos-lang/naming/words.go> |
 | JSON Schema 2020-12 | <https://json-schema.org/draft/2020-12/json-schema-core> |

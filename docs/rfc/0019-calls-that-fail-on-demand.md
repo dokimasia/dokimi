@@ -28,7 +28,7 @@ The fault strategies exist. The package `fault` of dokimi-go has counted, retry-
 
 The doors of conform are a reference, a second subject, a restart and a crash (`conform/handle.go:50-67`), and none of them makes a call fail. The ledger of the corpus lists the door that induces a failure as pending (`corpus/go/README.md`). A cache that serves a stale value after its backing fails passes the checks of a single caller when the backing never fails, and so does a writer that applies half a batch before an error.
 
-RFC-0002 names this machinery `a-call-that-fails-on-demand`. It arrives as the clock and the doors arrived. The subject declares the capability through an option, the check demands it, and a missing option fails the check by name.
+RFC-0002 names this machinery `call-that-fails-on-demand`. It arrives as the clock and the doors arrived. The subject declares the capability through an option, the check demands it, and a missing option fails the check by name.
 
 ## Detailed design
 
@@ -94,7 +94,7 @@ conform.Run(t, cachetest.CacheSuite, newCache,
 
 ### The claims
 
-The spec gains claims whose machinery is `a-call-that-fails-on-demand`:
+The spec gains claims whose machinery is `call-that-fails-on-demand`:
 
 | Claim | Licence | Law | Reason | Defect form | Entails |
 |---|---|---|---|---|---|
@@ -105,7 +105,7 @@ The spec gains claims whose machinery is `a-call-that-fails-on-demand`:
 
 RFC-0003 binds `retry-succeeds` and `transaction` as claims of a single caller, whose subject fails through its own inputs. The two claims of this table witness the same laws in full, with the failure of a dependency, so each entails the claim of RFC-0003 and reports its reason code.
 
-Each claim lists `a-call-that-fails-on-demand` among its machineries. A declaration without `machineries=faults` lists the classifications of these claims as unclaimed with the stance `needs`, and a note that names the param. The derivation therefore does not need a fact about the dependencies of a subject: the declaration states that its consumer builds the subject over dependencies that fail.
+Each claim lists `call-that-fails-on-demand` among its machineries. A declaration without `machineries=faults` lists the classifications of these claims as unclaimed with the stance `needs`, and a note that names the param. The derivation therefore does not need a fact about the dependencies of a subject: the declaration states that its consumer builds the subject over dependencies that fail.
 
 ## Alternatives considered
 

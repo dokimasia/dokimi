@@ -110,12 +110,12 @@ func (h *Handle[S]) Crash(s S, call func()) S
 
 The crash function draws the point of the crash from `h.Rand()`. In a property check that source belongs to the case, so a failure replays the same crash point from its seed and shrinks it. The function chooses the unit of the point, such as a write, a byte or a sync of its medium, because only the medium knows its units. `Crash` builds the new subject as `Restart` does, so a read of the clock in the crash function counts as a read by a subject.
 
-The conformance spec has the machinery `a-killable-process-or-breakable-medium` for `Restart`. `Crash` supplies the same machinery:
+The conformance spec has the machinery `killable-process-or-breakable-medium` for `Restart`. `Crash` supplies the same machinery:
 
 | Method | Returns | Machinery |
 |---|---|---|
-| `Restart(s)` | The subject `s` after a restart of its process | `a-killable-process-or-breakable-medium` |
-| `Crash(s, call)` | The subject over the medium of `s` after a crash during `call` | `a-killable-process-or-breakable-medium` |
+| `Restart(s)` | The subject `s` after a restart of its process | `killable-process-or-breakable-medium` |
+| `Crash(s, call)` | The subject over the medium of `s` after a crash during `call` | `killable-process-or-breakable-medium` |
 
 ### The doors of a planted defect
 

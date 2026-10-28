@@ -27,8 +27,8 @@ A Go team that writes `//dokimi:suite` on an interface gets a check for each cla
 - [ ] `dokimi run` on a reader with the mixin `read-after-write` and its param `write` writes the check `read-after-write` with its planted defect, and a reader whose param names no callable lists the claim among its refusals with the remedy.
 - [ ] The module `go.dokimi.dev/conform` contains the packages `spec` and `probe`, with a Go probe for every probe of the spec that a single caller runs.
 - [ ] Falsification of a derived check fails with both reason codes when the planted defect fails for another reason.
-- [ ] Falsification of a pair of `entails` fails with both identities when the deeper check passes on the defect of the shallower one.
-- [ ] Each of the seven partner modes binds a partner in a fixture of the corpus, and refuses with `partner` and `one-partner` in two more.
+- [ ] Under `conform.Isolate`, falsification of a pair of `entails` fails with both identities when the deeper check passes on the defect of the shallower one, and the corpus passes the option for each control.
+- [ ] Each of the seven partner modes binds a partner in a fixture of the corpus, and refuses with `partner-found` and `one-partner` in two more.
 - [ ] A declaration without `machineries=reference` lists a claim that needs a reference as unclaimed with the stance `needs`.
 - [ ] Each fixture of the Go corpus whose laws the spec states uses derived checks, and its tests pass.
 - [ ] An authored check of the directive `check` proves by the contract of its failure record.
@@ -40,7 +40,7 @@ The claims, probes and reason codes of milestone 0002 have to exist first. Vacui
 
 ## Scope
 
-`Derive` of RFC-0003 with the partner modes and the param `machineries` of RFC-0014, the generated checks and the planted defects that wrap a fresh subject, the packages `spec` and `probe` of conform, the fields `Claim`, `Reason` and `Law` of a check, the methods `Expect` and `Fresh` of the handle, the falsification of derived checks inside `conform.Run`, the proof of the edges, and the migration of the Go corpus.
+`Derive` of RFC-0003 with the partner modes and the param `machineries` of RFC-0014, the generated checks and the planted defects that wrap a fresh subject, the packages `spec` and `probe` of conform, the fields `Claim`, `Reason`, `Law`, `Machineries` and `Shallow` of a check, the methods `Expect` and `Fresh` of the handle, the falsification of derived checks inside `conform.Run`, the isolation and the edges under `conform.Isolate`, the generators `enum` and `sentinel` on the claims of the spec through `conform.Falsify` and `conform.Run`, and the migration of the Go corpus.
 
 ## Not in this milestone
 
@@ -52,7 +52,7 @@ The claims, probes and reason codes of milestone 0002 have to exist first. Vacui
 
 | Risk | What it delays | What we would do |
 |---|---|---|
-| The migration of 168 fixtures takes longer than the derivation | Milestone 0004 and every later milestone | Migrate the fixtures of conformance level 1 first, and keep the others authored until the corpus gate needs them |
+| The migration of 146 fixtures takes longer than the derivation | Milestone 0004 and every later milestone | Migrate the fixtures of conformance level 1 first, and keep the others authored until the corpus gate needs them |
 | A gate needs a fact that the rules of eidos do not assign | The claims of that gate | File the request with eidos, and refuse the claim with the gate until it is released |
 
 ## Changes
@@ -60,3 +60,5 @@ The claims, probes and reason codes of milestone 0002 have to exist first. Vacui
 | Date | What changed | Why |
 |---|---|---|
 | 2026-10-28 | Created at position 3 | The first roadmap of dokimi |
+| 2026-10-28 | The isolation and the edges run under `conform.Isolate`, a check gains `Machineries` and `Shallow`, and the corpus counts 146 fixtures | A defect of the subject of a consumer fails the isolation of every planted defect that wraps it, so the controls of the corpus isolate the derived defects. The suite record needs the machineries of each check |
+| 2026-10-28 | The scope gains the generators `enum` and `sentinel` on the claims of the spec | Their checks are claims of the spec, and no milestone contained the change of the generators |

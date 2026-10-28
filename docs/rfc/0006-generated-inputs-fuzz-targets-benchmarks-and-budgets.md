@@ -20,7 +20,7 @@ produces-adr: tbd
 
 ## Summary
 
-The suite generator gains two machineries. Under `generated-inputs`, the property engine of the assert library generates the inputs of a check and shrinks each failure to its smallest case. Under `a-benchmark-run`, the benchmark contract of the assert library measures a callable. Both cover every callable that a suite covers: the methods of an interface or of a concrete type, functions, and generic declarations at their witnesses.
+The suite generator gains two machineries. Under `generated-inputs`, the property engine of the assert library generates the inputs of a check and shrinks each failure to its smallest case. Under `benchmark-run`, the benchmark contract of the assert library measures a callable. Both cover every callable that a suite covers: the methods of an interface or of a concrete type, functions, and generic declarations at their witnesses.
 
 The generator writes four kinds of output with them:
 
@@ -78,7 +78,7 @@ The conformance spec gains two machineries:
 | Machinery | What the run supplies |
 |---|---|
 | `generated-inputs` | Inputs of the calls of a check that the property engine generates and shrinks |
-| `a-benchmark-run` | A run of the benchmarks of the test runner, such as `go test -bench` or `vitest bench` |
+| `benchmark-run` | A run of the benchmarks of the test runner, such as `go test -bench` or `vitest bench` |
 
 `generated-inputs` is deeper than `nothing-beyond-a-caller` and shallower than `generated-sequences`. Under `generated-sequences` the engine also chooses the calls, and the claims of that machinery have a design of their own. The sample binding of a claim whose law has the depth `generated-inputs` witnesses the law at its shallow end, and the suite record marks that check as shallow.
 

@@ -2,9 +2,9 @@
 rfc: 0001
 title: The purpose and scope of dokimi
 author: Roy Klopper <roy.klopper@stealthscale.io>
-status: Draft
+status: Accepted
 created: 2026-10-13
-updated: 2026-10-21
+updated: 2026-10-28
 discussion: none
 supersedes: none
 superseded-by: none
@@ -20,7 +20,7 @@ produces-adr: tbd
 
 ## Summary
 
-dokimi defines what an implementation must do to conform to a shape, and it generates the conformance suites of a codebase with the proof that each check can fail. The conformance spec of dokimi is versioned data. It contains the laws of each shape, mixin and contract of the shape catalog of eidos, the claims that each classification licenses, the probes that check the claims and the reason codes of their failures. One derivation turns the spec into the checks of each contract that a codebase declares. A contract is an interface, a concrete type, a function, an enumeration or an error value. Every check comes with a planted defect. Each planted defect is an implementation of the contract that is correct except for the one law that its check verifies. Falsification runs the check against its planted defect and fails unless the check fails with the reason code of its claim.
+dokimi defines what an implementation must do to conform to a shape, and it generates the conformance suites of a codebase with the proof that each check can fail. The conformance spec of dokimi is versioned data. It contains the laws of each shape, mixin and contract of the shape catalog of eidos, the claims that each classification licenses, the probes that check the claims and the reason codes of their failures. One derivation turns the spec into the checks of each declaration of a codebase. A declaration is an interface, a concrete type, a function, an enumeration or an error value. Every check comes with a planted defect. Each planted defect is an implementation of the declaration that is correct except for the one law that its check verifies. Falsification runs the check against its planted defect and fails unless the check fails with the reason code of its claim.
 
 The binary reads source code through eidos and writes the tests in the language of the source. Each generated check calls a probe of the runtime of its language, and the probe asserts through the assert library of that language. The tests run under the test runner of the language and write the records that assert-spec defines. A mutation run of the tests writes the records that mutate-spec defines. Each run uploads its results to the service of dokimi, which shows what each suite claims, what it proved and what it refused.
 
@@ -60,7 +60,7 @@ testkit generates conformance checks for Go interfaces and proves each check aga
 
 The neighbouring projects leave the choice of checks and their proof to their users:
 
-- eidos reads source code in Go, TypeScript, Rust, Java and protobuf, classifies each callable and renders files. It leaves the choice of checks to its consumer.
+- eidos reads source code in Go, TypeScript, Rust, Python, Java, protobuf and GraphQL, classifies each callable and renders files. It leaves the choice of checks to its consumer.
 - assert-spec defines the assertions and the records of a test run, and an assert library implements it in each language. Neither defines a law of a shape.
 - mutate-spec defines the records of a mutation run, and dokimi-mutate-go measures the tests of Go code.
 
@@ -69,7 +69,7 @@ The neighbouring projects leave the choice of checks and their proof to their us
 ### Goals
 
 - Define the conformance of each shape, mixin and contract of the shape catalog once, as versioned data that every language reads.
-- Generate the tests of a declared contract in the language of its source, for interfaces, concrete types, functions, enumerations and error values.
+- Generate the tests of a declaration in the language of its source, for interfaces, concrete types, functions, enumerations and error values.
 - Derive the checks of every language with one derivation from the conformance spec.
 - Prove each generated check against a planted defect, and match its failure by the reason code of its claim.
 - Check every language against the conformance spec with one corpus, so that a difference between two languages is declared or fails the build.
@@ -101,9 +101,9 @@ dokimi does not derive a check from the behaviour of an implementation, because 
 | Law | A statement about a subject that is true or false, such as `no-value-beside-an-error`. The service counts coverage per law. assert-spec uses the word property for a body that passes for every generated input |
 | Claim | A statement that a classification licenses, such as "Read returns the zero value beside an error". Its check witnesses one law |
 | Licence | The classification that a claim requires |
-| Gate | A condition on the facts of a callable that a claim requires, such as "the callable can fail" |
-| Check | The generated test of one claim on one callable |
-| Check identity | `<declaration>.<callable>/<segment>` with an optional `#<case>`, such as `Store.Read/zero-on-error` |
+| Gate | A condition on the facts of the subject of a claim that the claim requires, such as "the callable can fail" |
+| Check | The test of one claim on one callable, on a whole declaration, on an enumeration or on the errors of a package. A check of the consumer is a function that the consumer binds with the directive `check` |
+| Check identity | `<declaration>.<callable>/<segment>` with an optional `#<case>`, such as `Store.Read/zero-on-error`, or `<declaration>/<segment>` for a check without a callable |
 | Probe | The procedure of a check. The conformance spec defines its inputs and its reason codes, and each runtime implements it |
 | Reason code | The identifier of a violation that a probe reports, such as `value-beside-error` |
 | Assertion | An assertion of assert-spec, such as `equal` or `idempotent`. A probe asserts through the assert library of its language |
@@ -194,7 +194,7 @@ The same directive on a concrete type selects the same claims for each method of
 
 | Component | Repository | Contents |
 |---|---|---|
-| dokimi | `dokimasia/dokimi`, the Go module `go.dokimi.dev/dokimi` | The conformance spec, the binary `dokimi` with its derivation, its generators and the command `conform`, and the corpus |
+| dokimi | `dokimasia/dokimi`, the Go module `go.dokimi.dev/dokimi` | The conformance spec, the binary `dokimi` with its derivation, its generators and the commands `conform` and `report`, and the corpus |
 | A runtime per language | `dokimasia/dokimi-<lang>`, published to the registry of the language | The packages that generated tests import: the probes of the conformance spec, the suite engine, falsification, typed doubles, fault injection and the writer of suite records |
 | assert-spec | `dokimasia/assert-spec` | The definition of every assertion and of its name in each language, the failure record and the call record, the property engine, the machines, the checkers of histories, the benchmark ceilings and the controlled clock |
 | mutate-spec | `dokimasia/mutate-spec` | The definition of a mutation run and of its record |
@@ -236,7 +236,7 @@ The conformance spec defines the conformance of shapes. assert-spec and mutate-s
 | A check that disappears from a regeneration fails the generation gate | The suite generator |
 | A generated test runs without the binary and imports none of its packages | The template trees, and a test of each binding |
 | The derivation contains no rule for a single language | depguard on the package of the derivation |
-| A generated file and its runtime agree on their major version, or the build of the consumer fails | The compatibility constant of each runtime |
+| A generated file and its runtime agree on their major version, or the build of the consumer fails | The compatibility function of each runtime |
 | A claim has one meaning in every language | One conformance spec, and the corpus that every language runs |
 | The corpus has a control for each shape family that differs from its subject | The corpus |
 | A suite record has an identity, a version of the conformance spec and a seed | Each runtime |
@@ -244,7 +244,7 @@ The conformance spec defines the conformance of shapes. assert-spec and mutate-s
 
 ### Capabilities
 
-Each capability beyond the checks of a single caller has a design of its own. The verdicts follow.
+Each capability beyond the checks of a single caller needs a design of its own. The verdicts follow.
 
 #### What dokimi generates from
 
@@ -286,7 +286,7 @@ Each capability beyond the checks of a single caller has a design of its own. Th
 | A killable process and a breakable medium | In | Durable subjects lose data on torn writes, lost syncs, bit rot and a full disk, which no check on a healthy medium produces | A subject that is durable on real media fails the injected faults |
 | Cross-version evolution | In | Version N+1 must read what version N wrote, and a rollback must survive what N+1 wrote | — |
 | Replay of recorded call sequences | In | Recorded sequences exercise states that derived sequences miss | — |
-| Controlled interleavings | Out | No language in scope lets a test choose the schedule of an unmodified subject | An opt-in synchronization package, controlled by the scheduler under a build tag, reproduces a known race from a schedule identifier on a second machine |
+| Controlled interleavings | Out | gosim runs an unmodified Go program on a seeded scheduler, but only on Go 1.25 and 1.26. No tool does the same for the Go release that dokimi builds with or for another language in scope | An opt-in synchronization package, controlled by the scheduler under a build tag, reproduces a known race from a schedule identifier on a second machine |
 
 #### The proof
 
@@ -340,7 +340,7 @@ Each capability beyond the checks of a single caller has a design of its own. Th
 | Repair that merges its own patch | Out | The suite that approved a patch cannot check it, and patches that delete the feature pass their suites | A verification step proves the law that the patch claims to fix |
 | A digital twin of production | Out | A prediction from a simulation of production needs a faithful model of production, which nobody has | — |
 | Proofs of conformance in zero knowledge | Out | A proof of a test run states that the tests passed, which a signature over the bundle states already | — |
-| A matrix of Byzantine faults | Out | The simulation of sans-IO machines drops, delays, duplicates and forges messages. A Byzantine fault is a machine that breaks its protocol on purpose, and no consumer runs a consensus protocol that must survive one | A consumer runs a consensus protocol in a simulated system |
+| A matrix of Byzantine faults | Out | The simulation of sans-IO machines drops, delays, duplicates and forges messages. A Byzantine fault is a machine that breaks its protocol on purpose, and no consumer runs a consensus protocol that must survive one | A consumer runs a Byzantine-fault-tolerant protocol in a simulated system |
 | Concolic execution | Out | It needs a symbolic model of the runtime of each language. Generation guided by vacuous checks exercises many of the same states | Guided generation proves insufficient |
 | Export of claims to a model checker | Out | The mapping from the claims to the model fails without a sign | The mapping can be checked against the implementation |
 
@@ -359,9 +359,10 @@ A language gets a binding design when eidos reads it with rules and an assert li
 |---|---|---|
 | Go | Go | Nothing |
 | TypeScript | TypeScript | A release of `@dokimi/assert` on npm |
-| Rust | Rust | The rules of Rust in eidos, and a release of the crate `dokimi-assert` |
-| Python | Python | A satellite of Python in eidos, and a release of the package `dokimi-assert` |
-| Protobuf | Go and TypeScript | The gRPC binding of a service in eidos |
+| Rust | Rust | A release of the crate `dokimi-assert` |
+| Python | Python | A release of the package `dokimi-assert` |
+| Protobuf | Go and TypeScript | Nothing |
+| GraphQL | Go and TypeScript | The binding of a schema to the resolvers of each target in eidos |
 | Java | Java | The rules of Java in eidos, and a release of `dev.dokimi:assert-core` |
 | Kotlin | Kotlin | A satellite of Kotlin with rules in eidos, and a release of `dev.dokimi:assert-kotlin` |
 | PHP | PHP | A satellite of PHP with rules in eidos, and an assert library for PHP |
@@ -419,15 +420,15 @@ testkit keeps its repository, and its plugins move to the SDK of the new eidos.
 
 ## Drawbacks
 
-- **A runtime per language.** Each runtime needs a repository with a baseline, a gate and a release flow. The languages in the table need eight runtimes, because protobuf runs on the runtimes of Go and TypeScript.
+- **A runtime per language.** Each runtime needs a repository with a baseline, a gate and a release flow. The languages in the table need eight runtimes, because protobuf and GraphQL run on the runtimes of Go and TypeScript.
 - **Every probe in every runtime.** Each runtime implements in host code every probe of the conformance spec, a suite engine, a double runtime, the fault strategies and a writer of suite records. The corpus checks each runtime against the spec.
 - **A sync of the conformance spec in every runtime.** Each runtime vendors the conformance spec of a release of dokimi, and a new probe needs an implementation in each runtime.
 - **Requests to assert-spec.** A probe that needs an assertion that assert-spec lacks waits for the RFC process of assert-spec and an implementation in each assert library.
-- **A template tree per generator and language.** Each generator needs a template tree for each target language. The suite, stub, builder, enum and sentinel generators with eight targets need 40 trees, and each new generator, such as `fake` and `sim`, adds eight more. The machineries beyond a single caller are claims of the suite, so they add templates to the trees of the suite and no tree of their own.
-- **Falsification doubles the run time of a suite.** Each check runs against the subject and against its planted defect.
+- **A template tree per generator and language.** Each generator needs a template tree for each target language. The suite, stub, builder, enum and sentinel generators with eight targets need 40 trees. Each new generator adds one tree per language that it serves: eight for `fake`, and one for `sim`, which serves Go. The machineries beyond a single caller are claims of the suite, so they add templates to the trees of the suite and no tree of their own.
+- **Falsification doubles the run time of a suite.** Each check runs against the subject and against its planted defect. The corpus also runs every other check on each planted defect of a control, so a suite of N derived checks costs N×N runs of checks there.
 - **A dependency on the API of eidos.** Each breaking release of eidos is a release of dokimi.
 - **Generated files in the repository of the consumer.** Each regeneration produces a diff to review.
-- **cgo in every release.** The frontends of TypeScript, Java and Rust parse through the cgo bindings of tree-sitter, so every release platform needs a C toolchain.
+- **cgo in every release.** The frontends of TypeScript, Java, Rust and Python parse through the cgo bindings of tree-sitter, so every release platform needs a C toolchain.
 - **A hosted service to run.** The service stores the bundles of every run of every consumer, so it needs storage, retention and an upload token per project.
 
 ## Open questions
@@ -443,8 +444,6 @@ None.
 | assert-spec: the definition, its rendering and its vendoring | <https://github.com/dokimasia/assert-spec/blob/main/README.md> |
 | mutate-spec: a mutation run and its record | <https://github.com/dokimasia/mutate-spec/blob/main/docs/rfc/0002-a-mutation-run-and-its-record.md> |
 | A consumer binary of eidos and its command kernels | <https://github.com/dokimasia/eidos/blob/main/docs/architecture/14-distribution-and-cli.md> |
-| The request for the rules of Rust | <https://github.com/dokimasia/eidos/issues/4> |
-| The request for a satellite of Python | <https://github.com/dokimasia/eidos/issues/5> |
-| The request for the gRPC binding of a protobuf service | <https://github.com/dokimasia/eidos/issues/6> |
+| gosim, a deterministic simulation of Go programs by translation | <https://github.com/neria-cloud/gosim> |
 | `testing/fstest` | <https://pkg.go.dev/testing/fstest> |
 | `testing/iotest` | <https://pkg.go.dev/testing/iotest> |

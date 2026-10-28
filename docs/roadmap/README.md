@@ -46,7 +46,7 @@ flowchart LR
 | Order | Milestone | Status | Depends on | Released in |
 |---|---|---|---|---|
 | 1 | [0001](0001-a-lost-check-fails-the-gate.md) A lost check fails the generation gate | Planned | none | unscheduled |
-| 2 | [0002](0002-every-classification-has-a-law.md) Every classification has a law or a stance | Planned | none | unscheduled |
+| 2 | [0002](0002-every-classification-has-a-law.md) Every classification has a law or a stance | In progress | none | unscheduled |
 | 3 | [0003](0003-go-declarations-get-derived-checks.md) A Go declaration gets derived checks | Planned | 0002 | unscheduled |
 | 4 | [0004](0004-vacuous-and-over-strong-checks-fail.md) Vacuous and over-strong checks fail | Planned | 0003 | unscheduled |
 | 5 | [0005](0005-a-run-writes-its-suite-record.md) A run writes its suite record | Planned | 0003, 0004 | unscheduled |

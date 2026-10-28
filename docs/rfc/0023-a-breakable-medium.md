@@ -132,7 +132,7 @@ An application with `Durable` therefore needs neither `Restartable` nor `Crashab
 | `corruption-is-reported` | The mixin `durable` with its param `corrupt` | A read of a corrupted record fails with the error that `corrupt` names and returns no value | `ignores-checksum` |
 | `full-medium-is-reported` | The mixin `durable` | A write that the medium cannot hold fails with an error, and the state is as before | `half-written-on-full` |
 
-Each claim lists `a-killable-process-or-breakable-medium` among its machineries. A declaration without `machineries=medium` lists the mixin `durable` as unclaimed with the stance `needs`.
+Each claim lists `killable-process-or-breakable-medium` among its machineries. A declaration without `machineries=medium` lists the mixin `durable` as unclaimed with the stance `needs`.
 
 The shape catalog of eidos has the mixin `durable` (`eidos-plugin-shape/spec/mixins/durable.yaml`). Its param `corrupt` refers to the error that a read of a corrupted record reports, so a declaration states with it that the subject checks the integrity of a record on read. A declaration without `corrupt` gets no claim `corruption-is-reported`.
 

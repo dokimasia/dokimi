@@ -9,8 +9,8 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 
 | RFC | Title | Status |
 |---|---|---|
-| [0001](0001-the-architecture-of-dokimi.md) | The purpose and scope of dokimi | Draft |
-| [0002](0002-the-conformance-spec.md) | The conformance spec | Draft |
+| [0001](0001-the-architecture-of-dokimi.md) | The purpose and scope of dokimi | Accepted |
+| [0002](0002-the-conformance-spec.md) | The conformance spec | Accepted |
 | [0003](0003-the-suite-generator.md) | The suite generator | Accepted |
 | [0004](0004-doubles-builders-enumerations-and-errors.md) | Doubles, builders, enumerations and errors | Accepted |
 | [0005](0005-the-package-structure-of-dokimi.md) | The package structure of dokimi | Draft |
@@ -22,7 +22,7 @@ Proposals, and the argument that produced them. An RFC is written to be argued w
 | [0011](0011-the-environment-of-a-check.md) | The environment of the runs of a check | Accepted |
 | [0012](0012-the-sample-of-a-parameter.md) | The sample of a parameter in the generated calls | Accepted |
 | [0013](0013-the-lock-of-check-identities.md) | The lock of check identities | Draft |
-| [0014](0014-the-derivation-of-checks.md) | The derivation of checks from the conformance spec | Draft |
+| [0014](0014-the-derivation-of-checks.md) | The derivation of checks from the conformance spec | Accepted |
 | [0015](0015-vacuous-checks-and-controls.md) | Vacuous checks and controls | Draft |
 | [0016](0016-the-suite-record-in-the-run-artifact.md) | The suite record in the artifact of a run | Draft |
 | [0017](0017-the-corpus-gate.md) | The corpus gate of each language | Draft |

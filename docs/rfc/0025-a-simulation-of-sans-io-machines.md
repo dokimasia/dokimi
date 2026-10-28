@@ -289,7 +289,7 @@ A machine whose effects depend on the order of a map therefore fails at once, in
 
 ### The rules of a runtime
 
-The spec states five claims with the generator `sim` and the machinery `a-simulated-system`. A claim of `sim` binds to each machine interface under the directive, as a claim of `enum` binds to each enumeration:
+The spec states five claims with the generator `sim` and the machinery `simulated-system`. A claim of `sim` binds to each machine interface under the directive, as a claim of `enum` binds to each enumeration:
 
 | Claim | Law | Reason | Defect form |
 |---|---|---|---|

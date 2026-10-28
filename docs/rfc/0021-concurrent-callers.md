@@ -36,7 +36,7 @@ Porcupine checks linearizability for Go programs in the same way, and partitions
 
 | Claim | Licence | Machineries | Probe | Reason | Defect form |
 |---|---|---|---|---|---|
-| `linearizable` | The mixin `concurrent` | `concurrent-callers`, `a-reference-implementation` | `linearizable-history` | `not-linearizable` | `racy-read-write` |
+| `linearizable` | The mixin `concurrent` | `concurrent-callers`, `reference-implementation` | `linearizable-history` | `not-linearizable` | `racy-read-write` |
 | `serializable` | The mixin `serializable` | `concurrent-callers` | `serializable-history` | `not-serializable` | `reads-uncommitted` |
 | `snapshot-isolation` | The mixin `snapshot-isolation` | `concurrent-callers` | `snapshot-history` | `lost-update` | `writes-without-a-snapshot` |
 

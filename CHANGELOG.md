@@ -1,5 +1,17 @@
 # go.dokimi.dev/dokimi
 
+## 0.6.0
+
+### Minor Changes
+
+- 33b06f2: Add the param `field` of `//dokimi:stub`, the name template of the field that configures each method of a double.
+- 33b06f2: Report `DOKIMISTUB-0007` at a declaration whose param `field` is not the name template of a field.
+
+### Patch Changes
+
+- f76be57: Quote the empty name template of an option of enum in its error, as the other errors of a name template do.
+- 5994f41: Fix a run over a module whose dependency carries directives of dokimi, through the eidos modules at 83dc1f97.
+
 ## 0.5.0
 
 ### Minor Changes

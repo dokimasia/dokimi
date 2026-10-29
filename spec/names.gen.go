@@ -182,6 +182,7 @@ const (
 	OptionalInput                            GateID       = "optional-input"
 	PartnerFound                             GateID       = "partner-found"
 	OnePartner                               GateID       = "one-partner"
+	PartnerArguments                         GateID       = "partner-arguments"
 	Rewritable                               GateID       = "rewritable"
 	Members                                  GateID       = "members"
 	TwoMembers                               GateID       = "two-members"

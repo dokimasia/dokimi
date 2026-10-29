@@ -74,6 +74,11 @@ gates:
     why: "two callables of the declaration can be the partner {partner} of {callable}"
     remedy: "name the partner of {callable} with the param of the classification"
     since: 1.0.0
+  partner-arguments:
+    passes: Each parameter of the read is a parameter of the write with the same name and type, a field of the written value with its name and type, or the context.
+    why: "a parameter of the read of {callable} selects neither a value that {partner} takes nor a field of the written value"
+    remedy: "align the name of the parameter of the read with a parameter or a field of the write"
+    since: 1.0.0
   rewritable:
     passes: The written value has a field that the read does not select by, so a second write can change what the read returns.
     why: "the read selects by every field of the value that {callable} writes"

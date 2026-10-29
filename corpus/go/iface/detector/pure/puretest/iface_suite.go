@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pure"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,59 @@ type pureDescribe struct {
 	conform.Callable[pure.Pure]
 }
 
+// Smoke returns the identity of the check that Describe returns without a
+// panic for derived inputs.
+func (c pureDescribe) Smoke() conform.ID[pure.Pure] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Describe returns
+// the same value for the same inputs.
+func (c pureDescribe) Deterministic() conform.ID[pure.Pure] {
+	return c.Check("deterministic")
+}
+
 // PureSuite returns the checks of Pure, and the calls and the budgets of
 // its callables.
 func PureSuite() conform.Suite[pure.Pure] {
 	return conform.Suite[pure.Pure]{
 		Declaration: "Pure",
+		Checks: []conform.Check[pure.Pure]{
+			{
+				ID:          PureChecks.Describe.Smoke(),
+				Statement:   "Describe returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PureHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Describe()
+						return nil
+					})
+				},
+				Defect: pureDescribePanics,
+			},
+			{
+				ID:          PureChecks.Describe.Deterministic(),
+				Statement:   "Describe returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PureHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						r0 := h.Subject().Describe()
+						return r0, nil
+					})
+				},
+				Defect: pureDescribeDrifts,
+			},
+		},
 		Calls: []conform.Call[pure.Pure]{
 			{
 				Calls:    pureDescribeCalls,
@@ -138,4 +188,43 @@ func newPureOver(_ *PureHandle, spend func()) pure.Pure {
 	return pureOver{spend: spend}
 }
 
-// dokimi:provenance sha256:e9164fac37da4df5c7f7cdb04a0a9d8cb3d8a1d5698785dfd6ea529305808056
+// pureDescribePanicsDefect is the planted defect of a Pure whose Describe
+// panics.
+type pureDescribePanicsDefect struct {
+	pureOverEmbedded
+}
+
+// Describe is the override of the planted defect.
+func (*pureDescribePanicsDefect) Describe() (r0 string) {
+	panic("the planted defect of a Pure whose Describe panics")
+}
+
+// pureDescribePanics returns the planted defect of a Pure whose Describe
+// panics over a fresh subject.
+func pureDescribePanics(h *PureHandle) pure.Pure {
+	return &pureDescribePanicsDefect{pureOverEmbedded: h.Fresh()}
+}
+
+// pureDescribeDriftsDefect is the planted defect of a Pure whose Describe
+// returns another value on the repeat.
+type pureDescribeDriftsDefect struct {
+	pureOverEmbedded
+	calls int
+}
+
+// Describe is the override of the planted defect.
+func (d *pureDescribeDriftsDefect) Describe() (r0 string) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = string("sample-b")
+	}
+	return r0
+}
+
+// pureDescribeDrifts returns the planted defect of a Pure whose Describe
+// returns another value on the repeat over a fresh subject.
+func pureDescribeDrifts(h *PureHandle) pure.Pure {
+	return &pureDescribeDriftsDefect{pureOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:6c3f637d36340d4d1a9f30e514f314d8ae347de9b1b4a82bb6303afb5972a7ab

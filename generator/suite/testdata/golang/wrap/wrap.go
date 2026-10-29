@@ -2,7 +2,28 @@
 // cannot import.
 package wrap
 
-import "example.com/shop/lib/tool"
+import (
+	"context"
+
+	"example.com/shop/lib/tool"
+)
+
+// Reach stores and reads the pitch of a tool, whose declared default is a
+// constant of the internal package of the tree lib.
+//
+//dokimi:suite
+type Reach interface {
+	// Store stores p.
+	Store(ctx context.Context, p tool.Pitch) error
+
+	// Current returns the pitch that Store stored.
+	//
+	//dokimi:mixin read-after-write write=Store
+	Current(ctx context.Context) (tool.Pitch, error)
+
+	// Gear returns the gear of the tool.
+	Gear(ctx context.Context) (tool.Gear, error)
+}
 
 // Wrapped is a struct under the directive suite that promotes Level, whose
 // result is a type of the internal package of the tree lib.

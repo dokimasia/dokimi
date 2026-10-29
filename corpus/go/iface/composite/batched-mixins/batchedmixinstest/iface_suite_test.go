@@ -49,6 +49,54 @@ func TestBatchedSuite(t *testing.T) {
 				Defect: func(*batchedmixinstest.BatchedHandle) batchedmixins.Batched { return &batchedSubject{} },
 			}),
 			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.Idempotent(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.ReadAfterWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Cacheable(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Pure(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
 				"the test applies the check of its option alone",
 			),
@@ -73,6 +121,54 @@ func TestBatchedSuite(t *testing.T) {
 				},
 				Defect: func(*batchedmixinstest.BatchedHandle) batchedmixins.Batched { return &batchedSubject{} },
 			}),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Put.Idempotent(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.Read.ReadAfterWrite(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Cacheable(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchedmixinstest.BatchedChecks.List.Pure(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
 				"the test applies the check of its option alone",
@@ -109,6 +205,54 @@ func TestBatchedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(batchedmixinstest.BatchedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(batchedmixinstest.BatchedChecks.List.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cacheable(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Pure(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -122,6 +266,54 @@ func FuzzBatchedSuitePut(f *testing.F) {
 		f,
 		batchedmixinstest.BatchedChecks.Put.Callable,
 		batchedIdle,
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cacheable(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Pure(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -137,6 +329,54 @@ func FuzzBatchedSuiteRead(f *testing.F) {
 		batchedmixinstest.BatchedChecks.Read.Callable,
 		batchedIdle,
 		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cacheable(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Pure(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -150,6 +390,54 @@ func FuzzBatchedSuiteList(f *testing.F) {
 		f,
 		batchedmixinstest.BatchedChecks.List.Callable,
 		batchedIdle,
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Put.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.Read.ReadAfterWrite(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Cacheable(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchedmixinstest.BatchedChecks.List.Pure(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			batchedmixinstest.BatchedChecks.List.ListsAtMostTheLimit(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -180,4 +468,4 @@ func BenchmarkBatchedSuiteParallel(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:cf7ad4d5952398f0899ea8cbe6ccc5497ed02d4a89ea09dc1ff3dccf4075c7f7
+// dokimi:provenance sha256:1dec021db358f2210fa6432ccdfd9f7f322e9f437b1feb0703bac67e5f0da3d4

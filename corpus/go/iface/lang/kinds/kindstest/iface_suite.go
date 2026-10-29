@@ -20,7 +20,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/kinds"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -75,10 +77,34 @@ type everyFields struct {
 	conform.Callable[kinds.Every]
 }
 
+// Smoke returns the identity of the check that Fields returns without a
+// panic for derived inputs.
+func (c everyFields) Smoke() conform.ID[kinds.Every] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Fields returns the
+// same value for the same inputs.
+func (c everyFields) Deterministic() conform.ID[kinds.Every] {
+	return c.Check("deterministic")
+}
+
 // everyElements is the name of Every.Elements, with the identities of its
 // checks.
 type everyElements struct {
 	conform.Callable[kinds.Every]
+}
+
+// Smoke returns the identity of the check that Elements returns without a
+// panic for derived inputs.
+func (c everyElements) Smoke() conform.ID[kinds.Every] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Elements returns
+// the same value for the same inputs.
+func (c everyElements) Deterministic() conform.ID[kinds.Every] {
+	return c.Check("deterministic")
 }
 
 // everyResults is the name of Every.Results, with the identities of its
@@ -158,6 +184,74 @@ func EverySuite() conform.Suite[kinds.Every] {
 	return conform.Suite[kinds.Every]{
 		Declaration: "Every",
 		Checks: []conform.Check[kinds.Every]{
+			{
+				ID:          EveryChecks.Fields.Smoke(),
+				Statement:   "Fields returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *EveryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Fields(&kinds.Fields{Map: map[string]int{"Map-a": 42}})
+						return nil
+					})
+				},
+				Defect: everyFieldsPanics,
+			},
+			{
+				ID:          EveryChecks.Fields.Deterministic(),
+				Statement:   "Fields returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *EveryHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Fields(&kinds.Fields{Map: map[string]int{"Map-a": 42}})
+						return r0, nil
+					})
+				},
+				Defect: everyFieldsDrifts,
+			},
+			{
+				ID:          EveryChecks.Elements.Smoke(),
+				Statement:   "Elements returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *EveryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Elements(&kinds.Elements{Bool: []bool{true}})
+						return nil
+					})
+				},
+				Defect: everyElementsPanics,
+			},
+			{
+				ID:          EveryChecks.Elements.Deterministic(),
+				Statement:   "Elements returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *EveryHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Elements(&kinds.Elements{Bool: []bool{true}})
+						return r0, nil
+					})
+				},
+				Defect: everyElementsDrifts,
+			},
 			{
 				ID:        EveryChecks.Drain.DrainsTheFeed(),
 				Statement: "Drain sends each buffered value of the channels of a feed that the case draws",
@@ -1293,4 +1387,82 @@ func newEveryOver(_ *EveryHandle, spend func()) kinds.Every {
 	return everyOver{spend: spend}
 }
 
-// dokimi:provenance sha256:64207573151fd768596e835cd50d39870d10acf21c3ae732ad09572ceb8bbd79
+// everyFieldsPanicsDefect is the planted defect of a Every whose Fields
+// panics.
+type everyFieldsPanicsDefect struct {
+	everyOverEmbedded
+}
+
+// Fields is the override of the planted defect.
+func (*everyFieldsPanicsDefect) Fields(p0 *kinds.Fields) (r0 int) {
+	panic("the planted defect of a Every whose Fields panics")
+}
+
+// everyFieldsPanics returns the planted defect of a Every whose Fields
+// panics over a fresh subject.
+func everyFieldsPanics(h *EveryHandle) kinds.Every {
+	return &everyFieldsPanicsDefect{everyOverEmbedded: h.Fresh()}
+}
+
+// everyFieldsDriftsDefect is the planted defect of a Every whose Fields
+// returns another value on the repeat.
+type everyFieldsDriftsDefect struct {
+	everyOverEmbedded
+	calls int
+}
+
+// Fields is the override of the planted defect.
+func (d *everyFieldsDriftsDefect) Fields(p0 *kinds.Fields) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// everyFieldsDrifts returns the planted defect of a Every whose Fields
+// returns another value on the repeat over a fresh subject.
+func everyFieldsDrifts(h *EveryHandle) kinds.Every {
+	return &everyFieldsDriftsDefect{everyOverEmbedded: h.Fresh()}
+}
+
+// everyElementsPanicsDefect is the planted defect of a Every whose
+// Elements panics.
+type everyElementsPanicsDefect struct {
+	everyOverEmbedded
+}
+
+// Elements is the override of the planted defect.
+func (*everyElementsPanicsDefect) Elements(p0 *kinds.Elements) (r0 int) {
+	panic("the planted defect of a Every whose Elements panics")
+}
+
+// everyElementsPanics returns the planted defect of a Every whose Elements
+// panics over a fresh subject.
+func everyElementsPanics(h *EveryHandle) kinds.Every {
+	return &everyElementsPanicsDefect{everyOverEmbedded: h.Fresh()}
+}
+
+// everyElementsDriftsDefect is the planted defect of a Every whose
+// Elements returns another value on the repeat.
+type everyElementsDriftsDefect struct {
+	everyOverEmbedded
+	calls int
+}
+
+// Elements is the override of the planted defect.
+func (d *everyElementsDriftsDefect) Elements(p0 *kinds.Elements) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// everyElementsDrifts returns the planted defect of a Every whose Elements
+// returns another value on the repeat over a fresh subject.
+func everyElementsDrifts(h *EveryHandle) kinds.Every {
+	return &everyElementsDriftsDefect{everyOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:3df42602fd28f667b4d6da60b30c7df972e2a5a86c305b926b550e9a588165c6

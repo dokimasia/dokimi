@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/lease"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,40 @@ type contractAcquire struct {
 	conform.Callable[lease.Contract]
 }
 
+// Smoke returns the identity of the check that Acquire returns without a
+// panic for derived inputs.
+func (c contractAcquire) Smoke() conform.ID[lease.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Acquire returns an error
+// for a cancelled context.
+func (c contractAcquire) Cancel() conform.ID[lease.Contract] {
+	return c.Check("cancel")
+}
+
+// Lease returns the identity of the check that a second Acquire for one
+// key fails with the declared sentinel.
+func (c contractAcquire) Lease() conform.ID[lease.Contract] {
+	return c.Check("lease")
+}
+
 // contractRelease is the name of Contract.Release, with the identities of
 // its checks.
 type contractRelease struct {
 	conform.Callable[lease.Contract]
+}
+
+// Smoke returns the identity of the check that Release returns without a
+// panic for derived inputs.
+func (c contractRelease) Smoke() conform.ID[lease.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Release returns an error
+// for a cancelled context.
+func (c contractRelease) Cancel() conform.ID[lease.Contract] {
+	return c.Check("cancel")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +82,86 @@ type contractRelease struct {
 func ContractSuite() conform.Suite[lease.Contract] {
 	return conform.Suite[lease.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[lease.Contract]{
+			{
+				ID:          ContractChecks.Acquire.Smoke(),
+				Statement:   "Acquire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					})
+				},
+				Defect: contractAcquirePanics,
+			},
+			{
+				ID:          ContractChecks.Acquire.Cancel(),
+				Statement:   "Acquire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					})
+				},
+				Defect: contractAcquireSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Acquire.Lease(),
+				Statement:   "a second Acquire for one key fails with the declared sentinel",
+				Claim:       spec.Lease,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.GrantedLeaseIsNotGrantedTwice,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					}, lease.ErrHeld)
+				},
+				Defect: contractAcquireSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Release.Smoke(),
+				Statement:   "Release returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, string("key-a"))
+					})
+				},
+				Defect: contractReleasePanics,
+			},
+			{
+				ID:          ContractChecks.Release.Cancel(),
+				Statement:   "Release returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, string("key-a"))
+					})
+				},
+				Defect: contractReleaseSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[lease.Contract]{
 			{
 				Calls:    contractAcquireCalls,
@@ -170,4 +282,72 @@ func newContractOver(_ *ContractHandle, spend func()) lease.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7e45115702b7ebc0be82a4de384ec45fd74ea1d6f41e3f9063cbdc8601332325
+// contractAcquirePanicsDefect is the planted defect of a Contract whose
+// Acquire panics.
+type contractAcquirePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Acquire is the override of the planted defect.
+func (*contractAcquirePanicsDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Contract whose Acquire panics")
+}
+
+// contractAcquirePanics returns the planted defect of a Contract whose
+// Acquire panics over a fresh subject.
+func contractAcquirePanics(h *ContractHandle) lease.Contract {
+	return &contractAcquirePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractAcquireSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Acquire ignores the context.
+type contractAcquireSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Acquire is the override of the planted defect.
+func (*contractAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// contractAcquireSucceedsAlways returns the planted defect of a Contract
+// whose Acquire ignores the context over a fresh subject.
+func contractAcquireSucceedsAlways(h *ContractHandle) lease.Contract {
+	return &contractAcquireSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractReleasePanicsDefect is the planted defect of a Contract whose
+// Release panics.
+type contractReleasePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Release is the override of the planted defect.
+func (*contractReleasePanicsDefect) Release(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Contract whose Release panics")
+}
+
+// contractReleasePanics returns the planted defect of a Contract whose
+// Release panics over a fresh subject.
+func contractReleasePanics(h *ContractHandle) lease.Contract {
+	return &contractReleasePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractReleaseSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Release ignores the context.
+type contractReleaseSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Release is the override of the planted defect.
+func (*contractReleaseSucceedsAlwaysDefect) Release(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// contractReleaseSucceedsAlways returns the planted defect of a Contract
+// whose Release ignores the context over a fresh subject.
+func contractReleaseSucceedsAlways(h *ContractHandle) lease.Contract {
+	return &contractReleaseSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:cbef53681418603c4d46cac131a3ccd2d61aa38f3f132a95305d42f24781776d

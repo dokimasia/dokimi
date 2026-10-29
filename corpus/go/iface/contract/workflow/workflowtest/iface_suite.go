@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/workflow"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,40 @@ type contractRun struct {
 	conform.Callable[workflow.Contract]
 }
 
+// Smoke returns the identity of the check that Run returns without a panic
+// for derived inputs.
+func (c contractRun) Smoke() conform.ID[workflow.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Run returns an error for a
+// cancelled context.
+func (c contractRun) Cancel() conform.ID[workflow.Contract] {
+	return c.Check("cancel")
+}
+
 // contractState is the name of Contract.State, with the identities of its
 // checks.
 type contractState struct {
 	conform.Callable[workflow.Contract]
+}
+
+// Smoke returns the identity of the check that State returns without a
+// panic for derived inputs.
+func (c contractState) Smoke() conform.ID[workflow.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that State returns an error for
+// a cancelled context.
+func (c contractState) Cancel() conform.ID[workflow.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that State returns the
+// zero value beside an error.
+func (c contractState) ZeroOnError() conform.ID[workflow.Contract] {
+	return c.Check("zero-on-error")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +82,87 @@ type contractState struct {
 func ContractSuite() conform.Suite[workflow.Contract] {
 	return conform.Suite[workflow.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[workflow.Contract]{
+			{
+				ID:          ContractChecks.Run.Smoke(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
+				ID:          ContractChecks.Run.Cancel(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.State.Smoke(),
+				Statement:   "State returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().State(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractStatePanics,
+			},
+			{
+				ID:          ContractChecks.State.Cancel(),
+				Statement:   "State returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().State(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractStateSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.State.ZeroOnError(),
+				Statement:   "State returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().State(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: contractStateValueBeside,
+			},
+		},
 		Calls: []conform.Call[workflow.Contract]{
 			{
 				Calls:    contractRunCalls,
@@ -177,4 +290,91 @@ func newContractOver(_ *ContractHandle, spend func()) workflow.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6761ae58381aa658b9ff7d3fe885dab8c7da89bf8c174df1dc6ec1e52b352207
+// contractRunPanicsDefect is the planted defect of a Contract whose Run
+// panics.
+type contractRunPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunPanicsDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Contract whose Run panics")
+}
+
+// contractRunPanics returns the planted defect of a Contract whose Run
+// panics over a fresh subject.
+func contractRunPanics(h *ContractHandle) workflow.Contract {
+	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRunSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Run ignores the context.
+type contractRunSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// contractRunSucceedsAlways returns the planted defect of a Contract whose
+// Run ignores the context over a fresh subject.
+func contractRunSucceedsAlways(h *ContractHandle) workflow.Contract {
+	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStatePanicsDefect is the planted defect of a Contract whose
+// State panics.
+type contractStatePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// State is the override of the planted defect.
+func (*contractStatePanicsDefect) State(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Contract whose State panics")
+}
+
+// contractStatePanics returns the planted defect of a Contract whose State
+// panics over a fresh subject.
+func contractStatePanics(h *ContractHandle) workflow.Contract {
+	return &contractStatePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStateSucceedsAlwaysDefect is the planted defect of a Contract
+// whose State ignores the context.
+type contractStateSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// State is the override of the planted defect.
+func (*contractStateSucceedsAlwaysDefect) State(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// contractStateSucceedsAlways returns the planted defect of a Contract
+// whose State ignores the context over a fresh subject.
+func contractStateSucceedsAlways(h *ContractHandle) workflow.Contract {
+	return &contractStateSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStateValueBesideDefect is the planted defect of a Contract whose
+// State returns a value beside an error.
+type contractStateValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// State is the override of the planted defect.
+func (*contractStateValueBesideDefect) State(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractStateValueBeside returns the planted defect of a Contract whose
+// State returns a value beside an error over a fresh subject.
+func contractStateValueBeside(h *ContractHandle) workflow.Contract {
+	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:2b8045b9f8da1e8abd01d0eae14267f9cb534ac9556e10333d2f7b707b11e012

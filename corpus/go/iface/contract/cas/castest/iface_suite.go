@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cas"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type contractPut struct {
 	conform.Callable[cas.Contract]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c contractPut) Smoke() conform.ID[cas.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c contractPut) Cancel() conform.ID[cas.Contract] {
+	return c.Check("cancel")
+}
+
+// Cas returns the identity of the check that a second Put with the same
+// version fails with the declared mismatch.
+func (c contractPut) Cas() conform.ID[cas.Contract] {
+	return c.Check("cas")
+}
+
 // contractGet is the name of Contract.Get, with the identities of its
 // checks.
 type contractGet struct {
 	conform.Callable[cas.Contract]
+}
+
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c contractGet) Smoke() conform.ID[cas.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c contractGet) Cancel() conform.ID[cas.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c contractGet) ZeroOnError() conform.ID[cas.Contract] {
+	return c.Check("zero-on-error")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +88,102 @@ type contractGet struct {
 func ContractSuite() conform.Suite[cas.Contract] {
 	return conform.Suite[cas.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[cas.Contract]{
+			{
+				ID:          ContractChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, cas.Value{Body: "Body-a"})
+					})
+				},
+				Defect: contractPutPanics,
+			},
+			{
+				ID:          ContractChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, cas.Value{Body: "Body-a"})
+					})
+				},
+				Defect: contractPutSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Put.Cas(),
+				Statement:   "a second Put with the same version fails with the declared mismatch",
+				Claim:       spec.Cas,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.WriteIsRefusedOnAStaleVersion,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, cas.Value{Body: "Body-a"})
+					}, cas.ErrMismatch)
+				},
+				Defect: contractPutSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx)
+						return err
+					})
+				},
+				Defect: contractGetPanics,
+			},
+			{
+				ID:          ContractChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx)
+						return err
+					})
+				},
+				Defect: contractGetSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (cas.Value, error) {
+						return h.Subject().Get(ctx)
+					}, cas.Value{})
+				},
+				Defect: contractGetValueBeside,
+			},
+		},
 		Calls: []conform.Call[cas.Contract]{
 			{
 				Calls:    contractPutCalls,
@@ -170,4 +304,91 @@ func newContractOver(_ *ContractHandle, spend func()) cas.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:e8070e1d86096b16e621de620607591fc87107287f076cfdc0fb9872bad8a7c3
+// contractPutPanicsDefect is the planted defect of a Contract whose Put
+// panics.
+type contractPutPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*contractPutPanicsDefect) Put(p0 context.Context, p1 cas.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Put panics")
+}
+
+// contractPutPanics returns the planted defect of a Contract whose Put
+// panics over a fresh subject.
+func contractPutPanics(h *ContractHandle) cas.Contract {
+	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractPutSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Put ignores the context.
+type contractPutSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 cas.Value) (r0 error) {
+	return r0
+}
+
+// contractPutSucceedsAlways returns the planted defect of a Contract whose
+// Put ignores the context over a fresh subject.
+func contractPutSucceedsAlways(h *ContractHandle) cas.Contract {
+	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractGetPanicsDefect is the planted defect of a Contract whose Get
+// panics.
+type contractGetPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*contractGetPanicsDefect) Get(p0 context.Context) (r0 cas.Value, r1 error) {
+	panic("the planted defect of a Contract whose Get panics")
+}
+
+// contractGetPanics returns the planted defect of a Contract whose Get
+// panics over a fresh subject.
+func contractGetPanics(h *ContractHandle) cas.Contract {
+	return &contractGetPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractGetSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Get ignores the context.
+type contractGetSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*contractGetSucceedsAlwaysDefect) Get(p0 context.Context) (r0 cas.Value, r1 error) {
+	return r0, r1
+}
+
+// contractGetSucceedsAlways returns the planted defect of a Contract whose
+// Get ignores the context over a fresh subject.
+func contractGetSucceedsAlways(h *ContractHandle) cas.Contract {
+	return &contractGetSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractGetValueBesideDefect is the planted defect of a Contract whose
+// Get returns a value beside an error.
+type contractGetValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*contractGetValueBesideDefect) Get(p0 context.Context) (r0 cas.Value, r1 error) {
+	r0 = cas.Value{Body: "Body-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractGetValueBeside returns the planted defect of a Contract whose
+// Get returns a value beside an error over a fresh subject.
+func contractGetValueBeside(h *ContractHandle) cas.Contract {
+	return &contractGetValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:e2b218f7b95c19c2069fd99d84042c89bfbb07df0c7444a4f79316fdb3094fe4

@@ -7,10 +7,14 @@ package windowedtest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/windowed"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +43,46 @@ type mixedRecord struct {
 	conform.Callable[windowed.Mixed]
 }
 
+// Smoke returns the identity of the check that Record returns without a
+// panic for derived inputs.
+func (c mixedRecord) Smoke() conform.ID[windowed.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Record returns an error
+// for a cancelled context.
+func (c mixedRecord) Cancel() conform.ID[windowed.Mixed] {
+	return c.Check("cancel")
+}
+
+// Windowed returns the identity of the check that CountIn includes a
+// Record inside the declared window and not after it.
+func (c mixedRecord) Windowed() conform.ID[windowed.Mixed] {
+	return c.Check("windowed")
+}
+
 // mixedCountIn is the name of Mixed.CountIn, with the identities of its
 // checks.
 type mixedCountIn struct {
 	conform.Callable[windowed.Mixed]
+}
+
+// Smoke returns the identity of the check that CountIn returns without a
+// panic for derived inputs.
+func (c mixedCountIn) Smoke() conform.ID[windowed.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that CountIn returns an error
+// for a cancelled context.
+func (c mixedCountIn) Cancel() conform.ID[windowed.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that CountIn returns the
+// zero value beside an error.
+func (c mixedCountIn) ZeroOnError() conform.ID[windowed.Mixed] {
+	return c.Check("zero-on-error")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -50,6 +90,105 @@ type mixedCountIn struct {
 func MixedSuite() conform.Suite[windowed.Mixed] {
 	return conform.Suite[windowed.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[windowed.Mixed]{
+			{
+				ID:          MixedChecks.Record.Smoke(),
+				Statement:   "Record returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedRecordPanics,
+			},
+			{
+				ID:          MixedChecks.Record.Cancel(),
+				Statement:   "Record returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedRecordSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Record.Windowed(),
+				Statement:   "CountIn includes a Record inside the declared window and not after it",
+				Claim:       spec.Windowed,
+				Probe:       spec.CountsWithinWindow,
+				Reason:      spec.MisreadWindow,
+				Law:         spec.CountCoversABoundedWindow,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
+				Apply: func(h *MixedHandle) {
+					probe.CountsWithinWindow(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, string("key-a"))
+					}, func(ctx context.Context) (int, error) {
+						return h.Subject().CountIn(ctx, string("key-a"))
+					}, time.Minute)
+				},
+				Defect: mixedCountInCountDrifts,
+				Around: synctest.Test,
+			},
+			{
+				ID:          MixedChecks.CountIn.Smoke(),
+				Statement:   "CountIn returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().CountIn(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedCountInPanics,
+			},
+			{
+				ID:          MixedChecks.CountIn.Cancel(),
+				Statement:   "CountIn returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().CountIn(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedCountInSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.CountIn.ZeroOnError(),
+				Statement:   "CountIn returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().CountIn(ctx, string("key-a"))
+					}, int(0))
+				},
+				Defect: mixedCountInValueBeside,
+			},
+		},
 		Calls: []conform.Call[windowed.Mixed]{
 			{
 				Calls:    mixedRecordCalls,
@@ -167,4 +306,114 @@ func newMixedOver(_ *MixedHandle, spend func()) windowed.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b9e1f57bae1edddd7671a686d4f59a2b34d738a98f9e40c4be5c6f11039e1aff
+// mixedRecordPanicsDefect is the planted defect of a Mixed whose Record
+// panics.
+type mixedRecordPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Record is the override of the planted defect.
+func (*mixedRecordPanicsDefect) Record(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Record panics")
+}
+
+// mixedRecordPanics returns the planted defect of a Mixed whose Record
+// panics over a fresh subject.
+func mixedRecordPanics(h *MixedHandle) windowed.Mixed {
+	return &mixedRecordPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRecordSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Record ignores the context.
+type mixedRecordSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Record is the override of the planted defect.
+func (*mixedRecordSucceedsAlwaysDefect) Record(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedRecordSucceedsAlways returns the planted defect of a Mixed whose
+// Record ignores the context over a fresh subject.
+func mixedRecordSucceedsAlways(h *MixedHandle) windowed.Mixed {
+	return &mixedRecordSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCountInCountDriftsDefect is the planted defect of a Mixed whose
+// CountIn keeps every Record however far the clock moves.
+type mixedCountInCountDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// CountIn is the override of the planted defect.
+func (d *mixedCountInCountDriftsDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0, r1
+}
+
+// mixedCountInCountDrifts returns the planted defect of a Mixed whose
+// CountIn keeps every Record however far the clock moves over a fresh
+// subject.
+func mixedCountInCountDrifts(h *MixedHandle) windowed.Mixed {
+	return &mixedCountInCountDriftsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCountInPanicsDefect is the planted defect of a Mixed whose CountIn
+// panics.
+type mixedCountInPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// CountIn is the override of the planted defect.
+func (*mixedCountInPanicsDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
+	panic("the planted defect of a Mixed whose CountIn panics")
+}
+
+// mixedCountInPanics returns the planted defect of a Mixed whose CountIn
+// panics over a fresh subject.
+func mixedCountInPanics(h *MixedHandle) windowed.Mixed {
+	return &mixedCountInPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCountInSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// CountIn ignores the context.
+type mixedCountInSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// CountIn is the override of the planted defect.
+func (*mixedCountInSucceedsAlwaysDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// mixedCountInSucceedsAlways returns the planted defect of a Mixed whose
+// CountIn ignores the context over a fresh subject.
+func mixedCountInSucceedsAlways(h *MixedHandle) windowed.Mixed {
+	return &mixedCountInSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCountInValueBesideDefect is the planted defect of a Mixed whose
+// CountIn returns a value beside an error.
+type mixedCountInValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// CountIn is the override of the planted defect.
+func (*mixedCountInValueBesideDefect) CountIn(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedCountInValueBeside returns the planted defect of a Mixed whose
+// CountIn returns a value beside an error over a fresh subject.
+func mixedCountInValueBeside(h *MixedHandle) windowed.Mixed {
+	return &mixedCountInValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:daed011f1d0208b82d90f7ef764dcba1f69ec29f418c00ddfc1d3244a4541af6

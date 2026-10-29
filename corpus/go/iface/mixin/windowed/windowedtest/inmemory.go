@@ -22,7 +22,7 @@ const window = time.Minute
 // InMemory implements [windowed.Mixed] in memory. The corpus applies the
 // suite of Mixed to it as a control.
 //
-//dokimi:subject windowed.Mixed new=NewInMemory
+//dokimi:subject windowed.Mixed new=NewInMemoryFromHandle
 type InMemory struct {
 	clk  assert.Clock
 	seen map[string][]time.Time
@@ -41,6 +41,10 @@ func NewInMemoryOn(clk assert.Clock) *InMemory {
 func NewInMemory() *InMemory {
 	return NewInMemoryOn(assert.NewControlled(time.Unix(0, 0).UTC()))
 }
+
+// NewInMemoryFromHandle returns an InMemory on the clock of the handle h, so
+// a check that advances the clock moves the time of the subject.
+func NewInMemoryFromHandle(h *MixedHandle) *InMemory { return NewInMemoryOn(h.Clock()) }
 
 // Record implements [windowed.Mixed].
 func (s *InMemory) Record(ctx context.Context, key string) error {

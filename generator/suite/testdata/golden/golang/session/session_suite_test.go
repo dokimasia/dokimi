@@ -44,7 +44,23 @@ func TestSessionsSuite(t *testing.T) {
 				Defect: func(*SessionsHandle) Sessions { return &sessionsSubject{} },
 			}),
 			conform.Excuse(
-				SessionsChecks.Get.KeepsTheLastPut(),
+				SessionsChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SessionsChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SessionsChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SessionsChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SessionsChecks.Get.ZeroOnError(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -69,19 +85,25 @@ func TestSessionsSuite(t *testing.T) {
 				Defect: func(*SessionsHandle) Sessions { return &sessionsSubject{} },
 			}),
 			conform.Excuse(
-				SessionsChecks.Get.KeepsTheLastPut(),
+				SessionsChecks.Put.Smoke(),
 				"the test applies the check of its option alone",
 			),
-		)
-	})
-
-	t.Run("SessionsChecks", func(t *testing.T) {
-		t.Parallel()
-		assert.Equal(
-			t,
-			string(SessionsChecks.Get.KeepsTheLastPut()),
-			"Sessions.Get/keeps-the-last-put",
-			"the identity of the check joins the callable and the segment of the check",
+			conform.Excuse(
+				SessionsChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SessionsChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SessionsChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SessionsChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -103,7 +125,23 @@ func TestSessionsSuiteBudgets(t *testing.T) {
 		conform.Ceilings(SessionsChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(SessionsChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			SessionsChecks.Get.KeepsTheLastPut(),
+			SessionsChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -117,7 +155,23 @@ func FuzzSessionsSuitePut(f *testing.F) {
 		SessionsChecks.Put.Callable,
 		sessionsIdle,
 		conform.Excuse(
-			SessionsChecks.Get.KeepsTheLastPut(),
+			SessionsChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -131,7 +185,23 @@ func FuzzSessionsSuiteGet(f *testing.F) {
 		SessionsChecks.Get.Callable,
 		sessionsIdle,
 		conform.Excuse(
-			SessionsChecks.Get.KeepsTheLastPut(),
+			SessionsChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			SessionsChecks.Get.ZeroOnError(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)

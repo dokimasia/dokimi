@@ -51,6 +51,18 @@ func TestMultiAggregatorSuite(t *testing.T) {
 					return &multiAggregatorSubject{}
 				},
 			}),
+			conform.Excuse(
+				multiaggregatortest.MultiAggregatorChecks.Stats.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multiaggregatortest.MultiAggregatorChecks.Stats.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multiaggregatortest.MultiAggregatorChecks.Stats.ZeroesOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +86,18 @@ func TestMultiAggregatorSuite(t *testing.T) {
 					return &multiAggregatorSubject{}
 				},
 			}),
+			conform.Excuse(
+				multiaggregatortest.MultiAggregatorChecks.Stats.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multiaggregatortest.MultiAggregatorChecks.Stats.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multiaggregatortest.MultiAggregatorChecks.Stats.ZeroesOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -97,6 +121,18 @@ func TestMultiAggregatorSuiteBudgets(t *testing.T) {
 			multiaggregatortest.MultiAggregatorChecks.Stats.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			multiaggregatortest.MultiAggregatorChecks.Stats.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multiaggregatortest.MultiAggregatorChecks.Stats.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multiaggregatortest.MultiAggregatorChecks.Stats.ZeroesOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -108,6 +144,18 @@ func FuzzMultiAggregatorSuiteStats(f *testing.F) {
 		f,
 		multiaggregatortest.MultiAggregatorChecks.Stats.Callable,
 		multiAggregatorIdle,
+		conform.Excuse(
+			multiaggregatortest.MultiAggregatorChecks.Stats.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multiaggregatortest.MultiAggregatorChecks.Stats.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multiaggregatortest.MultiAggregatorChecks.Stats.ZeroesOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +171,4 @@ func BenchmarkMultiAggregatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2107d4a7c26af4d3fe6f7d9faa4c34c93294c119fc5058d9387de235cc41ed5c
+// dokimi:provenance sha256:017be3ec1e967fc13e46cfd182a00f3b34b9fd09a0794dd2db5ad8e7b87911b8

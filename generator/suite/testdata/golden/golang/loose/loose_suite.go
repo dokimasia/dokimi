@@ -8,6 +8,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -34,11 +36,36 @@ type printerPrint struct {
 	conform.Callable[Printer]
 }
 
+// Smoke returns the identity of the check that Print returns without a
+// panic for derived inputs.
+func (c printerPrint) Smoke() conform.ID[Printer] {
+	return c.Check("smoke")
+}
+
 // PrinterSuite returns the checks of Printer, and the calls and the
 // budgets of its callables.
 func PrinterSuite() conform.Suite[Printer] {
 	return conform.Suite[Printer]{
 		Declaration: "Printer",
+		Checks: []conform.Check[Printer]{
+			{
+				ID:          PrinterChecks.Print.Smoke(),
+				Statement:   "Print returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PrinterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Print(string("msg-a"), any("values-a"))
+						return nil
+					})
+				},
+				Defect: printerPrintPanics,
+			},
+		},
 		Calls: []conform.Call[Printer]{
 			{
 				Calls:    printerPrintCalls,
@@ -157,6 +184,23 @@ func newPrinterOver(_ *PrinterHandle, spend func()) Printer {
 	return printerOver{spend: spend}
 }
 
+// printerPrintPanicsDefect is the planted defect of a Printer whose Print
+// panics.
+type printerPrintPanicsDefect struct {
+	printerOverEmbedded
+}
+
+// Print is the override of the planted defect.
+func (*printerPrintPanicsDefect) Print(p0 string, p1 ...any) {
+	panic("the planted defect of a Printer whose Print panics")
+}
+
+// printerPrintPanics returns the planted defect of a Printer whose Print
+// panics over a fresh subject.
+func printerPrintPanics(h *PrinterHandle) Printer {
+	return &printerPrintPanicsDefect{printerOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -181,11 +225,36 @@ type recorderField struct {
 	conform.Callable[Recorder]
 }
 
+// Smoke returns the identity of the check that Field returns without a
+// panic for derived inputs.
+func (c recorderField) Smoke() conform.ID[Recorder] {
+	return c.Check("smoke")
+}
+
 // RecorderSuite returns the checks of Recorder, and the calls and the
 // budgets of its callables.
 func RecorderSuite() conform.Suite[Recorder] {
 	return conform.Suite[Recorder]{
 		Declaration: "Recorder",
+		Checks: []conform.Check[Recorder]{
+			{
+				ID:          RecorderChecks.Field.Smoke(),
+				Statement:   "Field returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *RecorderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Field(string("name-a"), interface{}("value-a"))
+						return nil
+					})
+				},
+				Defect: recorderFieldPanics,
+			},
+		},
 		Calls: []conform.Call[Recorder]{
 			{
 				Calls:    recorderFieldCalls,
@@ -304,6 +373,23 @@ func newRecorderOver(_ *RecorderHandle, spend func()) Recorder {
 	return recorderOver{spend: spend}
 }
 
+// recorderFieldPanicsDefect is the planted defect of a Recorder whose
+// Field panics.
+type recorderFieldPanicsDefect struct {
+	recorderOverEmbedded
+}
+
+// Field is the override of the planted defect.
+func (*recorderFieldPanicsDefect) Field(p0 string, p1 interface{}) {
+	panic("the planted defect of a Recorder whose Field panics")
+}
+
+// recorderFieldPanics returns the planted defect of a Recorder whose Field
+// panics over a fresh subject.
+func recorderFieldPanics(h *RecorderHandle) Recorder {
+	return &recorderFieldPanicsDefect{recorderOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -328,11 +414,36 @@ type journalPut struct {
 	conform.Callable[Journal]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c journalPut) Smoke() conform.ID[Journal] {
+	return c.Check("smoke")
+}
+
 // JournalSuite returns the checks of Journal, and the calls and the
 // budgets of its callables.
 func JournalSuite() conform.Suite[Journal] {
 	return conform.Suite[Journal]{
 		Declaration: "Journal",
+		Checks: []conform.Check[Journal]{
+			{
+				ID:          JournalChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *JournalHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Put(Entry{Value: "Value-a"})
+						return nil
+					})
+				},
+				Defect: journalPutPanics,
+			},
+		},
 		Calls: []conform.Call[Journal]{
 			{
 				Calls:    journalPutCalls,
@@ -450,6 +561,23 @@ func newJournalOver(_ *JournalHandle, spend func()) Journal {
 	return journalOver{spend: spend}
 }
 
+// journalPutPanicsDefect is the planted defect of a Journal whose Put
+// panics.
+type journalPutPanicsDefect struct {
+	journalOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*journalPutPanicsDefect) Put(p0 Entry) {
+	panic("the planted defect of a Journal whose Put panics")
+}
+
+// journalPutPanics returns the planted defect of a Journal whose Put
+// panics over a fresh subject.
+func journalPutPanics(h *JournalHandle) Journal {
+	return &journalPutPanicsDefect{journalOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -474,11 +602,36 @@ type plainPrint struct {
 	conform.Callable[Plain]
 }
 
+// Smoke returns the identity of the check that Print returns without a
+// panic for derived inputs.
+func (c plainPrint) Smoke() conform.ID[Plain] {
+	return c.Check("smoke")
+}
+
 // PlainSuite returns the checks of Plain, and the calls and the budgets of
 // its callables.
 func PlainSuite() conform.Suite[Plain] {
 	return conform.Suite[Plain]{
 		Declaration: "Plain",
+		Checks: []conform.Check[Plain]{
+			{
+				ID:          PlainChecks.Print.Smoke(),
+				Statement:   "Print returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PlainHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Print(string("msg-a"))
+						return nil
+					})
+				},
+				Defect: plainPrintPanics,
+			},
+		},
 		Calls: []conform.Call[Plain]{
 			{
 				Calls:    plainPrintCalls,
@@ -581,6 +734,23 @@ func (o plainOver) Print(string) {
 // callables call spend.
 func newPlainOver(_ *PlainHandle, spend func()) Plain {
 	return plainOver{spend: spend}
+}
+
+// plainPrintPanicsDefect is the planted defect of a Plain whose Print
+// panics.
+type plainPrintPanicsDefect struct {
+	plainOverEmbedded
+}
+
+// Print is the override of the planted defect.
+func (*plainPrintPanicsDefect) Print(p0 string) {
+	panic("the planted defect of a Plain whose Print panics")
+}
+
+// plainPrintPanics returns the planted defect of a Plain whose Print
+// panics over a fresh subject.
+func plainPrintPanics(h *PlainHandle) Plain {
+	return &plainPrintPanicsDefect{plainOverEmbedded: h.Fresh()}
 }
 
 // The suite refers to the compatibility witness of its runtime.

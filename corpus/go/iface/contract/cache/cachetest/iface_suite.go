@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cache"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,40 @@ type contractStore struct {
 	conform.Callable[cache.Contract]
 }
 
+// Smoke returns the identity of the check that Store returns without a
+// panic for derived inputs.
+func (c contractStore) Smoke() conform.ID[cache.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Store returns an error for
+// a cancelled context.
+func (c contractStore) Cancel() conform.ID[cache.Contract] {
+	return c.Check("cancel")
+}
+
 // contractLookup is the name of Contract.Lookup, with the identities of
 // its checks.
 type contractLookup struct {
 	conform.Callable[cache.Contract]
+}
+
+// Smoke returns the identity of the check that Lookup returns without a
+// panic for derived inputs.
+func (c contractLookup) Smoke() conform.ID[cache.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Lookup returns an error
+// for a cancelled context.
+func (c contractLookup) Cancel() conform.ID[cache.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Lookup returns the
+// zero value beside an error.
+func (c contractLookup) ZeroOnError() conform.ID[cache.Contract] {
+	return c.Check("zero-on-error")
 }
 
 // contractFetch is the name of Contract.Fetch, with the identities of its
@@ -53,11 +85,158 @@ type contractFetch struct {
 	conform.Callable[cache.Contract]
 }
 
+// Smoke returns the identity of the check that Fetch returns without a
+// panic for derived inputs.
+func (c contractFetch) Smoke() conform.ID[cache.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Fetch returns an error for
+// a cancelled context.
+func (c contractFetch) Cancel() conform.ID[cache.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Fetch returns the
+// zero value beside an error.
+func (c contractFetch) ZeroOnError() conform.ID[cache.Contract] {
+	return c.Check("zero-on-error")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[cache.Contract] {
 	return conform.Suite[cache.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[cache.Contract]{
+			{
+				ID:          ContractChecks.Store.Smoke(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, string("key-a"), cache.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractStorePanics,
+			},
+			{
+				ID:          ContractChecks.Store.Cancel(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, string("key-a"), cache.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractStoreSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Lookup.Smoke(),
+				Statement:   "Lookup returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Lookup(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractLookupPanics,
+			},
+			{
+				ID:          ContractChecks.Lookup.Cancel(),
+				Statement:   "Lookup returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Lookup(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractLookupSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Lookup.ZeroOnError(),
+				Statement:   "Lookup returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (cache.Value, error) {
+						return h.Subject().Lookup(ctx, string("key-a"))
+					}, cache.Value{})
+				},
+				Defect: contractLookupValueBeside,
+			},
+			{
+				ID:          ContractChecks.Fetch.Smoke(),
+				Statement:   "Fetch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractFetchPanics,
+			},
+			{
+				ID:          ContractChecks.Fetch.Cancel(),
+				Statement:   "Fetch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractFetchSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Fetch.ZeroOnError(),
+				Statement:   "Fetch returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (cache.Value, error) {
+						return h.Subject().Fetch(ctx, string("key-a"))
+					}, cache.Value{})
+				},
+				Defect: contractFetchValueBeside,
+			},
+		},
 		Calls: []conform.Call[cache.Contract]{
 			{
 				Calls:    contractStoreCalls,
@@ -201,4 +380,144 @@ func newContractOver(_ *ContractHandle, spend func()) cache.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8cf78a2e493b00199ac5cffc8ea583cb74c18e2c9fd679d995d76da4cc18808b
+// contractStorePanicsDefect is the planted defect of a Contract whose
+// Store panics.
+type contractStorePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*contractStorePanicsDefect) Store(p0 context.Context, p1 string, p2 cache.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Store panics")
+}
+
+// contractStorePanics returns the planted defect of a Contract whose Store
+// panics over a fresh subject.
+func contractStorePanics(h *ContractHandle) cache.Contract {
+	return &contractStorePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStoreSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Store ignores the context.
+type contractStoreSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*contractStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 string, p2 cache.Value) (r0 error) {
+	return r0
+}
+
+// contractStoreSucceedsAlways returns the planted defect of a Contract
+// whose Store ignores the context over a fresh subject.
+func contractStoreSucceedsAlways(h *ContractHandle) cache.Contract {
+	return &contractStoreSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractLookupPanicsDefect is the planted defect of a Contract whose
+// Lookup panics.
+type contractLookupPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*contractLookupPanicsDefect) Lookup(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	panic("the planted defect of a Contract whose Lookup panics")
+}
+
+// contractLookupPanics returns the planted defect of a Contract whose
+// Lookup panics over a fresh subject.
+func contractLookupPanics(h *ContractHandle) cache.Contract {
+	return &contractLookupPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractLookupSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Lookup ignores the context.
+type contractLookupSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*contractLookupSucceedsAlwaysDefect) Lookup(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	return r0, r1
+}
+
+// contractLookupSucceedsAlways returns the planted defect of a Contract
+// whose Lookup ignores the context over a fresh subject.
+func contractLookupSucceedsAlways(h *ContractHandle) cache.Contract {
+	return &contractLookupSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractLookupValueBesideDefect is the planted defect of a Contract
+// whose Lookup returns a value beside an error.
+type contractLookupValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*contractLookupValueBesideDefect) Lookup(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	r0 = cache.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractLookupValueBeside returns the planted defect of a Contract whose
+// Lookup returns a value beside an error over a fresh subject.
+func contractLookupValueBeside(h *ContractHandle) cache.Contract {
+	return &contractLookupValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractFetchPanicsDefect is the planted defect of a Contract whose
+// Fetch panics.
+type contractFetchPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Fetch is the override of the planted defect.
+func (*contractFetchPanicsDefect) Fetch(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	panic("the planted defect of a Contract whose Fetch panics")
+}
+
+// contractFetchPanics returns the planted defect of a Contract whose Fetch
+// panics over a fresh subject.
+func contractFetchPanics(h *ContractHandle) cache.Contract {
+	return &contractFetchPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractFetchSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Fetch ignores the context.
+type contractFetchSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Fetch is the override of the planted defect.
+func (*contractFetchSucceedsAlwaysDefect) Fetch(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	return r0, r1
+}
+
+// contractFetchSucceedsAlways returns the planted defect of a Contract
+// whose Fetch ignores the context over a fresh subject.
+func contractFetchSucceedsAlways(h *ContractHandle) cache.Contract {
+	return &contractFetchSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractFetchValueBesideDefect is the planted defect of a Contract whose
+// Fetch returns a value beside an error.
+type contractFetchValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Fetch is the override of the planted defect.
+func (*contractFetchValueBesideDefect) Fetch(p0 context.Context, p1 string) (r0 cache.Value, r1 error) {
+	r0 = cache.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractFetchValueBeside returns the planted defect of a Contract whose
+// Fetch returns a value beside an error over a fresh subject.
+func contractFetchValueBeside(h *ContractHandle) cache.Contract {
+	return &contractFetchValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:2f68b5085dbe07ee629977f628c6b9647fee4363009abb0549f57ef54b8fa386

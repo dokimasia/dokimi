@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/injectionsafe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,9 +41,45 @@ type mixedStore struct {
 	conform.Callable[injectionsafe.Mixed]
 }
 
+// Smoke returns the identity of the check that Store returns without a
+// panic for derived inputs.
+func (c mixedStore) Smoke() conform.ID[injectionsafe.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Store returns an error for
+// a cancelled context.
+func (c mixedStore) Cancel() conform.ID[injectionsafe.Mixed] {
+	return c.Check("cancel")
+}
+
+// InjectionSafe returns the identity of the check that Load returns the
+// value that the directive of Store declares unsafe, unchanged.
+func (c mixedStore) InjectionSafe() conform.ID[injectionsafe.Mixed] {
+	return c.Check("injection-safe")
+}
+
 // mixedLoad is the name of Mixed.Load, with the identities of its checks.
 type mixedLoad struct {
 	conform.Callable[injectionsafe.Mixed]
+}
+
+// Smoke returns the identity of the check that Load returns without a
+// panic for derived inputs.
+func (c mixedLoad) Smoke() conform.ID[injectionsafe.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Load returns an error for
+// a cancelled context.
+func (c mixedLoad) Cancel() conform.ID[injectionsafe.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Load returns the zero
+// value beside an error.
+func (c mixedLoad) ZeroOnError() conform.ID[injectionsafe.Mixed] {
+	return c.Check("zero-on-error")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +87,107 @@ type mixedLoad struct {
 func MixedSuite() conform.Suite[injectionsafe.Mixed] {
 	return conform.Suite[injectionsafe.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[injectionsafe.Mixed]{
+			{
+				ID:          MixedChecks.Store.Smoke(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedStorePanics,
+			},
+			{
+				ID:          MixedChecks.Store.Cancel(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedStoreSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Store.InjectionSafe(),
+				Statement:   "Load returns the value that the directive of Store declares unsafe, unchanged",
+				Claim:       spec.InjectionSafe,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.UnsafeValueIsKeptAsData,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.WriteThenRead(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Load(ctx, string("key-a"))
+					}, func(ctx context.Context) (string, error) {
+						w := string("value-a")
+						err := h.Subject().Store(ctx, string("key-a"), w)
+						return w, err
+					})
+				},
+				Defect: mixedStoreStoresNothing,
+			},
+			{
+				ID:          MixedChecks.Load.Smoke(),
+				Statement:   "Load returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Load(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedLoadPanics,
+			},
+			{
+				ID:          MixedChecks.Load.Cancel(),
+				Statement:   "Load returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Load(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedLoadSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Load.ZeroOnError(),
+				Statement:   "Load returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Load(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: mixedLoadValueBeside,
+			},
+		},
 		Calls: []conform.Call[injectionsafe.Mixed]{
 			{
 				Calls:    mixedStoreCalls,
@@ -171,4 +310,108 @@ func newMixedOver(_ *MixedHandle, spend func()) injectionsafe.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8076ab37716533227d2880c63e49957ea87e9ec84b0e3546fa0f55858b2ffa0e
+// mixedStorePanicsDefect is the planted defect of a Mixed whose Store
+// panics.
+type mixedStorePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStorePanicsDefect) Store(p0 context.Context, p1, p2 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Store panics")
+}
+
+// mixedStorePanics returns the planted defect of a Mixed whose Store
+// panics over a fresh subject.
+func mixedStorePanics(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedStorePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedStoreSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Store ignores the context.
+type mixedStoreSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// mixedStoreSucceedsAlways returns the planted defect of a Mixed whose
+// Store ignores the context over a fresh subject.
+func mixedStoreSucceedsAlways(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedStoreSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedStoreStoresNothingDefect is the planted defect of a Mixed whose
+// Store returns success and stores nothing.
+type mixedStoreStoresNothingDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStoreStoresNothingDefect) Store(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// mixedStoreStoresNothing returns the planted defect of a Mixed whose
+// Store returns success and stores nothing over a fresh subject.
+func mixedStoreStoresNothing(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedStoreStoresNothingDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedLoadPanicsDefect is the planted defect of a Mixed whose Load
+// panics.
+type mixedLoadPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Load is the override of the planted defect.
+func (*mixedLoadPanicsDefect) Load(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Load panics")
+}
+
+// mixedLoadPanics returns the planted defect of a Mixed whose Load panics
+// over a fresh subject.
+func mixedLoadPanics(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedLoadPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedLoadSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Load ignores the context.
+type mixedLoadSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Load is the override of the planted defect.
+func (*mixedLoadSucceedsAlwaysDefect) Load(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedLoadSucceedsAlways returns the planted defect of a Mixed whose Load
+// ignores the context over a fresh subject.
+func mixedLoadSucceedsAlways(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedLoadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedLoadValueBesideDefect is the planted defect of a Mixed whose Load
+// returns a value beside an error.
+type mixedLoadValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Load is the override of the planted defect.
+func (*mixedLoadValueBesideDefect) Load(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedLoadValueBeside returns the planted defect of a Mixed whose Load
+// returns a value beside an error over a fresh subject.
+func mixedLoadValueBeside(h *MixedHandle) injectionsafe.Mixed {
+	return &mixedLoadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:7ceb7c86eedee2ae4c1c5a70a33f2278ea41f8e8bcaa81ce7eafd161285a04e2

@@ -51,6 +51,18 @@ func TestAnsweringWriterSuite(t *testing.T) {
 					return &answeringWriterSubject{}
 				},
 			}),
+			conform.Excuse(
+				answeringwritertest.AnsweringWriterChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				answeringwritertest.AnsweringWriterChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				answeringwritertest.AnsweringWriterChecks.Put.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +86,18 @@ func TestAnsweringWriterSuite(t *testing.T) {
 					return &answeringWriterSubject{}
 				},
 			}),
+			conform.Excuse(
+				answeringwritertest.AnsweringWriterChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				answeringwritertest.AnsweringWriterChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				answeringwritertest.AnsweringWriterChecks.Put.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -97,6 +121,18 @@ func TestAnsweringWriterSuiteBudgets(t *testing.T) {
 			answeringwritertest.AnsweringWriterChecks.Put.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			answeringwritertest.AnsweringWriterChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			answeringwritertest.AnsweringWriterChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			answeringwritertest.AnsweringWriterChecks.Put.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -108,6 +144,18 @@ func FuzzAnsweringWriterSuitePut(f *testing.F) {
 		f,
 		answeringwritertest.AnsweringWriterChecks.Put.Callable,
 		answeringWriterIdle,
+		conform.Excuse(
+			answeringwritertest.AnsweringWriterChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			answeringwritertest.AnsweringWriterChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			answeringwritertest.AnsweringWriterChecks.Put.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +171,4 @@ func BenchmarkAnsweringWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:04c58499352774cc61a0a6e98d9de58cc44678310416f7cdd3a0f947bc614a12
+// dokimi:provenance sha256:17590e04c377f9542cb1a1b80773eba393dc61b51dad9bbde76e5f3dfcf5b1dc

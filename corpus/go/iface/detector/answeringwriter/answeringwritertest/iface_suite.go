@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/answeringwriter"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,79 @@ type answeringWriterPut struct {
 	conform.Callable[answeringwriter.AnsweringWriter]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c answeringWriterPut) Smoke() conform.ID[answeringwriter.AnsweringWriter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c answeringWriterPut) Cancel() conform.ID[answeringwriter.AnsweringWriter] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Put returns the zero
+// value beside an error.
+func (c answeringWriterPut) ZeroOnError() conform.ID[answeringwriter.AnsweringWriter] {
+	return c.Check("zero-on-error")
+}
+
 // AnsweringWriterSuite returns the checks of AnsweringWriter, and the
 // calls and the budgets of its callables.
 func AnsweringWriterSuite() conform.Suite[answeringwriter.AnsweringWriter] {
 	return conform.Suite[answeringwriter.AnsweringWriter]{
 		Declaration: "AnsweringWriter",
+		Checks: []conform.Check[answeringwriter.AnsweringWriter]{
+			{
+				ID:          AnsweringWriterChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AnsweringWriterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Put(ctx, answeringwriter.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: answeringWriterPutPanics,
+			},
+			{
+				ID:          AnsweringWriterChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AnsweringWriterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Put(ctx, answeringwriter.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: answeringWriterPutSucceedsAlways,
+			},
+			{
+				ID:          AnsweringWriterChecks.Put.ZeroOnError(),
+				Statement:   "Put returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AnsweringWriterHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (answeringwriter.Value, error) {
+						return h.Subject().Put(ctx, answeringwriter.Value{Key: "Key-a"})
+					}, answeringwriter.Value{})
+				},
+				Defect: answeringWriterPutValueBeside,
+			},
+		},
 		Calls: []conform.Call[answeringwriter.AnsweringWriter]{
 			{
 				Calls:    answeringWriterPutCalls,
@@ -156,4 +226,67 @@ func newAnsweringWriterOver(_ *AnsweringWriterHandle, spend func()) answeringwri
 	return answeringWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:e55bac75d489e64204c724c1cf77803225fbd9d3c562a22619561b61b3f900d1
+// answeringWriterPutPanicsDefect is the planted defect of a
+// AnsweringWriter whose Put panics.
+type answeringWriterPutPanicsDefect struct {
+	answeringWriterOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*answeringWriterPutPanicsDefect) Put(
+	p0 context.Context,
+	p1 answeringwriter.Value,
+) (r0 answeringwriter.Value, r1 error) {
+	panic("the planted defect of a AnsweringWriter whose Put panics")
+}
+
+// answeringWriterPutPanics returns the planted defect of a AnsweringWriter
+// whose Put panics over a fresh subject.
+func answeringWriterPutPanics(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter {
+	return &answeringWriterPutPanicsDefect{answeringWriterOverEmbedded: h.Fresh()}
+}
+
+// answeringWriterPutSucceedsAlwaysDefect is the planted defect of a
+// AnsweringWriter whose Put ignores the context.
+type answeringWriterPutSucceedsAlwaysDefect struct {
+	answeringWriterOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*answeringWriterPutSucceedsAlwaysDefect) Put(
+	p0 context.Context,
+	p1 answeringwriter.Value,
+) (r0 answeringwriter.Value, r1 error) {
+	return r0, r1
+}
+
+// answeringWriterPutSucceedsAlways returns the planted defect of a
+// AnsweringWriter whose Put ignores the context over a fresh subject.
+func answeringWriterPutSucceedsAlways(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter {
+	return &answeringWriterPutSucceedsAlwaysDefect{answeringWriterOverEmbedded: h.Fresh()}
+}
+
+// answeringWriterPutValueBesideDefect is the planted defect of a
+// AnsweringWriter whose Put returns a value beside an error.
+type answeringWriterPutValueBesideDefect struct {
+	answeringWriterOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*answeringWriterPutValueBesideDefect) Put(
+	p0 context.Context,
+	p1 answeringwriter.Value,
+) (r0 answeringwriter.Value, r1 error) {
+	r0 = answeringwriter.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// answeringWriterPutValueBeside returns the planted defect of a
+// AnsweringWriter whose Put returns a value beside an error over a fresh
+// subject.
+func answeringWriterPutValueBeside(h *AnsweringWriterHandle) answeringwriter.AnsweringWriter {
+	return &answeringWriterPutValueBesideDefect{answeringWriterOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:96fe080988cb79f84a78d1ac476a392672051237c24695101a0d8b540a1186db

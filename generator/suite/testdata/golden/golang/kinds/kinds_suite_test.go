@@ -42,6 +42,86 @@ func TestParamsSuite(t *testing.T) {
 				},
 				Defect: func(*ParamsHandle) Params { return &paramsSubject{} },
 			}),
+			conform.Excuse(
+				ParamsChecks.Bool.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int8.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int16.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int32.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint8.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint16.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint32.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uintptr.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Float32.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Float64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Complex64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Complex128.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Array.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Map.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Slice.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.String.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -63,6 +143,86 @@ func TestParamsSuite(t *testing.T) {
 				},
 				Defect: func(*ParamsHandle) Params { return &paramsSubject{} },
 			}),
+			conform.Excuse(
+				ParamsChecks.Bool.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int8.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int16.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int32.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Int64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint8.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint16.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint32.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uint64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Uintptr.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Float32.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Float64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Complex64.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Complex128.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Array.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Map.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.Slice.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ParamsChecks.String.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -109,6 +269,86 @@ func TestParamsSuiteBudgets(t *testing.T) {
 			ParamsChecks.UnsafePointer.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -119,6 +359,86 @@ func FuzzParamsSuiteBool(f *testing.F) {
 		f,
 		ParamsChecks.Bool.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -129,6 +449,86 @@ func FuzzParamsSuiteInt(f *testing.F) {
 		f,
 		ParamsChecks.Int.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -139,6 +539,86 @@ func FuzzParamsSuiteInt8(f *testing.F) {
 		f,
 		ParamsChecks.Int8.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -149,6 +629,86 @@ func FuzzParamsSuiteInt16(f *testing.F) {
 		f,
 		ParamsChecks.Int16.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -159,6 +719,86 @@ func FuzzParamsSuiteInt32(f *testing.F) {
 		f,
 		ParamsChecks.Int32.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -169,6 +809,86 @@ func FuzzParamsSuiteInt64(f *testing.F) {
 		f,
 		ParamsChecks.Int64.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -179,6 +899,86 @@ func FuzzParamsSuiteUint(f *testing.F) {
 		f,
 		ParamsChecks.Uint.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -189,6 +989,86 @@ func FuzzParamsSuiteUint8(f *testing.F) {
 		f,
 		ParamsChecks.Uint8.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -199,6 +1079,86 @@ func FuzzParamsSuiteUint16(f *testing.F) {
 		f,
 		ParamsChecks.Uint16.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -209,6 +1169,86 @@ func FuzzParamsSuiteUint32(f *testing.F) {
 		f,
 		ParamsChecks.Uint32.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -219,6 +1259,86 @@ func FuzzParamsSuiteUint64(f *testing.F) {
 		f,
 		ParamsChecks.Uint64.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -229,6 +1349,86 @@ func FuzzParamsSuiteUintptr(f *testing.F) {
 		f,
 		ParamsChecks.Uintptr.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -239,6 +1439,86 @@ func FuzzParamsSuiteFloat32(f *testing.F) {
 		f,
 		ParamsChecks.Float32.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -249,6 +1529,86 @@ func FuzzParamsSuiteFloat64(f *testing.F) {
 		f,
 		ParamsChecks.Float64.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -259,6 +1619,86 @@ func FuzzParamsSuiteComplex64(f *testing.F) {
 		f,
 		ParamsChecks.Complex64.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -269,6 +1709,86 @@ func FuzzParamsSuiteComplex128(f *testing.F) {
 		f,
 		ParamsChecks.Complex128.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -279,6 +1799,86 @@ func FuzzParamsSuiteArray(f *testing.F) {
 		f,
 		ParamsChecks.Array.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -289,6 +1889,86 @@ func FuzzParamsSuiteChan(f *testing.F) {
 		f,
 		ParamsChecks.Chan.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -299,6 +1979,86 @@ func FuzzParamsSuiteFunc(f *testing.F) {
 		f,
 		ParamsChecks.Func.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -309,6 +2069,86 @@ func FuzzParamsSuiteInterface(f *testing.F) {
 		f,
 		ParamsChecks.Interface.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -319,6 +2159,86 @@ func FuzzParamsSuiteMap(f *testing.F) {
 		f,
 		ParamsChecks.Map.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -329,6 +2249,86 @@ func FuzzParamsSuitePtr(f *testing.F) {
 		f,
 		ParamsChecks.Ptr.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -339,6 +2339,86 @@ func FuzzParamsSuiteSlice(f *testing.F) {
 		f,
 		ParamsChecks.Slice.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -349,6 +2429,86 @@ func FuzzParamsSuiteString(f *testing.F) {
 		f,
 		ParamsChecks.String.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -359,6 +2519,86 @@ func FuzzParamsSuiteStruct(f *testing.F) {
 		f,
 		ParamsChecks.Struct.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -370,6 +2610,86 @@ func FuzzParamsSuiteUnsafePointer(f *testing.F) {
 		f,
 		ParamsChecks.UnsafePointer.Callable,
 		paramsIdle,
+		conform.Excuse(
+			ParamsChecks.Bool.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Int64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint8.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint16.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uint64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Uintptr.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float32.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Float64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex64.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Complex128.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Array.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Map.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.Slice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ParamsChecks.String.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -491,6 +2811,14 @@ func TestEverySuite(t *testing.T) {
 				},
 				Defect: func(*EveryHandle) Every { return &everySubject{} },
 			}),
+			conform.Excuse(
+				EveryChecks.Fields.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				EveryChecks.Elements.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -512,6 +2840,14 @@ func TestEverySuite(t *testing.T) {
 				},
 				Defect: func(*EveryHandle) Every { return &everySubject{} },
 			}),
+			conform.Excuse(
+				EveryChecks.Fields.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				EveryChecks.Elements.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -532,6 +2868,14 @@ func TestEverySuiteBudgets(t *testing.T) {
 		everyIdle,
 		conform.Ceilings(EveryChecks.Fields.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(EveryChecks.Elements.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			EveryChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			EveryChecks.Elements.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -542,6 +2886,14 @@ func FuzzEverySuiteFields(f *testing.F) {
 		f,
 		EveryChecks.Fields.Callable,
 		everyIdle,
+		conform.Excuse(
+			EveryChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			EveryChecks.Elements.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -552,6 +2904,14 @@ func FuzzEverySuiteElements(f *testing.F) {
 		f,
 		EveryChecks.Elements.Callable,
 		everyIdle,
+		conform.Excuse(
+			EveryChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			EveryChecks.Elements.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -562,6 +2922,14 @@ func FuzzEverySuiteResults(f *testing.F) {
 		f,
 		EveryChecks.Results.Callable,
 		everyIdle,
+		conform.Excuse(
+			EveryChecks.Fields.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			EveryChecks.Elements.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1024,6 +3392,10 @@ func TestOddSuite(t *testing.T) {
 				},
 				Defect: func(*OddHandle) Odd { return &oddSubject{} },
 			}),
+			conform.Excuse(
+				OddChecks.Keep.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -1045,6 +3417,10 @@ func TestOddSuite(t *testing.T) {
 				},
 				Defect: func(*OddHandle) Odd { return &oddSubject{} },
 			}),
+			conform.Excuse(
+				OddChecks.Keep.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -1063,6 +3439,10 @@ func TestOddSuiteBudgets(t *testing.T) {
 		t,
 		oddIdle,
 		conform.Ceilings(OddChecks.Loop.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			OddChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1073,6 +3453,10 @@ func FuzzOddSuiteTag(f *testing.F) {
 		f,
 		OddChecks.Tag.Callable,
 		oddIdle,
+		conform.Excuse(
+			OddChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1083,6 +3467,10 @@ func FuzzOddSuiteKeep(f *testing.F) {
 		f,
 		OddChecks.Keep.Callable,
 		oddIdle,
+		conform.Excuse(
+			OddChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1093,6 +3481,10 @@ func FuzzOddSuiteEmbed(f *testing.F) {
 		f,
 		OddChecks.Embed.Callable,
 		oddIdle,
+		conform.Excuse(
+			OddChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1103,6 +3495,10 @@ func FuzzOddSuiteLoop(f *testing.F) {
 		f,
 		OddChecks.Loop.Callable,
 		oddIdle,
+		conform.Excuse(
+			OddChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1157,6 +3553,22 @@ func TestStdSuite(t *testing.T) {
 				},
 				Defect: func(*StdHandle) Std { return &stdSubject{} },
 			}),
+			conform.Excuse(
+				StdChecks.Within.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StdChecks.Within.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StdChecks.Pair.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StdChecks.Meet.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -1178,6 +3590,22 @@ func TestStdSuite(t *testing.T) {
 				},
 				Defect: func(*StdHandle) Std { return &stdSubject{} },
 			}),
+			conform.Excuse(
+				StdChecks.Within.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StdChecks.Within.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StdChecks.Pair.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StdChecks.Meet.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -1205,6 +3633,22 @@ func TestStdSuiteBudgets(t *testing.T) {
 		conform.Ceilings(StdChecks.Hold.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(StdChecks.Pair.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(StdChecks.Meet.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1215,6 +3659,22 @@ func FuzzStdSuiteCopy(f *testing.F) {
 		f,
 		StdChecks.Copy.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1225,6 +3685,22 @@ func FuzzStdSuiteClose(f *testing.F) {
 		f,
 		StdChecks.Close.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1235,6 +3711,22 @@ func FuzzStdSuiteFrom(f *testing.F) {
 		f,
 		StdChecks.From.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1245,6 +3737,22 @@ func FuzzStdSuiteAt(f *testing.F) {
 		f,
 		StdChecks.At.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1255,6 +3763,22 @@ func FuzzStdSuiteLog(f *testing.F) {
 		f,
 		StdChecks.Log.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1265,6 +3789,22 @@ func FuzzStdSuiteBuffer(f *testing.F) {
 		f,
 		StdChecks.Buffer.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1275,6 +3815,22 @@ func FuzzStdSuiteLock(f *testing.F) {
 		f,
 		StdChecks.Lock.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1285,6 +3841,22 @@ func FuzzStdSuiteFail(f *testing.F) {
 		f,
 		StdChecks.Fail.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1295,6 +3867,22 @@ func FuzzStdSuiteWithin(f *testing.F) {
 		f,
 		StdChecks.Within.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1305,6 +3893,22 @@ func FuzzStdSuiteHold(f *testing.F) {
 		f,
 		StdChecks.Hold.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1315,6 +3919,22 @@ func FuzzStdSuitePair(f *testing.F) {
 		f,
 		StdChecks.Pair.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -1325,6 +3945,22 @@ func FuzzStdSuiteMeet(f *testing.F) {
 		f,
 		StdChecks.Meet.Callable,
 		stdIdle,
+		conform.Excuse(
+			StdChecks.Within.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Within.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Pair.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StdChecks.Meet.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

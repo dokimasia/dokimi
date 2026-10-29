@@ -48,6 +48,22 @@ func TestDiarySuite(t *testing.T) {
 				},
 				Defect: func(*dynamictest.DiaryHandle) dynamic.Diary { return &diarySubject{} },
 			}),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Print.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Field.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Count.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Count.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +85,22 @@ func TestDiarySuite(t *testing.T) {
 				},
 				Defect: func(*dynamictest.DiaryHandle) dynamic.Diary { return &diarySubject{} },
 			}),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Print.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Field.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Count.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				dynamictest.DiaryChecks.Count.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -92,6 +124,22 @@ func TestDiarySuiteBudgets(t *testing.T) {
 		conform.Ceilings(dynamictest.DiaryChecks.In.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(dynamictest.DiaryChecks.Scale.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(dynamictest.DiaryChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -102,6 +150,22 @@ func FuzzDiarySuitePrint(f *testing.F) {
 		f,
 		dynamictest.DiaryChecks.Print.Callable,
 		diaryIdle,
+		conform.Excuse(
+			dynamictest.DiaryChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -112,6 +176,22 @@ func FuzzDiarySuiteField(f *testing.F) {
 		f,
 		dynamictest.DiaryChecks.Field.Callable,
 		diaryIdle,
+		conform.Excuse(
+			dynamictest.DiaryChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -122,6 +202,22 @@ func FuzzDiarySuiteIn(f *testing.F) {
 		f,
 		dynamictest.DiaryChecks.In.Callable,
 		diaryIdle,
+		conform.Excuse(
+			dynamictest.DiaryChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -132,6 +228,22 @@ func FuzzDiarySuiteScale(f *testing.F) {
 		f,
 		dynamictest.DiaryChecks.Scale.Callable,
 		diaryIdle,
+		conform.Excuse(
+			dynamictest.DiaryChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -142,6 +254,22 @@ func FuzzDiarySuiteCount(f *testing.F) {
 		f,
 		dynamictest.DiaryChecks.Count.Callable,
 		diaryIdle,
+		conform.Excuse(
+			dynamictest.DiaryChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			dynamictest.DiaryChecks.Count.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -165,4 +293,4 @@ func BenchmarkDiarySuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3e060adb6438ccc19b7bbc99f2f46fa5b115e3d7b64e215b15260d6777550c14
+// dokimi:provenance sha256:c29e88f428831b0026d86e240373f99317d7c05bd0a574448774eafdcbc04b57

@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	publisheratleastonce "go.dokimi.dev/dokimi/corpus/go/iface/contract/publisher-atleastonce"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,34 @@ type contractPublish struct {
 	conform.Callable[publisheratleastonce.Contract]
 }
 
+// Smoke returns the identity of the check that Publish returns without a
+// panic for derived inputs.
+func (c contractPublish) Smoke() conform.ID[publisheratleastonce.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Publish returns an error
+// for a cancelled context.
+func (c contractPublish) Cancel() conform.ID[publisheratleastonce.Contract] {
+	return c.Check("cancel")
+}
+
 // contractSubscribe is the name of Contract.Subscribe, with the identities
 // of its checks.
 type contractSubscribe struct {
 	conform.Callable[publisheratleastonce.Contract]
+}
+
+// Smoke returns the identity of the check that Subscribe returns without a
+// panic for derived inputs.
+func (c contractSubscribe) Smoke() conform.ID[publisheratleastonce.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Subscribe returns an error
+// for a cancelled context.
+func (c contractSubscribe) Cancel() conform.ID[publisheratleastonce.Contract] {
+	return c.Check("cancel")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +76,72 @@ type contractSubscribe struct {
 func ContractSuite() conform.Suite[publisheratleastonce.Contract] {
 	return conform.Suite[publisheratleastonce.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[publisheratleastonce.Contract]{
+			{
+				ID:          ContractChecks.Publish.Smoke(),
+				Statement:   "Publish returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, publisheratleastonce.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPublishPanics,
+			},
+			{
+				ID:          ContractChecks.Publish.Cancel(),
+				Statement:   "Publish returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, publisheratleastonce.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPublishSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Subscribe.Smoke(),
+				Statement:   "Subscribe returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Subscribe(ctx)
+						return err
+					})
+				},
+				Defect: contractSubscribePanics,
+			},
+			{
+				ID:          ContractChecks.Subscribe.Cancel(),
+				Statement:   "Subscribe returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Subscribe(ctx)
+						return err
+					})
+				},
+				Defect: contractSubscribeSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[publisheratleastonce.Contract]{
 			{
 				Calls:    contractPublishCalls,
@@ -180,4 +272,74 @@ func newContractOver(_ *ContractHandle, spend func()) publisheratleastonce.Contr
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ca8f96375a609eafea89a1fa55bae97603697d5426ac4a781e89fa9822802573
+// contractPublishPanicsDefect is the planted defect of a Contract whose
+// Publish panics.
+type contractPublishPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Publish is the override of the planted defect.
+func (*contractPublishPanicsDefect) Publish(p0 context.Context, p1 publisheratleastonce.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Publish panics")
+}
+
+// contractPublishPanics returns the planted defect of a Contract whose
+// Publish panics over a fresh subject.
+func contractPublishPanics(h *ContractHandle) publisheratleastonce.Contract {
+	return &contractPublishPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractPublishSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Publish ignores the context.
+type contractPublishSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Publish is the override of the planted defect.
+func (*contractPublishSucceedsAlwaysDefect) Publish(p0 context.Context, p1 publisheratleastonce.Value) (r0 error) {
+	return r0
+}
+
+// contractPublishSucceedsAlways returns the planted defect of a Contract
+// whose Publish ignores the context over a fresh subject.
+func contractPublishSucceedsAlways(h *ContractHandle) publisheratleastonce.Contract {
+	return &contractPublishSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractSubscribePanicsDefect is the planted defect of a Contract whose
+// Subscribe panics.
+type contractSubscribePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Subscribe is the override of the planted defect.
+func (*contractSubscribePanicsDefect) Subscribe(p0 context.Context) (r0 <-chan publisheratleastonce.Value, r1 error) {
+	panic("the planted defect of a Contract whose Subscribe panics")
+}
+
+// contractSubscribePanics returns the planted defect of a Contract whose
+// Subscribe panics over a fresh subject.
+func contractSubscribePanics(h *ContractHandle) publisheratleastonce.Contract {
+	return &contractSubscribePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractSubscribeSucceedsAlwaysDefect is the planted defect of a
+// Contract whose Subscribe ignores the context.
+type contractSubscribeSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Subscribe is the override of the planted defect.
+func (*contractSubscribeSucceedsAlwaysDefect) Subscribe(
+	p0 context.Context,
+) (r0 <-chan publisheratleastonce.Value, r1 error) {
+	return r0, r1
+}
+
+// contractSubscribeSucceedsAlways returns the planted defect of a Contract
+// whose Subscribe ignores the context over a fresh subject.
+func contractSubscribeSucceedsAlways(h *ContractHandle) publisheratleastonce.Contract {
+	return &contractSubscribeSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:6bd2808a7c9a1ab2dd76f0764a6ea5a0a459a8cbe9097f3bb7999645d5e70623

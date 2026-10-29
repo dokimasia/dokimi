@@ -49,6 +49,30 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*batchwritertest.ContractHandle) batchwriter.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Put.BatchWriter(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +94,30 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*batchwritertest.ContractHandle) batchwriter.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Put.BatchWriter(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchwritertest.ContractChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -90,6 +138,30 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(batchwritertest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(batchwritertest.ContractChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.BatchWriter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +172,30 @@ func FuzzContractSuitePut(f *testing.F) {
 		f,
 		batchwritertest.ContractChecks.Put.Callable,
 		contractIdle,
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.BatchWriter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +206,30 @@ func FuzzContractSuiteGet(f *testing.F) {
 		f,
 		batchwritertest.ContractChecks.Get.Callable,
 		contractIdle,
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Put.BatchWriter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchwritertest.ContractChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,4 +244,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c5959995f788755fef165b92d2e2a9836d38b7fcbeb4fcd7c051d6e22f9a1aaf
+// dokimi:provenance sha256:dceef90ee27987e318bf46a2410dbd5899ad72a7b87ac352947cbdc118a28c20

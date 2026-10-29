@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/appender"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,101 @@ type contractRun struct {
 	conform.Callable[appender.Contract]
 }
 
+// Smoke returns the identity of the check that Run returns without a panic
+// for derived inputs.
+func (c contractRun) Smoke() conform.ID[appender.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Run returns an error for a
+// cancelled context.
+func (c contractRun) Cancel() conform.ID[appender.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Run returns the zero
+// value beside an error.
+func (c contractRun) ZeroOnError() conform.ID[appender.Contract] {
+	return c.Check("zero-on-error")
+}
+
+// Appender returns the identity of the check that Run returns a position
+// above the position of the append before it.
+func (c contractRun) Appender() conform.ID[appender.Contract] {
+	return c.Check("appender")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[appender.Contract] {
 	return conform.Suite[appender.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[appender.Contract]{
+			{
+				ID:          ContractChecks.Run.Smoke(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, appender.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
+				ID:          ContractChecks.Run.Cancel(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Run(ctx, appender.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: contractRunSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Run.ZeroOnError(),
+				Statement:   "Run returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().Run(ctx, appender.Value{Key: "Key-a"})
+					}, int64(0))
+				},
+				Defect: contractRunValueBeside,
+			},
+			{
+				ID:          ContractChecks.Run.Appender(),
+				Statement:   "Run returns a position above the position of the append before it",
+				Claim:       spec.Appender,
+				Probe:       spec.RepeatAscends,
+				Reason:      spec.NotAscending,
+				Law:         spec.AppendReturnsAboveTheLast,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.RepeatAscends(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().Run(ctx, appender.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractRunDescends,
+			},
+		},
 		Calls: []conform.Call[appender.Contract]{
 			{
 				Calls:    contractRunCalls,
@@ -149,4 +241,79 @@ func newContractOver(_ *ContractHandle, spend func()) appender.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d9d8b0ad5a30987e1074105aa96ca89c2fba4e26f0e10830b16ec15e507b6c4b
+// contractRunPanicsDefect is the planted defect of a Contract whose Run
+// panics.
+type contractRunPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunPanicsDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	panic("the planted defect of a Contract whose Run panics")
+}
+
+// contractRunPanics returns the planted defect of a Contract whose Run
+// panics over a fresh subject.
+func contractRunPanics(h *ContractHandle) appender.Contract {
+	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRunSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Run ignores the context.
+type contractRunSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	return r0, r1
+}
+
+// contractRunSucceedsAlways returns the planted defect of a Contract whose
+// Run ignores the context over a fresh subject.
+func contractRunSucceedsAlways(h *ContractHandle) appender.Contract {
+	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRunValueBesideDefect is the planted defect of a Contract whose
+// Run returns a value beside an error.
+type contractRunValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunValueBesideDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	r0 = int64(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractRunValueBeside returns the planted defect of a Contract whose
+// Run returns a value beside an error over a fresh subject.
+func contractRunValueBeside(h *ContractHandle) appender.Contract {
+	return &contractRunValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRunDescendsDefect is the planted defect of a Contract whose Run
+// returns a position that is not above the last.
+type contractRunDescendsDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Run is the override of the planted defect.
+func (d *contractRunDescendsDefect) Run(p0 context.Context, p1 appender.Value) (r0 int64, r1 error) {
+	d.calls++
+	if d.calls == 1 {
+		r0 = int64(7)
+	}
+	return r0, r1
+}
+
+// contractRunDescends returns the planted defect of a Contract whose Run
+// returns a position that is not above the last over a fresh subject.
+func contractRunDescends(h *ContractHandle) appender.Contract {
+	return &contractRunDescendsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:e6549974f3bd161251db1a51c6d709470c34c2fb401b01af7d17df1366ee7578

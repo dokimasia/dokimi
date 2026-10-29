@@ -33,16 +33,28 @@ var runtime = func() []spec.MachineryID {
 // the methods or the function of the callables, in the order of s.Callables.
 // The suite of a function has no declaration beside the function.
 func (k *caller) derivation(s *Suite, syms []symbol.Symbol) {
+	declaration := s.Declaration
+	if s.Func != nil {
+		declaration = ""
+	}
+	s.Facts, s.Derivation = k.derive(declaration, syms)
+	k.derived(s)
+}
+
+// derive returns the facts of the callables syms of the declaration named
+// declaration, and the checks that the claims of the conformance spec derive
+// from them. A function has no declaration, so its declaration is empty.
+func (k *caller) derive(declaration string, syms []symbol.Symbol) ([]derive.Facts, derive.Suite) {
+	facts := make([]derive.Facts, 0, len(syms))
 	for _, sym := range syms {
 		f := k.factsOf(sym)
-		if s.Func == nil {
-			f.Declaration = s.Declaration
-		}
-		s.Facts = append(s.Facts, f)
+		f.Declaration = declaration
+		facts = append(facts, f)
 	}
 	// The callables of one declaration have distinct names, so their keys
 	// differ and Derive returns no error.
-	s.Derivation, _ = derive.Derive(s.Facts, spec.Claims(), nil, runtime)
+	d, _ := derive.Derive(facts, spec.Claims(), nil, runtime)
+	return facts, d
 }
 
 // factsOf returns the facts of the method or the function sym. Each input and

@@ -58,8 +58,12 @@ func keepsWritesWaiting(*QueueHandle) queue.Queue {
 	return &deaf{items: make(chan string, room)}
 }
 
-// Write appends the item, and waits while the queue has no room.
+// Write appends the item, and waits while the queue has no room. It returns
+// the error of a cancelled context.
 func (q *deaf) Write(ctx context.Context, item string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if q.closed.Load() {
 		return queue.ErrClosed
 	}

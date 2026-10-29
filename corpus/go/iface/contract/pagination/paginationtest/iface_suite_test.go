@@ -49,6 +49,30 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*paginationtest.ContractHandle) pagination.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.Pagination(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +94,30 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*paginationtest.ContractHandle) pagination.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Fetch.Pagination(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginationtest.ContractChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -90,6 +138,30 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(paginationtest.ContractChecks.Fetch.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(paginationtest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Pagination(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +172,30 @@ func FuzzContractSuiteFetch(f *testing.F) {
 		f,
 		paginationtest.ContractChecks.Fetch.Callable,
 		contractIdle,
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Pagination(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +206,30 @@ func FuzzContractSuitePut(f *testing.F) {
 		f,
 		paginationtest.ContractChecks.Put.Callable,
 		contractIdle,
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Fetch.Pagination(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginationtest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,4 +244,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:eb082ca35108f91d9e2d274da0b1f90ca30f2313b1e8a9916c53c0f724c93c6d
+// dokimi:provenance sha256:63a4878cd77abe136a1107c6cf2a1cde4fabf409a99f7506c498d0367d49f0cc

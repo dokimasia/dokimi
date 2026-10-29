@@ -7,10 +7,13 @@ package timeawaretest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeaware"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +42,52 @@ type mixedTouch struct {
 	conform.Callable[timeaware.Mixed]
 }
 
+// Smoke returns the identity of the check that Touch returns without a
+// panic for derived inputs.
+func (c mixedTouch) Smoke() conform.ID[timeaware.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Touch returns an error for
+// a cancelled context.
+func (c mixedTouch) Cancel() conform.ID[timeaware.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedAgeOf is the name of Mixed.AgeOf, with the identities of its
 // checks.
 type mixedAgeOf struct {
 	conform.Callable[timeaware.Mixed]
+}
+
+// Smoke returns the identity of the check that AgeOf returns without a
+// panic for derived inputs.
+func (c mixedAgeOf) Smoke() conform.ID[timeaware.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that AgeOf returns an error for
+// a cancelled context.
+func (c mixedAgeOf) Cancel() conform.ID[timeaware.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that AgeOf returns the
+// zero value beside an error.
+func (c mixedAgeOf) ZeroOnError() conform.ID[timeaware.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// TimeAware returns the identity of the check that AgeOf returns another
+// value once the clock has moved far enough.
+func (c mixedAgeOf) TimeAware() conform.ID[timeaware.Mixed] {
+	return c.Check("time-aware")
+}
+
+// Steady returns the identity of the check that AgeOf returns the same
+// value twice while the clock does not move.
+func (c mixedAgeOf) Steady() conform.ID[timeaware.Mixed] {
+	return c.Check("steady")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -50,6 +95,123 @@ type mixedAgeOf struct {
 func MixedSuite() conform.Suite[timeaware.Mixed] {
 	return conform.Suite[timeaware.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[timeaware.Mixed]{
+			{
+				ID:          MixedChecks.Touch.Smoke(),
+				Statement:   "Touch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedTouchPanics,
+			},
+			{
+				ID:          MixedChecks.Touch.Cancel(),
+				Statement:   "Touch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedTouchSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.AgeOf.Smoke(),
+				Statement:   "AgeOf returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().AgeOf(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedAgeOfPanics,
+			},
+			{
+				ID:          MixedChecks.AgeOf.Cancel(),
+				Statement:   "AgeOf returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().AgeOf(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedAgeOfSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.AgeOf.ZeroOnError(),
+				Statement:   "AgeOf returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().AgeOf(ctx, string("key-a"))
+					}, int64(0))
+				},
+				Defect: mixedAgeOfValueBeside,
+			},
+			{
+				ID:          MixedChecks.AgeOf.TimeAware(),
+				Statement:   "AgeOf returns another value once the clock has moved far enough",
+				Claim:       spec.TimeAware,
+				Probe:       spec.MovesWithTheClock,
+				Reason:      spec.UnmovedByTheClock,
+				Law:         spec.ResultDependsOnTheClock,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
+				Apply: func(h *MixedHandle) {
+					probe.MovesWithTheClock(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().AgeOf(ctx, string("key-a"))
+					}, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedAgeOfAnswersASample,
+				Around: synctest.Test,
+			},
+			{
+				ID:          MixedChecks.AgeOf.Steady(),
+				Statement:   "AgeOf returns the same value twice while the clock does not move",
+				Claim:       spec.Steady,
+				Probe:       spec.SteadyWhileTheClockStops,
+				Reason:      spec.DriftedWithoutClock,
+				Law:         spec.ResultIsStableWhileTheClockStops,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
+				Apply: func(h *MixedHandle) {
+					probe.SteadyWhileTheClockStops(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().AgeOf(ctx, string("key-a"))
+					}, func(ctx context.Context) error {
+						return h.Subject().Touch(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedAgeOfDrifts,
+				Around: synctest.Test,
+			},
+		},
 		Calls: []conform.Call[timeaware.Mixed]{
 			{
 				Calls:    mixedTouchCalls,
@@ -167,4 +329,132 @@ func newMixedOver(_ *MixedHandle, spend func()) timeaware.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:930d135ce750dedcd690c700ec4820c87cfd6cd030ee7b0cb5e6842bfe876b1e
+// mixedTouchPanicsDefect is the planted defect of a Mixed whose Touch
+// panics.
+type mixedTouchPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Touch is the override of the planted defect.
+func (*mixedTouchPanicsDefect) Touch(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Touch panics")
+}
+
+// mixedTouchPanics returns the planted defect of a Mixed whose Touch
+// panics over a fresh subject.
+func mixedTouchPanics(h *MixedHandle) timeaware.Mixed {
+	return &mixedTouchPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedTouchSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Touch ignores the context.
+type mixedTouchSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Touch is the override of the planted defect.
+func (*mixedTouchSucceedsAlwaysDefect) Touch(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedTouchSucceedsAlways returns the planted defect of a Mixed whose
+// Touch ignores the context over a fresh subject.
+func mixedTouchSucceedsAlways(h *MixedHandle) timeaware.Mixed {
+	return &mixedTouchSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAgeOfPanicsDefect is the planted defect of a Mixed whose AgeOf
+// panics.
+type mixedAgeOfPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// AgeOf is the override of the planted defect.
+func (*mixedAgeOfPanicsDefect) AgeOf(p0 context.Context, p1 string) (r0 int64, r1 error) {
+	panic("the planted defect of a Mixed whose AgeOf panics")
+}
+
+// mixedAgeOfPanics returns the planted defect of a Mixed whose AgeOf
+// panics over a fresh subject.
+func mixedAgeOfPanics(h *MixedHandle) timeaware.Mixed {
+	return &mixedAgeOfPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAgeOfSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// AgeOf ignores the context.
+type mixedAgeOfSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// AgeOf is the override of the planted defect.
+func (*mixedAgeOfSucceedsAlwaysDefect) AgeOf(p0 context.Context, p1 string) (r0 int64, r1 error) {
+	return r0, r1
+}
+
+// mixedAgeOfSucceedsAlways returns the planted defect of a Mixed whose
+// AgeOf ignores the context over a fresh subject.
+func mixedAgeOfSucceedsAlways(h *MixedHandle) timeaware.Mixed {
+	return &mixedAgeOfSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAgeOfValueBesideDefect is the planted defect of a Mixed whose AgeOf
+// returns a value beside an error.
+type mixedAgeOfValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// AgeOf is the override of the planted defect.
+func (*mixedAgeOfValueBesideDefect) AgeOf(p0 context.Context, p1 string) (r0 int64, r1 error) {
+	r0 = int64(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedAgeOfValueBeside returns the planted defect of a Mixed whose AgeOf
+// returns a value beside an error over a fresh subject.
+func mixedAgeOfValueBeside(h *MixedHandle) timeaware.Mixed {
+	return &mixedAgeOfValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAgeOfAnswersASampleDefect is the planted defect of a Mixed whose
+// AgeOf returns the same value however far the clock moves.
+type mixedAgeOfAnswersASampleDefect struct {
+	mixedOverEmbedded
+}
+
+// AgeOf is the override of the planted defect.
+func (*mixedAgeOfAnswersASampleDefect) AgeOf(p0 context.Context, p1 string) (r0 int64, r1 error) {
+	r0 = int64(7)
+	return r0, r1
+}
+
+// mixedAgeOfAnswersASample returns the planted defect of a Mixed whose
+// AgeOf returns the same value however far the clock moves over a fresh
+// subject.
+func mixedAgeOfAnswersASample(h *MixedHandle) timeaware.Mixed {
+	return &mixedAgeOfAnswersASampleDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAgeOfDriftsDefect is the planted defect of a Mixed whose AgeOf
+// returns another value while nothing moved.
+type mixedAgeOfDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// AgeOf is the override of the planted defect.
+func (d *mixedAgeOfDriftsDefect) AgeOf(p0 context.Context, p1 string) (r0 int64, r1 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int64(7)
+	}
+	return r0, r1
+}
+
+// mixedAgeOfDrifts returns the planted defect of a Mixed whose AgeOf
+// returns another value while nothing moved over a fresh subject.
+func mixedAgeOfDrifts(h *MixedHandle) timeaware.Mixed {
+	return &mixedAgeOfDriftsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:d34bf9ea7785ddeef0e9bb0184ea10384a1483652f96097de1ef7c2930817819

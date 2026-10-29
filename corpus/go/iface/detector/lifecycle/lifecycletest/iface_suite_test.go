@@ -49,6 +49,18 @@ func TestLifecycleSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycletest.LifecycleHandle) lifecycle.Lifecycle { return &lifecycleSubject{} },
 			}),
+			conform.Excuse(
+				lifecycletest.LifecycleChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycletest.LifecycleChecks.Close.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycletest.LifecycleChecks.Close.Idempotent(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +82,18 @@ func TestLifecycleSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycletest.LifecycleHandle) lifecycle.Lifecycle { return &lifecycleSubject{} },
 			}),
+			conform.Excuse(
+				lifecycletest.LifecycleChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycletest.LifecycleChecks.Close.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycletest.LifecycleChecks.Close.Idempotent(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +113,18 @@ func TestLifecycleSuiteBudgets(t *testing.T) {
 		t,
 		lifecycleIdle,
 		conform.Ceilings(lifecycletest.LifecycleChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			lifecycletest.LifecycleChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycletest.LifecycleChecks.Close.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycletest.LifecycleChecks.Close.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +135,18 @@ func FuzzLifecycleSuiteClose(f *testing.F) {
 		f,
 		lifecycletest.LifecycleChecks.Close.Callable,
 		lifecycleIdle,
+		conform.Excuse(
+			lifecycletest.LifecycleChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycletest.LifecycleChecks.Close.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycletest.LifecycleChecks.Close.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,4 +158,4 @@ func BenchmarkLifecycleSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:741ff795efb77e49e9d16e3ebc97a3e05c31dc135f9627cc024f8def3ff61175
+// dokimi:provenance sha256:06680444ccdb89ba43129a9b41a56478cecf858c619bf983c661002307bc745c

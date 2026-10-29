@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/writer"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -36,11 +38,56 @@ type writerPut struct {
 	conform.Callable[writer.Writer]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c writerPut) Smoke() conform.ID[writer.Writer] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c writerPut) Cancel() conform.ID[writer.Writer] {
+	return c.Check("cancel")
+}
+
 // WriterSuite returns the checks of Writer, and the calls and the budgets
 // of its callables.
 func WriterSuite() conform.Suite[writer.Writer] {
 	return conform.Suite[writer.Writer]{
 		Declaration: "Writer",
+		Checks: []conform.Check[writer.Writer]{
+			{
+				ID:          WriterChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WriterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, writer.Value{Key: "Key-a"})
+					})
+				},
+				Defect: writerPutPanics,
+			},
+			{
+				ID:          WriterChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WriterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, writer.Value{Key: "Key-a"})
+					})
+				},
+				Defect: writerPutSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[writer.Writer]{
 			{
 				Calls:    writerPutCalls,
@@ -137,4 +184,38 @@ func newWriterOver(_ *WriterHandle, spend func()) writer.Writer {
 	return writerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:396b4528b522df559e8b902e8b2b90342863254ecabb3eea39e45c5846bedf85
+// writerPutPanicsDefect is the planted defect of a Writer whose Put
+// panics.
+type writerPutPanicsDefect struct {
+	writerOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*writerPutPanicsDefect) Put(p0 context.Context, p1 writer.Value) (r0 error) {
+	panic("the planted defect of a Writer whose Put panics")
+}
+
+// writerPutPanics returns the planted defect of a Writer whose Put panics
+// over a fresh subject.
+func writerPutPanics(h *WriterHandle) writer.Writer {
+	return &writerPutPanicsDefect{writerOverEmbedded: h.Fresh()}
+}
+
+// writerPutSucceedsAlwaysDefect is the planted defect of a Writer whose
+// Put ignores the context.
+type writerPutSucceedsAlwaysDefect struct {
+	writerOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*writerPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 writer.Value) (r0 error) {
+	return r0
+}
+
+// writerPutSucceedsAlways returns the planted defect of a Writer whose Put
+// ignores the context over a fresh subject.
+func writerPutSucceedsAlways(h *WriterHandle) writer.Writer {
+	return &writerPutSucceedsAlwaysDefect{writerOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:655a205eb2d382ed50e1070c439c1a44d7549eb557e8a511c7cff4e14203a652

@@ -12,7 +12,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/dynamic"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -47,10 +49,22 @@ type diaryPrint struct {
 	conform.Callable[dynamic.Diary]
 }
 
+// Smoke returns the identity of the check that Print returns without a
+// panic for derived inputs.
+func (c diaryPrint) Smoke() conform.ID[dynamic.Diary] {
+	return c.Check("smoke")
+}
+
 // diaryField is the name of Diary.Field, with the identities of its
 // checks.
 type diaryField struct {
 	conform.Callable[dynamic.Diary]
+}
+
+// Smoke returns the identity of the check that Field returns without a
+// panic for derived inputs.
+func (c diaryField) Smoke() conform.ID[dynamic.Diary] {
+	return c.Check("smoke")
 }
 
 // diaryIn is the name of Diary.In, with the identities of its checks.
@@ -70,11 +84,93 @@ type diaryCount struct {
 	conform.Callable[dynamic.Diary]
 }
 
+// Smoke returns the identity of the check that Count returns without a
+// panic for derived inputs.
+func (c diaryCount) Smoke() conform.ID[dynamic.Diary] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Count returns the
+// same value for the same inputs.
+func (c diaryCount) Deterministic() conform.ID[dynamic.Diary] {
+	return c.Check("deterministic")
+}
+
 // DiarySuite returns the checks of Diary, and the calls and the budgets of
 // its callables.
 func DiarySuite() conform.Suite[dynamic.Diary] {
 	return conform.Suite[dynamic.Diary]{
 		Declaration: "Diary",
+		Checks: []conform.Check[dynamic.Diary]{
+			{
+				ID:          DiaryChecks.Print.Smoke(),
+				Statement:   "Print returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DiaryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Print(string("msg-a"), any("values-a"))
+						return nil
+					})
+				},
+				Defect: diaryPrintPanics,
+			},
+			{
+				ID:          DiaryChecks.Field.Smoke(),
+				Statement:   "Field returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DiaryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Field(string("name-a"), any("value-a"))
+						return nil
+					})
+				},
+				Defect: diaryFieldPanics,
+			},
+			{
+				ID:          DiaryChecks.Count.Smoke(),
+				Statement:   "Count returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DiaryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Count()
+						return nil
+					})
+				},
+				Defect: diaryCountPanics,
+			},
+			{
+				ID:          DiaryChecks.Count.Deterministic(),
+				Statement:   "Count returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DiaryHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Count()
+						return r0, nil
+					})
+				},
+				Defect: diaryCountDrifts,
+			},
+		},
 		Calls: []conform.Call[dynamic.Diary]{
 			{
 				Calls:    diaryPrintCalls,
@@ -264,4 +360,77 @@ func newDiaryOver(_ *DiaryHandle, spend func()) dynamic.Diary {
 	return diaryOver{spend: spend}
 }
 
-// dokimi:provenance sha256:20a0219ffeb416c7dc83a644ef3a5055e8734241857ada72c79530f66ac4538b
+// diaryPrintPanicsDefect is the planted defect of a Diary whose Print
+// panics.
+type diaryPrintPanicsDefect struct {
+	diaryOverEmbedded
+}
+
+// Print is the override of the planted defect.
+func (*diaryPrintPanicsDefect) Print(p0 string, p1 ...any) {
+	panic("the planted defect of a Diary whose Print panics")
+}
+
+// diaryPrintPanics returns the planted defect of a Diary whose Print
+// panics over a fresh subject.
+func diaryPrintPanics(h *DiaryHandle) dynamic.Diary {
+	return &diaryPrintPanicsDefect{diaryOverEmbedded: h.Fresh()}
+}
+
+// diaryFieldPanicsDefect is the planted defect of a Diary whose Field
+// panics.
+type diaryFieldPanicsDefect struct {
+	diaryOverEmbedded
+}
+
+// Field is the override of the planted defect.
+func (*diaryFieldPanicsDefect) Field(p0 string, p1 any) {
+	panic("the planted defect of a Diary whose Field panics")
+}
+
+// diaryFieldPanics returns the planted defect of a Diary whose Field
+// panics over a fresh subject.
+func diaryFieldPanics(h *DiaryHandle) dynamic.Diary {
+	return &diaryFieldPanicsDefect{diaryOverEmbedded: h.Fresh()}
+}
+
+// diaryCountPanicsDefect is the planted defect of a Diary whose Count
+// panics.
+type diaryCountPanicsDefect struct {
+	diaryOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*diaryCountPanicsDefect) Count() (r0 int) {
+	panic("the planted defect of a Diary whose Count panics")
+}
+
+// diaryCountPanics returns the planted defect of a Diary whose Count
+// panics over a fresh subject.
+func diaryCountPanics(h *DiaryHandle) dynamic.Diary {
+	return &diaryCountPanicsDefect{diaryOverEmbedded: h.Fresh()}
+}
+
+// diaryCountDriftsDefect is the planted defect of a Diary whose Count
+// returns another value on the repeat.
+type diaryCountDriftsDefect struct {
+	diaryOverEmbedded
+	calls int
+}
+
+// Count is the override of the planted defect.
+func (d *diaryCountDriftsDefect) Count() (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// diaryCountDrifts returns the planted defect of a Diary whose Count
+// returns another value on the repeat over a fresh subject.
+func diaryCountDrifts(h *DiaryHandle) dynamic.Diary {
+	return &diaryCountDriftsDefect{diaryOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:8b393fddbf2b55893d5ada94034e6947b10b0f8d0059b714230e5314b4fc0e80

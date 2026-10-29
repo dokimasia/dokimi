@@ -244,7 +244,8 @@ const (
 // generators take. Facts are the facts of the callables in their order, and
 // Derivation contains the checks that the claims of the conformance spec
 // derive from them, with the refusals, the unclaimed classifications and the
-// edges.
+// edges. Derived are the derived checks in the order of the derivation, and
+// Defects their planted defects, one for each break of a callable.
 type Suite struct {
 	Subject     *emit.TypeRef
 	Methods     *emit.Interface
@@ -265,6 +266,8 @@ type Suite struct {
 	Inputs      []Input
 	Facts       []derive.Facts
 	Derivation  derive.Suite
+	Derived     []Derived
+	Defects     []*Defect
 	Dynamic     bool
 	Errors      bool
 }
@@ -1169,21 +1172,28 @@ func (g *generator) checksOf(m sdk.Matcher, origin *symbol.Identity, callables [
 
 // excusalsOf returns the excusals of the subject of m in the order of their
 // directives. Each excusal excuses a check that the annotate half binds to the
-// declaration declared, or the check of a ceiling of the budget of one of its
+// declaration declared, a check that the claims of the conformance spec derive
+// for its callables, or the check of a ceiling of the budget of one of its
 // callables. excusalsOf reports [UnknownExcusal] at each excusal whose
 // identity does not match such a check, with the identities of the checks of
-// its callable: the checks in the order of their functions, then the
-// ceilings. It returns false where it reports an excusal. A subject of a
-// struct with several directives subject reads the excusals of the callables
-// of its own declaration, as [skips] states.
+// its callable: the bound checks in the order of their functions, then the
+// derived checks, then the ceilings. It returns false where it reports an
+// excusal. A subject of a struct with several directives subject reads the
+// excusals of the callables of its own declaration, as [skips] states.
 func (g *generator) excusalsOf(
-	m *sdk.StructMatch, declared *symbol.Identity, callables []*node.Method,
+	m *sdk.StructMatch, e *sdk.Emitter, declared *symbol.Identity, callables []*node.Method,
 ) ([]Excusal, bool) {
 	var checks []excusable
 	bindings := g.boundTo(m, declared)
 	for i := range bindings {
 		b := &bindings[i]
 		checks = append(checks, excusable{callable: b.callable, segment: b.segment, method: b.fn.Name})
+	}
+	for _, c := range g.derivationOf(m, e, declared, callables).Checks {
+		callable, segment, _ := strings.Cut(c.Identity, "/")
+		checks = append(checks, excusable{
+			callable: callable, segment: segment, method: naming.Pascal(strings.ReplaceAll(segment, "#", "-")),
+		})
 	}
 	for _, c := range callables {
 		for _, segment := range g.budgetFact(m, &c.ID).segments() {
@@ -1226,8 +1236,28 @@ func (g *generator) excusalsOf(
 	return out, excused
 }
 
-// excusable is a check that a subject can excuse: a check of a consumer, or
-// the check of a ceiling of a budget. callable is its callable, as Store.Get,
+// derivationOf returns the checks that the suite of the declaration declared
+// derives for its callables, at the witnesses of the type parameters of a
+// generic interface, as [generator.suiteOfInterface] derives them. e is the
+// emitter of the conformance test.
+func (g *generator) derivationOf(
+	m *sdk.StructMatch, e *sdk.Emitter, declared *symbol.Identity, callables []*node.Method,
+) derive.Suite {
+	k := caller{m: m, g: g, e: e, b: m.Rules(), origin: *declared, decl: declared.Name}
+	sym, _ := m.Reader().Lookup(*declared)
+	if i, isInterface := sym.(*node.Interface); isInterface {
+		k.typeParams, k.witnesses = i.TypeParams, k.b.Witnesses(i.TypeParams)
+	}
+	syms := make([]symbol.Symbol, 0, len(callables))
+	for _, c := range callables {
+		syms = append(syms, c)
+	}
+	_, d := k.derive(declared.Name, syms)
+	return d
+}
+
+// excusable is a check that a subject can excuse: a check of a consumer, a
+// derived check, or the check of a ceiling of a budget. callable is its callable, as Store.Get,
 // segment the last part of its identity, and method the method of the names
 // of the callables that returns its identity.
 type excusable struct {
@@ -1407,6 +1437,18 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 	if n.NewOver != "" {
 		decls = append(decls, &emit.Function{Origin: *origin, Name: n.NewOver, Visibility: symbol.VisibilityPackage})
 	}
+	for _, d := range s.Defects {
+		decls = append(decls, &emit.Function{Origin: *origin, Name: d.Name, Visibility: symbol.VisibilityPackage})
+		if d.Type != "" {
+			decls = append(decls, &emit.Struct{Origin: *origin, Name: d.Type, Visibility: symbol.VisibilityPackage})
+		}
+		if d.Handle != nil {
+			decls = append(
+				decls,
+				&emit.Struct{Origin: *origin, Name: d.Handle.Type, Visibility: symbol.VisibilityPackage},
+			)
+		}
+	}
 	decls = append(decls, public(n.Suite), public(n.Run), public(n.RunFromHandle), public(n.Fuzz),
 		public(n.Budgets), public(n.Bench))
 	if n.BenchParallel != "" {
@@ -1432,7 +1474,11 @@ func write(e *sdk.Emitter, origin *symbol.Identity, s *Suite) {
 		&emit.Field{Name: subjectWord, Type: subject},
 		&emit.Field{Name: checksWord, Type: emitted(n.Checks)},
 	)
-	excused := make([]Excusal, 0, len(s.Checks))
+	excused := make([]Excusal, 0, len(s.Derived)+len(s.Checks))
+	for i := range s.Derived {
+		d := &s.Derived[i]
+		excused = append(excused, Excusal{Field: d.Field, Method: d.Method, Reason: aloneReason})
+	}
 	for i := range s.Checks {
 		c := &s.Checks[i]
 		excused = append(excused, Excusal{Field: c.Field, Method: c.Method, Reason: aloneReason})
@@ -1610,7 +1656,7 @@ func (g *generator) conformanceOf(m *sdk.StructMatch, _ part, e *sdk.Emitter) er
 	}
 	decl, _ := m.Reader().Lookup(declared)
 	methods := methodsOf(&b, decl)
-	excusals, excused := g.excusalsOf(m, &declared, methods)
+	excusals, excused := g.excusalsOf(m, e, &declared, methods)
 	ceilings, stated := g.ceilingsOf(m, &declared, methods)
 	if !excused || !stated {
 		return nil

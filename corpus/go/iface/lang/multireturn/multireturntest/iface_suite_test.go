@@ -48,6 +48,22 @@ func TestWideSuite(t *testing.T) {
 				},
 				Defect: func(*multireturntest.WideHandle) multireturn.Wide { return &wideSubject{} },
 			}),
+			conform.Excuse(
+				multireturntest.WideChecks.Quad.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multireturntest.WideChecks.Quad.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multireturntest.WideChecks.Triple.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multireturntest.WideChecks.NoError.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +85,22 @@ func TestWideSuite(t *testing.T) {
 				},
 				Defect: func(*multireturntest.WideHandle) multireturn.Wide { return &wideSubject{} },
 			}),
+			conform.Excuse(
+				multireturntest.WideChecks.Quad.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multireturntest.WideChecks.Quad.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multireturntest.WideChecks.Triple.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				multireturntest.WideChecks.NoError.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -90,6 +122,22 @@ func TestWideSuiteBudgets(t *testing.T) {
 		conform.Ceilings(multireturntest.WideChecks.Quad.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(multireturntest.WideChecks.Triple.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(multireturntest.WideChecks.NoError.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Triple.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.NoError.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +148,22 @@ func FuzzWideSuiteQuad(f *testing.F) {
 		f,
 		multireturntest.WideChecks.Quad.Callable,
 		wideIdle,
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Triple.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.NoError.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +174,22 @@ func FuzzWideSuiteTriple(f *testing.F) {
 		f,
 		multireturntest.WideChecks.Triple.Callable,
 		wideIdle,
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Triple.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.NoError.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -120,6 +200,22 @@ func FuzzWideSuiteNoError(f *testing.F) {
 		f,
 		multireturntest.WideChecks.NoError.Callable,
 		wideIdle,
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Quad.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.Triple.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			multireturntest.WideChecks.NoError.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -137,4 +233,4 @@ func BenchmarkWideSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2ae3a88a7795599d73d1ae4785de4cda2b2d4a0f6d8a7366263d34ecf1338c81
+// dokimi:provenance sha256:78ccfe2b74a9bc7157e35e6f0d14a4af45dc13d85967ff7920e019b9b956293d

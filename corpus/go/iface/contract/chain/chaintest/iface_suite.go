@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/chain"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,46 @@ type contractAppend struct {
 	conform.Callable[chain.Contract]
 }
 
+// Smoke returns the identity of the check that Append returns without a
+// panic for derived inputs.
+func (c contractAppend) Smoke() conform.ID[chain.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Append returns an error
+// for a cancelled context.
+func (c contractAppend) Cancel() conform.ID[chain.Contract] {
+	return c.Check("cancel")
+}
+
+// Chain returns the identity of the check that Append grows Replay by the
+// entry that it admits.
+func (c contractAppend) Chain() conform.ID[chain.Contract] {
+	return c.Check("chain")
+}
+
 // contractReplay is the name of Contract.Replay, with the identities of
 // its checks.
 type contractReplay struct {
 	conform.Callable[chain.Contract]
+}
+
+// Smoke returns the identity of the check that Replay returns without a
+// panic for derived inputs.
+func (c contractReplay) Smoke() conform.ID[chain.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Replay returns an error
+// for a cancelled context.
+func (c contractReplay) Cancel() conform.ID[chain.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Replay returns the
+// zero value beside an error.
+func (c contractReplay) ZeroOnError() conform.ID[chain.Contract] {
+	return c.Check("zero-on-error")
 }
 
 // contractVerify is the name of Contract.Verify, with the identities of
@@ -53,11 +91,152 @@ type contractVerify struct {
 	conform.Callable[chain.Contract]
 }
 
+// Smoke returns the identity of the check that Verify returns without a
+// panic for derived inputs.
+func (c contractVerify) Smoke() conform.ID[chain.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Verify returns an error
+// for a cancelled context.
+func (c contractVerify) Cancel() conform.ID[chain.Contract] {
+	return c.Check("cancel")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[chain.Contract] {
 	return conform.Suite[chain.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[chain.Contract]{
+			{
+				ID:          ContractChecks.Append.Smoke(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, chain.Entry{Key: "Key-a"})
+					})
+				},
+				Defect: contractAppendPanics,
+			},
+			{
+				ID:          ContractChecks.Append.Cancel(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, chain.Entry{Key: "Key-a"})
+					})
+				},
+				Defect: contractAppendSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Append.Chain(),
+				Statement:   "Append grows Replay by the entry that it admits",
+				Claim:       spec.Chain,
+				Probe:       spec.ReplayGrows,
+				Reason:      spec.ReplayNotGrown,
+				Law:         spec.AdmittedEntryGrowsTheReplay,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ReplayGrows(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, chain.Entry{Key: "Key-a"})
+					}, func(ctx context.Context) ([]chain.Entry, error) {
+						return h.Subject().Replay(ctx)
+					})
+				},
+				Defect: contractAppendSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Replay.Smoke(),
+				Statement:   "Replay returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Replay(ctx)
+						return err
+					})
+				},
+				Defect: contractReplayPanics,
+			},
+			{
+				ID:          ContractChecks.Replay.Cancel(),
+				Statement:   "Replay returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Replay(ctx)
+						return err
+					})
+				},
+				Defect: contractReplaySucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Replay.ZeroOnError(),
+				Statement:   "Replay returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]chain.Entry, error) {
+						return h.Subject().Replay(ctx)
+					}, []chain.Entry(nil))
+				},
+				Defect: contractReplayValueBeside,
+			},
+			{
+				ID:          ContractChecks.Verify.Smoke(),
+				Statement:   "Verify returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					})
+				},
+				Defect: contractVerifyPanics,
+			},
+			{
+				ID:          ContractChecks.Verify.Cancel(),
+				Statement:   "Verify returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					})
+				},
+				Defect: contractVerifySucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[chain.Contract]{
 			{
 				Calls:    contractAppendCalls,
@@ -197,4 +376,125 @@ func newContractOver(_ *ContractHandle, spend func()) chain.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:42c561ebb1ffbdc2efef88cc6351b7ea08c1cad543206cda5a6c529faab8a001
+// contractAppendPanicsDefect is the planted defect of a Contract whose
+// Append panics.
+type contractAppendPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (*contractAppendPanicsDefect) Append(p0 context.Context, p1 chain.Entry) (r0 error) {
+	panic("the planted defect of a Contract whose Append panics")
+}
+
+// contractAppendPanics returns the planted defect of a Contract whose
+// Append panics over a fresh subject.
+func contractAppendPanics(h *ContractHandle) chain.Contract {
+	return &contractAppendPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractAppendSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Append ignores the context.
+type contractAppendSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (*contractAppendSucceedsAlwaysDefect) Append(p0 context.Context, p1 chain.Entry) (r0 error) {
+	return r0
+}
+
+// contractAppendSucceedsAlways returns the planted defect of a Contract
+// whose Append ignores the context over a fresh subject.
+func contractAppendSucceedsAlways(h *ContractHandle) chain.Contract {
+	return &contractAppendSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractReplayPanicsDefect is the planted defect of a Contract whose
+// Replay panics.
+type contractReplayPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Replay is the override of the planted defect.
+func (*contractReplayPanicsDefect) Replay(p0 context.Context) (r0 []chain.Entry, r1 error) {
+	panic("the planted defect of a Contract whose Replay panics")
+}
+
+// contractReplayPanics returns the planted defect of a Contract whose
+// Replay panics over a fresh subject.
+func contractReplayPanics(h *ContractHandle) chain.Contract {
+	return &contractReplayPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractReplaySucceedsAlwaysDefect is the planted defect of a Contract
+// whose Replay ignores the context.
+type contractReplaySucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Replay is the override of the planted defect.
+func (*contractReplaySucceedsAlwaysDefect) Replay(p0 context.Context) (r0 []chain.Entry, r1 error) {
+	return r0, r1
+}
+
+// contractReplaySucceedsAlways returns the planted defect of a Contract
+// whose Replay ignores the context over a fresh subject.
+func contractReplaySucceedsAlways(h *ContractHandle) chain.Contract {
+	return &contractReplaySucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractReplayValueBesideDefect is the planted defect of a Contract
+// whose Replay returns a value beside an error.
+type contractReplayValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Replay is the override of the planted defect.
+func (*contractReplayValueBesideDefect) Replay(p0 context.Context) (r0 []chain.Entry, r1 error) {
+	r0 = []chain.Entry{{Key: "Key-b"}}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractReplayValueBeside returns the planted defect of a Contract whose
+// Replay returns a value beside an error over a fresh subject.
+func contractReplayValueBeside(h *ContractHandle) chain.Contract {
+	return &contractReplayValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractVerifyPanicsDefect is the planted defect of a Contract whose
+// Verify panics.
+type contractVerifyPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Verify is the override of the planted defect.
+func (*contractVerifyPanicsDefect) Verify(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Contract whose Verify panics")
+}
+
+// contractVerifyPanics returns the planted defect of a Contract whose
+// Verify panics over a fresh subject.
+func contractVerifyPanics(h *ContractHandle) chain.Contract {
+	return &contractVerifyPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractVerifySucceedsAlwaysDefect is the planted defect of a Contract
+// whose Verify ignores the context.
+type contractVerifySucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Verify is the override of the planted defect.
+func (*contractVerifySucceedsAlwaysDefect) Verify(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// contractVerifySucceedsAlways returns the planted defect of a Contract
+// whose Verify ignores the context over a fresh subject.
+func contractVerifySucceedsAlways(h *ContractHandle) chain.Contract {
+	return &contractVerifySucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:618acd81705f3be050fdede3dccd6fdc874f9bd685e22a0926b81f501415b4db

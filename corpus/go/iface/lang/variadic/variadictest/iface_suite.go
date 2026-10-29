@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/variadic"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,34 @@ type finderFind struct {
 	conform.Callable[variadic.Finder]
 }
 
+// Smoke returns the identity of the check that Find returns without a
+// panic for derived inputs.
+func (c finderFind) Smoke() conform.ID[variadic.Finder] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Find returns an error for
+// a cancelled context.
+func (c finderFind) Cancel() conform.ID[variadic.Finder] {
+	return c.Check("cancel")
+}
+
 // finderFindWithLimit is the name of Finder.FindWithLimit, with the
 // identities of its checks.
 type finderFindWithLimit struct {
 	conform.Callable[variadic.Finder]
+}
+
+// Smoke returns the identity of the check that FindWithLimit returns
+// without a panic for derived inputs.
+func (c finderFindWithLimit) Smoke() conform.ID[variadic.Finder] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that FindWithLimit returns an
+// error for a cancelled context.
+func (c finderFindWithLimit) Cancel() conform.ID[variadic.Finder] {
+	return c.Check("cancel")
 }
 
 // FinderSuite returns the checks of Finder, and the calls and the budgets
@@ -50,6 +76,74 @@ type finderFindWithLimit struct {
 func FinderSuite() conform.Suite[variadic.Finder] {
 	return conform.Suite[variadic.Finder]{
 		Declaration: "Finder",
+		Checks: []conform.Check[variadic.Finder]{
+			{
+				ID:          FinderChecks.Find.Smoke(),
+				Statement:   "Find returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *FinderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Find(ctx, string("keys-a"))
+						return err
+					})
+				},
+				Defect: finderFindPanics,
+			},
+			{
+				ID:          FinderChecks.Find.Cancel(),
+				Statement:   "Find returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *FinderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Find(ctx, string("keys-a"))
+						return err
+					})
+				},
+				Defect: finderFindSucceedsAlways,
+			},
+			{
+				ID:          FinderChecks.FindWithLimit.Smoke(),
+				Statement:   "FindWithLimit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *FinderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().FindWithLimit(ctx, int(42), string("keys-a"))
+						return err
+					})
+				},
+				Defect: finderFindWithLimitPanics,
+			},
+			{
+				ID:          FinderChecks.FindWithLimit.Cancel(),
+				Statement:   "FindWithLimit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *FinderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().FindWithLimit(ctx, int(42), string("keys-a"))
+						return err
+					})
+				},
+				Defect: finderFindWithLimitSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[variadic.Finder]{
 			{
 				Calls:    finderFindCalls,
@@ -173,4 +267,80 @@ func newFinderOver(_ *FinderHandle, spend func()) variadic.Finder {
 	return finderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b6543ace515ef298716b6c3a76b7369e8c0e343d29c5c4479994e545e6dd45dd
+// finderFindPanicsDefect is the planted defect of a Finder whose Find
+// panics.
+type finderFindPanicsDefect struct {
+	finderOverEmbedded
+}
+
+// Find is the override of the planted defect.
+func (*finderFindPanicsDefect) Find(p0 context.Context, p1 ...string) (r0 []string, r1 error) {
+	panic("the planted defect of a Finder whose Find panics")
+}
+
+// finderFindPanics returns the planted defect of a Finder whose Find
+// panics over a fresh subject.
+func finderFindPanics(h *FinderHandle) variadic.Finder {
+	return &finderFindPanicsDefect{finderOverEmbedded: h.Fresh()}
+}
+
+// finderFindSucceedsAlwaysDefect is the planted defect of a Finder whose
+// Find ignores the context.
+type finderFindSucceedsAlwaysDefect struct {
+	finderOverEmbedded
+}
+
+// Find is the override of the planted defect.
+func (*finderFindSucceedsAlwaysDefect) Find(p0 context.Context, p1 ...string) (r0 []string, r1 error) {
+	return r0, r1
+}
+
+// finderFindSucceedsAlways returns the planted defect of a Finder whose
+// Find ignores the context over a fresh subject.
+func finderFindSucceedsAlways(h *FinderHandle) variadic.Finder {
+	return &finderFindSucceedsAlwaysDefect{finderOverEmbedded: h.Fresh()}
+}
+
+// finderFindWithLimitPanicsDefect is the planted defect of a Finder whose
+// FindWithLimit panics.
+type finderFindWithLimitPanicsDefect struct {
+	finderOverEmbedded
+}
+
+// FindWithLimit is the override of the planted defect.
+func (*finderFindWithLimitPanicsDefect) FindWithLimit(
+	p0 context.Context,
+	p1 int,
+	p2 ...string,
+) (r0 []string, r1 error) {
+	panic("the planted defect of a Finder whose FindWithLimit panics")
+}
+
+// finderFindWithLimitPanics returns the planted defect of a Finder whose
+// FindWithLimit panics over a fresh subject.
+func finderFindWithLimitPanics(h *FinderHandle) variadic.Finder {
+	return &finderFindWithLimitPanicsDefect{finderOverEmbedded: h.Fresh()}
+}
+
+// finderFindWithLimitSucceedsAlwaysDefect is the planted defect of a
+// Finder whose FindWithLimit ignores the context.
+type finderFindWithLimitSucceedsAlwaysDefect struct {
+	finderOverEmbedded
+}
+
+// FindWithLimit is the override of the planted defect.
+func (*finderFindWithLimitSucceedsAlwaysDefect) FindWithLimit(
+	p0 context.Context,
+	p1 int,
+	p2 ...string,
+) (r0 []string, r1 error) {
+	return r0, r1
+}
+
+// finderFindWithLimitSucceedsAlways returns the planted defect of a Finder
+// whose FindWithLimit ignores the context over a fresh subject.
+func finderFindWithLimitSucceedsAlways(h *FinderHandle) variadic.Finder {
+	return &finderFindWithLimitSucceedsAlwaysDefect{finderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:4848e7350403dcfcc1288021e7433419e76661ea070d41c90bb6675698e26d5d

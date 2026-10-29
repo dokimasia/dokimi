@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/deleter"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,56 @@ type deleterDelete struct {
 	conform.Callable[deleter.Deleter]
 }
 
+// Smoke returns the identity of the check that Delete returns without a
+// panic for derived inputs.
+func (c deleterDelete) Smoke() conform.ID[deleter.Deleter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Delete returns an error
+// for a cancelled context.
+func (c deleterDelete) Cancel() conform.ID[deleter.Deleter] {
+	return c.Check("cancel")
+}
+
 // DeleterSuite returns the checks of Deleter, and the calls and the
 // budgets of its callables.
 func DeleterSuite() conform.Suite[deleter.Deleter] {
 	return conform.Suite[deleter.Deleter]{
 		Declaration: "Deleter",
+		Checks: []conform.Check[deleter.Deleter]{
+			{
+				ID:          DeleterChecks.Delete.Smoke(),
+				Statement:   "Delete returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DeleterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Delete(ctx, string("key-a"))
+					})
+				},
+				Defect: deleterDeletePanics,
+			},
+			{
+				ID:          DeleterChecks.Delete.Cancel(),
+				Statement:   "Delete returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *DeleterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Delete(ctx, string("key-a"))
+					})
+				},
+				Defect: deleterDeleteSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[deleter.Deleter]{
 			{
 				Calls:    deleterDeleteCalls,
@@ -142,4 +189,38 @@ func newDeleterOver(_ *DeleterHandle, spend func()) deleter.Deleter {
 	return deleterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:382f02f9eb251dd9de84d1e9bdfd3603421cbeb28139ad9a474ddc10334c282d
+// deleterDeletePanicsDefect is the planted defect of a Deleter whose
+// Delete panics.
+type deleterDeletePanicsDefect struct {
+	deleterOverEmbedded
+}
+
+// Delete is the override of the planted defect.
+func (*deleterDeletePanicsDefect) Delete(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Deleter whose Delete panics")
+}
+
+// deleterDeletePanics returns the planted defect of a Deleter whose Delete
+// panics over a fresh subject.
+func deleterDeletePanics(h *DeleterHandle) deleter.Deleter {
+	return &deleterDeletePanicsDefect{deleterOverEmbedded: h.Fresh()}
+}
+
+// deleterDeleteSucceedsAlwaysDefect is the planted defect of a Deleter
+// whose Delete ignores the context.
+type deleterDeleteSucceedsAlwaysDefect struct {
+	deleterOverEmbedded
+}
+
+// Delete is the override of the planted defect.
+func (*deleterDeleteSucceedsAlwaysDefect) Delete(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// deleterDeleteSucceedsAlways returns the planted defect of a Deleter
+// whose Delete ignores the context over a fresh subject.
+func deleterDeleteSucceedsAlways(h *DeleterHandle) deleter.Deleter {
+	return &deleterDeleteSucceedsAlwaysDefect{deleterOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:a2ca88a42f625467819880d3e7484ae07bb47b89775570d92c52efe1b807acb8

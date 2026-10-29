@@ -42,6 +42,18 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*CacheHandle) Cache[int, int] { return &cacheSubject{} },
 			}),
+			conform.Excuse(
+				CacheChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CacheChecks.Get.ZeroOnMiss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CacheChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -63,6 +75,18 @@ func TestCacheSuite(t *testing.T) {
 				},
 				Defect: func(*CacheHandle) Cache[int, int] { return &cacheSubject{} },
 			}),
+			conform.Excuse(
+				CacheChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CacheChecks.Get.ZeroOnMiss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CacheChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -83,6 +107,18 @@ func TestCacheSuiteBudgets(t *testing.T) {
 		cacheIdle,
 		conform.Ceilings(CacheChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(CacheChecks.Set.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			CacheChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CacheChecks.Get.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CacheChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -93,6 +129,18 @@ func FuzzCacheSuiteGet(f *testing.F) {
 		f,
 		CacheChecks.Get.Callable,
 		cacheIdle,
+		conform.Excuse(
+			CacheChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CacheChecks.Get.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CacheChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -103,6 +151,18 @@ func FuzzCacheSuiteSet(f *testing.F) {
 		f,
 		CacheChecks.Set.Callable,
 		cacheIdle,
+		conform.Excuse(
+			CacheChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CacheChecks.Get.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CacheChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

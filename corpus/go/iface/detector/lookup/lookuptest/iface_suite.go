@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/lookup"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,36 @@ type lookupInspect struct {
 	conform.Callable[lookup.Lookup]
 }
 
+// Smoke returns the identity of the check that Inspect returns without a
+// panic for derived inputs.
+func (c lookupInspect) Smoke() conform.ID[lookup.Lookup] {
+	return c.Check("smoke")
+}
+
 // LookupSuite returns the checks of Lookup, and the calls and the budgets
 // of its callables.
 func LookupSuite() conform.Suite[lookup.Lookup] {
 	return conform.Suite[lookup.Lookup]{
 		Declaration: "Lookup",
+		Checks: []conform.Check[lookup.Lookup]{
+			{
+				ID:          LookupChecks.Inspect.Smoke(),
+				Statement:   "Inspect returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LookupHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Inspect(string("key-a"))
+						return nil
+					})
+				},
+				Defect: lookupInspectPanics,
+			},
+		},
 		Calls: []conform.Call[lookup.Lookup]{
 			{
 				Calls:    lookupInspectCalls,
@@ -139,4 +166,21 @@ func newLookupOver(_ *LookupHandle, spend func()) lookup.Lookup {
 	return lookupOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0e732fdeb13378a2dad9eb26d000e8572f3510ae33b720a17a25dae27da8475f
+// lookupInspectPanicsDefect is the planted defect of a Lookup whose
+// Inspect panics.
+type lookupInspectPanicsDefect struct {
+	lookupOverEmbedded
+}
+
+// Inspect is the override of the planted defect.
+func (*lookupInspectPanicsDefect) Inspect(p0 string) (r0 lookup.Value, r1 lookup.Meta, r2 bool) {
+	panic("the planted defect of a Lookup whose Inspect panics")
+}
+
+// lookupInspectPanics returns the planted defect of a Lookup whose Inspect
+// panics over a fresh subject.
+func lookupInspectPanics(h *LookupHandle) lookup.Lookup {
+	return &lookupInspectPanicsDefect{lookupOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:8942c732f0d5c9b7155db7d77f93ab44e9c0225646fd870a5323956327d1c465

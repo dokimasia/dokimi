@@ -8,6 +8,7 @@ claims:
     generator: suite
     licences:
       - callable: true
+    gates: [returns-unaided]
     law: no-panic-on-any-input
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns without a panic for derived inputs"
@@ -43,7 +44,7 @@ claims:
       - shape: answering-writer
       - shape: stream-consumer
     unless: default-on-error
-    gates: [failure, returns-beside-error, one-value, value-samples]
+    gates: [failure, returns-beside-error, one-value, value-samples, returns-unaided]
     law: no-value-beside-an-error
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the zero value beside an error"
@@ -61,7 +62,7 @@ claims:
     licences:
       - shape: multi-reader
       - shape: multi-aggregator
-    gates: [failure, returns-beside-error, two-values, value-samples]
+    gates: [failure, returns-beside-error, two-values, value-samples, returns-unaided]
     law: no-value-beside-an-error
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the zero values beside an error"
@@ -78,7 +79,7 @@ claims:
     generator: suite
     licences:
       - shape: reader-with-bool
-    gates: [presence-flag, one-value, value-samples]
+    gates: [presence-flag, one-value, value-samples, returns-unaided]
     law: no-value-beside-a-false-flag
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the zero value beside a false presence flag"
@@ -95,7 +96,7 @@ claims:
     generator: suite
     licences:
       - shape: lookup
-    gates: [presence-flag, two-values, value-samples]
+    gates: [presence-flag, two-values, value-samples, returns-unaided]
     law: no-value-beside-a-false-flag
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the zero values beside a false presence flag"
@@ -112,7 +113,7 @@ claims:
     generator: suite
     licences:
       - shape: pointer-reader
-    gates: [one-value, optional-value]
+    gates: [one-value, optional-value, returns-unaided]
     law: miss-returns-the-zero
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns nil for an input that nothing stored"
@@ -128,7 +129,7 @@ claims:
     generator: suite
     licences:
       - shape: reader-no-error
-    gates: [one-value, value-samples]
+    gates: [one-value, value-samples, returns-unaided]
     law: miss-returns-the-zero
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the zero value for an input that nothing stored"
@@ -145,7 +146,7 @@ claims:
     generator: suite
     licences:
       - shape: computation
-    gates: [one-value, value-samples]
+    gates: [one-value, value-samples, returns-unaided]
     law: repeat-returns-alike
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the same value for the same inputs"
@@ -161,7 +162,7 @@ claims:
     generator: suite
     licences:
       - shape: predicate
-    gates: [one-value]
+    gates: [one-value, returns-unaided]
     law: repeat-returns-alike
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns the same answer twice for an unchanged subject"
@@ -177,7 +178,7 @@ claims:
     generator: suite
     licences:
       - shape: void-lifecycle
-    gates: [no-value]
+    gates: [no-value, returns-unaided]
     law: repeated-call-survives
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} returns without a panic when it is called twice"
@@ -523,6 +524,7 @@ claims:
     licences:
       - mixin: total
         needs-param: edge
+    gates: [failure]
     law: call-accepts-its-declared-domain
     machineries: [nothing-beyond-a-caller]
     statement: "{callable} succeeds for the input that its directive declares at the edge of the domain"
@@ -1109,6 +1111,7 @@ claims:
     licences:
       - contract: if-match
         role: writer
+        needs-param: field
     gates: [cancellation, failure]
     partners:
       match: {mode: role, role: match}
@@ -1120,7 +1123,7 @@ claims:
       call: {from: callable}
       match: {from: partner, partner: match}
     defect:
-      form: succeeds-always
+      form: ignores-the-predicate
       clause: "a {declaration} whose {callable} accepts a write that {match} rejects"
       reason: unmatched-write
     since: 1.0.0
@@ -1270,8 +1273,8 @@ claims:
       after: {from: partner, partner: rollback}
       sentinel: {from: param, param: closed}
     defect:
-      form: answers-a-sample
-      clause: "a {declaration} whose {callable} opens a transaction that settles twice"
+      form: settles-twice
+      clause: "a {declaration} whose {rollback} settles a transaction that {commit} settled"
       reason: alive-after-close
     since: 1.0.0
   pool:

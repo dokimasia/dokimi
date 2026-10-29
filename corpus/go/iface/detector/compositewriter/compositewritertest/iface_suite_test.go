@@ -51,6 +51,14 @@ func TestCompositeWriterSuite(t *testing.T) {
 					return &compositeWriterSubject{}
 				},
 			}),
+			conform.Excuse(
+				compositewritertest.CompositeWriterChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				compositewritertest.CompositeWriterChecks.Set.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +82,14 @@ func TestCompositeWriterSuite(t *testing.T) {
 					return &compositeWriterSubject{}
 				},
 			}),
+			conform.Excuse(
+				compositewritertest.CompositeWriterChecks.Set.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				compositewritertest.CompositeWriterChecks.Set.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -97,6 +113,14 @@ func TestCompositeWriterSuiteBudgets(t *testing.T) {
 			compositewritertest.CompositeWriterChecks.Set.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			compositewritertest.CompositeWriterChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			compositewritertest.CompositeWriterChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -108,6 +132,14 @@ func FuzzCompositeWriterSuiteSet(f *testing.F) {
 		f,
 		compositewritertest.CompositeWriterChecks.Set.Callable,
 		compositeWriterIdle,
+		conform.Excuse(
+			compositewritertest.CompositeWriterChecks.Set.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			compositewritertest.CompositeWriterChecks.Set.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +155,4 @@ func BenchmarkCompositeWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:22d7c603f63412b256dbc30d6af78069e8044654a1ac03545292867719a24df5
+// dokimi:provenance sha256:1ab28a75112565c0e2911820924fcd4a54a4a00560c8af2e1664d566296e4da4

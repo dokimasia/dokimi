@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/resolved"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,40 @@ type applierApply struct {
 	conform.Callable[resolved.Applier]
 }
 
+// Smoke returns the identity of the check that Apply returns without a
+// panic for derived inputs.
+func (c applierApply) Smoke() conform.ID[resolved.Applier] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Apply returns an error for
+// a cancelled context.
+func (c applierApply) Cancel() conform.ID[resolved.Applier] {
+	return c.Check("cancel")
+}
+
 // applierLimit is the name of Applier.Limit, with the identities of its
 // checks.
 type applierLimit struct {
 	conform.Callable[resolved.Applier]
+}
+
+// Smoke returns the identity of the check that Limit returns without a
+// panic for derived inputs.
+func (c applierLimit) Smoke() conform.ID[resolved.Applier] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Limit returns an error for
+// a cancelled context.
+func (c applierLimit) Cancel() conform.ID[resolved.Applier] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Limit returns the
+// zero value beside an error.
+func (c applierLimit) ZeroOnError() conform.ID[resolved.Applier] {
+	return c.Check("zero-on-error")
 }
 
 // ApplierSuite returns the checks of Applier, and the calls and the
@@ -50,6 +82,87 @@ type applierLimit struct {
 func ApplierSuite() conform.Suite[resolved.Applier] {
 	return conform.Suite[resolved.Applier]{
 		Declaration: "Applier",
+		Checks: []conform.Check[resolved.Applier]{
+			{
+				ID:          ApplierChecks.Apply.Smoke(),
+				Statement:   "Apply returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ApplierHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, resolved.ApplyRequest{Key: "Key-a"})
+					})
+				},
+				Defect: applierApplyPanics,
+			},
+			{
+				ID:          ApplierChecks.Apply.Cancel(),
+				Statement:   "Apply returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ApplierHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Apply(ctx, resolved.ApplyRequest{Key: "Key-a"})
+					})
+				},
+				Defect: applierApplySucceedsAlways,
+			},
+			{
+				ID:          ApplierChecks.Limit.Smoke(),
+				Statement:   "Limit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ApplierHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Limit(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: applierLimitPanics,
+			},
+			{
+				ID:          ApplierChecks.Limit.Cancel(),
+				Statement:   "Limit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ApplierHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Limit(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: applierLimitSucceedsAlways,
+			},
+			{
+				ID:          ApplierChecks.Limit.ZeroOnError(),
+				Statement:   "Limit returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ApplierHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Limit(ctx, string("key-a"))
+					}, int(0))
+				},
+				Defect: applierLimitValueBeside,
+			},
+		},
 		Calls: []conform.Call[resolved.Applier]{
 			{
 				Calls:    applierApplyCalls,
@@ -180,4 +293,91 @@ func newApplierOver(_ *ApplierHandle, spend func()) resolved.Applier {
 	return applierOver{spend: spend}
 }
 
-// dokimi:provenance sha256:59def65fb48189f8b2e1bb920d23dc3c5d6c18a51dcdd16bffcb6d8f687854f8
+// applierApplyPanicsDefect is the planted defect of a Applier whose Apply
+// panics.
+type applierApplyPanicsDefect struct {
+	applierOverEmbedded
+}
+
+// Apply is the override of the planted defect.
+func (*applierApplyPanicsDefect) Apply(p0 context.Context, p1 resolved.ApplyRequest) (r0 error) {
+	panic("the planted defect of a Applier whose Apply panics")
+}
+
+// applierApplyPanics returns the planted defect of a Applier whose Apply
+// panics over a fresh subject.
+func applierApplyPanics(h *ApplierHandle) resolved.Applier {
+	return &applierApplyPanicsDefect{applierOverEmbedded: h.Fresh()}
+}
+
+// applierApplySucceedsAlwaysDefect is the planted defect of a Applier
+// whose Apply ignores the context.
+type applierApplySucceedsAlwaysDefect struct {
+	applierOverEmbedded
+}
+
+// Apply is the override of the planted defect.
+func (*applierApplySucceedsAlwaysDefect) Apply(p0 context.Context, p1 resolved.ApplyRequest) (r0 error) {
+	return r0
+}
+
+// applierApplySucceedsAlways returns the planted defect of a Applier whose
+// Apply ignores the context over a fresh subject.
+func applierApplySucceedsAlways(h *ApplierHandle) resolved.Applier {
+	return &applierApplySucceedsAlwaysDefect{applierOverEmbedded: h.Fresh()}
+}
+
+// applierLimitPanicsDefect is the planted defect of a Applier whose Limit
+// panics.
+type applierLimitPanicsDefect struct {
+	applierOverEmbedded
+}
+
+// Limit is the override of the planted defect.
+func (*applierLimitPanicsDefect) Limit(p0 context.Context, p1 string) (r0 int, r1 error) {
+	panic("the planted defect of a Applier whose Limit panics")
+}
+
+// applierLimitPanics returns the planted defect of a Applier whose Limit
+// panics over a fresh subject.
+func applierLimitPanics(h *ApplierHandle) resolved.Applier {
+	return &applierLimitPanicsDefect{applierOverEmbedded: h.Fresh()}
+}
+
+// applierLimitSucceedsAlwaysDefect is the planted defect of a Applier
+// whose Limit ignores the context.
+type applierLimitSucceedsAlwaysDefect struct {
+	applierOverEmbedded
+}
+
+// Limit is the override of the planted defect.
+func (*applierLimitSucceedsAlwaysDefect) Limit(p0 context.Context, p1 string) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// applierLimitSucceedsAlways returns the planted defect of a Applier whose
+// Limit ignores the context over a fresh subject.
+func applierLimitSucceedsAlways(h *ApplierHandle) resolved.Applier {
+	return &applierLimitSucceedsAlwaysDefect{applierOverEmbedded: h.Fresh()}
+}
+
+// applierLimitValueBesideDefect is the planted defect of a Applier whose
+// Limit returns a value beside an error.
+type applierLimitValueBesideDefect struct {
+	applierOverEmbedded
+}
+
+// Limit is the override of the planted defect.
+func (*applierLimitValueBesideDefect) Limit(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// applierLimitValueBeside returns the planted defect of a Applier whose
+// Limit returns a value beside an error over a fresh subject.
+func applierLimitValueBeside(h *ApplierHandle) resolved.Applier {
+	return &applierLimitValueBesideDefect{applierOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:bf72cc410852e0cc260bcf0d89e811c9edc51cbee5bf3316b4e4a00db881baa9

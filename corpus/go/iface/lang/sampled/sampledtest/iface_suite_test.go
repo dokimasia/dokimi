@@ -49,6 +49,18 @@ func TestLabellerSuite(t *testing.T) {
 				},
 				Defect: func(*sampledtest.LabellerHandle) sampled.Labeller { return &labellerSubject{} },
 			}),
+			conform.Excuse(
+				sampledtest.LabellerChecks.Apply.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledtest.LabellerChecks.Apply.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledtest.LabellerChecks.Apply.Idempotent(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +82,18 @@ func TestLabellerSuite(t *testing.T) {
 				},
 				Defect: func(*sampledtest.LabellerHandle) sampled.Labeller { return &labellerSubject{} },
 			}),
+			conform.Excuse(
+				sampledtest.LabellerChecks.Apply.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledtest.LabellerChecks.Apply.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledtest.LabellerChecks.Apply.Idempotent(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +113,18 @@ func TestLabellerSuiteBudgets(t *testing.T) {
 		t,
 		labellerIdle,
 		conform.Ceilings(sampledtest.LabellerChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			sampledtest.LabellerChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledtest.LabellerChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledtest.LabellerChecks.Apply.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +135,18 @@ func FuzzLabellerSuiteApply(f *testing.F) {
 		f,
 		sampledtest.LabellerChecks.Apply.Callable,
 		labellerIdle,
+		conform.Excuse(
+			sampledtest.LabellerChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledtest.LabellerChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledtest.LabellerChecks.Apply.Idempotent(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,4 +158,4 @@ func BenchmarkLabellerSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:41888cea04d8fdf42df185eae44afbd60ceb38c6526b1d96b0497cd4865d50c0
+// dokimi:provenance sha256:971d0622e9971ba6c76d3ca98bddc7fb0bf12ea3526997267b44cbab2c1d7125

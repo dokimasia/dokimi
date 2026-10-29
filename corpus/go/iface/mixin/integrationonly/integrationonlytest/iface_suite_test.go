@@ -48,6 +48,14 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*integrationonlytest.MixedHandle) integrationonly.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				integrationonlytest.MixedChecks.Connect.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				integrationonlytest.MixedChecks.Connect.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +77,14 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*integrationonlytest.MixedHandle) integrationonly.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				integrationonlytest.MixedChecks.Connect.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				integrationonlytest.MixedChecks.Connect.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +104,14 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(integrationonlytest.MixedChecks.Connect.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			integrationonlytest.MixedChecks.Connect.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			integrationonlytest.MixedChecks.Connect.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +122,14 @@ func FuzzMixedSuiteConnect(f *testing.F) {
 		f,
 		integrationonlytest.MixedChecks.Connect.Callable,
 		mixedIdle,
+		conform.Excuse(
+			integrationonlytest.MixedChecks.Connect.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			integrationonlytest.MixedChecks.Connect.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +141,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7292b9522e45ebbda7d65fff01dbad54236b836081b650243a3691b83a91a018
+// dokimi:provenance sha256:1372222d5c107a1896c8c5a88e546ccd579bc6829ea6f468810bc1e4d2a21756

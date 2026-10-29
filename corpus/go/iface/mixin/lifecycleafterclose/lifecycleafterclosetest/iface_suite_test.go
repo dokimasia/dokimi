@@ -48,6 +48,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycleafterclosetest.MixedHandle) lifecycleafterclose.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Close.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Work.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Work.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*lifecycleafterclosetest.MixedHandle) lifecycleafterclose.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Close.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Work.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Work.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(lifecycleafterclosetest.MixedChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(lifecycleafterclosetest.MixedChecks.Work.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Close.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzMixedSuiteClose(f *testing.F) {
 		f,
 		lifecycleafterclosetest.MixedChecks.Close.Callable,
 		mixedIdle,
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Close.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzMixedSuiteWork(f *testing.F) {
 		f,
 		lifecycleafterclosetest.MixedChecks.Work.Callable,
 		mixedIdle,
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Close.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			lifecycleafterclosetest.MixedChecks.Work.LifecycleAfterClose(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +223,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:cd2dbfe8c10ea372bc164622cc527782b9b6aff63c5b634d41fba80dfcfc494e
+// dokimi:provenance sha256:424cc13880d7e98c3c2266f4c7b6f5be674506c2f7902a8846af00e637433715

@@ -43,11 +43,15 @@ func TestLedgerSuite(t *testing.T) {
 				Defect: func(*LedgerHandle) Ledger { return &ledgerSubject{} },
 			}),
 			conform.Excuse(
-				LedgerChecks.Credit.CreditsInPlace(),
+				LedgerChecks.Credit.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Balance.KeepsTheSum(),
+				LedgerChecks.Balance.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LedgerChecks.Balance.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -72,38 +76,18 @@ func TestLedgerSuite(t *testing.T) {
 				Defect: func(*LedgerHandle) Ledger { return &ledgerSubject{} },
 			}),
 			conform.Excuse(
-				LedgerChecks.Credit.CreditsInPlace(),
+				LedgerChecks.Credit.Smoke(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
-				LedgerChecks.Balance.KeepsTheSum(),
+				LedgerChecks.Balance.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LedgerChecks.Balance.Deterministic(),
 				"the test applies the check of its option alone",
 			),
 		)
-	})
-
-	t.Run("LedgerChecks", func(t *testing.T) {
-		t.Parallel()
-		assert.Equal(
-			t,
-			string(LedgerChecks.Credit.CreditsInPlace()),
-			"Ledger.Credit/credits-in-place",
-			"the identity of the check joins the callable and the segment of the check",
-		)
-		assert.Equal(
-			t,
-			string(LedgerChecks.Balance.KeepsTheSum()),
-			"Ledger.Balance/keeps-the-sum",
-			"the identity of the check joins the callable and the segment of the check",
-		)
-	})
-}
-
-// TestLedgerSuiteAllocs falsifies the allocation ceilings and the checks
-// that count allocations of the suite of Ledger.
-func TestLedgerSuiteAllocs(t *testing.T) {
-	t.Run("LedgerSuite", func(t *testing.T) {
-		conform.FalsifyAllocs(t, LedgerSuite())
 	})
 }
 
@@ -124,11 +108,15 @@ func TestLedgerSuiteBudgets(t *testing.T) {
 		conform.Ceilings(LedgerChecks.Credit.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(LedgerChecks.Balance.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			LedgerChecks.Credit.CreditsInPlace(),
+			LedgerChecks.Credit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Balance.KeepsTheSum(),
+			LedgerChecks.Balance.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LedgerChecks.Balance.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -142,11 +130,15 @@ func FuzzLedgerSuiteCredit(f *testing.F) {
 		LedgerChecks.Credit.Callable,
 		ledgerIdle,
 		conform.Excuse(
-			LedgerChecks.Credit.CreditsInPlace(),
+			LedgerChecks.Credit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Balance.KeepsTheSum(),
+			LedgerChecks.Balance.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LedgerChecks.Balance.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -160,11 +152,15 @@ func FuzzLedgerSuiteBalance(f *testing.F) {
 		LedgerChecks.Balance.Callable,
 		ledgerIdle,
 		conform.Excuse(
-			LedgerChecks.Credit.CreditsInPlace(),
+			LedgerChecks.Credit.Smoke(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
-			LedgerChecks.Balance.KeepsTheSum(),
+			LedgerChecks.Balance.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LedgerChecks.Balance.Deterministic(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -187,12 +183,6 @@ func TestBookConformsToLedger(t *testing.T) {
 	t.Parallel()
 
 	RunLedgerSuite(t, NewBook)
-}
-
-// TestBookConformsToLedgerAllocs applies the allocation ceilings and the
-// checks that count allocations of the suite of Ledger to Book.
-func TestBookConformsToLedgerAllocs(t *testing.T) {
-	RunLedgerBudgets(t, func(*LedgerHandle) *Book { return NewBook() })
 }
 
 // BenchmarkBookConformsToLedger measures each callable of the suite of

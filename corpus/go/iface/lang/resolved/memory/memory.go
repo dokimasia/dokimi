@@ -21,16 +21,24 @@ type Applier struct {
 // New returns an applier without requests.
 func New() *Applier { return &Applier{limits: map[string]int{}} }
 
-// Apply implements [resolved.Applier].
-func (a *Applier) Apply(_ context.Context, req resolved.ApplyRequest) error {
+// Apply implements [resolved.Applier]. It returns the error of a cancelled
+// context.
+func (a *Applier) Apply(ctx context.Context, req resolved.ApplyRequest) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.limits[req.Key] = req.Resolution.Limit()
 	return nil
 }
 
-// Limit implements [resolved.Applier].
-func (a *Applier) Limit(_ context.Context, key string) (int, error) {
+// Limit implements [resolved.Applier]. It returns the error of a cancelled
+// context.
+func (a *Applier) Limit(ctx context.Context, key string) (int, error) {
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return a.limits[key], nil

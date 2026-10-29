@@ -8,7 +8,318 @@ import (
 	"example.com/shop/lib/tool"
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
+
+// The suite refers to the compatibility witness of its runtime.
+var _ = conform.CompatV1
+
+// The names that a test of Reach writes.
+type (
+	ReachHandle = conform.Handle[Reach]
+	ReachCheck  = conform.Check[Reach]
+	ReachOption = conform.Option[Reach]
+)
+
+// ReachChecks contains the name of each callable of Reach, with the
+// identities of its checks.
+var ReachChecks = struct {
+	Store   reachStore
+	Current reachCurrent
+	Gear    reachGear
+}{
+	Store:   reachStore{"Reach.Store"},
+	Current: reachCurrent{"Reach.Current"},
+	Gear:    reachGear{"Reach.Gear"},
+}
+
+// reachStore is the name of Reach.Store, with the identities of its
+// checks.
+type reachStore struct {
+	conform.Callable[Reach]
+}
+
+// reachCurrent is the name of Reach.Current, with the identities of its
+// checks.
+type reachCurrent struct {
+	conform.Callable[Reach]
+}
+
+// Smoke returns the identity of the check that Current returns without a
+// panic for derived inputs.
+func (c reachCurrent) Smoke() conform.ID[Reach] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Current returns an error
+// for a cancelled context.
+func (c reachCurrent) Cancel() conform.ID[Reach] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Current returns the
+// zero value beside an error.
+func (c reachCurrent) ZeroOnError() conform.ID[Reach] {
+	return c.Check("zero-on-error")
+}
+
+// reachGear is the name of Reach.Gear, with the identities of its checks.
+type reachGear struct {
+	conform.Callable[Reach]
+}
+
+// ReachSuite returns the checks of Reach, and the calls and the budgets of
+// its callables.
+func ReachSuite() conform.Suite[Reach] {
+	return conform.Suite[Reach]{
+		Declaration: "Reach",
+		Checks: []conform.Check[Reach]{
+			{
+				ID:          ReachChecks.Current.Smoke(),
+				Statement:   "Current returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ReachHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Current(ctx)
+						return err
+					})
+				},
+				Defect: reachCurrentPanics,
+			},
+			{
+				ID:          ReachChecks.Current.Cancel(),
+				Statement:   "Current returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ReachHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Current(ctx)
+						return err
+					})
+				},
+				Defect: reachCurrentSucceedsAlways,
+			},
+			{
+				ID:          ReachChecks.Current.ZeroOnError(),
+				Statement:   "Current returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ReachHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (tool.Pitch, error) {
+						return h.Subject().Current(ctx)
+					}, tool.Pitch(0))
+				},
+				Defect: reachCurrentValueBeside,
+			},
+		},
+		Calls: []conform.Call[Reach]{
+			{
+				Calls:    reachStoreCalls,
+				Over:     newReachOver,
+				Callable: ReachChecks.Store.Callable,
+			},
+			{
+				Calls:    reachCurrentCalls,
+				Over:     newReachOver,
+				Callable: ReachChecks.Current.Callable,
+			},
+			{
+				Calls:    reachGearCalls,
+				Over:     newReachOver,
+				Callable: ReachChecks.Gear.Callable,
+			},
+		},
+	}
+}
+
+// RunReachSuite applies the checks of Reach, and the checks that opts add,
+// to a fresh subject of newSubject for each check.
+func RunReachSuite[T Reach](t *testing.T, newSubject func() T, opts ...ReachOption) {
+	t.Helper()
+	RunReachSuiteFromHandle(t, func(*ReachHandle) T { return newSubject() }, opts...)
+}
+
+// RunReachSuiteFromHandle applies the same checks to a subject that
+// newSubject builds from the handle of each check.
+func RunReachSuiteFromHandle[T Reach](
+	t *testing.T,
+	newSubject func(h *ReachHandle) T,
+	opts ...ReachOption,
+) {
+	t.Helper()
+	conform.Run(t, ReachSuite(), reachSubjects(newSubject), opts...)
+}
+
+// FuzzReachSuite registers on f the fuzz target of the property checks of
+// callable, on a subject that newSubject builds from the handle of each
+// case.
+func FuzzReachSuite[T Reach](
+	f *testing.F,
+	callable conform.Callable[Reach],
+	newSubject func(h *ReachHandle) T,
+	opts ...ReachOption,
+) {
+	f.Helper()
+	conform.Fuzz(f, ReachSuite(), callable, reachSubjects(newSubject), opts...)
+}
+
+// RunReachBudgets applies the allocation ceilings of Reach and its checks
+// that count allocations, and the ceilings and the checks that opts add,
+// to a fresh subject of newSubject for each case.
+func RunReachBudgets[T Reach](
+	t *testing.T,
+	newSubject func(h *ReachHandle) T,
+	opts ...ReachOption,
+) {
+	t.Helper()
+	conform.RunBudgets(t, ReachSuite(), reachSubjects(newSubject), opts...)
+}
+
+// BenchReachSuite measures callable on a subject of newSubject, under the
+// ceilings of its budget.
+func BenchReachSuite[T Reach](
+	b conform.B,
+	callable conform.Callable[Reach],
+	newSubject func(h *ReachHandle) T,
+	opts ...ReachOption,
+) {
+	b.Helper()
+	conform.Bench(b, ReachSuite(), callable, reachSubjects(newSubject), opts...)
+}
+
+// reachSubjects returns the factory of the subjects of Reach that calls
+// newSubject with the handle of each check.
+func reachSubjects[T Reach](newSubject func(h *ReachHandle) T) func(h *ReachHandle) Reach {
+	return func(h *ReachHandle) Reach { return newSubject(h) }
+}
+
+// reachStoreCalls generates the calls of Reach.Store with the inputs that
+// each case draws.
+var reachStoreCalls = prop.Composite(func(c *prop.Case) func(context.Context, Reach) error {
+	p := c.Draw(prop.Of[tool.Pitch](), "p")
+	return func(ctx context.Context, subject Reach) error {
+		return subject.Store(ctx, p)
+	}
+})
+
+// reachCurrentCalls generates the calls of Reach.Current with the inputs
+// that each case draws.
+var reachCurrentCalls = prop.Composite(func(*prop.Case) func(context.Context, Reach) error {
+	return func(ctx context.Context, subject Reach) error {
+		_, err := subject.Current(ctx)
+		return err
+	}
+})
+
+// reachGearCalls generates the calls of Reach.Gear with the inputs that
+// each case draws.
+var reachGearCalls = prop.Composite(func(*prop.Case) func(context.Context, Reach) error {
+	return func(ctx context.Context, subject Reach) error {
+		_, err := subject.Gear(ctx)
+		return err
+	}
+})
+
+// reachOverEmbedded is Reach under the name of the field that reachOver
+// embeds.
+type reachOverEmbedded = Reach
+
+// reachOver is a subject of Reach whose callables call spend and return
+// their zero results. The planted defect of a ceiling passes a spend that
+// exceeds the ceiling.
+type reachOver struct {
+	reachOverEmbedded
+	spend func()
+}
+
+// Store calls spend and returns its zero results.
+func (o reachOver) Store(context.Context, tool.Pitch) (r0 error) {
+	o.spend()
+	return r0
+}
+
+// Current calls spend and returns its zero results.
+func (o reachOver) Current(context.Context) (r0 tool.Pitch, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// Gear calls spend and returns its zero results.
+func (o reachOver) Gear(context.Context) (r0 tool.Gear, r1 error) {
+	o.spend()
+	return r0, r1
+}
+
+// newReachOver returns the planted defect of a ceiling of Reach, whose
+// callables call spend.
+func newReachOver(_ *ReachHandle, spend func()) Reach {
+	return reachOver{spend: spend}
+}
+
+// reachCurrentPanicsDefect is the planted defect of a Reach whose Current
+// panics.
+type reachCurrentPanicsDefect struct {
+	reachOverEmbedded
+}
+
+// Current is the override of the planted defect.
+func (*reachCurrentPanicsDefect) Current(p0 context.Context) (r0 tool.Pitch, r1 error) {
+	panic("the planted defect of a Reach whose Current panics")
+}
+
+// reachCurrentPanics returns the planted defect of a Reach whose Current
+// panics over a fresh subject.
+func reachCurrentPanics(h *ReachHandle) Reach {
+	return &reachCurrentPanicsDefect{reachOverEmbedded: h.Fresh()}
+}
+
+// reachCurrentSucceedsAlwaysDefect is the planted defect of a Reach whose
+// Current ignores the context.
+type reachCurrentSucceedsAlwaysDefect struct {
+	reachOverEmbedded
+}
+
+// Current is the override of the planted defect.
+func (*reachCurrentSucceedsAlwaysDefect) Current(p0 context.Context) (r0 tool.Pitch, r1 error) {
+	return r0, r1
+}
+
+// reachCurrentSucceedsAlways returns the planted defect of a Reach whose
+// Current ignores the context over a fresh subject.
+func reachCurrentSucceedsAlways(h *ReachHandle) Reach {
+	return &reachCurrentSucceedsAlwaysDefect{reachOverEmbedded: h.Fresh()}
+}
+
+// reachCurrentValueBesideDefect is the planted defect of a Reach whose
+// Current returns a value beside an error.
+type reachCurrentValueBesideDefect struct {
+	reachOverEmbedded
+}
+
+// Current is the override of the planted defect.
+func (*reachCurrentValueBesideDefect) Current(p0 context.Context) (r0 tool.Pitch, r1 error) {
+	r0 = tool.Pitch(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// reachCurrentValueBeside returns the planted defect of a Reach whose
+// Current returns a value beside an error over a fresh subject.
+func reachCurrentValueBeside(h *ReachHandle) Reach {
+	return &reachCurrentValueBesideDefect{reachOverEmbedded: h.Fresh()}
+}
 
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
@@ -287,6 +598,12 @@ type limitedLimit struct {
 	conform.Callable[Limited]
 }
 
+// Smoke returns the identity of the check that Limit returns without a
+// panic for derived inputs.
+func (c limitedLimit) Smoke() conform.ID[Limited] {
+	return c.Check("smoke")
+}
+
 // limitedGrip is the name of Limited.Grip, with the identities of its
 // checks.
 type limitedGrip struct {
@@ -329,10 +646,22 @@ type limitedMeasure struct {
 	conform.Callable[Limited]
 }
 
+// Smoke returns the identity of the check that Measure returns without a
+// panic for derived inputs.
+func (c limitedMeasure) Smoke() conform.ID[Limited] {
+	return c.Check("smoke")
+}
+
 // limitedPhase is the name of Limited.Phase, with the identities of its
 // checks.
 type limitedPhase struct {
 	conform.Callable[Limited]
+}
+
+// Smoke returns the identity of the check that Phase returns without a
+// panic for derived inputs.
+func (c limitedPhase) Smoke() conform.ID[Limited] {
+	return c.Check("smoke")
 }
 
 // limitedSense is the name of Limited.Sense, with the identities of its
@@ -346,6 +675,59 @@ type limitedSense struct {
 func LimitedSuite() conform.Suite[Limited] {
 	return conform.Suite[Limited]{
 		Declaration: "Limited",
+		Checks: []conform.Check[Limited]{
+			{
+				ID:          LimitedChecks.Limit.Smoke(),
+				Statement:   "Limit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LimitedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Limit(tool.Limits{Count: 2})
+						return nil
+					})
+				},
+				Defect: limitedLimitPanics,
+			},
+			{
+				ID:          LimitedChecks.Measure.Smoke(),
+				Statement:   "Measure returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LimitedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Measure(tool.Unit(1))
+						return nil
+					})
+				},
+				Defect: limitedMeasurePanics,
+			},
+			{
+				ID:          LimitedChecks.Phase.Smoke(),
+				Statement:   "Phase returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LimitedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Phase(tool.Phase(1))
+						return nil
+					})
+				},
+				Defect: limitedPhasePanics,
+			},
+		},
 		Calls: []conform.Call[Limited]{
 			{
 				Calls:    limitedLimitCalls,
@@ -759,6 +1141,57 @@ func newLimitedOver(_ *LimitedHandle, spend func()) Limited {
 	return limitedOver{spend: spend}
 }
 
+// limitedLimitPanicsDefect is the planted defect of a Limited whose Limit
+// panics.
+type limitedLimitPanicsDefect struct {
+	limitedOverEmbedded
+}
+
+// Limit is the override of the planted defect.
+func (*limitedLimitPanicsDefect) Limit(p0 tool.Limits) {
+	panic("the planted defect of a Limited whose Limit panics")
+}
+
+// limitedLimitPanics returns the planted defect of a Limited whose Limit
+// panics over a fresh subject.
+func limitedLimitPanics(h *LimitedHandle) Limited {
+	return &limitedLimitPanicsDefect{limitedOverEmbedded: h.Fresh()}
+}
+
+// limitedMeasurePanicsDefect is the planted defect of a Limited whose
+// Measure panics.
+type limitedMeasurePanicsDefect struct {
+	limitedOverEmbedded
+}
+
+// Measure is the override of the planted defect.
+func (*limitedMeasurePanicsDefect) Measure(p0 tool.Unit) {
+	panic("the planted defect of a Limited whose Measure panics")
+}
+
+// limitedMeasurePanics returns the planted defect of a Limited whose
+// Measure panics over a fresh subject.
+func limitedMeasurePanics(h *LimitedHandle) Limited {
+	return &limitedMeasurePanicsDefect{limitedOverEmbedded: h.Fresh()}
+}
+
+// limitedPhasePanicsDefect is the planted defect of a Limited whose Phase
+// panics.
+type limitedPhasePanicsDefect struct {
+	limitedOverEmbedded
+}
+
+// Phase is the override of the planted defect.
+func (*limitedPhasePanicsDefect) Phase(p0 tool.Phase) {
+	panic("the planted defect of a Limited whose Phase panics")
+}
+
+// limitedPhasePanics returns the planted defect of a Limited whose Phase
+// panics over a fresh subject.
+func limitedPhasePanics(h *LimitedHandle) Limited {
+	return &limitedPhasePanicsDefect{limitedOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -788,11 +1221,59 @@ type plainName struct {
 	conform.Callable[PlainMethods]
 }
 
+// Smoke returns the identity of the check that Name returns without a
+// panic for derived inputs.
+func (c plainName) Smoke() conform.ID[PlainMethods] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Name returns the
+// same value for the same inputs.
+func (c plainName) Deterministic() conform.ID[PlainMethods] {
+	return c.Check("deterministic")
+}
+
 // PlainSuite returns the checks of Plain, and the calls and the budgets of
 // its callables.
 func PlainSuite() conform.Suite[PlainMethods] {
 	return conform.Suite[PlainMethods]{
 		Declaration: "Plain",
+		Checks: []conform.Check[PlainMethods]{
+			{
+				ID:          PlainChecks.Name.Smoke(),
+				Statement:   "Name returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PlainHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Name()
+						return nil
+					})
+				},
+				Defect: plainNamePanics,
+			},
+			{
+				ID:          PlainChecks.Name.Deterministic(),
+				Statement:   "Name returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PlainHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						r0 := h.Subject().Name()
+						return r0, nil
+					})
+				},
+				Defect: plainNameDrifts,
+			},
+		},
 		Calls: []conform.Call[PlainMethods]{
 			{
 				Calls:    plainNameCalls,
@@ -897,4 +1378,43 @@ func (o plainOver) Name() (r0 string) {
 // callables call spend.
 func newPlainOver(_ *PlainHandle, spend func()) PlainMethods {
 	return plainOver{spend: spend}
+}
+
+// plainNamePanicsDefect is the planted defect of a Plain whose Name
+// panics.
+type plainNamePanicsDefect struct {
+	plainOverEmbedded
+}
+
+// Name is the override of the planted defect.
+func (*plainNamePanicsDefect) Name() (r0 string) {
+	panic("the planted defect of a Plain whose Name panics")
+}
+
+// plainNamePanics returns the planted defect of a Plain whose Name panics
+// over a fresh subject.
+func plainNamePanics(h *PlainHandle) PlainMethods {
+	return &plainNamePanicsDefect{plainOverEmbedded: h.Fresh()}
+}
+
+// plainNameDriftsDefect is the planted defect of a Plain whose Name
+// returns another value on the repeat.
+type plainNameDriftsDefect struct {
+	plainOverEmbedded
+	calls int
+}
+
+// Name is the override of the planted defect.
+func (d *plainNameDriftsDefect) Name() (r0 string) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = string("sample-b")
+	}
+	return r0
+}
+
+// plainNameDrifts returns the planted defect of a Plain whose Name returns
+// another value on the repeat over a fresh subject.
+func plainNameDrifts(h *PlainHandle) PlainMethods {
+	return &plainNameDriftsDefect{plainOverEmbedded: h.Fresh()}
 }

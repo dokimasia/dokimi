@@ -48,6 +48,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*stickytest.MixedHandle) sticky.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				stickytest.MixedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*stickytest.MixedHandle) sticky.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				stickytest.MixedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				stickytest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(stickytest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(stickytest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			stickytest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		f,
 		stickytest.MixedChecks.Store.Callable,
 		mixedIdle,
+		conform.Excuse(
+			stickytest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		stickytest.MixedChecks.Get.Callable,
 		mixedIdle,
+		conform.Excuse(
+			stickytest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			stickytest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +223,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:c8622ea0073ed18ea71f69415872160f08372ef25062014105238ad9990ee6b2
+// dokimi:provenance sha256:45f73a4e89cc1c81ed240c9c2cd1b07936657376839dec345f37ac477f278f05

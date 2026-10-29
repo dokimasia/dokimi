@@ -48,6 +48,14 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*opaquetest.StoreHandle) opaque.Store { return &storeSubject{} },
 			}),
+			conform.Excuse(
+				opaquetest.StoreChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				opaquetest.StoreChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +77,14 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*opaquetest.StoreHandle) opaque.Store { return &storeSubject{} },
 			}),
+			conform.Excuse(
+				opaquetest.StoreChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				opaquetest.StoreChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -105,6 +121,14 @@ func TestStoreSuiteBudgets(t *testing.T) {
 	opaquetest.RunStoreBudgets(
 		t,
 		storeIdle,
+		conform.Excuse(
+			opaquetest.StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			opaquetest.StoreChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -115,6 +139,14 @@ func FuzzStoreSuitePut(f *testing.F) {
 		f,
 		opaquetest.StoreChecks.Put.Callable,
 		storeIdle,
+		conform.Excuse(
+			opaquetest.StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			opaquetest.StoreChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -126,4 +158,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:dfde310f1dae9db468766da9da6692a1cc1ced5baadbd70e2c7acdacf7ad576c
+// dokimi:provenance sha256:f215352f7d29b64494a00e4df711d790f6a807fcc4264037ea1207ffb7e11a0a

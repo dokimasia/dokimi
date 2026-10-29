@@ -48,6 +48,14 @@ func TestDeleterSuite(t *testing.T) {
 				},
 				Defect: func(*deletertest.DeleterHandle) deleter.Deleter { return &deleterSubject{} },
 			}),
+			conform.Excuse(
+				deletertest.DeleterChecks.Delete.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deletertest.DeleterChecks.Delete.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +77,14 @@ func TestDeleterSuite(t *testing.T) {
 				},
 				Defect: func(*deletertest.DeleterHandle) deleter.Deleter { return &deleterSubject{} },
 			}),
+			conform.Excuse(
+				deletertest.DeleterChecks.Delete.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deletertest.DeleterChecks.Delete.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +104,14 @@ func TestDeleterSuiteBudgets(t *testing.T) {
 		t,
 		deleterIdle,
 		conform.Ceilings(deletertest.DeleterChecks.Delete.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			deletertest.DeleterChecks.Delete.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deletertest.DeleterChecks.Delete.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +122,14 @@ func FuzzDeleterSuiteDelete(f *testing.F) {
 		f,
 		deletertest.DeleterChecks.Delete.Callable,
 		deleterIdle,
+		conform.Excuse(
+			deletertest.DeleterChecks.Delete.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deletertest.DeleterChecks.Delete.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +141,4 @@ func BenchmarkDeleterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f3d67c5b7c8e10ed78fdc94a44e3951c0fd7af3d8720f5bd1ed41d624d992f8a
+// dokimi:provenance sha256:60de42cc77003afdc563ea681ce142772b259f39f0c766358be9c64ce58299f5

@@ -11,7 +11,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/eventually"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -44,10 +46,34 @@ type mixedPublish struct {
 	conform.Callable[eventually.Mixed]
 }
 
+// Smoke returns the identity of the check that Publish returns without a
+// panic for derived inputs.
+func (c mixedPublish) Smoke() conform.ID[eventually.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Publish returns an error
+// for a cancelled context.
+func (c mixedPublish) Cancel() conform.ID[eventually.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedSettle is the name of Mixed.Settle, with the identities of its
 // checks.
 type mixedSettle struct {
 	conform.Callable[eventually.Mixed]
+}
+
+// Smoke returns the identity of the check that Settle returns without a
+// panic for derived inputs.
+func (c mixedSettle) Smoke() conform.ID[eventually.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Settle returns an error
+// for a cancelled context.
+func (c mixedSettle) Cancel() conform.ID[eventually.Mixed] {
+	return c.Check("cancel")
 }
 
 // mixedSync is the name of Mixed.Sync, with the identities of its checks.
@@ -61,11 +87,141 @@ type mixedItems struct {
 	conform.Callable[eventually.Mixed]
 }
 
+// Smoke returns the identity of the check that Items returns without a
+// panic for derived inputs.
+func (c mixedItems) Smoke() conform.ID[eventually.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Items returns an error for
+// a cancelled context.
+func (c mixedItems) Cancel() conform.ID[eventually.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Items returns the
+// zero value beside an error.
+func (c mixedItems) ZeroOnError() conform.ID[eventually.Mixed] {
+	return c.Check("zero-on-error")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[eventually.Mixed] {
 	return conform.Suite[eventually.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[eventually.Mixed]{
+			{
+				ID:          MixedChecks.Publish.Smoke(),
+				Statement:   "Publish returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedPublishPanics,
+			},
+			{
+				ID:          MixedChecks.Publish.Cancel(),
+				Statement:   "Publish returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Publish(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedPublishSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Settle.Smoke(),
+				Statement:   "Settle returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Settle(ctx)
+					})
+				},
+				Defect: mixedSettlePanics,
+			},
+			{
+				ID:          MixedChecks.Settle.Cancel(),
+				Statement:   "Settle returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Settle(ctx)
+					})
+				},
+				Defect: mixedSettleSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Items.Smoke(),
+				Statement:   "Items returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Items(ctx)
+						return err
+					})
+				},
+				Defect: mixedItemsPanics,
+			},
+			{
+				ID:          MixedChecks.Items.Cancel(),
+				Statement:   "Items returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Items(ctx)
+						return err
+					})
+				},
+				Defect: mixedItemsSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Items.ZeroOnError(),
+				Statement:   "Items returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]string, error) {
+						return h.Subject().Items(ctx)
+					}, []string(nil))
+				},
+				Defect: mixedItemsValueBeside,
+			},
+		},
 		Calls: []conform.Call[eventually.Mixed]{
 			{
 				Calls:    mixedPublishCalls,
@@ -305,4 +461,125 @@ func newMixedOver(_ *MixedHandle, spend func()) eventually.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0450e4e15a60e0f683a4330647db422e7ad62ea6d33d25f9f2bca38d888ca92c
+// mixedPublishPanicsDefect is the planted defect of a Mixed whose Publish
+// panics.
+type mixedPublishPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Publish is the override of the planted defect.
+func (*mixedPublishPanicsDefect) Publish(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Publish panics")
+}
+
+// mixedPublishPanics returns the planted defect of a Mixed whose Publish
+// panics over a fresh subject.
+func mixedPublishPanics(h *MixedHandle) eventually.Mixed {
+	return &mixedPublishPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedPublishSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Publish ignores the context.
+type mixedPublishSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Publish is the override of the planted defect.
+func (*mixedPublishSucceedsAlwaysDefect) Publish(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedPublishSucceedsAlways returns the planted defect of a Mixed whose
+// Publish ignores the context over a fresh subject.
+func mixedPublishSucceedsAlways(h *MixedHandle) eventually.Mixed {
+	return &mixedPublishSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSettlePanicsDefect is the planted defect of a Mixed whose Settle
+// panics.
+type mixedSettlePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Settle is the override of the planted defect.
+func (*mixedSettlePanicsDefect) Settle(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Settle panics")
+}
+
+// mixedSettlePanics returns the planted defect of a Mixed whose Settle
+// panics over a fresh subject.
+func mixedSettlePanics(h *MixedHandle) eventually.Mixed {
+	return &mixedSettlePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSettleSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Settle ignores the context.
+type mixedSettleSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Settle is the override of the planted defect.
+func (*mixedSettleSucceedsAlwaysDefect) Settle(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedSettleSucceedsAlways returns the planted defect of a Mixed whose
+// Settle ignores the context over a fresh subject.
+func mixedSettleSucceedsAlways(h *MixedHandle) eventually.Mixed {
+	return &mixedSettleSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsPanicsDefect is the planted defect of a Mixed whose Items
+// panics.
+type mixedItemsPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsPanicsDefect) Items(p0 context.Context) (r0 []string, r1 error) {
+	panic("the planted defect of a Mixed whose Items panics")
+}
+
+// mixedItemsPanics returns the planted defect of a Mixed whose Items
+// panics over a fresh subject.
+func mixedItemsPanics(h *MixedHandle) eventually.Mixed {
+	return &mixedItemsPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Items ignores the context.
+type mixedItemsSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsSucceedsAlwaysDefect) Items(p0 context.Context) (r0 []string, r1 error) {
+	return r0, r1
+}
+
+// mixedItemsSucceedsAlways returns the planted defect of a Mixed whose
+// Items ignores the context over a fresh subject.
+func mixedItemsSucceedsAlways(h *MixedHandle) eventually.Mixed {
+	return &mixedItemsSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsValueBesideDefect is the planted defect of a Mixed whose Items
+// returns a value beside an error.
+type mixedItemsValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsValueBesideDefect) Items(p0 context.Context) (r0 []string, r1 error) {
+	r0 = []string{"sample-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedItemsValueBeside returns the planted defect of a Mixed whose Items
+// returns a value beside an error over a fresh subject.
+func mixedItemsValueBeside(h *MixedHandle) eventually.Mixed {
+	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:855d4cf00188e7271307c8e51d87ad74b6a07993b165b3c071775805b279e815

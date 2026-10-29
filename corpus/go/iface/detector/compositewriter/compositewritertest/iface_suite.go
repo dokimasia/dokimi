@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/compositewriter"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,56 @@ type compositeWriterSet struct {
 	conform.Callable[compositewriter.CompositeWriter]
 }
 
+// Smoke returns the identity of the check that Set returns without a panic
+// for derived inputs.
+func (c compositeWriterSet) Smoke() conform.ID[compositewriter.CompositeWriter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Set returns an error for a
+// cancelled context.
+func (c compositeWriterSet) Cancel() conform.ID[compositewriter.CompositeWriter] {
+	return c.Check("cancel")
+}
+
 // CompositeWriterSuite returns the checks of CompositeWriter, and the
 // calls and the budgets of its callables.
 func CompositeWriterSuite() conform.Suite[compositewriter.CompositeWriter] {
 	return conform.Suite[compositewriter.CompositeWriter]{
 		Declaration: "CompositeWriter",
+		Checks: []conform.Check[compositewriter.CompositeWriter]{
+			{
+				ID:          CompositeWriterChecks.Set.Smoke(),
+				Statement:   "Set returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CompositeWriterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, string("key-a"), compositewriter.Value{Key: "Key-a"})
+					})
+				},
+				Defect: compositeWriterSetPanics,
+			},
+			{
+				ID:          CompositeWriterChecks.Set.Cancel(),
+				Statement:   "Set returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CompositeWriterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, string("key-a"), compositewriter.Value{Key: "Key-a"})
+					})
+				},
+				Defect: compositeWriterSetSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[compositewriter.CompositeWriter]{
 			{
 				Calls:    compositeWriterSetCalls,
@@ -156,4 +203,38 @@ func newCompositeWriterOver(_ *CompositeWriterHandle, spend func()) compositewri
 	return compositeWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5051304a277992e629e685f642a53d660c1ac7f90571cea62f52567cf1b85238
+// compositeWriterSetPanicsDefect is the planted defect of a
+// CompositeWriter whose Set panics.
+type compositeWriterSetPanicsDefect struct {
+	compositeWriterOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (*compositeWriterSetPanicsDefect) Set(p0 context.Context, p1 string, p2 compositewriter.Value) (r0 error) {
+	panic("the planted defect of a CompositeWriter whose Set panics")
+}
+
+// compositeWriterSetPanics returns the planted defect of a CompositeWriter
+// whose Set panics over a fresh subject.
+func compositeWriterSetPanics(h *CompositeWriterHandle) compositewriter.CompositeWriter {
+	return &compositeWriterSetPanicsDefect{compositeWriterOverEmbedded: h.Fresh()}
+}
+
+// compositeWriterSetSucceedsAlwaysDefect is the planted defect of a
+// CompositeWriter whose Set ignores the context.
+type compositeWriterSetSucceedsAlwaysDefect struct {
+	compositeWriterOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (*compositeWriterSetSucceedsAlwaysDefect) Set(p0 context.Context, p1 string, p2 compositewriter.Value) (r0 error) {
+	return r0
+}
+
+// compositeWriterSetSucceedsAlways returns the planted defect of a
+// CompositeWriter whose Set ignores the context over a fresh subject.
+func compositeWriterSetSucceedsAlways(h *CompositeWriterHandle) compositewriter.CompositeWriter {
+	return &compositeWriterSetSucceedsAlwaysDefect{compositeWriterOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:b639e86187f24f541316d534ffd554db1c2a2ca7f29cfdb92dd80079b09c6829

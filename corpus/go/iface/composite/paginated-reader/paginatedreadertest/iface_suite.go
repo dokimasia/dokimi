@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	paginatedreader "go.dokimi.dev/dokimi/corpus/go/iface/composite/paginated-reader"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type paginatedReaderFetch struct {
 	conform.Callable[paginatedreader.PaginatedReader]
 }
 
+// Smoke returns the identity of the check that Fetch returns without a
+// panic for derived inputs.
+func (c paginatedReaderFetch) Smoke() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Fetch returns an error for
+// a cancelled context.
+func (c paginatedReaderFetch) Cancel() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Fetch returns the
+// zero value beside an error.
+func (c paginatedReaderFetch) ZeroOnError() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("zero-on-error")
+}
+
+// Pagination returns the identity of the check that Fetch resumes from the
+// cursor of its own page.
+func (c paginatedReaderFetch) Pagination() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("pagination")
+}
+
 // paginatedReaderAdd is the name of PaginatedReader.Add, with the
 // identities of its checks.
 type paginatedReaderAdd struct {
 	conform.Callable[paginatedreader.PaginatedReader]
+}
+
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c paginatedReaderAdd) Smoke() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c paginatedReaderAdd) Cancel() conform.ID[paginatedreader.PaginatedReader] {
+	return c.Check("cancel")
 }
 
 // PaginatedReaderSuite returns the checks of PaginatedReader, and the
@@ -50,6 +88,102 @@ type paginatedReaderAdd struct {
 func PaginatedReaderSuite() conform.Suite[paginatedreader.PaginatedReader] {
 	return conform.Suite[paginatedreader.PaginatedReader]{
 		Declaration: "PaginatedReader",
+		Checks: []conform.Check[paginatedreader.PaginatedReader]{
+			{
+				ID:          PaginatedReaderChecks.Fetch.Smoke(),
+				Statement:   "Fetch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PaginatedReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, int(42))
+						return err
+					})
+				},
+				Defect: paginatedReaderFetchPanics,
+			},
+			{
+				ID:          PaginatedReaderChecks.Fetch.Cancel(),
+				Statement:   "Fetch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *PaginatedReaderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Fetch(ctx, int(42))
+						return err
+					})
+				},
+				Defect: paginatedReaderFetchSucceedsAlways,
+			},
+			{
+				ID:          PaginatedReaderChecks.Fetch.ZeroOnError(),
+				Statement:   "Fetch returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *PaginatedReaderHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (paginatedreader.Page, error) {
+						return h.Subject().Fetch(ctx, int(42))
+					}, paginatedreader.Page{})
+				},
+				Defect: paginatedReaderFetchValueBeside,
+			},
+			{
+				ID:          PaginatedReaderChecks.Fetch.Pagination(),
+				Statement:   "Fetch resumes from the cursor of its own page",
+				Claim:       spec.Pagination,
+				Probe:       spec.ContinuesFromTheCursor,
+				Reason:      spec.RepeatedPage,
+				Law:         spec.WalkResumesWhereItLeftOff,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *PaginatedReaderHandle) {
+					probe.ContinuesFromTheCursor(h, func(ctx context.Context, v int) (paginatedreader.Page, error) {
+						return h.Subject().Fetch(ctx, v)
+					}, func(v paginatedreader.Page) int { return v.Next })
+				},
+				Defect: paginatedReaderFetchServesOnePage,
+			},
+			{
+				ID:          PaginatedReaderChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PaginatedReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, paginatedreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: paginatedReaderAddPanics,
+			},
+			{
+				ID:          PaginatedReaderChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *PaginatedReaderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, paginatedreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: paginatedReaderAddSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[paginatedreader.PaginatedReader]{
 			{
 				Calls:    paginatedReaderFetchCalls,
@@ -186,4 +320,114 @@ func newPaginatedReaderOver(_ *PaginatedReaderHandle, spend func()) paginatedrea
 	return paginatedReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:de1a7b4f894d2ba516862375de123a1a4129229468d6433882ae1a5d639a3e62
+// paginatedReaderFetchPanicsDefect is the planted defect of a
+// PaginatedReader whose Fetch panics.
+type paginatedReaderFetchPanicsDefect struct {
+	paginatedReaderOverEmbedded
+}
+
+// Fetch is the override of the planted defect.
+func (*paginatedReaderFetchPanicsDefect) Fetch(p0 context.Context, p1 int) (r0 paginatedreader.Page, r1 error) {
+	panic("the planted defect of a PaginatedReader whose Fetch panics")
+}
+
+// paginatedReaderFetchPanics returns the planted defect of a
+// PaginatedReader whose Fetch panics over a fresh subject.
+func paginatedReaderFetchPanics(h *PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return &paginatedReaderFetchPanicsDefect{paginatedReaderOverEmbedded: h.Fresh()}
+}
+
+// paginatedReaderFetchSucceedsAlwaysDefect is the planted defect of a
+// PaginatedReader whose Fetch ignores the context.
+type paginatedReaderFetchSucceedsAlwaysDefect struct {
+	paginatedReaderOverEmbedded
+}
+
+// Fetch is the override of the planted defect.
+func (*paginatedReaderFetchSucceedsAlwaysDefect) Fetch(p0 context.Context, p1 int) (r0 paginatedreader.Page, r1 error) {
+	return r0, r1
+}
+
+// paginatedReaderFetchSucceedsAlways returns the planted defect of a
+// PaginatedReader whose Fetch ignores the context over a fresh subject.
+func paginatedReaderFetchSucceedsAlways(h *PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return &paginatedReaderFetchSucceedsAlwaysDefect{paginatedReaderOverEmbedded: h.Fresh()}
+}
+
+// paginatedReaderFetchValueBesideDefect is the planted defect of a
+// PaginatedReader whose Fetch returns a value beside an error.
+type paginatedReaderFetchValueBesideDefect struct {
+	paginatedReaderOverEmbedded
+}
+
+// Fetch is the override of the planted defect.
+func (*paginatedReaderFetchValueBesideDefect) Fetch(p0 context.Context, p1 int) (r0 paginatedreader.Page, r1 error) {
+	r0 = paginatedreader.Page{Items: []paginatedreader.Value{{Key: "Key-b"}}}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// paginatedReaderFetchValueBeside returns the planted defect of a
+// PaginatedReader whose Fetch returns a value beside an error over a fresh
+// subject.
+func paginatedReaderFetchValueBeside(h *PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return &paginatedReaderFetchValueBesideDefect{paginatedReaderOverEmbedded: h.Fresh()}
+}
+
+// paginatedReaderFetchServesOnePageDefect is the planted defect of a
+// PaginatedReader whose Fetch returns the first page to every cursor.
+type paginatedReaderFetchServesOnePageDefect struct {
+	paginatedReaderOverEmbedded
+}
+
+// Fetch is the override of the planted defect.
+func (d *paginatedReaderFetchServesOnePageDefect) Fetch(
+	p0 context.Context,
+	p1 int,
+) (r0 paginatedreader.Page, r1 error) {
+	p1 = *new(int)
+	return d.paginatedReaderOverEmbedded.Fetch(p0, p1)
+}
+
+// paginatedReaderFetchServesOnePage returns the planted defect of a
+// PaginatedReader whose Fetch returns the first page to every cursor over
+// a fresh subject.
+func paginatedReaderFetchServesOnePage(h *PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return &paginatedReaderFetchServesOnePageDefect{paginatedReaderOverEmbedded: h.Fresh()}
+}
+
+// paginatedReaderAddPanicsDefect is the planted defect of a
+// PaginatedReader whose Add panics.
+type paginatedReaderAddPanicsDefect struct {
+	paginatedReaderOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*paginatedReaderAddPanicsDefect) Add(p0 context.Context, p1 paginatedreader.Value) (r0 error) {
+	panic("the planted defect of a PaginatedReader whose Add panics")
+}
+
+// paginatedReaderAddPanics returns the planted defect of a PaginatedReader
+// whose Add panics over a fresh subject.
+func paginatedReaderAddPanics(h *PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return &paginatedReaderAddPanicsDefect{paginatedReaderOverEmbedded: h.Fresh()}
+}
+
+// paginatedReaderAddSucceedsAlwaysDefect is the planted defect of a
+// PaginatedReader whose Add ignores the context.
+type paginatedReaderAddSucceedsAlwaysDefect struct {
+	paginatedReaderOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*paginatedReaderAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 paginatedreader.Value) (r0 error) {
+	return r0
+}
+
+// paginatedReaderAddSucceedsAlways returns the planted defect of a
+// PaginatedReader whose Add ignores the context over a fresh subject.
+func paginatedReaderAddSucceedsAlways(h *PaginatedReaderHandle) paginatedreader.PaginatedReader {
+	return &paginatedReaderAddSucceedsAlwaysDefect{paginatedReaderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:39193d04e88425a5d76199d5f33fe118d97b0c91df1e71f46f7a45cfa4c50dad

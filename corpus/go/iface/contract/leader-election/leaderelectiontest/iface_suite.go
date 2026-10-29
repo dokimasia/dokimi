@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	leaderelection "go.dokimi.dev/dokimi/corpus/go/iface/contract/leader-election"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,40 @@ type contractCampaign struct {
 	conform.Callable[leaderelection.Contract]
 }
 
+// Smoke returns the identity of the check that Campaign returns without a
+// panic for derived inputs.
+func (c contractCampaign) Smoke() conform.ID[leaderelection.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Campaign returns an error
+// for a cancelled context.
+func (c contractCampaign) Cancel() conform.ID[leaderelection.Contract] {
+	return c.Check("cancel")
+}
+
+// LeaderElection returns the identity of the check that IsLeader reports
+// no leadership that Campaign took once Resign has run.
+func (c contractCampaign) LeaderElection() conform.ID[leaderelection.Contract] {
+	return c.Check("leader-election")
+}
+
 // contractResign is the name of Contract.Resign, with the identities of
 // its checks.
 type contractResign struct {
 	conform.Callable[leaderelection.Contract]
+}
+
+// Smoke returns the identity of the check that Resign returns without a
+// panic for derived inputs.
+func (c contractResign) Smoke() conform.ID[leaderelection.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Resign returns an error
+// for a cancelled context.
+func (c contractResign) Cancel() conform.ID[leaderelection.Contract] {
+	return c.Check("cancel")
 }
 
 // contractIsLeader is the name of Contract.IsLeader, with the identities
@@ -53,11 +85,118 @@ type contractIsLeader struct {
 	conform.Callable[leaderelection.Contract]
 }
 
+// Smoke returns the identity of the check that IsLeader returns without a
+// panic for derived inputs.
+func (c contractIsLeader) Smoke() conform.ID[leaderelection.Contract] {
+	return c.Check("smoke")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[leaderelection.Contract] {
 	return conform.Suite[leaderelection.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[leaderelection.Contract]{
+			{
+				ID:          ContractChecks.Campaign.Smoke(),
+				Statement:   "Campaign returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Campaign(ctx)
+					})
+				},
+				Defect: contractCampaignPanics,
+			},
+			{
+				ID:          ContractChecks.Campaign.Cancel(),
+				Statement:   "Campaign returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Campaign(ctx)
+					})
+				},
+				Defect: contractCampaignSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Campaign.LeaderElection(),
+				Statement:   "IsLeader reports no leadership that Campaign took once Resign has run",
+				Claim:       spec.LeaderElection,
+				Probe:       spec.ResignsLeadership,
+				Reason:      spec.StillLeading,
+				Law:         spec.ResignedLeadershipIsReleased,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ResignsLeadership(h, func(ctx context.Context) error {
+						return h.Subject().Campaign(ctx)
+					}, func(ctx context.Context) error {
+						return h.Subject().Resign(ctx)
+					}, func(ctx context.Context) (bool, error) {
+						r0 := h.Subject().IsLeader(ctx)
+						return r0, nil
+					})
+				},
+				Defect: contractIsLeaderLeadsOn,
+			},
+			{
+				ID:          ContractChecks.Resign.Smoke(),
+				Statement:   "Resign returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Resign(ctx)
+					})
+				},
+				Defect: contractResignPanics,
+			},
+			{
+				ID:          ContractChecks.Resign.Cancel(),
+				Statement:   "Resign returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Resign(ctx)
+					})
+				},
+				Defect: contractResignSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.IsLeader.Smoke(),
+				Statement:   "IsLeader returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().IsLeader(ctx)
+						return nil
+					})
+				},
+				Defect: contractIsLeaderPanics,
+			},
+		},
 		Calls: []conform.Call[leaderelection.Contract]{
 			{
 				Calls:    contractCampaignCalls,
@@ -202,4 +341,107 @@ func newContractOver(_ *ContractHandle, spend func()) leaderelection.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d72c19710ac0e58c70ffccdfbb414c0fe604a1db552dc446027862390b28c013
+// contractCampaignPanicsDefect is the planted defect of a Contract whose
+// Campaign panics.
+type contractCampaignPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Campaign is the override of the planted defect.
+func (*contractCampaignPanicsDefect) Campaign(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Contract whose Campaign panics")
+}
+
+// contractCampaignPanics returns the planted defect of a Contract whose
+// Campaign panics over a fresh subject.
+func contractCampaignPanics(h *ContractHandle) leaderelection.Contract {
+	return &contractCampaignPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractCampaignSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Campaign ignores the context.
+type contractCampaignSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Campaign is the override of the planted defect.
+func (*contractCampaignSucceedsAlwaysDefect) Campaign(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// contractCampaignSucceedsAlways returns the planted defect of a Contract
+// whose Campaign ignores the context over a fresh subject.
+func contractCampaignSucceedsAlways(h *ContractHandle) leaderelection.Contract {
+	return &contractCampaignSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractIsLeaderLeadsOnDefect is the planted defect of a Contract whose
+// IsLeader reports leadership after Resign.
+type contractIsLeaderLeadsOnDefect struct {
+	contractOverEmbedded
+}
+
+// IsLeader is the override of the planted defect.
+func (*contractIsLeaderLeadsOnDefect) IsLeader(p0 context.Context) (r0 bool) {
+	r0 = true
+	return r0
+}
+
+// contractIsLeaderLeadsOn returns the planted defect of a Contract whose
+// IsLeader reports leadership after Resign over a fresh subject.
+func contractIsLeaderLeadsOn(h *ContractHandle) leaderelection.Contract {
+	return &contractIsLeaderLeadsOnDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractResignPanicsDefect is the planted defect of a Contract whose
+// Resign panics.
+type contractResignPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Resign is the override of the planted defect.
+func (*contractResignPanicsDefect) Resign(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Contract whose Resign panics")
+}
+
+// contractResignPanics returns the planted defect of a Contract whose
+// Resign panics over a fresh subject.
+func contractResignPanics(h *ContractHandle) leaderelection.Contract {
+	return &contractResignPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractResignSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Resign ignores the context.
+type contractResignSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Resign is the override of the planted defect.
+func (*contractResignSucceedsAlwaysDefect) Resign(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// contractResignSucceedsAlways returns the planted defect of a Contract
+// whose Resign ignores the context over a fresh subject.
+func contractResignSucceedsAlways(h *ContractHandle) leaderelection.Contract {
+	return &contractResignSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractIsLeaderPanicsDefect is the planted defect of a Contract whose
+// IsLeader panics.
+type contractIsLeaderPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// IsLeader is the override of the planted defect.
+func (*contractIsLeaderPanicsDefect) IsLeader(p0 context.Context) (r0 bool) {
+	panic("the planted defect of a Contract whose IsLeader panics")
+}
+
+// contractIsLeaderPanics returns the planted defect of a Contract whose
+// IsLeader panics over a fresh subject.
+func contractIsLeaderPanics(h *ContractHandle) leaderelection.Contract {
+	return &contractIsLeaderPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:a04d8912721dd405fdf662f9680074de1dbe1559fa791d05830d8202a2b3c870

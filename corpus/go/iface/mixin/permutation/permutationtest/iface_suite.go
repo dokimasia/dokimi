@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/permutation"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,10 +40,46 @@ type mixedAdd struct {
 	conform.Callable[permutation.Mixed]
 }
 
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c mixedAdd) Smoke() conform.ID[permutation.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c mixedAdd) Cancel() conform.ID[permutation.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedItems is the name of Mixed.Items, with the identities of its
 // checks.
 type mixedItems struct {
 	conform.Callable[permutation.Mixed]
+}
+
+// Smoke returns the identity of the check that Items returns without a
+// panic for derived inputs.
+func (c mixedItems) Smoke() conform.ID[permutation.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Items returns an error for
+// a cancelled context.
+func (c mixedItems) Cancel() conform.ID[permutation.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Items returns the
+// zero value beside an error.
+func (c mixedItems) ZeroOnError() conform.ID[permutation.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// Permutation returns the identity of the check that Items gains exactly
+// the elements that Add wrote between two of its calls.
+func (c mixedItems) Permutation() conform.ID[permutation.Mixed] {
+	return c.Check("permutation")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +87,113 @@ type mixedItems struct {
 func MixedSuite() conform.Suite[permutation.Mixed] {
 	return conform.Suite[permutation.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[permutation.Mixed]{
+			{
+				ID:          MixedChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, permutation.Value{Key: "Key-a"})
+					})
+				},
+				Defect: mixedAddPanics,
+			},
+			{
+				ID:          MixedChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, permutation.Value{Key: "Key-a"})
+					})
+				},
+				Defect: mixedAddSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Items.Smoke(),
+				Statement:   "Items returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Items(ctx)
+						return err
+					})
+				},
+				Defect: mixedItemsPanics,
+			},
+			{
+				ID:          MixedChecks.Items.Cancel(),
+				Statement:   "Items returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Items(ctx)
+						return err
+					})
+				},
+				Defect: mixedItemsSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Items.ZeroOnError(),
+				Statement:   "Items returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]permutation.Value, error) {
+						return h.Subject().Items(ctx)
+					}, []permutation.Value(nil))
+				},
+				Defect: mixedItemsValueBeside,
+			},
+			{
+				ID:          MixedChecks.Items.Permutation(),
+				Statement:   "Items gains exactly the elements that Add wrote between two of its calls",
+				Claim:       spec.Permutation,
+				Probe:       spec.GainsWhatWentIn,
+				Reason:      spec.MiscountedDrain,
+				Law:         spec.DrainGainsExactlyWhatWentIn,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.GainsWhatWentIn(h, func(ctx context.Context) ([]permutation.Value, error) {
+						return h.Subject().Items(ctx)
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := permutation.Value{Key: "Key-a"}
+							if calls > 1 {
+								w = permutation.Value{Key: "Key-b"}
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: mixedItemsDrainsNothing,
+			},
+		},
 		Calls: []conform.Call[permutation.Mixed]{
 			{
 				Calls:    mixedAddCalls,
@@ -169,4 +314,107 @@ func newMixedOver(_ *MixedHandle, spend func()) permutation.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ebc06fc13472c8ded64844f7bc6b983652c58eab6b103c12c871c517fb246254
+// mixedAddPanicsDefect is the planted defect of a Mixed whose Add panics.
+type mixedAddPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddPanicsDefect) Add(p0 context.Context, p1 permutation.Value) (r0 error) {
+	panic("the planted defect of a Mixed whose Add panics")
+}
+
+// mixedAddPanics returns the planted defect of a Mixed whose Add panics
+// over a fresh subject.
+func mixedAddPanics(h *MixedHandle) permutation.Mixed {
+	return &mixedAddPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose Add
+// ignores the context.
+type mixedAddSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 permutation.Value) (r0 error) {
+	return r0
+}
+
+// mixedAddSucceedsAlways returns the planted defect of a Mixed whose Add
+// ignores the context over a fresh subject.
+func mixedAddSucceedsAlways(h *MixedHandle) permutation.Mixed {
+	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsPanicsDefect is the planted defect of a Mixed whose Items
+// panics.
+type mixedItemsPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsPanicsDefect) Items(p0 context.Context) (r0 []permutation.Value, r1 error) {
+	panic("the planted defect of a Mixed whose Items panics")
+}
+
+// mixedItemsPanics returns the planted defect of a Mixed whose Items
+// panics over a fresh subject.
+func mixedItemsPanics(h *MixedHandle) permutation.Mixed {
+	return &mixedItemsPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Items ignores the context.
+type mixedItemsSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsSucceedsAlwaysDefect) Items(p0 context.Context) (r0 []permutation.Value, r1 error) {
+	return r0, r1
+}
+
+// mixedItemsSucceedsAlways returns the planted defect of a Mixed whose
+// Items ignores the context over a fresh subject.
+func mixedItemsSucceedsAlways(h *MixedHandle) permutation.Mixed {
+	return &mixedItemsSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsValueBesideDefect is the planted defect of a Mixed whose Items
+// returns a value beside an error.
+type mixedItemsValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsValueBesideDefect) Items(p0 context.Context) (r0 []permutation.Value, r1 error) {
+	r0 = []permutation.Value{{Key: "Key-b"}}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedItemsValueBeside returns the planted defect of a Mixed whose Items
+// returns a value beside an error over a fresh subject.
+func mixedItemsValueBeside(h *MixedHandle) permutation.Mixed {
+	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsDrainsNothingDefect is the planted defect of a Mixed whose
+// Items loses what Add wrote.
+type mixedItemsDrainsNothingDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsDrainsNothingDefect) Items(p0 context.Context) (r0 []permutation.Value, r1 error) {
+	return r0, r1
+}
+
+// mixedItemsDrainsNothing returns the planted defect of a Mixed whose
+// Items loses what Add wrote over a fresh subject.
+func mixedItemsDrainsNothing(h *MixedHandle) permutation.Mixed {
+	return &mixedItemsDrainsNothingDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:ea964290fb493b26129d94bf20ca9fa07c9304b8aa04bea2946ba31a4fd4285e

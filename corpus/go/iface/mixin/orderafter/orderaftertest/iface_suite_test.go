@@ -48,6 +48,30 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*orderaftertest.MixedHandle) orderafter.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.OrderAfter(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.ReadyAfter(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Prepare.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Prepare.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +93,30 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*orderaftertest.MixedHandle) orderafter.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.OrderAfter(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Commit.ReadyAfter(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Prepare.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				orderaftertest.MixedChecks.Prepare.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +137,30 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(orderaftertest.MixedChecks.Commit.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(orderaftertest.MixedChecks.Prepare.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.OrderAfter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.ReadyAfter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Prepare.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Prepare.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +171,30 @@ func FuzzMixedSuiteCommit(f *testing.F) {
 		f,
 		orderaftertest.MixedChecks.Commit.Callable,
 		mixedIdle,
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.OrderAfter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.ReadyAfter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Prepare.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Prepare.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +205,30 @@ func FuzzMixedSuitePrepare(f *testing.F) {
 		f,
 		orderaftertest.MixedChecks.Prepare.Callable,
 		mixedIdle,
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.OrderAfter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Commit.ReadyAfter(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Prepare.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			orderaftertest.MixedChecks.Prepare.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +243,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3f970c2fec236364605837e8f8361ae69812caca408cb507dceb3c02b50df9f1
+// dokimi:provenance sha256:b084a32989abbc9a457310b01b70d80c5f48d23769c0145a350d73ab6fc70523

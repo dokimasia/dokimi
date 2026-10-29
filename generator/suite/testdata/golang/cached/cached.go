@@ -4,9 +4,11 @@ package cached
 import "example.com/shop/generic"
 
 // Cache is the cache of integers by integer in memory. The directive suite of
-// generic.Cache has no prefix.
+// generic.Cache has no prefix. It excuses a derived check of Get, whose
+// derivation reads the witnesses of generic.Cache.
 //
 //dokimi:subject generic.Cache new=New
+//dokimi:excuse Cache.Get/zero-on-miss reason="the cache returns the zero value of int for each miss already"
 type Cache struct {
 	values map[int]int
 }

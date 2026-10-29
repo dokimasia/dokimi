@@ -48,6 +48,18 @@ func TestFileSuite(t *testing.T) {
 				},
 				Defect: func(*suitedhandletest.FileHandle) suitedhandle.File { return &fileSubject{} },
 			}),
+			conform.Excuse(
+				suitedhandletest.FileChecks.Name.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				suitedhandletest.FileChecks.Name.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				suitedhandletest.FileChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +81,18 @@ func TestFileSuite(t *testing.T) {
 				},
 				Defect: func(*suitedhandletest.FileHandle) suitedhandle.File { return &fileSubject{} },
 			}),
+			conform.Excuse(
+				suitedhandletest.FileChecks.Name.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				suitedhandletest.FileChecks.Name.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				suitedhandletest.FileChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +113,18 @@ func TestFileSuiteBudgets(t *testing.T) {
 		fileIdle,
 		conform.Ceilings(suitedhandletest.FileChecks.Name.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(suitedhandletest.FileChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			suitedhandletest.FileChecks.Name.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			suitedhandletest.FileChecks.Name.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			suitedhandletest.FileChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +135,18 @@ func FuzzFileSuiteName(f *testing.F) {
 		f,
 		suitedhandletest.FileChecks.Name.Callable,
 		fileIdle,
+		conform.Excuse(
+			suitedhandletest.FileChecks.Name.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			suitedhandletest.FileChecks.Name.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			suitedhandletest.FileChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +157,18 @@ func FuzzFileSuiteClose(f *testing.F) {
 		f,
 		suitedhandletest.FileChecks.Close.Callable,
 		fileIdle,
+		conform.Excuse(
+			suitedhandletest.FileChecks.Name.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			suitedhandletest.FileChecks.Name.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			suitedhandletest.FileChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -157,6 +217,10 @@ func TestFSSuite(t *testing.T) {
 				},
 				Defect: func(*suitedhandletest.FSHandle) suitedhandle.FS { return &fsSubject{} },
 			}),
+			conform.Excuse(
+				suitedhandletest.FSChecks.Open.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -178,6 +242,10 @@ func TestFSSuite(t *testing.T) {
 				},
 				Defect: func(*suitedhandletest.FSHandle) suitedhandle.FS { return &fsSubject{} },
 			}),
+			conform.Excuse(
+				suitedhandletest.FSChecks.Open.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -196,6 +264,10 @@ func TestFSSuiteBudgets(t *testing.T) {
 		t,
 		fsIdle,
 		conform.Ceilings(suitedhandletest.FSChecks.Open.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			suitedhandletest.FSChecks.Open.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -206,6 +278,10 @@ func FuzzFSSuiteOpen(f *testing.F) {
 		f,
 		suitedhandletest.FSChecks.Open.Callable,
 		fsIdle,
+		conform.Excuse(
+			suitedhandletest.FSChecks.Open.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -216,4 +292,4 @@ func BenchmarkFSSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:63c7bd1239a00da6244b370b41a98b4bdabf1de6a92af8b3d8b77ab032f388a3
+// dokimi:provenance sha256:e89d3141e36ad56b356906546a829c2bcf44351d10983c882776f43b1fa6051b

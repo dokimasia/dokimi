@@ -49,6 +49,14 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*circuitbreakertest.ContractHandle) circuitbreaker.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +78,14 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*circuitbreakertest.ContractHandle) circuitbreaker.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				circuitbreakertest.ContractChecks.Run.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +105,14 @@ func TestContractSuiteBudgets(t *testing.T) {
 		t,
 		contractIdle,
 		conform.Ceilings(circuitbreakertest.ContractChecks.Run.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +123,14 @@ func FuzzContractSuiteRun(f *testing.F) {
 		f,
 		circuitbreakertest.ContractChecks.Run.Callable,
 		contractIdle,
+		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			circuitbreakertest.ContractChecks.Run.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,4 +142,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ac5f2b5a93fdaf3751197d7d95dd85e2fd6dad2b0e400ee2680abd694eaad1b3
+// dokimi:provenance sha256:cdd502279fbf94f5bec348c4aebecb8f871ab00fe4f5e3265e6e2426d337fb97

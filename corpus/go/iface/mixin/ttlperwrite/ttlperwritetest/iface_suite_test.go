@@ -48,6 +48,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*ttlperwritetest.MixedHandle) ttlperwrite.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*ttlperwritetest.MixedHandle) ttlperwrite.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttlperwritetest.MixedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(ttlperwritetest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(ttlperwritetest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzMixedSuitePut(f *testing.F) {
 		f,
 		ttlperwritetest.MixedChecks.Put.Callable,
 		mixedIdle,
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzMixedSuiteRead(f *testing.F) {
 		f,
 		ttlperwritetest.MixedChecks.Read.Callable,
 		mixedIdle,
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttlperwritetest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +223,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2e99062d26c55a6e3db5b8e748ac358df3634341d7949c33995eac8c9683cfd0
+// dokimi:provenance sha256:07e5ed6dc9ace684b9a8349e3a413e876842236e39041c2b3ae76a77a0b34507

@@ -49,6 +49,22 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*publisheratmostoncetest.ContractHandle) publisheratmostonce.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Publish.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Publish.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +86,22 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*publisheratmostoncetest.ContractHandle) publisheratmostonce.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Publish.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Publish.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratmostoncetest.ContractChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -96,6 +128,22 @@ func TestContractSuiteBudgets(t *testing.T) {
 			publisheratmostoncetest.ContractChecks.Subscribe.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -106,6 +154,22 @@ func FuzzContractSuitePublish(f *testing.F) {
 		f,
 		publisheratmostoncetest.ContractChecks.Publish.Callable,
 		contractIdle,
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -117,6 +181,22 @@ func FuzzContractSuiteSubscribe(f *testing.F) {
 		f,
 		publisheratmostoncetest.ContractChecks.Subscribe.Callable,
 		contractIdle,
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratmostoncetest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -139,4 +219,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f876c2656869c61b29d87db3f2810a0f07f8970447432c44bdee208016bd9832
+// dokimi:provenance sha256:a123674d4f4c02b02a202e8c0e44b3abfdbbd14a4517efac922847d30ec194f1

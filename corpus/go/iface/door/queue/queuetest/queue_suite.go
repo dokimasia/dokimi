@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/door/queue"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,9 +43,21 @@ type queueWrite struct {
 	conform.Callable[queue.Queue]
 }
 
+// Cancel returns the identity of the check that Write returns an error for
+// a cancelled context.
+func (c queueWrite) Cancel() conform.ID[queue.Queue] {
+	return c.Check("cancel")
+}
+
 // queueRead is the name of Queue.Read, with the identities of its checks.
 type queueRead struct {
 	conform.Callable[queue.Queue]
+}
+
+// Cancel returns the identity of the check that Read returns an error for
+// a cancelled context.
+func (c queueRead) Cancel() conform.ID[queue.Queue] {
+	return c.Check("cancel")
 }
 
 // queueClose is the name of Queue.Close, with the identities of its
@@ -58,12 +72,65 @@ func (c queueClose) CloseEndsAWaitingWrite() conform.ID[queue.Queue] {
 	return c.Check("close-ends-a-waiting-write")
 }
 
+// Smoke returns the identity of the check that Close returns without a
+// panic for derived inputs.
+func (c queueClose) Smoke() conform.ID[queue.Queue] {
+	return c.Check("smoke")
+}
+
 // QueueSuite returns the checks of Queue, and the calls and the budgets of
 // its callables.
 func QueueSuite() conform.Suite[queue.Queue] {
 	return conform.Suite[queue.Queue]{
 		Declaration: "Queue",
 		Checks: []conform.Check[queue.Queue]{
+			{
+				ID:          QueueChecks.Write.Cancel(),
+				Statement:   "Write returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *QueueHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Write(ctx, string("item-a"))
+					})
+				},
+				Defect: queueWriteSucceedsAlways,
+			},
+			{
+				ID:          QueueChecks.Read.Cancel(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *QueueHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx)
+						return err
+					})
+				},
+				Defect: queueReadSucceedsAlways,
+			},
+			{
+				ID:          QueueChecks.Close.Smoke(),
+				Statement:   "Close returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *QueueHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Close()
+					})
+				},
+				Defect: queueClosePanics,
+			},
 			{
 				ID:        QueueChecks.Close.CloseEndsAWaitingWrite(),
 				Statement: "Close ends a write that waits for room with ErrClosed",
@@ -209,4 +276,55 @@ func newQueueOver(_ *QueueHandle, spend func()) queue.Queue {
 	return queueOver{spend: spend}
 }
 
-// dokimi:provenance sha256:82614b296086ee66eb65ffd82eb7de81db7a5f81abce88fa564e70f81726ebfe
+// queueWriteSucceedsAlwaysDefect is the planted defect of a Queue whose
+// Write ignores the context.
+type queueWriteSucceedsAlwaysDefect struct {
+	queueOverEmbedded
+}
+
+// Write is the override of the planted defect.
+func (*queueWriteSucceedsAlwaysDefect) Write(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// queueWriteSucceedsAlways returns the planted defect of a Queue whose
+// Write ignores the context over a fresh subject.
+func queueWriteSucceedsAlways(h *QueueHandle) queue.Queue {
+	return &queueWriteSucceedsAlwaysDefect{queueOverEmbedded: h.Fresh()}
+}
+
+// queueReadSucceedsAlwaysDefect is the planted defect of a Queue whose
+// Read ignores the context.
+type queueReadSucceedsAlwaysDefect struct {
+	queueOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*queueReadSucceedsAlwaysDefect) Read(p0 context.Context) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// queueReadSucceedsAlways returns the planted defect of a Queue whose Read
+// ignores the context over a fresh subject.
+func queueReadSucceedsAlways(h *QueueHandle) queue.Queue {
+	return &queueReadSucceedsAlwaysDefect{queueOverEmbedded: h.Fresh()}
+}
+
+// queueClosePanicsDefect is the planted defect of a Queue whose Close
+// panics.
+type queueClosePanicsDefect struct {
+	queueOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*queueClosePanicsDefect) Close() (r0 error) {
+	panic("the planted defect of a Queue whose Close panics")
+}
+
+// queueClosePanics returns the planted defect of a Queue whose Close
+// panics over a fresh subject.
+func queueClosePanics(h *QueueHandle) queue.Queue {
+	return &queueClosePanicsDefect{queueOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:803f4a03a7db50b6b7c1ab9cc45cfd93b1e519e3d05f396fdd80fb5c77ed71a1

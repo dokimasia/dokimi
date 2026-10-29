@@ -48,6 +48,22 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*cacheabletest.MixedHandle) cacheable.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.Cacheable(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +85,22 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*cacheabletest.MixedHandle) cacheable.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cacheabletest.MixedChecks.Get.Cacheable(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +120,22 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(cacheabletest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.Cacheable(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +146,22 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		cacheabletest.MixedChecks.Get.Callable,
 		mixedIdle,
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cacheabletest.MixedChecks.Get.Cacheable(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +173,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2de759ca61869a3e92f923514ee77a1204598d541b6acaaaaed3739ec2f356ad
+// dokimi:provenance sha256:2b75edaacba4dd8913dcafd862ca2ddf3a5722162179f019419f65094fb2d35f

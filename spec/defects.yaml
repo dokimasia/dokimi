@@ -31,6 +31,11 @@ forms:
     does: The callable fails with an error that no directive declares.
     min-steps: 1
     since: 1.0.0
+  ignores-the-predicate:
+    changes: callable
+    does: The callable applies its first call, and returns the zero value of each value result and no error on every later call.
+    min-steps: 2
+    since: 1.0.0
   refuses-repeat:
     changes: callable
     does: The callable succeeds on its first call and fails on every later call.
@@ -129,6 +134,11 @@ forms:
   verify-silent:
     changes: partner:verify
     does: The verify returns no error on every call.
+    min-steps: 3
+    since: 1.0.0
+  settles-twice:
+    changes: partner:rollback
+    does: The rollback returns no error on every call, also for a transaction that a commit settled.
     min-steps: 3
     since: 1.0.0
   count-drifts:

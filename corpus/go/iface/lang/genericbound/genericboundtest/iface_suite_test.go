@@ -56,6 +56,26 @@ func TestRankedSuite(t *testing.T) {
 					return &rankedSubject{}
 				},
 			}),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Rank.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Rank.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Rank.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Reset.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Reset.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -85,6 +105,26 @@ func TestRankedSuite(t *testing.T) {
 					return &rankedSubject{}
 				},
 			}),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Rank.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Rank.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Rank.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Reset.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				genericboundtest.RankedChecks.Reset.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -105,6 +145,26 @@ func TestRankedSuiteBudgets(t *testing.T) {
 		rankedIdle,
 		conform.Ceilings(genericboundtest.RankedChecks.Rank.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(genericboundtest.RankedChecks.Reset.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Reset.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Reset.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -115,6 +175,26 @@ func FuzzRankedSuiteRank(f *testing.F) {
 		f,
 		genericboundtest.RankedChecks.Rank.Callable,
 		rankedIdle,
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Reset.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Reset.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -125,6 +205,26 @@ func FuzzRankedSuiteReset(f *testing.F) {
 		f,
 		genericboundtest.RankedChecks.Reset.Callable,
 		rankedIdle,
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Rank.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Reset.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			genericboundtest.RankedChecks.Reset.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -139,4 +239,4 @@ func BenchmarkRankedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:e332290714843c95b6c475dfa6e4d263cc3202b4f7d1c6eed0fe4e1ee37ea06c
+// dokimi:provenance sha256:9394804bc91d471e6394edf181fddc8140d421612ae3d18094013814ef3b7e45

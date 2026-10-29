@@ -15,46 +15,30 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	windowedtest.RunMixedSuite(t, windowedtest.NewInMemory)
+	windowedtest.RunMixedSuiteFromHandle(t, windowedtest.NewInMemoryFromHandle)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Record", func(b *testing.B) {
-		windowedtest.BenchMixedSuite(
-			b,
-			windowedtest.MixedChecks.Record.Callable,
-			func(*windowedtest.MixedHandle) *windowedtest.InMemory { return windowedtest.NewInMemory() },
-		)
+		windowedtest.BenchMixedSuite(b, windowedtest.MixedChecks.Record.Callable, windowedtest.NewInMemoryFromHandle)
 	})
 	b.Run("CountIn", func(b *testing.B) {
-		windowedtest.BenchMixedSuite(
-			b,
-			windowedtest.MixedChecks.CountIn.Callable,
-			func(*windowedtest.MixedHandle) *windowedtest.InMemory { return windowedtest.NewInMemory() },
-		)
+		windowedtest.BenchMixedSuite(b, windowedtest.MixedChecks.CountIn.Callable, windowedtest.NewInMemoryFromHandle)
 	})
 }
 
 // FuzzInMemoryConformsToMixedRecord fuzzes the property checks of
 // Mixed.Record on InMemory.
 func FuzzInMemoryConformsToMixedRecord(f *testing.F) {
-	windowedtest.FuzzMixedSuite(
-		f,
-		windowedtest.MixedChecks.Record.Callable,
-		func(*windowedtest.MixedHandle) *windowedtest.InMemory { return windowedtest.NewInMemory() },
-	)
+	windowedtest.FuzzMixedSuite(f, windowedtest.MixedChecks.Record.Callable, windowedtest.NewInMemoryFromHandle)
 }
 
 // FuzzInMemoryConformsToMixedCountIn fuzzes the property checks of
 // Mixed.CountIn on InMemory.
 func FuzzInMemoryConformsToMixedCountIn(f *testing.F) {
-	windowedtest.FuzzMixedSuite(
-		f,
-		windowedtest.MixedChecks.CountIn.Callable,
-		func(*windowedtest.MixedHandle) *windowedtest.InMemory { return windowedtest.NewInMemory() },
-	)
+	windowedtest.FuzzMixedSuite(f, windowedtest.MixedChecks.CountIn.Callable, windowedtest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:3192ecf73e5c88cb162ec9d079b6734fe5fc185e0b888814a5217c4ef4b709cf
+// dokimi:provenance sha256:342c7cddc68cb5b87f910c78451f5c02e723e5a2aebb634f0b29445b28d1e67d

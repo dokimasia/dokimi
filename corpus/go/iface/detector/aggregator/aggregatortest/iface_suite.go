@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/aggregator"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,79 @@ type aggregatorCount struct {
 	conform.Callable[aggregator.Aggregator]
 }
 
+// Smoke returns the identity of the check that Count returns without a
+// panic for derived inputs.
+func (c aggregatorCount) Smoke() conform.ID[aggregator.Aggregator] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Count returns an error for
+// a cancelled context.
+func (c aggregatorCount) Cancel() conform.ID[aggregator.Aggregator] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Count returns the
+// zero value beside an error.
+func (c aggregatorCount) ZeroOnError() conform.ID[aggregator.Aggregator] {
+	return c.Check("zero-on-error")
+}
+
 // AggregatorSuite returns the checks of Aggregator, and the calls and the
 // budgets of its callables.
 func AggregatorSuite() conform.Suite[aggregator.Aggregator] {
 	return conform.Suite[aggregator.Aggregator]{
 		Declaration: "Aggregator",
+		Checks: []conform.Check[aggregator.Aggregator]{
+			{
+				ID:          AggregatorChecks.Count.Smoke(),
+				Statement:   "Count returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *AggregatorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx)
+						return err
+					})
+				},
+				Defect: aggregatorCountPanics,
+			},
+			{
+				ID:          AggregatorChecks.Count.Cancel(),
+				Statement:   "Count returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AggregatorHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx)
+						return err
+					})
+				},
+				Defect: aggregatorCountSucceedsAlways,
+			},
+			{
+				ID:          AggregatorChecks.Count.ZeroOnError(),
+				Statement:   "Count returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AggregatorHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Count(ctx)
+					}, int(0))
+				},
+				Defect: aggregatorCountValueBeside,
+			},
+		},
 		Calls: []conform.Call[aggregator.Aggregator]{
 			{
 				Calls:    aggregatorCountCalls,
@@ -148,4 +218,57 @@ func newAggregatorOver(_ *AggregatorHandle, spend func()) aggregator.Aggregator 
 	return aggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0a29d22260553887dacff8a38f818945ed399802c4528b690d9b3036a76fe2dd
+// aggregatorCountPanicsDefect is the planted defect of a Aggregator whose
+// Count panics.
+type aggregatorCountPanicsDefect struct {
+	aggregatorOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*aggregatorCountPanicsDefect) Count(p0 context.Context) (r0 int, r1 error) {
+	panic("the planted defect of a Aggregator whose Count panics")
+}
+
+// aggregatorCountPanics returns the planted defect of a Aggregator whose
+// Count panics over a fresh subject.
+func aggregatorCountPanics(h *AggregatorHandle) aggregator.Aggregator {
+	return &aggregatorCountPanicsDefect{aggregatorOverEmbedded: h.Fresh()}
+}
+
+// aggregatorCountSucceedsAlwaysDefect is the planted defect of a
+// Aggregator whose Count ignores the context.
+type aggregatorCountSucceedsAlwaysDefect struct {
+	aggregatorOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*aggregatorCountSucceedsAlwaysDefect) Count(p0 context.Context) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// aggregatorCountSucceedsAlways returns the planted defect of a Aggregator
+// whose Count ignores the context over a fresh subject.
+func aggregatorCountSucceedsAlways(h *AggregatorHandle) aggregator.Aggregator {
+	return &aggregatorCountSucceedsAlwaysDefect{aggregatorOverEmbedded: h.Fresh()}
+}
+
+// aggregatorCountValueBesideDefect is the planted defect of a Aggregator
+// whose Count returns a value beside an error.
+type aggregatorCountValueBesideDefect struct {
+	aggregatorOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*aggregatorCountValueBesideDefect) Count(p0 context.Context) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// aggregatorCountValueBeside returns the planted defect of a Aggregator
+// whose Count returns a value beside an error over a fresh subject.
+func aggregatorCountValueBeside(h *AggregatorHandle) aggregator.Aggregator {
+	return &aggregatorCountValueBesideDefect{aggregatorOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:a79dd1abd4a1fba0490aa0d8c2adbb4c24cbd0341e3372c922684c578c8faa76

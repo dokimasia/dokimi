@@ -7,6 +7,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,6 +41,24 @@ type meterCount struct {
 	conform.Callable[Meter]
 }
 
+// Smoke returns the identity of the check that Count returns without a
+// panic for derived inputs.
+func (c meterCount) Smoke() conform.ID[Meter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Count returns an error for
+// a cancelled context.
+func (c meterCount) Cancel() conform.ID[Meter] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Count returns the
+// zero value beside an error.
+func (c meterCount) ZeroOnError() conform.ID[Meter] {
+	return c.Check("zero-on-error")
+}
+
 // AllocationBudget returns the identity of the check
 // Meter.Count/allocation-budget.
 func (c meterCount) AllocationBudget() conform.ID[Meter] {
@@ -68,6 +88,18 @@ type meterRecord struct {
 	conform.Callable[Meter]
 }
 
+// Smoke returns the identity of the check that Record returns without a
+// panic for derived inputs.
+func (c meterRecord) Smoke() conform.ID[Meter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Record returns an error
+// for a cancelled context.
+func (c meterRecord) Cancel() conform.ID[Meter] {
+	return c.Check("cancel")
+}
+
 // LatencyBudget returns the identity of the check
 // Meter.Record/latency-budget.
 func (c meterRecord) LatencyBudget() conform.ID[Meter] {
@@ -80,10 +112,34 @@ type meterMerge struct {
 	conform.Callable[Meter]
 }
 
+// Smoke returns the identity of the check that Merge returns without a
+// panic for derived inputs.
+func (c meterMerge) Smoke() conform.ID[Meter] {
+	return c.Check("smoke")
+}
+
+// NilSafe returns the identity of the check that Merge returns without a
+// panic for a nil argument.
+func (c meterMerge) NilSafe() conform.ID[Meter] {
+	return c.Check("nil-safe")
+}
+
 // meterTotal is the name of Meter.Total, with the identities of its
 // checks.
 type meterTotal struct {
 	conform.Callable[Meter]
+}
+
+// Smoke returns the identity of the check that Total returns without a
+// panic for derived inputs.
+func (c meterTotal) Smoke() conform.ID[Meter] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Total returns the
+// same value for the same inputs.
+func (c meterTotal) Deterministic() conform.ID[Meter] {
+	return c.Check("deterministic")
 }
 
 // MeterSuite returns the checks of Meter, and the calls and the budgets of
@@ -91,6 +147,154 @@ type meterTotal struct {
 func MeterSuite() conform.Suite[Meter] {
 	return conform.Suite[Meter]{
 		Declaration: "Meter",
+		Checks: []conform.Check[Meter]{
+			{
+				ID:          MeterChecks.Count.Smoke(),
+				Statement:   "Count returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MeterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx, Unit(1))
+						return err
+					})
+				},
+				Defect: meterCountPanics,
+			},
+			{
+				ID:          MeterChecks.Count.Cancel(),
+				Statement:   "Count returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MeterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Count(ctx, Unit(1))
+						return err
+					})
+				},
+				Defect: meterCountSucceedsAlways,
+			},
+			{
+				ID:          MeterChecks.Count.ZeroOnError(),
+				Statement:   "Count returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MeterHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Count(ctx, Unit(1))
+					}, int(0))
+				},
+				Defect: meterCountValueBeside,
+			},
+			{
+				ID:          MeterChecks.Record.Smoke(),
+				Statement:   "Record returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MeterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, Sample{ID: "ID-a"})
+					})
+				},
+				Defect: meterRecordPanics,
+			},
+			{
+				ID:          MeterChecks.Record.Cancel(),
+				Statement:   "Record returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MeterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Record(ctx, Sample{ID: "ID-a"})
+					})
+				},
+				Defect: meterRecordSucceedsAlways,
+			},
+			{
+				ID:          MeterChecks.Merge.Smoke(),
+				Statement:   "Merge returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MeterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Merge(&Sample{ID: "ID-a"})
+						return nil
+					})
+				},
+				Defect: meterMergePanics,
+			},
+			{
+				ID:          MeterChecks.Merge.NilSafe(),
+				Statement:   "Merge returns without a panic for a nil argument",
+				Claim:       spec.NilSafe,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NilArgumentIsAccepted,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MeterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Merge(&Sample{ID: "ID-a"})
+						return nil
+					})
+				},
+				Defect: meterMergePanics,
+			},
+			{
+				ID:          MeterChecks.Total.Smoke(),
+				Statement:   "Total returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MeterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Total()
+						return nil
+					})
+				},
+				Defect: meterTotalPanics,
+			},
+			{
+				ID:          MeterChecks.Total.Deterministic(),
+				Statement:   "Total returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MeterHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Total()
+						return r0, nil
+					})
+				},
+				Defect: meterTotalDrifts,
+			},
+		},
 		Calls: []conform.Call[Meter]{
 			{
 				Calls:    meterCountCalls,
@@ -282,6 +486,149 @@ func newMeterOver(_ *MeterHandle, spend func()) Meter {
 	return meterOver{spend: spend}
 }
 
+// meterCountPanicsDefect is the planted defect of a Meter whose Count
+// panics.
+type meterCountPanicsDefect struct {
+	meterOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*meterCountPanicsDefect) Count(p0 context.Context, p1 Unit) (r0 int, r1 error) {
+	panic("the planted defect of a Meter whose Count panics")
+}
+
+// meterCountPanics returns the planted defect of a Meter whose Count
+// panics over a fresh subject.
+func meterCountPanics(h *MeterHandle) Meter {
+	return &meterCountPanicsDefect{meterOverEmbedded: h.Fresh()}
+}
+
+// meterCountSucceedsAlwaysDefect is the planted defect of a Meter whose
+// Count ignores the context.
+type meterCountSucceedsAlwaysDefect struct {
+	meterOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*meterCountSucceedsAlwaysDefect) Count(p0 context.Context, p1 Unit) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// meterCountSucceedsAlways returns the planted defect of a Meter whose
+// Count ignores the context over a fresh subject.
+func meterCountSucceedsAlways(h *MeterHandle) Meter {
+	return &meterCountSucceedsAlwaysDefect{meterOverEmbedded: h.Fresh()}
+}
+
+// meterCountValueBesideDefect is the planted defect of a Meter whose Count
+// returns a value beside an error.
+type meterCountValueBesideDefect struct {
+	meterOverEmbedded
+}
+
+// Count is the override of the planted defect.
+func (*meterCountValueBesideDefect) Count(p0 context.Context, p1 Unit) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// meterCountValueBeside returns the planted defect of a Meter whose Count
+// returns a value beside an error over a fresh subject.
+func meterCountValueBeside(h *MeterHandle) Meter {
+	return &meterCountValueBesideDefect{meterOverEmbedded: h.Fresh()}
+}
+
+// meterRecordPanicsDefect is the planted defect of a Meter whose Record
+// panics.
+type meterRecordPanicsDefect struct {
+	meterOverEmbedded
+}
+
+// Record is the override of the planted defect.
+func (*meterRecordPanicsDefect) Record(p0 context.Context, p1 ...Sample) (r0 error) {
+	panic("the planted defect of a Meter whose Record panics")
+}
+
+// meterRecordPanics returns the planted defect of a Meter whose Record
+// panics over a fresh subject.
+func meterRecordPanics(h *MeterHandle) Meter {
+	return &meterRecordPanicsDefect{meterOverEmbedded: h.Fresh()}
+}
+
+// meterRecordSucceedsAlwaysDefect is the planted defect of a Meter whose
+// Record ignores the context.
+type meterRecordSucceedsAlwaysDefect struct {
+	meterOverEmbedded
+}
+
+// Record is the override of the planted defect.
+func (*meterRecordSucceedsAlwaysDefect) Record(p0 context.Context, p1 ...Sample) (r0 error) {
+	return r0
+}
+
+// meterRecordSucceedsAlways returns the planted defect of a Meter whose
+// Record ignores the context over a fresh subject.
+func meterRecordSucceedsAlways(h *MeterHandle) Meter {
+	return &meterRecordSucceedsAlwaysDefect{meterOverEmbedded: h.Fresh()}
+}
+
+// meterMergePanicsDefect is the planted defect of a Meter whose Merge
+// panics.
+type meterMergePanicsDefect struct {
+	meterOverEmbedded
+}
+
+// Merge is the override of the planted defect.
+func (*meterMergePanicsDefect) Merge(p0 *Sample) {
+	panic("the planted defect of a Meter whose Merge panics")
+}
+
+// meterMergePanics returns the planted defect of a Meter whose Merge
+// panics over a fresh subject.
+func meterMergePanics(h *MeterHandle) Meter {
+	return &meterMergePanicsDefect{meterOverEmbedded: h.Fresh()}
+}
+
+// meterTotalPanicsDefect is the planted defect of a Meter whose Total
+// panics.
+type meterTotalPanicsDefect struct {
+	meterOverEmbedded
+}
+
+// Total is the override of the planted defect.
+func (*meterTotalPanicsDefect) Total() (r0 int) {
+	panic("the planted defect of a Meter whose Total panics")
+}
+
+// meterTotalPanics returns the planted defect of a Meter whose Total
+// panics over a fresh subject.
+func meterTotalPanics(h *MeterHandle) Meter {
+	return &meterTotalPanicsDefect{meterOverEmbedded: h.Fresh()}
+}
+
+// meterTotalDriftsDefect is the planted defect of a Meter whose Total
+// returns another value on the repeat.
+type meterTotalDriftsDefect struct {
+	meterOverEmbedded
+	calls int
+}
+
+// Total is the override of the planted defect.
+func (d *meterTotalDriftsDefect) Total() (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// meterTotalDrifts returns the planted defect of a Meter whose Total
+// returns another value on the repeat over a fresh subject.
+func meterTotalDrifts(h *MeterHandle) Meter {
+	return &meterTotalDriftsDefect{meterOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -305,6 +652,18 @@ type weighCallable struct {
 	conform.Callable[WeighFunc]
 }
 
+// Smoke returns the identity of the check that Weigh returns without a
+// panic for derived inputs.
+func (c weighCallable) Smoke() conform.ID[WeighFunc] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Weigh returns the
+// same value for the same inputs.
+func (c weighCallable) Deterministic() conform.ID[WeighFunc] {
+	return c.Check("deterministic")
+}
+
 // AllocationBudget returns the identity of the check
 // Weigh/allocation-budget.
 func (c weighCallable) AllocationBudget() conform.ID[WeighFunc] {
@@ -321,6 +680,42 @@ func (c weighCallable) LatencyBudget() conform.ID[WeighFunc] {
 func WeighSuite() conform.Suite[WeighFunc] {
 	return conform.Suite[WeighFunc]{
 		Declaration: "Weigh",
+		Checks: []conform.Check[WeighFunc]{
+			{
+				ID:          WeighChecks.Smoke(),
+				Statement:   "Weigh returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WeighHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject()(Sample{ID: "ID-a"}, float64(1.5))
+						return nil
+					})
+				},
+				Defect: weighPanics,
+			},
+			{
+				ID:          WeighChecks.Deterministic(),
+				Statement:   "Weigh returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WeighHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (float64, error) {
+						r0 := h.Subject()(Sample{ID: "ID-a"}, float64(1.5))
+						return r0, nil
+					})
+				},
+				Defect: weighDrifts,
+			},
+		},
 		Calls: []conform.Call[WeighFunc]{
 			{
 				Calls:    weighCalls,
@@ -408,6 +803,27 @@ var weighCalls = prop.Composite(func(c *prop.Case) func(context.Context, WeighFu
 func newWeighOver(_ *WeighHandle, spend func()) WeighFunc {
 	return func(Sample, float64) (r0 float64) {
 		spend()
+		return r0
+	}
+}
+
+// weighPanics returns the planted defect of a Weigh whose Weigh panics
+// over the fresh function.
+func weighPanics(h *WeighHandle) WeighFunc {
+	return func(p0 Sample, p1 float64) (r0 float64) {
+		panic("the planted defect of a Weigh whose Weigh panics")
+	}
+}
+
+// weighDrifts returns the planted defect of a Weigh whose Weigh returns
+// another value on the repeat over the fresh function.
+func weighDrifts(h *WeighHandle) WeighFunc {
+	calls := 0
+	return func(p0 Sample, p1 float64) (r0 float64) {
+		calls++
+		if calls > 1 {
+			r0 = float64(2.5)
+		}
 		return r0
 	}
 }

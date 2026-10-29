@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/embeddedforeign"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,34 @@ type streamRead struct {
 	conform.Callable[embeddedforeign.Stream]
 }
 
+// Smoke returns the identity of the check that Read returns without a
+// panic for derived inputs.
+func (c streamRead) Smoke() conform.ID[embeddedforeign.Stream] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Read returns an error for
+// a cancelled context.
+func (c streamRead) Cancel() conform.ID[embeddedforeign.Stream] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Read returns the zero
+// value beside an error.
+func (c streamRead) ZeroOnError() conform.ID[embeddedforeign.Stream] {
+	return c.Check("zero-on-error")
+}
+
 // streamClose is the name of Stream.Close, with the identities of its
 // checks.
 type streamClose struct {
 	conform.Callable[embeddedforeign.Stream]
+}
+
+// Smoke returns the identity of the check that Close returns without a
+// panic for derived inputs.
+func (c streamClose) Smoke() conform.ID[embeddedforeign.Stream] {
+	return c.Check("smoke")
 }
 
 // StreamSuite returns the checks of Stream, and the calls and the budgets
@@ -50,6 +76,72 @@ type streamClose struct {
 func StreamSuite() conform.Suite[embeddedforeign.Stream] {
 	return conform.Suite[embeddedforeign.Stream]{
 		Declaration: "Stream",
+		Checks: []conform.Check[embeddedforeign.Stream]{
+			{
+				ID:          StreamChecks.Read.Smoke(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StreamHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: streamReadPanics,
+			},
+			{
+				ID:          StreamChecks.Read.Cancel(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StreamHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: streamReadSucceedsAlways,
+			},
+			{
+				ID:          StreamChecks.Read.ZeroOnError(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StreamHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: streamReadValueBeside,
+			},
+			{
+				ID:          StreamChecks.Close.Smoke(),
+				Statement:   "Close returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StreamHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Close()
+					})
+				},
+				Defect: streamClosePanics,
+			},
+		},
 		Calls: []conform.Call[embeddedforeign.Stream]{
 			{
 				Calls:    streamReadCalls,
@@ -176,4 +268,74 @@ func newStreamOver(_ *StreamHandle, spend func()) embeddedforeign.Stream {
 	return streamOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d9a418327562ccf778017ace11ba912ab09a625c492cf7eac5ec3bb1c3e50b3c
+// streamReadPanicsDefect is the planted defect of a Stream whose Read
+// panics.
+type streamReadPanicsDefect struct {
+	streamOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*streamReadPanicsDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Stream whose Read panics")
+}
+
+// streamReadPanics returns the planted defect of a Stream whose Read
+// panics over a fresh subject.
+func streamReadPanics(h *StreamHandle) embeddedforeign.Stream {
+	return &streamReadPanicsDefect{streamOverEmbedded: h.Fresh()}
+}
+
+// streamReadSucceedsAlwaysDefect is the planted defect of a Stream whose
+// Read ignores the context.
+type streamReadSucceedsAlwaysDefect struct {
+	streamOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*streamReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// streamReadSucceedsAlways returns the planted defect of a Stream whose
+// Read ignores the context over a fresh subject.
+func streamReadSucceedsAlways(h *StreamHandle) embeddedforeign.Stream {
+	return &streamReadSucceedsAlwaysDefect{streamOverEmbedded: h.Fresh()}
+}
+
+// streamReadValueBesideDefect is the planted defect of a Stream whose Read
+// returns a value beside an error.
+type streamReadValueBesideDefect struct {
+	streamOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*streamReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// streamReadValueBeside returns the planted defect of a Stream whose Read
+// returns a value beside an error over a fresh subject.
+func streamReadValueBeside(h *StreamHandle) embeddedforeign.Stream {
+	return &streamReadValueBesideDefect{streamOverEmbedded: h.Fresh()}
+}
+
+// streamClosePanicsDefect is the planted defect of a Stream whose Close
+// panics.
+type streamClosePanicsDefect struct {
+	streamOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*streamClosePanicsDefect) Close() (r0 error) {
+	panic("the planted defect of a Stream whose Close panics")
+}
+
+// streamClosePanics returns the planted defect of a Stream whose Close
+// panics over a fresh subject.
+func streamClosePanics(h *StreamHandle) embeddedforeign.Stream {
+	return &streamClosePanicsDefect{streamOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:357b0753a8657606b218e2ee1e2889f5da460c12b77fc03d79fb002513f5ccd1

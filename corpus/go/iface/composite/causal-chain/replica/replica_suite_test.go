@@ -20,6 +20,10 @@ func TestLogConformsToLog(t *testing.T) {
 		t,
 		replica.New,
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausal(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
 		),
@@ -34,6 +38,10 @@ func TestLogConformsToLog(t *testing.T) {
 // Log.
 func BenchmarkLogConformsToLog(b *testing.B) {
 	opts := []causalchaintest.LogOption{
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausal(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
 		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
@@ -67,6 +75,10 @@ func FuzzLogConformsToLogAppend(f *testing.F) {
 		causalchaintest.LogChecks.Append.Callable,
 		func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausal(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
 		),
@@ -85,6 +97,10 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 		causalchaintest.LogChecks.Replay.Callable,
 		func(*causalchaintest.LogHandle) *replica.Log { return replica.New() },
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausal(),
+			"a replica refuses each append, so its replay has no stamps to order",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsTheBody(),
 			"a replica refuses each append, so no body reaches its replay",
 		),
@@ -95,4 +111,4 @@ func FuzzLogConformsToLogReplay(f *testing.F) {
 	)
 }
 
-// dokimi:provenance sha256:483edd56eaf390db99f1366eb4b196f9b466663b6b31dd98ff3c6f5dc80a71f8
+// dokimi:provenance sha256:4bcab0f476baee22e603c6fd5c63a422a938f62000fc6bb18b2b12e43234c429

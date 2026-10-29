@@ -36,6 +36,14 @@ func TestSlugSuite(t *testing.T) {
 				Defect: func(*SlugHandle) SlugFunc { return nil },
 			}),
 			conform.Excuse(
+				SlugChecks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SlugChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				SlugChecks.KeepsTheOrder(),
 				"the test applies the check of its option alone",
 			),
@@ -61,6 +69,14 @@ func TestSlugSuite(t *testing.T) {
 				},
 				Defect: func(*SlugHandle) SlugFunc { return nil },
 			}),
+			conform.Excuse(
+				SlugChecks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				SlugChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				SlugChecks.KeepsTheOrder(),
 				"the test applies the check of its option alone",

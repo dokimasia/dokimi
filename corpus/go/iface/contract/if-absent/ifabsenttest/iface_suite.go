@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	ifabsent "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-absent"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,77 @@ type contractPut struct {
 	conform.Callable[ifabsent.Contract]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c contractPut) Smoke() conform.ID[ifabsent.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c contractPut) Cancel() conform.ID[ifabsent.Contract] {
+	return c.Check("cancel")
+}
+
+// IfAbsent returns the identity of the check that a second Put for one key
+// fails with the declared conflict.
+func (c contractPut) IfAbsent() conform.ID[ifabsent.Contract] {
+	return c.Check("if-absent")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[ifabsent.Contract] {
 	return conform.Suite[ifabsent.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[ifabsent.Contract]{
+			{
+				ID:          ContractChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ifabsent.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPutPanics,
+			},
+			{
+				ID:          ContractChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ifabsent.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPutSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Put.IfAbsent(),
+				Statement:   "a second Put for one key fails with the declared conflict",
+				Claim:       spec.IfAbsent,
+				Probe:       spec.RefusesTheSecondWrite,
+				Reason:      spec.UnguardedWrite,
+				Law:         spec.WriteIsRefusedWhereItsKeyExists,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.RefusesTheSecondWrite(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ifabsent.Value{Key: "Key-a"})
+					}, ifabsent.ErrExists)
+				},
+				Defect: contractPutSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[ifabsent.Contract]{
 			{
 				Calls:    contractPutCalls,
@@ -148,4 +216,38 @@ func newContractOver(_ *ContractHandle, spend func()) ifabsent.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:11b6abdb52afc86e21bf48662c82a2123f99e6454b3f45e816b3087d77742991
+// contractPutPanicsDefect is the planted defect of a Contract whose Put
+// panics.
+type contractPutPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*contractPutPanicsDefect) Put(p0 context.Context, p1 ifabsent.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Put panics")
+}
+
+// contractPutPanics returns the planted defect of a Contract whose Put
+// panics over a fresh subject.
+func contractPutPanics(h *ContractHandle) ifabsent.Contract {
+	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractPutSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Put ignores the context.
+type contractPutSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 ifabsent.Value) (r0 error) {
+	return r0
+}
+
+// contractPutSucceedsAlways returns the planted defect of a Contract whose
+// Put ignores the context over a fresh subject.
+func contractPutSucceedsAlways(h *ContractHandle) ifabsent.Contract {
+	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:d46eb1e8ab432a594c13f6a40a53e79e0ef0d6fc6d82f9dd724753afc63edbb4

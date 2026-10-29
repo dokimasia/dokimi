@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/indexed"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -40,9 +42,39 @@ type rankedAdd struct {
 	conform.Callable[indexed.Ranked]
 }
 
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c rankedAdd) Smoke() conform.ID[indexed.Ranked] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c rankedAdd) Cancel() conform.ID[indexed.Ranked] {
+	return c.Check("cancel")
+}
+
 // rankedLen is the name of Ranked.Len, with the identities of its checks.
 type rankedLen struct {
 	conform.Callable[indexed.Ranked]
+}
+
+// Smoke returns the identity of the check that Len returns without a panic
+// for derived inputs.
+func (c rankedLen) Smoke() conform.ID[indexed.Ranked] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Len returns an error for a
+// cancelled context.
+func (c rankedLen) Cancel() conform.ID[indexed.Ranked] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Len returns the zero
+// value beside an error.
+func (c rankedLen) ZeroOnError() conform.ID[indexed.Ranked] {
+	return c.Check("zero-on-error")
 }
 
 // rankedAt is the name of Ranked.At, with the identities of its checks.
@@ -50,11 +82,158 @@ type rankedAt struct {
 	conform.Callable[indexed.Ranked]
 }
 
+// Smoke returns the identity of the check that At returns without a panic
+// for derived inputs.
+func (c rankedAt) Smoke() conform.ID[indexed.Ranked] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that At returns an error for a
+// cancelled context.
+func (c rankedAt) Cancel() conform.ID[indexed.Ranked] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that At returns the zero
+// value beside an error.
+func (c rankedAt) ZeroOnError() conform.ID[indexed.Ranked] {
+	return c.Check("zero-on-error")
+}
+
 // RankedSuite returns the checks of Ranked, and the calls and the budgets
 // of its callables.
 func RankedSuite() conform.Suite[indexed.Ranked] {
 	return conform.Suite[indexed.Ranked]{
 		Declaration: "Ranked",
+		Checks: []conform.Check[indexed.Ranked]{
+			{
+				ID:          RankedChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *RankedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, indexed.Value{Key: "Key-a"})
+					})
+				},
+				Defect: rankedAddPanics,
+			},
+			{
+				ID:          RankedChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *RankedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, indexed.Value{Key: "Key-a"})
+					})
+				},
+				Defect: rankedAddSucceedsAlways,
+			},
+			{
+				ID:          RankedChecks.Len.Smoke(),
+				Statement:   "Len returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *RankedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Len(ctx)
+						return err
+					})
+				},
+				Defect: rankedLenPanics,
+			},
+			{
+				ID:          RankedChecks.Len.Cancel(),
+				Statement:   "Len returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *RankedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Len(ctx)
+						return err
+					})
+				},
+				Defect: rankedLenSucceedsAlways,
+			},
+			{
+				ID:          RankedChecks.Len.ZeroOnError(),
+				Statement:   "Len returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *RankedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Len(ctx)
+					}, int(0))
+				},
+				Defect: rankedLenValueBeside,
+			},
+			{
+				ID:          RankedChecks.At.Smoke(),
+				Statement:   "At returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *RankedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().At(ctx, int(42))
+						return err
+					})
+				},
+				Defect: rankedAtPanics,
+			},
+			{
+				ID:          RankedChecks.At.Cancel(),
+				Statement:   "At returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *RankedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().At(ctx, int(42))
+						return err
+					})
+				},
+				Defect: rankedAtSucceedsAlways,
+			},
+			{
+				ID:          RankedChecks.At.ZeroOnError(),
+				Statement:   "At returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *RankedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (indexed.Value, error) {
+						return h.Subject().At(ctx, int(42))
+					}, indexed.Value{})
+				},
+				Defect: rankedAtValueBeside,
+			},
+		},
 		Calls: []conform.Call[indexed.Ranked]{
 			{
 				Calls:    rankedAddCalls,
@@ -196,4 +375,143 @@ func newRankedOver(_ *RankedHandle, spend func()) indexed.Ranked {
 	return rankedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9c2069355aa7fea503bb022441f57199199e79266e0ac0187181fce533f489a6
+// rankedAddPanicsDefect is the planted defect of a Ranked whose Add
+// panics.
+type rankedAddPanicsDefect struct {
+	rankedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*rankedAddPanicsDefect) Add(p0 context.Context, p1 indexed.Value) (r0 error) {
+	panic("the planted defect of a Ranked whose Add panics")
+}
+
+// rankedAddPanics returns the planted defect of a Ranked whose Add panics
+// over a fresh subject.
+func rankedAddPanics(h *RankedHandle) indexed.Ranked {
+	return &rankedAddPanicsDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// rankedAddSucceedsAlwaysDefect is the planted defect of a Ranked whose
+// Add ignores the context.
+type rankedAddSucceedsAlwaysDefect struct {
+	rankedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*rankedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 indexed.Value) (r0 error) {
+	return r0
+}
+
+// rankedAddSucceedsAlways returns the planted defect of a Ranked whose Add
+// ignores the context over a fresh subject.
+func rankedAddSucceedsAlways(h *RankedHandle) indexed.Ranked {
+	return &rankedAddSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// rankedLenPanicsDefect is the planted defect of a Ranked whose Len
+// panics.
+type rankedLenPanicsDefect struct {
+	rankedOverEmbedded
+}
+
+// Len is the override of the planted defect.
+func (*rankedLenPanicsDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	panic("the planted defect of a Ranked whose Len panics")
+}
+
+// rankedLenPanics returns the planted defect of a Ranked whose Len panics
+// over a fresh subject.
+func rankedLenPanics(h *RankedHandle) indexed.Ranked {
+	return &rankedLenPanicsDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// rankedLenSucceedsAlwaysDefect is the planted defect of a Ranked whose
+// Len ignores the context.
+type rankedLenSucceedsAlwaysDefect struct {
+	rankedOverEmbedded
+}
+
+// Len is the override of the planted defect.
+func (*rankedLenSucceedsAlwaysDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// rankedLenSucceedsAlways returns the planted defect of a Ranked whose Len
+// ignores the context over a fresh subject.
+func rankedLenSucceedsAlways(h *RankedHandle) indexed.Ranked {
+	return &rankedLenSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// rankedLenValueBesideDefect is the planted defect of a Ranked whose Len
+// returns a value beside an error.
+type rankedLenValueBesideDefect struct {
+	rankedOverEmbedded
+}
+
+// Len is the override of the planted defect.
+func (*rankedLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// rankedLenValueBeside returns the planted defect of a Ranked whose Len
+// returns a value beside an error over a fresh subject.
+func rankedLenValueBeside(h *RankedHandle) indexed.Ranked {
+	return &rankedLenValueBesideDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// rankedAtPanicsDefect is the planted defect of a Ranked whose At panics.
+type rankedAtPanicsDefect struct {
+	rankedOverEmbedded
+}
+
+// At is the override of the planted defect.
+func (*rankedAtPanicsDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
+	panic("the planted defect of a Ranked whose At panics")
+}
+
+// rankedAtPanics returns the planted defect of a Ranked whose At panics
+// over a fresh subject.
+func rankedAtPanics(h *RankedHandle) indexed.Ranked {
+	return &rankedAtPanicsDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// rankedAtSucceedsAlwaysDefect is the planted defect of a Ranked whose At
+// ignores the context.
+type rankedAtSucceedsAlwaysDefect struct {
+	rankedOverEmbedded
+}
+
+// At is the override of the planted defect.
+func (*rankedAtSucceedsAlwaysDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
+	return r0, r1
+}
+
+// rankedAtSucceedsAlways returns the planted defect of a Ranked whose At
+// ignores the context over a fresh subject.
+func rankedAtSucceedsAlways(h *RankedHandle) indexed.Ranked {
+	return &rankedAtSucceedsAlwaysDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// rankedAtValueBesideDefect is the planted defect of a Ranked whose At
+// returns a value beside an error.
+type rankedAtValueBesideDefect struct {
+	rankedOverEmbedded
+}
+
+// At is the override of the planted defect.
+func (*rankedAtValueBesideDefect) At(p0 context.Context, p1 int) (r0 indexed.Value, r1 error) {
+	r0 = indexed.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// rankedAtValueBeside returns the planted defect of a Ranked whose At
+// returns a value beside an error over a fresh subject.
+func rankedAtValueBeside(h *RankedHandle) indexed.Ranked {
+	return &rankedAtValueBesideDefect{rankedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:6a28bcfff5283210965abd736acbd12406da0790db7530d8722fab7bbc3f204d

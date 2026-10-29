@@ -11,7 +11,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/streamreflectsmutations"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -42,9 +44,27 @@ type mixedStream struct {
 	conform.Callable[streamreflectsmutations.Mixed]
 }
 
+// Smoke returns the identity of the check that Stream returns without a
+// panic for derived inputs.
+func (c mixedStream) Smoke() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("smoke")
+}
+
 // mixedAdd is the name of Mixed.Add, with the identities of its checks.
 type mixedAdd struct {
 	conform.Callable[streamreflectsmutations.Mixed]
+}
+
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c mixedAdd) Smoke() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c mixedAdd) Cancel() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("cancel")
 }
 
 // mixedRemove is the name of Mixed.Remove, with the identities of its
@@ -53,11 +73,104 @@ type mixedRemove struct {
 	conform.Callable[streamreflectsmutations.Mixed]
 }
 
+// Smoke returns the identity of the check that Remove returns without a
+// panic for derived inputs.
+func (c mixedRemove) Smoke() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Remove returns an error
+// for a cancelled context.
+func (c mixedRemove) Cancel() conform.ID[streamreflectsmutations.Mixed] {
+	return c.Check("cancel")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[streamreflectsmutations.Mixed] {
 	return conform.Suite[streamreflectsmutations.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[streamreflectsmutations.Mixed]{
+			{
+				ID:          MixedChecks.Stream.Smoke(),
+				Statement:   "Stream returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Stream(ctx)
+						return nil
+					})
+				},
+				Defect: mixedStreamPanics,
+			},
+			{
+				ID:          MixedChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedAddPanics,
+			},
+			{
+				ID:          MixedChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedAddSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Remove.Smoke(),
+				Statement:   "Remove returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedRemovePanics,
+			},
+			{
+				ID:          MixedChecks.Remove.Cancel(),
+				Statement:   "Remove returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Remove(ctx, string("item-a"))
+					})
+				},
+				Defect: mixedRemoveSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[streamreflectsmutations.Mixed]{
 			{
 				Calls:    mixedStreamCalls,
@@ -204,4 +317,88 @@ func newMixedOver(_ *MixedHandle, spend func()) streamreflectsmutations.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:3d112956621300bf8a0960276d584706491f3d67caec8009448b0c2fd8d7530b
+// mixedStreamPanicsDefect is the planted defect of a Mixed whose Stream
+// panics.
+type mixedStreamPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Stream is the override of the planted defect.
+func (*mixedStreamPanicsDefect) Stream(p0 context.Context) (r0 iter.Seq2[string, error]) {
+	panic("the planted defect of a Mixed whose Stream panics")
+}
+
+// mixedStreamPanics returns the planted defect of a Mixed whose Stream
+// panics over a fresh subject.
+func mixedStreamPanics(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedStreamPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAddPanicsDefect is the planted defect of a Mixed whose Add panics.
+type mixedAddPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddPanicsDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Add panics")
+}
+
+// mixedAddPanics returns the planted defect of a Mixed whose Add panics
+// over a fresh subject.
+func mixedAddPanics(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedAddPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose Add
+// ignores the context.
+type mixedAddSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedAddSucceedsAlways returns the planted defect of a Mixed whose Add
+// ignores the context over a fresh subject.
+func mixedAddSucceedsAlways(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRemovePanicsDefect is the planted defect of a Mixed whose Remove
+// panics.
+type mixedRemovePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Remove is the override of the planted defect.
+func (*mixedRemovePanicsDefect) Remove(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Remove panics")
+}
+
+// mixedRemovePanics returns the planted defect of a Mixed whose Remove
+// panics over a fresh subject.
+func mixedRemovePanics(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedRemovePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRemoveSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Remove ignores the context.
+type mixedRemoveSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Remove is the override of the planted defect.
+func (*mixedRemoveSucceedsAlwaysDefect) Remove(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedRemoveSucceedsAlways returns the planted defect of a Mixed whose
+// Remove ignores the context over a fresh subject.
+func mixedRemoveSucceedsAlways(h *MixedHandle) streamreflectsmutations.Mixed {
+	return &mixedRemoveSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:4d7c68cc81bca2fea8bb934d1d1165654cbb278edde8b50e7f7494bc1da201f3

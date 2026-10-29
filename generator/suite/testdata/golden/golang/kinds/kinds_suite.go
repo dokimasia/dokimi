@@ -16,6 +16,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -92,9 +94,21 @@ type paramsBool struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Bool returns without a
+// panic for derived inputs.
+func (c paramsBool) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsInt is the name of Params.Int, with the identities of its checks.
 type paramsInt struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Int returns without a panic
+// for derived inputs.
+func (c paramsInt) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsInt8 is the name of Params.Int8, with the identities of its
@@ -103,10 +117,22 @@ type paramsInt8 struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Int8 returns without a
+// panic for derived inputs.
+func (c paramsInt8) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsInt16 is the name of Params.Int16, with the identities of its
 // checks.
 type paramsInt16 struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Int16 returns without a
+// panic for derived inputs.
+func (c paramsInt16) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsInt32 is the name of Params.Int32, with the identities of its
@@ -115,10 +141,22 @@ type paramsInt32 struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Int32 returns without a
+// panic for derived inputs.
+func (c paramsInt32) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsInt64 is the name of Params.Int64, with the identities of its
 // checks.
 type paramsInt64 struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Int64 returns without a
+// panic for derived inputs.
+func (c paramsInt64) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsUint is the name of Params.Uint, with the identities of its
@@ -127,10 +165,22 @@ type paramsUint struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Uint returns without a
+// panic for derived inputs.
+func (c paramsUint) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsUint8 is the name of Params.Uint8, with the identities of its
 // checks.
 type paramsUint8 struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Uint8 returns without a
+// panic for derived inputs.
+func (c paramsUint8) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsUint16 is the name of Params.Uint16, with the identities of its
@@ -139,10 +189,22 @@ type paramsUint16 struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Uint16 returns without a
+// panic for derived inputs.
+func (c paramsUint16) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsUint32 is the name of Params.Uint32, with the identities of its
 // checks.
 type paramsUint32 struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Uint32 returns without a
+// panic for derived inputs.
+func (c paramsUint32) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsUint64 is the name of Params.Uint64, with the identities of its
@@ -151,10 +213,22 @@ type paramsUint64 struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Uint64 returns without a
+// panic for derived inputs.
+func (c paramsUint64) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsUintptr is the name of Params.Uintptr, with the identities of its
 // checks.
 type paramsUintptr struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Uintptr returns without a
+// panic for derived inputs.
+func (c paramsUintptr) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsFloat32 is the name of Params.Float32, with the identities of its
@@ -163,10 +237,22 @@ type paramsFloat32 struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Float32 returns without a
+// panic for derived inputs.
+func (c paramsFloat32) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsFloat64 is the name of Params.Float64, with the identities of its
 // checks.
 type paramsFloat64 struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Float64 returns without a
+// panic for derived inputs.
+func (c paramsFloat64) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsComplex64 is the name of Params.Complex64, with the identities of
@@ -175,16 +261,34 @@ type paramsComplex64 struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Complex64 returns without a
+// panic for derived inputs.
+func (c paramsComplex64) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsComplex128 is the name of Params.Complex128, with the identities
 // of its checks.
 type paramsComplex128 struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Complex128 returns without
+// a panic for derived inputs.
+func (c paramsComplex128) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsArray is the name of Params.Array, with the identities of its
 // checks.
 type paramsArray struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that Array returns without a
+// panic for derived inputs.
+func (c paramsArray) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsChan is the name of Params.Chan, with the identities of its
@@ -210,6 +314,12 @@ type paramsMap struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Map returns without a panic
+// for derived inputs.
+func (c paramsMap) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsPtr is the name of Params.Ptr, with the identities of its checks.
 type paramsPtr struct {
 	conform.Callable[Params]
@@ -221,10 +331,22 @@ type paramsSlice struct {
 	conform.Callable[Params]
 }
 
+// Smoke returns the identity of the check that Slice returns without a
+// panic for derived inputs.
+func (c paramsSlice) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
+}
+
 // paramsString is the name of Params.String, with the identities of its
 // checks.
 type paramsString struct {
 	conform.Callable[Params]
+}
+
+// Smoke returns the identity of the check that String returns without a
+// panic for derived inputs.
+func (c paramsString) Smoke() conform.ID[Params] {
+	return c.Check("smoke")
 }
 
 // paramsStruct is the name of Params.Struct, with the identities of its
@@ -244,6 +366,348 @@ type paramsUnsafePointer struct {
 func ParamsSuite() conform.Suite[Params] {
 	return conform.Suite[Params]{
 		Declaration: "Params",
+		Checks: []conform.Check[Params]{
+			{
+				ID:          ParamsChecks.Bool.Smoke(),
+				Statement:   "Bool returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Bool(bool(true))
+						return nil
+					})
+				},
+				Defect: paramsBoolPanics,
+			},
+			{
+				ID:          ParamsChecks.Int.Smoke(),
+				Statement:   "Int returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int(int(42))
+						return nil
+					})
+				},
+				Defect: paramsIntPanics,
+			},
+			{
+				ID:          ParamsChecks.Int8.Smoke(),
+				Statement:   "Int8 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int8(int8(42))
+						return nil
+					})
+				},
+				Defect: paramsInt8Panics,
+			},
+			{
+				ID:          ParamsChecks.Int16.Smoke(),
+				Statement:   "Int16 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int16(int16(42))
+						return nil
+					})
+				},
+				Defect: paramsInt16Panics,
+			},
+			{
+				ID:          ParamsChecks.Int32.Smoke(),
+				Statement:   "Int32 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int32(int32(42))
+						return nil
+					})
+				},
+				Defect: paramsInt32Panics,
+			},
+			{
+				ID:          ParamsChecks.Int64.Smoke(),
+				Statement:   "Int64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Int64(int64(42))
+						return nil
+					})
+				},
+				Defect: paramsInt64Panics,
+			},
+			{
+				ID:          ParamsChecks.Uint.Smoke(),
+				Statement:   "Uint returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint(uint(42))
+						return nil
+					})
+				},
+				Defect: paramsUintPanics,
+			},
+			{
+				ID:          ParamsChecks.Uint8.Smoke(),
+				Statement:   "Uint8 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint8(uint8(1))
+						return nil
+					})
+				},
+				Defect: paramsUint8Panics,
+			},
+			{
+				ID:          ParamsChecks.Uint16.Smoke(),
+				Statement:   "Uint16 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint16(uint16(42))
+						return nil
+					})
+				},
+				Defect: paramsUint16Panics,
+			},
+			{
+				ID:          ParamsChecks.Uint32.Smoke(),
+				Statement:   "Uint32 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint32(uint32(42))
+						return nil
+					})
+				},
+				Defect: paramsUint32Panics,
+			},
+			{
+				ID:          ParamsChecks.Uint64.Smoke(),
+				Statement:   "Uint64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uint64(uint64(42))
+						return nil
+					})
+				},
+				Defect: paramsUint64Panics,
+			},
+			{
+				ID:          ParamsChecks.Uintptr.Smoke(),
+				Statement:   "Uintptr returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Uintptr(uintptr(42))
+						return nil
+					})
+				},
+				Defect: paramsUintptrPanics,
+			},
+			{
+				ID:          ParamsChecks.Float32.Smoke(),
+				Statement:   "Float32 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Float32(float32(1.5))
+						return nil
+					})
+				},
+				Defect: paramsFloat32Panics,
+			},
+			{
+				ID:          ParamsChecks.Float64.Smoke(),
+				Statement:   "Float64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Float64(float64(1.5))
+						return nil
+					})
+				},
+				Defect: paramsFloat64Panics,
+			},
+			{
+				ID:          ParamsChecks.Complex64.Smoke(),
+				Statement:   "Complex64 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Complex64(complex64(1.5))
+						return nil
+					})
+				},
+				Defect: paramsComplex64Panics,
+			},
+			{
+				ID:          ParamsChecks.Complex128.Smoke(),
+				Statement:   "Complex128 returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Complex128(complex128(1.5))
+						return nil
+					})
+				},
+				Defect: paramsComplex128Panics,
+			},
+			{
+				ID:          ParamsChecks.Array.Smoke(),
+				Statement:   "Array returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Array([2]int{42})
+						return nil
+					})
+				},
+				Defect: paramsArrayPanics,
+			},
+			{
+				ID:          ParamsChecks.Map.Smoke(),
+				Statement:   "Map returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Map(map[string]int{"v-a": 42})
+						return nil
+					})
+				},
+				Defect: paramsMapPanics,
+			},
+			{
+				ID:          ParamsChecks.Slice.Smoke(),
+				Statement:   "Slice returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Slice([]int{42})
+						return nil
+					})
+				},
+				Defect: paramsSlicePanics,
+			},
+			{
+				ID:          ParamsChecks.String.Smoke(),
+				Statement:   "String returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ParamsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().String(string("v-a"))
+						return nil
+					})
+				},
+				Defect: paramsStringPanics,
+			},
+		},
 		Calls: []conform.Call[Params]{
 			{
 				Calls:    paramsBoolCalls,
@@ -896,6 +1360,346 @@ func newParamsOver(_ *ParamsHandle, spend func()) Params {
 	return paramsOver{spend: spend}
 }
 
+// paramsBoolPanicsDefect is the planted defect of a Params whose Bool
+// panics.
+type paramsBoolPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Bool is the override of the planted defect.
+func (*paramsBoolPanicsDefect) Bool(p0 bool) {
+	panic("the planted defect of a Params whose Bool panics")
+}
+
+// paramsBoolPanics returns the planted defect of a Params whose Bool
+// panics over a fresh subject.
+func paramsBoolPanics(h *ParamsHandle) Params {
+	return &paramsBoolPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsIntPanicsDefect is the planted defect of a Params whose Int
+// panics.
+type paramsIntPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Int is the override of the planted defect.
+func (*paramsIntPanicsDefect) Int(p0 int) {
+	panic("the planted defect of a Params whose Int panics")
+}
+
+// paramsIntPanics returns the planted defect of a Params whose Int panics
+// over a fresh subject.
+func paramsIntPanics(h *ParamsHandle) Params {
+	return &paramsIntPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsInt8PanicsDefect is the planted defect of a Params whose Int8
+// panics.
+type paramsInt8PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Int8 is the override of the planted defect.
+func (*paramsInt8PanicsDefect) Int8(p0 int8) {
+	panic("the planted defect of a Params whose Int8 panics")
+}
+
+// paramsInt8Panics returns the planted defect of a Params whose Int8
+// panics over a fresh subject.
+func paramsInt8Panics(h *ParamsHandle) Params {
+	return &paramsInt8PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsInt16PanicsDefect is the planted defect of a Params whose Int16
+// panics.
+type paramsInt16PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Int16 is the override of the planted defect.
+func (*paramsInt16PanicsDefect) Int16(p0 int16) {
+	panic("the planted defect of a Params whose Int16 panics")
+}
+
+// paramsInt16Panics returns the planted defect of a Params whose Int16
+// panics over a fresh subject.
+func paramsInt16Panics(h *ParamsHandle) Params {
+	return &paramsInt16PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsInt32PanicsDefect is the planted defect of a Params whose Int32
+// panics.
+type paramsInt32PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Int32 is the override of the planted defect.
+func (*paramsInt32PanicsDefect) Int32(p0 int32) {
+	panic("the planted defect of a Params whose Int32 panics")
+}
+
+// paramsInt32Panics returns the planted defect of a Params whose Int32
+// panics over a fresh subject.
+func paramsInt32Panics(h *ParamsHandle) Params {
+	return &paramsInt32PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsInt64PanicsDefect is the planted defect of a Params whose Int64
+// panics.
+type paramsInt64PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Int64 is the override of the planted defect.
+func (*paramsInt64PanicsDefect) Int64(p0 int64) {
+	panic("the planted defect of a Params whose Int64 panics")
+}
+
+// paramsInt64Panics returns the planted defect of a Params whose Int64
+// panics over a fresh subject.
+func paramsInt64Panics(h *ParamsHandle) Params {
+	return &paramsInt64PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsUintPanicsDefect is the planted defect of a Params whose Uint
+// panics.
+type paramsUintPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Uint is the override of the planted defect.
+func (*paramsUintPanicsDefect) Uint(p0 uint) {
+	panic("the planted defect of a Params whose Uint panics")
+}
+
+// paramsUintPanics returns the planted defect of a Params whose Uint
+// panics over a fresh subject.
+func paramsUintPanics(h *ParamsHandle) Params {
+	return &paramsUintPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsUint8PanicsDefect is the planted defect of a Params whose Uint8
+// panics.
+type paramsUint8PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Uint8 is the override of the planted defect.
+func (*paramsUint8PanicsDefect) Uint8(p0 uint8) {
+	panic("the planted defect of a Params whose Uint8 panics")
+}
+
+// paramsUint8Panics returns the planted defect of a Params whose Uint8
+// panics over a fresh subject.
+func paramsUint8Panics(h *ParamsHandle) Params {
+	return &paramsUint8PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsUint16PanicsDefect is the planted defect of a Params whose Uint16
+// panics.
+type paramsUint16PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Uint16 is the override of the planted defect.
+func (*paramsUint16PanicsDefect) Uint16(p0 uint16) {
+	panic("the planted defect of a Params whose Uint16 panics")
+}
+
+// paramsUint16Panics returns the planted defect of a Params whose Uint16
+// panics over a fresh subject.
+func paramsUint16Panics(h *ParamsHandle) Params {
+	return &paramsUint16PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsUint32PanicsDefect is the planted defect of a Params whose Uint32
+// panics.
+type paramsUint32PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Uint32 is the override of the planted defect.
+func (*paramsUint32PanicsDefect) Uint32(p0 uint32) {
+	panic("the planted defect of a Params whose Uint32 panics")
+}
+
+// paramsUint32Panics returns the planted defect of a Params whose Uint32
+// panics over a fresh subject.
+func paramsUint32Panics(h *ParamsHandle) Params {
+	return &paramsUint32PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsUint64PanicsDefect is the planted defect of a Params whose Uint64
+// panics.
+type paramsUint64PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Uint64 is the override of the planted defect.
+func (*paramsUint64PanicsDefect) Uint64(p0 uint64) {
+	panic("the planted defect of a Params whose Uint64 panics")
+}
+
+// paramsUint64Panics returns the planted defect of a Params whose Uint64
+// panics over a fresh subject.
+func paramsUint64Panics(h *ParamsHandle) Params {
+	return &paramsUint64PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsUintptrPanicsDefect is the planted defect of a Params whose
+// Uintptr panics.
+type paramsUintptrPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Uintptr is the override of the planted defect.
+func (*paramsUintptrPanicsDefect) Uintptr(p0 uintptr) {
+	panic("the planted defect of a Params whose Uintptr panics")
+}
+
+// paramsUintptrPanics returns the planted defect of a Params whose Uintptr
+// panics over a fresh subject.
+func paramsUintptrPanics(h *ParamsHandle) Params {
+	return &paramsUintptrPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsFloat32PanicsDefect is the planted defect of a Params whose
+// Float32 panics.
+type paramsFloat32PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Float32 is the override of the planted defect.
+func (*paramsFloat32PanicsDefect) Float32(p0 float32) {
+	panic("the planted defect of a Params whose Float32 panics")
+}
+
+// paramsFloat32Panics returns the planted defect of a Params whose Float32
+// panics over a fresh subject.
+func paramsFloat32Panics(h *ParamsHandle) Params {
+	return &paramsFloat32PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsFloat64PanicsDefect is the planted defect of a Params whose
+// Float64 panics.
+type paramsFloat64PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Float64 is the override of the planted defect.
+func (*paramsFloat64PanicsDefect) Float64(p0 float64) {
+	panic("the planted defect of a Params whose Float64 panics")
+}
+
+// paramsFloat64Panics returns the planted defect of a Params whose Float64
+// panics over a fresh subject.
+func paramsFloat64Panics(h *ParamsHandle) Params {
+	return &paramsFloat64PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsComplex64PanicsDefect is the planted defect of a Params whose
+// Complex64 panics.
+type paramsComplex64PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Complex64 is the override of the planted defect.
+func (*paramsComplex64PanicsDefect) Complex64(p0 complex64) {
+	panic("the planted defect of a Params whose Complex64 panics")
+}
+
+// paramsComplex64Panics returns the planted defect of a Params whose
+// Complex64 panics over a fresh subject.
+func paramsComplex64Panics(h *ParamsHandle) Params {
+	return &paramsComplex64PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsComplex128PanicsDefect is the planted defect of a Params whose
+// Complex128 panics.
+type paramsComplex128PanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Complex128 is the override of the planted defect.
+func (*paramsComplex128PanicsDefect) Complex128(p0 complex128) {
+	panic("the planted defect of a Params whose Complex128 panics")
+}
+
+// paramsComplex128Panics returns the planted defect of a Params whose
+// Complex128 panics over a fresh subject.
+func paramsComplex128Panics(h *ParamsHandle) Params {
+	return &paramsComplex128PanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsArrayPanicsDefect is the planted defect of a Params whose Array
+// panics.
+type paramsArrayPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Array is the override of the planted defect.
+func (*paramsArrayPanicsDefect) Array(p0 [2]int) {
+	panic("the planted defect of a Params whose Array panics")
+}
+
+// paramsArrayPanics returns the planted defect of a Params whose Array
+// panics over a fresh subject.
+func paramsArrayPanics(h *ParamsHandle) Params {
+	return &paramsArrayPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsMapPanicsDefect is the planted defect of a Params whose Map
+// panics.
+type paramsMapPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Map is the override of the planted defect.
+func (*paramsMapPanicsDefect) Map(p0 map[string]int) {
+	panic("the planted defect of a Params whose Map panics")
+}
+
+// paramsMapPanics returns the planted defect of a Params whose Map panics
+// over a fresh subject.
+func paramsMapPanics(h *ParamsHandle) Params {
+	return &paramsMapPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsSlicePanicsDefect is the planted defect of a Params whose Slice
+// panics.
+type paramsSlicePanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// Slice is the override of the planted defect.
+func (*paramsSlicePanicsDefect) Slice(p0 []int) {
+	panic("the planted defect of a Params whose Slice panics")
+}
+
+// paramsSlicePanics returns the planted defect of a Params whose Slice
+// panics over a fresh subject.
+func paramsSlicePanics(h *ParamsHandle) Params {
+	return &paramsSlicePanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
+// paramsStringPanicsDefect is the planted defect of a Params whose String
+// panics.
+type paramsStringPanicsDefect struct {
+	paramsOverEmbedded
+}
+
+// String is the override of the planted defect.
+func (*paramsStringPanicsDefect) String(p0 string) {
+	panic("the planted defect of a Params whose String panics")
+}
+
+// paramsStringPanics returns the planted defect of a Params whose String
+// panics over a fresh subject.
+func paramsStringPanics(h *ParamsHandle) Params {
+	return &paramsStringPanicsDefect{paramsOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -924,10 +1728,22 @@ type everyFields struct {
 	conform.Callable[Every]
 }
 
+// Smoke returns the identity of the check that Fields returns without a
+// panic for derived inputs.
+func (c everyFields) Smoke() conform.ID[Every] {
+	return c.Check("smoke")
+}
+
 // everyElements is the name of Every.Elements, with the identities of its
 // checks.
 type everyElements struct {
 	conform.Callable[Every]
+}
+
+// Smoke returns the identity of the check that Elements returns without a
+// panic for derived inputs.
+func (c everyElements) Smoke() conform.ID[Every] {
+	return c.Check("smoke")
 }
 
 // everyResults is the name of Every.Results, with the identities of its
@@ -941,6 +1757,42 @@ type everyResults struct {
 func EverySuite() conform.Suite[Every] {
 	return conform.Suite[Every]{
 		Declaration: "Every",
+		Checks: []conform.Check[Every]{
+			{
+				ID:          EveryChecks.Fields.Smoke(),
+				Statement:   "Fields returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *EveryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Fields(Fields{Bool: true})
+						return nil
+					})
+				},
+				Defect: everyFieldsPanics,
+			},
+			{
+				ID:          EveryChecks.Elements.Smoke(),
+				Statement:   "Elements returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *EveryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Elements(Elements{Bool: []bool{true}})
+						return nil
+					})
+				},
+				Defect: everyElementsPanics,
+			},
+		},
 		Calls: []conform.Call[Every]{
 			{
 				Calls:    everyFieldsCalls,
@@ -1538,6 +2390,40 @@ func (o everyOver) Results(Results) {
 // callables call spend.
 func newEveryOver(_ *EveryHandle, spend func()) Every {
 	return everyOver{spend: spend}
+}
+
+// everyFieldsPanicsDefect is the planted defect of a Every whose Fields
+// panics.
+type everyFieldsPanicsDefect struct {
+	everyOverEmbedded
+}
+
+// Fields is the override of the planted defect.
+func (*everyFieldsPanicsDefect) Fields(p0 Fields) {
+	panic("the planted defect of a Every whose Fields panics")
+}
+
+// everyFieldsPanics returns the planted defect of a Every whose Fields
+// panics over a fresh subject.
+func everyFieldsPanics(h *EveryHandle) Every {
+	return &everyFieldsPanicsDefect{everyOverEmbedded: h.Fresh()}
+}
+
+// everyElementsPanicsDefect is the planted defect of a Every whose
+// Elements panics.
+type everyElementsPanicsDefect struct {
+	everyOverEmbedded
+}
+
+// Elements is the override of the planted defect.
+func (*everyElementsPanicsDefect) Elements(p0 Elements) {
+	panic("the planted defect of a Every whose Elements panics")
+}
+
+// everyElementsPanics returns the planted defect of a Every whose Elements
+// panics over a fresh subject.
+func everyElementsPanics(h *EveryHandle) Every {
+	return &everyElementsPanicsDefect{everyOverEmbedded: h.Fresh()}
 }
 
 // The suite refers to the compatibility witness of its runtime.
@@ -2470,6 +3356,12 @@ type oddKeep struct {
 	conform.Callable[Odd]
 }
 
+// Smoke returns the identity of the check that Keep returns without a
+// panic for derived inputs.
+func (c oddKeep) Smoke() conform.ID[Odd] {
+	return c.Check("smoke")
+}
+
 // oddEmbed is the name of Odd.Embed, with the identities of its checks.
 type oddEmbed struct {
 	conform.Callable[Odd]
@@ -2485,6 +3377,25 @@ type oddLoop struct {
 func OddSuite() conform.Suite[Odd] {
 	return conform.Suite[Odd]{
 		Declaration: "Odd",
+		Checks: []conform.Check[Odd]{
+			{
+				ID:          OddChecks.Keep.Smoke(),
+				Statement:   "Keep returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *OddHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Keep(Anything("a-a"))
+						return nil
+					})
+				},
+				Defect: oddKeepPanics,
+			},
+		},
 		Calls: []conform.Call[Odd]{
 			{
 				Calls:    oddTagCalls,
@@ -2739,6 +3650,22 @@ func newOddOver(_ *OddHandle, spend func()) Odd {
 	return oddOver{spend: spend}
 }
 
+// oddKeepPanicsDefect is the planted defect of a Odd whose Keep panics.
+type oddKeepPanicsDefect struct {
+	oddOverEmbedded
+}
+
+// Keep is the override of the planted defect.
+func (*oddKeepPanicsDefect) Keep(p0 Anything) {
+	panic("the planted defect of a Odd whose Keep panics")
+}
+
+// oddKeepPanics returns the planted defect of a Odd whose Keep panics over
+// a fresh subject.
+func oddKeepPanics(h *OddHandle) Odd {
+	return &oddKeepPanicsDefect{oddOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -2824,6 +3751,18 @@ type stdWithin struct {
 	conform.Callable[Std]
 }
 
+// Smoke returns the identity of the check that Within returns without a
+// panic for derived inputs.
+func (c stdWithin) Smoke() conform.ID[Std] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Within returns an error
+// for a cancelled context.
+func (c stdWithin) Cancel() conform.ID[Std] {
+	return c.Check("cancel")
+}
+
 // stdHold is the name of Std.Hold, with the identities of its checks.
 type stdHold struct {
 	conform.Callable[Std]
@@ -2834,9 +3773,21 @@ type stdPair struct {
 	conform.Callable[Std]
 }
 
+// Smoke returns the identity of the check that Pair returns without a
+// panic for derived inputs.
+func (c stdPair) Smoke() conform.ID[Std] {
+	return c.Check("smoke")
+}
+
 // stdMeet is the name of Std.Meet, with the identities of its checks.
 type stdMeet struct {
 	conform.Callable[Std]
+}
+
+// Smoke returns the identity of the check that Meet returns without a
+// panic for derived inputs.
+func (c stdMeet) Smoke() conform.ID[Std] {
+	return c.Check("smoke")
 }
 
 // StdSuite returns the checks of Std, and the calls and the budgets of its
@@ -2844,6 +3795,73 @@ type stdMeet struct {
 func StdSuite() conform.Suite[Std] {
 	return conform.Suite[Std]{
 		Declaration: "Std",
+		Checks: []conform.Check[Std]{
+			{
+				ID:          StdChecks.Within.Smoke(),
+				Statement:   "Within returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StdHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Within(ctx, ctx)
+					})
+				},
+				Defect: stdWithinPanics,
+			},
+			{
+				ID:          StdChecks.Within.Cancel(),
+				Statement:   "Within returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StdHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Within(ctx, ctx)
+					})
+				},
+				Defect: stdWithinSucceedsAlways,
+			},
+			{
+				ID:          StdChecks.Pair.Smoke(),
+				Statement:   "Pair returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StdHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Pair([]Twins{{A: 42}})
+						return nil
+					})
+				},
+				Defect: stdPairPanics,
+			},
+			{
+				ID:          StdChecks.Meet.Smoke(),
+				Statement:   "Meet returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StdHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Meet(Clash{Name: "Name-a"})
+						return nil
+					})
+				},
+				Defect: stdMeetPanics,
+			},
+		},
 		Calls: []conform.Call[Std]{
 			{
 				Calls:    stdCopyCalls,
@@ -3326,4 +4344,70 @@ func (o stdOver) Meet(Clash) {
 // callables call spend.
 func newStdOver(_ *StdHandle, spend func()) Std {
 	return stdOver{spend: spend}
+}
+
+// stdWithinPanicsDefect is the planted defect of a Std whose Within
+// panics.
+type stdWithinPanicsDefect struct {
+	stdOverEmbedded
+}
+
+// Within is the override of the planted defect.
+func (*stdWithinPanicsDefect) Within(p0, p1 context.Context) (r0 error) {
+	panic("the planted defect of a Std whose Within panics")
+}
+
+// stdWithinPanics returns the planted defect of a Std whose Within panics
+// over a fresh subject.
+func stdWithinPanics(h *StdHandle) Std {
+	return &stdWithinPanicsDefect{stdOverEmbedded: h.Fresh()}
+}
+
+// stdWithinSucceedsAlwaysDefect is the planted defect of a Std whose
+// Within ignores the context.
+type stdWithinSucceedsAlwaysDefect struct {
+	stdOverEmbedded
+}
+
+// Within is the override of the planted defect.
+func (*stdWithinSucceedsAlwaysDefect) Within(p0, p1 context.Context) (r0 error) {
+	return r0
+}
+
+// stdWithinSucceedsAlways returns the planted defect of a Std whose Within
+// ignores the context over a fresh subject.
+func stdWithinSucceedsAlways(h *StdHandle) Std {
+	return &stdWithinSucceedsAlwaysDefect{stdOverEmbedded: h.Fresh()}
+}
+
+// stdPairPanicsDefect is the planted defect of a Std whose Pair panics.
+type stdPairPanicsDefect struct {
+	stdOverEmbedded
+}
+
+// Pair is the override of the planted defect.
+func (*stdPairPanicsDefect) Pair(p0 []Twins) {
+	panic("the planted defect of a Std whose Pair panics")
+}
+
+// stdPairPanics returns the planted defect of a Std whose Pair panics over
+// a fresh subject.
+func stdPairPanics(h *StdHandle) Std {
+	return &stdPairPanicsDefect{stdOverEmbedded: h.Fresh()}
+}
+
+// stdMeetPanicsDefect is the planted defect of a Std whose Meet panics.
+type stdMeetPanicsDefect struct {
+	stdOverEmbedded
+}
+
+// Meet is the override of the planted defect.
+func (*stdMeetPanicsDefect) Meet(p0 Clash) {
+	panic("the planted defect of a Std whose Meet panics")
+}
+
+// stdMeetPanics returns the planted defect of a Std whose Meet panics over
+// a fresh subject.
+func stdMeetPanics(h *StdHandle) Std {
+	return &stdMeetPanicsDefect{stdOverEmbedded: h.Fresh()}
 }

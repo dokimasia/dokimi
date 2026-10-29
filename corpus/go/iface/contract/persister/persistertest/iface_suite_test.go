@@ -49,6 +49,34 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*persistertest.ContractHandle) persister.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.Persister(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +98,34 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*persistertest.ContractHandle) persister.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Put.Persister(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				persistertest.ContractChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -90,6 +146,34 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(persistertest.ContractChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(persistertest.ContractChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Persister(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +184,34 @@ func FuzzContractSuitePut(f *testing.F) {
 		f,
 		persistertest.ContractChecks.Put.Callable,
 		contractIdle,
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Persister(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +222,34 @@ func FuzzContractSuiteGet(f *testing.F) {
 		f,
 		persistertest.ContractChecks.Get.Callable,
 		contractIdle,
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Put.Persister(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			persistertest.ContractChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,4 +264,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5d158822af5b415d79aa1b706bea414439914fc90752e3699c77ae6207ec28b2
+// dokimi:provenance sha256:5d2b659890ce76a47e743e73e65f08637358c51fbad8d93f44601102cfd59c8e

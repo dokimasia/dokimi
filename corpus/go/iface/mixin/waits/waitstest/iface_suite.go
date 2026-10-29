@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/waits"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,28 @@ type lockAcquire struct {
 	conform.Callable[waits.Lock]
 }
 
+// Cancel returns the identity of the check that Acquire returns an error
+// for a cancelled context.
+func (c lockAcquire) Cancel() conform.ID[waits.Lock] {
+	return c.Check("cancel")
+}
+
 // lockRelease is the name of Lock.Release, with the identities of its
 // checks.
 type lockRelease struct {
 	conform.Callable[waits.Lock]
+}
+
+// Smoke returns the identity of the check that Release returns without a
+// panic for derived inputs.
+func (c lockRelease) Smoke() conform.ID[waits.Lock] {
+	return c.Check("smoke")
+}
+
+// RepeatSurvives returns the identity of the check that Release returns
+// without a panic when it is called twice.
+func (c lockRelease) RepeatSurvives() conform.ID[waits.Lock] {
+	return c.Check("repeat-survives")
 }
 
 // lockHeld is the name of Lock.Held, with the identities of its checks.
@@ -52,11 +72,108 @@ type lockHeld struct {
 	conform.Callable[waits.Lock]
 }
 
+// Smoke returns the identity of the check that Held returns without a
+// panic for derived inputs.
+func (c lockHeld) Smoke() conform.ID[waits.Lock] {
+	return c.Check("smoke")
+}
+
+// Predicate returns the identity of the check that Held returns the same
+// answer twice for an unchanged subject.
+func (c lockHeld) Predicate() conform.ID[waits.Lock] {
+	return c.Check("predicate")
+}
+
 // LockSuite returns the checks of Lock, and the calls and the budgets of
 // its callables.
 func LockSuite() conform.Suite[waits.Lock] {
 	return conform.Suite[waits.Lock]{
 		Declaration: "Lock",
+		Checks: []conform.Check[waits.Lock]{
+			{
+				ID:          LockChecks.Acquire.Cancel(),
+				Statement:   "Acquire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LockHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx)
+					})
+				},
+				Defect: lockAcquireSucceedsAlways,
+			},
+			{
+				ID:          LockChecks.Release.Smoke(),
+				Statement:   "Release returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Release()
+						return nil
+					})
+				},
+				Defect: lockReleasePanics,
+			},
+			{
+				ID:          LockChecks.Release.RepeatSurvives(),
+				Statement:   "Release returns without a panic when it is called twice",
+				Claim:       spec.RepeatSurvives,
+				Probe:       spec.SurvivesRepeat,
+				Reason:      spec.PanickedRepeat,
+				Law:         spec.RepeatedCallSurvives,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Entails:     []conform.ID[waits.Lock]{LockChecks.Release.Smoke()},
+				Apply: func(h *LockHandle) {
+					probe.SurvivesRepeat(h, func(ctx context.Context) error {
+						h.Subject().Release()
+						return nil
+					})
+				},
+				Defect: lockReleasePanicsOnRepeat,
+			},
+			{
+				ID:          LockChecks.Held.Smoke(),
+				Statement:   "Held returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Held()
+						return nil
+					})
+				},
+				Defect: lockHeldPanics,
+			},
+			{
+				ID:          LockChecks.Held.Predicate(),
+				Statement:   "Held returns the same answer twice for an unchanged subject",
+				Claim:       spec.Predicate,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (bool, error) {
+						r0 := h.Subject().Held()
+						return r0, nil
+					})
+				},
+				Defect: lockHeldDrifts,
+			},
+		},
 		Calls: []conform.Call[waits.Lock]{
 			{
 				Calls:    lockAcquireCalls,
@@ -192,4 +309,98 @@ func newLockOver(_ *LockHandle, spend func()) waits.Lock {
 	return lockOver{spend: spend}
 }
 
-// dokimi:provenance sha256:2eccd9fd5fc5cfd16bd9f02cf2bb1a80d9fde75f5fa3ac407a1fe40c9880bb9c
+// lockAcquireSucceedsAlwaysDefect is the planted defect of a Lock whose
+// Acquire ignores the context.
+type lockAcquireSucceedsAlwaysDefect struct {
+	lockOverEmbedded
+}
+
+// Acquire is the override of the planted defect.
+func (*lockAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// lockAcquireSucceedsAlways returns the planted defect of a Lock whose
+// Acquire ignores the context over a fresh subject.
+func lockAcquireSucceedsAlways(h *LockHandle) waits.Lock {
+	return &lockAcquireSucceedsAlwaysDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockReleasePanicsDefect is the planted defect of a Lock whose Release
+// panics.
+type lockReleasePanicsDefect struct {
+	lockOverEmbedded
+}
+
+// Release is the override of the planted defect.
+func (*lockReleasePanicsDefect) Release() {
+	panic("the planted defect of a Lock whose Release panics")
+}
+
+// lockReleasePanics returns the planted defect of a Lock whose Release
+// panics over a fresh subject.
+func lockReleasePanics(h *LockHandle) waits.Lock {
+	return &lockReleasePanicsDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockReleasePanicsOnRepeatDefect is the planted defect of a Lock whose
+// Release panics on the repeat.
+type lockReleasePanicsOnRepeatDefect struct {
+	lockOverEmbedded
+	calls int
+}
+
+// Release is the override of the planted defect.
+func (d *lockReleasePanicsOnRepeatDefect) Release() {
+	d.calls++
+	if d.calls > 1 {
+		panic("the planted defect of a Lock whose Release panics on the repeat")
+	}
+	d.lockOverEmbedded.Release()
+}
+
+// lockReleasePanicsOnRepeat returns the planted defect of a Lock whose
+// Release panics on the repeat over a fresh subject.
+func lockReleasePanicsOnRepeat(h *LockHandle) waits.Lock {
+	return &lockReleasePanicsOnRepeatDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockHeldPanicsDefect is the planted defect of a Lock whose Held panics.
+type lockHeldPanicsDefect struct {
+	lockOverEmbedded
+}
+
+// Held is the override of the planted defect.
+func (*lockHeldPanicsDefect) Held() (r0 bool) {
+	panic("the planted defect of a Lock whose Held panics")
+}
+
+// lockHeldPanics returns the planted defect of a Lock whose Held panics
+// over a fresh subject.
+func lockHeldPanics(h *LockHandle) waits.Lock {
+	return &lockHeldPanicsDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockHeldDriftsDefect is the planted defect of a Lock whose Held returns
+// another answer on the repeat.
+type lockHeldDriftsDefect struct {
+	lockOverEmbedded
+	calls int
+}
+
+// Held is the override of the planted defect.
+func (d *lockHeldDriftsDefect) Held() (r0 bool) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = bool(true)
+	}
+	return r0
+}
+
+// lockHeldDrifts returns the planted defect of a Lock whose Held returns
+// another answer on the repeat over a fresh subject.
+func lockHeldDrifts(h *LockHandle) waits.Lock {
+	return &lockHeldDriftsDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:bd8104885bae7ab18ee7ccb704c2b9c80760f8ac87f3d2fcd6659d09d1ebdeba

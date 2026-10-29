@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	txwithretry "go.dokimi.dev/dokimi/corpus/go/iface/composite/tx-with-retry"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,40 @@ type txWithRetryBegin struct {
 	conform.Callable[txwithretry.TxWithRetry]
 }
 
+// Smoke returns the identity of the check that Begin returns without a
+// panic for derived inputs.
+func (c txWithRetryBegin) Smoke() conform.ID[txwithretry.TxWithRetry] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Begin returns an error for
+// a cancelled context.
+func (c txWithRetryBegin) Cancel() conform.ID[txwithretry.TxWithRetry] {
+	return c.Check("cancel")
+}
+
 // txWithRetryCommit is the name of TxWithRetry.Commit, with the identities
 // of its checks.
 type txWithRetryCommit struct {
 	conform.Callable[txwithretry.TxWithRetry]
+}
+
+// Smoke returns the identity of the check that Commit returns without a
+// panic for derived inputs.
+func (c txWithRetryCommit) Smoke() conform.ID[txwithretry.TxWithRetry] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Commit returns an error
+// for a cancelled context.
+func (c txWithRetryCommit) Cancel() conform.ID[txwithretry.TxWithRetry] {
+	return c.Check("cancel")
+}
+
+// RetrySucceedsTx returns the identity of the check that Commit succeeds
+// within the declared attempts once Begin has opened its transaction.
+func (c txWithRetryCommit) RetrySucceedsTx() conform.ID[txwithretry.TxWithRetry] {
+	return c.Check("retry-succeeds-tx")
 }
 
 // txWithRetryRollback is the name of TxWithRetry.Rollback, with the
@@ -53,11 +85,135 @@ type txWithRetryRollback struct {
 	conform.Callable[txwithretry.TxWithRetry]
 }
 
+// Smoke returns the identity of the check that Rollback returns without a
+// panic for derived inputs.
+func (c txWithRetryRollback) Smoke() conform.ID[txwithretry.TxWithRetry] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Rollback returns an error
+// for a cancelled context.
+func (c txWithRetryRollback) Cancel() conform.ID[txwithretry.TxWithRetry] {
+	return c.Check("cancel")
+}
+
 // TxWithRetrySuite returns the checks of TxWithRetry, and the calls and
 // the budgets of its callables.
 func TxWithRetrySuite() conform.Suite[txwithretry.TxWithRetry] {
 	return conform.Suite[txwithretry.TxWithRetry]{
 		Declaration: "TxWithRetry",
+		Checks: []conform.Check[txwithretry.TxWithRetry]{
+			{
+				ID:          TxWithRetryChecks.Begin.Smoke(),
+				Statement:   "Begin returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *TxWithRetryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Begin(ctx)
+					})
+				},
+				Defect: txWithRetryBeginPanics,
+			},
+			{
+				ID:          TxWithRetryChecks.Begin.Cancel(),
+				Statement:   "Begin returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *TxWithRetryHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Begin(ctx)
+					})
+				},
+				Defect: txWithRetryBeginSucceedsAlways,
+			},
+			{
+				ID:          TxWithRetryChecks.Commit.Smoke(),
+				Statement:   "Commit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *TxWithRetryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Commit(ctx)
+					})
+				},
+				Defect: txWithRetryCommitPanics,
+			},
+			{
+				ID:          TxWithRetryChecks.Commit.Cancel(),
+				Statement:   "Commit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *TxWithRetryHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Commit(ctx)
+					})
+				},
+				Defect: txWithRetryCommitSucceedsAlways,
+			},
+			{
+				ID:          TxWithRetryChecks.Commit.RetrySucceedsTx(),
+				Statement:   "Commit succeeds within the declared attempts once Begin has opened its transaction",
+				Claim:       spec.RetrySucceedsTx,
+				Probe:       spec.ConvergesAfter,
+				Reason:      spec.NeverConverged,
+				Law:         spec.CallConvergesOnceItsScopeIsOpen,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *TxWithRetryHandle) {
+					probe.ConvergesAfter(h, func(ctx context.Context) error {
+						return h.Subject().Commit(ctx)
+					}, func(ctx context.Context) error {
+						return h.Subject().Begin(ctx)
+					}, 2)
+				},
+				Defect: txWithRetryCommitFailsAlways,
+			},
+			{
+				ID:          TxWithRetryChecks.Rollback.Smoke(),
+				Statement:   "Rollback returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *TxWithRetryHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Rollback(ctx)
+					})
+				},
+				Defect: txWithRetryRollbackPanics,
+			},
+			{
+				ID:          TxWithRetryChecks.Rollback.Cancel(),
+				Statement:   "Rollback returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *TxWithRetryHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Rollback(ctx)
+					})
+				},
+				Defect: txWithRetryRollbackSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[txwithretry.TxWithRetry]{
 			{
 				Calls:    txWithRetryBeginCalls,
@@ -201,4 +357,124 @@ func newTxWithRetryOver(_ *TxWithRetryHandle, spend func()) txwithretry.TxWithRe
 	return txWithRetryOver{spend: spend}
 }
 
-// dokimi:provenance sha256:9971b6ea72bd2fb28b7e8df172054eb36692eb8c652c9d6c71e39d303af4e53d
+// txWithRetryBeginPanicsDefect is the planted defect of a TxWithRetry
+// whose Begin panics.
+type txWithRetryBeginPanicsDefect struct {
+	txWithRetryOverEmbedded
+}
+
+// Begin is the override of the planted defect.
+func (*txWithRetryBeginPanicsDefect) Begin(p0 context.Context) (r0 error) {
+	panic("the planted defect of a TxWithRetry whose Begin panics")
+}
+
+// txWithRetryBeginPanics returns the planted defect of a TxWithRetry whose
+// Begin panics over a fresh subject.
+func txWithRetryBeginPanics(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryBeginPanicsDefect{txWithRetryOverEmbedded: h.Fresh()}
+}
+
+// txWithRetryBeginSucceedsAlwaysDefect is the planted defect of a
+// TxWithRetry whose Begin ignores the context.
+type txWithRetryBeginSucceedsAlwaysDefect struct {
+	txWithRetryOverEmbedded
+}
+
+// Begin is the override of the planted defect.
+func (*txWithRetryBeginSucceedsAlwaysDefect) Begin(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// txWithRetryBeginSucceedsAlways returns the planted defect of a
+// TxWithRetry whose Begin ignores the context over a fresh subject.
+func txWithRetryBeginSucceedsAlways(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryBeginSucceedsAlwaysDefect{txWithRetryOverEmbedded: h.Fresh()}
+}
+
+// txWithRetryCommitPanicsDefect is the planted defect of a TxWithRetry
+// whose Commit panics.
+type txWithRetryCommitPanicsDefect struct {
+	txWithRetryOverEmbedded
+}
+
+// Commit is the override of the planted defect.
+func (*txWithRetryCommitPanicsDefect) Commit(p0 context.Context) (r0 error) {
+	panic("the planted defect of a TxWithRetry whose Commit panics")
+}
+
+// txWithRetryCommitPanics returns the planted defect of a TxWithRetry
+// whose Commit panics over a fresh subject.
+func txWithRetryCommitPanics(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryCommitPanicsDefect{txWithRetryOverEmbedded: h.Fresh()}
+}
+
+// txWithRetryCommitSucceedsAlwaysDefect is the planted defect of a
+// TxWithRetry whose Commit ignores the context.
+type txWithRetryCommitSucceedsAlwaysDefect struct {
+	txWithRetryOverEmbedded
+}
+
+// Commit is the override of the planted defect.
+func (*txWithRetryCommitSucceedsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// txWithRetryCommitSucceedsAlways returns the planted defect of a
+// TxWithRetry whose Commit ignores the context over a fresh subject.
+func txWithRetryCommitSucceedsAlways(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryCommitSucceedsAlwaysDefect{txWithRetryOverEmbedded: h.Fresh()}
+}
+
+// txWithRetryCommitFailsAlwaysDefect is the planted defect of a
+// TxWithRetry whose Commit never succeeds.
+type txWithRetryCommitFailsAlwaysDefect struct {
+	txWithRetryOverEmbedded
+}
+
+// Commit is the override of the planted defect.
+func (*txWithRetryCommitFailsAlwaysDefect) Commit(p0 context.Context) (r0 error) {
+	r0 = conform.ErrGenerated
+	return r0
+}
+
+// txWithRetryCommitFailsAlways returns the planted defect of a TxWithRetry
+// whose Commit never succeeds over a fresh subject.
+func txWithRetryCommitFailsAlways(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryCommitFailsAlwaysDefect{txWithRetryOverEmbedded: h.Fresh()}
+}
+
+// txWithRetryRollbackPanicsDefect is the planted defect of a TxWithRetry
+// whose Rollback panics.
+type txWithRetryRollbackPanicsDefect struct {
+	txWithRetryOverEmbedded
+}
+
+// Rollback is the override of the planted defect.
+func (*txWithRetryRollbackPanicsDefect) Rollback(p0 context.Context) (r0 error) {
+	panic("the planted defect of a TxWithRetry whose Rollback panics")
+}
+
+// txWithRetryRollbackPanics returns the planted defect of a TxWithRetry
+// whose Rollback panics over a fresh subject.
+func txWithRetryRollbackPanics(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryRollbackPanicsDefect{txWithRetryOverEmbedded: h.Fresh()}
+}
+
+// txWithRetryRollbackSucceedsAlwaysDefect is the planted defect of a
+// TxWithRetry whose Rollback ignores the context.
+type txWithRetryRollbackSucceedsAlwaysDefect struct {
+	txWithRetryOverEmbedded
+}
+
+// Rollback is the override of the planted defect.
+func (*txWithRetryRollbackSucceedsAlwaysDefect) Rollback(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// txWithRetryRollbackSucceedsAlways returns the planted defect of a
+// TxWithRetry whose Rollback ignores the context over a fresh subject.
+func txWithRetryRollbackSucceedsAlways(h *TxWithRetryHandle) txwithretry.TxWithRetry {
+	return &txWithRetryRollbackSucceedsAlwaysDefect{txWithRetryOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:312cb72acc421546809c2c7e8d0f5a0c439425284510ac2af97565035604bf6d

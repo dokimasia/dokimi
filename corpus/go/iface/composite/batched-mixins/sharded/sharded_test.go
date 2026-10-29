@@ -29,8 +29,8 @@ func TestBatched(t *testing.T) {
 }
 
 // listsAsTheReference returns the check that List returns the keys that the
-// reference lists after the same writes. Its planted defect lists the first
-// key that Put stored alone.
+// reference lists after the same writes. Its planted defect is the sharded
+// Batched whose List returns the first key alone.
 func listsAsTheReference() batchedmixinstest.BatchedCheck {
 	return batchedmixinstest.BatchedCheck{
 		ID:        batchedmixinstest.BatchedChecks.List.Check("lists-as-the-reference"),
@@ -48,14 +48,11 @@ func listsAsTheReference() batchedmixinstest.BatchedCheck {
 			assert.Equal(h, got, want, h.Statement())
 		},
 		Defect: func(h *batchedmixinstest.BatchedHandle) batchedmixins.Batched {
-			var keys []string
-			return batchedmixinstest.NewBatchedStub(h,
-				batchedmixinstest.WithBatchedPut(func(_ context.Context, key, _ string) error {
-					keys = append(keys, key)
-					return nil
-				}),
-				batchedmixinstest.WithBatchedList(func(context.Context) ([]string, error) {
-					return keys[:1], nil
+			inner := sharded.New(4)
+			return batchedmixinstest.NewBatchedStub(h, batchedmixinstest.BatchedStubDelegateTo(inner),
+				batchedmixinstest.WithBatchedList(func(ctx context.Context) ([]string, error) {
+					keys, err := inner.List(ctx)
+					return keys[:min(1, len(keys))], err
 				}))
 		},
 	}

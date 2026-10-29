@@ -128,6 +128,11 @@ type Span int
 // defaultSpan returns the span of a new tool.
 func defaultSpan() Span { return 6 }
 
+// Gear is the mode of a tool, an alias of an enumeration of the internal
+// package of the tree lib, so each member of Gear is a constant of that
+// package.
+type Gear = deep.Mode
+
 // Pitch is the pitch of a tool, whose declared default is a constant of the
 // internal package of the tree lib.
 //

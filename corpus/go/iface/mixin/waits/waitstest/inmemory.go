@@ -38,8 +38,12 @@ func NewInMemory() *InMemory {
 }
 
 // Acquire implements [waits.Lock]. It waits until the holder releases the lock
-// or its lease ends, or until ctx ends.
+// or its lease ends, or until ctx ends. It returns the error of a context that
+// ended before the call.
 func (l *InMemory) Acquire(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	for {
 		l.mu.Lock()
 		now := time.Now()

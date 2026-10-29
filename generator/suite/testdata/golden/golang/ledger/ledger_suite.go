@@ -6,6 +6,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -34,10 +36,10 @@ type ledgerCredit struct {
 	conform.Callable[Ledger]
 }
 
-// CreditsInPlace returns the identity of the check that Credit allocates
-// nothing once the account has a balance.
-func (c ledgerCredit) CreditsInPlace() conform.ID[Ledger] {
-	return c.Check("credits-in-place")
+// Smoke returns the identity of the check that Credit returns without a
+// panic for derived inputs.
+func (c ledgerCredit) Smoke() conform.ID[Ledger] {
+	return c.Check("smoke")
 }
 
 // ledgerBalance is the name of Ledger.Balance, with the identities of its
@@ -46,10 +48,16 @@ type ledgerBalance struct {
 	conform.Callable[Ledger]
 }
 
-// KeepsTheSum returns the identity of the check that Balance returns the
-// sum of the credits of the account.
-func (c ledgerBalance) KeepsTheSum() conform.ID[Ledger] {
-	return c.Check("keeps-the-sum")
+// Smoke returns the identity of the check that Balance returns without a
+// panic for derived inputs.
+func (c ledgerBalance) Smoke() conform.ID[Ledger] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Balance returns the
+// same value for the same inputs.
+func (c ledgerBalance) Deterministic() conform.ID[Ledger] {
+	return c.Check("deterministic")
 }
 
 // LedgerSuite returns the checks of Ledger, and the calls and the budgets
@@ -59,17 +67,55 @@ func LedgerSuite() conform.Suite[Ledger] {
 		Declaration: "Ledger",
 		Checks: []conform.Check[Ledger]{
 			{
-				ID:        LedgerChecks.Credit.CreditsInPlace(),
-				Statement: "Credit allocates nothing once the account has a balance",
-				Apply:     CreditsInPlace,
-				Defect:    copiesBalances,
-				Counted:   true,
+				ID:          LedgerChecks.Credit.Smoke(),
+				Statement:   "Credit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LedgerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Credit(string("account-a"), int(42))
+						return nil
+					})
+				},
+				Defect: ledgerCreditPanics,
 			},
 			{
-				ID:        LedgerChecks.Balance.KeepsTheSum(),
-				Statement: "Balance returns the sum of the credits of the account",
-				Apply:     KeepsTheSum,
-				Defect:    dropsCredits,
+				ID:          LedgerChecks.Balance.Smoke(),
+				Statement:   "Balance returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LedgerHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Balance(string("account-a"))
+						return nil
+					})
+				},
+				Defect: ledgerBalancePanics,
+			},
+			{
+				ID:          LedgerChecks.Balance.Deterministic(),
+				Statement:   "Balance returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LedgerHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Balance(string("account-a"))
+						return r0, nil
+					})
+				},
+				Defect: ledgerBalanceDrifts,
 			},
 		},
 		Calls: []conform.Call[Ledger]{
@@ -196,4 +242,60 @@ func (o ledgerOver) Balance(string) (r0 int) {
 // callables call spend.
 func newLedgerOver(_ *LedgerHandle, spend func()) Ledger {
 	return ledgerOver{spend: spend}
+}
+
+// ledgerCreditPanicsDefect is the planted defect of a Ledger whose Credit
+// panics.
+type ledgerCreditPanicsDefect struct {
+	ledgerOverEmbedded
+}
+
+// Credit is the override of the planted defect.
+func (*ledgerCreditPanicsDefect) Credit(p0 string, p1 int) {
+	panic("the planted defect of a Ledger whose Credit panics")
+}
+
+// ledgerCreditPanics returns the planted defect of a Ledger whose Credit
+// panics over a fresh subject.
+func ledgerCreditPanics(h *LedgerHandle) Ledger {
+	return &ledgerCreditPanicsDefect{ledgerOverEmbedded: h.Fresh()}
+}
+
+// ledgerBalancePanicsDefect is the planted defect of a Ledger whose
+// Balance panics.
+type ledgerBalancePanicsDefect struct {
+	ledgerOverEmbedded
+}
+
+// Balance is the override of the planted defect.
+func (*ledgerBalancePanicsDefect) Balance(p0 string) (r0 int) {
+	panic("the planted defect of a Ledger whose Balance panics")
+}
+
+// ledgerBalancePanics returns the planted defect of a Ledger whose Balance
+// panics over a fresh subject.
+func ledgerBalancePanics(h *LedgerHandle) Ledger {
+	return &ledgerBalancePanicsDefect{ledgerOverEmbedded: h.Fresh()}
+}
+
+// ledgerBalanceDriftsDefect is the planted defect of a Ledger whose
+// Balance returns another value on the repeat.
+type ledgerBalanceDriftsDefect struct {
+	ledgerOverEmbedded
+	calls int
+}
+
+// Balance is the override of the planted defect.
+func (d *ledgerBalanceDriftsDefect) Balance(p0 string) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// ledgerBalanceDrifts returns the planted defect of a Ledger whose Balance
+// returns another value on the repeat over a fresh subject.
+func ledgerBalanceDrifts(h *LedgerHandle) Ledger {
+	return &ledgerBalanceDriftsDefect{ledgerOverEmbedded: h.Fresh()}
 }

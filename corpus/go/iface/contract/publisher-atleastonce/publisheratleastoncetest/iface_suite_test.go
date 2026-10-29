@@ -51,6 +51,22 @@ func TestContractSuite(t *testing.T) {
 					return &contractSubject{}
 				},
 			}),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Publish.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Publish.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +90,22 @@ func TestContractSuite(t *testing.T) {
 					return &contractSubject{}
 				},
 			}),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Publish.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Publish.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publisheratleastoncetest.ContractChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -100,6 +132,22 @@ func TestContractSuiteBudgets(t *testing.T) {
 			publisheratleastoncetest.ContractChecks.Subscribe.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +158,22 @@ func FuzzContractSuitePublish(f *testing.F) {
 		f,
 		publisheratleastoncetest.ContractChecks.Publish.Callable,
 		contractIdle,
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -121,6 +185,22 @@ func FuzzContractSuiteSubscribe(f *testing.F) {
 		f,
 		publisheratleastoncetest.ContractChecks.Subscribe.Callable,
 		contractIdle,
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publisheratleastoncetest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -143,4 +223,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:01b586b139d675345b2253163046c5768a6e21507b57dbf2d129613ea02cd954
+// dokimi:provenance sha256:81a46f2c2b5cb3383ca9c8ac374bcc6865e06af9fe23d97695594d2f87ce7601

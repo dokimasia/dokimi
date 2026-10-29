@@ -49,6 +49,26 @@ func TestStoreSuite(t *testing.T) {
 				Defect: func(*durabletest.StoreHandle) durable.Store { return &storeSubject{} },
 			}),
 			conform.Excuse(
+				durabletest.StoreChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				durabletest.StoreChecks.Put.LeavesTheWholeValue(),
 				"the test applies the check of its option alone",
 			),
@@ -77,6 +97,26 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*durabletest.StoreHandle) durable.Store { return &storeSubject{} },
 			}),
+			conform.Excuse(
+				durabletest.StoreChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				durabletest.StoreChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				durabletest.StoreChecks.Put.LeavesTheWholeValue(),
 				"the test applies the check of its option alone",
@@ -122,6 +162,26 @@ func TestStoreSuiteBudgets(t *testing.T) {
 		conform.Ceilings(durabletest.StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(durabletest.StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			durabletest.StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durabletest.StoreChecks.Put.LeavesTheWholeValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -140,6 +200,26 @@ func FuzzStoreSuitePut(f *testing.F) {
 		durabletest.StoreChecks.Put.Callable,
 		storeIdle,
 		conform.Excuse(
+			durabletest.StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			durabletest.StoreChecks.Put.LeavesTheWholeValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -157,6 +237,26 @@ func FuzzStoreSuiteGet(f *testing.F) {
 		f,
 		durabletest.StoreChecks.Get.Callable,
 		storeIdle,
+		conform.Excuse(
+			durabletest.StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			durabletest.StoreChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			durabletest.StoreChecks.Put.LeavesTheWholeValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -179,4 +279,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:bdcde2003712200975ae2e45c8018aaa326ecbe50e19d3762a1598cff5445acf
+// dokimi:provenance sha256:db149fe53b1fc2c35cd893983744e3ee6f82f9239d78d94c8abc303cd55260ad

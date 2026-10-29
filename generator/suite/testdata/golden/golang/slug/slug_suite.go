@@ -6,6 +6,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -43,12 +45,58 @@ func (c slugCallable) KeepsTheWords() conform.ID[SlugFunc] {
 	return c.Check("keeps-the-words")
 }
 
+// Smoke returns the identity of the check that Slug returns without a
+// panic for derived inputs.
+func (c slugCallable) Smoke() conform.ID[SlugFunc] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Slug returns the
+// same value for the same inputs.
+func (c slugCallable) Deterministic() conform.ID[SlugFunc] {
+	return c.Check("deterministic")
+}
+
 // SlugSuite returns the checks of Slug, and the calls and the budgets of
 // its callables.
 func SlugSuite() conform.Suite[SlugFunc] {
 	return conform.Suite[SlugFunc]{
 		Declaration: "Slug",
 		Checks: []conform.Check[SlugFunc]{
+			{
+				ID:          SlugChecks.Smoke(),
+				Statement:   "Slug returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *SlugHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject()(string("title-a"), string("keep-a"))
+						return nil
+					})
+				},
+				Defect: slugPanics,
+			},
+			{
+				ID:          SlugChecks.Deterministic(),
+				Statement:   "Slug returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *SlugHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						r0 := h.Subject()(string("title-a"), string("keep-a"))
+						return r0, nil
+					})
+				},
+				Defect: slugDrifts,
+			},
 			{
 				ID:        SlugChecks.KeepsTheOrder(),
 				Statement: "Slug keeps the words of the title in their order",
@@ -134,6 +182,27 @@ var slugCalls = prop.Composite(func(c *prop.Case) func(context.Context, SlugFunc
 func newSlugOver(_ *SlugHandle, spend func()) SlugFunc {
 	return func(string, ...string) (r0 string) {
 		spend()
+		return r0
+	}
+}
+
+// slugPanics returns the planted defect of a Slug whose Slug panics over
+// the fresh function.
+func slugPanics(h *SlugHandle) SlugFunc {
+	return func(p0 string, p1 ...string) (r0 string) {
+		panic("the planted defect of a Slug whose Slug panics")
+	}
+}
+
+// slugDrifts returns the planted defect of a Slug whose Slug returns
+// another value on the repeat over the fresh function.
+func slugDrifts(h *SlugHandle) SlugFunc {
+	calls := 0
+	return func(p0 string, p1 ...string) (r0 string) {
+		calls++
+		if calls > 1 {
+			r0 = string("sample-b")
+		}
 		return r0
 	}
 }

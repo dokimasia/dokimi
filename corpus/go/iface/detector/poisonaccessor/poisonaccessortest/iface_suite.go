@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/poisonaccessor"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,35 @@ type poisonAccessorErr struct {
 	conform.Callable[poisonaccessor.PoisonAccessor]
 }
 
+// Smoke returns the identity of the check that Err returns without a panic
+// for derived inputs.
+func (c poisonAccessorErr) Smoke() conform.ID[poisonaccessor.PoisonAccessor] {
+	return c.Check("smoke")
+}
+
 // PoisonAccessorSuite returns the checks of PoisonAccessor, and the calls
 // and the budgets of its callables.
 func PoisonAccessorSuite() conform.Suite[poisonaccessor.PoisonAccessor] {
 	return conform.Suite[poisonaccessor.PoisonAccessor]{
 		Declaration: "PoisonAccessor",
+		Checks: []conform.Check[poisonaccessor.PoisonAccessor]{
+			{
+				ID:          PoisonAccessorChecks.Err.Smoke(),
+				Statement:   "Err returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PoisonAccessorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Err()
+					})
+				},
+				Defect: poisonAccessorErrPanics,
+			},
+		},
 		Calls: []conform.Call[poisonaccessor.PoisonAccessor]{
 			{
 				Calls:    poisonAccessorErrCalls,
@@ -154,4 +180,21 @@ func newPoisonAccessorOver(_ *PoisonAccessorHandle, spend func()) poisonaccessor
 	return poisonAccessorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:8a866cfe1c020c6bf3d9b17a4d3a85fae3592487c65b0dcec06a24e0776491b6
+// poisonAccessorErrPanicsDefect is the planted defect of a PoisonAccessor
+// whose Err panics.
+type poisonAccessorErrPanicsDefect struct {
+	poisonAccessorOverEmbedded
+}
+
+// Err is the override of the planted defect.
+func (*poisonAccessorErrPanicsDefect) Err() (r0 error) {
+	panic("the planted defect of a PoisonAccessor whose Err panics")
+}
+
+// poisonAccessorErrPanics returns the planted defect of a PoisonAccessor
+// whose Err panics over a fresh subject.
+func poisonAccessorErrPanics(h *PoisonAccessorHandle) poisonaccessor.PoisonAccessor {
+	return &poisonAccessorErrPanicsDefect{poisonAccessorOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:49730f9a2cb73ae93776ba930d87b61bc757889b44c7023289d62b29a6b6b4dc

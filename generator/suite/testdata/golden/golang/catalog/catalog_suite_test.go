@@ -43,6 +43,18 @@ func TestCatalogSuite(t *testing.T) {
 				Defect: func(*CatalogHandle) CatalogMethods { return &catalogSubject{} },
 			}),
 			conform.Excuse(
+				CatalogChecks.Find.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CatalogChecks.Find.ZeroOnMiss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CatalogChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				CatalogChecks.Find.FindsTheAddedProduct(),
 				"the test applies the check of its option alone",
 			),
@@ -67,6 +79,18 @@ func TestCatalogSuite(t *testing.T) {
 				},
 				Defect: func(*CatalogHandle) CatalogMethods { return &catalogSubject{} },
 			}),
+			conform.Excuse(
+				CatalogChecks.Find.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CatalogChecks.Find.ZeroOnMiss(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CatalogChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				CatalogChecks.Find.FindsTheAddedProduct(),
 				"the test applies the check of its option alone",
@@ -115,6 +139,18 @@ func TestCatalogSuiteBudgets(t *testing.T) {
 		catalogIdle,
 		conform.Ceilings(CatalogChecks.Add.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			CatalogChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CatalogChecks.Find.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CatalogChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			CatalogChecks.Find.FindsTheAddedProduct(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -129,6 +165,18 @@ func FuzzCatalogSuiteFind(f *testing.F) {
 		CatalogChecks.Find.Callable,
 		catalogIdle,
 		conform.Excuse(
+			CatalogChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CatalogChecks.Find.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CatalogChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			CatalogChecks.Find.FindsTheAddedProduct(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -142,6 +190,18 @@ func FuzzCatalogSuiteAdd(f *testing.F) {
 		f,
 		CatalogChecks.Add.Callable,
 		catalogIdle,
+		conform.Excuse(
+			CatalogChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CatalogChecks.Find.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CatalogChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			CatalogChecks.Find.FindsTheAddedProduct(),
 			"the planted defect of a ceiling answers each call with its zero results",

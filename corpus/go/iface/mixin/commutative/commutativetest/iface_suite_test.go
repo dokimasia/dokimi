@@ -48,6 +48,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*commutativetest.MixedHandle) commutative.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				commutativetest.MixedChecks.Apply.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Apply.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Total.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Total.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Total.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*commutativetest.MixedHandle) commutative.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				commutativetest.MixedChecks.Apply.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Apply.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Total.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Total.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				commutativetest.MixedChecks.Total.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(commutativetest.MixedChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(commutativetest.MixedChecks.Total.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			commutativetest.MixedChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzMixedSuiteApply(f *testing.F) {
 		f,
 		commutativetest.MixedChecks.Apply.Callable,
 		mixedIdle,
+		conform.Excuse(
+			commutativetest.MixedChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzMixedSuiteTotal(f *testing.F) {
 		f,
 		commutativetest.MixedChecks.Total.Callable,
 		mixedIdle,
+		conform.Excuse(
+			commutativetest.MixedChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			commutativetest.MixedChecks.Total.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +223,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:0c6fbfeca4a429ac6e14196f71b9cc453f6edff31b8f84e383fbc8dfec5f0140
+// dokimi:provenance sha256:f085d93a94973d6ba3715caa0c213489c014f56e7df198969b89d73a7a450ea5

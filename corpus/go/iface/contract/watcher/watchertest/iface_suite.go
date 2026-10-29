@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/watcher"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,34 @@ type contractWatch struct {
 	conform.Callable[watcher.Contract]
 }
 
+// Smoke returns the identity of the check that Watch returns without a
+// panic for derived inputs.
+func (c contractWatch) Smoke() conform.ID[watcher.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Watch returns an error for
+// a cancelled context.
+func (c contractWatch) Cancel() conform.ID[watcher.Contract] {
+	return c.Check("cancel")
+}
+
 // contractTrigger is the name of Contract.Trigger, with the identities of
 // its checks.
 type contractTrigger struct {
 	conform.Callable[watcher.Contract]
+}
+
+// Smoke returns the identity of the check that Trigger returns without a
+// panic for derived inputs.
+func (c contractTrigger) Smoke() conform.ID[watcher.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Trigger returns an error
+// for a cancelled context.
+func (c contractTrigger) Cancel() conform.ID[watcher.Contract] {
+	return c.Check("cancel")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +76,72 @@ type contractTrigger struct {
 func ContractSuite() conform.Suite[watcher.Contract] {
 	return conform.Suite[watcher.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[watcher.Contract]{
+			{
+				ID:          ContractChecks.Watch.Smoke(),
+				Statement:   "Watch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractWatchPanics,
+			},
+			{
+				ID:          ContractChecks.Watch.Cancel(),
+				Statement:   "Watch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Watch(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: contractWatchSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Trigger.Smoke(),
+				Statement:   "Trigger returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Trigger(ctx, string("key-a"), watcher.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractTriggerPanics,
+			},
+			{
+				ID:          ContractChecks.Trigger.Cancel(),
+				Statement:   "Trigger returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Trigger(ctx, string("key-a"), watcher.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractTriggerSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[watcher.Contract]{
 			{
 				Calls:    contractWatchCalls,
@@ -178,4 +270,72 @@ func newContractOver(_ *ContractHandle, spend func()) watcher.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:29a2cfedeed05fb5ffde9d35e98c0e8202875d88fd79a589b08527eefe145fcb
+// contractWatchPanicsDefect is the planted defect of a Contract whose
+// Watch panics.
+type contractWatchPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Watch is the override of the planted defect.
+func (*contractWatchPanicsDefect) Watch(p0 context.Context, p1 string) (r0 watcher.Subscription, r1 error) {
+	panic("the planted defect of a Contract whose Watch panics")
+}
+
+// contractWatchPanics returns the planted defect of a Contract whose Watch
+// panics over a fresh subject.
+func contractWatchPanics(h *ContractHandle) watcher.Contract {
+	return &contractWatchPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractWatchSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Watch ignores the context.
+type contractWatchSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Watch is the override of the planted defect.
+func (*contractWatchSucceedsAlwaysDefect) Watch(p0 context.Context, p1 string) (r0 watcher.Subscription, r1 error) {
+	return r0, r1
+}
+
+// contractWatchSucceedsAlways returns the planted defect of a Contract
+// whose Watch ignores the context over a fresh subject.
+func contractWatchSucceedsAlways(h *ContractHandle) watcher.Contract {
+	return &contractWatchSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractTriggerPanicsDefect is the planted defect of a Contract whose
+// Trigger panics.
+type contractTriggerPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Trigger is the override of the planted defect.
+func (*contractTriggerPanicsDefect) Trigger(p0 context.Context, p1 string, p2 watcher.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Trigger panics")
+}
+
+// contractTriggerPanics returns the planted defect of a Contract whose
+// Trigger panics over a fresh subject.
+func contractTriggerPanics(h *ContractHandle) watcher.Contract {
+	return &contractTriggerPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractTriggerSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Trigger ignores the context.
+type contractTriggerSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Trigger is the override of the planted defect.
+func (*contractTriggerSucceedsAlwaysDefect) Trigger(p0 context.Context, p1 string, p2 watcher.Value) (r0 error) {
+	return r0
+}
+
+// contractTriggerSucceedsAlways returns the planted defect of a Contract
+// whose Trigger ignores the context over a fresh subject.
+func contractTriggerSucceedsAlways(h *ContractHandle) watcher.Contract {
+	return &contractTriggerSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:88b900ab3f9e059053f1c47de973f5053fe35f172de5a1cc12c03d09050e9ab5

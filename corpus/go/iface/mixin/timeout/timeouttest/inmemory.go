@@ -19,7 +19,7 @@ import (
 // InMemory implements [timeout.Mixed] in memory. The corpus applies the
 // suite of Mixed to it as a control.
 //
-//dokimi:subject timeout.Mixed new=NewInMemory
+//dokimi:subject timeout.Mixed new=NewInMemoryFromHandle
 type InMemory struct {
 	clk   assert.Clock
 	delay time.Duration
@@ -37,6 +37,10 @@ func NewInMemoryOn(clk assert.Clock) *InMemory {
 // NewInMemory returns an InMemory on the system clock whose Slow returns at
 // once.
 func NewInMemory() *InMemory { return NewInMemoryOn(assert.System{}) }
+
+// NewInMemoryFromHandle returns an InMemory on the clock of the handle h
+// whose Slow returns at once.
+func NewInMemoryFromHandle(h *MixedHandle) *InMemory { return NewInMemoryOn(h.Clock()) }
 
 // WithDelay returns an InMemory whose Slow waits d on clk, or until its
 // context ends.

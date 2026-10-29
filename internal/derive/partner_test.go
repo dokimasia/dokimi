@@ -137,6 +137,61 @@ func TestPartner(t *testing.T) {
 				"the read shares the sample of the parameter id")
 		})
 
+		t.Run("writes the input that the read does not share as the written value", func(t *testing.T) {
+			t.Parallel()
+			readInputs := []derive.Value{text("key")}
+			read := derive.Facts{
+				Declaration: "Store", Callable: "Read", ID: idOf("Read"),
+				Signature: signature("Read", true, readInputs,
+					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+				Inputs: readInputs, Results: []derive.Value{text("")},
+			}
+			writeInputs := []derive.Value{text("key"), text("value")}
+			write := derive.Facts{
+				Declaration: "Store", Callable: "Write", ID: idOf("Write"),
+				Signature: signature("Write", true, writeInputs, []rules.ReturnRole{rules.ReturnError},
+					rules.ErrorsLastReturn),
+				Inputs: writeInputs,
+			}
+			decl := []derive.Facts{withParam(read, "read-after-write", "write", idOf("Write")), write}
+
+			got, gate := derive.Partner(
+				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Written, 1, "the write writes its value, and the read shares its key")
+		})
+
+		t.Run("writes the input of the type of the read as the written value", func(t *testing.T) {
+			t.Parallel()
+			read := derive.Facts{
+				Declaration: "Store", Callable: "Latest", ID: idOf("Latest"),
+				Signature: signature("Latest", true, nil,
+					[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+				Results: []derive.Value{text("")},
+			}
+			writeInputs := []derive.Value{item("it"), text("value")}
+			write := derive.Facts{
+				Declaration: "Store", Callable: "Note", ID: idOf("Note"),
+				Signature: signature("Note", true, writeInputs, []rules.ReturnRole{rules.ReturnError},
+					rules.ErrorsLastReturn),
+				Inputs: writeInputs,
+			}
+			decl := []derive.Facts{withParam(read, "read-after-write", "write", idOf("Note")), write}
+
+			got, gate := derive.Partner(
+				&spec.Partner{Name: "write", Mode: spec.ModeNamed, Param: "write"},
+				&decl[0],
+				decl,
+			)
+
+			assert.Nil(t, gate, "the partner binds")
+			assert.Equal(t, got.Written, 1, "the write writes the text that the read returns, not the item before it")
+		})
+
 		t.Run("binds the named read of a write with the halves swapped", func(t *testing.T) {
 			t.Parallel()
 			put := withParam(putter(), "injection-safe", "read", idOf("Get"))
@@ -185,6 +240,117 @@ func TestPartner(t *testing.T) {
 			assert.Equal(t, got.Read.Callable, "Get", "the role that returns a value reads")
 			assert.Equal(t, got.Write.Callable, "Put", "the role without a value writes")
 		})
+
+		{
+			// A write that returns what it stored, as Put(ctx, it Item)
+			// (Item, error), has a value of its own beside the read.
+			stored := withRole(putter(), "persister", "writer")
+			stored.Results = []derive.Value{item("")}
+			stored.Signature.Returns = []rules.ReturnView{{Role: rules.ReturnValue}, {Role: rules.ReturnError}}
+			tests := []struct {
+				name      string
+				giveFirst int
+				giveRole  string
+			}{
+				{name: "binds the role that takes the value of the other as the write", giveRole: "reader"},
+				{
+					name:      "binds the role that returns the value of the other as the read",
+					giveFirst: 1, giveRole: "writer",
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					decl := []derive.Facts{stored, withRole(getter(), "persister", "reader")}
+
+					got, gate := derive.Partner(
+						&spec.Partner{Name: "partner", Mode: spec.ModeRole, Role: shape.Role(tt.giveRole)},
+						&decl[tt.giveFirst],
+						decl,
+					)
+
+					assert.Nil(t, gate, "the partner binds")
+					assert.NotNil(t, got.Read, "one of the two roles reads")
+					assert.Equal(t, got.Read.Callable, "Get", "the role that returns the type of the other reads")
+					assert.Equal(t, got.Write.Callable, "Put", "the role that takes the type of the other writes")
+				})
+			}
+		}
+
+		{
+			// Mark(ctx, id string) error returns nothing and takes no item, as
+			// a write that marks the item under id.
+			markInputs := []derive.Value{text("id")}
+			mark := withRole(derive.Facts{
+				Declaration: "Store",
+				Callable:    "Mark",
+				ID:          idOf("Mark"),
+				Signature: signature(
+					"Mark",
+					true,
+					markInputs,
+					[]rules.ReturnRole{rules.ReturnError},
+					rules.ErrorsLastReturn,
+				),
+				Inputs: markInputs,
+			}, "persister", "writer")
+			tests := []struct {
+				name      string
+				giveFirst int
+				giveRole  string
+			}{
+				{name: "binds the role without a value as the write of the role with one", giveRole: "reader"},
+				{
+					name:      "binds the role with a value as the read of the role without one",
+					giveFirst: 1,
+					giveRole:  "writer",
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					t.Parallel()
+					decl := []derive.Facts{mark, withRole(getter(), "persister", "reader")}
+
+					got, gate := derive.Partner(
+						&spec.Partner{Name: "partner", Mode: spec.ModeRole, Role: shape.Role(tt.giveRole)},
+						&decl[tt.giveFirst],
+						decl,
+					)
+
+					assert.Nil(t, gate, "the partner binds")
+					assert.NotNil(t, got.Read, "one of the two roles reads")
+					assert.Equal(t, got.Read.Callable, "Get", "the role with a value reads")
+					assert.Equal(t, got.Write.Callable, "Mark", "the role without a value writes")
+				})
+			}
+		}
+
+		t.Run(
+			"leaves the arguments of two roles that each take the value of the other to the probe",
+			func(t *testing.T) {
+				t.Parallel()
+				coded := func(name, role string) derive.Facts {
+					inputs := []derive.Value{text("in")}
+					return withRole(derive.Facts{
+						Declaration: "Store", Callable: name, ID: idOf(name),
+						Signature: signature(name, true, inputs,
+							[]rules.ReturnRole{rules.ReturnValue, rules.ReturnError}, rules.ErrorsLastReturn),
+						Inputs: inputs, Results: []derive.Value{text("")},
+					}, "codec", shape.Role(role))
+				}
+				decl := []derive.Facts{coded("Encode", "forward"), coded("Decode", "inverse")}
+
+				got, gate := derive.Partner(
+					&spec.Partner{Name: "inverse", Mode: spec.ModeRole, Role: "inverse"},
+					&decl[0],
+					decl,
+				)
+
+				assert.Nil(t, gate, "the partner binds")
+				assert.Nil(t, got.Read, "neither role is the write of the other")
+				assert.Equal(t, got.Partner.Callable, "Decode", "the partner is the role inverse")
+			},
+		)
 
 		t.Run("leaves the arguments of two roles that both read to the probe", func(t *testing.T) {
 			t.Parallel()

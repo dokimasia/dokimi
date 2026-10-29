@@ -49,6 +49,18 @@ func TestQueueSuite(t *testing.T) {
 				Defect: func(*queuetest.QueueHandle) queue.Queue { return &queueSubject{} },
 			}),
 			conform.Excuse(
+				queuetest.QueueChecks.Write.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				queuetest.QueueChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				queuetest.QueueChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				queuetest.QueueChecks.Close.CloseEndsAWaitingWrite(),
 				"the test applies the check of its option alone",
 			),
@@ -73,6 +85,18 @@ func TestQueueSuite(t *testing.T) {
 				},
 				Defect: func(*queuetest.QueueHandle) queue.Queue { return &queueSubject{} },
 			}),
+			conform.Excuse(
+				queuetest.QueueChecks.Write.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				queuetest.QueueChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				queuetest.QueueChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				queuetest.QueueChecks.Close.CloseEndsAWaitingWrite(),
 				"the test applies the check of its option alone",
@@ -107,6 +131,18 @@ func TestQueueSuiteBudgets(t *testing.T) {
 		queueIdle,
 		conform.Ceilings(queuetest.QueueChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			queuetest.QueueChecks.Write.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			queuetest.QueueChecks.Close.CloseEndsAWaitingWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -120,6 +156,18 @@ func FuzzQueueSuiteWrite(f *testing.F) {
 		f,
 		queuetest.QueueChecks.Write.Callable,
 		queueIdle,
+		conform.Excuse(
+			queuetest.QueueChecks.Write.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			queuetest.QueueChecks.Close.CloseEndsAWaitingWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -135,6 +183,18 @@ func FuzzQueueSuiteRead(f *testing.F) {
 		queuetest.QueueChecks.Read.Callable,
 		queueIdle,
 		conform.Excuse(
+			queuetest.QueueChecks.Write.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			queuetest.QueueChecks.Close.CloseEndsAWaitingWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -148,6 +208,18 @@ func FuzzQueueSuiteClose(f *testing.F) {
 		f,
 		queuetest.QueueChecks.Close.Callable,
 		queueIdle,
+		conform.Excuse(
+			queuetest.QueueChecks.Write.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			queuetest.QueueChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			queuetest.QueueChecks.Close.CloseEndsAWaitingWrite(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -163,4 +235,4 @@ func BenchmarkQueueSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f95274d3407560f883f45fea477c265636c3e084d071fa2c6fcdc794ab3b0fd1
+// dokimi:provenance sha256:9ff7184ac6807d51e606e8650d2639c1f39f7572ff5a516e5c1c65bee4284c6f

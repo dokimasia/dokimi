@@ -48,6 +48,66 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*partnernamingtest.StoreHandle) partnernaming.Store { return &storeSubject{} },
 			}),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Seen.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Seen.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Move.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Move.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.At.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.At.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.At.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Emit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Emit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Count.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Count.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Count.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +129,66 @@ func TestStoreSuite(t *testing.T) {
 				},
 				Defect: func(*partnernamingtest.StoreHandle) partnernaming.Store { return &storeSubject{} },
 			}),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Seen.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Seen.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Move.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Move.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.At.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.At.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.At.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Emit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Emit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Count.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Count.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				partnernamingtest.StoreChecks.Count.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -93,6 +213,66 @@ func TestStoreSuiteBudgets(t *testing.T) {
 		conform.Ceilings(partnernamingtest.StoreChecks.At.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(partnernamingtest.StoreChecks.Emit.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(partnernamingtest.StoreChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -103,6 +283,66 @@ func FuzzStoreSuiteTouch(f *testing.F) {
 		f,
 		partnernamingtest.StoreChecks.Touch.Callable,
 		storeIdle,
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -113,6 +353,66 @@ func FuzzStoreSuiteSeen(f *testing.F) {
 		f,
 		partnernamingtest.StoreChecks.Seen.Callable,
 		storeIdle,
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,6 +423,66 @@ func FuzzStoreSuiteMove(f *testing.F) {
 		f,
 		partnernamingtest.StoreChecks.Move.Callable,
 		storeIdle,
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -133,6 +493,66 @@ func FuzzStoreSuiteAt(f *testing.F) {
 		f,
 		partnernamingtest.StoreChecks.At.Callable,
 		storeIdle,
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -143,6 +563,66 @@ func FuzzStoreSuiteEmit(f *testing.F) {
 		f,
 		partnernamingtest.StoreChecks.Emit.Callable,
 		storeIdle,
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -153,6 +633,66 @@ func FuzzStoreSuiteCount(f *testing.F) {
 		f,
 		partnernamingtest.StoreChecks.Count.Callable,
 		storeIdle,
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Seen.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Move.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.At.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Emit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			partnernamingtest.StoreChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -179,4 +719,4 @@ func BenchmarkStoreSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1fb46407cc30783173523836bf957ee392da6f26a283d72fa864ceb80657ba50
+// dokimi:provenance sha256:831eeaa6b020f97114e4b6c0daffc048d91e2558545125244137ffee490358fd

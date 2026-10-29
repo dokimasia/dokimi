@@ -48,6 +48,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*atomictest.MixedHandle) atomic.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				atomictest.MixedChecks.Write.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Write.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*atomictest.MixedHandle) atomic.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				atomictest.MixedChecks.Write.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Write.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				atomictest.MixedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(atomictest.MixedChecks.Write.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(atomictest.MixedChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			atomictest.MixedChecks.Write.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Write.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzMixedSuiteWrite(f *testing.F) {
 		f,
 		atomictest.MixedChecks.Write.Callable,
 		mixedIdle,
+		conform.Excuse(
+			atomictest.MixedChecks.Write.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Write.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzMixedSuiteRead(f *testing.F) {
 		f,
 		atomictest.MixedChecks.Read.Callable,
 		mixedIdle,
+		conform.Excuse(
+			atomictest.MixedChecks.Write.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Write.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			atomictest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +223,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:27635fdb6a4ef52f9765c039fa5a27139ff05a77307999d274b4fc62d3392b45
+// dokimi:provenance sha256:02ebfe1d4fb023b39eb06a060326db1602da0b6d726d368c86e219a7393c101f

@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readernoerror"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,58 @@ type readerNoErrorLookup struct {
 	conform.Callable[readernoerror.ReaderNoError]
 }
 
+// Smoke returns the identity of the check that Lookup returns without a
+// panic for derived inputs.
+func (c readerNoErrorLookup) Smoke() conform.ID[readernoerror.ReaderNoError] {
+	return c.Check("smoke")
+}
+
+// MissIsZero returns the identity of the check that Lookup returns the
+// zero value for an input that nothing stored.
+func (c readerNoErrorLookup) MissIsZero() conform.ID[readernoerror.ReaderNoError] {
+	return c.Check("miss-is-zero")
+}
+
 // ReaderNoErrorSuite returns the checks of ReaderNoError, and the calls
 // and the budgets of its callables.
 func ReaderNoErrorSuite() conform.Suite[readernoerror.ReaderNoError] {
 	return conform.Suite[readernoerror.ReaderNoError]{
 		Declaration: "ReaderNoError",
+		Checks: []conform.Check[readernoerror.ReaderNoError]{
+			{
+				ID:          ReaderNoErrorChecks.Lookup.Smoke(),
+				Statement:   "Lookup returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ReaderNoErrorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Lookup(ctx, string("key-a"))
+						return nil
+					})
+				},
+				Defect: readerNoErrorLookupPanics,
+			},
+			{
+				ID:          ReaderNoErrorChecks.Lookup.MissIsZero(),
+				Statement:   "Lookup returns the zero value for an input that nothing stored",
+				Claim:       spec.MissIsZero,
+				Probe:       spec.ZeroBesideAMiss,
+				Reason:      spec.NonZeroMiss,
+				Law:         spec.MissReturnsTheZero,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ReaderNoErrorHandle) {
+					probe.ZeroBesideAMiss(h, func(ctx context.Context) (readernoerror.Value, error) {
+						r0 := h.Subject().Lookup(ctx, string("key-a"))
+						return r0, nil
+					}, readernoerror.Value{})
+				},
+				Defect: readerNoErrorLookupInventsAValue,
+			},
+		},
 		Calls: []conform.Call[readernoerror.ReaderNoError]{
 			{
 				Calls:    readerNoErrorLookupCalls,
@@ -155,4 +204,41 @@ func newReaderNoErrorOver(_ *ReaderNoErrorHandle, spend func()) readernoerror.Re
 	return readerNoErrorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:eb45ad79bb1f6478cba81327e07bb4334df921b105a3ee79e3e55f6ff91d21c1
+// readerNoErrorLookupPanicsDefect is the planted defect of a ReaderNoError
+// whose Lookup panics.
+type readerNoErrorLookupPanicsDefect struct {
+	readerNoErrorOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*readerNoErrorLookupPanicsDefect) Lookup(p0 context.Context, p1 string) (r0 readernoerror.Value) {
+	panic("the planted defect of a ReaderNoError whose Lookup panics")
+}
+
+// readerNoErrorLookupPanics returns the planted defect of a ReaderNoError
+// whose Lookup panics over a fresh subject.
+func readerNoErrorLookupPanics(h *ReaderNoErrorHandle) readernoerror.ReaderNoError {
+	return &readerNoErrorLookupPanicsDefect{readerNoErrorOverEmbedded: h.Fresh()}
+}
+
+// readerNoErrorLookupInventsAValueDefect is the planted defect of a
+// ReaderNoError whose Lookup returns a value for an input that nothing
+// stored.
+type readerNoErrorLookupInventsAValueDefect struct {
+	readerNoErrorOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*readerNoErrorLookupInventsAValueDefect) Lookup(p0 context.Context, p1 string) (r0 readernoerror.Value) {
+	r0 = readernoerror.Value{Key: "Key-b"}
+	return r0
+}
+
+// readerNoErrorLookupInventsAValue returns the planted defect of a
+// ReaderNoError whose Lookup returns a value for an input that nothing
+// stored over a fresh subject.
+func readerNoErrorLookupInventsAValue(h *ReaderNoErrorHandle) readernoerror.ReaderNoError {
+	return &readerNoErrorLookupInventsAValueDefect{readerNoErrorOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:8beb4aeeaa0ed45828af178d32807e53ddaf83f0feedf6bca686738d05f3ccde

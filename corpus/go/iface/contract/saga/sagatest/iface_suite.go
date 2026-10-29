@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/saga"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -45,10 +47,40 @@ type contractStep struct {
 	conform.Callable[saga.Contract]
 }
 
+// Smoke returns the identity of the check that Step returns without a
+// panic for derived inputs.
+func (c contractStep) Smoke() conform.ID[saga.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Step returns an error for
+// a cancelled context.
+func (c contractStep) Cancel() conform.ID[saga.Contract] {
+	return c.Check("cancel")
+}
+
+// Saga returns the identity of the check that Compensate accepts what Step
+// applied.
+func (c contractStep) Saga() conform.ID[saga.Contract] {
+	return c.Check("saga")
+}
+
 // contractCompensate is the name of Contract.Compensate, with the
 // identities of its checks.
 type contractCompensate struct {
 	conform.Callable[saga.Contract]
+}
+
+// Smoke returns the identity of the check that Compensate returns without
+// a panic for derived inputs.
+func (c contractCompensate) Smoke() conform.ID[saga.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Compensate returns an
+// error for a cancelled context.
+func (c contractCompensate) Cancel() conform.ID[saga.Contract] {
+	return c.Check("cancel")
 }
 
 // contractShip is the name of Contract.Ship, with the identities of its
@@ -57,10 +89,40 @@ type contractShip struct {
 	conform.Callable[saga.Contract]
 }
 
+// Smoke returns the identity of the check that Ship returns without a
+// panic for derived inputs.
+func (c contractShip) Smoke() conform.ID[saga.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Ship returns an error for
+// a cancelled context.
+func (c contractShip) Cancel() conform.ID[saga.Contract] {
+	return c.Check("cancel")
+}
+
+// Saga returns the identity of the check that UndoShip accepts what Ship
+// applied.
+func (c contractShip) Saga() conform.ID[saga.Contract] {
+	return c.Check("saga")
+}
+
 // contractUndoShip is the name of Contract.UndoShip, with the identities
 // of its checks.
 type contractUndoShip struct {
 	conform.Callable[saga.Contract]
+}
+
+// Smoke returns the identity of the check that UndoShip returns without a
+// panic for derived inputs.
+func (c contractUndoShip) Smoke() conform.ID[saga.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that UndoShip returns an error
+// for a cancelled context.
+func (c contractUndoShip) Cancel() conform.ID[saga.Contract] {
+	return c.Check("cancel")
 }
 
 // contractState is the name of Contract.State, with the identities of its
@@ -69,11 +131,237 @@ type contractState struct {
 	conform.Callable[saga.Contract]
 }
 
+// Smoke returns the identity of the check that State returns without a
+// panic for derived inputs.
+func (c contractState) Smoke() conform.ID[saga.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that State returns an error for
+// a cancelled context.
+func (c contractState) Cancel() conform.ID[saga.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that State returns the
+// zero value beside an error.
+func (c contractState) ZeroOnError() conform.ID[saga.Contract] {
+	return c.Check("zero-on-error")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[saga.Contract] {
 	return conform.Suite[saga.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[saga.Contract]{
+			{
+				ID:          ContractChecks.Step.Smoke(),
+				Statement:   "Step returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Step(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractStepPanics,
+			},
+			{
+				ID:          ContractChecks.Step.Cancel(),
+				Statement:   "Step returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Step(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractStepSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Step.Saga(),
+				Statement:   "Compensate accepts what Step applied",
+				Claim:       spec.Saga,
+				Probe:       spec.CompensatesTheStep,
+				Reason:      spec.UncompensatedStep,
+				Law:         spec.CompensationAcceptsItsStep,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.CompensatesTheStep(h, func(ctx context.Context) error {
+						return h.Subject().Step(ctx, saga.Value{Key: "Key-a"})
+					}, func(ctx context.Context) error {
+						return h.Subject().Compensate(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractCompensateCompensationRefuses,
+			},
+			{
+				ID:          ContractChecks.Compensate.Smoke(),
+				Statement:   "Compensate returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Compensate(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractCompensatePanics,
+			},
+			{
+				ID:          ContractChecks.Compensate.Cancel(),
+				Statement:   "Compensate returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Compensate(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractCompensateSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Ship.Smoke(),
+				Statement:   "Ship returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Ship(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractShipPanics,
+			},
+			{
+				ID:          ContractChecks.Ship.Cancel(),
+				Statement:   "Ship returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Ship(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractShipSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Ship.Saga(),
+				Statement:   "UndoShip accepts what Ship applied",
+				Claim:       spec.Saga,
+				Probe:       spec.CompensatesTheStep,
+				Reason:      spec.UncompensatedStep,
+				Law:         spec.CompensationAcceptsItsStep,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.CompensatesTheStep(h, func(ctx context.Context) error {
+						return h.Subject().Ship(ctx, saga.Value{Key: "Key-a"})
+					}, func(ctx context.Context) error {
+						return h.Subject().UndoShip(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractUndoShipCompensationRefuses,
+			},
+			{
+				ID:          ContractChecks.UndoShip.Smoke(),
+				Statement:   "UndoShip returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().UndoShip(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractUndoShipPanics,
+			},
+			{
+				ID:          ContractChecks.UndoShip.Cancel(),
+				Statement:   "UndoShip returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().UndoShip(ctx, saga.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractUndoShipSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.State.Smoke(),
+				Statement:   "State returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().State(ctx)
+						return err
+					})
+				},
+				Defect: contractStatePanics,
+			},
+			{
+				ID:          ContractChecks.State.Cancel(),
+				Statement:   "State returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().State(ctx)
+						return err
+					})
+				},
+				Defect: contractStateSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.State.ZeroOnError(),
+				Statement:   "State returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().State(ctx)
+					}, string(""))
+				},
+				Defect: contractStateValueBeside,
+			},
+		},
 		Calls: []conform.Call[saga.Contract]{
 			{
 				Calls:    contractStepCalls,
@@ -254,4 +542,229 @@ func newContractOver(_ *ContractHandle, spend func()) saga.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b2314977d2c82d19488b70108959040aacdd1cfa903a1ede59209acfa2071470
+// contractStepPanicsDefect is the planted defect of a Contract whose Step
+// panics.
+type contractStepPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Step is the override of the planted defect.
+func (*contractStepPanicsDefect) Step(p0 context.Context, p1 saga.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Step panics")
+}
+
+// contractStepPanics returns the planted defect of a Contract whose Step
+// panics over a fresh subject.
+func contractStepPanics(h *ContractHandle) saga.Contract {
+	return &contractStepPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStepSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Step ignores the context.
+type contractStepSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Step is the override of the planted defect.
+func (*contractStepSucceedsAlwaysDefect) Step(p0 context.Context, p1 saga.Value) (r0 error) {
+	return r0
+}
+
+// contractStepSucceedsAlways returns the planted defect of a Contract
+// whose Step ignores the context over a fresh subject.
+func contractStepSucceedsAlways(h *ContractHandle) saga.Contract {
+	return &contractStepSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractCompensateCompensationRefusesDefect is the planted defect of a
+// Contract whose Compensate refuses the step of Step.
+type contractCompensateCompensationRefusesDefect struct {
+	contractOverEmbedded
+}
+
+// Compensate is the override of the planted defect.
+func (*contractCompensateCompensationRefusesDefect) Compensate(p0 context.Context, p1 saga.Value) (r0 error) {
+	r0 = conform.ErrGenerated
+	return r0
+}
+
+// contractCompensateCompensationRefuses returns the planted defect of a
+// Contract whose Compensate refuses the step of Step over a fresh subject.
+func contractCompensateCompensationRefuses(h *ContractHandle) saga.Contract {
+	return &contractCompensateCompensationRefusesDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractCompensatePanicsDefect is the planted defect of a Contract whose
+// Compensate panics.
+type contractCompensatePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Compensate is the override of the planted defect.
+func (*contractCompensatePanicsDefect) Compensate(p0 context.Context, p1 saga.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Compensate panics")
+}
+
+// contractCompensatePanics returns the planted defect of a Contract whose
+// Compensate panics over a fresh subject.
+func contractCompensatePanics(h *ContractHandle) saga.Contract {
+	return &contractCompensatePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractCompensateSucceedsAlwaysDefect is the planted defect of a
+// Contract whose Compensate ignores the context.
+type contractCompensateSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Compensate is the override of the planted defect.
+func (*contractCompensateSucceedsAlwaysDefect) Compensate(p0 context.Context, p1 saga.Value) (r0 error) {
+	return r0
+}
+
+// contractCompensateSucceedsAlways returns the planted defect of a
+// Contract whose Compensate ignores the context over a fresh subject.
+func contractCompensateSucceedsAlways(h *ContractHandle) saga.Contract {
+	return &contractCompensateSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractShipPanicsDefect is the planted defect of a Contract whose Ship
+// panics.
+type contractShipPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Ship is the override of the planted defect.
+func (*contractShipPanicsDefect) Ship(p0 context.Context, p1 saga.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Ship panics")
+}
+
+// contractShipPanics returns the planted defect of a Contract whose Ship
+// panics over a fresh subject.
+func contractShipPanics(h *ContractHandle) saga.Contract {
+	return &contractShipPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractShipSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Ship ignores the context.
+type contractShipSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Ship is the override of the planted defect.
+func (*contractShipSucceedsAlwaysDefect) Ship(p0 context.Context, p1 saga.Value) (r0 error) {
+	return r0
+}
+
+// contractShipSucceedsAlways returns the planted defect of a Contract
+// whose Ship ignores the context over a fresh subject.
+func contractShipSucceedsAlways(h *ContractHandle) saga.Contract {
+	return &contractShipSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractUndoShipCompensationRefusesDefect is the planted defect of a
+// Contract whose UndoShip refuses the step of Ship.
+type contractUndoShipCompensationRefusesDefect struct {
+	contractOverEmbedded
+}
+
+// UndoShip is the override of the planted defect.
+func (*contractUndoShipCompensationRefusesDefect) UndoShip(p0 context.Context, p1 saga.Value) (r0 error) {
+	r0 = conform.ErrGenerated
+	return r0
+}
+
+// contractUndoShipCompensationRefuses returns the planted defect of a
+// Contract whose UndoShip refuses the step of Ship over a fresh subject.
+func contractUndoShipCompensationRefuses(h *ContractHandle) saga.Contract {
+	return &contractUndoShipCompensationRefusesDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractUndoShipPanicsDefect is the planted defect of a Contract whose
+// UndoShip panics.
+type contractUndoShipPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// UndoShip is the override of the planted defect.
+func (*contractUndoShipPanicsDefect) UndoShip(p0 context.Context, p1 saga.Value) (r0 error) {
+	panic("the planted defect of a Contract whose UndoShip panics")
+}
+
+// contractUndoShipPanics returns the planted defect of a Contract whose
+// UndoShip panics over a fresh subject.
+func contractUndoShipPanics(h *ContractHandle) saga.Contract {
+	return &contractUndoShipPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractUndoShipSucceedsAlwaysDefect is the planted defect of a Contract
+// whose UndoShip ignores the context.
+type contractUndoShipSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// UndoShip is the override of the planted defect.
+func (*contractUndoShipSucceedsAlwaysDefect) UndoShip(p0 context.Context, p1 saga.Value) (r0 error) {
+	return r0
+}
+
+// contractUndoShipSucceedsAlways returns the planted defect of a Contract
+// whose UndoShip ignores the context over a fresh subject.
+func contractUndoShipSucceedsAlways(h *ContractHandle) saga.Contract {
+	return &contractUndoShipSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStatePanicsDefect is the planted defect of a Contract whose
+// State panics.
+type contractStatePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// State is the override of the planted defect.
+func (*contractStatePanicsDefect) State(p0 context.Context) (r0 string, r1 error) {
+	panic("the planted defect of a Contract whose State panics")
+}
+
+// contractStatePanics returns the planted defect of a Contract whose State
+// panics over a fresh subject.
+func contractStatePanics(h *ContractHandle) saga.Contract {
+	return &contractStatePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStateSucceedsAlwaysDefect is the planted defect of a Contract
+// whose State ignores the context.
+type contractStateSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// State is the override of the planted defect.
+func (*contractStateSucceedsAlwaysDefect) State(p0 context.Context) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// contractStateSucceedsAlways returns the planted defect of a Contract
+// whose State ignores the context over a fresh subject.
+func contractStateSucceedsAlways(h *ContractHandle) saga.Contract {
+	return &contractStateSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractStateValueBesideDefect is the planted defect of a Contract whose
+// State returns a value beside an error.
+type contractStateValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// State is the override of the planted defect.
+func (*contractStateValueBesideDefect) State(p0 context.Context) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractStateValueBeside returns the planted defect of a Contract whose
+// State returns a value beside an error over a fresh subject.
+func contractStateValueBeside(h *ContractHandle) saga.Contract {
+	return &contractStateValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:1a2edd918511f148ddc7019d96e41397380e7efba53b881eec60b3741db59981

@@ -9,6 +9,8 @@ import (
 	"example.com/shop/store"
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -67,10 +69,28 @@ type boardPlace struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Place returns without a
+// panic for derived inputs.
+func (c boardPlace) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardClash is the name of Board.Clash, with the identities of its
 // checks.
 type boardClash struct {
 	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Clash returns without a
+// panic for derived inputs.
+func (c boardClash) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Clash returns an error for
+// a cancelled context.
+func (c boardClash) Cancel() conform.ID[Board] {
+	return c.Check("cancel")
 }
 
 // boardBlank is the name of Board.Blank, with the identities of its
@@ -79,10 +99,28 @@ type boardBlank struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Blank returns without a
+// panic for derived inputs.
+func (c boardBlank) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardIndex is the name of Board.Index, with the identities of its
 // checks.
 type boardIndex struct {
 	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Index returns without a
+// panic for derived inputs.
+func (c boardIndex) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Index returns the
+// same value for the same inputs.
+func (c boardIndex) Deterministic() conform.ID[Board] {
+	return c.Check("deterministic")
 }
 
 // boardLabel is the name of Board.Label, with the identities of its
@@ -91,9 +129,21 @@ type boardLabel struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Label returns without a
+// panic for derived inputs.
+func (c boardLabel) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardWait is the name of Board.Wait, with the identities of its checks.
 type boardWait struct {
 	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Wait returns without a
+// panic for derived inputs.
+func (c boardWait) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
 }
 
 // boardHold is the name of Board.Hold, with the identities of its checks.
@@ -101,14 +151,38 @@ type boardHold struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Hold returns without a
+// panic for derived inputs.
+func (c boardHold) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardSwap is the name of Board.Swap, with the identities of its checks.
 type boardSwap struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Swap returns without a
+// panic for derived inputs.
+func (c boardSwap) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Swap returns the
+// same value for the same inputs.
+func (c boardSwap) Deterministic() conform.ID[Board] {
+	return c.Check("deterministic")
+}
+
 // boardMark is the name of Board.Mark, with the identities of its checks.
 type boardMark struct {
 	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Mark returns without a
+// panic for derived inputs.
+func (c boardMark) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
 }
 
 // boardPaint is the name of Board.Paint, with the identities of its
@@ -117,15 +191,33 @@ type boardPaint struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Paint returns without a
+// panic for derived inputs.
+func (c boardPaint) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardRepeat is the name of Board.Repeat, with the identities of its
 // checks.
 type boardRepeat struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Repeat returns without a
+// panic for derived inputs.
+func (c boardRepeat) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardKeep is the name of Board.Keep, with the identities of its checks.
 type boardKeep struct {
 	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Keep returns without a
+// panic for derived inputs.
+func (c boardKeep) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
 }
 
 // boardStock is the name of Board.Stock, with the identities of its
@@ -134,16 +226,34 @@ type boardStock struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Stock returns without a
+// panic for derived inputs.
+func (c boardStock) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardDiscard is the name of Board.Discard, with the identities of its
 // checks.
 type boardDiscard struct {
 	conform.Callable[Board]
 }
 
+// Smoke returns the identity of the check that Discard returns without a
+// panic for derived inputs.
+func (c boardDiscard) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
+}
+
 // boardTwice is the name of Board.Twice, with the identities of its
 // checks.
 type boardTwice struct {
 	conform.Callable[Board]
+}
+
+// Smoke returns the identity of the check that Twice returns without a
+// panic for derived inputs.
+func (c boardTwice) Smoke() conform.ID[Board] {
+	return c.Check("smoke")
 }
 
 // boardDrain is the name of Board.Drain, with the identities of its
@@ -163,6 +273,311 @@ type boardGather struct {
 func BoardSuite() conform.Suite[Board] {
 	return conform.Suite[Board]{
 		Declaration: "Board",
+		Checks: []conform.Check[Board]{
+			{
+				ID:          BoardChecks.Place.Smoke(),
+				Statement:   "Place returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Place(&Point{X: 42})
+					})
+				},
+				Defect: boardPlacePanics,
+			},
+			{
+				ID:          BoardChecks.Clash.Smoke(),
+				Statement:   "Clash returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().
+							Clash(ctx, string("c-a"), string("subject-a"), string("err-a"), int(42))
+					})
+				},
+				Defect: boardClashPanics,
+			},
+			{
+				ID:          BoardChecks.Clash.Cancel(),
+				Statement:   "Clash returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BoardHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().
+							Clash(ctx, string("c-a"), string("subject-a"), string("err-a"), int(42))
+					})
+				},
+				Defect: boardClashSucceedsAlways,
+			},
+			{
+				ID:          BoardChecks.Blank.Smoke(),
+				Statement:   "Blank returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Blank(string("sample-a"), int(42))
+						return nil
+					})
+				},
+				Defect: boardBlankPanics,
+			},
+			{
+				ID:          BoardChecks.Index.Smoke(),
+				Statement:   "Index returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Index(map[Shape][]Point{Shape(1): {{X: 42}}})
+						return nil
+					})
+				},
+				Defect: boardIndexPanics,
+			},
+			{
+				ID:          BoardChecks.Index.Deterministic(),
+				Statement:   "Index returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Index(map[Shape][]Point{Shape(1): {{X: 42}}})
+						return r0, nil
+					})
+				},
+				Defect: boardIndexDrifts,
+			},
+			{
+				ID:          BoardChecks.Label.Smoke(),
+				Statement:   "Label returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Label(string("string-a"))
+						return nil
+					})
+				},
+				Defect: boardLabelPanics,
+			},
+			{
+				ID:          BoardChecks.Wait.Smoke(),
+				Statement:   "Wait returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Wait(int(42), []time.Duration{time.Duration(1)})
+						return nil
+					})
+				},
+				Defect: boardWaitPanics,
+			},
+			{
+				ID:          BoardChecks.Hold.Smoke(),
+				Statement:   "Hold returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Hold(int(42), Pair[time.Month]{First: time.Month(1)})
+						return nil
+					})
+				},
+				Defect: boardHoldPanics,
+			},
+			{
+				ID:          BoardChecks.Swap.Smoke(),
+				Statement:   "Swap returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Swap(Pair[Tint]{First: Tint(1)})
+						return nil
+					})
+				},
+				Defect: boardSwapPanics,
+			},
+			{
+				ID:          BoardChecks.Swap.Deterministic(),
+				Statement:   "Swap returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (Pair[Tint], error) {
+						r0 := h.Subject().Swap(Pair[Tint]{First: Tint(1)})
+						return r0, nil
+					})
+				},
+				Defect: boardSwapDrifts,
+			},
+			{
+				ID:          BoardChecks.Mark.Smoke(),
+				Statement:   "Mark returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Mark(Cell{Note: "Note-a"})
+					})
+				},
+				Defect: boardMarkPanics,
+			},
+			{
+				ID:          BoardChecks.Paint.Smoke(),
+				Statement:   "Paint returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Paint(Palette{Hue(1)})
+						return nil
+					})
+				},
+				Defect: boardPaintPanics,
+			},
+			{
+				ID:          BoardChecks.Repeat.Smoke(),
+				Statement:   "Repeat returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Repeat(int(42))
+						return nil
+					})
+				},
+				Defect: boardRepeatPanics,
+			},
+			{
+				ID:          BoardChecks.Keep.Smoke(),
+				Statement:   "Keep returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Keep(int(42), store.Item{ID: "ID-a"})
+						return nil
+					})
+				},
+				Defect: boardKeepPanics,
+			},
+			{
+				ID:          BoardChecks.Stock.Smoke(),
+				Statement:   "Stock returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Stock(int(42), store.Item{ID: "ID-a"})
+						return nil
+					})
+				},
+				Defect: boardStockPanics,
+			},
+			{
+				ID:          BoardChecks.Discard.Smoke(),
+				Statement:   "Discard returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Discard(string("_-a"))
+						return nil
+					})
+				},
+				Defect: boardDiscardPanics,
+			},
+			{
+				ID:          BoardChecks.Twice.Smoke(),
+				Statement:   "Twice returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BoardHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Twice(string("c-a"), string("c0-a"))
+						return nil
+					})
+				},
+				Defect: boardTwicePanics,
+			},
+		},
 		Calls: []conform.Call[Board]{
 			{
 				Calls:    boardPlaceCalls,
@@ -620,4 +1035,324 @@ func (o boardOver) Gather(func() int, int, int) {
 // callables call spend.
 func newBoardOver(_ *BoardHandle, spend func()) Board {
 	return boardOver{spend: spend}
+}
+
+// boardPlacePanicsDefect is the planted defect of a Board whose Place
+// panics.
+type boardPlacePanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Place is the override of the planted defect.
+func (*boardPlacePanicsDefect) Place(p0 *Point) (r0 error) {
+	panic("the planted defect of a Board whose Place panics")
+}
+
+// boardPlacePanics returns the planted defect of a Board whose Place
+// panics over a fresh subject.
+func boardPlacePanics(h *BoardHandle) Board {
+	return &boardPlacePanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardClashPanicsDefect is the planted defect of a Board whose Clash
+// panics.
+type boardClashPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Clash is the override of the planted defect.
+func (*boardClashPanicsDefect) Clash(p0 context.Context, p1, p2, p3 string, p4 int) (r0 error) {
+	panic("the planted defect of a Board whose Clash panics")
+}
+
+// boardClashPanics returns the planted defect of a Board whose Clash
+// panics over a fresh subject.
+func boardClashPanics(h *BoardHandle) Board {
+	return &boardClashPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardClashSucceedsAlwaysDefect is the planted defect of a Board whose
+// Clash ignores the context.
+type boardClashSucceedsAlwaysDefect struct {
+	boardOverEmbedded
+}
+
+// Clash is the override of the planted defect.
+func (*boardClashSucceedsAlwaysDefect) Clash(
+	p0 context.Context,
+	p1, p2, p3 string,
+	p4 int,
+) (r0 error) {
+	return r0
+}
+
+// boardClashSucceedsAlways returns the planted defect of a Board whose
+// Clash ignores the context over a fresh subject.
+func boardClashSucceedsAlways(h *BoardHandle) Board {
+	return &boardClashSucceedsAlwaysDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardBlankPanicsDefect is the planted defect of a Board whose Blank
+// panics.
+type boardBlankPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Blank is the override of the planted defect.
+func (*boardBlankPanicsDefect) Blank(p0 string, p1 int) {
+	panic("the planted defect of a Board whose Blank panics")
+}
+
+// boardBlankPanics returns the planted defect of a Board whose Blank
+// panics over a fresh subject.
+func boardBlankPanics(h *BoardHandle) Board {
+	return &boardBlankPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardIndexPanicsDefect is the planted defect of a Board whose Index
+// panics.
+type boardIndexPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Index is the override of the planted defect.
+func (*boardIndexPanicsDefect) Index(p0 map[Shape][]Point) (r0 int) {
+	panic("the planted defect of a Board whose Index panics")
+}
+
+// boardIndexPanics returns the planted defect of a Board whose Index
+// panics over a fresh subject.
+func boardIndexPanics(h *BoardHandle) Board {
+	return &boardIndexPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardIndexDriftsDefect is the planted defect of a Board whose Index
+// returns another value on the repeat.
+type boardIndexDriftsDefect struct {
+	boardOverEmbedded
+	calls int
+}
+
+// Index is the override of the planted defect.
+func (d *boardIndexDriftsDefect) Index(p0 map[Shape][]Point) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// boardIndexDrifts returns the planted defect of a Board whose Index
+// returns another value on the repeat over a fresh subject.
+func boardIndexDrifts(h *BoardHandle) Board {
+	return &boardIndexDriftsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardLabelPanicsDefect is the planted defect of a Board whose Label
+// panics.
+type boardLabelPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Label is the override of the planted defect.
+func (*boardLabelPanicsDefect) Label(p0 string) {
+	panic("the planted defect of a Board whose Label panics")
+}
+
+// boardLabelPanics returns the planted defect of a Board whose Label
+// panics over a fresh subject.
+func boardLabelPanics(h *BoardHandle) Board {
+	return &boardLabelPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardWaitPanicsDefect is the planted defect of a Board whose Wait
+// panics.
+type boardWaitPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Wait is the override of the planted defect.
+func (*boardWaitPanicsDefect) Wait(p0 int, p1 []time.Duration) {
+	panic("the planted defect of a Board whose Wait panics")
+}
+
+// boardWaitPanics returns the planted defect of a Board whose Wait panics
+// over a fresh subject.
+func boardWaitPanics(h *BoardHandle) Board {
+	return &boardWaitPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardHoldPanicsDefect is the planted defect of a Board whose Hold
+// panics.
+type boardHoldPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Hold is the override of the planted defect.
+func (*boardHoldPanicsDefect) Hold(p0 int, p1 Pair[time.Month]) {
+	panic("the planted defect of a Board whose Hold panics")
+}
+
+// boardHoldPanics returns the planted defect of a Board whose Hold panics
+// over a fresh subject.
+func boardHoldPanics(h *BoardHandle) Board {
+	return &boardHoldPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardSwapPanicsDefect is the planted defect of a Board whose Swap
+// panics.
+type boardSwapPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Swap is the override of the planted defect.
+func (*boardSwapPanicsDefect) Swap(p0 Pair[Tint]) (r0 Pair[Tint]) {
+	panic("the planted defect of a Board whose Swap panics")
+}
+
+// boardSwapPanics returns the planted defect of a Board whose Swap panics
+// over a fresh subject.
+func boardSwapPanics(h *BoardHandle) Board {
+	return &boardSwapPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardSwapDriftsDefect is the planted defect of a Board whose Swap
+// returns another value on the repeat.
+type boardSwapDriftsDefect struct {
+	boardOverEmbedded
+	calls int
+}
+
+// Swap is the override of the planted defect.
+func (d *boardSwapDriftsDefect) Swap(p0 Pair[Tint]) (r0 Pair[Tint]) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = Pair[Tint]{First: Tint(2)}
+	}
+	return r0
+}
+
+// boardSwapDrifts returns the planted defect of a Board whose Swap returns
+// another value on the repeat over a fresh subject.
+func boardSwapDrifts(h *BoardHandle) Board {
+	return &boardSwapDriftsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardMarkPanicsDefect is the planted defect of a Board whose Mark
+// panics.
+type boardMarkPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Mark is the override of the planted defect.
+func (*boardMarkPanicsDefect) Mark(p0 Cell) (r0 error) {
+	panic("the planted defect of a Board whose Mark panics")
+}
+
+// boardMarkPanics returns the planted defect of a Board whose Mark panics
+// over a fresh subject.
+func boardMarkPanics(h *BoardHandle) Board {
+	return &boardMarkPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardPaintPanicsDefect is the planted defect of a Board whose Paint
+// panics.
+type boardPaintPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Paint is the override of the planted defect.
+func (*boardPaintPanicsDefect) Paint(p0 Palette) {
+	panic("the planted defect of a Board whose Paint panics")
+}
+
+// boardPaintPanics returns the planted defect of a Board whose Paint
+// panics over a fresh subject.
+func boardPaintPanics(h *BoardHandle) Board {
+	return &boardPaintPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardRepeatPanicsDefect is the planted defect of a Board whose Repeat
+// panics.
+type boardRepeatPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Repeat is the override of the planted defect.
+func (*boardRepeatPanicsDefect) Repeat(p0 int) {
+	panic("the planted defect of a Board whose Repeat panics")
+}
+
+// boardRepeatPanics returns the planted defect of a Board whose Repeat
+// panics over a fresh subject.
+func boardRepeatPanics(h *BoardHandle) Board {
+	return &boardRepeatPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardKeepPanicsDefect is the planted defect of a Board whose Keep
+// panics.
+type boardKeepPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Keep is the override of the planted defect.
+func (*boardKeepPanicsDefect) Keep(p0 int, p1 store.Item) {
+	panic("the planted defect of a Board whose Keep panics")
+}
+
+// boardKeepPanics returns the planted defect of a Board whose Keep panics
+// over a fresh subject.
+func boardKeepPanics(h *BoardHandle) Board {
+	return &boardKeepPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardStockPanicsDefect is the planted defect of a Board whose Stock
+// panics.
+type boardStockPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Stock is the override of the planted defect.
+func (*boardStockPanicsDefect) Stock(p0 int, p1 store.Item) {
+	panic("the planted defect of a Board whose Stock panics")
+}
+
+// boardStockPanics returns the planted defect of a Board whose Stock
+// panics over a fresh subject.
+func boardStockPanics(h *BoardHandle) Board {
+	return &boardStockPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardDiscardPanicsDefect is the planted defect of a Board whose Discard
+// panics.
+type boardDiscardPanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Discard is the override of the planted defect.
+func (*boardDiscardPanicsDefect) Discard(p0 string) {
+	panic("the planted defect of a Board whose Discard panics")
+}
+
+// boardDiscardPanics returns the planted defect of a Board whose Discard
+// panics over a fresh subject.
+func boardDiscardPanics(h *BoardHandle) Board {
+	return &boardDiscardPanicsDefect{boardOverEmbedded: h.Fresh()}
+}
+
+// boardTwicePanicsDefect is the planted defect of a Board whose Twice
+// panics.
+type boardTwicePanicsDefect struct {
+	boardOverEmbedded
+}
+
+// Twice is the override of the planted defect.
+func (*boardTwicePanicsDefect) Twice(p0, p1 string) {
+	panic("the planted defect of a Board whose Twice panics")
+}
+
+// boardTwicePanics returns the planted defect of a Board whose Twice
+// panics over a fresh subject.
+func boardTwicePanics(h *BoardHandle) Board {
+	return &boardTwicePanicsDefect{boardOverEmbedded: h.Fresh()}
 }

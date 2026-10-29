@@ -58,6 +58,7 @@ const (
 	toolPackage        = "example.com/shop/lib/tool"
 	deepPackage        = "example.com/shop/lib/internal/deep"
 	derivedPackage     = "example.com/shop/derived"
+	familiesPackage    = "example.com/shop/families"
 	suiteTemplate      = "suite.tmpl"
 	conformTemplate    = "conform.test.tmpl"
 )
@@ -100,6 +101,16 @@ func specOf(dir string, p plugin.Plugin, pkgs ...string) *gentest.Spec {
 		Plugins:    []plugin.Plugin{p},
 		Annotators: annotators,
 	}
+}
+
+// derivedNamed returns the derived check of the suite s on the callable of
+// the field, with the segment.
+func derivedNamed(t *testing.T, s *suite.Suite, field, segment string) *suite.Derived {
+	t.Helper()
+
+	at := slices.IndexFunc(s.Derived, func(d suite.Derived) bool { return d.Field == field && d.Segment == segment })
+	assert.True(t, at >= 0, "the suite derives the check "+field+"/"+segment)
+	return &s.Derived[at]
 }
 
 // generate runs a new suite over the packages pkgs of the tree dir, and

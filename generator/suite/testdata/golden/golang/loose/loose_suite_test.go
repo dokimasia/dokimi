@@ -42,6 +42,10 @@ func TestPrinterSuite(t *testing.T) {
 				},
 				Defect: func(*PrinterHandle) Printer { return &printerSubject{} },
 			}),
+			conform.Excuse(
+				PrinterChecks.Print.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -63,6 +67,10 @@ func TestPrinterSuite(t *testing.T) {
 				},
 				Defect: func(*PrinterHandle) Printer { return &printerSubject{} },
 			}),
+			conform.Excuse(
+				PrinterChecks.Print.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -82,6 +90,10 @@ func TestPrinterSuiteBudgets(t *testing.T) {
 		t,
 		printerIdle,
 		conform.Ceilings(PrinterChecks.Print.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			PrinterChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -92,6 +104,10 @@ func FuzzPrinterSuitePrint(f *testing.F) {
 		f,
 		PrinterChecks.Print.Callable,
 		printerIdle,
+		conform.Excuse(
+			PrinterChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -139,6 +155,10 @@ func TestRecorderSuite(t *testing.T) {
 				},
 				Defect: func(*RecorderHandle) Recorder { return &recorderSubject{} },
 			}),
+			conform.Excuse(
+				RecorderChecks.Field.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -160,6 +180,10 @@ func TestRecorderSuite(t *testing.T) {
 				},
 				Defect: func(*RecorderHandle) Recorder { return &recorderSubject{} },
 			}),
+			conform.Excuse(
+				RecorderChecks.Field.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -179,6 +203,10 @@ func TestRecorderSuiteBudgets(t *testing.T) {
 		t,
 		recorderIdle,
 		conform.Ceilings(RecorderChecks.Field.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			RecorderChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -189,6 +217,10 @@ func FuzzRecorderSuiteField(f *testing.F) {
 		f,
 		RecorderChecks.Field.Callable,
 		recorderIdle,
+		conform.Excuse(
+			RecorderChecks.Field.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -235,6 +267,10 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*JournalHandle) Journal { return &journalSubject{} },
 			}),
+			conform.Excuse(
+				JournalChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -256,6 +292,10 @@ func TestJournalSuite(t *testing.T) {
 				},
 				Defect: func(*JournalHandle) Journal { return &journalSubject{} },
 			}),
+			conform.Excuse(
+				JournalChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -275,6 +315,10 @@ func TestJournalSuiteBudgets(t *testing.T) {
 		t,
 		journalIdle,
 		conform.Ceilings(JournalChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			JournalChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -285,6 +329,10 @@ func FuzzJournalSuitePut(f *testing.F) {
 		f,
 		JournalChecks.Put.Callable,
 		journalIdle,
+		conform.Excuse(
+			JournalChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -331,6 +379,10 @@ func TestPlainSuite(t *testing.T) {
 				},
 				Defect: func(*PlainHandle) Plain { return &plainSubject{} },
 			}),
+			conform.Excuse(
+				PlainChecks.Print.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -352,6 +404,10 @@ func TestPlainSuite(t *testing.T) {
 				},
 				Defect: func(*PlainHandle) Plain { return &plainSubject{} },
 			}),
+			conform.Excuse(
+				PlainChecks.Print.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -371,6 +427,10 @@ func TestPlainSuiteBudgets(t *testing.T) {
 		t,
 		plainIdle,
 		conform.Ceilings(PlainChecks.Print.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			PlainChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -381,6 +441,10 @@ func FuzzPlainSuitePrint(f *testing.F) {
 		f,
 		PlainChecks.Print.Callable,
 		plainIdle,
+		conform.Excuse(
+			PlainChecks.Print.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

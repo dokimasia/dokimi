@@ -15,46 +15,30 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	timeawaretest.RunMixedSuite(t, timeawaretest.NewInMemory)
+	timeawaretest.RunMixedSuiteFromHandle(t, timeawaretest.NewInMemoryFromHandle)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Touch", func(b *testing.B) {
-		timeawaretest.BenchMixedSuite(
-			b,
-			timeawaretest.MixedChecks.Touch.Callable,
-			func(*timeawaretest.MixedHandle) *timeawaretest.InMemory { return timeawaretest.NewInMemory() },
-		)
+		timeawaretest.BenchMixedSuite(b, timeawaretest.MixedChecks.Touch.Callable, timeawaretest.NewInMemoryFromHandle)
 	})
 	b.Run("AgeOf", func(b *testing.B) {
-		timeawaretest.BenchMixedSuite(
-			b,
-			timeawaretest.MixedChecks.AgeOf.Callable,
-			func(*timeawaretest.MixedHandle) *timeawaretest.InMemory { return timeawaretest.NewInMemory() },
-		)
+		timeawaretest.BenchMixedSuite(b, timeawaretest.MixedChecks.AgeOf.Callable, timeawaretest.NewInMemoryFromHandle)
 	})
 }
 
 // FuzzInMemoryConformsToMixedTouch fuzzes the property checks of
 // Mixed.Touch on InMemory.
 func FuzzInMemoryConformsToMixedTouch(f *testing.F) {
-	timeawaretest.FuzzMixedSuite(
-		f,
-		timeawaretest.MixedChecks.Touch.Callable,
-		func(*timeawaretest.MixedHandle) *timeawaretest.InMemory { return timeawaretest.NewInMemory() },
-	)
+	timeawaretest.FuzzMixedSuite(f, timeawaretest.MixedChecks.Touch.Callable, timeawaretest.NewInMemoryFromHandle)
 }
 
 // FuzzInMemoryConformsToMixedAgeOf fuzzes the property checks of
 // Mixed.AgeOf on InMemory.
 func FuzzInMemoryConformsToMixedAgeOf(f *testing.F) {
-	timeawaretest.FuzzMixedSuite(
-		f,
-		timeawaretest.MixedChecks.AgeOf.Callable,
-		func(*timeawaretest.MixedHandle) *timeawaretest.InMemory { return timeawaretest.NewInMemory() },
-	)
+	timeawaretest.FuzzMixedSuite(f, timeawaretest.MixedChecks.AgeOf.Callable, timeawaretest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:d462fefcb46cdbbb7dc12a3b898c644eb069aac66a0cb90d4c061f5f6bfa432e
+// dokimi:provenance sha256:1fe22c9cb83c9656b4f2dba5b27844c066be19f7745e651ac4cabd8293c8bf36

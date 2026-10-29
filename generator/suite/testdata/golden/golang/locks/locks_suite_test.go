@@ -43,6 +43,26 @@ func TestLockSuite(t *testing.T) {
 				Defect: func(*LockHandle) Lock { return &lockSubject{} },
 			}),
 			conform.Excuse(
+				LockChecks.Acquire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Release.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Release.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Held.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Held.Predicate(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				LockChecks.Acquire.ReleaseEndsTheWait(),
 				"the test applies the check of its option alone",
 			),
@@ -67,6 +87,26 @@ func TestLockSuite(t *testing.T) {
 				},
 				Defect: func(*LockHandle) Lock { return &lockSubject{} },
 			}),
+			conform.Excuse(
+				LockChecks.Acquire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Release.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Release.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Held.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LockChecks.Held.Predicate(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				LockChecks.Acquire.ReleaseEndsTheWait(),
 				"the test applies the check of its option alone",
@@ -102,6 +142,26 @@ func TestLockSuiteBudgets(t *testing.T) {
 		conform.Ceilings(LockChecks.Release.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(LockChecks.Held.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			LockChecks.Acquire.ReleaseEndsTheWait(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -115,6 +175,26 @@ func FuzzLockSuiteAcquire(f *testing.F) {
 		f,
 		LockChecks.Acquire.Callable,
 		lockIdle,
+		conform.Excuse(
+			LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			LockChecks.Acquire.ReleaseEndsTheWait(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -130,6 +210,26 @@ func FuzzLockSuiteRelease(f *testing.F) {
 		LockChecks.Release.Callable,
 		lockIdle,
 		conform.Excuse(
+			LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			LockChecks.Acquire.ReleaseEndsTheWait(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -143,6 +243,26 @@ func FuzzLockSuiteHeld(f *testing.F) {
 		f,
 		LockChecks.Held.Callable,
 		lockIdle,
+		conform.Excuse(
+			LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			LockChecks.Acquire.ReleaseEndsTheWait(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -205,6 +325,10 @@ func TestGateSuite(t *testing.T) {
 				},
 				Defect: func(*GateHandle) Gate { return &gateSubject{} },
 			}),
+			conform.Excuse(
+				GateChecks.Pass.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -226,6 +350,10 @@ func TestGateSuite(t *testing.T) {
 				},
 				Defect: func(*GateHandle) Gate { return &gateSubject{} },
 			}),
+			conform.Excuse(
+				GateChecks.Pass.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -244,6 +372,10 @@ func TestGateSuiteBudgets(t *testing.T) {
 	RunGateBudgets(
 		t,
 		gateIdle,
+		conform.Excuse(
+			GateChecks.Pass.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -254,6 +386,10 @@ func FuzzGateSuitePass(f *testing.F) {
 		f,
 		GateChecks.Pass.Callable,
 		gateIdle,
+		conform.Excuse(
+			GateChecks.Pass.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -285,6 +421,10 @@ func TestAwaitSuite(t *testing.T) {
 				},
 				Defect: func(*AwaitHandle) AwaitFunc { return nil },
 			}),
+			conform.Excuse(
+				AwaitChecks.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -303,6 +443,10 @@ func TestAwaitSuite(t *testing.T) {
 				},
 				Defect: func(*AwaitHandle) AwaitFunc { return nil },
 			}),
+			conform.Excuse(
+				AwaitChecks.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }

@@ -49,6 +49,14 @@ func TestPredicateSuite(t *testing.T) {
 				},
 				Defect: func(*predicatetest.PredicateHandle) predicate.Predicate { return &predicateSubject{} },
 			}),
+			conform.Excuse(
+				predicatetest.PredicateChecks.IsEmpty.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				predicatetest.PredicateChecks.IsEmpty.Predicate(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +78,14 @@ func TestPredicateSuite(t *testing.T) {
 				},
 				Defect: func(*predicatetest.PredicateHandle) predicate.Predicate { return &predicateSubject{} },
 			}),
+			conform.Excuse(
+				predicatetest.PredicateChecks.IsEmpty.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				predicatetest.PredicateChecks.IsEmpty.Predicate(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +105,14 @@ func TestPredicateSuiteBudgets(t *testing.T) {
 		t,
 		predicateIdle,
 		conform.Ceilings(predicatetest.PredicateChecks.IsEmpty.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			predicatetest.PredicateChecks.IsEmpty.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			predicatetest.PredicateChecks.IsEmpty.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +123,14 @@ func FuzzPredicateSuiteIsEmpty(f *testing.F) {
 		f,
 		predicatetest.PredicateChecks.IsEmpty.Callable,
 		predicateIdle,
+		conform.Excuse(
+			predicatetest.PredicateChecks.IsEmpty.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			predicatetest.PredicateChecks.IsEmpty.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,4 +142,4 @@ func BenchmarkPredicateSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b03ceefe993f38416c0fb352870a2375a3c0c2d133ffa4036b3562c2175595cf
+// dokimi:provenance sha256:3fcbe061831e02bbf707a2fc59ba7ded6d42a7a3f4f994da386b267490d23559

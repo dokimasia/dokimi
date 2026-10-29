@@ -48,6 +48,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*concurrentreaderstest.MixedHandle) concurrentreaders.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*concurrentreaderstest.MixedHandle) concurrentreaders.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				concurrentreaderstest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(concurrentreaderstest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(concurrentreaderstest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		concurrentreaderstest.MixedChecks.Get.Callable,
 		mixedIdle,
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzMixedSuitePut(f *testing.F) {
 		f,
 		concurrentreaderstest.MixedChecks.Put.Callable,
 		mixedIdle,
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			concurrentreaderstest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -132,4 +232,4 @@ func BenchmarkMixedSuiteParallel(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:29d064b300e8a21fc3b01e98437149e458b0414ee1eaa173f1f6392f0fea573c
+// dokimi:provenance sha256:fc1d51861a8ee1d0eab7f471bc6de05967f565dc04d7096d417c0fff33b3f55b

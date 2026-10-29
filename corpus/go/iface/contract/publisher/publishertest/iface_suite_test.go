@@ -49,6 +49,22 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*publishertest.ContractHandle) publisher.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				publishertest.ContractChecks.Publish.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publishertest.ContractChecks.Publish.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publishertest.ContractChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publishertest.ContractChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +86,22 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*publishertest.ContractHandle) publisher.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				publishertest.ContractChecks.Publish.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publishertest.ContractChecks.Publish.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publishertest.ContractChecks.Subscribe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				publishertest.ContractChecks.Subscribe.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -90,6 +122,22 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(publishertest.ContractChecks.Publish.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(publishertest.ContractChecks.Subscribe.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			publishertest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +148,22 @@ func FuzzContractSuitePublish(f *testing.F) {
 		f,
 		publishertest.ContractChecks.Publish.Callable,
 		contractIdle,
+		conform.Excuse(
+			publishertest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -111,6 +175,22 @@ func FuzzContractSuiteSubscribe(f *testing.F) {
 		f,
 		publishertest.ContractChecks.Subscribe.Callable,
 		contractIdle,
+		conform.Excuse(
+			publishertest.ContractChecks.Publish.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Publish.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Subscribe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			publishertest.ContractChecks.Subscribe.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -125,4 +205,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3f77e1a49e6fcbac297b1ee21ee37c03b03ea76536a505cc56b97310b5c894aa
+// dokimi:provenance sha256:df3ea515b9d7cbdb30bc7cdd54f42dcedc5bba8300dd923b250e78a351e08f75

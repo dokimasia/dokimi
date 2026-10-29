@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/wrappedvia"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,10 +40,34 @@ type mixedOpen struct {
 	conform.Callable[wrappedvia.Mixed]
 }
 
+// Smoke returns the identity of the check that Open returns without a
+// panic for derived inputs.
+func (c mixedOpen) Smoke() conform.ID[wrappedvia.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Open returns an error for
+// a cancelled context.
+func (c mixedOpen) Cancel() conform.ID[wrappedvia.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedCause is the name of Mixed.Cause, with the identities of its
 // checks.
 type mixedCause struct {
 	conform.Callable[wrappedvia.Mixed]
+}
+
+// Smoke returns the identity of the check that Cause returns without a
+// panic for derived inputs.
+func (c mixedCause) Smoke() conform.ID[wrappedvia.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Cause returns an error for
+// a cancelled context.
+func (c mixedCause) Cancel() conform.ID[wrappedvia.Mixed] {
+	return c.Check("cancel")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +75,70 @@ type mixedCause struct {
 func MixedSuite() conform.Suite[wrappedvia.Mixed] {
 	return conform.Suite[wrappedvia.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[wrappedvia.Mixed]{
+			{
+				ID:          MixedChecks.Open.Smoke(),
+				Statement:   "Open returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Open(ctx, string("name-a"))
+					})
+				},
+				Defect: mixedOpenPanics,
+			},
+			{
+				ID:          MixedChecks.Open.Cancel(),
+				Statement:   "Open returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Open(ctx, string("name-a"))
+					})
+				},
+				Defect: mixedOpenSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Cause.Smoke(),
+				Statement:   "Cause returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Cause(ctx)
+					})
+				},
+				Defect: mixedCausePanics,
+			},
+			{
+				ID:          MixedChecks.Cause.Cancel(),
+				Statement:   "Cause returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Cause(ctx)
+					})
+				},
+				Defect: mixedCauseSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[wrappedvia.Mixed]{
 			{
 				Calls:    mixedOpenCalls,
@@ -164,4 +254,72 @@ func newMixedOver(_ *MixedHandle, spend func()) wrappedvia.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0cf2e4cfabf28b75b21f90e234c029f9ab1b489ba5a42f6260605a22f7f0071b
+// mixedOpenPanicsDefect is the planted defect of a Mixed whose Open
+// panics.
+type mixedOpenPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Open is the override of the planted defect.
+func (*mixedOpenPanicsDefect) Open(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Open panics")
+}
+
+// mixedOpenPanics returns the planted defect of a Mixed whose Open panics
+// over a fresh subject.
+func mixedOpenPanics(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedOpenPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedOpenSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Open ignores the context.
+type mixedOpenSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Open is the override of the planted defect.
+func (*mixedOpenSucceedsAlwaysDefect) Open(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedOpenSucceedsAlways returns the planted defect of a Mixed whose Open
+// ignores the context over a fresh subject.
+func mixedOpenSucceedsAlways(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedOpenSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCausePanicsDefect is the planted defect of a Mixed whose Cause
+// panics.
+type mixedCausePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Cause is the override of the planted defect.
+func (*mixedCausePanicsDefect) Cause(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Cause panics")
+}
+
+// mixedCausePanics returns the planted defect of a Mixed whose Cause
+// panics over a fresh subject.
+func mixedCausePanics(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedCausePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCauseSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Cause ignores the context.
+type mixedCauseSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Cause is the override of the planted defect.
+func (*mixedCauseSucceedsAlwaysDefect) Cause(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedCauseSucceedsAlways returns the planted defect of a Mixed whose
+// Cause ignores the context over a fresh subject.
+func mixedCauseSucceedsAlways(h *MixedHandle) wrappedvia.Mixed {
+	return &mixedCauseSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:6cfe621634d71cbc9e866f3d52db676607534ba7a9d0ceddd827cf7c151297df

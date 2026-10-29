@@ -7,6 +7,202 @@ import (
 	"go.dokimi.dev/conform"
 )
 
+// reachSubjectEmbedded is Reach under the name of the field that
+// reachSubject embeds.
+type reachSubjectEmbedded = Reach
+
+// reachSubject is a value of Reach that only TestReachSuite builds.
+type reachSubject struct{ reachSubjectEmbedded }
+
+// TestReachSuite checks the suite of Reach and the two forms of its
+// application.
+func TestReachSuite(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ReachSuite", func(t *testing.T) {
+		t.Parallel()
+		conform.Falsify(t, ReachSuite())
+	})
+
+	t.Run("RunReachSuite", func(t *testing.T) {
+		t.Parallel()
+		var built *reachSubject
+		RunReachSuite(
+			t,
+			func() *reachSubject {
+				built = &reachSubject{}
+				return built
+			},
+			conform.With(ReachCheck{
+				ID:        "Reach/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *ReachHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, Reach(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*ReachHandle) Reach { return &reachSubject{} },
+			}),
+			conform.Excuse(
+				ReachChecks.Current.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ReachChecks.Current.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ReachChecks.Current.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+
+	t.Run("RunReachSuiteFromHandle", func(t *testing.T) {
+		t.Parallel()
+		var built *reachSubject
+		RunReachSuiteFromHandle(
+			t,
+			func(*ReachHandle) *reachSubject {
+				built = &reachSubject{}
+				return built
+			},
+			conform.With(ReachCheck{
+				ID:        "Reach/builds-the-subject",
+				Statement: "the subject of a check is the value that the factory builds",
+				Apply: func(h *ReachHandle) {
+					got := h.Subject()
+					assert.Equal(h, got, Reach(built), h.Statement(), assert.ByIdentity())
+				},
+				Defect: func(*ReachHandle) Reach { return &reachSubject{} },
+			}),
+			conform.Excuse(
+				ReachChecks.Current.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ReachChecks.Current.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ReachChecks.Current.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+		)
+	})
+}
+
+// reachIdle returns the planted defect of a ceiling of Reach with a spend
+// of nothing, a subject that answers each call at once.
+func reachIdle(h *ReachHandle) Reach {
+	return ReachSuite().Calls[0].Over(h, func() {})
+}
+
+// TestReachSuiteBudgets applies the allocation ceilings of the suite of
+// Reach to reachIdle with every check of the suite excused, and a ceiling
+// of 0 to each callable without a budget whose calls build no input of
+// their own.
+func TestReachSuiteBudgets(t *testing.T) {
+	RunReachBudgets(
+		t,
+		reachIdle,
+		conform.Ceilings(ReachChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(ReachChecks.Current.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Ceilings(ReachChecks.Gear.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			ReachChecks.Current.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzReachSuiteStore registers the fuzz target of Reach.Store on
+// reachIdle, with every check of the suite excused.
+func FuzzReachSuiteStore(f *testing.F) {
+	FuzzReachSuite(
+		f,
+		ReachChecks.Store.Callable,
+		reachIdle,
+		conform.Excuse(
+			ReachChecks.Current.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzReachSuiteCurrent registers the fuzz target of Reach.Current on
+// reachIdle, with every check of the suite excused.
+func FuzzReachSuiteCurrent(f *testing.F) {
+	FuzzReachSuite(
+		f,
+		ReachChecks.Current.Callable,
+		reachIdle,
+		conform.Excuse(
+			ReachChecks.Current.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// FuzzReachSuiteGear registers the fuzz target of Reach.Gear on reachIdle,
+// with every check of the suite excused.
+func FuzzReachSuiteGear(f *testing.F) {
+	FuzzReachSuite(
+		f,
+		ReachChecks.Gear.Callable,
+		reachIdle,
+		conform.Excuse(
+			ReachChecks.Current.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ReachChecks.Current.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+	)
+}
+
+// BenchmarkReachSuite measures each callable of the suite of Reach on
+// reachIdle.
+func BenchmarkReachSuite(b *testing.B) {
+	b.Run("Store", func(b *testing.B) {
+		BenchReachSuite(b, ReachChecks.Store.Callable, reachIdle)
+	})
+	b.Run("Current", func(b *testing.B) {
+		BenchReachSuite(b, ReachChecks.Current.Callable, reachIdle)
+	})
+	b.Run("Gear", func(b *testing.B) {
+		BenchReachSuite(b, ReachChecks.Gear.Callable, reachIdle)
+	})
+}
+
 // tunedSubjectEmbedded is Tuned under the name of the field that
 // tunedSubject embeds.
 type tunedSubjectEmbedded = Tuned
@@ -166,6 +362,18 @@ func TestLimitedSuite(t *testing.T) {
 				},
 				Defect: func(*LimitedHandle) Limited { return &limitedSubject{} },
 			}),
+			conform.Excuse(
+				LimitedChecks.Limit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LimitedChecks.Measure.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LimitedChecks.Phase.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -187,6 +395,18 @@ func TestLimitedSuite(t *testing.T) {
 				},
 				Defect: func(*LimitedHandle) Limited { return &limitedSubject{} },
 			}),
+			conform.Excuse(
+				LimitedChecks.Limit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LimitedChecks.Measure.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				LimitedChecks.Phase.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -214,6 +434,18 @@ func TestLimitedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(LimitedChecks.Pitch.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(LimitedChecks.Measure.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(LimitedChecks.Phase.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -224,6 +456,18 @@ func FuzzLimitedSuiteLimit(f *testing.F) {
 		f,
 		LimitedChecks.Limit.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -234,6 +478,18 @@ func FuzzLimitedSuiteGrip(f *testing.F) {
 		f,
 		LimitedChecks.Grip.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -244,6 +500,18 @@ func FuzzLimitedSuiteClamp(f *testing.F) {
 		f,
 		LimitedChecks.Clamp.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -254,6 +522,18 @@ func FuzzLimitedSuiteFrame(f *testing.F) {
 		f,
 		LimitedChecks.Frame.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -264,6 +544,18 @@ func FuzzLimitedSuiteMount(f *testing.F) {
 		f,
 		LimitedChecks.Mount.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -274,6 +566,18 @@ func FuzzLimitedSuiteSpan(f *testing.F) {
 		f,
 		LimitedChecks.Span.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -284,6 +588,18 @@ func FuzzLimitedSuitePitch(f *testing.F) {
 		f,
 		LimitedChecks.Pitch.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -294,6 +610,18 @@ func FuzzLimitedSuiteMeasure(f *testing.F) {
 		f,
 		LimitedChecks.Measure.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -304,6 +632,18 @@ func FuzzLimitedSuitePhase(f *testing.F) {
 		f,
 		LimitedChecks.Phase.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -314,6 +654,18 @@ func FuzzLimitedSuiteSense(f *testing.F) {
 		f,
 		LimitedChecks.Sense.Callable,
 		limitedIdle,
+		conform.Excuse(
+			LimitedChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Measure.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			LimitedChecks.Phase.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -387,6 +739,14 @@ func TestPlainSuite(t *testing.T) {
 				},
 				Defect: func(*PlainHandle) PlainMethods { return &plainSubject{} },
 			}),
+			conform.Excuse(
+				PlainChecks.Name.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				PlainChecks.Name.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -408,6 +768,14 @@ func TestPlainSuite(t *testing.T) {
 				},
 				Defect: func(*PlainHandle) PlainMethods { return &plainSubject{} },
 			}),
+			conform.Excuse(
+				PlainChecks.Name.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				PlainChecks.Name.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -427,6 +795,14 @@ func TestPlainSuiteBudgets(t *testing.T) {
 		t,
 		plainIdle,
 		conform.Ceilings(PlainChecks.Name.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			PlainChecks.Name.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			PlainChecks.Name.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -437,6 +813,14 @@ func FuzzPlainSuiteName(f *testing.F) {
 		f,
 		PlainChecks.Name.Callable,
 		plainIdle,
+		conform.Excuse(
+			PlainChecks.Name.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			PlainChecks.Name.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

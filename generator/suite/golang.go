@@ -6,6 +6,7 @@ package suite
 import (
 	"embed"
 	"fmt"
+	"strings"
 	"text/template"
 	"time"
 
@@ -27,12 +28,62 @@ var golangTemplates embed.FS
 // pascalHelper writes an exported name, and camelHelper a name that is not
 // exported. ceilingsHelper returns the segment of the check of each ceiling
 // of a [Budget], and durationHelper writes a duration as a Go expression.
+//
+// defectHelper and bodyHelper return the views of a planted defect that its
+// templates read, joinHelper joins words with commas, and namesHelper joins
+// the names of the results of a planted defect.
 const (
 	pascalHelper   = "suitePascal"
 	camelHelper    = "suiteCamel"
 	ceilingsHelper = "suiteCeilings"
 	durationHelper = "suiteDuration"
+	defectHelper   = "suiteDefect"
+	bodyHelper     = "suiteBody"
+	joinHelper     = "suiteJoin"
+	namesHelper    = "suiteNames"
 )
+
+// defectView is a planted defect with the names of the suite that its
+// template writes: the alias of the subject type that its type embeds, the
+// alias of the handle and the subject type.
+type defectView struct {
+	Defect   *Defect
+	Embedded string
+	Handle   string
+	Subject  string
+}
+
+// viewOfDefect returns the view of the planted defect d.
+func viewOfDefect(d *Defect, embedded, handle, subject string) defectView {
+	return defectView{Defect: d, Embedded: embedded, Handle: handle, Subject: subject}
+}
+
+// bodyView is the body of the override of the planted defect Defect: Call is
+// the callable of the fresh subject, and State the prefix of the counter and
+// the clock of the defect.
+type bodyView struct {
+	Defect *Defect
+	Call   string
+	State  string
+}
+
+// viewOfBody returns the view of the body of the planted defect d.
+func viewOfBody(d *Defect, call, state string) bodyView {
+	return bodyView{Defect: d, Call: call, State: state}
+}
+
+// namesOfOutcomes returns the names of the results outcomes, joined by
+// commas.
+func namesOfOutcomes(outcomes []Outcome) string {
+	names := make([]string, 0, len(outcomes))
+	for _, o := range outcomes {
+		names = append(names, o.Name)
+	}
+	return strings.Join(names, ", ")
+}
+
+// joined returns words joined by commas.
+func joined(words []string) string { return strings.Join(words, ", ") }
 
 // units are the units of the time package above a nanosecond from the
 // largest down, with the names of their constants.
@@ -79,7 +130,8 @@ func (golangPart) Options() []sdk.TargetOption {
 		sdk.TemplatesOf(golangTemplates, golang.Target),
 		sdk.Funcs(template.FuncMap{
 			pascalHelper: naming.Pascal, camelHelper: naming.Camel, ceilingsHelper: Budget.segments,
-			durationHelper: golangDuration,
+			durationHelper: golangDuration, defectHelper: viewOfDefect, bodyHelper: viewOfBody, joinHelper: joined,
+			namesHelper: namesOfOutcomes,
 		}),
 	}
 }

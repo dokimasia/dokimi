@@ -14,6 +14,11 @@ gates:
     why: "{callable} returns no value when it fails"
     remedy: "remove the classification, because a failed call of {callable} returns no value"
     since: 1.0.0
+  returns-unaided:
+    passes: The callable has no mixin waits, so a call on a fresh subject returns without the call of another callable.
+    why: "{callable} waits for the call of another callable on a fresh subject"
+    remedy: "remove the mixin waits where {callable} returns on a fresh subject"
+    since: 1.0.0
   cancellation:
     passes: A parameter has the role context.
     why: "{callable} takes no context"

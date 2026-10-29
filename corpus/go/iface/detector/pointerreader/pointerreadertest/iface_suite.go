@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/pointerreader"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,58 @@ type pointerReaderFind struct {
 	conform.Callable[pointerreader.PointerReader]
 }
 
+// Smoke returns the identity of the check that Find returns without a
+// panic for derived inputs.
+func (c pointerReaderFind) Smoke() conform.ID[pointerreader.PointerReader] {
+	return c.Check("smoke")
+}
+
+// NilOnMiss returns the identity of the check that Find returns nil for an
+// input that nothing stored.
+func (c pointerReaderFind) NilOnMiss() conform.ID[pointerreader.PointerReader] {
+	return c.Check("nil-on-miss")
+}
+
 // PointerReaderSuite returns the checks of PointerReader, and the calls
 // and the budgets of its callables.
 func PointerReaderSuite() conform.Suite[pointerreader.PointerReader] {
 	return conform.Suite[pointerreader.PointerReader]{
 		Declaration: "PointerReader",
+		Checks: []conform.Check[pointerreader.PointerReader]{
+			{
+				ID:          PointerReaderChecks.Find.Smoke(),
+				Statement:   "Find returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PointerReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Find(ctx, string("key-a"))
+						return nil
+					})
+				},
+				Defect: pointerReaderFindPanics,
+			},
+			{
+				ID:          PointerReaderChecks.Find.NilOnMiss(),
+				Statement:   "Find returns nil for an input that nothing stored",
+				Claim:       spec.NilOnMiss,
+				Probe:       spec.NilBesideAMiss,
+				Reason:      spec.NonNilMiss,
+				Law:         spec.MissReturnsTheZero,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *PointerReaderHandle) {
+					probe.NilBesideAMiss(h, func(ctx context.Context) (*pointerreader.Value, error) {
+						r0 := h.Subject().Find(ctx, string("key-a"))
+						return r0, nil
+					})
+				},
+				Defect: pointerReaderFindInventsAPointer,
+			},
+		},
 		Calls: []conform.Call[pointerreader.PointerReader]{
 			{
 				Calls:    pointerReaderFindCalls,
@@ -155,4 +204,41 @@ func newPointerReaderOver(_ *PointerReaderHandle, spend func()) pointerreader.Po
 	return pointerReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:942665b76dabcfaba3793b86e7c994487dbed3b49e8854be67824ce376b9aff5
+// pointerReaderFindPanicsDefect is the planted defect of a PointerReader
+// whose Find panics.
+type pointerReaderFindPanicsDefect struct {
+	pointerReaderOverEmbedded
+}
+
+// Find is the override of the planted defect.
+func (*pointerReaderFindPanicsDefect) Find(p0 context.Context, p1 string) (r0 *pointerreader.Value) {
+	panic("the planted defect of a PointerReader whose Find panics")
+}
+
+// pointerReaderFindPanics returns the planted defect of a PointerReader
+// whose Find panics over a fresh subject.
+func pointerReaderFindPanics(h *PointerReaderHandle) pointerreader.PointerReader {
+	return &pointerReaderFindPanicsDefect{pointerReaderOverEmbedded: h.Fresh()}
+}
+
+// pointerReaderFindInventsAPointerDefect is the planted defect of a
+// PointerReader whose Find returns a value for an input that nothing
+// stored.
+type pointerReaderFindInventsAPointerDefect struct {
+	pointerReaderOverEmbedded
+}
+
+// Find is the override of the planted defect.
+func (*pointerReaderFindInventsAPointerDefect) Find(p0 context.Context, p1 string) (r0 *pointerreader.Value) {
+	r0 = &pointerreader.Value{Key: "Key-b"}
+	return r0
+}
+
+// pointerReaderFindInventsAPointer returns the planted defect of a
+// PointerReader whose Find returns a value for an input that nothing
+// stored over a fresh subject.
+func pointerReaderFindInventsAPointer(h *PointerReaderHandle) pointerreader.PointerReader {
+	return &pointerReaderFindInventsAPointerDefect{pointerReaderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:64b4ec5ea863b6633be0a50728e58d981a138f16fa508913ab255848c2285f59

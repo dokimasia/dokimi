@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/lifecycleafterclose"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,9 +41,39 @@ type mixedClose struct {
 	conform.Callable[lifecycleafterclose.Mixed]
 }
 
+// Smoke returns the identity of the check that Close returns without a
+// panic for derived inputs.
+func (c mixedClose) Smoke() conform.ID[lifecycleafterclose.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Close returns an error for
+// a cancelled context.
+func (c mixedClose) Cancel() conform.ID[lifecycleafterclose.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedWork is the name of Mixed.Work, with the identities of its checks.
 type mixedWork struct {
 	conform.Callable[lifecycleafterclose.Mixed]
+}
+
+// Smoke returns the identity of the check that Work returns without a
+// panic for derived inputs.
+func (c mixedWork) Smoke() conform.ID[lifecycleafterclose.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Work returns an error for
+// a cancelled context.
+func (c mixedWork) Cancel() conform.ID[lifecycleafterclose.Mixed] {
+	return c.Check("cancel")
+}
+
+// LifecycleAfterClose returns the identity of the check that Work fails
+// with the declared sentinel after Close.
+func (c mixedWork) LifecycleAfterClose() conform.ID[lifecycleafterclose.Mixed] {
+	return c.Check("lifecycle-after-close")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +81,87 @@ type mixedWork struct {
 func MixedSuite() conform.Suite[lifecycleafterclose.Mixed] {
 	return conform.Suite[lifecycleafterclose.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[lifecycleafterclose.Mixed]{
+			{
+				ID:          MixedChecks.Close.Smoke(),
+				Statement:   "Close returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					})
+				},
+				Defect: mixedClosePanics,
+			},
+			{
+				ID:          MixedChecks.Close.Cancel(),
+				Statement:   "Close returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					})
+				},
+				Defect: mixedCloseSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Work.Smoke(),
+				Statement:   "Work returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Work(ctx)
+					})
+				},
+				Defect: mixedWorkPanics,
+			},
+			{
+				ID:          MixedChecks.Work.Cancel(),
+				Statement:   "Work returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Work(ctx)
+					})
+				},
+				Defect: mixedWorkSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Work.LifecycleAfterClose(),
+				Statement:   "Work fails with the declared sentinel after Close",
+				Claim:       spec.LifecycleAfterClose,
+				Probe:       spec.ReportsSealed,
+				Reason:      spec.AliveAfterClose,
+				Law:         spec.WorkAfterCloseIsRefused,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ReportsSealed(h, func(ctx context.Context) error {
+						return h.Subject().Work(ctx)
+					}, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					}, lifecycleafterclose.ErrClosed)
+				},
+				Defect: mixedWorkSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[lifecycleafterclose.Mixed]{
 			{
 				Calls:    mixedCloseCalls,
@@ -173,4 +286,72 @@ func newMixedOver(_ *MixedHandle, spend func()) lifecycleafterclose.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:269e01a7a8fe00d7c93a21e9c7c672e7d11022de1d3ef90c0bda971789666046
+// mixedClosePanicsDefect is the planted defect of a Mixed whose Close
+// panics.
+type mixedClosePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*mixedClosePanicsDefect) Close(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Close panics")
+}
+
+// mixedClosePanics returns the planted defect of a Mixed whose Close
+// panics over a fresh subject.
+func mixedClosePanics(h *MixedHandle) lifecycleafterclose.Mixed {
+	return &mixedClosePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCloseSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Close ignores the context.
+type mixedCloseSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*mixedCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedCloseSucceedsAlways returns the planted defect of a Mixed whose
+// Close ignores the context over a fresh subject.
+func mixedCloseSucceedsAlways(h *MixedHandle) lifecycleafterclose.Mixed {
+	return &mixedCloseSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedWorkPanicsDefect is the planted defect of a Mixed whose Work
+// panics.
+type mixedWorkPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Work is the override of the planted defect.
+func (*mixedWorkPanicsDefect) Work(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Work panics")
+}
+
+// mixedWorkPanics returns the planted defect of a Mixed whose Work panics
+// over a fresh subject.
+func mixedWorkPanics(h *MixedHandle) lifecycleafterclose.Mixed {
+	return &mixedWorkPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedWorkSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Work ignores the context.
+type mixedWorkSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Work is the override of the planted defect.
+func (*mixedWorkSucceedsAlwaysDefect) Work(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedWorkSucceedsAlways returns the planted defect of a Mixed whose Work
+// ignores the context over a fresh subject.
+func mixedWorkSucceedsAlways(h *MixedHandle) lifecycleafterclose.Mixed {
+	return &mixedWorkSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:09268588c41d3070603e318414bf5c7351681f5e2c295748ef6d76e53df575ca

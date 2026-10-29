@@ -42,6 +42,18 @@ func TestCourierSuite(t *testing.T) {
 				},
 				Defect: func(*CourierHandle) Courier { return &courierSubject{} },
 			}),
+			conform.Excuse(
+				CourierChecks.Ship.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CourierChecks.Ship.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CourierChecks.Send.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -63,6 +75,18 @@ func TestCourierSuite(t *testing.T) {
 				},
 				Defect: func(*CourierHandle) Courier { return &courierSubject{} },
 			}),
+			conform.Excuse(
+				CourierChecks.Ship.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CourierChecks.Ship.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				CourierChecks.Send.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -83,6 +107,18 @@ func TestCourierSuiteBudgets(t *testing.T) {
 		courierIdle,
 		conform.Ceilings(CourierChecks.Ship.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(CourierChecks.Send.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			CourierChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CourierChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CourierChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -93,6 +129,18 @@ func FuzzCourierSuiteShip(f *testing.F) {
 		f,
 		CourierChecks.Ship.Callable,
 		courierIdle,
+		conform.Excuse(
+			CourierChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CourierChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CourierChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -103,6 +151,18 @@ func FuzzCourierSuiteSend(f *testing.F) {
 		f,
 		CourierChecks.Send.Callable,
 		courierIdle,
+		conform.Excuse(
+			CourierChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CourierChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			CourierChecks.Send.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

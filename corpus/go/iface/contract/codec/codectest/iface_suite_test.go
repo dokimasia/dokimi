@@ -49,6 +49,34 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*codectest.ContractHandle) codec.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.Codec(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Decode.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Decode.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Decode.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +98,34 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*codectest.ContractHandle) codec.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Encode.Codec(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Decode.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Decode.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				codectest.ContractChecks.Decode.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -90,6 +146,34 @@ func TestContractSuiteBudgets(t *testing.T) {
 		contractIdle,
 		conform.Ceilings(codectest.ContractChecks.Encode.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(codectest.ContractChecks.Decode.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Codec(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +184,34 @@ func FuzzContractSuiteEncode(f *testing.F) {
 		f,
 		codectest.ContractChecks.Encode.Callable,
 		contractIdle,
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Codec(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +222,34 @@ func FuzzContractSuiteDecode(f *testing.F) {
 		f,
 		codectest.ContractChecks.Decode.Callable,
 		contractIdle,
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Encode.Codec(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			codectest.ContractChecks.Decode.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,4 +264,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:758743e3f8972287327490cf03da12b12463f499af27aaaca03eb54ac0874019
+// dokimi:provenance sha256:ca042bd87ba19b048ffbc6ab0a133d5926685e8ce187d0e133c3612d0b3ff34f

@@ -15,29 +15,21 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	timeouttest.RunMixedSuite(t, timeouttest.NewInMemory)
+	timeouttest.RunMixedSuiteFromHandle(t, timeouttest.NewInMemoryFromHandle)
 }
 
 // BenchmarkInMemoryConformsToMixed measures each callable of the suite of
 // Mixed on InMemory.
 func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 	b.Run("Slow", func(b *testing.B) {
-		timeouttest.BenchMixedSuite(
-			b,
-			timeouttest.MixedChecks.Slow.Callable,
-			func(*timeouttest.MixedHandle) *timeouttest.InMemory { return timeouttest.NewInMemory() },
-		)
+		timeouttest.BenchMixedSuite(b, timeouttest.MixedChecks.Slow.Callable, timeouttest.NewInMemoryFromHandle)
 	})
 }
 
 // FuzzInMemoryConformsToMixedSlow fuzzes the property checks of Mixed.Slow
 // on InMemory.
 func FuzzInMemoryConformsToMixedSlow(f *testing.F) {
-	timeouttest.FuzzMixedSuite(
-		f,
-		timeouttest.MixedChecks.Slow.Callable,
-		func(*timeouttest.MixedHandle) *timeouttest.InMemory { return timeouttest.NewInMemory() },
-	)
+	timeouttest.FuzzMixedSuite(f, timeouttest.MixedChecks.Slow.Callable, timeouttest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:ea1ea68bdf058659e643551b3f6d0487b7f3fa775a599ecd74f397bad1dc7fc4
+// dokimi:provenance sha256:2f324d5398e3c51c3eae5d9707a0da2f377b55eec699eadd38cf2ec532da638b

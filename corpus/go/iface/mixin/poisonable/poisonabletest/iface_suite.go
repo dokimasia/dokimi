@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/poisonable"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,10 +40,34 @@ type mixedFail struct {
 	conform.Callable[poisonable.Mixed]
 }
 
+// Smoke returns the identity of the check that Fail returns without a
+// panic for derived inputs.
+func (c mixedFail) Smoke() conform.ID[poisonable.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Fail returns an error for
+// a cancelled context.
+func (c mixedFail) Cancel() conform.ID[poisonable.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedProbe is the name of Mixed.Probe, with the identities of its
 // checks.
 type mixedProbe struct {
 	conform.Callable[poisonable.Mixed]
+}
+
+// Smoke returns the identity of the check that Probe returns without a
+// panic for derived inputs.
+func (c mixedProbe) Smoke() conform.ID[poisonable.Mixed] {
+	return c.Check("smoke")
+}
+
+// Poisonable returns the identity of the check that Probe fails after
+// Fail, and keeps failing.
+func (c mixedProbe) Poisonable() conform.ID[poisonable.Mixed] {
+	return c.Check("poisonable")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +75,72 @@ type mixedProbe struct {
 func MixedSuite() conform.Suite[poisonable.Mixed] {
 	return conform.Suite[poisonable.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[poisonable.Mixed]{
+			{
+				ID:          MixedChecks.Fail.Smoke(),
+				Statement:   "Fail returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fail(ctx)
+					})
+				},
+				Defect: mixedFailPanics,
+			},
+			{
+				ID:          MixedChecks.Fail.Cancel(),
+				Statement:   "Fail returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fail(ctx)
+					})
+				},
+				Defect: mixedFailSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Probe.Smoke(),
+				Statement:   "Probe returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Probe()
+					})
+				},
+				Defect: mixedProbePanics,
+			},
+			{
+				ID:          MixedChecks.Probe.Poisonable(),
+				Statement:   "Probe fails after Fail, and keeps failing",
+				Claim:       spec.Poisonable,
+				Probe:       spec.RemainsPoisoned,
+				Reason:      spec.HealthyAfterInduce,
+				Law:         spec.InducedFailureLatches,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.RemainsPoisoned(h, func(ctx context.Context) error {
+						return h.Subject().Probe()
+					}, func(ctx context.Context) error {
+						return h.Subject().Fail(ctx)
+					})
+				},
+				Defect: mixedProbeSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[poisonable.Mixed]{
 			{
 				Calls:    mixedFailCalls,
@@ -163,4 +255,72 @@ func newMixedOver(_ *MixedHandle, spend func()) poisonable.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:4f017414ecda98a679433f55041d189457d2f5bafe8d78b3ca8e3af25162dbd2
+// mixedFailPanicsDefect is the planted defect of a Mixed whose Fail
+// panics.
+type mixedFailPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Fail is the override of the planted defect.
+func (*mixedFailPanicsDefect) Fail(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Fail panics")
+}
+
+// mixedFailPanics returns the planted defect of a Mixed whose Fail panics
+// over a fresh subject.
+func mixedFailPanics(h *MixedHandle) poisonable.Mixed {
+	return &mixedFailPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedFailSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Fail ignores the context.
+type mixedFailSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Fail is the override of the planted defect.
+func (*mixedFailSucceedsAlwaysDefect) Fail(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedFailSucceedsAlways returns the planted defect of a Mixed whose Fail
+// ignores the context over a fresh subject.
+func mixedFailSucceedsAlways(h *MixedHandle) poisonable.Mixed {
+	return &mixedFailSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedProbePanicsDefect is the planted defect of a Mixed whose Probe
+// panics.
+type mixedProbePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Probe is the override of the planted defect.
+func (*mixedProbePanicsDefect) Probe() (r0 error) {
+	panic("the planted defect of a Mixed whose Probe panics")
+}
+
+// mixedProbePanics returns the planted defect of a Mixed whose Probe
+// panics over a fresh subject.
+func mixedProbePanics(h *MixedHandle) poisonable.Mixed {
+	return &mixedProbePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedProbeSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Probe succeeds after Fail.
+type mixedProbeSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Probe is the override of the planted defect.
+func (*mixedProbeSucceedsAlwaysDefect) Probe() (r0 error) {
+	return r0
+}
+
+// mixedProbeSucceedsAlways returns the planted defect of a Mixed whose
+// Probe succeeds after Fail over a fresh subject.
+func mixedProbeSucceedsAlways(h *MixedHandle) poisonable.Mixed {
+	return &mixedProbeSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:593cd28b32035139b0ae92c610da7bd3f4eda45e86ab4b6fe8bf7ded58451287

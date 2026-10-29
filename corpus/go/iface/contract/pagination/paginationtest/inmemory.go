@@ -31,8 +31,13 @@ type InMemory struct {
 // The compiler checks that InMemory implements [pagination.Contract].
 var _ pagination.Contract = (*InMemory)(nil)
 
-// NewInMemory returns a new InMemory.
-func NewInMemory() *InMemory { return &InMemory{values: map[string]pagination.Value{}} }
+// NewInMemory returns an InMemory with two values, so a walk has two pages.
+func NewInMemory() *InMemory {
+	return &InMemory{values: map[string]pagination.Value{
+		"a": {Key: "a", Body: "first"},
+		"b": {Key: "b", Body: "second"},
+	}}
+}
 
 // Put implements [pagination.Contract].
 func (s *InMemory) Put(ctx context.Context, v pagination.Value) error {

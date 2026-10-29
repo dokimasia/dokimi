@@ -6,6 +6,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -42,15 +44,45 @@ func (c lockAcquire) ReleaseEndsTheWait() conform.ID[Lock] {
 	return c.Check("release-ends-the-wait")
 }
 
+// Cancel returns the identity of the check that Acquire returns an error
+// for a cancelled context.
+func (c lockAcquire) Cancel() conform.ID[Lock] {
+	return c.Check("cancel")
+}
+
 // lockRelease is the name of Lock.Release, with the identities of its
 // checks.
 type lockRelease struct {
 	conform.Callable[Lock]
 }
 
+// Smoke returns the identity of the check that Release returns without a
+// panic for derived inputs.
+func (c lockRelease) Smoke() conform.ID[Lock] {
+	return c.Check("smoke")
+}
+
+// RepeatSurvives returns the identity of the check that Release returns
+// without a panic when it is called twice.
+func (c lockRelease) RepeatSurvives() conform.ID[Lock] {
+	return c.Check("repeat-survives")
+}
+
 // lockHeld is the name of Lock.Held, with the identities of its checks.
 type lockHeld struct {
 	conform.Callable[Lock]
+}
+
+// Smoke returns the identity of the check that Held returns without a
+// panic for derived inputs.
+func (c lockHeld) Smoke() conform.ID[Lock] {
+	return c.Check("smoke")
+}
+
+// Predicate returns the identity of the check that Held returns the same
+// answer twice for an unchanged subject.
+func (c lockHeld) Predicate() conform.ID[Lock] {
+	return c.Check("predicate")
 }
 
 // LockSuite returns the checks of Lock, and the calls and the budgets of
@@ -59,6 +91,89 @@ func LockSuite() conform.Suite[Lock] {
 	return conform.Suite[Lock]{
 		Declaration: "Lock",
 		Checks: []conform.Check[Lock]{
+			{
+				ID:          LockChecks.Acquire.Cancel(),
+				Statement:   "Acquire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LockHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx)
+					})
+				},
+				Defect: lockAcquireSucceedsAlways,
+			},
+			{
+				ID:          LockChecks.Release.Smoke(),
+				Statement:   "Release returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Release()
+						return nil
+					})
+				},
+				Defect: lockReleasePanics,
+			},
+			{
+				ID:          LockChecks.Release.RepeatSurvives(),
+				Statement:   "Release returns without a panic when it is called twice",
+				Claim:       spec.RepeatSurvives,
+				Probe:       spec.SurvivesRepeat,
+				Reason:      spec.PanickedRepeat,
+				Law:         spec.RepeatedCallSurvives,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Entails:     []conform.ID[Lock]{LockChecks.Release.Smoke()},
+				Apply: func(h *LockHandle) {
+					probe.SurvivesRepeat(h, func(ctx context.Context) error {
+						h.Subject().Release()
+						return nil
+					})
+				},
+				Defect: lockReleasePanicsOnRepeat,
+			},
+			{
+				ID:          LockChecks.Held.Smoke(),
+				Statement:   "Held returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Held()
+						return nil
+					})
+				},
+				Defect: lockHeldPanics,
+			},
+			{
+				ID:          LockChecks.Held.Predicate(),
+				Statement:   "Held returns the same answer twice for an unchanged subject",
+				Claim:       spec.Predicate,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LockHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (bool, error) {
+						r0 := h.Subject().Held()
+						return r0, nil
+					})
+				},
+				Defect: lockHeldDrifts,
+			},
 			{
 				ID:        LockChecks.Acquire.ReleaseEndsTheWait(),
 				Statement: "Release ends the wait of Acquire",
@@ -220,6 +335,100 @@ func newLockOver(_ *LockHandle, spend func()) Lock {
 	return lockOver{spend: spend}
 }
 
+// lockAcquireSucceedsAlwaysDefect is the planted defect of a Lock whose
+// Acquire ignores the context.
+type lockAcquireSucceedsAlwaysDefect struct {
+	lockOverEmbedded
+}
+
+// Acquire is the override of the planted defect.
+func (*lockAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// lockAcquireSucceedsAlways returns the planted defect of a Lock whose
+// Acquire ignores the context over a fresh subject.
+func lockAcquireSucceedsAlways(h *LockHandle) Lock {
+	return &lockAcquireSucceedsAlwaysDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockReleasePanicsDefect is the planted defect of a Lock whose Release
+// panics.
+type lockReleasePanicsDefect struct {
+	lockOverEmbedded
+}
+
+// Release is the override of the planted defect.
+func (*lockReleasePanicsDefect) Release() {
+	panic("the planted defect of a Lock whose Release panics")
+}
+
+// lockReleasePanics returns the planted defect of a Lock whose Release
+// panics over a fresh subject.
+func lockReleasePanics(h *LockHandle) Lock {
+	return &lockReleasePanicsDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockReleasePanicsOnRepeatDefect is the planted defect of a Lock whose
+// Release panics on the repeat.
+type lockReleasePanicsOnRepeatDefect struct {
+	lockOverEmbedded
+	calls int
+}
+
+// Release is the override of the planted defect.
+func (d *lockReleasePanicsOnRepeatDefect) Release() {
+	d.calls++
+	if d.calls > 1 {
+		panic("the planted defect of a Lock whose Release panics on the repeat")
+	}
+	d.lockOverEmbedded.Release()
+}
+
+// lockReleasePanicsOnRepeat returns the planted defect of a Lock whose
+// Release panics on the repeat over a fresh subject.
+func lockReleasePanicsOnRepeat(h *LockHandle) Lock {
+	return &lockReleasePanicsOnRepeatDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockHeldPanicsDefect is the planted defect of a Lock whose Held panics.
+type lockHeldPanicsDefect struct {
+	lockOverEmbedded
+}
+
+// Held is the override of the planted defect.
+func (*lockHeldPanicsDefect) Held() (r0 bool) {
+	panic("the planted defect of a Lock whose Held panics")
+}
+
+// lockHeldPanics returns the planted defect of a Lock whose Held panics
+// over a fresh subject.
+func lockHeldPanics(h *LockHandle) Lock {
+	return &lockHeldPanicsDefect{lockOverEmbedded: h.Fresh()}
+}
+
+// lockHeldDriftsDefect is the planted defect of a Lock whose Held returns
+// another answer on the repeat.
+type lockHeldDriftsDefect struct {
+	lockOverEmbedded
+	calls int
+}
+
+// Held is the override of the planted defect.
+func (d *lockHeldDriftsDefect) Held() (r0 bool) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = bool(true)
+	}
+	return r0
+}
+
+// lockHeldDrifts returns the planted defect of a Lock whose Held returns
+// another answer on the repeat over a fresh subject.
+func lockHeldDrifts(h *LockHandle) Lock {
+	return &lockHeldDriftsDefect{lockOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -243,11 +452,34 @@ type gatePass struct {
 	conform.Callable[Gate]
 }
 
+// Cancel returns the identity of the check that Pass returns an error for
+// a cancelled context.
+func (c gatePass) Cancel() conform.ID[Gate] {
+	return c.Check("cancel")
+}
+
 // GateSuite returns the checks of Gate, and the calls and the budgets of
 // its callables.
 func GateSuite() conform.Suite[Gate] {
 	return conform.Suite[Gate]{
 		Declaration: "Gate",
+		Checks: []conform.Check[Gate]{
+			{
+				ID:          GateChecks.Pass.Cancel(),
+				Statement:   "Pass returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *GateHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Pass(ctx)
+					})
+				},
+				Defect: gatePassSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[Gate]{
 			{
 				Calls:    gatePassCalls,
@@ -348,6 +580,23 @@ func newGateOver(_ *GateHandle, spend func()) Gate {
 	return gateOver{spend: spend}
 }
 
+// gatePassSucceedsAlwaysDefect is the planted defect of a Gate whose Pass
+// ignores the context.
+type gatePassSucceedsAlwaysDefect struct {
+	gateOverEmbedded
+}
+
+// Pass is the override of the planted defect.
+func (*gatePassSucceedsAlwaysDefect) Pass(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// gatePassSucceedsAlways returns the planted defect of a Gate whose Pass
+// ignores the context over a fresh subject.
+func gatePassSucceedsAlways(h *GateHandle) Gate {
+	return &gatePassSucceedsAlwaysDefect{gateOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -371,11 +620,34 @@ type awaitCallable struct {
 	conform.Callable[AwaitFunc]
 }
 
+// Cancel returns the identity of the check that Await returns an error for
+// a cancelled context.
+func (c awaitCallable) Cancel() conform.ID[AwaitFunc] {
+	return c.Check("cancel")
+}
+
 // AwaitSuite returns the checks of Await, and the calls and the budgets of
 // its callables.
 func AwaitSuite() conform.Suite[AwaitFunc] {
 	return conform.Suite[AwaitFunc]{
 		Declaration: "Await",
+		Checks: []conform.Check[AwaitFunc]{
+			{
+				ID:          AwaitChecks.Cancel(),
+				Statement:   "Await returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *AwaitHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject()(ctx)
+					})
+				},
+				Defect: awaitSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[AwaitFunc]{
 			{
 				Calls:    awaitCalls,
@@ -446,6 +718,14 @@ var awaitCalls = prop.Composite(func(*prop.Case) func(context.Context, AwaitFunc
 func newAwaitOver(_ *AwaitHandle, spend func()) AwaitFunc {
 	return func(context.Context) (r0 error) {
 		spend()
+		return r0
+	}
+}
+
+// awaitSucceedsAlways returns the planted defect of a Await whose Await
+// ignores the context over the fresh function.
+func awaitSucceedsAlways(h *AwaitHandle) AwaitFunc {
+	return func(p0 context.Context) (r0 error) {
 		return r0
 	}
 }

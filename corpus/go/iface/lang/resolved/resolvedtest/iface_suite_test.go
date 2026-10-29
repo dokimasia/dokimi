@@ -48,6 +48,26 @@ func TestApplierSuite(t *testing.T) {
 				},
 				Defect: func(*resolvedtest.ApplierHandle) resolved.Applier { return &applierSubject{} },
 			}),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Apply.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Apply.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Limit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Limit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Limit.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestApplierSuite(t *testing.T) {
 				},
 				Defect: func(*resolvedtest.ApplierHandle) resolved.Applier { return &applierSubject{} },
 			}),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Apply.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Apply.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Limit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Limit.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				resolvedtest.ApplierChecks.Limit.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestApplierSuiteBudgets(t *testing.T) {
 		applierIdle,
 		conform.Ceilings(resolvedtest.ApplierChecks.Apply.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(resolvedtest.ApplierChecks.Limit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzApplierSuiteApply(f *testing.F) {
 		f,
 		resolvedtest.ApplierChecks.Apply.Callable,
 		applierIdle,
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzApplierSuiteLimit(f *testing.F) {
 		f,
 		resolvedtest.ApplierChecks.Limit.Callable,
 		applierIdle,
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Apply.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Apply.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			resolvedtest.ApplierChecks.Limit.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +223,4 @@ func BenchmarkApplierSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6e152224288df853b08cdfbbdec3ca88fa85d896204cd8d2b958876eb619456b
+// dokimi:provenance sha256:2765dde0924bf02026180153fecfd445b0454e0875d394426b6fe19b1444eea7

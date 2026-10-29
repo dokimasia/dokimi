@@ -49,6 +49,58 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*sagatest.ContractHandle) saga.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				sagatest.ContractChecks.Step.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Step.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Step.Saga(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Compensate.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Compensate.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Ship.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Ship.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Ship.Saga(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.UndoShip.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.UndoShip.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.State.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.State.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.State.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +122,58 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*sagatest.ContractHandle) saga.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				sagatest.ContractChecks.Step.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Step.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Step.Saga(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Compensate.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Compensate.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Ship.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Ship.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.Ship.Saga(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.UndoShip.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.UndoShip.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.State.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.State.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sagatest.ContractChecks.State.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -93,6 +197,58 @@ func TestContractSuiteBudgets(t *testing.T) {
 		conform.Ceilings(sagatest.ContractChecks.Ship.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(sagatest.ContractChecks.UndoShip.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(sagatest.ContractChecks.State.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -103,6 +259,58 @@ func FuzzContractSuiteStep(f *testing.F) {
 		f,
 		sagatest.ContractChecks.Step.Callable,
 		contractIdle,
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -114,6 +322,58 @@ func FuzzContractSuiteCompensate(f *testing.F) {
 		f,
 		sagatest.ContractChecks.Compensate.Callable,
 		contractIdle,
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,6 +384,58 @@ func FuzzContractSuiteShip(f *testing.F) {
 		f,
 		sagatest.ContractChecks.Ship.Callable,
 		contractIdle,
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -134,6 +446,58 @@ func FuzzContractSuiteUndoShip(f *testing.F) {
 		f,
 		sagatest.ContractChecks.UndoShip.Callable,
 		contractIdle,
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -144,6 +508,58 @@ func FuzzContractSuiteState(f *testing.F) {
 		f,
 		sagatest.ContractChecks.State.Callable,
 		contractIdle,
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Step.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Compensate.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.Ship.Saga(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.UndoShip.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sagatest.ContractChecks.State.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -167,4 +583,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:42680ace4a86fec798898cedd8651ff550142cd71afeb5266f6840fe190c3935
+// dokimi:provenance sha256:33324467d0f60b9250fe8103e2a924e8d84ca7eaf9fca8eb3852901c159e8781

@@ -142,6 +142,14 @@ func TestGate(t *testing.T) {
 				give: withInput(reader(), symbol.FormOptional), want: true,
 			},
 			{name: "fails optional-input for a text input", giveGate: spec.OptionalInput, give: reader(), want: false},
+			{
+				name: "passes returns-unaided for a callable without the mixin waits", giveGate: spec.ReturnsUnaided,
+				give: withMixins(reader(), "idempotent"), want: true,
+			},
+			{
+				name: "fails returns-unaided for a callable with the mixin waits", giveGate: spec.ReturnsUnaided,
+				give: withMixins(reader(), "idempotent", "waits"), want: false,
+			},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

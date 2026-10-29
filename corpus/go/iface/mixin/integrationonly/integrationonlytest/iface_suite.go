@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/integrationonly"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,56 @@ type mixedConnect struct {
 	conform.Callable[integrationonly.Mixed]
 }
 
+// Smoke returns the identity of the check that Connect returns without a
+// panic for derived inputs.
+func (c mixedConnect) Smoke() conform.ID[integrationonly.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Connect returns an error
+// for a cancelled context.
+func (c mixedConnect) Cancel() conform.ID[integrationonly.Mixed] {
+	return c.Check("cancel")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[integrationonly.Mixed] {
 	return conform.Suite[integrationonly.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[integrationonly.Mixed]{
+			{
+				ID:          MixedChecks.Connect.Smoke(),
+				Statement:   "Connect returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Connect(ctx, string("dsn-a"))
+					})
+				},
+				Defect: mixedConnectPanics,
+			},
+			{
+				ID:          MixedChecks.Connect.Cancel(),
+				Statement:   "Connect returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Connect(ctx, string("dsn-a"))
+					})
+				},
+				Defect: mixedConnectSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[integrationonly.Mixed]{
 			{
 				Calls:    mixedConnectCalls,
@@ -144,4 +191,38 @@ func newMixedOver(_ *MixedHandle, spend func()) integrationonly.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c11261d47c57493db2c20d17391525607a666722e920b7a684c1c08272ac33cd
+// mixedConnectPanicsDefect is the planted defect of a Mixed whose Connect
+// panics.
+type mixedConnectPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Connect is the override of the planted defect.
+func (*mixedConnectPanicsDefect) Connect(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Connect panics")
+}
+
+// mixedConnectPanics returns the planted defect of a Mixed whose Connect
+// panics over a fresh subject.
+func mixedConnectPanics(h *MixedHandle) integrationonly.Mixed {
+	return &mixedConnectPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedConnectSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Connect ignores the context.
+type mixedConnectSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Connect is the override of the planted defect.
+func (*mixedConnectSucceedsAlwaysDefect) Connect(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedConnectSucceedsAlways returns the planted defect of a Mixed whose
+// Connect ignores the context over a fresh subject.
+func mixedConnectSucceedsAlways(h *MixedHandle) integrationonly.Mixed {
+	return &mixedConnectSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:2743d980986e255187f9ee9eb7757f91efdbefeea4e1a9b2b2a085e9a17a2ff4

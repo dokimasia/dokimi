@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/scope"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,9 +40,39 @@ type mixedSet struct {
 	conform.Callable[scope.Mixed]
 }
 
+// Smoke returns the identity of the check that Set returns without a panic
+// for derived inputs.
+func (c mixedSet) Smoke() conform.ID[scope.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Set returns an error for a
+// cancelled context.
+func (c mixedSet) Cancel() conform.ID[scope.Mixed] {
+	return c.Check("cancel")
+}
+
+// Partition returns the identity of the check that Get does not return in
+// one partition what Set wrote in another.
+func (c mixedSet) Partition() conform.ID[scope.Mixed] {
+	return c.Check("partition")
+}
+
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
 type mixedGet struct {
 	conform.Callable[scope.Mixed]
+}
+
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c mixedGet) Smoke() conform.ID[scope.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c mixedGet) Cancel() conform.ID[scope.Mixed] {
+	return c.Check("cancel")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -48,6 +80,102 @@ type mixedGet struct {
 func MixedSuite() conform.Suite[scope.Mixed] {
 	return conform.Suite[scope.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[scope.Mixed]{
+			{
+				ID:          MixedChecks.Set.Smoke(),
+				Statement:   "Set returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, string("scope-a"), string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedSetPanics,
+			},
+			{
+				ID:          MixedChecks.Set.Cancel(),
+				Statement:   "Set returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Set(ctx, string("scope-a"), string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedSetSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Set.Partition(),
+				Statement:   "Get does not return in one partition what Set wrote in another",
+				Claim:       spec.Partition,
+				Probe:       spec.KeepsPartitionsApart,
+				Reason:      spec.CrossedPartitions,
+				Law:         spec.OnePartitionDoesNotServeAnother,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.KeepsPartitionsApart(h, func() func(ctx context.Context) (string, error) {
+						calls := 0
+						return func(ctx context.Context) (string, error) {
+							calls++
+							w := string("value-a")
+							s0 := string("scope-a")
+							s1 := string("key-a")
+							if calls > 1 {
+								w = string("value-b")
+								s0 = string("scope-b")
+								s1 = string("key-b")
+							}
+							err := h.Subject().Set(ctx, s0, s1, w)
+							return w, err
+						}
+					}(), func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, string("scope-a"), string("key-a"))
+					})
+				},
+				Defect: mixedSetSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("scope-a"), string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
+				ID:          MixedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("scope-a"), string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[scope.Mixed]{
 			{
 				Calls:    mixedSetCalls,
@@ -168,4 +296,70 @@ func newMixedOver(_ *MixedHandle, spend func()) scope.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b7b1e58482542217d1f723e0682d6c212f25b54b1651c19635211352567789e7
+// mixedSetPanicsDefect is the planted defect of a Mixed whose Set panics.
+type mixedSetPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (*mixedSetPanicsDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Set panics")
+}
+
+// mixedSetPanics returns the planted defect of a Mixed whose Set panics
+// over a fresh subject.
+func mixedSetPanics(h *MixedHandle) scope.Mixed {
+	return &mixedSetPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSetSucceedsAlwaysDefect is the planted defect of a Mixed whose Set
+// ignores the context.
+type mixedSetSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Set is the override of the planted defect.
+func (*mixedSetSucceedsAlwaysDefect) Set(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	return r0
+}
+
+// mixedSetSucceedsAlways returns the planted defect of a Mixed whose Set
+// ignores the context over a fresh subject.
+func mixedSetSucceedsAlways(h *MixedHandle) scope.Mixed {
+	return &mixedSetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
+type mixedGetPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetPanicsDefect) Get(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Get panics")
+}
+
+// mixedGetPanics returns the planted defect of a Mixed whose Get panics
+// over a fresh subject.
+func mixedGetPanics(h *MixedHandle) scope.Mixed {
+	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// ignores the context.
+type mixedGetSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// ignores the context over a fresh subject.
+func mixedGetSucceedsAlways(h *MixedHandle) scope.Mixed {
+	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:2d579582cc4ecf1d633ef056fbb5129d76b00cefae7b132b689e180828062c45

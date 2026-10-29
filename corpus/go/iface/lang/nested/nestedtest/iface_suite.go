@@ -11,7 +11,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nested"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -42,6 +44,18 @@ type dispatcherDispatch struct {
 	conform.Callable[nested.Dispatcher]
 }
 
+// Smoke returns the identity of the check that Dispatch returns without a
+// panic for derived inputs.
+func (c dispatcherDispatch) Smoke() conform.ID[nested.Dispatcher] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Dispatch returns an error
+// for a cancelled context.
+func (c dispatcherDispatch) Cancel() conform.ID[nested.Dispatcher] {
+	return c.Check("cancel")
+}
+
 // AllocationBudget returns the identity of the check
 // Dispatcher.Dispatch/allocation-budget.
 func (c dispatcherDispatch) AllocationBudget() conform.ID[nested.Dispatcher] {
@@ -52,6 +66,18 @@ func (c dispatcherDispatch) AllocationBudget() conform.ID[nested.Dispatcher] {
 // identities of its checks.
 type dispatcherDispatchAll struct {
 	conform.Callable[nested.Dispatcher]
+}
+
+// Smoke returns the identity of the check that DispatchAll returns without
+// a panic for derived inputs.
+func (c dispatcherDispatchAll) Smoke() conform.ID[nested.Dispatcher] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that DispatchAll returns an
+// error for a cancelled context.
+func (c dispatcherDispatchAll) Cancel() conform.ID[nested.Dispatcher] {
+	return c.Check("cancel")
 }
 
 // AllocationBudget returns the identity of the check
@@ -66,11 +92,123 @@ type dispatcherWeight struct {
 	conform.Callable[nested.Dispatcher]
 }
 
+// Smoke returns the identity of the check that Weight returns without a
+// panic for derived inputs.
+func (c dispatcherWeight) Smoke() conform.ID[nested.Dispatcher] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Weight returns the
+// same value for the same inputs.
+func (c dispatcherWeight) Deterministic() conform.ID[nested.Dispatcher] {
+	return c.Check("deterministic")
+}
+
 // DispatcherSuite returns the checks of Dispatcher, and the calls and the
 // budgets of its callables.
 func DispatcherSuite() conform.Suite[nested.Dispatcher] {
 	return conform.Suite[nested.Dispatcher]{
 		Declaration: "Dispatcher",
+		Checks: []conform.Check[nested.Dispatcher]{
+			{
+				ID:          DispatcherChecks.Dispatch.Smoke(),
+				Statement:   "Dispatch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DispatcherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Dispatch(ctx, &nested.DispatchRequest{ID: "ID-a"})
+					})
+				},
+				Defect: dispatcherDispatchPanics,
+			},
+			{
+				ID:          DispatcherChecks.Dispatch.Cancel(),
+				Statement:   "Dispatch returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *DispatcherHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Dispatch(ctx, &nested.DispatchRequest{ID: "ID-a"})
+					})
+				},
+				Defect: dispatcherDispatchSucceedsAlways,
+			},
+			{
+				ID:          DispatcherChecks.DispatchAll.Smoke(),
+				Statement:   "DispatchAll returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DispatcherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().
+							DispatchAll(ctx, nested.Batch{Requests: []nested.DispatchRequest{{ID: "ID-a"}}})
+					})
+				},
+				Defect: dispatcherDispatchAllPanics,
+			},
+			{
+				ID:          DispatcherChecks.DispatchAll.Cancel(),
+				Statement:   "DispatchAll returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *DispatcherHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().
+							DispatchAll(ctx, nested.Batch{Requests: []nested.DispatchRequest{{ID: "ID-a"}}})
+					})
+				},
+				Defect: dispatcherDispatchAllSucceedsAlways,
+			},
+			{
+				ID:          DispatcherChecks.Weight.Smoke(),
+				Statement:   "Weight returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DispatcherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Weight()
+						return nil
+					})
+				},
+				Defect: dispatcherWeightPanics,
+			},
+			{
+				ID:          DispatcherChecks.Weight.Deterministic(),
+				Statement:   "Weight returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DispatcherHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Weight()
+						return r0, nil
+					})
+				},
+				Defect: dispatcherWeightDrifts,
+			},
+		},
 		Calls: []conform.Call[nested.Dispatcher]{
 			{
 				Calls:    dispatcherDispatchCalls,
@@ -278,4 +416,111 @@ func newDispatcherOver(_ *DispatcherHandle, spend func()) nested.Dispatcher {
 	return dispatcherOver{spend: spend}
 }
 
-// dokimi:provenance sha256:91ad47856473dc4d2dcad7157e1e1215845d36e9624a6fae67adb97ed629e516
+// dispatcherDispatchPanicsDefect is the planted defect of a Dispatcher
+// whose Dispatch panics.
+type dispatcherDispatchPanicsDefect struct {
+	dispatcherOverEmbedded
+}
+
+// Dispatch is the override of the planted defect.
+func (*dispatcherDispatchPanicsDefect) Dispatch(p0 context.Context, p1 *nested.DispatchRequest) (r0 error) {
+	panic("the planted defect of a Dispatcher whose Dispatch panics")
+}
+
+// dispatcherDispatchPanics returns the planted defect of a Dispatcher
+// whose Dispatch panics over a fresh subject.
+func dispatcherDispatchPanics(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherDispatchPanicsDefect{dispatcherOverEmbedded: h.Fresh()}
+}
+
+// dispatcherDispatchSucceedsAlwaysDefect is the planted defect of a
+// Dispatcher whose Dispatch ignores the context.
+type dispatcherDispatchSucceedsAlwaysDefect struct {
+	dispatcherOverEmbedded
+}
+
+// Dispatch is the override of the planted defect.
+func (*dispatcherDispatchSucceedsAlwaysDefect) Dispatch(p0 context.Context, p1 *nested.DispatchRequest) (r0 error) {
+	return r0
+}
+
+// dispatcherDispatchSucceedsAlways returns the planted defect of a
+// Dispatcher whose Dispatch ignores the context over a fresh subject.
+func dispatcherDispatchSucceedsAlways(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherDispatchSucceedsAlwaysDefect{dispatcherOverEmbedded: h.Fresh()}
+}
+
+// dispatcherDispatchAllPanicsDefect is the planted defect of a Dispatcher
+// whose DispatchAll panics.
+type dispatcherDispatchAllPanicsDefect struct {
+	dispatcherOverEmbedded
+}
+
+// DispatchAll is the override of the planted defect.
+func (*dispatcherDispatchAllPanicsDefect) DispatchAll(p0 context.Context, p1 nested.Batch) (r0 error) {
+	panic("the planted defect of a Dispatcher whose DispatchAll panics")
+}
+
+// dispatcherDispatchAllPanics returns the planted defect of a Dispatcher
+// whose DispatchAll panics over a fresh subject.
+func dispatcherDispatchAllPanics(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherDispatchAllPanicsDefect{dispatcherOverEmbedded: h.Fresh()}
+}
+
+// dispatcherDispatchAllSucceedsAlwaysDefect is the planted defect of a
+// Dispatcher whose DispatchAll ignores the context.
+type dispatcherDispatchAllSucceedsAlwaysDefect struct {
+	dispatcherOverEmbedded
+}
+
+// DispatchAll is the override of the planted defect.
+func (*dispatcherDispatchAllSucceedsAlwaysDefect) DispatchAll(p0 context.Context, p1 nested.Batch) (r0 error) {
+	return r0
+}
+
+// dispatcherDispatchAllSucceedsAlways returns the planted defect of a
+// Dispatcher whose DispatchAll ignores the context over a fresh subject.
+func dispatcherDispatchAllSucceedsAlways(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherDispatchAllSucceedsAlwaysDefect{dispatcherOverEmbedded: h.Fresh()}
+}
+
+// dispatcherWeightPanicsDefect is the planted defect of a Dispatcher whose
+// Weight panics.
+type dispatcherWeightPanicsDefect struct {
+	dispatcherOverEmbedded
+}
+
+// Weight is the override of the planted defect.
+func (*dispatcherWeightPanicsDefect) Weight() (r0 int) {
+	panic("the planted defect of a Dispatcher whose Weight panics")
+}
+
+// dispatcherWeightPanics returns the planted defect of a Dispatcher whose
+// Weight panics over a fresh subject.
+func dispatcherWeightPanics(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherWeightPanicsDefect{dispatcherOverEmbedded: h.Fresh()}
+}
+
+// dispatcherWeightDriftsDefect is the planted defect of a Dispatcher whose
+// Weight returns another value on the repeat.
+type dispatcherWeightDriftsDefect struct {
+	dispatcherOverEmbedded
+	calls int
+}
+
+// Weight is the override of the planted defect.
+func (d *dispatcherWeightDriftsDefect) Weight() (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// dispatcherWeightDrifts returns the planted defect of a Dispatcher whose
+// Weight returns another value on the repeat over a fresh subject.
+func dispatcherWeightDrifts(h *DispatcherHandle) nested.Dispatcher {
+	return &dispatcherWeightDriftsDefect{dispatcherOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:1a8a3be3c9eef4b65214a1ea433e5e2cb57e3f7d8912a53519c1e08dad193a10

@@ -8,6 +8,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -36,10 +38,28 @@ type courierShip struct {
 	conform.Callable[Courier]
 }
 
+// Smoke returns the identity of the check that Ship returns without a
+// panic for derived inputs.
+func (c courierShip) Smoke() conform.ID[Courier] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Ship returns an error for
+// a cancelled context.
+func (c courierShip) Cancel() conform.ID[Courier] {
+	return c.Check("cancel")
+}
+
 // courierSend is the name of Courier.Send, with the identities of its
 // checks.
 type courierSend struct {
 	conform.Callable[Courier]
+}
+
+// Smoke returns the identity of the check that Send returns without a
+// panic for derived inputs.
+func (c courierSend) Smoke() conform.ID[Courier] {
+	return c.Check("smoke")
 }
 
 // CourierSuite returns the checks of Courier, and the calls and the
@@ -47,6 +67,55 @@ type courierSend struct {
 func CourierSuite() conform.Suite[Courier] {
 	return conform.Suite[Courier]{
 		Declaration: "Courier",
+		Checks: []conform.Check[Courier]{
+			{
+				ID:          CourierChecks.Ship.Smoke(),
+				Statement:   "Ship returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CourierHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Ship(ctx, &ShipRequest{ID: "ID-a"})
+					})
+				},
+				Defect: courierShipPanics,
+			},
+			{
+				ID:          CourierChecks.Ship.Cancel(),
+				Statement:   "Ship returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CourierHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Ship(ctx, &ShipRequest{ID: "ID-a"})
+					})
+				},
+				Defect: courierShipSucceedsAlways,
+			},
+			{
+				ID:          CourierChecks.Send.Smoke(),
+				Statement:   "Send returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CourierHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Send(Batch{Requests: []ShipRequest{{ID: "ID-a"}}})
+					})
+				},
+				Defect: courierSendPanics,
+			},
+		},
 		Calls: []conform.Call[Courier]{
 			{
 				Calls:    courierShipCalls,
@@ -277,6 +346,57 @@ func (o courierOver) Send(Batch) (r0 error) {
 // callables call spend.
 func newCourierOver(_ *CourierHandle, spend func()) Courier {
 	return courierOver{spend: spend}
+}
+
+// courierShipPanicsDefect is the planted defect of a Courier whose Ship
+// panics.
+type courierShipPanicsDefect struct {
+	courierOverEmbedded
+}
+
+// Ship is the override of the planted defect.
+func (*courierShipPanicsDefect) Ship(p0 context.Context, p1 *ShipRequest) (r0 error) {
+	panic("the planted defect of a Courier whose Ship panics")
+}
+
+// courierShipPanics returns the planted defect of a Courier whose Ship
+// panics over a fresh subject.
+func courierShipPanics(h *CourierHandle) Courier {
+	return &courierShipPanicsDefect{courierOverEmbedded: h.Fresh()}
+}
+
+// courierShipSucceedsAlwaysDefect is the planted defect of a Courier whose
+// Ship ignores the context.
+type courierShipSucceedsAlwaysDefect struct {
+	courierOverEmbedded
+}
+
+// Ship is the override of the planted defect.
+func (*courierShipSucceedsAlwaysDefect) Ship(p0 context.Context, p1 *ShipRequest) (r0 error) {
+	return r0
+}
+
+// courierShipSucceedsAlways returns the planted defect of a Courier whose
+// Ship ignores the context over a fresh subject.
+func courierShipSucceedsAlways(h *CourierHandle) Courier {
+	return &courierShipSucceedsAlwaysDefect{courierOverEmbedded: h.Fresh()}
+}
+
+// courierSendPanicsDefect is the planted defect of a Courier whose Send
+// panics.
+type courierSendPanicsDefect struct {
+	courierOverEmbedded
+}
+
+// Send is the override of the planted defect.
+func (*courierSendPanicsDefect) Send(p0 Batch) (r0 error) {
+	panic("the planted defect of a Courier whose Send panics")
+}
+
+// courierSendPanics returns the planted defect of a Courier whose Send
+// panics over a fresh subject.
+func courierSendPanics(h *CourierHandle) Courier {
+	return &courierSendPanicsDefect{courierOverEmbedded: h.Fresh()}
 }
 
 // The suite refers to the compatibility witness of its runtime.

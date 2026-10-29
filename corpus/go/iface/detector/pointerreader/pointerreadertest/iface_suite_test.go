@@ -51,6 +51,14 @@ func TestPointerReaderSuite(t *testing.T) {
 					return &pointerReaderSubject{}
 				},
 			}),
+			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +82,14 @@ func TestPointerReaderSuite(t *testing.T) {
 					return &pointerReaderSubject{}
 				},
 			}),
+			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -94,6 +110,14 @@ func TestPointerReaderSuiteBudgets(t *testing.T) {
 		t,
 		pointerReaderIdle,
 		conform.Ceilings(pointerreadertest.PointerReaderChecks.Find.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -105,6 +129,14 @@ func FuzzPointerReaderSuiteFind(f *testing.F) {
 		f,
 		pointerreadertest.PointerReaderChecks.Find.Callable,
 		pointerReaderIdle,
+		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			pointerreadertest.PointerReaderChecks.Find.NilOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -120,4 +152,4 @@ func BenchmarkPointerReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:cc28e67420d17da98d7a050c5d563708742cfb25f7269ec02b78a5f37f82e75a
+// dokimi:provenance sha256:b843ca7a027d38d3ed350fee479947f3ebd7adee751ee36e58189ca9d921ad88

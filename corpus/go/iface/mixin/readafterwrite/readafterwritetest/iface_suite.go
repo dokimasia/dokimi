@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/readafterwrite"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,10 +40,46 @@ type mixedRead struct {
 	conform.Callable[readafterwrite.Mixed]
 }
 
+// Smoke returns the identity of the check that Read returns without a
+// panic for derived inputs.
+func (c mixedRead) Smoke() conform.ID[readafterwrite.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Read returns an error for
+// a cancelled context.
+func (c mixedRead) Cancel() conform.ID[readafterwrite.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Read returns the zero
+// value beside an error.
+func (c mixedRead) ZeroOnError() conform.ID[readafterwrite.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// ReadAfterWrite returns the identity of the check that Read returns what
+// Write stored before it.
+func (c mixedRead) ReadAfterWrite() conform.ID[readafterwrite.Mixed] {
+	return c.Check("read-after-write")
+}
+
 // mixedWrite is the name of Mixed.Write, with the identities of its
 // checks.
 type mixedWrite struct {
 	conform.Callable[readafterwrite.Mixed]
+}
+
+// Smoke returns the identity of the check that Write returns without a
+// panic for derived inputs.
+func (c mixedWrite) Smoke() conform.ID[readafterwrite.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Write returns an error for
+// a cancelled context.
+func (c mixedWrite) Cancel() conform.ID[readafterwrite.Mixed] {
+	return c.Check("cancel")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +87,107 @@ type mixedWrite struct {
 func MixedSuite() conform.Suite[readafterwrite.Mixed] {
 	return conform.Suite[readafterwrite.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[readafterwrite.Mixed]{
+			{
+				ID:          MixedChecks.Read.Smoke(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedReadPanics,
+			},
+			{
+				ID:          MixedChecks.Read.Cancel(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedReadSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Read.ZeroOnError(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: mixedReadValueBeside,
+			},
+			{
+				ID:          MixedChecks.Read.ReadAfterWrite(),
+				Statement:   "Read returns what Write stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.WriteThenRead(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, string("key-a"))
+					}, func(ctx context.Context) (string, error) {
+						w := string("value-a")
+						err := h.Subject().Write(ctx, string("key-a"), w)
+						return w, err
+					})
+				},
+				Defect: mixedWriteForgetsWrites,
+			},
+			{
+				ID:          MixedChecks.Write.Smoke(),
+				Statement:   "Write returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Write(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedWritePanics,
+			},
+			{
+				ID:          MixedChecks.Write.Cancel(),
+				Statement:   "Write returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Write(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedWriteSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[readafterwrite.Mixed]{
 			{
 				Calls:    mixedReadCalls,
@@ -173,4 +312,108 @@ func newMixedOver(_ *MixedHandle, spend func()) readafterwrite.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f6eefed91ad4be98978b6636dff2dd8c1932f1c83d83548f78ebbbf7e7867508
+// mixedReadPanicsDefect is the planted defect of a Mixed whose Read
+// panics.
+type mixedReadPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadPanicsDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Read panics")
+}
+
+// mixedReadPanics returns the planted defect of a Mixed whose Read panics
+// over a fresh subject.
+func mixedReadPanics(h *MixedHandle) readafterwrite.Mixed {
+	return &mixedReadPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Read ignores the context.
+type mixedReadSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedReadSucceedsAlways returns the planted defect of a Mixed whose Read
+// ignores the context over a fresh subject.
+func mixedReadSucceedsAlways(h *MixedHandle) readafterwrite.Mixed {
+	return &mixedReadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadValueBesideDefect is the planted defect of a Mixed whose Read
+// returns a value beside an error.
+type mixedReadValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedReadValueBeside returns the planted defect of a Mixed whose Read
+// returns a value beside an error over a fresh subject.
+func mixedReadValueBeside(h *MixedHandle) readafterwrite.Mixed {
+	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedWriteForgetsWritesDefect is the planted defect of a Mixed whose
+// Write returns success and stores nothing.
+type mixedWriteForgetsWritesDefect struct {
+	mixedOverEmbedded
+}
+
+// Write is the override of the planted defect.
+func (*mixedWriteForgetsWritesDefect) Write(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// mixedWriteForgetsWrites returns the planted defect of a Mixed whose
+// Write returns success and stores nothing over a fresh subject.
+func mixedWriteForgetsWrites(h *MixedHandle) readafterwrite.Mixed {
+	return &mixedWriteForgetsWritesDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedWritePanicsDefect is the planted defect of a Mixed whose Write
+// panics.
+type mixedWritePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Write is the override of the planted defect.
+func (*mixedWritePanicsDefect) Write(p0 context.Context, p1, p2 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Write panics")
+}
+
+// mixedWritePanics returns the planted defect of a Mixed whose Write
+// panics over a fresh subject.
+func mixedWritePanics(h *MixedHandle) readafterwrite.Mixed {
+	return &mixedWritePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedWriteSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Write ignores the context.
+type mixedWriteSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Write is the override of the planted defect.
+func (*mixedWriteSucceedsAlwaysDefect) Write(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// mixedWriteSucceedsAlways returns the planted defect of a Mixed whose
+// Write ignores the context over a fresh subject.
+func mixedWriteSucceedsAlways(h *MixedHandle) readafterwrite.Mixed {
+	return &mixedWriteSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:ab8eae1e6a930a554d94fd28e82344ac62d1ab796efe36b305a21bfb43ac2dd0

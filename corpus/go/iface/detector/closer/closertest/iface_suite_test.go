@@ -48,6 +48,10 @@ func TestCloserSuite(t *testing.T) {
 				},
 				Defect: func(*closertest.CloserHandle) closer.Closer { return &closerSubject{} },
 			}),
+			conform.Excuse(
+				closertest.CloserChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +73,10 @@ func TestCloserSuite(t *testing.T) {
 				},
 				Defect: func(*closertest.CloserHandle) closer.Closer { return &closerSubject{} },
 			}),
+			conform.Excuse(
+				closertest.CloserChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +96,10 @@ func TestCloserSuiteBudgets(t *testing.T) {
 		t,
 		closerIdle,
 		conform.Ceilings(closertest.CloserChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			closertest.CloserChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +110,10 @@ func FuzzCloserSuiteClose(f *testing.F) {
 		f,
 		closertest.CloserChecks.Close.Callable,
 		closerIdle,
+		conform.Excuse(
+			closertest.CloserChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +125,4 @@ func BenchmarkCloserSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:13893e377920dad6be9661f99f8693df14bfbb1cf2c9f876f264a1e7e94fc5cc
+// dokimi:provenance sha256:6056d7e91976bdcf15ad0e31bae597f085ada97a9f8a6f8a8d27bb17bdef6efd

@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/pure"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,82 @@ type mixedDerive struct {
 	conform.Callable[pure.Mixed]
 }
 
+// Smoke returns the identity of the check that Derive returns without a
+// panic for derived inputs.
+func (c mixedDerive) Smoke() conform.ID[pure.Mixed] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Derive returns the
+// same value for the same inputs.
+func (c mixedDerive) Deterministic() conform.ID[pure.Mixed] {
+	return c.Check("deterministic")
+}
+
+// Pure returns the identity of the check that Derive returns the same
+// value on a repeat.
+func (c mixedDerive) Pure() conform.ID[pure.Mixed] {
+	return c.Check("pure")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[pure.Mixed] {
 	return conform.Suite[pure.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[pure.Mixed]{
+			{
+				ID:          MixedChecks.Derive.Smoke(),
+				Statement:   "Derive returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Derive(string("input-a"))
+						return nil
+					})
+				},
+				Defect: mixedDerivePanics,
+			},
+			{
+				ID:          MixedChecks.Derive.Deterministic(),
+				Statement:   "Derive returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						r0 := h.Subject().Derive(string("input-a"))
+						return r0, nil
+					})
+				},
+				Defect: mixedDeriveDrifts,
+			},
+			{
+				ID:          MixedChecks.Derive.Pure(),
+				Statement:   "Derive returns the same value on a repeat",
+				Claim:       spec.Pure,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						r0 := h.Subject().Derive(string("input-a"))
+						return r0, nil
+					})
+				},
+				Defect: mixedDeriveDrifts,
+			},
+		},
 		Calls: []conform.Call[pure.Mixed]{
 			{
 				Calls:    mixedDeriveCalls,
@@ -139,4 +212,43 @@ func newMixedOver(_ *MixedHandle, spend func()) pure.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:4680c1c4781d293e0df137ee563923ccafd95497a395e7893d22acffee4db582
+// mixedDerivePanicsDefect is the planted defect of a Mixed whose Derive
+// panics.
+type mixedDerivePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Derive is the override of the planted defect.
+func (*mixedDerivePanicsDefect) Derive(p0 string) (r0 string) {
+	panic("the planted defect of a Mixed whose Derive panics")
+}
+
+// mixedDerivePanics returns the planted defect of a Mixed whose Derive
+// panics over a fresh subject.
+func mixedDerivePanics(h *MixedHandle) pure.Mixed {
+	return &mixedDerivePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedDeriveDriftsDefect is the planted defect of a Mixed whose Derive
+// returns another value on the repeat.
+type mixedDeriveDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Derive is the override of the planted defect.
+func (d *mixedDeriveDriftsDefect) Derive(p0 string) (r0 string) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = string("sample-b")
+	}
+	return r0
+}
+
+// mixedDeriveDrifts returns the planted defect of a Mixed whose Derive
+// returns another value on the repeat over a fresh subject.
+func mixedDeriveDrifts(h *MixedHandle) pure.Mixed {
+	return &mixedDeriveDriftsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:b2f8d61267179db3d03d2f190e6bdfdf475ef410a162a84a6cb5a2b26d985b84

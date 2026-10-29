@@ -30,15 +30,28 @@ func ListsAtMostTheLimit(h *BatchedHandle) {
 	assert.InRange(h, len(got), 0, listLimit, h.Statement())
 }
 
-// unbounded returns a Batched whose List returns every stored key.
+// unbounded returns a Batched whose List returns every stored key. Each call
+// returns the error of a cancelled context.
 func unbounded(h *BatchedHandle) batchedmixins.Batched {
 	values := map[string]string{}
 	return NewBatchedStub(h,
-		WithBatchedPut(func(_ context.Context, key, value string) error {
+		WithBatchedPut(func(ctx context.Context, key, value string) error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			values[key] = value
 			return nil
 		}),
-		WithBatchedList(func(context.Context) ([]string, error) {
+		WithBatchedRead(func(ctx context.Context, key string) (string, error) {
+			if err := ctx.Err(); err != nil {
+				return "", err
+			}
+			return values[key], nil
+		}),
+		WithBatchedList(func(ctx context.Context) ([]string, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 			return slices.Sorted(maps.Keys(values)), nil
 		}))
 }

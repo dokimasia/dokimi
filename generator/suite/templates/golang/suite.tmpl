@@ -81,6 +81,15 @@ var _ = conform.CompatV1
 }
 {{- end}}
 {{- end}}
+{{- range $c.Derived}}
+{{- if eq .Type $callable.Type}}
+
+{{docs (wrapdocs (printf `%s returns the identity of the check that %s.` .Method .Statement))}}
+{{- ""}}func (c {{$type}}) {{.Method}}() conform.ID[{{$s}}] {
+	return c.Check({{printf "%q" .Segment}})
+}
+{{- end}}
+{{- end}}
 {{- range $c.Calls}}
 {{- if eq .Type $callable.Type}}
 {{- range suiteCeilings .Budget}}
@@ -99,9 +108,33 @@ var _ = conform.CompatV1
 {{- ""}}func {{$suite}}() conform.Suite[{{$s}}] {
 	return conform.Suite[{{$s}}]{
 		Declaration: {{printf "%q" $c.Declaration}},
-{{- with $c.Checks}}
+{{- if or $c.Checks $c.Derived}}
 		Checks: []conform.Check[{{$s}}]{
-{{- range .}}
+{{- range $c.Derived}}{{use "go.dokimi.dev/spec"}}{{use "go.dokimi.dev/conform/probe"}}
+			{
+				ID:          {{$checks}}{{with .Field}}.{{.}}{{end}}.{{.Method}}(),
+				Statement:   {{printf "%q" .Statement}},
+				Claim:       spec.{{.Claim}},
+				Probe:       spec.{{.Probe}},
+				Reason:      spec.{{.Reason}},
+				Law:         spec.{{.Law}},
+				Machineries: []spec.MachineryID{ {{- range $i, $m := .Machineries}}{{if $i}}, {{end}}spec.{{$m}}{{end -}} },
+{{- if .Shallow}}
+				Shallow:     true,
+{{- end}}
+{{- with .Entails}}
+				Entails:     []conform.ID[{{$s}}]{ {{- range $i, $e := .}}{{if $i}}, {{end}}{{$checks}}{{with $e.Field}}.{{.}}{{end}}.{{$e.Method}}(){{end -}} },
+{{- end}}
+				Apply: func(h *{{$handle}}) {
+					probe.{{.Probe}}(h{{range .Args}}, {{template "suite.arg" .}}{{end}})
+				},
+				Defect: {{suiteCamel .Defect}},
+{{- if .Clock}}{{use "testing/synctest"}}
+				Around: synctest.Test,
+{{- end}}
+			},
+{{- end}}
+{{- range $c.Checks}}
 			{
 				ID:        {{$checks}}{{with .Field}}.{{.}}{{end}}.{{suitePascal .Method}}(),
 				Statement: {{printf "%q" .Statement}},
@@ -448,7 +481,297 @@ var _ = conform.CompatV1
 {{- end}}
 {{- end}}
 {{- end}}
+{{- range $c.Defects}}
+{{- template "suite.defect" (suiteDefect . (suiteCamel $n.Embedded) $handle $s)}}
 {{- end}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.defect writes the planted defect of the derived checks with one break
+of one callable: the type that embeds the subject type and overrides the
+callable, with the function that wraps a fresh subject in it, or the function
+of a function suite that wraps the fresh function.
+*/}}
+{{- define "suite.defect"}}
+{{- $d := .Defect}}
+{{- $new := suiteCamel $d.Name}}
+{{- if $d.Type}}
+{{- $type := suiteCamel $d.Type}}
+
+{{docs (wrapdocs (printf `%s is the planted defect of %s.` $type $d.Doc))}}
+{{- ""}}type {{$type}} struct {
+	{{.Embedded}}
+{{- if $d.Counts}}
+	calls int
+{{- end}}
+{{- if eq $d.Body "slow"}}{{use "go.dokimi.dev/assert"}}
+	clock assert.Clock
+{{- end}}
+}
+
+{{docs (wrapdocs (printf `%s is the override of the planted defect.` $d.Method.Name))}}
+{{- ""}}func ({{if or $d.Delegates $d.Counts}}d {{end}}*{{$type}}) {{$d.Method.Name}}({{params $d.Method.Params}}){{results $d.Method.Returns}} {
+{{- template "suite.defect.body" (suiteBody $d (printf "d.%s.%s" .Embedded $d.Method.Name) "d.")}}
+}
+{{- with $d.Handle}}
+{{- $handle := suiteCamel .Type}}
+
+{{docs (wrapdocs (printf `%s is a handle whose %s returns its zero results and no error, also after its close.` $handle .Method.Name))}}
+{{- ""}}type {{$handle}} struct {
+	{{spell .Handled}}
+}
+
+{{docs (wrapdocs (printf `%s returns its zero results and no error.` .Method.Name))}}
+{{- ""}}func ({{$handle}}) {{.Method.Name}}({{params .Method.Params}}){{results .Method.Returns}} {
+	return
+}
+{{- end}}
+
+{{docs (wrapdocs (printf `%s returns the planted defect of %s over a fresh subject.` $new $d.Doc))}}
+{{- ""}}func {{$new}}(h *{{.Handle}}) {{.Subject}} {
+	return &{{$type}}{ {{- .Embedded}}: h.Fresh(){{if eq $d.Body "slow"}}, clock: h.Clock(){{end -}} }
+}
+{{- else}}
+
+{{docs (wrapdocs (printf `%s returns the planted defect of %s over the fresh function.` $new $d.Doc))}}
+{{- ""}}func {{$new}}(h *{{.Handle}}) {{.Subject}} {
+{{- if $d.Delegates}}
+	fresh := h.Fresh()
+{{- end}}
+{{- if $d.Counts}}
+	calls := 0
+{{- end}}
+{{- if eq $d.Body "slow"}}
+	clock := h.Clock()
+{{- end}}
+	return func({{params $d.Method.Params}}){{results $d.Method.Returns}} {
+{{- template "suite.defect.body" (suiteBody $d "fresh" "")}}
+	}
+}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.defect.body writes the body of the override of a planted defect. Call
+is the call of the callable of the fresh subject, and State the prefix of the
+counter and of the clock of the defect.
+*/}}
+{{- define "suite.defect.body"}}
+{{- $d := .Defect}}
+{{- $call := printf "%s(%s)" .Call (suiteJoin $d.Args)}}
+{{- $all := suiteNames $d.Results}}
+{{- if eq $d.Body "panic"}}
+	panic({{printf "%q" (printf "the planted defect of %s" $d.Doc)}})
+{{- else if eq $d.Body "panic-later"}}
+	{{.State}}calls++
+	if {{.State}}calls > 1 {
+		panic({{printf "%q" (printf "the planted defect of %s" $d.Doc)}})
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "zero"}}
+	return
+{{- else if eq $d.Body "zero-later"}}
+	{{.State}}calls++
+	if {{.State}}calls > 1 {
+		return
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "fail"}}
+{{- template "suite.defect.fail" $d}}
+	return
+{{- else if eq $d.Body "fail-later"}}
+	{{.State}}calls++
+	if {{.State}}calls > 1 {
+{{- template "suite.defect.fail" $d}}
+		return
+	}
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "fail-beside"}}
+{{- template "suite.defect.samples" $d}}
+{{- template "suite.defect.fail" $d}}
+	return
+{{- else if eq $d.Body "beside-false"}}
+	{{$all}} = {{$call}}
+	if !{{range $d.Results}}{{if eq .Role "flag"}}{{.Name}}{{end}}{{end}} {
+{{- template "suite.defect.samples" $d}}
+	}
+	return
+{{- else if eq $d.Body "sample"}}
+{{- template "suite.defect.samples" $d}}
+	return
+{{- else if eq $d.Body "drift"}}
+	{{.State}}calls++
+	if {{.State}}calls > 1 {
+{{- template "suite.defect.samples" $d}}
+	}
+	return
+{{- else if eq $d.Body "descend"}}
+	{{.State}}calls++
+	if {{.State}}calls == 1 {
+{{- template "suite.defect.samples" $d}}
+	}
+	return
+{{- else if eq $d.Body "version-descend"}}
+	{{.State}}calls++
+{{- template "suite.defect.samples" $d}}
+	if {{.State}}calls == 1 {
+		r0.{{$d.Version}} = 1
+	} else {
+		r0.{{$d.Version}} = 0
+	}
+	return
+{{- else if eq $d.Body "echo"}}
+	r0 = p{{$d.Input}}
+	return
+{{- else if eq $d.Body "drain-twice"}}
+	{{$all}} = {{$call}}
+	if len(r0) > 0 {
+		r0 = append(r0[:1:1], r0...)
+	}
+	return
+{{- else if eq $d.Body "reorder"}}{{use "slices"}}
+	{{$all}} = {{$call}}
+	{{.State}}calls++
+	if {{.State}}calls > 1 {
+		slices.Reverse(r0)
+	}
+	return
+{{- else if eq $d.Body "reverse"}}{{use "slices"}}
+	{{$all}} = {{$call}}
+	slices.Reverse(r0)
+	return
+{{- else if eq $d.Body "slow"}}{{use "time"}}
+	{{.State}}clock.Sleep({{suiteDuration $d.Budget}})
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "lead"}}
+	r0 = true
+	return
+{{- else if eq $d.Body "first-page"}}
+	p{{$d.Input}} = *new({{spell (index $d.Method.Params.Items $d.Input).Type}})
+	{{if $d.Results}}return {{end}}{{$call}}
+{{- else if eq $d.Body "live-handle"}}
+	{{$all}} = {{$call}}
+	r0 = {{suiteCamel $d.Handle.Type}}{r0}
+	return
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.defect.fail sets the error of the results of a planted defect to the
+error that the runtime generates, which no directive declares.
+*/}}
+{{- define "suite.defect.fail"}}
+{{- range .Results}}{{if eq .Role "error"}}
+	{{.Name}} = conform.ErrGenerated
+{{- end}}{{end}}
+{{- end}}
+
+{{- /*
+suite.defect.samples sets each value of the results of a planted defect to
+its second sample.
+*/}}
+{{- define "suite.defect.samples"}}
+{{- range .Results}}{{if eq .Role "value"}}
+	{{.Name}} = {{template "suite.expr" .Sample}}
+{{- end}}{{end}}
+{{- end}}
+
+{{- /*
+suite.arg writes one argument of the probe of a derived check.
+*/}}
+{{- define "suite.arg"}}
+{{- if .Closure}}{{template "suite.closure" .Closure}}
+{{- else if .Expr}}{{template "suite.expr" .Expr}}
+{{- else if .Projection}}func(v {{spell .Projection.Type}}) {{spell .Projection.Result}} { return v.{{.Projection.Field}} }
+{{- else}}{{use "time"}}{{suiteDuration .Duration}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.expr writes one expression of a derived check.
+*/}}
+{{- define "suite.expr"}}
+{{- if .Value}}{{value .Value}}
+{{- else if .Of}}({{template "suite.expr" .Of}}).{{.Select}}
+{{- else if .Hook}}func({{range $i, $p := slice .Hook.Elems 0 .Hook.Split}}{{if $i}}, {{end}}_ {{spell $p}}{{end}}) { {{- .Name}}() }
+{{- else if .Pair}}probe.Pair[{{spell (index .Pair.Types 0)}}, {{spell (index .Pair.Types 1)}}]{First: {{template "suite.expr" (index .Pair.Values 0)}}, Second: {{template "suite.expr" (index .Pair.Values 1)}}}
+{{- else if .Name}}{{.Name}}
+{{- else}}{{.Word}}
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.closure writes a closure that a derived check passes to its probe. A
+closure with assignments on its later calls counts its calls in a variable of
+the function that returns it.
+*/}}
+{{- define "suite.closure"}}{{use "context"}}
+{{- if .Later}}func() {{template "suite.closure.signature" .}} {
+	calls := 0
+	return {{end}}{{template "suite.closure.signature" .}} {
+{{- if .Later}}
+	calls++
+{{- end}}
+{{- range .Lets}}
+	{{.Name}}{{if .Select}}.{{.Select}} ={{else}} :={{end}} {{template "suite.expr" .Value}}
+{{- end}}
+{{- with .Later}}
+	if calls > 1 {
+{{- range .}}
+		{{.Name}}{{with .Select}}.{{.}}{{end}} = {{template "suite.expr" .Value}}
+{{- end}}
+	}
+{{- end}}
+{{- if .Stamps}}
+	{{suiteJoin .Assign}} := {{template "suite.invoke" .}}
+	stamps := make([]{{spell (index .Returns 0)}}, 0, len(r0))
+	for _, e := range r0 {
+		stamps = append(stamps, e.{{.Stamps}})
+	}
+	return {{template "suite.exprs" .Results}}
+{{- else if .Assign}}
+	{{suiteJoin .Assign}} := {{template "suite.invoke" .}}
+	return {{template "suite.exprs" .Results}}
+{{- else if .Discard}}
+	{{template "suite.invoke" .}}
+	return {{template "suite.exprs" .Results}}
+{{- else}}
+	return {{template "suite.invoke" .}}
+{{- end}}
+}{{if .Later}}
+}(){{end}}
+{{- end}}
+
+{{- /*
+suite.closure.signature writes the signature of a closure: the context, its
+parameter and its results.
+*/}}
+{{- define "suite.closure.signature"}}func(ctx context.Context{{with .Param}}, {{.Name}} {{if .Hook}}func(){{else if .Body}}probe.Act{{else}}{{spell .Type}}{{end}}{{end}}) {{template "suite.closure.returns" .}}
+{{- end}}
+
+{{- /*
+suite.closure.returns writes the results of a closure.
+*/}}
+{{- define "suite.closure.returns"}}
+{{- if and (not .Returns) .Error}}error
+{{- else}}({{if .Pair}}probe.Pair[{{spell (index .Returns 0)}}, {{spell (index .Returns 1)}}]{{else}}{{range $i, $r := .Returns}}{{if $i}}, {{end}}{{if $.Stamps}}[]{{end}}{{spell $r}}{{end}}{{end}}{{if .Error}}, error{{end}}{{if .Flag}}, bool{{end}})
+{{- end}}
+{{- end}}
+
+{{- /*
+suite.invoke writes the call of a closure: the callable on the subject of the
+handle, or on the receiver of the closure, with its arguments.
+*/}}
+{{- define "suite.invoke"}}
+{{- with .Receiver}}{{template "suite.expr" .}}{{else}}h.Subject(){{end}}{{with .Method}}.{{.}}{{end}}({{template "suite.exprs" .Args}})
+{{- end}}
+
+{{- /*
+suite.exprs writes a list of expressions, separated by commas.
+*/}}
+{{- define "suite.exprs"}}
+{{- range $i, $e := .}}{{if $i}}, {{end}}{{template "suite.expr" $e}}{{end}}
 {{- end}}
 
 {{- /*

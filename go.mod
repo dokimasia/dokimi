@@ -7,7 +7,7 @@ go 1.27.3
 
 require (
 	github.com/google/jsonschema-go v0.4.3
-	go.dokimi.dev/assert v0.11.0
+	go.dokimi.dev/assert v0.12.0
 	go.dokimi.dev/eidos/cli v0.3.5-0.20261029070751-8d191b8e49af
 	go.dokimi.dev/eidos/core v0.12.1-0.20261029070751-8d191b8e49af
 	go.dokimi.dev/eidos/lang v0.4.3-0.20261029070751-8d191b8e49af

@@ -48,6 +48,14 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*hookstest.MixedHandle) hooks.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				hookstest.MixedChecks.Fire.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				hookstest.MixedChecks.Fire.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +77,14 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*hookstest.MixedHandle) hooks.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				hookstest.MixedChecks.Fire.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				hookstest.MixedChecks.Fire.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +105,14 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(hookstest.MixedChecks.Fire.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(hookstest.MixedChecks.OnEvent.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			hookstest.MixedChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			hookstest.MixedChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +123,14 @@ func FuzzMixedSuiteFire(f *testing.F) {
 		f,
 		hookstest.MixedChecks.Fire.Callable,
 		mixedIdle,
+		conform.Excuse(
+			hookstest.MixedChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			hookstest.MixedChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +141,14 @@ func FuzzMixedSuiteOnEvent(f *testing.F) {
 		f,
 		hookstest.MixedChecks.OnEvent.Callable,
 		mixedIdle,
+		conform.Excuse(
+			hookstest.MixedChecks.Fire.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			hookstest.MixedChecks.Fire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +163,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:48039b2d90900ee2c238686ac805fa05c4171d2f24ff5d9237f4952826b47e04
+// dokimi:provenance sha256:dc73ce2815c8a8e934a9f6aaec80afbd86d44800712e6168557fe3e03cda7023

@@ -48,6 +48,18 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*timeouttest.MixedHandle) timeout.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				timeouttest.MixedChecks.Slow.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeouttest.MixedChecks.Slow.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeouttest.MixedChecks.Slow.Within(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +81,18 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*timeouttest.MixedHandle) timeout.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				timeouttest.MixedChecks.Slow.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeouttest.MixedChecks.Slow.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeouttest.MixedChecks.Slow.Within(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +112,18 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(timeouttest.MixedChecks.Slow.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			timeouttest.MixedChecks.Slow.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeouttest.MixedChecks.Slow.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeouttest.MixedChecks.Slow.Within(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +134,18 @@ func FuzzMixedSuiteSlow(f *testing.F) {
 		f,
 		timeouttest.MixedChecks.Slow.Callable,
 		mixedIdle,
+		conform.Excuse(
+			timeouttest.MixedChecks.Slow.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeouttest.MixedChecks.Slow.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeouttest.MixedChecks.Slow.Within(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +157,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b8d5d2c95ab7edb7e2388aa6386727c4bdbd5670c211a79b7d07db2cb5219968
+// dokimi:provenance sha256:a4860ccee97f0c76caf3e513f4d72ea84f1bd7fbb97d7f969e7a8dec1b1e517a

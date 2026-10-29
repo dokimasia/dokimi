@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/xsssafe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,101 @@ type mixedRender struct {
 	conform.Callable[xsssafe.Mixed]
 }
 
+// Smoke returns the identity of the check that Render returns without a
+// panic for derived inputs.
+func (c mixedRender) Smoke() conform.ID[xsssafe.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Render returns an error
+// for a cancelled context.
+func (c mixedRender) Cancel() conform.ID[xsssafe.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Render returns the
+// zero value beside an error.
+func (c mixedRender) ZeroOnError() conform.ID[xsssafe.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// XSSSafe returns the identity of the check that Render does not return
+// the value that its directive declares unsafe.
+func (c mixedRender) XSSSafe() conform.ID[xsssafe.Mixed] {
+	return c.Check("xss-safe")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[xsssafe.Mixed] {
 	return conform.Suite[xsssafe.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[xsssafe.Mixed]{
+			{
+				ID:          MixedChecks.Render.Smoke(),
+				Statement:   "Render returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Render(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: mixedRenderPanics,
+			},
+			{
+				ID:          MixedChecks.Render.Cancel(),
+				Statement:   "Render returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Render(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: mixedRenderSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Render.ZeroOnError(),
+				Statement:   "Render returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Render(ctx, string("in-a"))
+					}, string(""))
+				},
+				Defect: mixedRenderValueBeside,
+			},
+			{
+				ID:          MixedChecks.Render.XSSSafe(),
+				Statement:   "Render does not return the value that its directive declares unsafe",
+				Claim:       spec.XSSSafe,
+				Probe:       spec.EscapesTheUnsafe,
+				Reason:      spec.UnescapedOutput,
+				Law:         spec.UnsafeValueDoesNotSurvive,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.EscapesTheUnsafe(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Render(ctx, xsssafe.Unsafe)
+					}, xsssafe.Unsafe)
+				},
+				Defect: mixedRenderEchoes,
+			},
+		},
 		Calls: []conform.Call[xsssafe.Mixed]{
 			{
 				Calls:    mixedRenderCalls,
@@ -139,4 +231,75 @@ func newMixedOver(_ *MixedHandle, spend func()) xsssafe.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b18af08a12886b1707569fbd8638db8a6341f5f93ac44fb9ddb5b4321762d21c
+// mixedRenderPanicsDefect is the planted defect of a Mixed whose Render
+// panics.
+type mixedRenderPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Render is the override of the planted defect.
+func (*mixedRenderPanicsDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Render panics")
+}
+
+// mixedRenderPanics returns the planted defect of a Mixed whose Render
+// panics over a fresh subject.
+func mixedRenderPanics(h *MixedHandle) xsssafe.Mixed {
+	return &mixedRenderPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRenderSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Render ignores the context.
+type mixedRenderSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Render is the override of the planted defect.
+func (*mixedRenderSucceedsAlwaysDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedRenderSucceedsAlways returns the planted defect of a Mixed whose
+// Render ignores the context over a fresh subject.
+func mixedRenderSucceedsAlways(h *MixedHandle) xsssafe.Mixed {
+	return &mixedRenderSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRenderValueBesideDefect is the planted defect of a Mixed whose
+// Render returns a value beside an error.
+type mixedRenderValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Render is the override of the planted defect.
+func (*mixedRenderValueBesideDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedRenderValueBeside returns the planted defect of a Mixed whose
+// Render returns a value beside an error over a fresh subject.
+func mixedRenderValueBeside(h *MixedHandle) xsssafe.Mixed {
+	return &mixedRenderValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedRenderEchoesDefect is the planted defect of a Mixed whose Render
+// returns its input unchanged.
+type mixedRenderEchoesDefect struct {
+	mixedOverEmbedded
+}
+
+// Render is the override of the planted defect.
+func (*mixedRenderEchoesDefect) Render(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = p1
+	return r0, r1
+}
+
+// mixedRenderEchoes returns the planted defect of a Mixed whose Render
+// returns its input unchanged over a fresh subject.
+func mixedRenderEchoes(h *MixedHandle) xsssafe.Mixed {
+	return &mixedRenderEchoesDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:d3b7950f61a5b5ae51ace1a8b9693c4cf7b52b9dd802d7796c2c38dd5ca3cd1d

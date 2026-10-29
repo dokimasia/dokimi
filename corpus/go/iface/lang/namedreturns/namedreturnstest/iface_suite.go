@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/namedreturns"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,46 @@ type serviceNamed struct {
 	conform.Callable[namedreturns.Service]
 }
 
+// Smoke returns the identity of the check that Named returns without a
+// panic for derived inputs.
+func (c serviceNamed) Smoke() conform.ID[namedreturns.Service] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Named returns an error for
+// a cancelled context.
+func (c serviceNamed) Cancel() conform.ID[namedreturns.Service] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Named returns the
+// zero value beside an error.
+func (c serviceNamed) ZeroOnError() conform.ID[namedreturns.Service] {
+	return c.Check("zero-on-error")
+}
+
 // serviceUnnamed is the name of Service.Unnamed, with the identities of
 // its checks.
 type serviceUnnamed struct {
 	conform.Callable[namedreturns.Service]
+}
+
+// Smoke returns the identity of the check that Unnamed returns without a
+// panic for derived inputs.
+func (c serviceUnnamed) Smoke() conform.ID[namedreturns.Service] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Unnamed returns an error
+// for a cancelled context.
+func (c serviceUnnamed) Cancel() conform.ID[namedreturns.Service] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Unnamed returns the
+// zero value beside an error.
+func (c serviceUnnamed) ZeroOnError() conform.ID[namedreturns.Service] {
+	return c.Check("zero-on-error")
 }
 
 // servicePartiallyNamed is the name of Service.PartiallyNamed, with the
@@ -53,11 +91,175 @@ type servicePartiallyNamed struct {
 	conform.Callable[namedreturns.Service]
 }
 
+// Smoke returns the identity of the check that PartiallyNamed returns
+// without a panic for derived inputs.
+func (c servicePartiallyNamed) Smoke() conform.ID[namedreturns.Service] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that PartiallyNamed returns an
+// error for a cancelled context.
+func (c servicePartiallyNamed) Cancel() conform.ID[namedreturns.Service] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that PartiallyNamed
+// returns the zero value beside an error.
+func (c servicePartiallyNamed) ZeroOnError() conform.ID[namedreturns.Service] {
+	return c.Check("zero-on-error")
+}
+
 // ServiceSuite returns the checks of Service, and the calls and the
 // budgets of its callables.
 func ServiceSuite() conform.Suite[namedreturns.Service] {
 	return conform.Suite[namedreturns.Service]{
 		Declaration: "Service",
+		Checks: []conform.Check[namedreturns.Service]{
+			{
+				ID:          ServiceChecks.Named.Smoke(),
+				Statement:   "Named returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ServiceHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Named(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: serviceNamedPanics,
+			},
+			{
+				ID:          ServiceChecks.Named.Cancel(),
+				Statement:   "Named returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ServiceHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Named(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: serviceNamedSucceedsAlways,
+			},
+			{
+				ID:          ServiceChecks.Named.ZeroOnError(),
+				Statement:   "Named returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ServiceHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Named(ctx, string("id-a"))
+					}, string(""))
+				},
+				Defect: serviceNamedValueBeside,
+			},
+			{
+				ID:          ServiceChecks.Unnamed.Smoke(),
+				Statement:   "Unnamed returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ServiceHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Unnamed(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: serviceUnnamedPanics,
+			},
+			{
+				ID:          ServiceChecks.Unnamed.Cancel(),
+				Statement:   "Unnamed returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ServiceHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Unnamed(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: serviceUnnamedSucceedsAlways,
+			},
+			{
+				ID:          ServiceChecks.Unnamed.ZeroOnError(),
+				Statement:   "Unnamed returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ServiceHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Unnamed(ctx, string("id-a"))
+					}, string(""))
+				},
+				Defect: serviceUnnamedValueBeside,
+			},
+			{
+				ID:          ServiceChecks.PartiallyNamed.Smoke(),
+				Statement:   "PartiallyNamed returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ServiceHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().PartiallyNamed(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: servicePartiallyNamedPanics,
+			},
+			{
+				ID:          ServiceChecks.PartiallyNamed.Cancel(),
+				Statement:   "PartiallyNamed returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ServiceHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().PartiallyNamed(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: servicePartiallyNamedSucceedsAlways,
+			},
+			{
+				ID:          ServiceChecks.PartiallyNamed.ZeroOnError(),
+				Statement:   "PartiallyNamed returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ServiceHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().PartiallyNamed(ctx, string("id-a"))
+					}, string(""))
+				},
+				Defect: servicePartiallyNamedValueBeside,
+			},
+		},
 		Calls: []conform.Call[namedreturns.Service]{
 			{
 				Calls:    serviceNamedCalls,
@@ -207,4 +409,164 @@ func newServiceOver(_ *ServiceHandle, spend func()) namedreturns.Service {
 	return serviceOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b3b136cb506006ece54aefc70226e8118b1a69f92170b76ea451911c5fb63763
+// serviceNamedPanicsDefect is the planted defect of a Service whose Named
+// panics.
+type serviceNamedPanicsDefect struct {
+	serviceOverEmbedded
+}
+
+// Named is the override of the planted defect.
+func (*serviceNamedPanicsDefect) Named(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Service whose Named panics")
+}
+
+// serviceNamedPanics returns the planted defect of a Service whose Named
+// panics over a fresh subject.
+func serviceNamedPanics(h *ServiceHandle) namedreturns.Service {
+	return &serviceNamedPanicsDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// serviceNamedSucceedsAlwaysDefect is the planted defect of a Service
+// whose Named ignores the context.
+type serviceNamedSucceedsAlwaysDefect struct {
+	serviceOverEmbedded
+}
+
+// Named is the override of the planted defect.
+func (*serviceNamedSucceedsAlwaysDefect) Named(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// serviceNamedSucceedsAlways returns the planted defect of a Service whose
+// Named ignores the context over a fresh subject.
+func serviceNamedSucceedsAlways(h *ServiceHandle) namedreturns.Service {
+	return &serviceNamedSucceedsAlwaysDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// serviceNamedValueBesideDefect is the planted defect of a Service whose
+// Named returns a value beside an error.
+type serviceNamedValueBesideDefect struct {
+	serviceOverEmbedded
+}
+
+// Named is the override of the planted defect.
+func (*serviceNamedValueBesideDefect) Named(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("item-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// serviceNamedValueBeside returns the planted defect of a Service whose
+// Named returns a value beside an error over a fresh subject.
+func serviceNamedValueBeside(h *ServiceHandle) namedreturns.Service {
+	return &serviceNamedValueBesideDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// serviceUnnamedPanicsDefect is the planted defect of a Service whose
+// Unnamed panics.
+type serviceUnnamedPanicsDefect struct {
+	serviceOverEmbedded
+}
+
+// Unnamed is the override of the planted defect.
+func (*serviceUnnamedPanicsDefect) Unnamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Service whose Unnamed panics")
+}
+
+// serviceUnnamedPanics returns the planted defect of a Service whose
+// Unnamed panics over a fresh subject.
+func serviceUnnamedPanics(h *ServiceHandle) namedreturns.Service {
+	return &serviceUnnamedPanicsDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// serviceUnnamedSucceedsAlwaysDefect is the planted defect of a Service
+// whose Unnamed ignores the context.
+type serviceUnnamedSucceedsAlwaysDefect struct {
+	serviceOverEmbedded
+}
+
+// Unnamed is the override of the planted defect.
+func (*serviceUnnamedSucceedsAlwaysDefect) Unnamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// serviceUnnamedSucceedsAlways returns the planted defect of a Service
+// whose Unnamed ignores the context over a fresh subject.
+func serviceUnnamedSucceedsAlways(h *ServiceHandle) namedreturns.Service {
+	return &serviceUnnamedSucceedsAlwaysDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// serviceUnnamedValueBesideDefect is the planted defect of a Service whose
+// Unnamed returns a value beside an error.
+type serviceUnnamedValueBesideDefect struct {
+	serviceOverEmbedded
+}
+
+// Unnamed is the override of the planted defect.
+func (*serviceUnnamedValueBesideDefect) Unnamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// serviceUnnamedValueBeside returns the planted defect of a Service whose
+// Unnamed returns a value beside an error over a fresh subject.
+func serviceUnnamedValueBeside(h *ServiceHandle) namedreturns.Service {
+	return &serviceUnnamedValueBesideDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// servicePartiallyNamedPanicsDefect is the planted defect of a Service
+// whose PartiallyNamed panics.
+type servicePartiallyNamedPanicsDefect struct {
+	serviceOverEmbedded
+}
+
+// PartiallyNamed is the override of the planted defect.
+func (*servicePartiallyNamedPanicsDefect) PartiallyNamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Service whose PartiallyNamed panics")
+}
+
+// servicePartiallyNamedPanics returns the planted defect of a Service
+// whose PartiallyNamed panics over a fresh subject.
+func servicePartiallyNamedPanics(h *ServiceHandle) namedreturns.Service {
+	return &servicePartiallyNamedPanicsDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// servicePartiallyNamedSucceedsAlwaysDefect is the planted defect of a
+// Service whose PartiallyNamed ignores the context.
+type servicePartiallyNamedSucceedsAlwaysDefect struct {
+	serviceOverEmbedded
+}
+
+// PartiallyNamed is the override of the planted defect.
+func (*servicePartiallyNamedSucceedsAlwaysDefect) PartiallyNamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// servicePartiallyNamedSucceedsAlways returns the planted defect of a
+// Service whose PartiallyNamed ignores the context over a fresh subject.
+func servicePartiallyNamedSucceedsAlways(h *ServiceHandle) namedreturns.Service {
+	return &servicePartiallyNamedSucceedsAlwaysDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// servicePartiallyNamedValueBesideDefect is the planted defect of a
+// Service whose PartiallyNamed returns a value beside an error.
+type servicePartiallyNamedValueBesideDefect struct {
+	serviceOverEmbedded
+}
+
+// PartiallyNamed is the override of the planted defect.
+func (*servicePartiallyNamedValueBesideDefect) PartiallyNamed(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("item-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// servicePartiallyNamedValueBeside returns the planted defect of a Service
+// whose PartiallyNamed returns a value beside an error over a fresh
+// subject.
+func servicePartiallyNamedValueBeside(h *ServiceHandle) namedreturns.Service {
+	return &servicePartiallyNamedValueBesideDefect{serviceOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:06411eb8f81bef39027aa19802a5f2cfb81537a1c559299c4d0bd4aca9ce34bb

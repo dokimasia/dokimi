@@ -48,6 +48,14 @@ func TestPureSuite(t *testing.T) {
 				},
 				Defect: func(*puretest.PureHandle) pure.Pure { return &pureSubject{} },
 			}),
+			conform.Excuse(
+				puretest.PureChecks.Describe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				puretest.PureChecks.Describe.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +77,14 @@ func TestPureSuite(t *testing.T) {
 				},
 				Defect: func(*puretest.PureHandle) pure.Pure { return &pureSubject{} },
 			}),
+			conform.Excuse(
+				puretest.PureChecks.Describe.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				puretest.PureChecks.Describe.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +104,14 @@ func TestPureSuiteBudgets(t *testing.T) {
 		t,
 		pureIdle,
 		conform.Ceilings(puretest.PureChecks.Describe.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			puretest.PureChecks.Describe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			puretest.PureChecks.Describe.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +122,14 @@ func FuzzPureSuiteDescribe(f *testing.F) {
 		f,
 		puretest.PureChecks.Describe.Callable,
 		pureIdle,
+		conform.Excuse(
+			puretest.PureChecks.Describe.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			puretest.PureChecks.Describe.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +141,4 @@ func BenchmarkPureSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:d2c0464a783c8bcffebbc9c7be715479d3e1b1fa2aa5c360bad7841bcbe103f9
+// dokimi:provenance sha256:87598e48f56286ee6308586b5d87f91a40b0761743f967d90e2eb9822b92e068

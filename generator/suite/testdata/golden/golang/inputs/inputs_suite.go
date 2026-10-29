@@ -8,6 +8,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -110,6 +112,12 @@ type pipelinePut struct {
 	conform.Callable[Pipeline]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c pipelinePut) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
+}
+
 // pipelineCount is the name of Pipeline.Count, with the identities of its
 // checks.
 type pipelineCount struct {
@@ -146,11 +154,53 @@ type pipelineLabel struct {
 	conform.Callable[Pipeline]
 }
 
+// Smoke returns the identity of the check that Label returns without a
+// panic for derived inputs.
+func (c pipelineLabel) Smoke() conform.ID[Pipeline] {
+	return c.Check("smoke")
+}
+
 // PipelineSuite returns the checks of Pipeline, and the calls and the
 // budgets of its callables.
 func PipelineSuite() conform.Suite[Pipeline] {
 	return conform.Suite[Pipeline]{
 		Declaration: "Pipeline",
+		Checks: []conform.Check[Pipeline]{
+			{
+				ID:          PipelineChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(Item{Count: 1}, Line{Qty: 1}, DefaultNote())
+					})
+				},
+				Defect: pipelinePutPanics,
+			},
+			{
+				ID:          PipelineChecks.Label.Smoke(),
+				Statement:   "Label returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PipelineHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().
+							Label(Tag("new"), DefaultCode(), Level(42), Text("text-a"), Bag[int]{42})
+						return nil
+					})
+				},
+				Defect: pipelineLabelPanics,
+			},
+		},
 		Calls: []conform.Call[Pipeline]{
 			{
 				Calls:    pipelinePumpCalls,
@@ -939,4 +989,38 @@ func (o pipelineOver) Label(Tag, Code, Level, Text, Bag[int]) {
 // whose callables call spend.
 func newPipelineOver(_ *PipelineHandle, spend func()) Pipeline {
 	return pipelineOver{spend: spend}
+}
+
+// pipelinePutPanicsDefect is the planted defect of a Pipeline whose Put
+// panics.
+type pipelinePutPanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*pipelinePutPanicsDefect) Put(p0 Item, p1 Line, p2 Note) (r0 error) {
+	panic("the planted defect of a Pipeline whose Put panics")
+}
+
+// pipelinePutPanics returns the planted defect of a Pipeline whose Put
+// panics over a fresh subject.
+func pipelinePutPanics(h *PipelineHandle) Pipeline {
+	return &pipelinePutPanicsDefect{pipelineOverEmbedded: h.Fresh()}
+}
+
+// pipelineLabelPanicsDefect is the planted defect of a Pipeline whose
+// Label panics.
+type pipelineLabelPanicsDefect struct {
+	pipelineOverEmbedded
+}
+
+// Label is the override of the planted defect.
+func (*pipelineLabelPanicsDefect) Label(p0 Tag, p1 Code, p2 Level, p3 Text, p4 Bag[int]) {
+	panic("the planted defect of a Pipeline whose Label panics")
+}
+
+// pipelineLabelPanics returns the planted defect of a Pipeline whose Label
+// panics over a fresh subject.
+func pipelineLabelPanics(h *PipelineHandle) Pipeline {
+	return &pipelineLabelPanicsDefect{pipelineOverEmbedded: h.Fresh()}
 }

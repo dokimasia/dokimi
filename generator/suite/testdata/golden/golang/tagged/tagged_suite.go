@@ -6,6 +6,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -40,10 +42,34 @@ type hasherHashTagged struct {
 	conform.Callable[Hasher]
 }
 
+// Smoke returns the identity of the check that HashTagged returns without
+// a panic for derived inputs.
+func (c hasherHashTagged) Smoke() conform.ID[Hasher] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that HashTagged returns
+// the same value for the same inputs.
+func (c hasherHashTagged) Deterministic() conform.ID[Hasher] {
+	return c.Check("deterministic")
+}
+
 // hasherCombineTagged is the name of Hasher.CombineTagged, with the
 // identities of its checks.
 type hasherCombineTagged struct {
 	conform.Callable[Hasher]
+}
+
+// Smoke returns the identity of the check that CombineTagged returns
+// without a panic for derived inputs.
+func (c hasherCombineTagged) Smoke() conform.ID[Hasher] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that CombineTagged
+// returns the same value for the same inputs.
+func (c hasherCombineTagged) Deterministic() conform.ID[Hasher] {
+	return c.Check("deterministic")
 }
 
 // hasherHashRoles is the name of Hasher.HashRoles, with the identities of
@@ -52,10 +78,34 @@ type hasherHashRoles struct {
 	conform.Callable[Hasher]
 }
 
+// Smoke returns the identity of the check that HashRoles returns without a
+// panic for derived inputs.
+func (c hasherHashRoles) Smoke() conform.ID[Hasher] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that HashRoles returns
+// the same value for the same inputs.
+func (c hasherHashRoles) Deterministic() conform.ID[Hasher] {
+	return c.Check("deterministic")
+}
+
 // hasherTruncate is the name of Hasher.Truncate, with the identities of
 // its checks.
 type hasherTruncate struct {
 	conform.Callable[Hasher]
+}
+
+// Smoke returns the identity of the check that Truncate returns without a
+// panic for derived inputs.
+func (c hasherTruncate) Smoke() conform.ID[Hasher] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Truncate returns
+// the same value for the same inputs.
+func (c hasherTruncate) Deterministic() conform.ID[Hasher] {
+	return c.Check("deterministic")
 }
 
 // hasherSeal is the name of Hasher.Seal, with the identities of its
@@ -64,11 +114,192 @@ type hasherSeal struct {
 	conform.Callable[Hasher]
 }
 
+// Smoke returns the identity of the check that Seal returns without a
+// panic for derived inputs.
+func (c hasherSeal) Smoke() conform.ID[Hasher] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Seal returns an error for
+// a cancelled context.
+func (c hasherSeal) Cancel() conform.ID[Hasher] {
+	return c.Check("cancel")
+}
+
 // HasherSuite returns the checks of Hasher, and the calls and the budgets
 // of its callables.
 func HasherSuite() conform.Suite[Hasher] {
 	return conform.Suite[Hasher]{
 		Declaration: "Hasher",
+		Checks: []conform.Check[Hasher]{
+			{
+				ID:          HasherChecks.HashTagged.Smoke(),
+				Statement:   "HashTagged returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().HashTagged(Role(1), []byte{1})
+						return nil
+					})
+				},
+				Defect: hasherHashTaggedPanics,
+			},
+			{
+				ID:          HasherChecks.HashTagged.Deterministic(),
+				Statement:   "HashTagged returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject().HashTagged(Role(1), []byte{1})
+						return r0, nil
+					})
+				},
+				Defect: hasherHashTaggedDrifts,
+			},
+			{
+				ID:          HasherChecks.CombineTagged.Smoke(),
+				Statement:   "CombineTagged returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().CombineTagged(Role(129), [32]byte{1}, [32]byte{1})
+						return nil
+					})
+				},
+				Defect: hasherCombineTaggedPanics,
+			},
+			{
+				ID:          HasherChecks.CombineTagged.Deterministic(),
+				Statement:   "CombineTagged returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject().CombineTagged(Role(129), [32]byte{1}, [32]byte{1})
+						return r0, nil
+					})
+				},
+				Defect: hasherCombineTaggedDrifts,
+			},
+			{
+				ID:          HasherChecks.HashRoles.Smoke(),
+				Statement:   "HashRoles returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().HashRoles(Role(2))
+						return nil
+					})
+				},
+				Defect: hasherHashRolesPanics,
+			},
+			{
+				ID:          HasherChecks.HashRoles.Deterministic(),
+				Statement:   "HashRoles returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject().HashRoles(Role(2))
+						return r0, nil
+					})
+				},
+				Defect: hasherHashRolesDrifts,
+			},
+			{
+				ID:          HasherChecks.Truncate.Smoke(),
+				Statement:   "Truncate returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Truncate([32]byte{1}, Size(16))
+						return nil
+					})
+				},
+				Defect: hasherTruncatePanics,
+			},
+			{
+				ID:          HasherChecks.Truncate.Deterministic(),
+				Statement:   "Truncate returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([]byte, error) {
+						r0 := h.Subject().Truncate([32]byte{1}, Size(16))
+						return r0, nil
+					})
+				},
+				Defect: hasherTruncateDrifts,
+			},
+			{
+				ID:          HasherChecks.Seal.Smoke(),
+				Statement:   "Seal returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Seal(ctx, [32]byte{1})
+					})
+				},
+				Defect: hasherSealPanics,
+			},
+			{
+				ID:          HasherChecks.Seal.Cancel(),
+				Statement:   "Seal returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *HasherHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Seal(ctx, [32]byte{1})
+					})
+				},
+				Defect: hasherSealSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[Hasher]{
 			{
 				Calls:    hasherHashTaggedCalls,
@@ -276,6 +507,196 @@ func newHasherOver(_ *HasherHandle, spend func()) Hasher {
 	return hasherOver{spend: spend}
 }
 
+// hasherHashTaggedPanicsDefect is the planted defect of a Hasher whose
+// HashTagged panics.
+type hasherHashTaggedPanicsDefect struct {
+	hasherOverEmbedded
+}
+
+// HashTagged is the override of the planted defect.
+func (*hasherHashTaggedPanicsDefect) HashTagged(p0 Role, p1 []byte) (r0 [32]byte) {
+	panic("the planted defect of a Hasher whose HashTagged panics")
+}
+
+// hasherHashTaggedPanics returns the planted defect of a Hasher whose
+// HashTagged panics over a fresh subject.
+func hasherHashTaggedPanics(h *HasherHandle) Hasher {
+	return &hasherHashTaggedPanicsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherHashTaggedDriftsDefect is the planted defect of a Hasher whose
+// HashTagged returns another value on the repeat.
+type hasherHashTaggedDriftsDefect struct {
+	hasherOverEmbedded
+	calls int
+}
+
+// HashTagged is the override of the planted defect.
+func (d *hasherHashTaggedDriftsDefect) HashTagged(p0 Role, p1 []byte) (r0 [32]byte) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = [32]byte{2}
+	}
+	return r0
+}
+
+// hasherHashTaggedDrifts returns the planted defect of a Hasher whose
+// HashTagged returns another value on the repeat over a fresh subject.
+func hasherHashTaggedDrifts(h *HasherHandle) Hasher {
+	return &hasherHashTaggedDriftsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherCombineTaggedPanicsDefect is the planted defect of a Hasher whose
+// CombineTagged panics.
+type hasherCombineTaggedPanicsDefect struct {
+	hasherOverEmbedded
+}
+
+// CombineTagged is the override of the planted defect.
+func (*hasherCombineTaggedPanicsDefect) CombineTagged(p0 Role, p1, p2 [32]byte) (r0 [32]byte) {
+	panic("the planted defect of a Hasher whose CombineTagged panics")
+}
+
+// hasherCombineTaggedPanics returns the planted defect of a Hasher whose
+// CombineTagged panics over a fresh subject.
+func hasherCombineTaggedPanics(h *HasherHandle) Hasher {
+	return &hasherCombineTaggedPanicsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherCombineTaggedDriftsDefect is the planted defect of a Hasher whose
+// CombineTagged returns another value on the repeat.
+type hasherCombineTaggedDriftsDefect struct {
+	hasherOverEmbedded
+	calls int
+}
+
+// CombineTagged is the override of the planted defect.
+func (d *hasherCombineTaggedDriftsDefect) CombineTagged(p0 Role, p1, p2 [32]byte) (r0 [32]byte) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = [32]byte{2}
+	}
+	return r0
+}
+
+// hasherCombineTaggedDrifts returns the planted defect of a Hasher whose
+// CombineTagged returns another value on the repeat over a fresh subject.
+func hasherCombineTaggedDrifts(h *HasherHandle) Hasher {
+	return &hasherCombineTaggedDriftsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherHashRolesPanicsDefect is the planted defect of a Hasher whose
+// HashRoles panics.
+type hasherHashRolesPanicsDefect struct {
+	hasherOverEmbedded
+}
+
+// HashRoles is the override of the planted defect.
+func (*hasherHashRolesPanicsDefect) HashRoles(p0 ...Role) (r0 [32]byte) {
+	panic("the planted defect of a Hasher whose HashRoles panics")
+}
+
+// hasherHashRolesPanics returns the planted defect of a Hasher whose
+// HashRoles panics over a fresh subject.
+func hasherHashRolesPanics(h *HasherHandle) Hasher {
+	return &hasherHashRolesPanicsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherHashRolesDriftsDefect is the planted defect of a Hasher whose
+// HashRoles returns another value on the repeat.
+type hasherHashRolesDriftsDefect struct {
+	hasherOverEmbedded
+	calls int
+}
+
+// HashRoles is the override of the planted defect.
+func (d *hasherHashRolesDriftsDefect) HashRoles(p0 ...Role) (r0 [32]byte) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = [32]byte{2}
+	}
+	return r0
+}
+
+// hasherHashRolesDrifts returns the planted defect of a Hasher whose
+// HashRoles returns another value on the repeat over a fresh subject.
+func hasherHashRolesDrifts(h *HasherHandle) Hasher {
+	return &hasherHashRolesDriftsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherTruncatePanicsDefect is the planted defect of a Hasher whose
+// Truncate panics.
+type hasherTruncatePanicsDefect struct {
+	hasherOverEmbedded
+}
+
+// Truncate is the override of the planted defect.
+func (*hasherTruncatePanicsDefect) Truncate(p0 [32]byte, p1 Size) (r0 []byte) {
+	panic("the planted defect of a Hasher whose Truncate panics")
+}
+
+// hasherTruncatePanics returns the planted defect of a Hasher whose
+// Truncate panics over a fresh subject.
+func hasherTruncatePanics(h *HasherHandle) Hasher {
+	return &hasherTruncatePanicsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherTruncateDriftsDefect is the planted defect of a Hasher whose
+// Truncate returns another value on the repeat.
+type hasherTruncateDriftsDefect struct {
+	hasherOverEmbedded
+	calls int
+}
+
+// Truncate is the override of the planted defect.
+func (d *hasherTruncateDriftsDefect) Truncate(p0 [32]byte, p1 Size) (r0 []byte) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = []byte{2}
+	}
+	return r0
+}
+
+// hasherTruncateDrifts returns the planted defect of a Hasher whose
+// Truncate returns another value on the repeat over a fresh subject.
+func hasherTruncateDrifts(h *HasherHandle) Hasher {
+	return &hasherTruncateDriftsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherSealPanicsDefect is the planted defect of a Hasher whose Seal
+// panics.
+type hasherSealPanicsDefect struct {
+	hasherOverEmbedded
+}
+
+// Seal is the override of the planted defect.
+func (*hasherSealPanicsDefect) Seal(p0 context.Context, p1 [32]byte) (r0 error) {
+	panic("the planted defect of a Hasher whose Seal panics")
+}
+
+// hasherSealPanics returns the planted defect of a Hasher whose Seal
+// panics over a fresh subject.
+func hasherSealPanics(h *HasherHandle) Hasher {
+	return &hasherSealPanicsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherSealSucceedsAlwaysDefect is the planted defect of a Hasher whose
+// Seal ignores the context.
+type hasherSealSucceedsAlwaysDefect struct {
+	hasherOverEmbedded
+}
+
+// Seal is the override of the planted defect.
+func (*hasherSealSucceedsAlwaysDefect) Seal(p0 context.Context, p1 [32]byte) (r0 error) {
+	return r0
+}
+
+// hasherSealSucceedsAlways returns the planted defect of a Hasher whose
+// Seal ignores the context over a fresh subject.
+func hasherSealSucceedsAlways(h *HasherHandle) Hasher {
+	return &hasherSealSucceedsAlwaysDefect{hasherOverEmbedded: h.Fresh()}
+}
+
 // The suite refers to the compatibility witness of its runtime.
 var _ = conform.CompatV1
 
@@ -299,11 +720,59 @@ type digestCallable struct {
 	conform.Callable[DigestFunc]
 }
 
+// Smoke returns the identity of the check that Digest returns without a
+// panic for derived inputs.
+func (c digestCallable) Smoke() conform.ID[DigestFunc] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Digest returns the
+// same value for the same inputs.
+func (c digestCallable) Deterministic() conform.ID[DigestFunc] {
+	return c.Check("deterministic")
+}
+
 // DigestSuite returns the checks of Digest, and the calls and the budgets
 // of its callables.
 func DigestSuite() conform.Suite[DigestFunc] {
 	return conform.Suite[DigestFunc]{
 		Declaration: "Digest",
+		Checks: []conform.Check[DigestFunc]{
+			{
+				ID:          DigestChecks.Smoke(),
+				Statement:   "Digest returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DigestHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject()(Role(3), []byte{1})
+						return nil
+					})
+				},
+				Defect: digestPanics,
+			},
+			{
+				ID:          DigestChecks.Deterministic(),
+				Statement:   "Digest returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *DigestHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject()(Role(3), []byte{1})
+						return r0, nil
+					})
+				},
+				Defect: digestDrifts,
+			},
+		},
 		Calls: []conform.Call[DigestFunc]{
 			{
 				Calls:    digestCalls,
@@ -376,6 +845,27 @@ var digestCalls = prop.Composite(func(c *prop.Case) func(context.Context, Digest
 func newDigestOver(_ *DigestHandle, spend func()) DigestFunc {
 	return func(Role, []byte) (r0 [32]byte) {
 		spend()
+		return r0
+	}
+}
+
+// digestPanics returns the planted defect of a Digest whose Digest panics
+// over the fresh function.
+func digestPanics(h *DigestHandle) DigestFunc {
+	return func(p0 Role, p1 []byte) (r0 [32]byte) {
+		panic("the planted defect of a Digest whose Digest panics")
+	}
+}
+
+// digestDrifts returns the planted defect of a Digest whose Digest returns
+// another value on the repeat over the fresh function.
+func digestDrifts(h *DigestHandle) DigestFunc {
+	calls := 0
+	return func(p0 Role, p1 []byte) (r0 [32]byte) {
+		calls++
+		if calls > 1 {
+			r0 = [32]byte{2}
+		}
 		return r0
 	}
 }

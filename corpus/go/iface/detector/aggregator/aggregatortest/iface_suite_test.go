@@ -49,6 +49,18 @@ func TestAggregatorSuite(t *testing.T) {
 				},
 				Defect: func(*aggregatortest.AggregatorHandle) aggregator.Aggregator { return &aggregatorSubject{} },
 			}),
+			conform.Excuse(
+				aggregatortest.AggregatorChecks.Count.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				aggregatortest.AggregatorChecks.Count.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				aggregatortest.AggregatorChecks.Count.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +82,18 @@ func TestAggregatorSuite(t *testing.T) {
 				},
 				Defect: func(*aggregatortest.AggregatorHandle) aggregator.Aggregator { return &aggregatorSubject{} },
 			}),
+			conform.Excuse(
+				aggregatortest.AggregatorChecks.Count.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				aggregatortest.AggregatorChecks.Count.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				aggregatortest.AggregatorChecks.Count.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +113,18 @@ func TestAggregatorSuiteBudgets(t *testing.T) {
 		t,
 		aggregatorIdle,
 		conform.Ceilings(aggregatortest.AggregatorChecks.Count.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			aggregatortest.AggregatorChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			aggregatortest.AggregatorChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			aggregatortest.AggregatorChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +135,18 @@ func FuzzAggregatorSuiteCount(f *testing.F) {
 		f,
 		aggregatortest.AggregatorChecks.Count.Callable,
 		aggregatorIdle,
+		conform.Excuse(
+			aggregatortest.AggregatorChecks.Count.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			aggregatortest.AggregatorChecks.Count.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			aggregatortest.AggregatorChecks.Count.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,4 +158,4 @@ func BenchmarkAggregatorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:532894c90201448f44cbc243ac7c73b11bb00d4a6ef2a92ed0b68f5403246d94
+// dokimi:provenance sha256:e7e50af400c75992530d85bb84433e090a8b880c0ff6a64fa3836ed79db3a773

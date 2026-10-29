@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/cacheable"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -36,11 +38,101 @@ type mixedGet struct {
 	conform.Callable[cacheable.Mixed]
 }
 
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c mixedGet) Smoke() conform.ID[cacheable.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c mixedGet) Cancel() conform.ID[cacheable.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c mixedGet) ZeroOnError() conform.ID[cacheable.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// Cacheable returns the identity of the check that Get returns the same
+// value on a repeat.
+func (c mixedGet) Cacheable() conform.ID[cacheable.Mixed] {
+	return c.Check("cacheable")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[cacheable.Mixed] {
 	return conform.Suite[cacheable.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[cacheable.Mixed]{
+			{
+				ID:          MixedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
+				ID:          MixedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.Get.Cacheable(),
+				Statement:   "Get returns the same value on a repeat",
+				Claim:       spec.Cacheable,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedGetDrifts,
+			},
+		},
 		Calls: []conform.Call[cacheable.Mixed]{
 			{
 				Calls:    mixedGetCalls,
@@ -138,4 +230,78 @@ func newMixedOver(_ *MixedHandle, spend func()) cacheable.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d1c5c97c6f36d1b903d05a41da2e6604c33ade710f6ea89499ea418a200c3aa1
+// mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
+type mixedGetPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Get panics")
+}
+
+// mixedGetPanics returns the planted defect of a Mixed whose Get panics
+// over a fresh subject.
+func mixedGetPanics(h *MixedHandle) cacheable.Mixed {
+	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// ignores the context.
+type mixedGetSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// ignores the context over a fresh subject.
+func mixedGetSucceedsAlways(h *MixedHandle) cacheable.Mixed {
+	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
+// returns a value beside an error.
+type mixedGetValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedGetValueBeside returns the planted defect of a Mixed whose Get
+// returns a value beside an error over a fresh subject.
+func mixedGetValueBeside(h *MixedHandle) cacheable.Mixed {
+	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetDriftsDefect is the planted defect of a Mixed whose Get returns
+// another value on the repeat.
+type mixedGetDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Get is the override of the planted defect.
+func (d *mixedGetDriftsDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// mixedGetDrifts returns the planted defect of a Mixed whose Get returns
+// another value on the repeat over a fresh subject.
+func mixedGetDrifts(h *MixedHandle) cacheable.Mixed {
+	return &mixedGetDriftsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:676f0d41cf59346886f9056be9be7c97ceaaaf1a13872df64bf35308d2afae75

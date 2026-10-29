@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/accumulates"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,10 +40,40 @@ type mixedAdd struct {
 	conform.Callable[accumulates.Mixed]
 }
 
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c mixedAdd) Smoke() conform.ID[accumulates.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c mixedAdd) Cancel() conform.ID[accumulates.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedTotal is the name of Mixed.Total, with the identities of its
 // checks.
 type mixedTotal struct {
 	conform.Callable[accumulates.Mixed]
+}
+
+// Smoke returns the identity of the check that Total returns without a
+// panic for derived inputs.
+func (c mixedTotal) Smoke() conform.ID[accumulates.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Total returns an error for
+// a cancelled context.
+func (c mixedTotal) Cancel() conform.ID[accumulates.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Total returns the
+// zero value beside an error.
+func (c mixedTotal) ZeroOnError() conform.ID[accumulates.Mixed] {
+	return c.Check("zero-on-error")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +81,87 @@ type mixedTotal struct {
 func MixedSuite() conform.Suite[accumulates.Mixed] {
 	return conform.Suite[accumulates.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[accumulates.Mixed]{
+			{
+				ID:          MixedChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("key-a"), int(42))
+					})
+				},
+				Defect: mixedAddPanics,
+			},
+			{
+				ID:          MixedChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, string("key-a"), int(42))
+					})
+				},
+				Defect: mixedAddSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Total.Smoke(),
+				Statement:   "Total returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Total(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedTotalPanics,
+			},
+			{
+				ID:          MixedChecks.Total.Cancel(),
+				Statement:   "Total returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Total(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedTotalSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Total.ZeroOnError(),
+				Statement:   "Total returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Total(ctx, string("key-a"))
+					}, int(0))
+				},
+				Defect: mixedTotalValueBeside,
+			},
+		},
 		Calls: []conform.Call[accumulates.Mixed]{
 			{
 				Calls:    mixedAddCalls,
@@ -171,4 +284,90 @@ func newMixedOver(_ *MixedHandle, spend func()) accumulates.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:62fe8ab5a650a3fccda674c5d35fdb40f008544aafeb3ad784a0e4b9d5fe6e24
+// mixedAddPanicsDefect is the planted defect of a Mixed whose Add panics.
+type mixedAddPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddPanicsDefect) Add(p0 context.Context, p1 string, p2 int) (r0 error) {
+	panic("the planted defect of a Mixed whose Add panics")
+}
+
+// mixedAddPanics returns the planted defect of a Mixed whose Add panics
+// over a fresh subject.
+func mixedAddPanics(h *MixedHandle) accumulates.Mixed {
+	return &mixedAddPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose Add
+// ignores the context.
+type mixedAddSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 string, p2 int) (r0 error) {
+	return r0
+}
+
+// mixedAddSucceedsAlways returns the planted defect of a Mixed whose Add
+// ignores the context over a fresh subject.
+func mixedAddSucceedsAlways(h *MixedHandle) accumulates.Mixed {
+	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedTotalPanicsDefect is the planted defect of a Mixed whose Total
+// panics.
+type mixedTotalPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Total is the override of the planted defect.
+func (*mixedTotalPanicsDefect) Total(p0 context.Context, p1 string) (r0 int, r1 error) {
+	panic("the planted defect of a Mixed whose Total panics")
+}
+
+// mixedTotalPanics returns the planted defect of a Mixed whose Total
+// panics over a fresh subject.
+func mixedTotalPanics(h *MixedHandle) accumulates.Mixed {
+	return &mixedTotalPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedTotalSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Total ignores the context.
+type mixedTotalSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Total is the override of the planted defect.
+func (*mixedTotalSucceedsAlwaysDefect) Total(p0 context.Context, p1 string) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// mixedTotalSucceedsAlways returns the planted defect of a Mixed whose
+// Total ignores the context over a fresh subject.
+func mixedTotalSucceedsAlways(h *MixedHandle) accumulates.Mixed {
+	return &mixedTotalSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedTotalValueBesideDefect is the planted defect of a Mixed whose Total
+// returns a value beside an error.
+type mixedTotalValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Total is the override of the planted defect.
+func (*mixedTotalValueBesideDefect) Total(p0 context.Context, p1 string) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedTotalValueBeside returns the planted defect of a Mixed whose Total
+// returns a value beside an error over a fresh subject.
+func mixedTotalValueBeside(h *MixedHandle) accumulates.Mixed {
+	return &mixedTotalValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:3634003b19877ef1d8c31c4a10c19118be853c6b7b967ca53e13cc7f7712c8ba

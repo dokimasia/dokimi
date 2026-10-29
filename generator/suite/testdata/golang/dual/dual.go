@@ -146,6 +146,22 @@ func (*Overspent) Write(string, string) error { return nil }
 // Flush writes nothing through.
 func (*Overspent) Flush() error { return nil }
 
+// Unflushed is the subject of Writer, and excuses a check of Flush that the
+// suite of Writer does not have.
+//
+//dokimi:subject Writer new=NewUnflushed
+//dokimi:excuse Writer.Flush/writes-through reason="the store keeps no items"
+type Unflushed struct{}
+
+// NewUnflushed returns a new Unflushed.
+func NewUnflushed() *Unflushed { return &Unflushed{} }
+
+// Write drops the item.
+func (*Unflushed) Write(string, string) error { return nil }
+
+// Flush writes nothing through.
+func (*Unflushed) Flush() error { return nil }
+
 // Stray is the subject of Reader, and excuses a check of Writer, which is
 // not one of its declarations.
 //

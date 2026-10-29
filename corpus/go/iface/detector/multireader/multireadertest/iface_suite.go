@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multireader"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,87 @@ type multiReaderGetWithMeta struct {
 	conform.Callable[multireader.MultiReader]
 }
 
+// Smoke returns the identity of the check that GetWithMeta returns without
+// a panic for derived inputs.
+func (c multiReaderGetWithMeta) Smoke() conform.ID[multireader.MultiReader] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that GetWithMeta returns an
+// error for a cancelled context.
+func (c multiReaderGetWithMeta) Cancel() conform.ID[multireader.MultiReader] {
+	return c.Check("cancel")
+}
+
+// ZeroesOnError returns the identity of the check that GetWithMeta returns
+// the zero values beside an error.
+func (c multiReaderGetWithMeta) ZeroesOnError() conform.ID[multireader.MultiReader] {
+	return c.Check("zeroes-on-error")
+}
+
 // MultiReaderSuite returns the checks of MultiReader, and the calls and
 // the budgets of its callables.
 func MultiReaderSuite() conform.Suite[multireader.MultiReader] {
 	return conform.Suite[multireader.MultiReader]{
 		Declaration: "MultiReader",
+		Checks: []conform.Check[multireader.MultiReader]{
+			{
+				ID:          MultiReaderChecks.GetWithMeta.Smoke(),
+				Statement:   "GetWithMeta returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MultiReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().GetWithMeta(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: multiReaderGetWithMetaPanics,
+			},
+			{
+				ID:          MultiReaderChecks.GetWithMeta.Cancel(),
+				Statement:   "GetWithMeta returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MultiReaderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().GetWithMeta(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: multiReaderGetWithMetaSucceedsAlways,
+			},
+			{
+				ID:          MultiReaderChecks.GetWithMeta.ZeroesOnError(),
+				Statement:   "GetWithMeta returns the zero values beside an error",
+				Claim:       spec.ZeroesOnError,
+				Probe:       spec.ZeroPairBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MultiReaderHandle) {
+					probe.ZeroPairBesideError(
+						h,
+						func(ctx context.Context) (probe.Pair[multireader.Value, multireader.Meta], error) {
+							r0, r1, err := h.Subject().GetWithMeta(ctx, string("key-a"))
+							return probe.Pair[multireader.Value, multireader.Meta]{First: r0, Second: r1}, err
+						},
+						probe.Pair[multireader.Value, multireader.Meta]{
+							First:  multireader.Value{},
+							Second: multireader.Meta{},
+						},
+					)
+				},
+				Defect: multiReaderGetWithMetaValuesBeside,
+			},
+		},
 		Calls: []conform.Call[multireader.MultiReader]{
 			{
 				Calls:    multiReaderGetWithMetaCalls,
@@ -151,4 +229,68 @@ func newMultiReaderOver(_ *MultiReaderHandle, spend func()) multireader.MultiRea
 	return multiReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:000f779bda43abcb7bacfa5151fd06b9de16e30c9b50bd409a41a3aadec24e46
+// multiReaderGetWithMetaPanicsDefect is the planted defect of a
+// MultiReader whose GetWithMeta panics.
+type multiReaderGetWithMetaPanicsDefect struct {
+	multiReaderOverEmbedded
+}
+
+// GetWithMeta is the override of the planted defect.
+func (*multiReaderGetWithMetaPanicsDefect) GetWithMeta(
+	p0 context.Context,
+	p1 string,
+) (r0 multireader.Value, r1 multireader.Meta, r2 error) {
+	panic("the planted defect of a MultiReader whose GetWithMeta panics")
+}
+
+// multiReaderGetWithMetaPanics returns the planted defect of a MultiReader
+// whose GetWithMeta panics over a fresh subject.
+func multiReaderGetWithMetaPanics(h *MultiReaderHandle) multireader.MultiReader {
+	return &multiReaderGetWithMetaPanicsDefect{multiReaderOverEmbedded: h.Fresh()}
+}
+
+// multiReaderGetWithMetaSucceedsAlwaysDefect is the planted defect of a
+// MultiReader whose GetWithMeta ignores the context.
+type multiReaderGetWithMetaSucceedsAlwaysDefect struct {
+	multiReaderOverEmbedded
+}
+
+// GetWithMeta is the override of the planted defect.
+func (*multiReaderGetWithMetaSucceedsAlwaysDefect) GetWithMeta(
+	p0 context.Context,
+	p1 string,
+) (r0 multireader.Value, r1 multireader.Meta, r2 error) {
+	return r0, r1, r2
+}
+
+// multiReaderGetWithMetaSucceedsAlways returns the planted defect of a
+// MultiReader whose GetWithMeta ignores the context over a fresh subject.
+func multiReaderGetWithMetaSucceedsAlways(h *MultiReaderHandle) multireader.MultiReader {
+	return &multiReaderGetWithMetaSucceedsAlwaysDefect{multiReaderOverEmbedded: h.Fresh()}
+}
+
+// multiReaderGetWithMetaValuesBesideDefect is the planted defect of a
+// MultiReader whose GetWithMeta returns values beside an error.
+type multiReaderGetWithMetaValuesBesideDefect struct {
+	multiReaderOverEmbedded
+}
+
+// GetWithMeta is the override of the planted defect.
+func (*multiReaderGetWithMetaValuesBesideDefect) GetWithMeta(
+	p0 context.Context,
+	p1 string,
+) (r0 multireader.Value, r1 multireader.Meta, r2 error) {
+	r0 = multireader.Value{Key: "Key-b"}
+	r1 = multireader.Meta{Revision: 7}
+	r2 = conform.ErrGenerated
+	return r0, r1, r2
+}
+
+// multiReaderGetWithMetaValuesBeside returns the planted defect of a
+// MultiReader whose GetWithMeta returns values beside an error over a
+// fresh subject.
+func multiReaderGetWithMetaValuesBeside(h *MultiReaderHandle) multireader.MultiReader {
+	return &multiReaderGetWithMetaValuesBesideDefect{multiReaderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:7c61dc9d934384fb6d813e004f2b643c74fe9359bba5b9c2e4a9a181be24c3b0

@@ -6,11 +6,14 @@ package stableordertest
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/stableorder"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,10 +41,46 @@ type mixedAdd struct {
 	conform.Callable[stableorder.Mixed]
 }
 
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c mixedAdd) Smoke() conform.ID[stableorder.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c mixedAdd) Cancel() conform.ID[stableorder.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedItems is the name of Mixed.Items, with the identities of its
 // checks.
 type mixedItems struct {
 	conform.Callable[stableorder.Mixed]
+}
+
+// Smoke returns the identity of the check that Items returns without a
+// panic for derived inputs.
+func (c mixedItems) Smoke() conform.ID[stableorder.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Items returns an error for
+// a cancelled context.
+func (c mixedItems) Cancel() conform.ID[stableorder.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Items returns the
+// zero value beside an error.
+func (c mixedItems) ZeroOnError() conform.ID[stableorder.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// StableOrder returns the identity of the check that two calls of Items
+// return the elements in the same order.
+func (c mixedItems) StableOrder() conform.ID[stableorder.Mixed] {
+	return c.Check("stable-order")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +88,113 @@ type mixedItems struct {
 func MixedSuite() conform.Suite[stableorder.Mixed] {
 	return conform.Suite[stableorder.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[stableorder.Mixed]{
+			{
+				ID:          MixedChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, stableorder.Value{Key: "Key-a"})
+					})
+				},
+				Defect: mixedAddPanics,
+			},
+			{
+				ID:          MixedChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, stableorder.Value{Key: "Key-a"})
+					})
+				},
+				Defect: mixedAddSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Items.Smoke(),
+				Statement:   "Items returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Items(ctx)
+						return err
+					})
+				},
+				Defect: mixedItemsPanics,
+			},
+			{
+				ID:          MixedChecks.Items.Cancel(),
+				Statement:   "Items returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Items(ctx)
+						return err
+					})
+				},
+				Defect: mixedItemsSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Items.ZeroOnError(),
+				Statement:   "Items returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]stableorder.Value, error) {
+						return h.Subject().Items(ctx)
+					}, []stableorder.Value(nil))
+				},
+				Defect: mixedItemsValueBeside,
+			},
+			{
+				ID:          MixedChecks.Items.StableOrder(),
+				Statement:   "two calls of Items return the elements in the same order",
+				Claim:       spec.StableOrder,
+				Probe:       spec.DrainsInOneOrder,
+				Reason:      spec.ReorderedDrain,
+				Law:         spec.TwoDrainsAgreeOnOrder,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.DrainsInOneOrder(h, func(ctx context.Context) ([]stableorder.Value, error) {
+						return h.Subject().Items(ctx)
+					}, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := stableorder.Value{Key: "Key-a"}
+							if calls > 1 {
+								w = stableorder.Value{Key: "Key-b"}
+							}
+							return h.Subject().Add(ctx, w)
+						}
+					}())
+				},
+				Defect: mixedItemsReordersDrain,
+			},
+		},
 		Calls: []conform.Call[stableorder.Mixed]{
 			{
 				Calls:    mixedAddCalls,
@@ -169,4 +315,113 @@ func newMixedOver(_ *MixedHandle, spend func()) stableorder.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:88c76eaa8b6d50d549e1b8d470d42ea1e837bf52ef473736e4eed0c9d6b1ccec
+// mixedAddPanicsDefect is the planted defect of a Mixed whose Add panics.
+type mixedAddPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddPanicsDefect) Add(p0 context.Context, p1 stableorder.Value) (r0 error) {
+	panic("the planted defect of a Mixed whose Add panics")
+}
+
+// mixedAddPanics returns the planted defect of a Mixed whose Add panics
+// over a fresh subject.
+func mixedAddPanics(h *MixedHandle) stableorder.Mixed {
+	return &mixedAddPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAddSucceedsAlwaysDefect is the planted defect of a Mixed whose Add
+// ignores the context.
+type mixedAddSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*mixedAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 stableorder.Value) (r0 error) {
+	return r0
+}
+
+// mixedAddSucceedsAlways returns the planted defect of a Mixed whose Add
+// ignores the context over a fresh subject.
+func mixedAddSucceedsAlways(h *MixedHandle) stableorder.Mixed {
+	return &mixedAddSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsPanicsDefect is the planted defect of a Mixed whose Items
+// panics.
+type mixedItemsPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsPanicsDefect) Items(p0 context.Context) (r0 []stableorder.Value, r1 error) {
+	panic("the planted defect of a Mixed whose Items panics")
+}
+
+// mixedItemsPanics returns the planted defect of a Mixed whose Items
+// panics over a fresh subject.
+func mixedItemsPanics(h *MixedHandle) stableorder.Mixed {
+	return &mixedItemsPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Items ignores the context.
+type mixedItemsSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsSucceedsAlwaysDefect) Items(p0 context.Context) (r0 []stableorder.Value, r1 error) {
+	return r0, r1
+}
+
+// mixedItemsSucceedsAlways returns the planted defect of a Mixed whose
+// Items ignores the context over a fresh subject.
+func mixedItemsSucceedsAlways(h *MixedHandle) stableorder.Mixed {
+	return &mixedItemsSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsValueBesideDefect is the planted defect of a Mixed whose Items
+// returns a value beside an error.
+type mixedItemsValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Items is the override of the planted defect.
+func (*mixedItemsValueBesideDefect) Items(p0 context.Context) (r0 []stableorder.Value, r1 error) {
+	r0 = []stableorder.Value{{Key: "Key-b"}}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedItemsValueBeside returns the planted defect of a Mixed whose Items
+// returns a value beside an error over a fresh subject.
+func mixedItemsValueBeside(h *MixedHandle) stableorder.Mixed {
+	return &mixedItemsValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedItemsReordersDrainDefect is the planted defect of a Mixed whose
+// Items reorders the elements between calls.
+type mixedItemsReordersDrainDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Items is the override of the planted defect.
+func (d *mixedItemsReordersDrainDefect) Items(p0 context.Context) (r0 []stableorder.Value, r1 error) {
+	r0, r1 = d.mixedOverEmbedded.Items(p0)
+	d.calls++
+	if d.calls > 1 {
+		slices.Reverse(r0)
+	}
+	return r0, r1
+}
+
+// mixedItemsReordersDrain returns the planted defect of a Mixed whose
+// Items reorders the elements between calls over a fresh subject.
+func mixedItemsReordersDrain(h *MixedHandle) stableorder.Mixed {
+	return &mixedItemsReordersDrainDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:e64f3f1fc18b6200bb85d3b9ae8f31941b28ba0c97acbbff0b84360218b3633b

@@ -51,6 +51,14 @@ func TestVoidLifecycleSuite(t *testing.T) {
 					return &voidLifecycleSubject{}
 				},
 			}),
+			conform.Excuse(
+				voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +82,14 @@ func TestVoidLifecycleSuite(t *testing.T) {
 					return &voidLifecycleSubject{}
 				},
 			}),
+			conform.Excuse(
+				voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -94,6 +110,14 @@ func TestVoidLifecycleSuiteBudgets(t *testing.T) {
 		t,
 		voidLifecycleIdle,
 		conform.Ceilings(voidlifecycletest.VoidLifecycleChecks.Stop.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -105,6 +129,14 @@ func FuzzVoidLifecycleSuiteStop(f *testing.F) {
 		f,
 		voidlifecycletest.VoidLifecycleChecks.Stop.Callable,
 		voidLifecycleIdle,
+		conform.Excuse(
+			voidlifecycletest.VoidLifecycleChecks.Stop.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			voidlifecycletest.VoidLifecycleChecks.Stop.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -120,4 +152,4 @@ func BenchmarkVoidLifecycleSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:4f98d4e49647d5f0d6b90a2746c7eaf44a4f00562e30a6f81f0d6676dc161058
+// dokimi:provenance sha256:c831e53bd18614cef150a9f8d35880d4fcf7f2582c3098796436bece25455d26

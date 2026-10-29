@@ -6,6 +6,7 @@ package derive
 import (
 	"slices"
 
+	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
 
@@ -37,6 +38,7 @@ var conditions = map[spec.GateID]func(f *Facts) bool{
 	spec.OptionalInput: func(f *Facts) bool {
 		return slices.ContainsFunc(f.Inputs, func(v Value) bool { return v.Shape.Form == symbol.FormOptional })
 	},
+	spec.ReturnsUnaided: func(f *Facts) bool { return !slices.Contains(f.Class.Mixins, shape.Waits) },
 }
 
 // OtherGates are the gates of the spec that another part of the derivation

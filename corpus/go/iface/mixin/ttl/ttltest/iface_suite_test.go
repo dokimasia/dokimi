@@ -49,7 +49,27 @@ func TestMixedSuite(t *testing.T) {
 				Defect: func(*ttltest.MixedHandle) ttl.Mixed { return &mixedSubject{} },
 			}),
 			conform.Excuse(
-				ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+				ttltest.MixedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.Expires(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -74,7 +94,27 @@ func TestMixedSuite(t *testing.T) {
 				Defect: func(*ttltest.MixedHandle) ttl.Mixed { return &mixedSubject{} },
 			}),
 			conform.Excuse(
-				ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+				ttltest.MixedChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				ttltest.MixedChecks.Read.Expires(),
 				"the test applies the check of its option alone",
 			),
 		)
@@ -82,12 +122,6 @@ func TestMixedSuite(t *testing.T) {
 
 	t.Run("MixedChecks", func(t *testing.T) {
 		t.Parallel()
-		assert.Equal(
-			t,
-			string(ttltest.MixedChecks.Read.ExpiresAfterTheLifetime()),
-			"Mixed.Read/expires-after-the-lifetime",
-			"the identity of the check joins the callable and the segment of the check",
-		)
 		assert.Equal(
 			t,
 			string(ttltest.MixedChecks.Read.AllocationBudget()),
@@ -133,7 +167,27 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(ttltest.MixedChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			ttltest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Expires(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -147,7 +201,27 @@ func FuzzMixedSuitePut(f *testing.F) {
 		ttltest.MixedChecks.Put.Callable,
 		mixedIdle,
 		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			ttltest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Expires(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -161,7 +235,27 @@ func FuzzMixedSuiteRead(f *testing.F) {
 		ttltest.MixedChecks.Read.Callable,
 		mixedIdle,
 		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
+			ttltest.MixedChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			ttltest.MixedChecks.Read.Expires(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 	)
@@ -178,4 +272,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2f7398b156e4cac2e4b9538811b7f39b74ba39a9be0a6477f15227f12086e7db
+// dokimi:provenance sha256:5944f239262a12b1c303dc670f9983ab59ae4ef83654f32a084cdf7ebe11ae9b

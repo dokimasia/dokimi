@@ -4,6 +4,7 @@
 package derive_test
 
 import (
+	"go.dokimi.dev/eidos/plugin/shape"
 	"go.dokimi.dev/eidos/sdk/emit"
 	"go.dokimi.dev/eidos/sdk/rules"
 	"go.dokimi.dev/eidos/sdk/symbol"
@@ -134,6 +135,12 @@ func stream() derive.Facts {
 			rules.ErrorsLastReturn,
 		),
 	}
+}
+
+// withMixins returns f with the mixins.
+func withMixins(f derive.Facts, mixins ...shape.Mixin) derive.Facts {
+	f.Class.Mixins = mixins
+	return f
 }
 
 // withErrors returns f with the error model errs.

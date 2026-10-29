@@ -42,6 +42,78 @@ func TestBoardSuite(t *testing.T) {
 				},
 				Defect: func(*BoardHandle) Board { return &boardSubject{} },
 			}),
+			conform.Excuse(
+				BoardChecks.Place.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Clash.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Clash.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Blank.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Index.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Index.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Label.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Wait.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Hold.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Swap.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Swap.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Mark.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Paint.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Repeat.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Keep.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Stock.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Discard.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Twice.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -63,6 +135,78 @@ func TestBoardSuite(t *testing.T) {
 				},
 				Defect: func(*BoardHandle) Board { return &boardSubject{} },
 			}),
+			conform.Excuse(
+				BoardChecks.Place.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Clash.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Clash.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Blank.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Index.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Index.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Label.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Wait.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Hold.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Swap.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Swap.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Mark.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Paint.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Repeat.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Keep.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Stock.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Discard.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				BoardChecks.Twice.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -97,6 +241,78 @@ func TestBoardSuiteBudgets(t *testing.T) {
 		conform.Ceilings(BoardChecks.Discard.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(BoardChecks.Twice.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(BoardChecks.Gather.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -107,6 +323,78 @@ func FuzzBoardSuitePlace(f *testing.F) {
 		f,
 		BoardChecks.Place.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -117,6 +405,78 @@ func FuzzBoardSuiteClash(f *testing.F) {
 		f,
 		BoardChecks.Clash.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -127,6 +487,78 @@ func FuzzBoardSuiteBlank(f *testing.F) {
 		f,
 		BoardChecks.Blank.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -137,6 +569,78 @@ func FuzzBoardSuiteIndex(f *testing.F) {
 		f,
 		BoardChecks.Index.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -147,6 +651,78 @@ func FuzzBoardSuiteLabel(f *testing.F) {
 		f,
 		BoardChecks.Label.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -157,6 +733,78 @@ func FuzzBoardSuiteWait(f *testing.F) {
 		f,
 		BoardChecks.Wait.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -167,6 +815,78 @@ func FuzzBoardSuiteHold(f *testing.F) {
 		f,
 		BoardChecks.Hold.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -177,6 +897,78 @@ func FuzzBoardSuiteSwap(f *testing.F) {
 		f,
 		BoardChecks.Swap.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -187,6 +979,78 @@ func FuzzBoardSuiteMark(f *testing.F) {
 		f,
 		BoardChecks.Mark.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -197,6 +1061,78 @@ func FuzzBoardSuitePaint(f *testing.F) {
 		f,
 		BoardChecks.Paint.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -207,6 +1143,78 @@ func FuzzBoardSuiteRepeat(f *testing.F) {
 		f,
 		BoardChecks.Repeat.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -217,6 +1225,78 @@ func FuzzBoardSuiteKeep(f *testing.F) {
 		f,
 		BoardChecks.Keep.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -227,6 +1307,78 @@ func FuzzBoardSuiteStock(f *testing.F) {
 		f,
 		BoardChecks.Stock.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -237,6 +1389,78 @@ func FuzzBoardSuiteDiscard(f *testing.F) {
 		f,
 		BoardChecks.Discard.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -247,6 +1471,78 @@ func FuzzBoardSuiteTwice(f *testing.F) {
 		f,
 		BoardChecks.Twice.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -257,6 +1553,78 @@ func FuzzBoardSuiteDrain(f *testing.F) {
 		f,
 		BoardChecks.Drain.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -267,6 +1635,78 @@ func FuzzBoardSuiteGather(f *testing.F) {
 		f,
 		BoardChecks.Gather.Callable,
 		boardIdle,
+		conform.Excuse(
+			BoardChecks.Place.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Clash.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Blank.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Index.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Label.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Wait.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Hold.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Swap.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Mark.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Paint.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Repeat.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Keep.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Stock.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Discard.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			BoardChecks.Twice.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 

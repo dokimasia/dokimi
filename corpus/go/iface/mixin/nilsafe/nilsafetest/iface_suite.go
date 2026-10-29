@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/nilsafe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,77 @@ type mixedStore struct {
 	conform.Callable[nilsafe.Mixed]
 }
 
+// Smoke returns the identity of the check that Store returns without a
+// panic for derived inputs.
+func (c mixedStore) Smoke() conform.ID[nilsafe.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Store returns an error for
+// a cancelled context.
+func (c mixedStore) Cancel() conform.ID[nilsafe.Mixed] {
+	return c.Check("cancel")
+}
+
+// NilSafe returns the identity of the check that Store returns without a
+// panic for a nil argument.
+func (c mixedStore) NilSafe() conform.ID[nilsafe.Mixed] {
+	return c.Check("nil-safe")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[nilsafe.Mixed] {
 	return conform.Suite[nilsafe.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[nilsafe.Mixed]{
+			{
+				ID:          MixedChecks.Store.Smoke(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, &nilsafe.Payload{Key: "Key-a"})
+					})
+				},
+				Defect: mixedStorePanics,
+			},
+			{
+				ID:          MixedChecks.Store.Cancel(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, &nilsafe.Payload{Key: "Key-a"})
+					})
+				},
+				Defect: mixedStoreSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Store.NilSafe(),
+				Statement:   "Store returns without a panic for a nil argument",
+				Claim:       spec.NilSafe,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NilArgumentIsAccepted,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, &nilsafe.Payload{Key: "Key-a"})
+					})
+				},
+				Defect: mixedStorePanics,
+			},
+		},
 		Calls: []conform.Call[nilsafe.Mixed]{
 			{
 				Calls:    mixedStoreCalls,
@@ -138,4 +206,38 @@ func newMixedOver(_ *MixedHandle, spend func()) nilsafe.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5d99890de58d2aee1bda1b98911a9fc90ee438d4b4aefdde6fa72b76df4aadf4
+// mixedStorePanicsDefect is the planted defect of a Mixed whose Store
+// panics.
+type mixedStorePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStorePanicsDefect) Store(p0 context.Context, p1 *nilsafe.Payload) (r0 error) {
+	panic("the planted defect of a Mixed whose Store panics")
+}
+
+// mixedStorePanics returns the planted defect of a Mixed whose Store
+// panics over a fresh subject.
+func mixedStorePanics(h *MixedHandle) nilsafe.Mixed {
+	return &mixedStorePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedStoreSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Store ignores the context.
+type mixedStoreSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 *nilsafe.Payload) (r0 error) {
+	return r0
+}
+
+// mixedStoreSucceedsAlways returns the planted defect of a Mixed whose
+// Store ignores the context over a fresh subject.
+func mixedStoreSucceedsAlways(h *MixedHandle) nilsafe.Mixed {
+	return &mixedStoreSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:92bc9760ec8bbdf23dd1b3b60ad95db136abe964344289f20feab1f67b44009d

@@ -7,11 +7,14 @@ package ttltest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,15 +42,45 @@ type mixedPut struct {
 	conform.Callable[ttl.Mixed]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c mixedPut) Smoke() conform.ID[ttl.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c mixedPut) Cancel() conform.ID[ttl.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedRead is the name of Mixed.Read, with the identities of its checks.
 type mixedRead struct {
 	conform.Callable[ttl.Mixed]
 }
 
-// ExpiresAfterTheLifetime returns the identity of the check that Read
-// reports ErrExpired once the lifetime of the value has passed.
-func (c mixedRead) ExpiresAfterTheLifetime() conform.ID[ttl.Mixed] {
-	return c.Check("expires-after-the-lifetime")
+// Smoke returns the identity of the check that Read returns without a
+// panic for derived inputs.
+func (c mixedRead) Smoke() conform.ID[ttl.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Read returns an error for
+// a cancelled context.
+func (c mixedRead) Cancel() conform.ID[ttl.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Read returns the zero
+// value beside an error.
+func (c mixedRead) ZeroOnError() conform.ID[ttl.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// Expires returns the identity of the check that Read fails with the
+// declared sentinel once the clock passes the declared lifetime.
+func (c mixedRead) Expires() conform.ID[ttl.Mixed] {
+	return c.Check("expires")
 }
 
 // AllocationBudget returns the identity of the check
@@ -75,10 +108,101 @@ func MixedSuite() conform.Suite[ttl.Mixed] {
 		Declaration: "Mixed",
 		Checks: []conform.Check[ttl.Mixed]{
 			{
-				ID:        MixedChecks.Read.ExpiresAfterTheLifetime(),
-				Statement: "Read reports ErrExpired once the lifetime of the value has passed",
-				Apply:     ExpiresAfterTheLifetime,
-				Defect:    keepsForever,
+				ID:          MixedChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ttl.Value{Key: "Key-a"})
+					})
+				},
+				Defect: mixedPutPanics,
+			},
+			{
+				ID:          MixedChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ttl.Value{Key: "Key-a"})
+					})
+				},
+				Defect: mixedPutSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Read.Smoke(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedReadPanics,
+			},
+			{
+				ID:          MixedChecks.Read.Cancel(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedReadSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Read.ZeroOnError(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (ttl.Value, error) {
+						return h.Subject().Read(ctx, string("key-a"))
+					}, ttl.Value{})
+				},
+				Defect: mixedReadValueBeside,
+			},
+			{
+				ID:          MixedChecks.Read.Expires(),
+				Statement:   "Read fails with the declared sentinel once the clock passes the declared lifetime",
+				Claim:       spec.Expires,
+				Probe:       spec.ExpiresAfter,
+				Reason:      spec.NotExpired,
+				Law:         spec.EntryLapsesOnTheClock,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
+				Apply: func(h *MixedHandle) {
+					probe.ExpiresAfter(h, func(ctx context.Context) (ttl.Value, error) {
+						return h.Subject().Read(ctx, (ttl.Value{Key: "Key-a"}).Key)
+					}, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ttl.Value{Key: "Key-a"})
+					}, time.Minute, ttl.ErrExpired)
+				},
+				Defect: mixedReadAnswersASample,
+				Around: synctest.Test,
 			},
 		},
 		Calls: []conform.Call[ttl.Mixed]{
@@ -203,4 +327,108 @@ func newMixedOver(_ *MixedHandle, spend func()) ttl.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b2ea3c2465805e3deb78d98e1ba4c9244292f0146a44878ca350b92b50e3c278
+// mixedPutPanicsDefect is the planted defect of a Mixed whose Put panics.
+type mixedPutPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*mixedPutPanicsDefect) Put(p0 context.Context, p1 ttl.Value) (r0 error) {
+	panic("the planted defect of a Mixed whose Put panics")
+}
+
+// mixedPutPanics returns the planted defect of a Mixed whose Put panics
+// over a fresh subject.
+func mixedPutPanics(h *MixedHandle) ttl.Mixed {
+	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// ignores the context.
+type mixedPutSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 ttl.Value) (r0 error) {
+	return r0
+}
+
+// mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
+// ignores the context over a fresh subject.
+func mixedPutSucceedsAlways(h *MixedHandle) ttl.Mixed {
+	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadPanicsDefect is the planted defect of a Mixed whose Read
+// panics.
+type mixedReadPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadPanicsDefect) Read(p0 context.Context, p1 string) (r0 ttl.Value, r1 error) {
+	panic("the planted defect of a Mixed whose Read panics")
+}
+
+// mixedReadPanics returns the planted defect of a Mixed whose Read panics
+// over a fresh subject.
+func mixedReadPanics(h *MixedHandle) ttl.Mixed {
+	return &mixedReadPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Read ignores the context.
+type mixedReadSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 ttl.Value, r1 error) {
+	return r0, r1
+}
+
+// mixedReadSucceedsAlways returns the planted defect of a Mixed whose Read
+// ignores the context over a fresh subject.
+func mixedReadSucceedsAlways(h *MixedHandle) ttl.Mixed {
+	return &mixedReadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadValueBesideDefect is the planted defect of a Mixed whose Read
+// returns a value beside an error.
+type mixedReadValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 ttl.Value, r1 error) {
+	r0 = ttl.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedReadValueBeside returns the planted defect of a Mixed whose Read
+// returns a value beside an error over a fresh subject.
+func mixedReadValueBeside(h *MixedHandle) ttl.Mixed {
+	return &mixedReadValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadAnswersASampleDefect is the planted defect of a Mixed whose
+// Read returns an entry after its lifetime.
+type mixedReadAnswersASampleDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadAnswersASampleDefect) Read(p0 context.Context, p1 string) (r0 ttl.Value, r1 error) {
+	r0 = ttl.Value{Key: "Key-b"}
+	return r0, r1
+}
+
+// mixedReadAnswersASample returns the planted defect of a Mixed whose Read
+// returns an entry after its lifetime over a fresh subject.
+func mixedReadAnswersASample(h *MixedHandle) ttl.Mixed {
+	return &mixedReadAnswersASampleDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:579d95b00f7809fb45e8ba3f5b89bf185b7970cb0b0875c2d03b15af93edaf5c

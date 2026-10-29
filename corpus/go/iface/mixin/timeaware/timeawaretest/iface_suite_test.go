@@ -48,6 +48,34 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*timeawaretest.MixedHandle) timeaware.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.TimeAware(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.Steady(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +97,34 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*timeawaretest.MixedHandle) timeaware.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.TimeAware(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				timeawaretest.MixedChecks.AgeOf.Steady(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +145,34 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(timeawaretest.MixedChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(timeawaretest.MixedChecks.AgeOf.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.TimeAware(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Steady(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +183,34 @@ func FuzzMixedSuiteTouch(f *testing.F) {
 		f,
 		timeawaretest.MixedChecks.Touch.Callable,
 		mixedIdle,
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.TimeAware(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Steady(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +221,34 @@ func FuzzMixedSuiteAgeOf(f *testing.F) {
 		f,
 		timeawaretest.MixedChecks.AgeOf.Callable,
 		mixedIdle,
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.TimeAware(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			timeawaretest.MixedChecks.AgeOf.Steady(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +263,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:ffa9352f89e380575294256196e3ba1995b52dd497fc7ab22f587b69f3612484
+// dokimi:provenance sha256:abb7f1e32a5419ac063da4bd2b1f35cb115f10e25198160d5e98c361949fda1d

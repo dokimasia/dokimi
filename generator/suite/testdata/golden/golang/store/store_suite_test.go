@@ -43,7 +43,23 @@ func TestStoreSuite(t *testing.T) {
 				Defect: func(*StoreHandle) Store { return &storeSubject{} },
 			}),
 			conform.Excuse(
-				StoreChecks.Get.KeepsTheItem(),
+				StoreChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -72,7 +88,23 @@ func TestStoreSuite(t *testing.T) {
 				Defect: func(*StoreHandle) Store { return &storeSubject{} },
 			}),
 			conform.Excuse(
-				StoreChecks.Get.KeepsTheItem(),
+				StoreChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				StoreChecks.Put.Cancel(),
 				"the test applies the check of its option alone",
 			),
 			conform.Excuse(
@@ -84,12 +116,6 @@ func TestStoreSuite(t *testing.T) {
 
 	t.Run("StoreChecks", func(t *testing.T) {
 		t.Parallel()
-		assert.Equal(
-			t,
-			string(StoreChecks.Get.KeepsTheItem()),
-			"Store.Get/keeps-the-item",
-			"the identity of the check joins the callable and the segment of the check",
-		)
 		assert.Equal(
 			t,
 			string(StoreChecks.Put.RefusesACancelledPut()),
@@ -116,7 +142,23 @@ func TestStoreSuiteBudgets(t *testing.T) {
 		conform.Ceilings(StoreChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(StoreChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
-			StoreChecks.Get.KeepsTheItem(),
+			StoreChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -134,7 +176,23 @@ func FuzzStoreSuiteGet(f *testing.F) {
 		StoreChecks.Get.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Get.KeepsTheItem(),
+			StoreChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(
@@ -152,7 +210,23 @@ func FuzzStoreSuitePut(f *testing.F) {
 		StoreChecks.Put.Callable,
 		storeIdle,
 		conform.Excuse(
-			StoreChecks.Get.KeepsTheItem(),
+			StoreChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			StoreChecks.Put.Cancel(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
 		conform.Excuse(

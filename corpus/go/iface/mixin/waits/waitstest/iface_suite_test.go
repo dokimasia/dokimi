@@ -48,6 +48,26 @@ func TestLockSuite(t *testing.T) {
 				},
 				Defect: func(*waitstest.LockHandle) waits.Lock { return &lockSubject{} },
 			}),
+			conform.Excuse(
+				waitstest.LockChecks.Acquire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Release.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Release.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Held.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Held.Predicate(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +89,26 @@ func TestLockSuite(t *testing.T) {
 				},
 				Defect: func(*waitstest.LockHandle) waits.Lock { return &lockSubject{} },
 			}),
+			conform.Excuse(
+				waitstest.LockChecks.Acquire.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Release.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Release.RepeatSurvives(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Held.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				waitstest.LockChecks.Held.Predicate(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +129,26 @@ func TestLockSuiteBudgets(t *testing.T) {
 		lockIdle,
 		conform.Ceilings(waitstest.LockChecks.Release.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(waitstest.LockChecks.Held.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			waitstest.LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +159,26 @@ func FuzzLockSuiteAcquire(f *testing.F) {
 		f,
 		waitstest.LockChecks.Acquire.Callable,
 		lockIdle,
+		conform.Excuse(
+			waitstest.LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +189,26 @@ func FuzzLockSuiteRelease(f *testing.F) {
 		f,
 		waitstest.LockChecks.Release.Callable,
 		lockIdle,
+		conform.Excuse(
+			waitstest.LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -119,6 +219,26 @@ func FuzzLockSuiteHeld(f *testing.F) {
 		f,
 		waitstest.LockChecks.Held.Callable,
 		lockIdle,
+		conform.Excuse(
+			waitstest.LockChecks.Acquire.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Release.RepeatSurvives(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			waitstest.LockChecks.Held.Predicate(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -133,4 +253,4 @@ func BenchmarkLockSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:fa743840e4947040a13b8e735e8aa30452c429d0ef1951811bc1bdb17baee24a
+// dokimi:provenance sha256:fee05ba0f1ed9c642216ccaf4e0ca69e195bd189155fe8e1dfd80e35adfc7fae

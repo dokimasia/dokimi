@@ -17,14 +17,7 @@ import (
 func TestInMemoryConformsToMixed(t *testing.T) {
 	t.Parallel()
 
-	ttltest.RunMixedSuite(
-		t,
-		ttltest.NewInMemory,
-		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
-			"the check does not advance the clock that NewInMemory reads",
-		),
-	)
+	ttltest.RunMixedSuiteFromHandle(t, ttltest.NewInMemoryFromHandle)
 }
 
 // TestInMemoryConformsToMixedAllocs applies the allocation ceilings and
@@ -32,7 +25,7 @@ func TestInMemoryConformsToMixed(t *testing.T) {
 func TestInMemoryConformsToMixedAllocs(t *testing.T) {
 	ttltest.RunMixedBudgets(
 		t,
-		func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
+		ttltest.NewInMemoryFromHandle,
 		conform.Ceilings(
 			ttltest.MixedChecks.Put.Callable,
 			conform.Budget{
@@ -40,10 +33,6 @@ func TestInMemoryConformsToMixedAllocs(t *testing.T) {
 				Latency: time.Millisecond,
 				Warmup:  new(1000),
 			},
-		),
-		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
-			"the check does not advance the clock that NewInMemory reads",
 		),
 	)
 }
@@ -60,53 +49,25 @@ func BenchmarkInMemoryConformsToMixed(b *testing.B) {
 				Warmup:  new(1000),
 			},
 		),
-		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
-			"the check does not advance the clock that NewInMemory reads",
-		),
 	}
 	b.Run("Put", func(b *testing.B) {
-		ttltest.BenchMixedSuite(
-			b,
-			ttltest.MixedChecks.Put.Callable,
-			func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
-			opts...)
+		ttltest.BenchMixedSuite(b, ttltest.MixedChecks.Put.Callable, ttltest.NewInMemoryFromHandle, opts...)
 	})
 	b.Run("Read", func(b *testing.B) {
-		ttltest.BenchMixedSuite(
-			b,
-			ttltest.MixedChecks.Read.Callable,
-			func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
-			opts...)
+		ttltest.BenchMixedSuite(b, ttltest.MixedChecks.Read.Callable, ttltest.NewInMemoryFromHandle, opts...)
 	})
 }
 
 // FuzzInMemoryConformsToMixedPut fuzzes the property checks of Mixed.Put
 // on InMemory.
 func FuzzInMemoryConformsToMixedPut(f *testing.F) {
-	ttltest.FuzzMixedSuite(
-		f,
-		ttltest.MixedChecks.Put.Callable,
-		func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
-		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
-			"the check does not advance the clock that NewInMemory reads",
-		),
-	)
+	ttltest.FuzzMixedSuite(f, ttltest.MixedChecks.Put.Callable, ttltest.NewInMemoryFromHandle)
 }
 
 // FuzzInMemoryConformsToMixedRead fuzzes the property checks of Mixed.Read
 // on InMemory.
 func FuzzInMemoryConformsToMixedRead(f *testing.F) {
-	ttltest.FuzzMixedSuite(
-		f,
-		ttltest.MixedChecks.Read.Callable,
-		func(*ttltest.MixedHandle) *ttltest.InMemory { return ttltest.NewInMemory() },
-		conform.Excuse(
-			ttltest.MixedChecks.Read.ExpiresAfterTheLifetime(),
-			"the check does not advance the clock that NewInMemory reads",
-		),
-	)
+	ttltest.FuzzMixedSuite(f, ttltest.MixedChecks.Read.Callable, ttltest.NewInMemoryFromHandle)
 }
 
-// dokimi:provenance sha256:80d32e542f9908fed33dfc36d56b9d5c6038b8b0c385f56d58c9c59e92b00c9b
+// dokimi:provenance sha256:04b17bfb16d00399460f04c0c7b743107d6cb99f0ec1d0f203ca9a9cbf3c9a8d

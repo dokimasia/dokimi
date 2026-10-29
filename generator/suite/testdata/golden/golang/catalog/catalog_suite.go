@@ -6,6 +6,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -47,6 +49,18 @@ func (c catalogFind) FindsTheAddedProduct() conform.ID[CatalogMethods] {
 	return c.Check("finds-the-added-product")
 }
 
+// Smoke returns the identity of the check that Find returns without a
+// panic for derived inputs.
+func (c catalogFind) Smoke() conform.ID[CatalogMethods] {
+	return c.Check("smoke")
+}
+
+// ZeroOnMiss returns the identity of the check that Find returns the zero
+// value beside a false presence flag.
+func (c catalogFind) ZeroOnMiss() conform.ID[CatalogMethods] {
+	return c.Check("zero-on-miss")
+}
+
 // AllocationBudget returns the identity of the check
 // Catalog.Find/allocation-budget.
 func (c catalogFind) AllocationBudget() conform.ID[CatalogMethods] {
@@ -59,12 +73,67 @@ type catalogAdd struct {
 	conform.Callable[CatalogMethods]
 }
 
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c catalogAdd) Smoke() conform.ID[CatalogMethods] {
+	return c.Check("smoke")
+}
+
 // CatalogSuite returns the checks of Catalog, and the calls and the
 // budgets of its callables.
 func CatalogSuite() conform.Suite[CatalogMethods] {
 	return conform.Suite[CatalogMethods]{
 		Declaration: "Catalog",
 		Checks: []conform.Check[CatalogMethods]{
+			{
+				ID:          CatalogChecks.Find.Smoke(),
+				Statement:   "Find returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CatalogHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Find(string("id-a"))
+						return nil
+					})
+				},
+				Defect: catalogFindPanics,
+			},
+			{
+				ID:          CatalogChecks.Find.ZeroOnMiss(),
+				Statement:   "Find returns the zero value beside a false presence flag",
+				Claim:       spec.ZeroOnMiss,
+				Probe:       spec.ZeroBesideFalse,
+				Reason:      spec.ValueBesideFalse,
+				Law:         spec.NoValueBesideAFalseFlag,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CatalogHandle) {
+					probe.ZeroBesideFalse(h, func(ctx context.Context) (string, bool) {
+						return h.Subject().Find(string("id-a"))
+					}, string(""))
+				},
+				Defect: catalogFindValueBesideAFalseFlag,
+			},
+			{
+				ID:          CatalogChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CatalogHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Add(string("id-a"), string("name-a"))
+						return nil
+					})
+				},
+				Defect: catalogAddPanics,
+			},
 			{
 				ID:        CatalogChecks.Find.FindsTheAddedProduct(),
 				Statement: "Find returns the product that Add listed",
@@ -205,4 +274,60 @@ func (o catalogOver) Add(string, string) {
 // callables call spend.
 func newCatalogOver(_ *CatalogHandle, spend func()) CatalogMethods {
 	return catalogOver{spend: spend}
+}
+
+// catalogFindPanicsDefect is the planted defect of a Catalog whose Find
+// panics.
+type catalogFindPanicsDefect struct {
+	catalogOverEmbedded
+}
+
+// Find is the override of the planted defect.
+func (*catalogFindPanicsDefect) Find(p0 string) (r0 string, r1 bool) {
+	panic("the planted defect of a Catalog whose Find panics")
+}
+
+// catalogFindPanics returns the planted defect of a Catalog whose Find
+// panics over a fresh subject.
+func catalogFindPanics(h *CatalogHandle) CatalogMethods {
+	return &catalogFindPanicsDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// catalogFindValueBesideAFalseFlagDefect is the planted defect of a
+// Catalog whose Find returns a value beside a false presence flag.
+type catalogFindValueBesideAFalseFlagDefect struct {
+	catalogOverEmbedded
+}
+
+// Find is the override of the planted defect.
+func (d *catalogFindValueBesideAFalseFlagDefect) Find(p0 string) (r0 string, r1 bool) {
+	r0, r1 = d.catalogOverEmbedded.Find(p0)
+	if !r1 {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// catalogFindValueBesideAFalseFlag returns the planted defect of a Catalog
+// whose Find returns a value beside a false presence flag over a fresh
+// subject.
+func catalogFindValueBesideAFalseFlag(h *CatalogHandle) CatalogMethods {
+	return &catalogFindValueBesideAFalseFlagDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// catalogAddPanicsDefect is the planted defect of a Catalog whose Add
+// panics.
+type catalogAddPanicsDefect struct {
+	catalogOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*catalogAddPanicsDefect) Add(p0, p1 string) {
+	panic("the planted defect of a Catalog whose Add panics")
+}
+
+// catalogAddPanics returns the planted defect of a Catalog whose Add
+// panics over a fresh subject.
+func catalogAddPanics(h *CatalogHandle) CatalogMethods {
+	return &catalogAddPanicsDefect{catalogOverEmbedded: h.Fresh()}
 }

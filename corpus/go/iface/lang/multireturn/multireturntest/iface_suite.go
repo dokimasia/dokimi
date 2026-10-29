@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/multireturn"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -40,10 +42,28 @@ type wideQuad struct {
 	conform.Callable[multireturn.Wide]
 }
 
+// Smoke returns the identity of the check that Quad returns without a
+// panic for derived inputs.
+func (c wideQuad) Smoke() conform.ID[multireturn.Wide] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Quad returns an error for
+// a cancelled context.
+func (c wideQuad) Cancel() conform.ID[multireturn.Wide] {
+	return c.Check("cancel")
+}
+
 // wideTriple is the name of Wide.Triple, with the identities of its
 // checks.
 type wideTriple struct {
 	conform.Callable[multireturn.Wide]
+}
+
+// Smoke returns the identity of the check that Triple returns without a
+// panic for derived inputs.
+func (c wideTriple) Smoke() conform.ID[multireturn.Wide] {
+	return c.Check("smoke")
 }
 
 // wideNoError is the name of Wide.NoError, with the identities of its
@@ -52,11 +72,86 @@ type wideNoError struct {
 	conform.Callable[multireturn.Wide]
 }
 
+// Smoke returns the identity of the check that NoError returns without a
+// panic for derived inputs.
+func (c wideNoError) Smoke() conform.ID[multireturn.Wide] {
+	return c.Check("smoke")
+}
+
 // WideSuite returns the checks of Wide, and the calls and the budgets of
 // its callables.
 func WideSuite() conform.Suite[multireturn.Wide] {
 	return conform.Suite[multireturn.Wide]{
 		Declaration: "Wide",
+		Checks: []conform.Check[multireturn.Wide]{
+			{
+				ID:          WideChecks.Quad.Smoke(),
+				Statement:   "Quad returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WideHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, _, _, err := h.Subject().Quad(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: wideQuadPanics,
+			},
+			{
+				ID:          WideChecks.Quad.Cancel(),
+				Statement:   "Quad returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *WideHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, _, _, err := h.Subject().Quad(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: wideQuadSucceedsAlways,
+			},
+			{
+				ID:          WideChecks.Triple.Smoke(),
+				Statement:   "Triple returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WideHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Triple(ctx, string("id-a"))
+						return nil
+					})
+				},
+				Defect: wideTriplePanics,
+			},
+			{
+				ID:          WideChecks.NoError.Smoke(),
+				Statement:   "NoError returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *WideHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().NoError(ctx, string("id-a"))
+						return nil
+					})
+				},
+				Defect: wideNoErrorPanics,
+			},
+		},
 		Calls: []conform.Call[multireturn.Wide]{
 			{
 				Calls:    wideQuadCalls,
@@ -196,4 +291,71 @@ func newWideOver(_ *WideHandle, spend func()) multireturn.Wide {
 	return wideOver{spend: spend}
 }
 
-// dokimi:provenance sha256:fff62b74bbd2ab130fb3e32401aec7ae8da5e93dcb3f7b8e925b65d505715501
+// wideQuadPanicsDefect is the planted defect of a Wide whose Quad panics.
+type wideQuadPanicsDefect struct {
+	wideOverEmbedded
+}
+
+// Quad is the override of the planted defect.
+func (*wideQuadPanicsDefect) Quad(p0 context.Context, p1 string) (r0 string, r1 int, r2 bool, r3 error) {
+	panic("the planted defect of a Wide whose Quad panics")
+}
+
+// wideQuadPanics returns the planted defect of a Wide whose Quad panics
+// over a fresh subject.
+func wideQuadPanics(h *WideHandle) multireturn.Wide {
+	return &wideQuadPanicsDefect{wideOverEmbedded: h.Fresh()}
+}
+
+// wideQuadSucceedsAlwaysDefect is the planted defect of a Wide whose Quad
+// ignores the context.
+type wideQuadSucceedsAlwaysDefect struct {
+	wideOverEmbedded
+}
+
+// Quad is the override of the planted defect.
+func (*wideQuadSucceedsAlwaysDefect) Quad(p0 context.Context, p1 string) (r0 string, r1 int, r2 bool, r3 error) {
+	return r0, r1, r2, r3
+}
+
+// wideQuadSucceedsAlways returns the planted defect of a Wide whose Quad
+// ignores the context over a fresh subject.
+func wideQuadSucceedsAlways(h *WideHandle) multireturn.Wide {
+	return &wideQuadSucceedsAlwaysDefect{wideOverEmbedded: h.Fresh()}
+}
+
+// wideTriplePanicsDefect is the planted defect of a Wide whose Triple
+// panics.
+type wideTriplePanicsDefect struct {
+	wideOverEmbedded
+}
+
+// Triple is the override of the planted defect.
+func (*wideTriplePanicsDefect) Triple(p0 context.Context, p1 string) (r0 string, r1 int, r2 bool) {
+	panic("the planted defect of a Wide whose Triple panics")
+}
+
+// wideTriplePanics returns the planted defect of a Wide whose Triple
+// panics over a fresh subject.
+func wideTriplePanics(h *WideHandle) multireturn.Wide {
+	return &wideTriplePanicsDefect{wideOverEmbedded: h.Fresh()}
+}
+
+// wideNoErrorPanicsDefect is the planted defect of a Wide whose NoError
+// panics.
+type wideNoErrorPanicsDefect struct {
+	wideOverEmbedded
+}
+
+// NoError is the override of the planted defect.
+func (*wideNoErrorPanicsDefect) NoError(p0 context.Context, p1 string) (r0 string, r1 int) {
+	panic("the planted defect of a Wide whose NoError panics")
+}
+
+// wideNoErrorPanics returns the planted defect of a Wide whose NoError
+// panics over a fresh subject.
+func wideNoErrorPanics(h *WideHandle) multireturn.Wide {
+	return &wideNoErrorPanicsDefect{wideOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:bd9c05376d40ca88d3e80fd4fdf94a1b4a641cb2cf2497afbf1bb9f99228af3f

@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/codec"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,52 @@ type contractEncode struct {
 	conform.Callable[codec.Contract]
 }
 
+// Smoke returns the identity of the check that Encode returns without a
+// panic for derived inputs.
+func (c contractEncode) Smoke() conform.ID[codec.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Encode returns an error
+// for a cancelled context.
+func (c contractEncode) Cancel() conform.ID[codec.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Encode returns the
+// zero value beside an error.
+func (c contractEncode) ZeroOnError() conform.ID[codec.Contract] {
+	return c.Check("zero-on-error")
+}
+
+// Codec returns the identity of the check that Decode returns what went
+// into Encode.
+func (c contractEncode) Codec() conform.ID[codec.Contract] {
+	return c.Check("codec")
+}
+
 // contractDecode is the name of Contract.Decode, with the identities of
 // its checks.
 type contractDecode struct {
 	conform.Callable[codec.Contract]
+}
+
+// Smoke returns the identity of the check that Decode returns without a
+// panic for derived inputs.
+func (c contractDecode) Smoke() conform.ID[codec.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Decode returns an error
+// for a cancelled context.
+func (c contractDecode) Cancel() conform.ID[codec.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Decode returns the
+// zero value beside an error.
+func (c contractDecode) ZeroOnError() conform.ID[codec.Contract] {
+	return c.Check("zero-on-error")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +94,124 @@ type contractDecode struct {
 func ContractSuite() conform.Suite[codec.Contract] {
 	return conform.Suite[codec.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[codec.Contract]{
+			{
+				ID:          ContractChecks.Encode.Smoke(),
+				Statement:   "Encode returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Encode(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: contractEncodePanics,
+			},
+			{
+				ID:          ContractChecks.Encode.Cancel(),
+				Statement:   "Encode returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Encode(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: contractEncodeSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Encode.ZeroOnError(),
+				Statement:   "Encode returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Encode(ctx, string("in-a"))
+					}, string(""))
+				},
+				Defect: contractEncodeValueBeside,
+			},
+			{
+				ID:          ContractChecks.Encode.Codec(),
+				Statement:   "Decode returns what went into Encode",
+				Claim:       spec.Codec,
+				Probe:       spec.RoundTrips,
+				Reason:      spec.BrokenRoundTrip,
+				Law:         spec.EncodingSurvivesItsRoundTrip,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.RoundTrips(h, func(ctx context.Context) (probe.Pair[string, string], error) {
+						in := string("in-a")
+						r0, err := h.Subject().Encode(ctx, in)
+						return probe.Pair[string, string]{First: in, Second: r0}, err
+					}, func(ctx context.Context, v string) (string, error) {
+						return h.Subject().Decode(ctx, v)
+					})
+				},
+				Defect: contractEncodeDrifts,
+			},
+			{
+				ID:          ContractChecks.Decode.Smoke(),
+				Statement:   "Decode returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Decode(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: contractDecodePanics,
+			},
+			{
+				ID:          ContractChecks.Decode.Cancel(),
+				Statement:   "Decode returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Decode(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: contractDecodeSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Decode.ZeroOnError(),
+				Statement:   "Decode returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Decode(ctx, string("in-a"))
+					}, string(""))
+				},
+				Defect: contractDecodeValueBeside,
+			},
+		},
 		Calls: []conform.Call[codec.Contract]{
 			{
 				Calls:    contractEncodeCalls,
@@ -172,4 +334,132 @@ func newContractOver(_ *ContractHandle, spend func()) codec.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:522a93c52a4b6ccbcfdcbee85033381e42d5d485dafe387f5f7d12542afea176
+// contractEncodePanicsDefect is the planted defect of a Contract whose
+// Encode panics.
+type contractEncodePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Encode is the override of the planted defect.
+func (*contractEncodePanicsDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Contract whose Encode panics")
+}
+
+// contractEncodePanics returns the planted defect of a Contract whose
+// Encode panics over a fresh subject.
+func contractEncodePanics(h *ContractHandle) codec.Contract {
+	return &contractEncodePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractEncodeSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Encode ignores the context.
+type contractEncodeSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Encode is the override of the planted defect.
+func (*contractEncodeSucceedsAlwaysDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// contractEncodeSucceedsAlways returns the planted defect of a Contract
+// whose Encode ignores the context over a fresh subject.
+func contractEncodeSucceedsAlways(h *ContractHandle) codec.Contract {
+	return &contractEncodeSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractEncodeValueBesideDefect is the planted defect of a Contract
+// whose Encode returns a value beside an error.
+type contractEncodeValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Encode is the override of the planted defect.
+func (*contractEncodeValueBesideDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractEncodeValueBeside returns the planted defect of a Contract whose
+// Encode returns a value beside an error over a fresh subject.
+func contractEncodeValueBeside(h *ContractHandle) codec.Contract {
+	return &contractEncodeValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractEncodeDriftsDefect is the planted defect of a Contract whose
+// Encode returns another encoding on every call.
+type contractEncodeDriftsDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Encode is the override of the planted defect.
+func (d *contractEncodeDriftsDefect) Encode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = string("sample-b")
+	}
+	return r0, r1
+}
+
+// contractEncodeDrifts returns the planted defect of a Contract whose
+// Encode returns another encoding on every call over a fresh subject.
+func contractEncodeDrifts(h *ContractHandle) codec.Contract {
+	return &contractEncodeDriftsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractDecodePanicsDefect is the planted defect of a Contract whose
+// Decode panics.
+type contractDecodePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Decode is the override of the planted defect.
+func (*contractDecodePanicsDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Contract whose Decode panics")
+}
+
+// contractDecodePanics returns the planted defect of a Contract whose
+// Decode panics over a fresh subject.
+func contractDecodePanics(h *ContractHandle) codec.Contract {
+	return &contractDecodePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractDecodeSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Decode ignores the context.
+type contractDecodeSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Decode is the override of the planted defect.
+func (*contractDecodeSucceedsAlwaysDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// contractDecodeSucceedsAlways returns the planted defect of a Contract
+// whose Decode ignores the context over a fresh subject.
+func contractDecodeSucceedsAlways(h *ContractHandle) codec.Contract {
+	return &contractDecodeSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractDecodeValueBesideDefect is the planted defect of a Contract
+// whose Decode returns a value beside an error.
+type contractDecodeValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Decode is the override of the planted defect.
+func (*contractDecodeValueBesideDefect) Decode(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractDecodeValueBeside returns the planted defect of a Contract whose
+// Decode returns a value beside an error over a fresh subject.
+func contractDecodeValueBeside(h *ContractHandle) codec.Contract {
+	return &contractDecodeValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:6a0cd05d640d32ad74ef4e3077afb426aa78cd0bd8d273a4e95bc50151808fd0

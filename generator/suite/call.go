@@ -336,7 +336,7 @@ func (k *caller) packages(ref *node.TypeRef, taken map[string]bool) {
 // result takes the blank name, and the error takes err.
 func results(view *rules.Callable) (assign, returns string) {
 	if len(view.Returns) == 0 {
-		return "", "nil"
+		return "", nilWord
 	}
 	names := make([]string, 0, len(view.Returns))
 	errs := false
@@ -353,7 +353,7 @@ func results(view *rules.Callable) (assign, returns string) {
 	case errs:
 		return strings.Join(names, ", ") + " :=", "err"
 	}
-	return strings.Join(names, ", ") + " =", "nil"
+	return strings.Join(names, ", ") + " =", nilWord
 }
 
 // over returns the signature of the callable of view in the planted defect of

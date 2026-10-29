@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/reader"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -36,11 +38,100 @@ type readerGet struct {
 	conform.Callable[reader.Reader]
 }
 
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c readerGet) Smoke() conform.ID[reader.Reader] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c readerGet) Cancel() conform.ID[reader.Reader] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c readerGet) ZeroOnError() conform.ID[reader.Reader] {
+	return c.Check("zero-on-error")
+}
+
+// Miss returns the identity of the check that Get fails with the declared
+// sentinel for an input that nothing stored.
+func (c readerGet) Miss() conform.ID[reader.Reader] {
+	return c.Check("miss")
+}
+
 // ReaderSuite returns the checks of Reader, and the calls and the budgets
 // of its callables.
 func ReaderSuite() conform.Suite[reader.Reader] {
 	return conform.Suite[reader.Reader]{
 		Declaration: "Reader",
+		Checks: []conform.Check[reader.Reader]{
+			{
+				ID:          ReaderChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: readerGetPanics,
+			},
+			{
+				ID:          ReaderChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ReaderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: readerGetSucceedsAlways,
+			},
+			{
+				ID:          ReaderChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ReaderHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (reader.Value, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, reader.Value{})
+				},
+				Defect: readerGetValueBeside,
+			},
+			{
+				ID:          ReaderChecks.Get.Miss(),
+				Statement:   "Get fails with the declared sentinel for an input that nothing stored",
+				Claim:       spec.Miss,
+				Probe:       spec.ReportsSentinel,
+				Reason:      spec.WrongSentinel,
+				Law:         spec.MissReportsTheDeclaredSentinel,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ReaderHandle) {
+					probe.ReportsSentinel(h, func(ctx context.Context) (reader.Value, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, reader.ErrNotFound)
+				},
+				Defect: readerGetReportsAnotherError,
+			},
+		},
 		Calls: []conform.Call[reader.Reader]{
 			{
 				Calls:    readerGetCalls,
@@ -138,4 +229,75 @@ func newReaderOver(_ *ReaderHandle, spend func()) reader.Reader {
 	return readerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:5042c0258df22ea9fca367d20876d5fb0f7ce99b9804b1b5af4efedd71649ca7
+// readerGetPanicsDefect is the planted defect of a Reader whose Get
+// panics.
+type readerGetPanicsDefect struct {
+	readerOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*readerGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
+	panic("the planted defect of a Reader whose Get panics")
+}
+
+// readerGetPanics returns the planted defect of a Reader whose Get panics
+// over a fresh subject.
+func readerGetPanics(h *ReaderHandle) reader.Reader {
+	return &readerGetPanicsDefect{readerOverEmbedded: h.Fresh()}
+}
+
+// readerGetSucceedsAlwaysDefect is the planted defect of a Reader whose
+// Get ignores the context.
+type readerGetSucceedsAlwaysDefect struct {
+	readerOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*readerGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
+	return r0, r1
+}
+
+// readerGetSucceedsAlways returns the planted defect of a Reader whose Get
+// ignores the context over a fresh subject.
+func readerGetSucceedsAlways(h *ReaderHandle) reader.Reader {
+	return &readerGetSucceedsAlwaysDefect{readerOverEmbedded: h.Fresh()}
+}
+
+// readerGetValueBesideDefect is the planted defect of a Reader whose Get
+// returns a value beside an error.
+type readerGetValueBesideDefect struct {
+	readerOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*readerGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
+	r0 = reader.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// readerGetValueBeside returns the planted defect of a Reader whose Get
+// returns a value beside an error over a fresh subject.
+func readerGetValueBeside(h *ReaderHandle) reader.Reader {
+	return &readerGetValueBesideDefect{readerOverEmbedded: h.Fresh()}
+}
+
+// readerGetReportsAnotherErrorDefect is the planted defect of a Reader
+// whose Get fails with another error for a miss.
+type readerGetReportsAnotherErrorDefect struct {
+	readerOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*readerGetReportsAnotherErrorDefect) Get(p0 context.Context, p1 string) (r0 reader.Value, r1 error) {
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// readerGetReportsAnotherError returns the planted defect of a Reader
+// whose Get fails with another error for a miss over a fresh subject.
+func readerGetReportsAnotherError(h *ReaderHandle) reader.Reader {
+	return &readerGetReportsAnotherErrorDefect{readerOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:06d481cb1224fcc4821e0e5932bba25edc1990258839dac12eee11e20ad2f85b

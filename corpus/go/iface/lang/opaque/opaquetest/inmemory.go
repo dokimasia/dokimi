@@ -25,8 +25,11 @@ type InMemory struct {
 // NewInMemory returns an InMemory without puts.
 func NewInMemory() *InMemory { return &InMemory{} }
 
-// Put implements [opaque.Store].
-func (s *InMemory) Put(_ context.Context, req *opaque.PutRequest) error {
+// Put implements [opaque.Store]. It returns the error of a cancelled context.
+func (s *InMemory) Put(ctx context.Context, req *opaque.PutRequest) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.total += req.Set.Len()

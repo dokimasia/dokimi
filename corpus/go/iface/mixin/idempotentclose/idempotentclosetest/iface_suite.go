@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/idempotentclose"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type closerClose struct {
 	conform.Callable[idempotentclose.Closer]
 }
 
+// Smoke returns the identity of the check that Close returns without a
+// panic for derived inputs.
+func (c closerClose) Smoke() conform.ID[idempotentclose.Closer] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Close returns an error for
+// a cancelled context.
+func (c closerClose) Cancel() conform.ID[idempotentclose.Closer] {
+	return c.Check("cancel")
+}
+
+// Idempotent returns the identity of the check that a second identical
+// Close succeeds after the first.
+func (c closerClose) Idempotent() conform.ID[idempotentclose.Closer] {
+	return c.Check("idempotent")
+}
+
 // closerStats is the name of Closer.Stats, with the identities of its
 // checks.
 type closerStats struct {
 	conform.Callable[idempotentclose.Closer]
+}
+
+// Smoke returns the identity of the check that Stats returns without a
+// panic for derived inputs.
+func (c closerStats) Smoke() conform.ID[idempotentclose.Closer] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Stats returns an error for
+// a cancelled context.
+func (c closerStats) Cancel() conform.ID[idempotentclose.Closer] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Stats returns the
+// zero value beside an error.
+func (c closerStats) ZeroOnError() conform.ID[idempotentclose.Closer] {
+	return c.Check("zero-on-error")
 }
 
 // CloserSuite returns the checks of Closer, and the calls and the budgets
@@ -50,6 +88,102 @@ type closerStats struct {
 func CloserSuite() conform.Suite[idempotentclose.Closer] {
 	return conform.Suite[idempotentclose.Closer]{
 		Declaration: "Closer",
+		Checks: []conform.Check[idempotentclose.Closer]{
+			{
+				ID:          CloserChecks.Close.Smoke(),
+				Statement:   "Close returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CloserHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					})
+				},
+				Defect: closerClosePanics,
+			},
+			{
+				ID:          CloserChecks.Close.Cancel(),
+				Statement:   "Close returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CloserHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					})
+				},
+				Defect: closerCloseSucceedsAlways,
+			},
+			{
+				ID:          CloserChecks.Close.Idempotent(),
+				Statement:   "a second identical Close succeeds after the first",
+				Claim:       spec.Idempotent,
+				Probe:       spec.RepeatIsQuiet,
+				Reason:      spec.RefusedRepeat,
+				Law:         spec.RepeatIsAccepted,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CloserHandle) {
+					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					})
+				},
+				Defect: closerCloseRefusesRepeat,
+			},
+			{
+				ID:          CloserChecks.Stats.Smoke(),
+				Statement:   "Stats returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CloserHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Stats(ctx)
+						return err
+					})
+				},
+				Defect: closerStatsPanics,
+			},
+			{
+				ID:          CloserChecks.Stats.Cancel(),
+				Statement:   "Stats returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CloserHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Stats(ctx)
+						return err
+					})
+				},
+				Defect: closerStatsSucceedsAlways,
+			},
+			{
+				ID:          CloserChecks.Stats.ZeroOnError(),
+				Statement:   "Stats returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CloserHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Stats(ctx)
+					}, int(0))
+				},
+				Defect: closerStatsValueBeside,
+			},
+		},
 		Calls: []conform.Call[idempotentclose.Closer]{
 			{
 				Calls:    closerCloseCalls,
@@ -175,4 +309,114 @@ func newCloserOver(_ *CloserHandle, spend func()) idempotentclose.Closer {
 	return closerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f087e9e65c2f5f8a4c9959ba032e7df5977187a88248ce9f3bc13bec2c71867d
+// closerClosePanicsDefect is the planted defect of a Closer whose Close
+// panics.
+type closerClosePanicsDefect struct {
+	closerOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*closerClosePanicsDefect) Close(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Closer whose Close panics")
+}
+
+// closerClosePanics returns the planted defect of a Closer whose Close
+// panics over a fresh subject.
+func closerClosePanics(h *CloserHandle) idempotentclose.Closer {
+	return &closerClosePanicsDefect{closerOverEmbedded: h.Fresh()}
+}
+
+// closerCloseSucceedsAlwaysDefect is the planted defect of a Closer whose
+// Close ignores the context.
+type closerCloseSucceedsAlwaysDefect struct {
+	closerOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*closerCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// closerCloseSucceedsAlways returns the planted defect of a Closer whose
+// Close ignores the context over a fresh subject.
+func closerCloseSucceedsAlways(h *CloserHandle) idempotentclose.Closer {
+	return &closerCloseSucceedsAlwaysDefect{closerOverEmbedded: h.Fresh()}
+}
+
+// closerCloseRefusesRepeatDefect is the planted defect of a Closer whose
+// Close fails on the second call.
+type closerCloseRefusesRepeatDefect struct {
+	closerOverEmbedded
+	calls int
+}
+
+// Close is the override of the planted defect.
+func (d *closerCloseRefusesRepeatDefect) Close(p0 context.Context) (r0 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = conform.ErrGenerated
+		return r0
+	}
+	return d.closerOverEmbedded.Close(p0)
+}
+
+// closerCloseRefusesRepeat returns the planted defect of a Closer whose
+// Close fails on the second call over a fresh subject.
+func closerCloseRefusesRepeat(h *CloserHandle) idempotentclose.Closer {
+	return &closerCloseRefusesRepeatDefect{closerOverEmbedded: h.Fresh()}
+}
+
+// closerStatsPanicsDefect is the planted defect of a Closer whose Stats
+// panics.
+type closerStatsPanicsDefect struct {
+	closerOverEmbedded
+}
+
+// Stats is the override of the planted defect.
+func (*closerStatsPanicsDefect) Stats(p0 context.Context) (r0 int, r1 error) {
+	panic("the planted defect of a Closer whose Stats panics")
+}
+
+// closerStatsPanics returns the planted defect of a Closer whose Stats
+// panics over a fresh subject.
+func closerStatsPanics(h *CloserHandle) idempotentclose.Closer {
+	return &closerStatsPanicsDefect{closerOverEmbedded: h.Fresh()}
+}
+
+// closerStatsSucceedsAlwaysDefect is the planted defect of a Closer whose
+// Stats ignores the context.
+type closerStatsSucceedsAlwaysDefect struct {
+	closerOverEmbedded
+}
+
+// Stats is the override of the planted defect.
+func (*closerStatsSucceedsAlwaysDefect) Stats(p0 context.Context) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// closerStatsSucceedsAlways returns the planted defect of a Closer whose
+// Stats ignores the context over a fresh subject.
+func closerStatsSucceedsAlways(h *CloserHandle) idempotentclose.Closer {
+	return &closerStatsSucceedsAlwaysDefect{closerOverEmbedded: h.Fresh()}
+}
+
+// closerStatsValueBesideDefect is the planted defect of a Closer whose
+// Stats returns a value beside an error.
+type closerStatsValueBesideDefect struct {
+	closerOverEmbedded
+}
+
+// Stats is the override of the planted defect.
+func (*closerStatsValueBesideDefect) Stats(p0 context.Context) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// closerStatsValueBeside returns the planted defect of a Closer whose
+// Stats returns a value beside an error over a fresh subject.
+func closerStatsValueBeside(h *CloserHandle) idempotentclose.Closer {
+	return &closerStatsValueBesideDefect{closerOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:fd96523a688773439df30e6534bf6226adf66022c8aa5ca05d1bcbd304c94334

@@ -48,6 +48,30 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*sideeffecttest.MixedHandle) sideeffect.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Touch.SideEffect(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Observed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Observed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Observed.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +93,30 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*sideeffecttest.MixedHandle) sideeffect.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Touch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Touch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Touch.SideEffect(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Observed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Observed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sideeffecttest.MixedChecks.Observed.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +137,30 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(sideeffecttest.MixedChecks.Touch.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(sideeffecttest.MixedChecks.Observed.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.SideEffect(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +171,30 @@ func FuzzMixedSuiteTouch(f *testing.F) {
 		f,
 		sideeffecttest.MixedChecks.Touch.Callable,
 		mixedIdle,
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.SideEffect(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +205,30 @@ func FuzzMixedSuiteObserved(f *testing.F) {
 		f,
 		sideeffecttest.MixedChecks.Observed.Callable,
 		mixedIdle,
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Touch.SideEffect(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sideeffecttest.MixedChecks.Observed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +243,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b75f5d070c233fdda06e08a5d18f8d7932d609e42c92305dff8f64bc25a4dd89
+// dokimi:provenance sha256:246f8bdc8891075bb7c44000b500972f6b9698d55fdae0a18d9ca35779dd5c9e

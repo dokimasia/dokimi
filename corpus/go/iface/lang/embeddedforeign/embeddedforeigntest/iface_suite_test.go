@@ -48,6 +48,22 @@ func TestStreamSuite(t *testing.T) {
 				},
 				Defect: func(*embeddedforeigntest.StreamHandle) embeddedforeign.Stream { return &streamSubject{} },
 			}),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +85,22 @@ func TestStreamSuite(t *testing.T) {
 				},
 				Defect: func(*embeddedforeigntest.StreamHandle) embeddedforeign.Stream { return &streamSubject{} },
 			}),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Read.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Read.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				embeddedforeigntest.StreamChecks.Close.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +121,22 @@ func TestStreamSuiteBudgets(t *testing.T) {
 		streamIdle,
 		conform.Ceilings(embeddedforeigntest.StreamChecks.Read.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(embeddedforeigntest.StreamChecks.Close.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +147,22 @@ func FuzzStreamSuiteRead(f *testing.F) {
 		f,
 		embeddedforeigntest.StreamChecks.Read.Callable,
 		streamIdle,
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +173,22 @@ func FuzzStreamSuiteClose(f *testing.F) {
 		f,
 		embeddedforeigntest.StreamChecks.Close.Callable,
 		streamIdle,
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Read.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			embeddedforeigntest.StreamChecks.Close.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +203,4 @@ func BenchmarkStreamSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:a192cb627fd31b3d358cc812d6cc0629fed3e3aeecc0869ed09aed249476f8a7
+// dokimi:provenance sha256:57425c397859019fbbf66e1a683996b6390088c01b3d8dce6c2146fa574bfd8c

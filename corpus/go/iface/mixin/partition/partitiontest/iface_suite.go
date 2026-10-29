@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/partition"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,9 +40,39 @@ type mixedPut struct {
 	conform.Callable[partition.Mixed]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c mixedPut) Smoke() conform.ID[partition.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c mixedPut) Cancel() conform.ID[partition.Mixed] {
+	return c.Check("cancel")
+}
+
+// Partition returns the identity of the check that Read does not return in
+// one partition what Put wrote in another.
+func (c mixedPut) Partition() conform.ID[partition.Mixed] {
+	return c.Check("partition")
+}
+
 // mixedRead is the name of Mixed.Read, with the identities of its checks.
 type mixedRead struct {
 	conform.Callable[partition.Mixed]
+}
+
+// Smoke returns the identity of the check that Read returns without a
+// panic for derived inputs.
+func (c mixedRead) Smoke() conform.ID[partition.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Read returns an error for
+// a cancelled context.
+func (c mixedRead) Cancel() conform.ID[partition.Mixed] {
+	return c.Check("cancel")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -48,6 +80,102 @@ type mixedRead struct {
 func MixedSuite() conform.Suite[partition.Mixed] {
 	return conform.Suite[partition.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[partition.Mixed]{
+			{
+				ID:          MixedChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("partition-a"), string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedPutPanics,
+			},
+			{
+				ID:          MixedChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("partition-a"), string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedPutSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Put.Partition(),
+				Statement:   "Read does not return in one partition what Put wrote in another",
+				Claim:       spec.Partition,
+				Probe:       spec.KeepsPartitionsApart,
+				Reason:      spec.CrossedPartitions,
+				Law:         spec.OnePartitionDoesNotServeAnother,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.KeepsPartitionsApart(h, func() func(ctx context.Context) (string, error) {
+						calls := 0
+						return func(ctx context.Context) (string, error) {
+							calls++
+							w := string("value-a")
+							s0 := string("partition-a")
+							s1 := string("key-a")
+							if calls > 1 {
+								w = string("value-b")
+								s0 = string("partition-b")
+								s1 = string("key-b")
+							}
+							err := h.Subject().Put(ctx, s0, s1, w)
+							return w, err
+						}
+					}(), func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, string("partition-a"), string("key-a"))
+					})
+				},
+				Defect: mixedPutSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Read.Smoke(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("partition-a"), string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedReadPanics,
+			},
+			{
+				ID:          MixedChecks.Read.Cancel(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("partition-a"), string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedReadSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[partition.Mixed]{
 			{
 				Calls:    mixedPutCalls,
@@ -168,4 +296,71 @@ func newMixedOver(_ *MixedHandle, spend func()) partition.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6572071a3b73a8ee7149571bdadba7b8a16ff217bcff7be61ecf7bbeca353290
+// mixedPutPanicsDefect is the planted defect of a Mixed whose Put panics.
+type mixedPutPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*mixedPutPanicsDefect) Put(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Put panics")
+}
+
+// mixedPutPanics returns the planted defect of a Mixed whose Put panics
+// over a fresh subject.
+func mixedPutPanics(h *MixedHandle) partition.Mixed {
+	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// ignores the context.
+type mixedPutSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2, p3 string) (r0 error) {
+	return r0
+}
+
+// mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
+// ignores the context over a fresh subject.
+func mixedPutSucceedsAlways(h *MixedHandle) partition.Mixed {
+	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadPanicsDefect is the planted defect of a Mixed whose Read
+// panics.
+type mixedReadPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadPanicsDefect) Read(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Read panics")
+}
+
+// mixedReadPanics returns the planted defect of a Mixed whose Read panics
+// over a fresh subject.
+func mixedReadPanics(h *MixedHandle) partition.Mixed {
+	return &mixedReadPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedReadSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Read ignores the context.
+type mixedReadSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*mixedReadSucceedsAlwaysDefect) Read(p0 context.Context, p1, p2 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedReadSucceedsAlways returns the planted defect of a Mixed whose Read
+// ignores the context over a fresh subject.
+func mixedReadSucceedsAlways(h *MixedHandle) partition.Mixed {
+	return &mixedReadSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:d756774f29dd56e4d0678a9662f4371a3064c3f7bc445079ec030f18d044e628

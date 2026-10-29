@@ -42,6 +42,46 @@ func TestHasherSuite(t *testing.T) {
 				},
 				Defect: func(*HasherHandle) Hasher { return &hasherSubject{} },
 			}),
+			conform.Excuse(
+				HasherChecks.HashTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.HashTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.CombineTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.CombineTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.HashRoles.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.HashRoles.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Truncate.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Truncate.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Seal.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Seal.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -63,6 +103,46 @@ func TestHasherSuite(t *testing.T) {
 				},
 				Defect: func(*HasherHandle) Hasher { return &hasherSubject{} },
 			}),
+			conform.Excuse(
+				HasherChecks.HashTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.HashTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.CombineTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.CombineTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.HashRoles.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.HashRoles.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Truncate.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Truncate.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Seal.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				HasherChecks.Seal.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +169,46 @@ func TestHasherSuiteBudgets(t *testing.T) {
 		conform.Ceilings(HasherChecks.HashRoles.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(HasherChecks.Truncate.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(HasherChecks.Seal.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +219,46 @@ func FuzzHasherSuiteHashTagged(f *testing.F) {
 		f,
 		HasherChecks.HashTagged.Callable,
 		hasherIdle,
+		conform.Excuse(
+			HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +270,46 @@ func FuzzHasherSuiteCombineTagged(f *testing.F) {
 		f,
 		HasherChecks.CombineTagged.Callable,
 		hasherIdle,
+		conform.Excuse(
+			HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -120,6 +320,46 @@ func FuzzHasherSuiteHashRoles(f *testing.F) {
 		f,
 		HasherChecks.HashRoles.Callable,
 		hasherIdle,
+		conform.Excuse(
+			HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -130,6 +370,46 @@ func FuzzHasherSuiteTruncate(f *testing.F) {
 		f,
 		HasherChecks.Truncate.Callable,
 		hasherIdle,
+		conform.Excuse(
+			HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -140,6 +420,46 @@ func FuzzHasherSuiteSeal(f *testing.F) {
 		f,
 		HasherChecks.Seal.Callable,
 		hasherIdle,
+		conform.Excuse(
+			HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.HashRoles.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Truncate.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			HasherChecks.Seal.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -191,6 +511,14 @@ func TestDigestSuite(t *testing.T) {
 				},
 				Defect: func(*DigestHandle) DigestFunc { return nil },
 			}),
+			conform.Excuse(
+				DigestChecks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DigestChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -209,6 +537,14 @@ func TestDigestSuite(t *testing.T) {
 				},
 				Defect: func(*DigestHandle) DigestFunc { return nil },
 			}),
+			conform.Excuse(
+				DigestChecks.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				DigestChecks.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }

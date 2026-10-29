@@ -49,6 +49,14 @@ func TestBatchReaderSuite(t *testing.T) {
 				},
 				Defect: func(*batchreadertest.BatchReaderHandle) batchreader.BatchReader { return &batchReaderSubject{} },
 			}),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +78,14 @@ func TestBatchReaderSuite(t *testing.T) {
 				},
 				Defect: func(*batchreadertest.BatchReaderHandle) batchreader.BatchReader { return &batchReaderSubject{} },
 			}),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				batchreadertest.BatchReaderChecks.GetAll.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +105,14 @@ func TestBatchReaderSuiteBudgets(t *testing.T) {
 		t,
 		batchReaderIdle,
 		conform.Ceilings(batchreadertest.BatchReaderChecks.GetAll.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +124,14 @@ func FuzzBatchReaderSuiteGetAll(f *testing.F) {
 		f,
 		batchreadertest.BatchReaderChecks.GetAll.Callable,
 		batchReaderIdle,
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			batchreadertest.BatchReaderChecks.GetAll.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -111,4 +143,4 @@ func BenchmarkBatchReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:5a33d7d4e295ac2aa28c02fe283cb4fd88490787c941ac614bf83c0fc93fd468
+// dokimi:provenance sha256:fe90115e8e0cc7c16f5678472935e54aef71e9a59c492e22bf7808a414573587

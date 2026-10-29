@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/voidlifecycle"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,59 @@ type voidLifecycleStop struct {
 	conform.Callable[voidlifecycle.VoidLifecycle]
 }
 
+// Smoke returns the identity of the check that Stop returns without a
+// panic for derived inputs.
+func (c voidLifecycleStop) Smoke() conform.ID[voidlifecycle.VoidLifecycle] {
+	return c.Check("smoke")
+}
+
+// RepeatSurvives returns the identity of the check that Stop returns
+// without a panic when it is called twice.
+func (c voidLifecycleStop) RepeatSurvives() conform.ID[voidlifecycle.VoidLifecycle] {
+	return c.Check("repeat-survives")
+}
+
 // VoidLifecycleSuite returns the checks of VoidLifecycle, and the calls
 // and the budgets of its callables.
 func VoidLifecycleSuite() conform.Suite[voidlifecycle.VoidLifecycle] {
 	return conform.Suite[voidlifecycle.VoidLifecycle]{
 		Declaration: "VoidLifecycle",
+		Checks: []conform.Check[voidlifecycle.VoidLifecycle]{
+			{
+				ID:          VoidLifecycleChecks.Stop.Smoke(),
+				Statement:   "Stop returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *VoidLifecycleHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Stop()
+						return nil
+					})
+				},
+				Defect: voidLifecycleStopPanics,
+			},
+			{
+				ID:          VoidLifecycleChecks.Stop.RepeatSurvives(),
+				Statement:   "Stop returns without a panic when it is called twice",
+				Claim:       spec.RepeatSurvives,
+				Probe:       spec.SurvivesRepeat,
+				Reason:      spec.PanickedRepeat,
+				Law:         spec.RepeatedCallSurvives,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Entails:     []conform.ID[voidlifecycle.VoidLifecycle]{VoidLifecycleChecks.Stop.Smoke()},
+				Apply: func(h *VoidLifecycleHandle) {
+					probe.SurvivesRepeat(h, func(ctx context.Context) error {
+						h.Subject().Stop()
+						return nil
+					})
+				},
+				Defect: voidLifecycleStopPanicsOnRepeat,
+			},
+		},
 		Calls: []conform.Call[voidlifecycle.VoidLifecycle]{
 			{
 				Calls:    voidLifecycleStopCalls,
@@ -151,4 +201,43 @@ func newVoidLifecycleOver(_ *VoidLifecycleHandle, spend func()) voidlifecycle.Vo
 	return voidLifecycleOver{spend: spend}
 }
 
-// dokimi:provenance sha256:30a0d0fde9ae6311b3b8abea54a7dfd41ccb74488b20311752f683b2d3ee92f5
+// voidLifecycleStopPanicsDefect is the planted defect of a VoidLifecycle
+// whose Stop panics.
+type voidLifecycleStopPanicsDefect struct {
+	voidLifecycleOverEmbedded
+}
+
+// Stop is the override of the planted defect.
+func (*voidLifecycleStopPanicsDefect) Stop() {
+	panic("the planted defect of a VoidLifecycle whose Stop panics")
+}
+
+// voidLifecycleStopPanics returns the planted defect of a VoidLifecycle
+// whose Stop panics over a fresh subject.
+func voidLifecycleStopPanics(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle {
+	return &voidLifecycleStopPanicsDefect{voidLifecycleOverEmbedded: h.Fresh()}
+}
+
+// voidLifecycleStopPanicsOnRepeatDefect is the planted defect of a
+// VoidLifecycle whose Stop panics on the repeat.
+type voidLifecycleStopPanicsOnRepeatDefect struct {
+	voidLifecycleOverEmbedded
+	calls int
+}
+
+// Stop is the override of the planted defect.
+func (d *voidLifecycleStopPanicsOnRepeatDefect) Stop() {
+	d.calls++
+	if d.calls > 1 {
+		panic("the planted defect of a VoidLifecycle whose Stop panics on the repeat")
+	}
+	d.voidLifecycleOverEmbedded.Stop()
+}
+
+// voidLifecycleStopPanicsOnRepeat returns the planted defect of a
+// VoidLifecycle whose Stop panics on the repeat over a fresh subject.
+func voidLifecycleStopPanicsOnRepeat(h *VoidLifecycleHandle) voidlifecycle.VoidLifecycle {
+	return &voidLifecycleStopPanicsOnRepeatDefect{voidLifecycleOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:7079591142ebb3ac268af083c56ecfc273379b1a0c291478901a3051f7ec82d2

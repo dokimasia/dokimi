@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/tamperevident"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,34 @@ type mixedStore struct {
 	conform.Callable[tamperevident.Mixed]
 }
 
+// Smoke returns the identity of the check that Store returns without a
+// panic for derived inputs.
+func (c mixedStore) Smoke() conform.ID[tamperevident.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Store returns an error for
+// a cancelled context.
+func (c mixedStore) Cancel() conform.ID[tamperevident.Mixed] {
+	return c.Check("cancel")
+}
+
 // mixedCorrupt is the name of Mixed.Corrupt, with the identities of its
 // checks.
 type mixedCorrupt struct {
 	conform.Callable[tamperevident.Mixed]
+}
+
+// Smoke returns the identity of the check that Corrupt returns without a
+// panic for derived inputs.
+func (c mixedCorrupt) Smoke() conform.ID[tamperevident.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Corrupt returns an error
+// for a cancelled context.
+func (c mixedCorrupt) Cancel() conform.ID[tamperevident.Mixed] {
+	return c.Check("cancel")
 }
 
 // mixedVerify is the name of Mixed.Verify, with the identities of its
@@ -53,11 +79,118 @@ type mixedVerify struct {
 	conform.Callable[tamperevident.Mixed]
 }
 
+// Smoke returns the identity of the check that Verify returns without a
+// panic for derived inputs.
+func (c mixedVerify) Smoke() conform.ID[tamperevident.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Verify returns an error
+// for a cancelled context.
+func (c mixedVerify) Cancel() conform.ID[tamperevident.Mixed] {
+	return c.Check("cancel")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[tamperevident.Mixed] {
 	return conform.Suite[tamperevident.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[tamperevident.Mixed]{
+			{
+				ID:          MixedChecks.Store.Smoke(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, string("body-a"))
+					})
+				},
+				Defect: mixedStorePanics,
+			},
+			{
+				ID:          MixedChecks.Store.Cancel(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Store(ctx, string("body-a"))
+					})
+				},
+				Defect: mixedStoreSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Corrupt.Smoke(),
+				Statement:   "Corrupt returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Corrupt(ctx)
+					})
+				},
+				Defect: mixedCorruptPanics,
+			},
+			{
+				ID:          MixedChecks.Corrupt.Cancel(),
+				Statement:   "Corrupt returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Corrupt(ctx)
+					})
+				},
+				Defect: mixedCorruptSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Verify.Smoke(),
+				Statement:   "Verify returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					})
+				},
+				Defect: mixedVerifyPanics,
+			},
+			{
+				ID:          MixedChecks.Verify.Cancel(),
+				Statement:   "Verify returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Verify(ctx)
+					})
+				},
+				Defect: mixedVerifySucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[tamperevident.Mixed]{
 			{
 				Calls:    mixedStoreCalls,
@@ -196,4 +329,106 @@ func newMixedOver(_ *MixedHandle, spend func()) tamperevident.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:78101ed6de1da6bbcbfba16645bd2e15f66894854268bc92194b53b220e18e8b
+// mixedStorePanicsDefect is the planted defect of a Mixed whose Store
+// panics.
+type mixedStorePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStorePanicsDefect) Store(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Store panics")
+}
+
+// mixedStorePanics returns the planted defect of a Mixed whose Store
+// panics over a fresh subject.
+func mixedStorePanics(h *MixedHandle) tamperevident.Mixed {
+	return &mixedStorePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedStoreSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Store ignores the context.
+type mixedStoreSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedStoreSucceedsAlways returns the planted defect of a Mixed whose
+// Store ignores the context over a fresh subject.
+func mixedStoreSucceedsAlways(h *MixedHandle) tamperevident.Mixed {
+	return &mixedStoreSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCorruptPanicsDefect is the planted defect of a Mixed whose Corrupt
+// panics.
+type mixedCorruptPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Corrupt is the override of the planted defect.
+func (*mixedCorruptPanicsDefect) Corrupt(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Corrupt panics")
+}
+
+// mixedCorruptPanics returns the planted defect of a Mixed whose Corrupt
+// panics over a fresh subject.
+func mixedCorruptPanics(h *MixedHandle) tamperevident.Mixed {
+	return &mixedCorruptPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedCorruptSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Corrupt ignores the context.
+type mixedCorruptSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Corrupt is the override of the planted defect.
+func (*mixedCorruptSucceedsAlwaysDefect) Corrupt(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedCorruptSucceedsAlways returns the planted defect of a Mixed whose
+// Corrupt ignores the context over a fresh subject.
+func mixedCorruptSucceedsAlways(h *MixedHandle) tamperevident.Mixed {
+	return &mixedCorruptSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedVerifyPanicsDefect is the planted defect of a Mixed whose Verify
+// panics.
+type mixedVerifyPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Verify is the override of the planted defect.
+func (*mixedVerifyPanicsDefect) Verify(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Verify panics")
+}
+
+// mixedVerifyPanics returns the planted defect of a Mixed whose Verify
+// panics over a fresh subject.
+func mixedVerifyPanics(h *MixedHandle) tamperevident.Mixed {
+	return &mixedVerifyPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedVerifySucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Verify ignores the context.
+type mixedVerifySucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Verify is the override of the planted defect.
+func (*mixedVerifySucceedsAlwaysDefect) Verify(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedVerifySucceedsAlways returns the planted defect of a Mixed whose
+// Verify ignores the context over a fresh subject.
+func mixedVerifySucceedsAlways(h *MixedHandle) tamperevident.Mixed {
+	return &mixedVerifySucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:79bfdcf06d1eb8d0864dc6e6e61311e4b5e4c7ad5c77e0f98bac91a97b3d2f60

@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/sample"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type mixedProcess struct {
 	conform.Callable[sample.Mixed]
 }
 
+// Smoke returns the identity of the check that Process returns without a
+// panic for derived inputs.
+func (c mixedProcess) Smoke() conform.ID[sample.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Process returns an error
+// for a cancelled context.
+func (c mixedProcess) Cancel() conform.ID[sample.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Process returns the
+// zero value beside an error.
+func (c mixedProcess) ZeroOnError() conform.ID[sample.Mixed] {
+	return c.Check("zero-on-error")
+}
+
 // mixedNewInput is the name of Mixed.NewInput, with the identities of its
 // checks.
 type mixedNewInput struct {
 	conform.Callable[sample.Mixed]
+}
+
+// Smoke returns the identity of the check that NewInput returns without a
+// panic for derived inputs.
+func (c mixedNewInput) Smoke() conform.ID[sample.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that NewInput returns an error
+// for a cancelled context.
+func (c mixedNewInput) Cancel() conform.ID[sample.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that NewInput returns the
+// zero value beside an error.
+func (c mixedNewInput) ZeroOnError() conform.ID[sample.Mixed] {
+	return c.Check("zero-on-error")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -50,6 +88,104 @@ type mixedNewInput struct {
 func MixedSuite() conform.Suite[sample.Mixed] {
 	return conform.Suite[sample.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[sample.Mixed]{
+			{
+				ID:          MixedChecks.Process.Smoke(),
+				Statement:   "Process returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Process(ctx, string("input-a"))
+						return err
+					})
+				},
+				Defect: mixedProcessPanics,
+			},
+			{
+				ID:          MixedChecks.Process.Cancel(),
+				Statement:   "Process returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Process(ctx, string("input-a"))
+						return err
+					})
+				},
+				Defect: mixedProcessSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Process.ZeroOnError(),
+				Statement:   "Process returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Process(ctx, string("input-a"))
+					}, string(""))
+				},
+				Defect: mixedProcessValueBeside,
+			},
+			{
+				ID:          MixedChecks.NewInput.Smoke(),
+				Statement:   "NewInput returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().NewInput(ctx)
+						return err
+					})
+				},
+				Defect: mixedNewInputPanics,
+			},
+			{
+				ID:          MixedChecks.NewInput.Cancel(),
+				Statement:   "NewInput returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().NewInput(ctx)
+						return err
+					})
+				},
+				Defect: mixedNewInputSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.NewInput.ZeroOnError(),
+				Statement:   "NewInput returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().NewInput(ctx)
+					}, string(""))
+				},
+				Defect: mixedNewInputValueBeside,
+			},
+		},
 		Calls: []conform.Call[sample.Mixed]{
 			{
 				Calls:    mixedProcessCalls,
@@ -167,4 +303,110 @@ func newMixedOver(_ *MixedHandle, spend func()) sample.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:ace21c7b3cbded087e29fa87feca8ace8ebb45408aad16d4043a9d798f15261e
+// mixedProcessPanicsDefect is the planted defect of a Mixed whose Process
+// panics.
+type mixedProcessPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Process is the override of the planted defect.
+func (*mixedProcessPanicsDefect) Process(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Process panics")
+}
+
+// mixedProcessPanics returns the planted defect of a Mixed whose Process
+// panics over a fresh subject.
+func mixedProcessPanics(h *MixedHandle) sample.Mixed {
+	return &mixedProcessPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedProcessSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Process ignores the context.
+type mixedProcessSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Process is the override of the planted defect.
+func (*mixedProcessSucceedsAlwaysDefect) Process(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedProcessSucceedsAlways returns the planted defect of a Mixed whose
+// Process ignores the context over a fresh subject.
+func mixedProcessSucceedsAlways(h *MixedHandle) sample.Mixed {
+	return &mixedProcessSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedProcessValueBesideDefect is the planted defect of a Mixed whose
+// Process returns a value beside an error.
+type mixedProcessValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Process is the override of the planted defect.
+func (*mixedProcessValueBesideDefect) Process(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedProcessValueBeside returns the planted defect of a Mixed whose
+// Process returns a value beside an error over a fresh subject.
+func mixedProcessValueBeside(h *MixedHandle) sample.Mixed {
+	return &mixedProcessValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedNewInputPanicsDefect is the planted defect of a Mixed whose
+// NewInput panics.
+type mixedNewInputPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// NewInput is the override of the planted defect.
+func (*mixedNewInputPanicsDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose NewInput panics")
+}
+
+// mixedNewInputPanics returns the planted defect of a Mixed whose NewInput
+// panics over a fresh subject.
+func mixedNewInputPanics(h *MixedHandle) sample.Mixed {
+	return &mixedNewInputPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedNewInputSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// NewInput ignores the context.
+type mixedNewInputSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// NewInput is the override of the planted defect.
+func (*mixedNewInputSucceedsAlwaysDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedNewInputSucceedsAlways returns the planted defect of a Mixed whose
+// NewInput ignores the context over a fresh subject.
+func mixedNewInputSucceedsAlways(h *MixedHandle) sample.Mixed {
+	return &mixedNewInputSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedNewInputValueBesideDefect is the planted defect of a Mixed whose
+// NewInput returns a value beside an error.
+type mixedNewInputValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// NewInput is the override of the planted defect.
+func (*mixedNewInputValueBesideDefect) NewInput(p0 context.Context) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedNewInputValueBeside returns the planted defect of a Mixed whose
+// NewInput returns a value beside an error over a fresh subject.
+func mixedNewInputValueBeside(h *MixedHandle) sample.Mixed {
+	return &mixedNewInputValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:211cb26b05556c9d0ede01bf289786d70c0f461355b05c857d034bc780550ac5

@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/predicate"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,59 @@ type predicateIsEmpty struct {
 	conform.Callable[predicate.Predicate]
 }
 
+// Smoke returns the identity of the check that IsEmpty returns without a
+// panic for derived inputs.
+func (c predicateIsEmpty) Smoke() conform.ID[predicate.Predicate] {
+	return c.Check("smoke")
+}
+
+// Predicate returns the identity of the check that IsEmpty returns the
+// same answer twice for an unchanged subject.
+func (c predicateIsEmpty) Predicate() conform.ID[predicate.Predicate] {
+	return c.Check("predicate")
+}
+
 // PredicateSuite returns the checks of Predicate, and the calls and the
 // budgets of its callables.
 func PredicateSuite() conform.Suite[predicate.Predicate] {
 	return conform.Suite[predicate.Predicate]{
 		Declaration: "Predicate",
+		Checks: []conform.Check[predicate.Predicate]{
+			{
+				ID:          PredicateChecks.IsEmpty.Smoke(),
+				Statement:   "IsEmpty returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PredicateHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().IsEmpty()
+						return nil
+					})
+				},
+				Defect: predicateIsEmptyPanics,
+			},
+			{
+				ID:          PredicateChecks.IsEmpty.Predicate(),
+				Statement:   "IsEmpty returns the same answer twice for an unchanged subject",
+				Claim:       spec.Predicate,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *PredicateHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (bool, error) {
+						r0 := h.Subject().IsEmpty()
+						return r0, nil
+					})
+				},
+				Defect: predicateIsEmptyDrifts,
+			},
+		},
 		Calls: []conform.Call[predicate.Predicate]{
 			{
 				Calls:    predicateIsEmptyCalls,
@@ -148,4 +198,43 @@ func newPredicateOver(_ *PredicateHandle, spend func()) predicate.Predicate {
 	return predicateOver{spend: spend}
 }
 
-// dokimi:provenance sha256:156493b8692aa0ce5437659f8b386cd43edb4a3eed4a81819e088274a50f6a23
+// predicateIsEmptyPanicsDefect is the planted defect of a Predicate whose
+// IsEmpty panics.
+type predicateIsEmptyPanicsDefect struct {
+	predicateOverEmbedded
+}
+
+// IsEmpty is the override of the planted defect.
+func (*predicateIsEmptyPanicsDefect) IsEmpty() (r0 bool) {
+	panic("the planted defect of a Predicate whose IsEmpty panics")
+}
+
+// predicateIsEmptyPanics returns the planted defect of a Predicate whose
+// IsEmpty panics over a fresh subject.
+func predicateIsEmptyPanics(h *PredicateHandle) predicate.Predicate {
+	return &predicateIsEmptyPanicsDefect{predicateOverEmbedded: h.Fresh()}
+}
+
+// predicateIsEmptyDriftsDefect is the planted defect of a Predicate whose
+// IsEmpty returns another answer on the repeat.
+type predicateIsEmptyDriftsDefect struct {
+	predicateOverEmbedded
+	calls int
+}
+
+// IsEmpty is the override of the planted defect.
+func (d *predicateIsEmptyDriftsDefect) IsEmpty() (r0 bool) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = bool(true)
+	}
+	return r0
+}
+
+// predicateIsEmptyDrifts returns the planted defect of a Predicate whose
+// IsEmpty returns another answer on the repeat over a fresh subject.
+func predicateIsEmptyDrifts(h *PredicateHandle) predicate.Predicate {
+	return &predicateIsEmptyDriftsDefect{predicateOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:5f73142a045fa5f20d137a4dfef77b84ae11720941991147d1794b37ea36b0d0

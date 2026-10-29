@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/monotonic"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type mixedVersion struct {
 	conform.Callable[monotonic.Mixed]
 }
 
+// Smoke returns the identity of the check that Version returns without a
+// panic for derived inputs.
+func (c mixedVersion) Smoke() conform.ID[monotonic.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Version returns an error
+// for a cancelled context.
+func (c mixedVersion) Cancel() conform.ID[monotonic.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Version returns the
+// zero value beside an error.
+func (c mixedVersion) ZeroOnError() conform.ID[monotonic.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// Monotonic returns the identity of the check that Version never returns
+// less than it returned before.
+func (c mixedVersion) Monotonic() conform.ID[monotonic.Mixed] {
+	return c.Check("monotonic")
+}
+
 // mixedAdvance is the name of Mixed.Advance, with the identities of its
 // checks.
 type mixedAdvance struct {
 	conform.Callable[monotonic.Mixed]
+}
+
+// Smoke returns the identity of the check that Advance returns without a
+// panic for derived inputs.
+func (c mixedAdvance) Smoke() conform.ID[monotonic.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Advance returns an error
+// for a cancelled context.
+func (c mixedAdvance) Cancel() conform.ID[monotonic.Mixed] {
+	return c.Check("cancel")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -50,6 +88,103 @@ type mixedAdvance struct {
 func MixedSuite() conform.Suite[monotonic.Mixed] {
 	return conform.Suite[monotonic.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[monotonic.Mixed]{
+			{
+				ID:          MixedChecks.Version.Smoke(),
+				Statement:   "Version returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Version(ctx)
+						return err
+					})
+				},
+				Defect: mixedVersionPanics,
+			},
+			{
+				ID:          MixedChecks.Version.Cancel(),
+				Statement:   "Version returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Version(ctx)
+						return err
+					})
+				},
+				Defect: mixedVersionSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Version.ZeroOnError(),
+				Statement:   "Version returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().Version(ctx)
+					}, int64(0))
+				},
+				Defect: mixedVersionValueBeside,
+			},
+			{
+				ID:          MixedChecks.Version.Monotonic(),
+				Statement:   "Version never returns less than it returned before",
+				Claim:       spec.Monotonic,
+				Probe:       spec.NeverDecreases,
+				Reason:      spec.Regressed,
+				Law:         spec.ResultsNeverDecrease,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.NeverDecreases(h, func(ctx context.Context) (int64, error) {
+						return h.Subject().Version(ctx)
+					})
+				},
+				Defect: mixedVersionDescends,
+			},
+			{
+				ID:          MixedChecks.Advance.Smoke(),
+				Statement:   "Advance returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Advance(ctx)
+					})
+				},
+				Defect: mixedAdvancePanics,
+			},
+			{
+				ID:          MixedChecks.Advance.Cancel(),
+				Statement:   "Advance returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Advance(ctx)
+					})
+				},
+				Defect: mixedAdvanceSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[monotonic.Mixed]{
 			{
 				Calls:    mixedVersionCalls,
@@ -165,4 +300,113 @@ func newMixedOver(_ *MixedHandle, spend func()) monotonic.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0317ab49a2363c5ef63f061d9b6de7580bf5fab32e3471bc2fe4a3c7b86327bc
+// mixedVersionPanicsDefect is the planted defect of a Mixed whose Version
+// panics.
+type mixedVersionPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Version is the override of the planted defect.
+func (*mixedVersionPanicsDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	panic("the planted defect of a Mixed whose Version panics")
+}
+
+// mixedVersionPanics returns the planted defect of a Mixed whose Version
+// panics over a fresh subject.
+func mixedVersionPanics(h *MixedHandle) monotonic.Mixed {
+	return &mixedVersionPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedVersionSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Version ignores the context.
+type mixedVersionSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Version is the override of the planted defect.
+func (*mixedVersionSucceedsAlwaysDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	return r0, r1
+}
+
+// mixedVersionSucceedsAlways returns the planted defect of a Mixed whose
+// Version ignores the context over a fresh subject.
+func mixedVersionSucceedsAlways(h *MixedHandle) monotonic.Mixed {
+	return &mixedVersionSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedVersionValueBesideDefect is the planted defect of a Mixed whose
+// Version returns a value beside an error.
+type mixedVersionValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Version is the override of the planted defect.
+func (*mixedVersionValueBesideDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	r0 = int64(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedVersionValueBeside returns the planted defect of a Mixed whose
+// Version returns a value beside an error over a fresh subject.
+func mixedVersionValueBeside(h *MixedHandle) monotonic.Mixed {
+	return &mixedVersionValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedVersionDescendsDefect is the planted defect of a Mixed whose
+// Version returns less than its previous result.
+type mixedVersionDescendsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Version is the override of the planted defect.
+func (d *mixedVersionDescendsDefect) Version(p0 context.Context) (r0 int64, r1 error) {
+	d.calls++
+	if d.calls == 1 {
+		r0 = int64(7)
+	}
+	return r0, r1
+}
+
+// mixedVersionDescends returns the planted defect of a Mixed whose Version
+// returns less than its previous result over a fresh subject.
+func mixedVersionDescends(h *MixedHandle) monotonic.Mixed {
+	return &mixedVersionDescendsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAdvancePanicsDefect is the planted defect of a Mixed whose Advance
+// panics.
+type mixedAdvancePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Advance is the override of the planted defect.
+func (*mixedAdvancePanicsDefect) Advance(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Mixed whose Advance panics")
+}
+
+// mixedAdvancePanics returns the planted defect of a Mixed whose Advance
+// panics over a fresh subject.
+func mixedAdvancePanics(h *MixedHandle) monotonic.Mixed {
+	return &mixedAdvancePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedAdvanceSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Advance ignores the context.
+type mixedAdvanceSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Advance is the override of the planted defect.
+func (*mixedAdvanceSucceedsAlwaysDefect) Advance(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// mixedAdvanceSucceedsAlways returns the planted defect of a Mixed whose
+// Advance ignores the context over a fresh subject.
+func mixedAdvanceSucceedsAlways(h *MixedHandle) monotonic.Mixed {
+	return &mixedAdvanceSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:ab3984ef514e2f23b9082e7cbce33fd2c3d49b6c4ad6aca3e306cde4df1d5913

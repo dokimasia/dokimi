@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/closer"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,35 @@ type closerClose struct {
 	conform.Callable[closer.Closer]
 }
 
+// Smoke returns the identity of the check that Close returns without a
+// panic for derived inputs.
+func (c closerClose) Smoke() conform.ID[closer.Closer] {
+	return c.Check("smoke")
+}
+
 // CloserSuite returns the checks of Closer, and the calls and the budgets
 // of its callables.
 func CloserSuite() conform.Suite[closer.Closer] {
 	return conform.Suite[closer.Closer]{
 		Declaration: "Closer",
+		Checks: []conform.Check[closer.Closer]{
+			{
+				ID:          CloserChecks.Close.Smoke(),
+				Statement:   "Close returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CloserHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Close()
+					})
+				},
+				Defect: closerClosePanics,
+			},
+		},
 		Calls: []conform.Call[closer.Closer]{
 			{
 				Calls:    closerCloseCalls,
@@ -137,4 +163,21 @@ func newCloserOver(_ *CloserHandle, spend func()) closer.Closer {
 	return closerOver{spend: spend}
 }
 
-// dokimi:provenance sha256:accb225662327b993597dd97a19d0e2587478e69fc8d61c99d1d8e12d4f65be8
+// closerClosePanicsDefect is the planted defect of a Closer whose Close
+// panics.
+type closerClosePanicsDefect struct {
+	closerOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*closerClosePanicsDefect) Close() (r0 error) {
+	panic("the planted defect of a Closer whose Close panics")
+}
+
+// closerClosePanics returns the planted defect of a Closer whose Close
+// panics over a fresh subject.
+func closerClosePanics(h *CloserHandle) closer.Closer {
+	return &closerClosePanicsDefect{closerOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:2f812daef78c47c882784b46e8657d7a7015b63a49e4593872e63c4123a1502b

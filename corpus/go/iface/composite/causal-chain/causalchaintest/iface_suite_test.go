@@ -49,6 +49,34 @@ func TestLogSuite(t *testing.T) {
 				Defect: func(*causalchaintest.LogHandle) causalchain.Log { return &logSubject{} },
 			}),
 			conform.Excuse(
+				causalchaintest.LogChecks.Append.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.ChainCausal(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.Chain(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Replay.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Replay.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Replay.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				causalchaintest.LogChecks.Replay.KeepsEveryBody(),
 				"the test applies the check of its option alone",
 			),
@@ -77,6 +105,34 @@ func TestLogSuite(t *testing.T) {
 				},
 				Defect: func(*causalchaintest.LogHandle) causalchain.Log { return &logSubject{} },
 			}),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.ChainCausal(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Append.Chain(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Replay.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Replay.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				causalchaintest.LogChecks.Replay.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				causalchaintest.LogChecks.Replay.KeepsEveryBody(),
 				"the test applies the check of its option alone",
@@ -121,6 +177,34 @@ func TestLogSuiteBudgets(t *testing.T) {
 		conform.Ceilings(causalchaintest.LogChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(causalchaintest.LogChecks.Replay.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -139,6 +223,34 @@ func FuzzLogSuiteAppend(f *testing.F) {
 		causalchaintest.LogChecks.Append.Callable,
 		logIdle,
 		conform.Excuse(
+			causalchaintest.LogChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -156,6 +268,34 @@ func FuzzLogSuiteReplay(f *testing.F) {
 		f,
 		causalchaintest.LogChecks.Replay.Callable,
 		logIdle,
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.ChainCausal(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			causalchaintest.LogChecks.Replay.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			causalchaintest.LogChecks.Replay.KeepsEveryBody(),
 			"the planted defect of a ceiling answers each call with its zero results",
@@ -177,4 +317,4 @@ func BenchmarkLogSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:9e51ff1ec81cd43a835b68dc10a71b526df68ca064be6c20e233a3914690d7e7
+// dokimi:provenance sha256:50441b6c3a0e7a072f1036baf6ca29403b26fed25cc549c5b7dcf570d6303ec0

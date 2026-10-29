@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	circuitbreaker "go.dokimi.dev/dokimi/corpus/go/iface/contract/circuit-breaker"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,56 @@ type contractRun struct {
 	conform.Callable[circuitbreaker.Contract]
 }
 
+// Smoke returns the identity of the check that Run returns without a panic
+// for derived inputs.
+func (c contractRun) Smoke() conform.ID[circuitbreaker.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Run returns an error for a
+// cancelled context.
+func (c contractRun) Cancel() conform.ID[circuitbreaker.Contract] {
+	return c.Check("cancel")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[circuitbreaker.Contract] {
 	return conform.Suite[circuitbreaker.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[circuitbreaker.Contract]{
+			{
+				ID:          ContractChecks.Run.Smoke(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
+				ID:          ContractChecks.Run.Cancel(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[circuitbreaker.Contract]{
 			{
 				Calls:    contractRunCalls,
@@ -148,4 +195,38 @@ func newContractOver(_ *ContractHandle, spend func()) circuitbreaker.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b6257a690e9f69e81041d0772cac326909f4612ea4c2314c5cfd005b916dd34a
+// contractRunPanicsDefect is the planted defect of a Contract whose Run
+// panics.
+type contractRunPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunPanicsDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Contract whose Run panics")
+}
+
+// contractRunPanics returns the planted defect of a Contract whose Run
+// panics over a fresh subject.
+func contractRunPanics(h *ContractHandle) circuitbreaker.Contract {
+	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRunSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Run ignores the context.
+type contractRunSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// contractRunSucceedsAlways returns the planted defect of a Contract whose
+// Run ignores the context over a fresh subject.
+func contractRunSucceedsAlways(h *ContractHandle) circuitbreaker.Contract {
+	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:c2eea71ac83d8113b079f38413aa74fa7f0a26603812bd4b672373a3e880ff0b

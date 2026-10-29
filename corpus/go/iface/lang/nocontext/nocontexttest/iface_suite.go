@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/nocontext"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,28 @@ type calculatorAdd struct {
 	conform.Callable[nocontext.Calculator]
 }
 
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c calculatorAdd) Smoke() conform.ID[nocontext.Calculator] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Add returns the
+// same value for the same inputs.
+func (c calculatorAdd) Deterministic() conform.ID[nocontext.Calculator] {
+	return c.Check("deterministic")
+}
+
 // calculatorDivide is the name of Calculator.Divide, with the identities
 // of its checks.
 type calculatorDivide struct {
 	conform.Callable[nocontext.Calculator]
+}
+
+// Smoke returns the identity of the check that Divide returns without a
+// panic for derived inputs.
+func (c calculatorDivide) Smoke() conform.ID[nocontext.Calculator] {
+	return c.Check("smoke")
 }
 
 // calculatorReset is the name of Calculator.Reset, with the identities of
@@ -53,11 +73,110 @@ type calculatorReset struct {
 	conform.Callable[nocontext.Calculator]
 }
 
+// Smoke returns the identity of the check that Reset returns without a
+// panic for derived inputs.
+func (c calculatorReset) Smoke() conform.ID[nocontext.Calculator] {
+	return c.Check("smoke")
+}
+
+// RepeatSurvives returns the identity of the check that Reset returns
+// without a panic when it is called twice.
+func (c calculatorReset) RepeatSurvives() conform.ID[nocontext.Calculator] {
+	return c.Check("repeat-survives")
+}
+
 // CalculatorSuite returns the checks of Calculator, and the calls and the
 // budgets of its callables.
 func CalculatorSuite() conform.Suite[nocontext.Calculator] {
 	return conform.Suite[nocontext.Calculator]{
 		Declaration: "Calculator",
+		Checks: []conform.Check[nocontext.Calculator]{
+			{
+				ID:          CalculatorChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CalculatorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Add(int(42), int(42))
+						return nil
+					})
+				},
+				Defect: calculatorAddPanics,
+			},
+			{
+				ID:          CalculatorChecks.Add.Deterministic(),
+				Statement:   "Add returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CalculatorHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (int, error) {
+						r0 := h.Subject().Add(int(42), int(42))
+						return r0, nil
+					})
+				},
+				Defect: calculatorAddDrifts,
+			},
+			{
+				ID:          CalculatorChecks.Divide.Smoke(),
+				Statement:   "Divide returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CalculatorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Divide(int(42), int(42))
+						return err
+					})
+				},
+				Defect: calculatorDividePanics,
+			},
+			{
+				ID:          CalculatorChecks.Reset.Smoke(),
+				Statement:   "Reset returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CalculatorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Reset()
+						return nil
+					})
+				},
+				Defect: calculatorResetPanics,
+			},
+			{
+				ID:          CalculatorChecks.Reset.RepeatSurvives(),
+				Statement:   "Reset returns without a panic when it is called twice",
+				Claim:       spec.RepeatSurvives,
+				Probe:       spec.SurvivesRepeat,
+				Reason:      spec.PanickedRepeat,
+				Law:         spec.RepeatedCallSurvives,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Entails:     []conform.ID[nocontext.Calculator]{CalculatorChecks.Reset.Smoke()},
+				Apply: func(h *CalculatorHandle) {
+					probe.SurvivesRepeat(h, func(ctx context.Context) error {
+						h.Subject().Reset()
+						return nil
+					})
+				},
+				Defect: calculatorResetPanicsOnRepeat,
+			},
+		},
 		Calls: []conform.Call[nocontext.Calculator]{
 			{
 				Calls:    calculatorAddCalls,
@@ -207,4 +326,99 @@ func newCalculatorOver(_ *CalculatorHandle, spend func()) nocontext.Calculator {
 	return calculatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:d966cfc4bd95c200bfcaf00e90c1f5addb40c4315adc8f734903ce70b1d217df
+// calculatorAddPanicsDefect is the planted defect of a Calculator whose
+// Add panics.
+type calculatorAddPanicsDefect struct {
+	calculatorOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*calculatorAddPanicsDefect) Add(p0, p1 int) (r0 int) {
+	panic("the planted defect of a Calculator whose Add panics")
+}
+
+// calculatorAddPanics returns the planted defect of a Calculator whose Add
+// panics over a fresh subject.
+func calculatorAddPanics(h *CalculatorHandle) nocontext.Calculator {
+	return &calculatorAddPanicsDefect{calculatorOverEmbedded: h.Fresh()}
+}
+
+// calculatorAddDriftsDefect is the planted defect of a Calculator whose
+// Add returns another value on the repeat.
+type calculatorAddDriftsDefect struct {
+	calculatorOverEmbedded
+	calls int
+}
+
+// Add is the override of the planted defect.
+func (d *calculatorAddDriftsDefect) Add(p0, p1 int) (r0 int) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = int(7)
+	}
+	return r0
+}
+
+// calculatorAddDrifts returns the planted defect of a Calculator whose Add
+// returns another value on the repeat over a fresh subject.
+func calculatorAddDrifts(h *CalculatorHandle) nocontext.Calculator {
+	return &calculatorAddDriftsDefect{calculatorOverEmbedded: h.Fresh()}
+}
+
+// calculatorDividePanicsDefect is the planted defect of a Calculator whose
+// Divide panics.
+type calculatorDividePanicsDefect struct {
+	calculatorOverEmbedded
+}
+
+// Divide is the override of the planted defect.
+func (*calculatorDividePanicsDefect) Divide(p0, p1 int) (r0 int, r1 error) {
+	panic("the planted defect of a Calculator whose Divide panics")
+}
+
+// calculatorDividePanics returns the planted defect of a Calculator whose
+// Divide panics over a fresh subject.
+func calculatorDividePanics(h *CalculatorHandle) nocontext.Calculator {
+	return &calculatorDividePanicsDefect{calculatorOverEmbedded: h.Fresh()}
+}
+
+// calculatorResetPanicsDefect is the planted defect of a Calculator whose
+// Reset panics.
+type calculatorResetPanicsDefect struct {
+	calculatorOverEmbedded
+}
+
+// Reset is the override of the planted defect.
+func (*calculatorResetPanicsDefect) Reset() {
+	panic("the planted defect of a Calculator whose Reset panics")
+}
+
+// calculatorResetPanics returns the planted defect of a Calculator whose
+// Reset panics over a fresh subject.
+func calculatorResetPanics(h *CalculatorHandle) nocontext.Calculator {
+	return &calculatorResetPanicsDefect{calculatorOverEmbedded: h.Fresh()}
+}
+
+// calculatorResetPanicsOnRepeatDefect is the planted defect of a
+// Calculator whose Reset panics on the repeat.
+type calculatorResetPanicsOnRepeatDefect struct {
+	calculatorOverEmbedded
+	calls int
+}
+
+// Reset is the override of the planted defect.
+func (d *calculatorResetPanicsOnRepeatDefect) Reset() {
+	d.calls++
+	if d.calls > 1 {
+		panic("the planted defect of a Calculator whose Reset panics on the repeat")
+	}
+	d.calculatorOverEmbedded.Reset()
+}
+
+// calculatorResetPanicsOnRepeat returns the planted defect of a Calculator
+// whose Reset panics on the repeat over a fresh subject.
+func calculatorResetPanicsOnRepeat(h *CalculatorHandle) nocontext.Calculator {
+	return &calculatorResetPanicsOnRepeatDefect{calculatorOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:f82ab61e10c52be33b29fd43ff9f4610ef4280b9be0ea34922a13521d66b91eb

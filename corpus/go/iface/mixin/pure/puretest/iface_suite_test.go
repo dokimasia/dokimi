@@ -48,6 +48,18 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*puretest.MixedHandle) pure.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				puretest.MixedChecks.Derive.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				puretest.MixedChecks.Derive.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				puretest.MixedChecks.Derive.Pure(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +81,18 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*puretest.MixedHandle) pure.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				puretest.MixedChecks.Derive.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				puretest.MixedChecks.Derive.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				puretest.MixedChecks.Derive.Pure(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +112,18 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(puretest.MixedChecks.Derive.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			puretest.MixedChecks.Derive.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			puretest.MixedChecks.Derive.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			puretest.MixedChecks.Derive.Pure(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +134,18 @@ func FuzzMixedSuiteDerive(f *testing.F) {
 		f,
 		puretest.MixedChecks.Derive.Callable,
 		mixedIdle,
+		conform.Excuse(
+			puretest.MixedChecks.Derive.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			puretest.MixedChecks.Derive.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			puretest.MixedChecks.Derive.Pure(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +157,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:6a2880a720d8a6872d7b0d4667098a5502d6ff1f0ea724d5366a5f65748f6c0f
+// dokimi:provenance sha256:9a07854d857163d6e9e6edeedf22984d0b206fcbee282d29eb624474c07f9fb6

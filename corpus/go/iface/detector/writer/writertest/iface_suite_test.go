@@ -48,6 +48,14 @@ func TestWriterSuite(t *testing.T) {
 				},
 				Defect: func(*writertest.WriterHandle) writer.Writer { return &writerSubject{} },
 			}),
+			conform.Excuse(
+				writertest.WriterChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				writertest.WriterChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +77,14 @@ func TestWriterSuite(t *testing.T) {
 				},
 				Defect: func(*writertest.WriterHandle) writer.Writer { return &writerSubject{} },
 			}),
+			conform.Excuse(
+				writertest.WriterChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				writertest.WriterChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +104,14 @@ func TestWriterSuiteBudgets(t *testing.T) {
 		t,
 		writerIdle,
 		conform.Ceilings(writertest.WriterChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			writertest.WriterChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			writertest.WriterChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +122,14 @@ func FuzzWriterSuitePut(f *testing.F) {
 		f,
 		writertest.WriterChecks.Put.Callable,
 		writerIdle,
+		conform.Excuse(
+			writertest.WriterChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			writertest.WriterChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +141,4 @@ func BenchmarkWriterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1e7a12bd6c6dd921425ce614168d8aa2b125988f518eb6b37767d01abed822b9
+// dokimi:provenance sha256:87608fb0ab530f5a45441eb3bd53b6e8b55d28b0fada286ea61d420ea6313a8a

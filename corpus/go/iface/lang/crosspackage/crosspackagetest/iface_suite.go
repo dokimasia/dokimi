@@ -11,8 +11,10 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/crosspackage/lib/part"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -42,10 +44,34 @@ type fitterFit struct {
 	conform.Callable[crosspackage.Fitter]
 }
 
+// Smoke returns the identity of the check that Fit returns without a panic
+// for derived inputs.
+func (c fitterFit) Smoke() conform.ID[crosspackage.Fitter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Fit returns an error for a
+// cancelled context.
+func (c fitterFit) Cancel() conform.ID[crosspackage.Fitter] {
+	return c.Check("cancel")
+}
+
 // fitterLimit is the name of Fitter.Limit, with the identities of its
 // checks.
 type fitterLimit struct {
 	conform.Callable[crosspackage.Fitter]
+}
+
+// Smoke returns the identity of the check that Limit returns without a
+// panic for derived inputs.
+func (c fitterLimit) Smoke() conform.ID[crosspackage.Fitter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Limit returns an error for
+// a cancelled context.
+func (c fitterLimit) Cancel() conform.ID[crosspackage.Fitter] {
+	return c.Check("cancel")
 }
 
 // fitterSense is the name of Fitter.Sense, with the identities of its
@@ -59,6 +85,70 @@ type fitterSense struct {
 func FitterSuite() conform.Suite[crosspackage.Fitter] {
 	return conform.Suite[crosspackage.Fitter]{
 		Declaration: "Fitter",
+		Checks: []conform.Check[crosspackage.Fitter]{
+			{
+				ID:          FitterChecks.Fit.Smoke(),
+				Statement:   "Fit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *FitterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Fit(ctx, part.Part{Name: "Name-a"})
+					})
+				},
+				Defect: fitterFitPanics,
+			},
+			{
+				ID:          FitterChecks.Fit.Cancel(),
+				Statement:   "Fit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *FitterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Fit(ctx, part.Part{Name: "Name-a"})
+					})
+				},
+				Defect: fitterFitSucceedsAlways,
+			},
+			{
+				ID:          FitterChecks.Limit.Smoke(),
+				Statement:   "Limit returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *FitterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Limit(ctx, part.Limits{Count: 2})
+					})
+				},
+				Defect: fitterLimitPanics,
+			},
+			{
+				ID:          FitterChecks.Limit.Cancel(),
+				Statement:   "Limit returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *FitterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Limit(ctx, part.Limits{Count: 2})
+					})
+				},
+				Defect: fitterLimitSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[crosspackage.Fitter]{
 			{
 				Calls:    fitterFitCalls,
@@ -245,4 +335,72 @@ func newFitterOver(_ *FitterHandle, spend func()) crosspackage.Fitter {
 	return fitterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7274390029faa2bfcd2f3854956c7d9c7a0f212ba758d7bb173001b498fae5aa
+// fitterFitPanicsDefect is the planted defect of a Fitter whose Fit
+// panics.
+type fitterFitPanicsDefect struct {
+	fitterOverEmbedded
+}
+
+// Fit is the override of the planted defect.
+func (*fitterFitPanicsDefect) Fit(p0 context.Context, p1 part.Part) (r0 error) {
+	panic("the planted defect of a Fitter whose Fit panics")
+}
+
+// fitterFitPanics returns the planted defect of a Fitter whose Fit panics
+// over a fresh subject.
+func fitterFitPanics(h *FitterHandle) crosspackage.Fitter {
+	return &fitterFitPanicsDefect{fitterOverEmbedded: h.Fresh()}
+}
+
+// fitterFitSucceedsAlwaysDefect is the planted defect of a Fitter whose
+// Fit ignores the context.
+type fitterFitSucceedsAlwaysDefect struct {
+	fitterOverEmbedded
+}
+
+// Fit is the override of the planted defect.
+func (*fitterFitSucceedsAlwaysDefect) Fit(p0 context.Context, p1 part.Part) (r0 error) {
+	return r0
+}
+
+// fitterFitSucceedsAlways returns the planted defect of a Fitter whose Fit
+// ignores the context over a fresh subject.
+func fitterFitSucceedsAlways(h *FitterHandle) crosspackage.Fitter {
+	return &fitterFitSucceedsAlwaysDefect{fitterOverEmbedded: h.Fresh()}
+}
+
+// fitterLimitPanicsDefect is the planted defect of a Fitter whose Limit
+// panics.
+type fitterLimitPanicsDefect struct {
+	fitterOverEmbedded
+}
+
+// Limit is the override of the planted defect.
+func (*fitterLimitPanicsDefect) Limit(p0 context.Context, p1 part.Limits) (r0 error) {
+	panic("the planted defect of a Fitter whose Limit panics")
+}
+
+// fitterLimitPanics returns the planted defect of a Fitter whose Limit
+// panics over a fresh subject.
+func fitterLimitPanics(h *FitterHandle) crosspackage.Fitter {
+	return &fitterLimitPanicsDefect{fitterOverEmbedded: h.Fresh()}
+}
+
+// fitterLimitSucceedsAlwaysDefect is the planted defect of a Fitter whose
+// Limit ignores the context.
+type fitterLimitSucceedsAlwaysDefect struct {
+	fitterOverEmbedded
+}
+
+// Limit is the override of the planted defect.
+func (*fitterLimitSucceedsAlwaysDefect) Limit(p0 context.Context, p1 part.Limits) (r0 error) {
+	return r0
+}
+
+// fitterLimitSucceedsAlways returns the planted defect of a Fitter whose
+// Limit ignores the context over a fresh subject.
+func fitterLimitSucceedsAlways(h *FitterHandle) crosspackage.Fitter {
+	return &fitterLimitSucceedsAlwaysDefect{fitterOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:cbae1847d80252ed9eacfd1bb4402926f56832e1a36e31f78caa346c0c6e2d61

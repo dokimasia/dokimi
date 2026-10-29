@@ -114,12 +114,25 @@ func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate) {
 			return paired(p.Mode, partner, f, partner)
 		case len(f.Results) == 0 && len(partner.Results) > 0:
 			return paired(p.Mode, partner, partner, f)
+		case takes(partner, f) && !takes(f, partner):
+			return paired(p.Mode, partner, f, partner)
+		case takes(f, partner) && !takes(partner, f):
+			return paired(p.Mode, partner, partner, f)
 		default:
 			return &Pair{Partner: partner, Written: -1}, nil
 		}
 	default:
 		return establishing(p, f, decl)
 	}
+}
+
+// takes reports whether the callable of write takes an input of the type of
+// the first result of the callable of read, as Put(ctx, v Value) takes what
+// Get(ctx, key) returns.
+func takes(write, read *Facts) bool {
+	return len(read.Results) > 0 && slices.ContainsFunc(write.Inputs, func(v Value) bool {
+		return reflect.DeepEqual(v.Shape, read.Results[0].Shape)
+	})
 }
 
 // named returns the callable of decl that the param key of a classification
@@ -245,8 +258,13 @@ func hasClassification(c *Facts, p *spec.Partner) bool {
 func paired(mode spec.PartnerMode, partner, read, write *Facts) (*Pair, *spec.Gate) {
 	pair := &Pair{Partner: partner, Read: read, Write: write, Written: -1}
 	if len(read.Results) > 0 {
+		// An input that the read takes by its name is a selector, such as the
+		// key of Write(key, value), so it is not the value. A read input of
+		// that name and another type binds nothing, so its claim refuses
+		// whichever input the write writes.
 		pair.Written = slices.IndexFunc(write.Inputs, func(v Value) bool {
-			return reflect.DeepEqual(v.Shape, read.Results[0].Shape)
+			shared := slices.ContainsFunc(read.Inputs, func(r Value) bool { return r.Name == v.Name })
+			return !shared && reflect.DeepEqual(v.Shape, read.Results[0].Shape)
 		})
 	}
 	inputs := read.Inputs

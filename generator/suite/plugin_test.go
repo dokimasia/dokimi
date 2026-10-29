@@ -142,6 +142,11 @@ func TestSuite(t *testing.T) {
 				"the check of the form Run of a function has the segment Receives")
 			alone := "the test applies the check of its option alone"
 			expect.Equal(t, got.Data.Excusals, []suite.Excusal{
+				{Field: "Get", Method: "Smoke", Reason: alone},
+				{Field: "Get", Method: "Cancel", Reason: alone},
+				{Field: "Get", Method: "ZeroOnError", Reason: alone},
+				{Field: "Put", Method: "Smoke", Reason: alone},
+				{Field: "Put", Method: "Cancel", Reason: alone},
 				{Field: "Get", Method: "KeepsTheItem", Reason: alone},
 				{Field: "Put", Method: "RefusesACancelledPut", Reason: alone},
 			}, "the test excuses each check of the suite where it applies a check of its own")
@@ -525,10 +530,33 @@ func TestSuite(t *testing.T) {
 				{
 					name: "declares each name of the suite of an interface", givePkg: storePackage, give: "Store",
 					wantDecl: []string{
-						"StoreGet", "StorePut", "StoreGetCalls", "StorePutCalls", "StoreOver", "StoreOverEmbedded",
+						"StoreGet",
+						"StorePut",
+						"StoreGetCalls",
+						"StorePutCalls",
+						"StoreOver",
+						"StoreOverEmbedded",
 						"NewStoreOver",
-						"StoreSuite", "RunStoreSuite", "RunStoreSuiteFromHandle", "FuzzStoreSuite", "RunStoreBudgets",
-						"BenchStoreSuite", "StoreHandle", "StoreCheck", "StoreOption", "StoreSubjects",
+						"StoreGetPanics",
+						"StoreGetPanicsDefect",
+						"StoreGetSucceedsAlways",
+						"StoreGetSucceedsAlwaysDefect",
+						"StoreGetValueBeside",
+						"StoreGetValueBesideDefect",
+						"StorePutPanics",
+						"StorePutPanicsDefect",
+						"StorePutSucceedsAlways",
+						"StorePutSucceedsAlwaysDefect",
+						"StoreSuite",
+						"RunStoreSuite",
+						"RunStoreSuiteFromHandle",
+						"FuzzStoreSuite",
+						"RunStoreBudgets",
+						"BenchStoreSuite",
+						"StoreHandle",
+						"StoreCheck",
+						"StoreOption",
+						"StoreSubjects",
 					},
 				},
 				{
@@ -537,7 +565,11 @@ func TestSuite(t *testing.T) {
 					wantDecl: []string{
 						"MeterCount", "MeterRecord", "MeterMerge", "MeterTotal", "MeterCountCalls",
 						"MeterRecordCalls", "MeterMergeCalls", "MeterTotalCalls", "MeterOver", "MeterOverEmbedded",
-						"NewMeterOver",
+						"NewMeterOver", "MeterCountPanics", "MeterCountPanicsDefect", "MeterCountSucceedsAlways",
+						"MeterCountSucceedsAlwaysDefect", "MeterCountValueBeside", "MeterCountValueBesideDefect",
+						"MeterRecordPanics", "MeterRecordPanicsDefect", "MeterRecordSucceedsAlways",
+						"MeterRecordSucceedsAlwaysDefect", "MeterMergePanics", "MeterMergePanicsDefect",
+						"MeterTotalPanics", "MeterTotalPanicsDefect", "MeterTotalDrifts", "MeterTotalDriftsDefect",
 						"MeterSuite", "RunMeterSuite", "RunMeterSuiteFromHandle", "FuzzMeterSuite", "RunMeterBudgets",
 						"BenchMeterSuite", "BenchMeterSuiteParallel", "MeterHandle", "MeterCheck", "MeterOption",
 						"MeterSubjects",
@@ -547,7 +579,10 @@ func TestSuite(t *testing.T) {
 					name: "declares the interface of the methods of a struct", givePkg: catalogPackage, give: "Catalog",
 					wantDecl: []string{
 						"CatalogMethods", "CatalogFind", "CatalogAdd", "CatalogFindCalls", "CatalogAddCalls",
-						"CatalogOver", "CatalogOverEmbedded", "NewCatalogOver", "CatalogSuite", "RunCatalogSuite",
+						"CatalogOver", "CatalogOverEmbedded", "NewCatalogOver", "CatalogFindPanics",
+						"CatalogFindPanicsDefect", "CatalogFindValueBesideAFalseFlag",
+						"CatalogFindValueBesideAFalseFlagDefect", "CatalogAddPanics", "CatalogAddPanicsDefect",
+						"CatalogSuite", "RunCatalogSuite",
 						"RunCatalogSuiteFromHandle", "FuzzCatalogSuite", "RunCatalogBudgets", "BenchCatalogSuite",
 						"CatalogHandle", "CatalogCheck", "CatalogOption", "CatalogSubjects",
 					},
@@ -555,7 +590,8 @@ func TestSuite(t *testing.T) {
 				{
 					name: "declares the function type of a function", givePkg: slugPackage, give: "Slug",
 					wantDecl: []string{
-						"SlugFunc", "SlugCallable", "SlugCalls", "NewSlugOver", "SlugSuite", "RunSlugSuite",
+						"SlugFunc", "SlugCallable", "SlugCalls", "NewSlugOver", "SlugPanics", "SlugDrifts",
+						"SlugSuite", "RunSlugSuite",
 						"RunSlugSuiteFromHandle", "FuzzSlugSuite", "RunSlugBudgets", "BenchSlugSuite", "SlugHandle",
 						"SlugCheck", "SlugOption", "SlugSubjects",
 					},
@@ -1069,6 +1105,10 @@ func TestSuite(t *testing.T) {
 					Field: "Put", Method: "RefusesACancelledPut",
 					Reason: "the store drops each item before it reads the context",
 				},
+				{
+					Field: "Get", Method: "ZeroOnError",
+					Reason: "the store drops each item, so Get has no item to return",
+				},
 			}, "each excusal names the callable and the method of the identity of its check")
 			assert.NotNil(t, got.Decl, "the record of the test is a struct")
 			refs := got.Decl.Fields.Items()
@@ -1076,6 +1116,19 @@ func TestSuite(t *testing.T) {
 			store := f.Find(t, symbol.KindInterface, "", "Store").Identity()
 			expect.Equal(t, *refs[2].Type, emit.TypeRef{Spelling: "StoreChecks", Target: store, Emitted: true},
 				"the record refers to the names of the checks that the suite of Store emits")
+		})
+
+		t.Run("records the excusal of a derived check of a generic interface", func(t *testing.T) {
+			t.Parallel()
+
+			got, found := generate(t, goTree, genericPackage, cachedPackage).tests["TestCacheConformsToCache"]
+			assert.True(t, found, "suite records the conformance test of Cache")
+			expect.Equal(t, got.Data.Excusals, []suite.Excusal{
+				{
+					Field: "Get", Method: "ZeroOnMiss",
+					Reason: "the cache returns the zero value of int for each miss already",
+				},
+			}, "the excusal names the derived check of Get at the witnesses of Cache")
 		})
 
 		t.Run("records a conformance test for each directive subject of a struct", func(t *testing.T) {
@@ -1205,9 +1258,10 @@ func TestSuite(t *testing.T) {
 				}
 			}
 			expect.Equal(t, got, []string{"Meter.Count/keeps-the-count is no check of the suite of Meter, so " +
-				"Unexcused has no conformance test. The checks of Meter.Count are Meter.Count/allocation-budget, " +
+				"Unexcused has no conformance test. The checks of Meter.Count are Meter.Count/smoke, " +
+				"Meter.Count/cancel, Meter.Count/zero-on-error, Meter.Count/allocation-budget, " +
 				"Meter.Count/byte-budget, Meter.Count/latency-budget and Meter.Count/mean-latency-budget"},
-				"the message lists the ceilings of the budget of the callable")
+				"the message lists the derived checks and the ceilings of the budget of the callable")
 			gentest.Unrecorded(t, res, subject)
 		})
 
@@ -1315,13 +1369,20 @@ func TestSuite(t *testing.T) {
 				{
 					name: "reports UnknownExcusal at an excusal of a callable with checks", give: "Priceless",
 					wantMsg: "Store.Get/keeps-the-price is no check of the suite of Store, so Priceless has no " +
-						"conformance test. The checks of Store.Get are Store.Get/keeps-an-item and " +
-						"Store.Get/keeps-the-item",
+						"conformance test. The checks of Store.Get are Store.Get/keeps-an-item, " +
+						"Store.Get/keeps-the-item, Store.Get/smoke, Store.Get/cancel and Store.Get/zero-on-error",
 				},
 				{
-					name: "reports UnknownExcusal at an excusal of a callable with one check", give: "Misplaced",
+					name: "reports UnknownExcusal at an excusal of a callable with a check and derived checks",
+					give: "Misplaced",
 					wantMsg: "Store.Put/keeps-the-item is no check of the suite of Store, so Misplaced has no " +
-						"conformance test. The check of Store.Put is Store.Put/refuses-a-cancelled-put",
+						"conformance test. The checks of Store.Put are Store.Put/refuses-a-cancelled-put, " +
+						"Store.Put/smoke and Store.Put/cancel",
+				},
+				{
+					name: "reports UnknownExcusal at an excusal of a callable with one check", give: "Unflushed",
+					wantMsg: "Writer.Flush/writes-through is no check of the suite of Writer, so Unflushed has no " +
+						"conformance test. The check of Writer.Flush is Writer.Flush/smoke",
 				},
 				{
 					name: "reports UnknownExcusal at an excusal of a callable without checks", give: "Fetchless",
@@ -1334,7 +1395,7 @@ func TestSuite(t *testing.T) {
 					t.Parallel()
 
 					p := suite.New()
-					f := fixture(t, goTree, p, storePackage, badPackage)
+					f := fixture(t, goTree, p, storePackage, badPackage, dualPackage)
 					_, res := phases(t, f, p)
 					subject := f.Find(t, symbol.KindStruct, "", tt.give)
 					at := subject.Position()

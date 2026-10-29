@@ -11,7 +11,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/selfnamed"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -40,6 +42,18 @@ type filterFilter struct {
 	conform.Callable[selfnamed.Filter]
 }
 
+// Smoke returns the identity of the check that Filter returns without a
+// panic for derived inputs.
+func (c filterFilter) Smoke() conform.ID[selfnamed.Filter] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Filter returns the
+// same value for the same inputs.
+func (c filterFilter) Deterministic() conform.ID[selfnamed.Filter] {
+	return c.Check("deterministic")
+}
+
 // filterDrain is the name of Filter.Drain, with the identities of its
 // checks.
 type filterDrain struct {
@@ -51,6 +65,42 @@ type filterDrain struct {
 func FilterSuite() conform.Suite[selfnamed.Filter] {
 	return conform.Suite[selfnamed.Filter]{
 		Declaration: "Filter",
+		Checks: []conform.Check[selfnamed.Filter]{
+			{
+				ID:          FilterChecks.Filter.Smoke(),
+				Statement:   "Filter returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *FilterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Filter(string("item-a"))
+						return nil
+					})
+				},
+				Defect: filterFilterPanics,
+			},
+			{
+				ID:          FilterChecks.Filter.Deterministic(),
+				Statement:   "Filter returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *FilterHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (bool, error) {
+						r0 := h.Subject().Filter(string("item-a"))
+						return r0, nil
+					})
+				},
+				Defect: filterFilterDrifts,
+			},
+		},
 		Calls: []conform.Call[selfnamed.Filter]{
 			{
 				Calls:    filterFilterCalls,
@@ -204,4 +254,43 @@ func newFilterOver(_ *FilterHandle, spend func()) selfnamed.Filter {
 	return filterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:dca8de477ac1f33ba8c57b065841a95e790cc04ebcf837c24d936bc49061cb2f
+// filterFilterPanicsDefect is the planted defect of a Filter whose Filter
+// panics.
+type filterFilterPanicsDefect struct {
+	filterOverEmbedded
+}
+
+// Filter is the override of the planted defect.
+func (*filterFilterPanicsDefect) Filter(p0 string) (r0 bool) {
+	panic("the planted defect of a Filter whose Filter panics")
+}
+
+// filterFilterPanics returns the planted defect of a Filter whose Filter
+// panics over a fresh subject.
+func filterFilterPanics(h *FilterHandle) selfnamed.Filter {
+	return &filterFilterPanicsDefect{filterOverEmbedded: h.Fresh()}
+}
+
+// filterFilterDriftsDefect is the planted defect of a Filter whose Filter
+// returns another value on the repeat.
+type filterFilterDriftsDefect struct {
+	filterOverEmbedded
+	calls int
+}
+
+// Filter is the override of the planted defect.
+func (d *filterFilterDriftsDefect) Filter(p0 string) (r0 bool) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = bool(true)
+	}
+	return r0
+}
+
+// filterFilterDrifts returns the planted defect of a Filter whose Filter
+// returns another value on the repeat over a fresh subject.
+func filterFilterDrifts(h *FilterHandle) selfnamed.Filter {
+	return &filterFilterDriftsDefect{filterOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:8d319812cf23124a2e371259b457e632107e8de01a551162231b3f01e760ce01

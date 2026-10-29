@@ -7,10 +7,15 @@ package timeouttest
 import (
 	"context"
 	"testing"
+	"testing/synctest"
+	"time"
 
+	"go.dokimi.dev/assert"
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/timeout"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -36,11 +41,78 @@ type mixedSlow struct {
 	conform.Callable[timeout.Mixed]
 }
 
+// Smoke returns the identity of the check that Slow returns without a
+// panic for derived inputs.
+func (c mixedSlow) Smoke() conform.ID[timeout.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Slow returns an error for
+// a cancelled context.
+func (c mixedSlow) Cancel() conform.ID[timeout.Mixed] {
+	return c.Check("cancel")
+}
+
+// Within returns the identity of the check that Slow returns before the
+// clock passes the declared budget.
+func (c mixedSlow) Within() conform.ID[timeout.Mixed] {
+	return c.Check("within")
+}
+
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
 // its callables.
 func MixedSuite() conform.Suite[timeout.Mixed] {
 	return conform.Suite[timeout.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[timeout.Mixed]{
+			{
+				ID:          MixedChecks.Slow.Smoke(),
+				Statement:   "Slow returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Slow(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedSlowPanics,
+			},
+			{
+				ID:          MixedChecks.Slow.Cancel(),
+				Statement:   "Slow returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Slow(ctx, string("key-a"))
+					})
+				},
+				Defect: mixedSlowSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Slow.Within(),
+				Statement:   "Slow returns before the clock passes the declared budget",
+				Claim:       spec.Within,
+				Probe:       spec.ReturnsWithin,
+				Reason:      spec.OverranBudget,
+				Law:         spec.CallReturnsWithinItsBudget,
+				Machineries: []spec.MachineryID{spec.ClockTheRunAdvances},
+				Apply: func(h *MixedHandle) {
+					probe.ReturnsWithin(h, func(ctx context.Context) error {
+						return h.Subject().Slow(ctx, string("key-a"))
+					}, 5*time.Second)
+				},
+				Defect: mixedSlowSlow,
+				Around: synctest.Test,
+			},
+		},
 		Calls: []conform.Call[timeout.Mixed]{
 			{
 				Calls:    mixedSlowCalls,
@@ -137,4 +209,57 @@ func newMixedOver(_ *MixedHandle, spend func()) timeout.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:1e513d2ba2ec61b2c6db207eda5448735f57f0f292d8c6c2f8b8c2d3a25f71d7
+// mixedSlowPanicsDefect is the planted defect of a Mixed whose Slow
+// panics.
+type mixedSlowPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Slow is the override of the planted defect.
+func (*mixedSlowPanicsDefect) Slow(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Slow panics")
+}
+
+// mixedSlowPanics returns the planted defect of a Mixed whose Slow panics
+// over a fresh subject.
+func mixedSlowPanics(h *MixedHandle) timeout.Mixed {
+	return &mixedSlowPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSlowSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Slow ignores the context.
+type mixedSlowSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Slow is the override of the planted defect.
+func (*mixedSlowSucceedsAlwaysDefect) Slow(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// mixedSlowSucceedsAlways returns the planted defect of a Mixed whose Slow
+// ignores the context over a fresh subject.
+func mixedSlowSucceedsAlways(h *MixedHandle) timeout.Mixed {
+	return &mixedSlowSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedSlowSlowDefect is the planted defect of a Mixed whose Slow waits
+// longer than its budget.
+type mixedSlowSlowDefect struct {
+	mixedOverEmbedded
+	clock assert.Clock
+}
+
+// Slow is the override of the planted defect.
+func (d *mixedSlowSlowDefect) Slow(p0 context.Context, p1 string) (r0 error) {
+	d.clock.Sleep(10 * time.Second)
+	return d.mixedOverEmbedded.Slow(p0, p1)
+}
+
+// mixedSlowSlow returns the planted defect of a Mixed whose Slow waits
+// longer than its budget over a fresh subject.
+func mixedSlowSlow(h *MixedHandle) timeout.Mixed {
+	return &mixedSlowSlowDefect{mixedOverEmbedded: h.Fresh(), clock: h.Clock()}
+}
+
+// dokimi:provenance sha256:cc7812f3f66ce84c071452cb1aa262f08b5fda76a517e014570e59b502fa8430

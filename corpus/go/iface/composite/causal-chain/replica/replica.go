@@ -18,9 +18,11 @@ var ErrReadOnly = errors.New("replica: a replica admits no entry")
 
 // Log is a read-only follower of a source log. It replays the entries of its
 // source and refuses each append, so it does not pass the checks that Replay
-// returns the body that Append admitted.
+// returns the body that Append admitted, or the check that Replay returns the
+// entries of Append in the order of their stamps.
 //
 //dokimi:subject causalchain.Log new=New
+//dokimi:excuse Log.Append/chain-causal reason="a replica refuses each append, so its replay has no stamps to order"
 //dokimi:excuse Log.Replay/keeps-the-body reason="a replica refuses each append, so no body reaches its replay"
 //dokimi:excuse Log.Replay/keeps-every-body reason="a replica refuses each append, so no body reaches its replay"
 type Log struct {

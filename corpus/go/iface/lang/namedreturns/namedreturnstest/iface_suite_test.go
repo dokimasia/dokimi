@@ -48,6 +48,42 @@ func TestServiceSuite(t *testing.T) {
 				},
 				Defect: func(*namedreturnstest.ServiceHandle) namedreturns.Service { return &serviceSubject{} },
 			}),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Named.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Named.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Named.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Unnamed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Unnamed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +105,42 @@ func TestServiceSuite(t *testing.T) {
 				},
 				Defect: func(*namedreturnstest.ServiceHandle) namedreturns.Service { return &serviceSubject{} },
 			}),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Named.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Named.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Named.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Unnamed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Unnamed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -93,6 +165,42 @@ func TestServiceSuiteBudgets(t *testing.T) {
 			namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -103,6 +211,42 @@ func FuzzServiceSuiteNamed(f *testing.F) {
 		f,
 		namedreturnstest.ServiceChecks.Named.Callable,
 		serviceIdle,
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -113,6 +257,42 @@ func FuzzServiceSuiteUnnamed(f *testing.F) {
 		f,
 		namedreturnstest.ServiceChecks.Unnamed.Callable,
 		serviceIdle,
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,6 +304,42 @@ func FuzzServiceSuitePartiallyNamed(f *testing.F) {
 		f,
 		namedreturnstest.ServiceChecks.PartiallyNamed.Callable,
 		serviceIdle,
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Named.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.Unnamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			namedreturnstest.ServiceChecks.PartiallyNamed.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -141,4 +357,4 @@ func BenchmarkServiceSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1bb9b2d420f07dd60ccada4b3478b8e2ddf58d2365a6de4d1352bf9abbf524ba
+// dokimi:provenance sha256:650bbd08e5d6a692ef607d686feb3a902c1068201b24407b1ff4259839d13a97

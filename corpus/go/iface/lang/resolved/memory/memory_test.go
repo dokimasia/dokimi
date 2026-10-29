@@ -46,7 +46,7 @@ func keepsTheLimit() resolvedtest.ApplierCheck {
 		},
 		Defect: func(h *resolvedtest.ApplierHandle) resolved.Applier {
 			return resolvedtest.NewApplierStub(h, resolvedtest.ApplierStubDelegateTo(memory.New()),
-				resolvedtest.WithApplierLimit(func(context.Context, string) (int, error) { return 0, nil }))
+				resolvedtest.WithApplierLimit(func(ctx context.Context, _ string) (int, error) { return 0, ctx.Err() }))
 		},
 	}
 }

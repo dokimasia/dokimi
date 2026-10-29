@@ -51,6 +51,30 @@ func TestPaginatedReaderSuite(t *testing.T) {
 					return &paginatedReaderSubject{}
 				},
 			}),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.Pagination(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Add.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +98,30 @@ func TestPaginatedReaderSuite(t *testing.T) {
 					return &paginatedReaderSubject{}
 				},
 			}),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Fetch.Pagination(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Add.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				paginatedreadertest.PaginatedReaderChecks.Add.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -101,6 +149,30 @@ func TestPaginatedReaderSuiteBudgets(t *testing.T) {
 			paginatedreadertest.PaginatedReaderChecks.Add.Callable,
 			conform.Budget{Allocs: new(uint64(0))},
 		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Pagination(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -112,6 +184,30 @@ func FuzzPaginatedReaderSuiteFetch(f *testing.F) {
 		f,
 		paginatedreadertest.PaginatedReaderChecks.Fetch.Callable,
 		paginatedReaderIdle,
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Pagination(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,6 +219,30 @@ func FuzzPaginatedReaderSuiteAdd(f *testing.F) {
 		f,
 		paginatedreadertest.PaginatedReaderChecks.Add.Callable,
 		paginatedReaderIdle,
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Fetch.Pagination(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Add.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			paginatedreadertest.PaginatedReaderChecks.Add.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -145,4 +265,4 @@ func BenchmarkPaginatedReaderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:d1f251638b53ed41dcdb0221a590dee633b5abe7e6b6f05ca88293e4037b612d
+// dokimi:provenance sha256:b6e2cdedd2e3a99be2f7f7b2d29a4d2ebdfb43fcb420e8d938df628b4d428133

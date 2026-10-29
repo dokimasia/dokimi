@@ -26,15 +26,23 @@ type InMemory struct {
 // NewInMemory returns an InMemory without dispatches.
 func NewInMemory() *InMemory { return &InMemory{} }
 
-// Dispatch implements [nested.Dispatcher].
-func (d *InMemory) Dispatch(_ context.Context, req *nested.DispatchRequest) error {
+// Dispatch implements [nested.Dispatcher]. It returns the error of a
+// cancelled context.
+func (d *InMemory) Dispatch(ctx context.Context, req *nested.DispatchRequest) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.dispatch(req)
 }
 
-// DispatchAll implements [nested.Dispatcher].
-func (d *InMemory) DispatchAll(_ context.Context, b nested.Batch) error {
+// DispatchAll implements [nested.Dispatcher]. It returns the error of a
+// cancelled context.
+func (d *InMemory) DispatchAll(ctx context.Context, b nested.Batch) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for i := range b.Requests {
@@ -53,8 +61,12 @@ func (d *InMemory) Weight() int {
 }
 
 // dispatch weighs the parcel of the request, and calls Done and Notify of the
-// request. It returns [nested.ErrUndelivered] where either returns an error.
+// request. It returns [nested.ErrUndelivered] for a request without a parcel,
+// a Done or a Notify, and where Done or Notify returns an error.
 func (d *InMemory) dispatch(req *nested.DispatchRequest) error {
+	if req.Parcel == nil || req.Done == nil || req.Notify == nil {
+		return nested.ErrUndelivered
+	}
 	d.weight += req.Parcel.Weight()
 	if req.Done() != nil {
 		return nested.ErrUndelivered

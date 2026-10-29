@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/multiaggregator"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,80 @@ type multiAggregatorStats struct {
 	conform.Callable[multiaggregator.MultiAggregator]
 }
 
+// Smoke returns the identity of the check that Stats returns without a
+// panic for derived inputs.
+func (c multiAggregatorStats) Smoke() conform.ID[multiaggregator.MultiAggregator] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Stats returns an error for
+// a cancelled context.
+func (c multiAggregatorStats) Cancel() conform.ID[multiaggregator.MultiAggregator] {
+	return c.Check("cancel")
+}
+
+// ZeroesOnError returns the identity of the check that Stats returns the
+// zero values beside an error.
+func (c multiAggregatorStats) ZeroesOnError() conform.ID[multiaggregator.MultiAggregator] {
+	return c.Check("zeroes-on-error")
+}
+
 // MultiAggregatorSuite returns the checks of MultiAggregator, and the
 // calls and the budgets of its callables.
 func MultiAggregatorSuite() conform.Suite[multiaggregator.MultiAggregator] {
 	return conform.Suite[multiaggregator.MultiAggregator]{
 		Declaration: "MultiAggregator",
+		Checks: []conform.Check[multiaggregator.MultiAggregator]{
+			{
+				ID:          MultiAggregatorChecks.Stats.Smoke(),
+				Statement:   "Stats returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MultiAggregatorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().Stats(ctx)
+						return err
+					})
+				},
+				Defect: multiAggregatorStatsPanics,
+			},
+			{
+				ID:          MultiAggregatorChecks.Stats.Cancel(),
+				Statement:   "Stats returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MultiAggregatorHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().Stats(ctx)
+						return err
+					})
+				},
+				Defect: multiAggregatorStatsSucceedsAlways,
+			},
+			{
+				ID:          MultiAggregatorChecks.Stats.ZeroesOnError(),
+				Statement:   "Stats returns the zero values beside an error",
+				Claim:       spec.ZeroesOnError,
+				Probe:       spec.ZeroPairBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MultiAggregatorHandle) {
+					probe.ZeroPairBesideError(h, func(ctx context.Context) (probe.Pair[int, int], error) {
+						r0, r1, err := h.Subject().Stats(ctx)
+						return probe.Pair[int, int]{First: r0, Second: r1}, err
+					}, probe.Pair[int, int]{First: int(0), Second: int(0)})
+				},
+				Defect: multiAggregatorStatsValuesBeside,
+			},
+		},
 		Calls: []conform.Call[multiaggregator.MultiAggregator]{
 			{
 				Calls:    multiAggregatorStatsCalls,
@@ -155,4 +226,59 @@ func newMultiAggregatorOver(_ *MultiAggregatorHandle, spend func()) multiaggrega
 	return multiAggregatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:e89fcb37a32f86c659032b2e44a50c483ac9aef19c7d601923a38c0ee10285fe
+// multiAggregatorStatsPanicsDefect is the planted defect of a
+// MultiAggregator whose Stats panics.
+type multiAggregatorStatsPanicsDefect struct {
+	multiAggregatorOverEmbedded
+}
+
+// Stats is the override of the planted defect.
+func (*multiAggregatorStatsPanicsDefect) Stats(p0 context.Context) (r0, r1 int, r2 error) {
+	panic("the planted defect of a MultiAggregator whose Stats panics")
+}
+
+// multiAggregatorStatsPanics returns the planted defect of a
+// MultiAggregator whose Stats panics over a fresh subject.
+func multiAggregatorStatsPanics(h *MultiAggregatorHandle) multiaggregator.MultiAggregator {
+	return &multiAggregatorStatsPanicsDefect{multiAggregatorOverEmbedded: h.Fresh()}
+}
+
+// multiAggregatorStatsSucceedsAlwaysDefect is the planted defect of a
+// MultiAggregator whose Stats ignores the context.
+type multiAggregatorStatsSucceedsAlwaysDefect struct {
+	multiAggregatorOverEmbedded
+}
+
+// Stats is the override of the planted defect.
+func (*multiAggregatorStatsSucceedsAlwaysDefect) Stats(p0 context.Context) (r0, r1 int, r2 error) {
+	return r0, r1, r2
+}
+
+// multiAggregatorStatsSucceedsAlways returns the planted defect of a
+// MultiAggregator whose Stats ignores the context over a fresh subject.
+func multiAggregatorStatsSucceedsAlways(h *MultiAggregatorHandle) multiaggregator.MultiAggregator {
+	return &multiAggregatorStatsSucceedsAlwaysDefect{multiAggregatorOverEmbedded: h.Fresh()}
+}
+
+// multiAggregatorStatsValuesBesideDefect is the planted defect of a
+// MultiAggregator whose Stats returns values beside an error.
+type multiAggregatorStatsValuesBesideDefect struct {
+	multiAggregatorOverEmbedded
+}
+
+// Stats is the override of the planted defect.
+func (*multiAggregatorStatsValuesBesideDefect) Stats(p0 context.Context) (r0, r1 int, r2 error) {
+	r0 = int(7)
+	r1 = int(7)
+	r2 = conform.ErrGenerated
+	return r0, r1, r2
+}
+
+// multiAggregatorStatsValuesBeside returns the planted defect of a
+// MultiAggregator whose Stats returns values beside an error over a fresh
+// subject.
+func multiAggregatorStatsValuesBeside(h *MultiAggregatorHandle) multiaggregator.MultiAggregator {
+	return &multiAggregatorStatsValuesBesideDefect{multiAggregatorOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:4a9eaf0d1fec0ac73f8d7e66bf7bccafdccac8d9690bb3ff5260ec48360a49de

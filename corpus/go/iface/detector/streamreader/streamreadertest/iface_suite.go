@@ -11,7 +11,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/streamreader"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -40,10 +42,28 @@ type streamReaderAdd struct {
 	conform.Callable[streamreader.StreamReader]
 }
 
+// Smoke returns the identity of the check that Add returns without a panic
+// for derived inputs.
+func (c streamReaderAdd) Smoke() conform.ID[streamreader.StreamReader] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Add returns an error for a
+// cancelled context.
+func (c streamReaderAdd) Cancel() conform.ID[streamreader.StreamReader] {
+	return c.Check("cancel")
+}
+
 // streamReaderList is the name of StreamReader.List, with the identities
 // of its checks.
 type streamReaderList struct {
 	conform.Callable[streamreader.StreamReader]
+}
+
+// Smoke returns the identity of the check that List returns without a
+// panic for derived inputs.
+func (c streamReaderList) Smoke() conform.ID[streamreader.StreamReader] {
+	return c.Check("smoke")
 }
 
 // StreamReaderSuite returns the checks of StreamReader, and the calls and
@@ -51,6 +71,56 @@ type streamReaderList struct {
 func StreamReaderSuite() conform.Suite[streamreader.StreamReader] {
 	return conform.Suite[streamreader.StreamReader]{
 		Declaration: "StreamReader",
+		Checks: []conform.Check[streamreader.StreamReader]{
+			{
+				ID:          StreamReaderChecks.Add.Smoke(),
+				Statement:   "Add returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StreamReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, streamreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: streamReaderAddPanics,
+			},
+			{
+				ID:          StreamReaderChecks.Add.Cancel(),
+				Statement:   "Add returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StreamReaderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Add(ctx, streamreader.Value{Key: "Key-a"})
+					})
+				},
+				Defect: streamReaderAddSucceedsAlways,
+			},
+			{
+				ID:          StreamReaderChecks.List.Smoke(),
+				Statement:   "List returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StreamReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().List(ctx)
+						return nil
+					})
+				},
+				Defect: streamReaderListPanics,
+			},
+		},
 		Calls: []conform.Call[streamreader.StreamReader]{
 			{
 				Calls:    streamReaderAddCalls,
@@ -177,4 +247,55 @@ func newStreamReaderOver(_ *StreamReaderHandle, spend func()) streamreader.Strea
 	return streamReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:cebb4ebdd6a972e8cc0f34d58b78054d3c7574e82cb97c563f9c43c8e81336dd
+// streamReaderAddPanicsDefect is the planted defect of a StreamReader
+// whose Add panics.
+type streamReaderAddPanicsDefect struct {
+	streamReaderOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*streamReaderAddPanicsDefect) Add(p0 context.Context, p1 streamreader.Value) (r0 error) {
+	panic("the planted defect of a StreamReader whose Add panics")
+}
+
+// streamReaderAddPanics returns the planted defect of a StreamReader whose
+// Add panics over a fresh subject.
+func streamReaderAddPanics(h *StreamReaderHandle) streamreader.StreamReader {
+	return &streamReaderAddPanicsDefect{streamReaderOverEmbedded: h.Fresh()}
+}
+
+// streamReaderAddSucceedsAlwaysDefect is the planted defect of a
+// StreamReader whose Add ignores the context.
+type streamReaderAddSucceedsAlwaysDefect struct {
+	streamReaderOverEmbedded
+}
+
+// Add is the override of the planted defect.
+func (*streamReaderAddSucceedsAlwaysDefect) Add(p0 context.Context, p1 streamreader.Value) (r0 error) {
+	return r0
+}
+
+// streamReaderAddSucceedsAlways returns the planted defect of a
+// StreamReader whose Add ignores the context over a fresh subject.
+func streamReaderAddSucceedsAlways(h *StreamReaderHandle) streamreader.StreamReader {
+	return &streamReaderAddSucceedsAlwaysDefect{streamReaderOverEmbedded: h.Fresh()}
+}
+
+// streamReaderListPanicsDefect is the planted defect of a StreamReader
+// whose List panics.
+type streamReaderListPanicsDefect struct {
+	streamReaderOverEmbedded
+}
+
+// List is the override of the planted defect.
+func (*streamReaderListPanicsDefect) List(p0 context.Context) (r0 iter.Seq2[streamreader.Value, error]) {
+	panic("the planted defect of a StreamReader whose List panics")
+}
+
+// streamReaderListPanics returns the planted defect of a StreamReader
+// whose List panics over a fresh subject.
+func streamReaderListPanics(h *StreamReaderHandle) streamreader.StreamReader {
+	return &streamReaderListPanicsDefect{streamReaderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:6eaf8c06051abae1d6d6449ddfe98ad49f4f94c72bfca1ccdfc339bfd473441b

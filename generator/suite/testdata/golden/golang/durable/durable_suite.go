@@ -6,6 +6,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,6 +41,18 @@ func (c keeperPut) LeavesTheWholeValue() conform.ID[Keeper] {
 	return c.Check("leaves-the-whole-value")
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c keeperPut) Smoke() conform.ID[Keeper] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c keeperPut) Cancel() conform.ID[Keeper] {
+	return c.Check("cancel")
+}
+
 // keeperGet is the name of Keeper.Get, with the identities of its checks.
 type keeperGet struct {
 	conform.Callable[Keeper]
@@ -56,12 +70,109 @@ func (c keeperGet) KeepsTheLastPut() conform.ID[Keeper] {
 	return c.Check("keeps-the-last-put")
 }
 
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c keeperGet) Smoke() conform.ID[Keeper] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c keeperGet) Cancel() conform.ID[Keeper] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c keeperGet) ZeroOnError() conform.ID[Keeper] {
+	return c.Check("zero-on-error")
+}
+
 // KeeperSuite returns the checks of Keeper, and the calls and the budgets
 // of its callables.
 func KeeperSuite() conform.Suite[Keeper] {
 	return conform.Suite[Keeper]{
 		Declaration: "Keeper",
 		Checks: []conform.Check[Keeper]{
+			{
+				ID:          KeeperChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *KeeperHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: keeperPutPanics,
+			},
+			{
+				ID:          KeeperChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *KeeperHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: keeperPutSucceedsAlways,
+			},
+			{
+				ID:          KeeperChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *KeeperHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: keeperGetPanics,
+			},
+			{
+				ID:          KeeperChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *KeeperHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: keeperGetSucceedsAlways,
+			},
+			{
+				ID:          KeeperChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *KeeperHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: keeperGetValueBeside,
+			},
 			{
 				ID:        KeeperChecks.Put.LeavesTheWholeValue(),
 				Statement: "a crash during Put leaves the whole value or no value",
@@ -208,4 +319,91 @@ func (o keeperOver) Get(context.Context, string) (r0 string, r1 error) {
 // callables call spend.
 func newKeeperOver(_ *KeeperHandle, spend func()) Keeper {
 	return keeperOver{spend: spend}
+}
+
+// keeperPutPanicsDefect is the planted defect of a Keeper whose Put
+// panics.
+type keeperPutPanicsDefect struct {
+	keeperOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*keeperPutPanicsDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	panic("the planted defect of a Keeper whose Put panics")
+}
+
+// keeperPutPanics returns the planted defect of a Keeper whose Put panics
+// over a fresh subject.
+func keeperPutPanics(h *KeeperHandle) Keeper {
+	return &keeperPutPanicsDefect{keeperOverEmbedded: h.Fresh()}
+}
+
+// keeperPutSucceedsAlwaysDefect is the planted defect of a Keeper whose
+// Put ignores the context.
+type keeperPutSucceedsAlwaysDefect struct {
+	keeperOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*keeperPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// keeperPutSucceedsAlways returns the planted defect of a Keeper whose Put
+// ignores the context over a fresh subject.
+func keeperPutSucceedsAlways(h *KeeperHandle) Keeper {
+	return &keeperPutSucceedsAlwaysDefect{keeperOverEmbedded: h.Fresh()}
+}
+
+// keeperGetPanicsDefect is the planted defect of a Keeper whose Get
+// panics.
+type keeperGetPanicsDefect struct {
+	keeperOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*keeperGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Keeper whose Get panics")
+}
+
+// keeperGetPanics returns the planted defect of a Keeper whose Get panics
+// over a fresh subject.
+func keeperGetPanics(h *KeeperHandle) Keeper {
+	return &keeperGetPanicsDefect{keeperOverEmbedded: h.Fresh()}
+}
+
+// keeperGetSucceedsAlwaysDefect is the planted defect of a Keeper whose
+// Get ignores the context.
+type keeperGetSucceedsAlwaysDefect struct {
+	keeperOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*keeperGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// keeperGetSucceedsAlways returns the planted defect of a Keeper whose Get
+// ignores the context over a fresh subject.
+func keeperGetSucceedsAlways(h *KeeperHandle) Keeper {
+	return &keeperGetSucceedsAlwaysDefect{keeperOverEmbedded: h.Fresh()}
+}
+
+// keeperGetValueBesideDefect is the planted defect of a Keeper whose Get
+// returns a value beside an error.
+type keeperGetValueBesideDefect struct {
+	keeperOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*keeperGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// keeperGetValueBeside returns the planted defect of a Keeper whose Get
+// returns a value beside an error over a fresh subject.
+func keeperGetValueBeside(h *KeeperHandle) Keeper {
+	return &keeperGetValueBesideDefect{keeperOverEmbedded: h.Fresh()}
 }

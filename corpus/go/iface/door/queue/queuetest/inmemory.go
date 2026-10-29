@@ -34,8 +34,11 @@ func NewInMemory() *InMemory {
 	return &InMemory{items: make(chan string, room), closed: make(chan struct{})}
 }
 
-// Write implements [queue.Queue].
+// Write implements [queue.Queue]. It returns the error of a cancelled context.
 func (q *InMemory) Write(ctx context.Context, item string) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	select {
 	case <-q.closed:
 		return queue.ErrClosed

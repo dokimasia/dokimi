@@ -48,6 +48,30 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*deprecatedtest.MixedHandle) deprecated.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.Old.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.Old.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.Old.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.New.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.New.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.New.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +93,30 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*deprecatedtest.MixedHandle) deprecated.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.Old.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.Old.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.Old.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.New.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.New.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				deprecatedtest.MixedChecks.New.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +137,30 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(deprecatedtest.MixedChecks.Old.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(deprecatedtest.MixedChecks.New.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +171,30 @@ func FuzzMixedSuiteOld(f *testing.F) {
 		f,
 		deprecatedtest.MixedChecks.Old.Callable,
 		mixedIdle,
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +205,30 @@ func FuzzMixedSuiteNew(f *testing.F) {
 		f,
 		deprecatedtest.MixedChecks.New.Callable,
 		mixedIdle,
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.Old.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			deprecatedtest.MixedChecks.New.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +243,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:447f974aecf5025df4d2616b63d9d114044346a713a6df660dd06fe6bacd85c5
+// dokimi:provenance sha256:9b6ee5b70bb3650ff20d0eacc061c7083bb3419363d0743ba0374a4bb2ca67ef

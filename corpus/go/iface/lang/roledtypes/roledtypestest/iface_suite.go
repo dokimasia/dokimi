@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/roledtypes"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,9 +40,39 @@ type storePut struct {
 	conform.Callable[roledtypes.Store]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c storePut) Smoke() conform.ID[roledtypes.Store] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c storePut) Cancel() conform.ID[roledtypes.Store] {
+	return c.Check("cancel")
+}
+
 // storeGet is the name of Store.Get, with the identities of its checks.
 type storeGet struct {
 	conform.Callable[roledtypes.Store]
+}
+
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c storeGet) Smoke() conform.ID[roledtypes.Store] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c storeGet) Cancel() conform.ID[roledtypes.Store] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c storeGet) ZeroOnError() conform.ID[roledtypes.Store] {
+	return c.Check("zero-on-error")
 }
 
 // StoreSuite returns the checks of Store, and the calls and the budgets of
@@ -48,6 +80,87 @@ type storeGet struct {
 func StoreSuite() conform.Suite[roledtypes.Store] {
 	return conform.Suite[roledtypes.Store]{
 		Declaration: "Store",
+		Checks: []conform.Check[roledtypes.Store]{
+			{
+				ID:          StoreChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StoreHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, roledtypes.Key("test-key"), roledtypes.Payload{Body: "test-body"})
+					})
+				},
+				Defect: storePutPanics,
+			},
+			{
+				ID:          StoreChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, roledtypes.Key("test-key"), roledtypes.Payload{Body: "test-body"})
+					})
+				},
+				Defect: storePutSucceedsAlways,
+			},
+			{
+				ID:          StoreChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StoreHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, roledtypes.Key("test-key"))
+						return err
+					})
+				},
+				Defect: storeGetPanics,
+			},
+			{
+				ID:          StoreChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, roledtypes.Key("test-key"))
+						return err
+					})
+				},
+				Defect: storeGetSucceedsAlways,
+			},
+			{
+				ID:          StoreChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (roledtypes.Payload, error) {
+						return h.Subject().Get(ctx, roledtypes.Key("test-key"))
+					}, roledtypes.Payload{})
+				},
+				Defect: storeGetValueBeside,
+			},
+		},
 		Calls: []conform.Call[roledtypes.Store]{
 			{
 				Calls:    storePutCalls,
@@ -191,4 +304,89 @@ func newStoreOver(_ *StoreHandle, spend func()) roledtypes.Store {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:b2346439adb34a08600d702f92bc2053a242172f41ea663d6719ddf15f32a3bd
+// storePutPanicsDefect is the planted defect of a Store whose Put panics.
+type storePutPanicsDefect struct {
+	storeOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*storePutPanicsDefect) Put(p0 context.Context, p1 roledtypes.Key, p2 roledtypes.Payload) (r0 error) {
+	panic("the planted defect of a Store whose Put panics")
+}
+
+// storePutPanics returns the planted defect of a Store whose Put panics
+// over a fresh subject.
+func storePutPanics(h *StoreHandle) roledtypes.Store {
+	return &storePutPanicsDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storePutSucceedsAlwaysDefect is the planted defect of a Store whose Put
+// ignores the context.
+type storePutSucceedsAlwaysDefect struct {
+	storeOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*storePutSucceedsAlwaysDefect) Put(p0 context.Context, p1 roledtypes.Key, p2 roledtypes.Payload) (r0 error) {
+	return r0
+}
+
+// storePutSucceedsAlways returns the planted defect of a Store whose Put
+// ignores the context over a fresh subject.
+func storePutSucceedsAlways(h *StoreHandle) roledtypes.Store {
+	return &storePutSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeGetPanicsDefect is the planted defect of a Store whose Get panics.
+type storeGetPanicsDefect struct {
+	storeOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*storeGetPanicsDefect) Get(p0 context.Context, p1 roledtypes.Key) (r0 roledtypes.Payload, r1 error) {
+	panic("the planted defect of a Store whose Get panics")
+}
+
+// storeGetPanics returns the planted defect of a Store whose Get panics
+// over a fresh subject.
+func storeGetPanics(h *StoreHandle) roledtypes.Store {
+	return &storeGetPanicsDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeGetSucceedsAlwaysDefect is the planted defect of a Store whose Get
+// ignores the context.
+type storeGetSucceedsAlwaysDefect struct {
+	storeOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*storeGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 roledtypes.Key) (r0 roledtypes.Payload, r1 error) {
+	return r0, r1
+}
+
+// storeGetSucceedsAlways returns the planted defect of a Store whose Get
+// ignores the context over a fresh subject.
+func storeGetSucceedsAlways(h *StoreHandle) roledtypes.Store {
+	return &storeGetSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storeGetValueBesideDefect is the planted defect of a Store whose Get
+// returns a value beside an error.
+type storeGetValueBesideDefect struct {
+	storeOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*storeGetValueBesideDefect) Get(p0 context.Context, p1 roledtypes.Key) (r0 roledtypes.Payload, r1 error) {
+	r0 = roledtypes.Payload{Body: "Body-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// storeGetValueBeside returns the planted defect of a Store whose Get
+// returns a value beside an error over a fresh subject.
+func storeGetValueBeside(h *StoreHandle) roledtypes.Store {
+	return &storeGetValueBesideDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:0d850bdb662cd5e74322de295062ea246ac748e766e61e9d0778a29a240a79f6

@@ -49,6 +49,38 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*chaintest.ContractHandle) chain.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				chaintest.ContractChecks.Append.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Append.Chain(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Replay.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Replay.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Replay.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Verify.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Verify.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +102,38 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*chaintest.ContractHandle) chain.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				chaintest.ContractChecks.Append.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Append.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Append.Chain(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Replay.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Replay.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Replay.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Verify.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				chaintest.ContractChecks.Verify.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -91,6 +155,38 @@ func TestContractSuiteBudgets(t *testing.T) {
 		conform.Ceilings(chaintest.ContractChecks.Append.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(chaintest.ContractChecks.Replay.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(chaintest.ContractChecks.Verify.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -101,6 +197,38 @@ func FuzzContractSuiteAppend(f *testing.F) {
 		f,
 		chaintest.ContractChecks.Append.Callable,
 		contractIdle,
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -111,6 +239,38 @@ func FuzzContractSuiteReplay(f *testing.F) {
 		f,
 		chaintest.ContractChecks.Replay.Callable,
 		contractIdle,
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -121,6 +281,38 @@ func FuzzContractSuiteVerify(f *testing.F) {
 		f,
 		chaintest.ContractChecks.Verify.Callable,
 		contractIdle,
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Append.Chain(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Replay.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			chaintest.ContractChecks.Verify.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -138,4 +330,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f1a2e88616ebfd77e064b2625581dc4cbe62cd310ef65358afaabb49cce0197f
+// dokimi:provenance sha256:316cca2398de837d6d74c61bd846dc9355b6e93bdff62adeb6c44b0a1c175263

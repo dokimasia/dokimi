@@ -51,6 +51,14 @@ func TestReaderNoErrorSuite(t *testing.T) {
 					return &readerNoErrorSubject{}
 				},
 			}),
+			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +82,14 @@ func TestReaderNoErrorSuite(t *testing.T) {
 					return &readerNoErrorSubject{}
 				},
 			}),
+			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -94,6 +110,14 @@ func TestReaderNoErrorSuiteBudgets(t *testing.T) {
 		t,
 		readerNoErrorIdle,
 		conform.Ceilings(readernoerrortest.ReaderNoErrorChecks.Lookup.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -105,6 +129,14 @@ func FuzzReaderNoErrorSuiteLookup(f *testing.F) {
 		f,
 		readernoerrortest.ReaderNoErrorChecks.Lookup.Callable,
 		readerNoErrorIdle,
+		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readernoerrortest.ReaderNoErrorChecks.Lookup.MissIsZero(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -120,4 +152,4 @@ func BenchmarkReaderNoErrorSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:882a7c831b340c9e1c0b6080a9d196916d5a3f668ea85b3b1a1beaddf76c352f
+// dokimi:provenance sha256:8c6d485a156de02c9811ac75f8f39584d3913e7391abf2f8a1982dd4aa18f1fb

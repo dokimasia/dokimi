@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/mutator"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,36 @@ type mutatorTouch struct {
 	conform.Callable[mutator.Mutator]
 }
 
+// Smoke returns the identity of the check that Touch returns without a
+// panic for derived inputs.
+func (c mutatorTouch) Smoke() conform.ID[mutator.Mutator] {
+	return c.Check("smoke")
+}
+
 // MutatorSuite returns the checks of Mutator, and the calls and the
 // budgets of its callables.
 func MutatorSuite() conform.Suite[mutator.Mutator] {
 	return conform.Suite[mutator.Mutator]{
 		Declaration: "Mutator",
+		Checks: []conform.Check[mutator.Mutator]{
+			{
+				ID:          MutatorChecks.Touch.Smoke(),
+				Statement:   "Touch returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MutatorHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Touch(ctx, string("key-a"))
+						return nil
+					})
+				},
+				Defect: mutatorTouchPanics,
+			},
+		},
 		Calls: []conform.Call[mutator.Mutator]{
 			{
 				Calls:    mutatorTouchCalls,
@@ -142,4 +169,21 @@ func newMutatorOver(_ *MutatorHandle, spend func()) mutator.Mutator {
 	return mutatorOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0fc5ec12528330e90c288d8788d95524d0c2d3df62979b1d013873d9337ac71e
+// mutatorTouchPanicsDefect is the planted defect of a Mutator whose Touch
+// panics.
+type mutatorTouchPanicsDefect struct {
+	mutatorOverEmbedded
+}
+
+// Touch is the override of the planted defect.
+func (*mutatorTouchPanicsDefect) Touch(p0 context.Context, p1 string) {
+	panic("the planted defect of a Mutator whose Touch panics")
+}
+
+// mutatorTouchPanics returns the planted defect of a Mutator whose Touch
+// panics over a fresh subject.
+func mutatorTouchPanics(h *MutatorHandle) mutator.Mutator {
+	return &mutatorTouchPanicsDefect{mutatorOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:3ac85ed8c3c9f3418b7c00421774e1b16578f0d40ce26449e677cec430e4ce38

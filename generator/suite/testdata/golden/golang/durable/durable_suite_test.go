@@ -43,6 +43,26 @@ func TestKeeperSuite(t *testing.T) {
 				Defect: func(*KeeperHandle) Keeper { return &keeperSubject{} },
 			}),
 			conform.Excuse(
+				KeeperChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
 				KeeperChecks.Put.LeavesTheWholeValue(),
 				"the test applies the check of its option alone",
 			),
@@ -75,6 +95,26 @@ func TestKeeperSuite(t *testing.T) {
 				},
 				Defect: func(*KeeperHandle) Keeper { return &keeperSubject{} },
 			}),
+			conform.Excuse(
+				KeeperChecks.Put.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Put.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				KeeperChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 			conform.Excuse(
 				KeeperChecks.Put.LeavesTheWholeValue(),
 				"the test applies the check of its option alone",
@@ -130,6 +170,26 @@ func TestKeeperSuiteBudgets(t *testing.T) {
 		conform.Ceilings(KeeperChecks.Put.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(KeeperChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Excuse(
+			KeeperChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			KeeperChecks.Put.LeavesTheWholeValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -152,6 +212,26 @@ func FuzzKeeperSuitePut(f *testing.F) {
 		KeeperChecks.Put.Callable,
 		keeperIdle,
 		conform.Excuse(
+			KeeperChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
 			KeeperChecks.Put.LeavesTheWholeValue(),
 			"the planted defect of a ceiling answers each call with its zero results",
 		),
@@ -173,6 +253,26 @@ func FuzzKeeperSuiteGet(f *testing.F) {
 		f,
 		KeeperChecks.Get.Callable,
 		keeperIdle,
+		conform.Excuse(
+			KeeperChecks.Put.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Put.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			KeeperChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 		conform.Excuse(
 			KeeperChecks.Put.LeavesTheWholeValue(),
 			"the planted defect of a ceiling answers each call with its zero results",

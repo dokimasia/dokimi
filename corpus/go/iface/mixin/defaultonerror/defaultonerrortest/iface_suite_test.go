@@ -48,6 +48,22 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*defaultonerrortest.MixedHandle) defaultonerror.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +85,22 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*defaultonerrortest.MixedHandle) defaultonerror.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				defaultonerrortest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +121,22 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		mixedIdle,
 		conform.Ceilings(defaultonerrortest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(defaultonerrortest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +147,22 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		f,
 		defaultonerrortest.MixedChecks.Store.Callable,
 		mixedIdle,
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,6 +173,22 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		defaultonerrortest.MixedChecks.Get.Callable,
 		mixedIdle,
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			defaultonerrortest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -123,4 +203,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:7425aad636c4512495c5ed4b19b2faf666e51045818a0683dd11ebf9202884ae
+// dokimi:provenance sha256:e64f89def4f401cf07e478ea119f3283935ed28c0291ba2ddbeaf6652a312292

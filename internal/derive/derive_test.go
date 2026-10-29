@@ -45,12 +45,6 @@ func claimOn(id spec.ClaimID, l spec.Licence, gates ...spec.GateID) spec.Claim {
 	}
 }
 
-// withMixins returns f with the mixins.
-func withMixins(f derive.Facts, mixins ...shape.Mixin) derive.Facts {
-	f.Class.Mixins = mixins
-	return f
-}
-
 func TestDerive(t *testing.T) {
 	t.Parallel()
 

@@ -48,6 +48,14 @@ func TestFilterSuite(t *testing.T) {
 				},
 				Defect: func(*selfnamedtest.FilterHandle) selfnamed.Filter { return &filterSubject{} },
 			}),
+			conform.Excuse(
+				selfnamedtest.FilterChecks.Filter.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				selfnamedtest.FilterChecks.Filter.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +77,14 @@ func TestFilterSuite(t *testing.T) {
 				},
 				Defect: func(*selfnamedtest.FilterHandle) selfnamed.Filter { return &filterSubject{} },
 			}),
+			conform.Excuse(
+				selfnamedtest.FilterChecks.Filter.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				selfnamedtest.FilterChecks.Filter.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +104,14 @@ func TestFilterSuiteBudgets(t *testing.T) {
 		t,
 		filterIdle,
 		conform.Ceilings(selfnamedtest.FilterChecks.Filter.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			selfnamedtest.FilterChecks.Filter.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			selfnamedtest.FilterChecks.Filter.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +122,14 @@ func FuzzFilterSuiteFilter(f *testing.F) {
 		f,
 		selfnamedtest.FilterChecks.Filter.Callable,
 		filterIdle,
+		conform.Excuse(
+			selfnamedtest.FilterChecks.Filter.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			selfnamedtest.FilterChecks.Filter.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -108,6 +140,14 @@ func FuzzFilterSuiteDrain(f *testing.F) {
 		f,
 		selfnamedtest.FilterChecks.Drain.Callable,
 		filterIdle,
+		conform.Excuse(
+			selfnamedtest.FilterChecks.Filter.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			selfnamedtest.FilterChecks.Filter.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -122,4 +162,4 @@ func BenchmarkFilterSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:1b5f00ea1506ab74bd7c69190e5a74184771f3cb922a78a15e28de91941c7fa4
+// dokimi:provenance sha256:a83dc102b99af954bd121f28dbff1deb31afd77151ec8817c1da4130ead6decc

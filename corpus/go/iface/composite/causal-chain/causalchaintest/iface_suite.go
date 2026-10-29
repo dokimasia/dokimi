@@ -6,11 +6,14 @@ package causalchaintest
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	causalchain "go.dokimi.dev/dokimi/corpus/go/iface/composite/causal-chain"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,6 +41,30 @@ type logAppend struct {
 	conform.Callable[causalchain.Log]
 }
 
+// Smoke returns the identity of the check that Append returns without a
+// panic for derived inputs.
+func (c logAppend) Smoke() conform.ID[causalchain.Log] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Append returns an error
+// for a cancelled context.
+func (c logAppend) Cancel() conform.ID[causalchain.Log] {
+	return c.Check("cancel")
+}
+
+// ChainCausal returns the identity of the check that Replay returns the
+// entries of Append in the order of their stamps.
+func (c logAppend) ChainCausal() conform.ID[causalchain.Log] {
+	return c.Check("chain-causal")
+}
+
+// Chain returns the identity of the check that Append grows Replay by the
+// entry that it admits.
+func (c logAppend) Chain() conform.ID[causalchain.Log] {
+	return c.Check("chain")
+}
+
 // logReplay is the name of Log.Replay, with the identities of its checks.
 type logReplay struct {
 	conform.Callable[causalchain.Log]
@@ -55,12 +82,158 @@ func (c logReplay) KeepsTheBody() conform.ID[causalchain.Log] {
 	return c.Check("keeps-the-body")
 }
 
+// Smoke returns the identity of the check that Replay returns without a
+// panic for derived inputs.
+func (c logReplay) Smoke() conform.ID[causalchain.Log] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Replay returns an error
+// for a cancelled context.
+func (c logReplay) Cancel() conform.ID[causalchain.Log] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Replay returns the
+// zero value beside an error.
+func (c logReplay) ZeroOnError() conform.ID[causalchain.Log] {
+	return c.Check("zero-on-error")
+}
+
 // LogSuite returns the checks of Log, and the calls and the budgets of its
 // callables.
 func LogSuite() conform.Suite[causalchain.Log] {
 	return conform.Suite[causalchain.Log]{
 		Declaration: "Log",
 		Checks: []conform.Check[causalchain.Log]{
+			{
+				ID:          LogChecks.Append.Smoke(),
+				Statement:   "Append returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LogHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, causalchain.RootEntry())
+					})
+				},
+				Defect: logAppendPanics,
+			},
+			{
+				ID:          LogChecks.Append.Cancel(),
+				Statement:   "Append returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LogHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, causalchain.RootEntry())
+					})
+				},
+				Defect: logAppendSucceedsAlways,
+			},
+			{
+				ID:          LogChecks.Append.ChainCausal(),
+				Statement:   "Replay returns the entries of Append in the order of their stamps",
+				Claim:       spec.ChainCausal,
+				Probe:       spec.ReplaysInStampOrder,
+				Reason:      spec.UnorderedHistory,
+				Law:         spec.HistoryReplaysInItsStampedOrder,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Entails:     []conform.ID[causalchain.Log]{LogChecks.Append.Chain()},
+				Apply: func(h *LogHandle) {
+					probe.ReplaysInStampOrder(h, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := causalchain.RootEntry()
+							if calls > 1 {
+								w = causalchain.Entry{ID: "ID-b"}
+							}
+							return h.Subject().Append(ctx, w)
+						}
+					}(), func(ctx context.Context) ([]int64, error) {
+						r0, err := h.Subject().Replay(ctx)
+						stamps := make([]int64, 0, len(r0))
+						for _, e := range r0 {
+							stamps = append(stamps, e.Seq)
+						}
+						return stamps, err
+					})
+				},
+				Defect: logReplayReplaysReversed,
+			},
+			{
+				ID:          LogChecks.Append.Chain(),
+				Statement:   "Append grows Replay by the entry that it admits",
+				Claim:       spec.Chain,
+				Probe:       spec.ReplayGrows,
+				Reason:      spec.ReplayNotGrown,
+				Law:         spec.AdmittedEntryGrowsTheReplay,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LogHandle) {
+					probe.ReplayGrows(h, func(ctx context.Context) error {
+						return h.Subject().Append(ctx, causalchain.RootEntry())
+					}, func(ctx context.Context) ([]causalchain.Entry, error) {
+						return h.Subject().Replay(ctx)
+					})
+				},
+				Defect: logAppendSucceedsAlways,
+			},
+			{
+				ID:          LogChecks.Replay.Smoke(),
+				Statement:   "Replay returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LogHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Replay(ctx)
+						return err
+					})
+				},
+				Defect: logReplayPanics,
+			},
+			{
+				ID:          LogChecks.Replay.Cancel(),
+				Statement:   "Replay returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LogHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Replay(ctx)
+						return err
+					})
+				},
+				Defect: logReplaySucceedsAlways,
+			},
+			{
+				ID:          LogChecks.Replay.ZeroOnError(),
+				Statement:   "Replay returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LogHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]causalchain.Entry, error) {
+						return h.Subject().Replay(ctx)
+					}, []causalchain.Entry(nil))
+				},
+				Defect: logReplayValueBeside,
+			},
 			{
 				ID:        LogChecks.Replay.KeepsEveryBody(),
 				Statement: "Replay returns each body that Append admitted in a root entry",
@@ -213,4 +386,110 @@ func newLogOver(_ *LogHandle, spend func()) causalchain.Log {
 	return logOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0da49d1aa3a39bc65d06d460fa621041fdf5fa76de05d9686fde2aa8241a2849
+// logAppendPanicsDefect is the planted defect of a Log whose Append
+// panics.
+type logAppendPanicsDefect struct {
+	logOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (*logAppendPanicsDefect) Append(p0 context.Context, p1 causalchain.Entry) (r0 error) {
+	panic("the planted defect of a Log whose Append panics")
+}
+
+// logAppendPanics returns the planted defect of a Log whose Append panics
+// over a fresh subject.
+func logAppendPanics(h *LogHandle) causalchain.Log {
+	return &logAppendPanicsDefect{logOverEmbedded: h.Fresh()}
+}
+
+// logAppendSucceedsAlwaysDefect is the planted defect of a Log whose
+// Append ignores the context.
+type logAppendSucceedsAlwaysDefect struct {
+	logOverEmbedded
+}
+
+// Append is the override of the planted defect.
+func (*logAppendSucceedsAlwaysDefect) Append(p0 context.Context, p1 causalchain.Entry) (r0 error) {
+	return r0
+}
+
+// logAppendSucceedsAlways returns the planted defect of a Log whose Append
+// ignores the context over a fresh subject.
+func logAppendSucceedsAlways(h *LogHandle) causalchain.Log {
+	return &logAppendSucceedsAlwaysDefect{logOverEmbedded: h.Fresh()}
+}
+
+// logReplayReplaysReversedDefect is the planted defect of a Log whose
+// Replay returns the history of Append reversed.
+type logReplayReplaysReversedDefect struct {
+	logOverEmbedded
+}
+
+// Replay is the override of the planted defect.
+func (d *logReplayReplaysReversedDefect) Replay(p0 context.Context) (r0 []causalchain.Entry, r1 error) {
+	r0, r1 = d.logOverEmbedded.Replay(p0)
+	slices.Reverse(r0)
+	return r0, r1
+}
+
+// logReplayReplaysReversed returns the planted defect of a Log whose
+// Replay returns the history of Append reversed over a fresh subject.
+func logReplayReplaysReversed(h *LogHandle) causalchain.Log {
+	return &logReplayReplaysReversedDefect{logOverEmbedded: h.Fresh()}
+}
+
+// logReplayPanicsDefect is the planted defect of a Log whose Replay
+// panics.
+type logReplayPanicsDefect struct {
+	logOverEmbedded
+}
+
+// Replay is the override of the planted defect.
+func (*logReplayPanicsDefect) Replay(p0 context.Context) (r0 []causalchain.Entry, r1 error) {
+	panic("the planted defect of a Log whose Replay panics")
+}
+
+// logReplayPanics returns the planted defect of a Log whose Replay panics
+// over a fresh subject.
+func logReplayPanics(h *LogHandle) causalchain.Log {
+	return &logReplayPanicsDefect{logOverEmbedded: h.Fresh()}
+}
+
+// logReplaySucceedsAlwaysDefect is the planted defect of a Log whose
+// Replay ignores the context.
+type logReplaySucceedsAlwaysDefect struct {
+	logOverEmbedded
+}
+
+// Replay is the override of the planted defect.
+func (*logReplaySucceedsAlwaysDefect) Replay(p0 context.Context) (r0 []causalchain.Entry, r1 error) {
+	return r0, r1
+}
+
+// logReplaySucceedsAlways returns the planted defect of a Log whose Replay
+// ignores the context over a fresh subject.
+func logReplaySucceedsAlways(h *LogHandle) causalchain.Log {
+	return &logReplaySucceedsAlwaysDefect{logOverEmbedded: h.Fresh()}
+}
+
+// logReplayValueBesideDefect is the planted defect of a Log whose Replay
+// returns a value beside an error.
+type logReplayValueBesideDefect struct {
+	logOverEmbedded
+}
+
+// Replay is the override of the planted defect.
+func (*logReplayValueBesideDefect) Replay(p0 context.Context) (r0 []causalchain.Entry, r1 error) {
+	r0 = []causalchain.Entry{{ID: "ID-b"}}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// logReplayValueBeside returns the planted defect of a Log whose Replay
+// returns a value beside an error over a fresh subject.
+func logReplayValueBeside(h *LogHandle) causalchain.Log {
+	return &logReplayValueBesideDefect{logOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:f9a0d516a41dee8563dbd11133f8debb7a9255dfe20f9d0c121ba8f5351c5560

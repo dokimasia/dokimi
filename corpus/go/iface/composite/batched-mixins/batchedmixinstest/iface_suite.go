@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	batchedmixins "go.dokimi.dev/dokimi/corpus/go/iface/composite/batched-mixins"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -41,10 +43,52 @@ type batchedPut struct {
 	conform.Callable[batchedmixins.Batched]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c batchedPut) Smoke() conform.ID[batchedmixins.Batched] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c batchedPut) Cancel() conform.ID[batchedmixins.Batched] {
+	return c.Check("cancel")
+}
+
+// Idempotent returns the identity of the check that a second identical Put
+// succeeds after the first.
+func (c batchedPut) Idempotent() conform.ID[batchedmixins.Batched] {
+	return c.Check("idempotent")
+}
+
 // batchedRead is the name of Batched.Read, with the identities of its
 // checks.
 type batchedRead struct {
 	conform.Callable[batchedmixins.Batched]
+}
+
+// Smoke returns the identity of the check that Read returns without a
+// panic for derived inputs.
+func (c batchedRead) Smoke() conform.ID[batchedmixins.Batched] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Read returns an error for
+// a cancelled context.
+func (c batchedRead) Cancel() conform.ID[batchedmixins.Batched] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Read returns the zero
+// value beside an error.
+func (c batchedRead) ZeroOnError() conform.ID[batchedmixins.Batched] {
+	return c.Check("zero-on-error")
+}
+
+// ReadAfterWrite returns the identity of the check that Read returns what
+// Put stored before it.
+func (c batchedRead) ReadAfterWrite() conform.ID[batchedmixins.Batched] {
+	return c.Check("read-after-write")
 }
 
 // batchedList is the name of Batched.List, with the identities of its
@@ -59,12 +103,236 @@ func (c batchedList) ListsAtMostTheLimit() conform.ID[batchedmixins.Batched] {
 	return c.Check("lists-at-most-the-limit")
 }
 
+// Smoke returns the identity of the check that List returns without a
+// panic for derived inputs.
+func (c batchedList) Smoke() conform.ID[batchedmixins.Batched] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that List returns an error for
+// a cancelled context.
+func (c batchedList) Cancel() conform.ID[batchedmixins.Batched] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that List returns the zero
+// value beside an error.
+func (c batchedList) ZeroOnError() conform.ID[batchedmixins.Batched] {
+	return c.Check("zero-on-error")
+}
+
+// Cacheable returns the identity of the check that List returns the same
+// value on a repeat.
+func (c batchedList) Cacheable() conform.ID[batchedmixins.Batched] {
+	return c.Check("cacheable")
+}
+
+// Pure returns the identity of the check that List returns the same value
+// on a repeat.
+func (c batchedList) Pure() conform.ID[batchedmixins.Batched] {
+	return c.Check("pure")
+}
+
 // BatchedSuite returns the checks of Batched, and the calls and the
 // budgets of its callables.
 func BatchedSuite() conform.Suite[batchedmixins.Batched] {
 	return conform.Suite[batchedmixins.Batched]{
 		Declaration: "Batched",
 		Checks: []conform.Check[batchedmixins.Batched]{
+			{
+				ID:          BatchedChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: batchedPutPanics,
+			},
+			{
+				ID:          BatchedChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: batchedPutSucceedsAlways,
+			},
+			{
+				ID:          BatchedChecks.Put.Idempotent(),
+				Statement:   "a second identical Put succeeds after the first",
+				Claim:       spec.Idempotent,
+				Probe:       spec.RepeatIsQuiet,
+				Reason:      spec.RefusedRepeat,
+				Law:         spec.RepeatIsAccepted,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchedHandle) {
+					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: batchedPutRefusesRepeat,
+			},
+			{
+				ID:          BatchedChecks.Read.Smoke(),
+				Statement:   "Read returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: batchedReadPanics,
+			},
+			{
+				ID:          BatchedChecks.Read.Cancel(),
+				Statement:   "Read returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Read(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: batchedReadSucceedsAlways,
+			},
+			{
+				ID:          BatchedChecks.Read.ZeroOnError(),
+				Statement:   "Read returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: batchedReadValueBeside,
+			},
+			{
+				ID:          BatchedChecks.Read.ReadAfterWrite(),
+				Statement:   "Read returns what Put stored before it",
+				Claim:       spec.ReadAfterWrite,
+				Probe:       spec.WriteThenRead,
+				Reason:      spec.UnobservedWrite,
+				Law:         spec.ReadReturnsTheWriteBeforeIt,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchedHandle) {
+					probe.WriteThenRead(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Read(ctx, string("key-a"))
+					}, func(ctx context.Context) (string, error) {
+						w := string("value-a")
+						err := h.Subject().Put(ctx, string("key-a"), w)
+						return w, err
+					})
+				},
+				Defect: batchedPutForgetsWrites,
+			},
+			{
+				ID:          BatchedChecks.List.Smoke(),
+				Statement:   "List returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().List(ctx)
+						return err
+					})
+				},
+				Defect: batchedListPanics,
+			},
+			{
+				ID:          BatchedChecks.List.Cancel(),
+				Statement:   "List returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().List(ctx)
+						return err
+					})
+				},
+				Defect: batchedListSucceedsAlways,
+			},
+			{
+				ID:          BatchedChecks.List.ZeroOnError(),
+				Statement:   "List returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) ([]string, error) {
+						return h.Subject().List(ctx)
+					}, []string(nil))
+				},
+				Defect: batchedListValueBeside,
+			},
+			{
+				ID:          BatchedChecks.List.Cacheable(),
+				Statement:   "List returns the same value on a repeat",
+				Claim:       spec.Cacheable,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([]string, error) {
+						return h.Subject().List(ctx)
+					})
+				},
+				Defect: batchedListDrifts,
+			},
+			{
+				ID:          BatchedChecks.List.Pure(),
+				Statement:   "List returns the same value on a repeat",
+				Claim:       spec.Pure,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([]string, error) {
+						return h.Subject().List(ctx)
+					})
+				},
+				Defect: batchedListDrifts,
+			},
 			{
 				ID:        BatchedChecks.List.ListsAtMostTheLimit(),
 				Statement: "List returns at most 50 keys after 51 writes",
@@ -233,4 +501,206 @@ func newBatchedOver(_ *BatchedHandle, spend func()) batchedmixins.Batched {
 	return batchedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:2be64b7a40af31a600541456c3a061bf10a12ffdeb8324f331992a33e76de7ff
+// batchedPutPanicsDefect is the planted defect of a Batched whose Put
+// panics.
+type batchedPutPanicsDefect struct {
+	batchedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*batchedPutPanicsDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	panic("the planted defect of a Batched whose Put panics")
+}
+
+// batchedPutPanics returns the planted defect of a Batched whose Put
+// panics over a fresh subject.
+func batchedPutPanics(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedPutPanicsDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedPutSucceedsAlwaysDefect is the planted defect of a Batched whose
+// Put ignores the context.
+type batchedPutSucceedsAlwaysDefect struct {
+	batchedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*batchedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// batchedPutSucceedsAlways returns the planted defect of a Batched whose
+// Put ignores the context over a fresh subject.
+func batchedPutSucceedsAlways(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedPutSucceedsAlwaysDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedPutRefusesRepeatDefect is the planted defect of a Batched whose
+// Put fails on the second call.
+type batchedPutRefusesRepeatDefect struct {
+	batchedOverEmbedded
+	calls int
+}
+
+// Put is the override of the planted defect.
+func (d *batchedPutRefusesRepeatDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = conform.ErrGenerated
+		return r0
+	}
+	return d.batchedOverEmbedded.Put(p0, p1, p2)
+}
+
+// batchedPutRefusesRepeat returns the planted defect of a Batched whose
+// Put fails on the second call over a fresh subject.
+func batchedPutRefusesRepeat(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedPutRefusesRepeatDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedReadPanicsDefect is the planted defect of a Batched whose Read
+// panics.
+type batchedReadPanicsDefect struct {
+	batchedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*batchedReadPanicsDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Batched whose Read panics")
+}
+
+// batchedReadPanics returns the planted defect of a Batched whose Read
+// panics over a fresh subject.
+func batchedReadPanics(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedReadPanicsDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedReadSucceedsAlwaysDefect is the planted defect of a Batched whose
+// Read ignores the context.
+type batchedReadSucceedsAlwaysDefect struct {
+	batchedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*batchedReadSucceedsAlwaysDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// batchedReadSucceedsAlways returns the planted defect of a Batched whose
+// Read ignores the context over a fresh subject.
+func batchedReadSucceedsAlways(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedReadSucceedsAlwaysDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedReadValueBesideDefect is the planted defect of a Batched whose
+// Read returns a value beside an error.
+type batchedReadValueBesideDefect struct {
+	batchedOverEmbedded
+}
+
+// Read is the override of the planted defect.
+func (*batchedReadValueBesideDefect) Read(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// batchedReadValueBeside returns the planted defect of a Batched whose
+// Read returns a value beside an error over a fresh subject.
+func batchedReadValueBeside(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedReadValueBesideDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedPutForgetsWritesDefect is the planted defect of a Batched whose
+// Put returns success and stores nothing.
+type batchedPutForgetsWritesDefect struct {
+	batchedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*batchedPutForgetsWritesDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// batchedPutForgetsWrites returns the planted defect of a Batched whose
+// Put returns success and stores nothing over a fresh subject.
+func batchedPutForgetsWrites(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedPutForgetsWritesDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedListPanicsDefect is the planted defect of a Batched whose List
+// panics.
+type batchedListPanicsDefect struct {
+	batchedOverEmbedded
+}
+
+// List is the override of the planted defect.
+func (*batchedListPanicsDefect) List(p0 context.Context) (r0 []string, r1 error) {
+	panic("the planted defect of a Batched whose List panics")
+}
+
+// batchedListPanics returns the planted defect of a Batched whose List
+// panics over a fresh subject.
+func batchedListPanics(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedListPanicsDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedListSucceedsAlwaysDefect is the planted defect of a Batched whose
+// List ignores the context.
+type batchedListSucceedsAlwaysDefect struct {
+	batchedOverEmbedded
+}
+
+// List is the override of the planted defect.
+func (*batchedListSucceedsAlwaysDefect) List(p0 context.Context) (r0 []string, r1 error) {
+	return r0, r1
+}
+
+// batchedListSucceedsAlways returns the planted defect of a Batched whose
+// List ignores the context over a fresh subject.
+func batchedListSucceedsAlways(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedListSucceedsAlwaysDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedListValueBesideDefect is the planted defect of a Batched whose
+// List returns a value beside an error.
+type batchedListValueBesideDefect struct {
+	batchedOverEmbedded
+}
+
+// List is the override of the planted defect.
+func (*batchedListValueBesideDefect) List(p0 context.Context) (r0 []string, r1 error) {
+	r0 = []string{"sample-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// batchedListValueBeside returns the planted defect of a Batched whose
+// List returns a value beside an error over a fresh subject.
+func batchedListValueBeside(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedListValueBesideDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// batchedListDriftsDefect is the planted defect of a Batched whose List
+// returns another value on the repeat.
+type batchedListDriftsDefect struct {
+	batchedOverEmbedded
+	calls int
+}
+
+// List is the override of the planted defect.
+func (d *batchedListDriftsDefect) List(p0 context.Context) (r0 []string, r1 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = []string{"sample-b"}
+	}
+	return r0, r1
+}
+
+// batchedListDrifts returns the planted defect of a Batched whose List
+// returns another value on the repeat over a fresh subject.
+func batchedListDrifts(h *BatchedHandle) batchedmixins.Batched {
+	return &batchedListDriftsDefect{batchedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:5a05caa7e87f2d181223abaf9fb100a5b9acf44ef9702b6fb9fa8d6e2c753bf5

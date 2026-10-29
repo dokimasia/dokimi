@@ -49,6 +49,30 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*leaderelectiontest.ContractHandle) leaderelection.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Campaign.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Campaign.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Campaign.LeaderElection(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Resign.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Resign.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.IsLeader.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +94,30 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*leaderelectiontest.ContractHandle) leaderelection.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Campaign.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Campaign.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Campaign.LeaderElection(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Resign.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.Resign.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				leaderelectiontest.ContractChecks.IsLeader.Smoke(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -91,6 +139,30 @@ func TestContractSuiteBudgets(t *testing.T) {
 		conform.Ceilings(leaderelectiontest.ContractChecks.Campaign.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(leaderelectiontest.ContractChecks.Resign.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(leaderelectiontest.ContractChecks.IsLeader.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.LeaderElection(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.IsLeader.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -101,6 +173,30 @@ func FuzzContractSuiteCampaign(f *testing.F) {
 		f,
 		leaderelectiontest.ContractChecks.Campaign.Callable,
 		contractIdle,
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.LeaderElection(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.IsLeader.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -111,6 +207,30 @@ func FuzzContractSuiteResign(f *testing.F) {
 		f,
 		leaderelectiontest.ContractChecks.Resign.Callable,
 		contractIdle,
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.LeaderElection(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.IsLeader.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -121,6 +241,30 @@ func FuzzContractSuiteIsLeader(f *testing.F) {
 		f,
 		leaderelectiontest.ContractChecks.IsLeader.Callable,
 		contractIdle,
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Campaign.LeaderElection(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.Resign.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			leaderelectiontest.ContractChecks.IsLeader.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -138,4 +282,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3fce4a554daf537f6f307cbc573c486744e35cf2b65ea1f534af721c5b102b73
+// dokimi:provenance sha256:4751c1fd41111686b840ec2e905d6d9a02b2f2a3a3ea69fe28a7af448e61c4f8

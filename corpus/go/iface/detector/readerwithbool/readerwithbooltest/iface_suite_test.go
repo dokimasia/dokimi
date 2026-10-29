@@ -51,6 +51,14 @@ func TestReaderWithBoolSuite(t *testing.T) {
 					return &readerWithBoolSubject{}
 				},
 			}),
+			conform.Excuse(
+				readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -74,6 +82,14 @@ func TestReaderWithBoolSuite(t *testing.T) {
 					return &readerWithBoolSubject{}
 				},
 			}),
+			conform.Excuse(
+				readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -94,6 +110,14 @@ func TestReaderWithBoolSuiteBudgets(t *testing.T) {
 		t,
 		readerWithBoolIdle,
 		conform.Ceilings(readerwithbooltest.ReaderWithBoolChecks.Load.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -105,6 +129,14 @@ func FuzzReaderWithBoolSuiteLoad(f *testing.F) {
 		f,
 		readerwithbooltest.ReaderWithBoolChecks.Load.Callable,
 		readerWithBoolIdle,
+		conform.Excuse(
+			readerwithbooltest.ReaderWithBoolChecks.Load.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			readerwithbooltest.ReaderWithBoolChecks.Load.ZeroOnMiss(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -120,4 +152,4 @@ func BenchmarkReaderWithBoolSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3c847ee1ba45ba98ec9d02d573e68580140422c7da92e4413d0ee9d800a2477a
+// dokimi:provenance sha256:cde8d8f3b083659a351d58a6070c8cf5239280080fc584eefacc6a222b74e483

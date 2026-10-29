@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/sampledparam"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,6 +41,18 @@ type hasherHashTagged struct {
 	conform.Callable[sampledparam.Hasher]
 }
 
+// Smoke returns the identity of the check that HashTagged returns without
+// a panic for derived inputs.
+func (c hasherHashTagged) Smoke() conform.ID[sampledparam.Hasher] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that HashTagged returns
+// the same value for the same inputs.
+func (c hasherHashTagged) Deterministic() conform.ID[sampledparam.Hasher] {
+	return c.Check("deterministic")
+}
+
 // AllocationBudget returns the identity of the check
 // Hasher.HashTagged/allocation-budget.
 func (c hasherHashTagged) AllocationBudget() conform.ID[sampledparam.Hasher] {
@@ -49,6 +63,18 @@ func (c hasherHashTagged) AllocationBudget() conform.ID[sampledparam.Hasher] {
 // identities of its checks.
 type hasherCombineTagged struct {
 	conform.Callable[sampledparam.Hasher]
+}
+
+// Smoke returns the identity of the check that CombineTagged returns
+// without a panic for derived inputs.
+func (c hasherCombineTagged) Smoke() conform.ID[sampledparam.Hasher] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that CombineTagged
+// returns the same value for the same inputs.
+func (c hasherCombineTagged) Deterministic() conform.ID[sampledparam.Hasher] {
+	return c.Check("deterministic")
 }
 
 // AllocationBudget returns the identity of the check
@@ -62,6 +88,76 @@ func (c hasherCombineTagged) AllocationBudget() conform.ID[sampledparam.Hasher] 
 func HasherSuite() conform.Suite[sampledparam.Hasher] {
 	return conform.Suite[sampledparam.Hasher]{
 		Declaration: "Hasher",
+		Checks: []conform.Check[sampledparam.Hasher]{
+			{
+				ID:          HasherChecks.HashTagged.Smoke(),
+				Statement:   "HashTagged returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().HashTagged(sampledparam.Role(1), []byte{1})
+						return nil
+					})
+				},
+				Defect: hasherHashTaggedPanics,
+			},
+			{
+				ID:          HasherChecks.HashTagged.Deterministic(),
+				Statement:   "HashTagged returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject().HashTagged(sampledparam.Role(1), []byte{1})
+						return r0, nil
+					})
+				},
+				Defect: hasherHashTaggedDrifts,
+			},
+			{
+				ID:          HasherChecks.CombineTagged.Smoke(),
+				Statement:   "CombineTagged returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().CombineTagged(sampledparam.Role(129), [32]byte{1}, [32]byte{1})
+						return nil
+					})
+				},
+				Defect: hasherCombineTaggedPanics,
+			},
+			{
+				ID:          HasherChecks.CombineTagged.Deterministic(),
+				Statement:   "CombineTagged returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *HasherHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) ([32]byte, error) {
+						r0 := h.Subject().CombineTagged(sampledparam.Role(129), [32]byte{1}, [32]byte{1})
+						return r0, nil
+					})
+				},
+				Defect: hasherCombineTaggedDrifts,
+			},
+		},
 		Calls: []conform.Call[sampledparam.Hasher]{
 			{
 				Calls:    hasherHashTaggedCalls,
@@ -195,4 +291,82 @@ func newHasherOver(_ *HasherHandle, spend func()) sampledparam.Hasher {
 	return hasherOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0622c7d37933d4dd87b8428eccce3bda650bdf783ae1d0630b2b2d1a7021dd58
+// hasherHashTaggedPanicsDefect is the planted defect of a Hasher whose
+// HashTagged panics.
+type hasherHashTaggedPanicsDefect struct {
+	hasherOverEmbedded
+}
+
+// HashTagged is the override of the planted defect.
+func (*hasherHashTaggedPanicsDefect) HashTagged(p0 sampledparam.Role, p1 []byte) (r0 [32]byte) {
+	panic("the planted defect of a Hasher whose HashTagged panics")
+}
+
+// hasherHashTaggedPanics returns the planted defect of a Hasher whose
+// HashTagged panics over a fresh subject.
+func hasherHashTaggedPanics(h *HasherHandle) sampledparam.Hasher {
+	return &hasherHashTaggedPanicsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherHashTaggedDriftsDefect is the planted defect of a Hasher whose
+// HashTagged returns another value on the repeat.
+type hasherHashTaggedDriftsDefect struct {
+	hasherOverEmbedded
+	calls int
+}
+
+// HashTagged is the override of the planted defect.
+func (d *hasherHashTaggedDriftsDefect) HashTagged(p0 sampledparam.Role, p1 []byte) (r0 [32]byte) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = [32]byte{2}
+	}
+	return r0
+}
+
+// hasherHashTaggedDrifts returns the planted defect of a Hasher whose
+// HashTagged returns another value on the repeat over a fresh subject.
+func hasherHashTaggedDrifts(h *HasherHandle) sampledparam.Hasher {
+	return &hasherHashTaggedDriftsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherCombineTaggedPanicsDefect is the planted defect of a Hasher whose
+// CombineTagged panics.
+type hasherCombineTaggedPanicsDefect struct {
+	hasherOverEmbedded
+}
+
+// CombineTagged is the override of the planted defect.
+func (*hasherCombineTaggedPanicsDefect) CombineTagged(p0 sampledparam.Role, p1, p2 [32]byte) (r0 [32]byte) {
+	panic("the planted defect of a Hasher whose CombineTagged panics")
+}
+
+// hasherCombineTaggedPanics returns the planted defect of a Hasher whose
+// CombineTagged panics over a fresh subject.
+func hasherCombineTaggedPanics(h *HasherHandle) sampledparam.Hasher {
+	return &hasherCombineTaggedPanicsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// hasherCombineTaggedDriftsDefect is the planted defect of a Hasher whose
+// CombineTagged returns another value on the repeat.
+type hasherCombineTaggedDriftsDefect struct {
+	hasherOverEmbedded
+	calls int
+}
+
+// CombineTagged is the override of the planted defect.
+func (d *hasherCombineTaggedDriftsDefect) CombineTagged(p0 sampledparam.Role, p1, p2 [32]byte) (r0 [32]byte) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = [32]byte{2}
+	}
+	return r0
+}
+
+// hasherCombineTaggedDrifts returns the planted defect of a Hasher whose
+// CombineTagged returns another value on the repeat over a fresh subject.
+func hasherCombineTaggedDrifts(h *HasherHandle) sampledparam.Hasher {
+	return &hasherCombineTaggedDriftsDefect{hasherOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:814a1b5f2d26de14810352a967e5b5946dcf322f48529a8040e0350be371c6a2

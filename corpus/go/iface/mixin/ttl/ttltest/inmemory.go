@@ -1,6 +1,8 @@
 // Copyright Dokimasia B.V. 2026
 // SPDX-License-Identifier: Apache-2.0
 
+// Package ttltest contains the suite and the double of Mixed. InMemory is the
+// control of the suite.
 package ttltest
 
 import (
@@ -14,19 +16,19 @@ import (
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/ttl"
 )
 
+// lifetime is the duration of the mixin ttl of Read.
+const lifetime = time.Minute
+
 // StaleKey is a key whose value Put stores with an age of one lifetime. Read
 // reports the value as expired at once.
 const StaleKey = "ttltest-stale"
 
 // InMemory implements [ttl.Mixed] in memory. The corpus applies the suite of
-// Mixed to it as a control. NewInMemory builds it on a clock of its own. The
-// check of the lifetime advances the clock of its handle, so the control
-// excuses that check. The store of the package memory applies the check on the
-// clock of the handle. A write of the control allocates nothing after a
-// warm-up of 1000 writes, which a budget of the control alone states.
+// Mixed to it as a control, on the clock of each check. A write of the
+// control allocates nothing after a warm-up of 1000 writes, which a budget of
+// the control alone states.
 //
-//dokimi:subject ttl.Mixed new=NewInMemory
-//dokimi:excuse Mixed.Read/expires-after-the-lifetime reason="the check does not advance the clock that NewInMemory reads"
+//dokimi:subject ttl.Mixed new=NewInMemoryFromHandle
 //dokimi:budget Mixed.Put allocs=0 p99=1ms warmup=1000
 type InMemory struct {
 	clk    assert.Clock
@@ -53,6 +55,10 @@ func NewInMemoryOn(clk assert.Clock) *InMemory {
 func NewInMemory() *InMemory {
 	return NewInMemoryOn(assert.NewControlled(time.Unix(0, 0).UTC()))
 }
+
+// NewInMemoryFromHandle returns an empty InMemory on the clock of the handle
+// h, so a check that advances the clock ends the lifetime of a value.
+func NewInMemoryFromHandle(h *MixedHandle) *InMemory { return NewInMemoryOn(h.Clock()) }
 
 // Put implements [ttl.Mixed].
 func (s *InMemory) Put(ctx context.Context, v ttl.Value) error {

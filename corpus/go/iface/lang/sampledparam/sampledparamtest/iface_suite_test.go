@@ -48,6 +48,22 @@ func TestHasherSuite(t *testing.T) {
 				},
 				Defect: func(*sampledparamtest.HasherHandle) sampledparam.Hasher { return &hasherSubject{} },
 			}),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +85,22 @@ func TestHasherSuite(t *testing.T) {
 				},
 				Defect: func(*sampledparamtest.HasherHandle) sampledparam.Hasher { return &hasherSubject{} },
 			}),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -111,6 +143,22 @@ func TestHasherSuiteBudgets(t *testing.T) {
 	sampledparamtest.RunHasherBudgets(
 		t,
 		hasherIdle,
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -121,6 +169,22 @@ func FuzzHasherSuiteHashTagged(f *testing.F) {
 		f,
 		sampledparamtest.HasherChecks.HashTagged.Callable,
 		hasherIdle,
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -132,6 +196,22 @@ func FuzzHasherSuiteCombineTagged(f *testing.F) {
 		f,
 		sampledparamtest.HasherChecks.CombineTagged.Callable,
 		hasherIdle,
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.HashTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			sampledparamtest.HasherChecks.CombineTagged.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -146,4 +226,4 @@ func BenchmarkHasherSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:67e7672a47681db53c895c27232779f93050c7070ef7359aff5f5f8b22d10c56
+// dokimi:provenance sha256:ca57688196d1af56f49390173ad9676d6c702572a99480ef7b952d8dfd833efd

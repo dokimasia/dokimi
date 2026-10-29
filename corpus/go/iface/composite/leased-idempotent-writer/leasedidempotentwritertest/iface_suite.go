@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	leasedidempotentwriter "go.dokimi.dev/dokimi/corpus/go/iface/composite/leased-idempotent-writer"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,40 @@ type leasedWriterAcquire struct {
 	conform.Callable[leasedidempotentwriter.LeasedWriter]
 }
 
+// Smoke returns the identity of the check that Acquire returns without a
+// panic for derived inputs.
+func (c leasedWriterAcquire) Smoke() conform.ID[leasedidempotentwriter.LeasedWriter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Acquire returns an error
+// for a cancelled context.
+func (c leasedWriterAcquire) Cancel() conform.ID[leasedidempotentwriter.LeasedWriter] {
+	return c.Check("cancel")
+}
+
+// Idempotent returns the identity of the check that a second identical
+// Acquire succeeds after the first.
+func (c leasedWriterAcquire) Idempotent() conform.ID[leasedidempotentwriter.LeasedWriter] {
+	return c.Check("idempotent")
+}
+
 // leasedWriterRelease is the name of LeasedWriter.Release, with the
 // identities of its checks.
 type leasedWriterRelease struct {
 	conform.Callable[leasedidempotentwriter.LeasedWriter]
+}
+
+// Smoke returns the identity of the check that Release returns without a
+// panic for derived inputs.
+func (c leasedWriterRelease) Smoke() conform.ID[leasedidempotentwriter.LeasedWriter] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Release returns an error
+// for a cancelled context.
+func (c leasedWriterRelease) Cancel() conform.ID[leasedidempotentwriter.LeasedWriter] {
+	return c.Check("cancel")
 }
 
 // LeasedWriterSuite returns the checks of LeasedWriter, and the calls and
@@ -50,6 +82,85 @@ type leasedWriterRelease struct {
 func LeasedWriterSuite() conform.Suite[leasedidempotentwriter.LeasedWriter] {
 	return conform.Suite[leasedidempotentwriter.LeasedWriter]{
 		Declaration: "LeasedWriter",
+		Checks: []conform.Check[leasedidempotentwriter.LeasedWriter]{
+			{
+				ID:          LeasedWriterChecks.Acquire.Smoke(),
+				Statement:   "Acquire returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LeasedWriterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					})
+				},
+				Defect: leasedWriterAcquirePanics,
+			},
+			{
+				ID:          LeasedWriterChecks.Acquire.Cancel(),
+				Statement:   "Acquire returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LeasedWriterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					})
+				},
+				Defect: leasedWriterAcquireSucceedsAlways,
+			},
+			{
+				ID:          LeasedWriterChecks.Acquire.Idempotent(),
+				Statement:   "a second identical Acquire succeeds after the first",
+				Claim:       spec.Idempotent,
+				Probe:       spec.RepeatIsQuiet,
+				Reason:      spec.RefusedRepeat,
+				Law:         spec.RepeatIsAccepted,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LeasedWriterHandle) {
+					probe.RepeatIsQuiet(h, func(ctx context.Context) error {
+						return h.Subject().Acquire(ctx, string("key-a"))
+					})
+				},
+				Defect: leasedWriterAcquireRefusesRepeat,
+			},
+			{
+				ID:          LeasedWriterChecks.Release.Smoke(),
+				Statement:   "Release returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *LeasedWriterHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, string("key-a"))
+					})
+				},
+				Defect: leasedWriterReleasePanics,
+			},
+			{
+				ID:          LeasedWriterChecks.Release.Cancel(),
+				Statement:   "Release returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *LeasedWriterHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Release(ctx, string("key-a"))
+					})
+				},
+				Defect: leasedWriterReleaseSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[leasedidempotentwriter.LeasedWriter]{
 			{
 				Calls:    leasedWriterAcquireCalls,
@@ -184,4 +295,96 @@ func newLeasedWriterOver(_ *LeasedWriterHandle, spend func()) leasedidempotentwr
 	return leasedWriterOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c53a2085f4b06a1fc67076d90c3da1aee778701c25d5b9fe58f9356f2b42b1ad
+// leasedWriterAcquirePanicsDefect is the planted defect of a LeasedWriter
+// whose Acquire panics.
+type leasedWriterAcquirePanicsDefect struct {
+	leasedWriterOverEmbedded
+}
+
+// Acquire is the override of the planted defect.
+func (*leasedWriterAcquirePanicsDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a LeasedWriter whose Acquire panics")
+}
+
+// leasedWriterAcquirePanics returns the planted defect of a LeasedWriter
+// whose Acquire panics over a fresh subject.
+func leasedWriterAcquirePanics(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
+	return &leasedWriterAcquirePanicsDefect{leasedWriterOverEmbedded: h.Fresh()}
+}
+
+// leasedWriterAcquireSucceedsAlwaysDefect is the planted defect of a
+// LeasedWriter whose Acquire ignores the context.
+type leasedWriterAcquireSucceedsAlwaysDefect struct {
+	leasedWriterOverEmbedded
+}
+
+// Acquire is the override of the planted defect.
+func (*leasedWriterAcquireSucceedsAlwaysDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// leasedWriterAcquireSucceedsAlways returns the planted defect of a
+// LeasedWriter whose Acquire ignores the context over a fresh subject.
+func leasedWriterAcquireSucceedsAlways(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
+	return &leasedWriterAcquireSucceedsAlwaysDefect{leasedWriterOverEmbedded: h.Fresh()}
+}
+
+// leasedWriterAcquireRefusesRepeatDefect is the planted defect of a
+// LeasedWriter whose Acquire fails on the second call.
+type leasedWriterAcquireRefusesRepeatDefect struct {
+	leasedWriterOverEmbedded
+	calls int
+}
+
+// Acquire is the override of the planted defect.
+func (d *leasedWriterAcquireRefusesRepeatDefect) Acquire(p0 context.Context, p1 string) (r0 error) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = conform.ErrGenerated
+		return r0
+	}
+	return d.leasedWriterOverEmbedded.Acquire(p0, p1)
+}
+
+// leasedWriterAcquireRefusesRepeat returns the planted defect of a
+// LeasedWriter whose Acquire fails on the second call over a fresh
+// subject.
+func leasedWriterAcquireRefusesRepeat(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
+	return &leasedWriterAcquireRefusesRepeatDefect{leasedWriterOverEmbedded: h.Fresh()}
+}
+
+// leasedWriterReleasePanicsDefect is the planted defect of a LeasedWriter
+// whose Release panics.
+type leasedWriterReleasePanicsDefect struct {
+	leasedWriterOverEmbedded
+}
+
+// Release is the override of the planted defect.
+func (*leasedWriterReleasePanicsDefect) Release(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a LeasedWriter whose Release panics")
+}
+
+// leasedWriterReleasePanics returns the planted defect of a LeasedWriter
+// whose Release panics over a fresh subject.
+func leasedWriterReleasePanics(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
+	return &leasedWriterReleasePanicsDefect{leasedWriterOverEmbedded: h.Fresh()}
+}
+
+// leasedWriterReleaseSucceedsAlwaysDefect is the planted defect of a
+// LeasedWriter whose Release ignores the context.
+type leasedWriterReleaseSucceedsAlwaysDefect struct {
+	leasedWriterOverEmbedded
+}
+
+// Release is the override of the planted defect.
+func (*leasedWriterReleaseSucceedsAlwaysDefect) Release(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// leasedWriterReleaseSucceedsAlways returns the planted defect of a
+// LeasedWriter whose Release ignores the context over a fresh subject.
+func leasedWriterReleaseSucceedsAlways(h *LeasedWriterHandle) leasedidempotentwriter.LeasedWriter {
+	return &leasedWriterReleaseSucceedsAlwaysDefect{leasedWriterOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:6a26050ecabab2be6aabff5aeda15e09708c57949ef884529680c565c6e7d559

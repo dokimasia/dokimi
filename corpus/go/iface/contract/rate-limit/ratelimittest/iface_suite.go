@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	ratelimit "go.dokimi.dev/dokimi/corpus/go/iface/contract/rate-limit"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,77 @@ type contractRun struct {
 	conform.Callable[ratelimit.Contract]
 }
 
+// Smoke returns the identity of the check that Run returns without a panic
+// for derived inputs.
+func (c contractRun) Smoke() conform.ID[ratelimit.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Run returns an error for a
+// cancelled context.
+func (c contractRun) Cancel() conform.ID[ratelimit.Contract] {
+	return c.Check("cancel")
+}
+
+// RateLimit returns the identity of the check that Run admits its declared
+// burst and refuses the call after it.
+func (c contractRun) RateLimit() conform.ID[ratelimit.Contract] {
+	return c.Check("rate-limit")
+}
+
 // ContractSuite returns the checks of Contract, and the calls and the
 // budgets of its callables.
 func ContractSuite() conform.Suite[ratelimit.Contract] {
 	return conform.Suite[ratelimit.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[ratelimit.Contract]{
+			{
+				ID:          ContractChecks.Run.Smoke(),
+				Statement:   "Run returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunPanics,
+			},
+			{
+				ID:          ContractChecks.Run.Cancel(),
+				Statement:   "Run returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, string("key-a"))
+					})
+				},
+				Defect: contractRunSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Run.RateLimit(),
+				Statement:   "Run admits its declared burst and refuses the call after it",
+				Claim:       spec.RateLimit,
+				Probe:       spec.RefusesPastTheBurst,
+				Reason:      spec.PastTheBurst,
+				Law:         spec.BurstIsSpentThenRefused,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.RefusesPastTheBurst(h, func(ctx context.Context) error {
+						return h.Subject().Run(ctx, string("key-a"))
+					}, 10, ratelimit.ErrLimited)
+				},
+				Defect: contractRunSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[ratelimit.Contract]{
 			{
 				Calls:    contractRunCalls,
@@ -148,4 +216,38 @@ func newContractOver(_ *ContractHandle, spend func()) ratelimit.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:c526c6bef0d54cd0188fb03de9b6143a2d735dcf93d7f8b4c3f6049f7543453e
+// contractRunPanicsDefect is the planted defect of a Contract whose Run
+// panics.
+type contractRunPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunPanicsDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	panic("the planted defect of a Contract whose Run panics")
+}
+
+// contractRunPanics returns the planted defect of a Contract whose Run
+// panics over a fresh subject.
+func contractRunPanics(h *ContractHandle) ratelimit.Contract {
+	return &contractRunPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractRunSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Run ignores the context.
+type contractRunSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Run is the override of the planted defect.
+func (*contractRunSucceedsAlwaysDefect) Run(p0 context.Context, p1 string) (r0 error) {
+	return r0
+}
+
+// contractRunSucceedsAlways returns the planted defect of a Contract whose
+// Run ignores the context over a fresh subject.
+func contractRunSucceedsAlways(h *ContractHandle) ratelimit.Contract {
+	return &contractRunSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:f338eb80d335daf41693908396b4a6cc2aa0e13c3b4997dbf16aab6600be2814

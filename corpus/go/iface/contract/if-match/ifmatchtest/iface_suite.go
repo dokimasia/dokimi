@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	ifmatch "go.dokimi.dev/dokimi/corpus/go/iface/contract/if-match"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type contractPut struct {
 	conform.Callable[ifmatch.Contract]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c contractPut) Smoke() conform.ID[ifmatch.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c contractPut) Cancel() conform.ID[ifmatch.Contract] {
+	return c.Check("cancel")
+}
+
+// IfMatch returns the identity of the check that Put refuses a value that
+// Match rejects.
+func (c contractPut) IfMatch() conform.ID[ifmatch.Contract] {
+	return c.Check("if-match")
+}
+
 // contractMatch is the name of Contract.Match, with the identities of its
 // checks.
 type contractMatch struct {
 	conform.Callable[ifmatch.Contract]
+}
+
+// Smoke returns the identity of the check that Match returns without a
+// panic for derived inputs.
+func (c contractMatch) Smoke() conform.ID[ifmatch.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Match returns an error for
+// a cancelled context.
+func (c contractMatch) Cancel() conform.ID[ifmatch.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Match returns the
+// zero value beside an error.
+func (c contractMatch) ZeroOnError() conform.ID[ifmatch.Contract] {
+	return c.Check("zero-on-error")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +88,115 @@ type contractMatch struct {
 func ContractSuite() conform.Suite[ifmatch.Contract] {
 	return conform.Suite[ifmatch.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[ifmatch.Contract]{
+			{
+				ID:          ContractChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ifmatch.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPutPanics,
+			},
+			{
+				ID:          ContractChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, ifmatch.Value{Key: "Key-a"})
+					})
+				},
+				Defect: contractPutSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Put.IfMatch(),
+				Statement:   "Put refuses a value that Match rejects",
+				Claim:       spec.IfMatch,
+				Probe:       spec.RefusesWhatThePredicateRejects,
+				Reason:      spec.UnmatchedWrite,
+				Law:         spec.WriteIsRefusedWhereThePredicateRejectsIt,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.RefusesWhatThePredicateRejects(h, func() func(ctx context.Context) error {
+						calls := 0
+						return func(ctx context.Context) error {
+							calls++
+							w := ifmatch.Value{Key: "Key-a"}
+							w.Body = string("Body-a")
+							if calls > 1 {
+								w.Body = string("Body-b")
+							}
+							return h.Subject().Put(ctx, w)
+						}
+					}(), func(ctx context.Context) (bool, error) {
+						w := ifmatch.Value{Key: "Key-a"}
+						w.Body = string("Body-b")
+						return h.Subject().Match(ctx, w)
+					})
+				},
+				Defect: contractPutIgnoresThePredicate,
+			},
+			{
+				ID:          ContractChecks.Match.Smoke(),
+				Statement:   "Match returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Match(ctx, ifmatch.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: contractMatchPanics,
+			},
+			{
+				ID:          ContractChecks.Match.Cancel(),
+				Statement:   "Match returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Match(ctx, ifmatch.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: contractMatchSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Match.ZeroOnError(),
+				Statement:   "Match returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (bool, error) {
+						return h.Subject().Match(ctx, ifmatch.Value{Key: "Key-a"})
+					}, bool(false))
+				},
+				Defect: contractMatchValueBeside,
+			},
+		},
 		Calls: []conform.Call[ifmatch.Contract]{
 			{
 				Calls:    contractPutCalls,
@@ -177,4 +324,113 @@ func newContractOver(_ *ContractHandle, spend func()) ifmatch.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:6b70e19a1d1cc79ca70dce4109e30f4646ae0a9f97d428d7005ee80aa1228b0a
+// contractPutPanicsDefect is the planted defect of a Contract whose Put
+// panics.
+type contractPutPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*contractPutPanicsDefect) Put(p0 context.Context, p1 ifmatch.Value) (r0 error) {
+	panic("the planted defect of a Contract whose Put panics")
+}
+
+// contractPutPanics returns the planted defect of a Contract whose Put
+// panics over a fresh subject.
+func contractPutPanics(h *ContractHandle) ifmatch.Contract {
+	return &contractPutPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractPutSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Put ignores the context.
+type contractPutSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*contractPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 ifmatch.Value) (r0 error) {
+	return r0
+}
+
+// contractPutSucceedsAlways returns the planted defect of a Contract whose
+// Put ignores the context over a fresh subject.
+func contractPutSucceedsAlways(h *ContractHandle) ifmatch.Contract {
+	return &contractPutSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractPutIgnoresThePredicateDefect is the planted defect of a Contract
+// whose Put accepts a write that Match rejects.
+type contractPutIgnoresThePredicateDefect struct {
+	contractOverEmbedded
+	calls int
+}
+
+// Put is the override of the planted defect.
+func (d *contractPutIgnoresThePredicateDefect) Put(p0 context.Context, p1 ifmatch.Value) (r0 error) {
+	d.calls++
+	if d.calls > 1 {
+		return r0
+	}
+	return d.contractOverEmbedded.Put(p0, p1)
+}
+
+// contractPutIgnoresThePredicate returns the planted defect of a Contract
+// whose Put accepts a write that Match rejects over a fresh subject.
+func contractPutIgnoresThePredicate(h *ContractHandle) ifmatch.Contract {
+	return &contractPutIgnoresThePredicateDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractMatchPanicsDefect is the planted defect of a Contract whose
+// Match panics.
+type contractMatchPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Match is the override of the planted defect.
+func (*contractMatchPanicsDefect) Match(p0 context.Context, p1 ifmatch.Value) (r0 bool, r1 error) {
+	panic("the planted defect of a Contract whose Match panics")
+}
+
+// contractMatchPanics returns the planted defect of a Contract whose Match
+// panics over a fresh subject.
+func contractMatchPanics(h *ContractHandle) ifmatch.Contract {
+	return &contractMatchPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractMatchSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Match ignores the context.
+type contractMatchSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Match is the override of the planted defect.
+func (*contractMatchSucceedsAlwaysDefect) Match(p0 context.Context, p1 ifmatch.Value) (r0 bool, r1 error) {
+	return r0, r1
+}
+
+// contractMatchSucceedsAlways returns the planted defect of a Contract
+// whose Match ignores the context over a fresh subject.
+func contractMatchSucceedsAlways(h *ContractHandle) ifmatch.Contract {
+	return &contractMatchSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractMatchValueBesideDefect is the planted defect of a Contract whose
+// Match returns a value beside an error.
+type contractMatchValueBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Match is the override of the planted defect.
+func (*contractMatchValueBesideDefect) Match(p0 context.Context, p1 ifmatch.Value) (r0 bool, r1 error) {
+	r0 = bool(true)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// contractMatchValueBeside returns the planted defect of a Contract whose
+// Match returns a value beside an error over a fresh subject.
+func contractMatchValueBeside(h *ContractHandle) ifmatch.Contract {
+	return &contractMatchValueBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:f09669c62b3d2850e589823a2659a88718fce502e9c40f90eb6f80e71e737b70

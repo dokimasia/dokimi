@@ -36,7 +36,14 @@ func (*InMemory) Params(
 
 // Fields implements [kinds.Every].
 func (*InMemory) Fields(f *kinds.Fields) int {
-	return drained(f.Chan) + f.Func() + len(f.Interface.String())
+	n := drained(f.Chan)
+	if f.Func != nil {
+		n += f.Func()
+	}
+	if f.Interface != nil {
+		n += len(f.Interface.String())
+	}
+	return n
 }
 
 // Elements implements [kinds.Every].
@@ -158,8 +165,11 @@ func (*InMemory) Use(r *kinds.Resources) int {
 }
 
 // drained returns the number of the values of ch, which it receives until ch
-// closes.
+// closes. A nil channel has no values.
 func drained(ch <-chan int) int {
+	if ch == nil {
+		return 0
+	}
 	n := 0
 	for range ch {
 		n++

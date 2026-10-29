@@ -48,6 +48,22 @@ func TestFinderSuite(t *testing.T) {
 				},
 				Defect: func(*variadictest.FinderHandle) variadic.Finder { return &finderSubject{} },
 			}),
+			conform.Excuse(
+				variadictest.FinderChecks.Find.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				variadictest.FinderChecks.Find.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				variadictest.FinderChecks.FindWithLimit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				variadictest.FinderChecks.FindWithLimit.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +85,22 @@ func TestFinderSuite(t *testing.T) {
 				},
 				Defect: func(*variadictest.FinderHandle) variadic.Finder { return &finderSubject{} },
 			}),
+			conform.Excuse(
+				variadictest.FinderChecks.Find.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				variadictest.FinderChecks.Find.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				variadictest.FinderChecks.FindWithLimit.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				variadictest.FinderChecks.FindWithLimit.Cancel(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -89,6 +121,22 @@ func TestFinderSuiteBudgets(t *testing.T) {
 		finderIdle,
 		conform.Ceilings(variadictest.FinderChecks.Find.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(variadictest.FinderChecks.FindWithLimit.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			variadictest.FinderChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.Find.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.FindWithLimit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.FindWithLimit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -99,6 +147,22 @@ func FuzzFinderSuiteFind(f *testing.F) {
 		f,
 		variadictest.FinderChecks.Find.Callable,
 		finderIdle,
+		conform.Excuse(
+			variadictest.FinderChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.Find.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.FindWithLimit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.FindWithLimit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +174,22 @@ func FuzzFinderSuiteFindWithLimit(f *testing.F) {
 		f,
 		variadictest.FinderChecks.FindWithLimit.Callable,
 		finderIdle,
+		conform.Excuse(
+			variadictest.FinderChecks.Find.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.Find.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.FindWithLimit.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			variadictest.FinderChecks.FindWithLimit.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,4 +204,4 @@ func BenchmarkFinderSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:2d53704af6d927fd8df76b1ea2db2522ab5707c961504e9522d01ae6a77a21ee
+// dokimi:provenance sha256:c0d93084585f914df952c91a846df4eca864c08a6b8c7718220ce50e3bfcee00

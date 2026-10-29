@@ -49,6 +49,38 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*cachetest.ContractHandle) cache.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				cachetest.ContractChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Lookup.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Lookup.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Lookup.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Fetch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Fetch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Fetch.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +102,38 @@ func TestContractSuite(t *testing.T) {
 				},
 				Defect: func(*cachetest.ContractHandle) cache.Contract { return &contractSubject{} },
 			}),
+			conform.Excuse(
+				cachetest.ContractChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Lookup.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Lookup.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Lookup.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Fetch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Fetch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				cachetest.ContractChecks.Fetch.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -91,6 +155,38 @@ func TestContractSuiteBudgets(t *testing.T) {
 		conform.Ceilings(cachetest.ContractChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(cachetest.ContractChecks.Lookup.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(cachetest.ContractChecks.Fetch.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -101,6 +197,38 @@ func FuzzContractSuiteStore(f *testing.F) {
 		f,
 		cachetest.ContractChecks.Store.Callable,
 		contractIdle,
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -111,6 +239,38 @@ func FuzzContractSuiteLookup(f *testing.F) {
 		f,
 		cachetest.ContractChecks.Lookup.Callable,
 		contractIdle,
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -121,6 +281,38 @@ func FuzzContractSuiteFetch(f *testing.F) {
 		f,
 		cachetest.ContractChecks.Fetch.Callable,
 		contractIdle,
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Lookup.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			cachetest.ContractChecks.Fetch.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -138,4 +330,4 @@ func BenchmarkContractSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:b956c50b3ab3d1602025ecf0bee9252617a988363f335116f82eb4aabf325088
+// dokimi:provenance sha256:32e7a30903b57723a570f278ea546359c5c7281cdd190a1073bbef299573c3cb

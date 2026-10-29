@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/batchreader"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,58 @@ type batchReaderGetAll struct {
 	conform.Callable[batchreader.BatchReader]
 }
 
+// Smoke returns the identity of the check that GetAll returns without a
+// panic for derived inputs.
+func (c batchReaderGetAll) Smoke() conform.ID[batchreader.BatchReader] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that GetAll returns an error
+// for a cancelled context.
+func (c batchReaderGetAll) Cancel() conform.ID[batchreader.BatchReader] {
+	return c.Check("cancel")
+}
+
 // BatchReaderSuite returns the checks of BatchReader, and the calls and
 // the budgets of its callables.
 func BatchReaderSuite() conform.Suite[batchreader.BatchReader] {
 	return conform.Suite[batchreader.BatchReader]{
 		Declaration: "BatchReader",
+		Checks: []conform.Check[batchreader.BatchReader]{
+			{
+				ID:          BatchReaderChecks.GetAll.Smoke(),
+				Statement:   "GetAll returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *BatchReaderHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().GetAll(ctx, string("keys-a"))
+						return err
+					})
+				},
+				Defect: batchReaderGetAllPanics,
+			},
+			{
+				ID:          BatchReaderChecks.GetAll.Cancel(),
+				Statement:   "GetAll returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *BatchReaderHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().GetAll(ctx, string("keys-a"))
+						return err
+					})
+				},
+				Defect: batchReaderGetAllSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[batchreader.BatchReader]{
 			{
 				Calls:    batchReaderGetAllCalls,
@@ -149,4 +198,41 @@ func newBatchReaderOver(_ *BatchReaderHandle, spend func()) batchreader.BatchRea
 	return batchReaderOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f095298af32a1ddadcddd4e473cb3540ba395e6cf40c65aaa1cd40dd38506c77
+// batchReaderGetAllPanicsDefect is the planted defect of a BatchReader
+// whose GetAll panics.
+type batchReaderGetAllPanicsDefect struct {
+	batchReaderOverEmbedded
+}
+
+// GetAll is the override of the planted defect.
+func (*batchReaderGetAllPanicsDefect) GetAll(p0 context.Context, p1 ...string) (r0 []batchreader.Value, r1 error) {
+	panic("the planted defect of a BatchReader whose GetAll panics")
+}
+
+// batchReaderGetAllPanics returns the planted defect of a BatchReader
+// whose GetAll panics over a fresh subject.
+func batchReaderGetAllPanics(h *BatchReaderHandle) batchreader.BatchReader {
+	return &batchReaderGetAllPanicsDefect{batchReaderOverEmbedded: h.Fresh()}
+}
+
+// batchReaderGetAllSucceedsAlwaysDefect is the planted defect of a
+// BatchReader whose GetAll ignores the context.
+type batchReaderGetAllSucceedsAlwaysDefect struct {
+	batchReaderOverEmbedded
+}
+
+// GetAll is the override of the planted defect.
+func (*batchReaderGetAllSucceedsAlwaysDefect) GetAll(
+	p0 context.Context,
+	p1 ...string,
+) (r0 []batchreader.Value, r1 error) {
+	return r0, r1
+}
+
+// batchReaderGetAllSucceedsAlways returns the planted defect of a
+// BatchReader whose GetAll ignores the context over a fresh subject.
+func batchReaderGetAllSucceedsAlways(h *BatchReaderHandle) batchreader.BatchReader {
+	return &batchReaderGetAllSucceedsAlwaysDefect{batchReaderOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:c2417f1ea65c58086d9639647bd0add9a3c3dbef2f39bdecdcec8702c213a22c

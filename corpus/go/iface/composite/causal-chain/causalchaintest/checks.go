@@ -42,16 +42,23 @@ func KeepsEveryBody(h *LogHandle, c *prop.Case) {
 	assert.Equal(h, got[0].Body, root.Body, h.Statement())
 }
 
-// losesBodies returns a Log that admits each entry without its body.
+// losesBodies returns a Log that admits each entry without its body. Each
+// call returns the error of a cancelled context.
 func losesBodies(h *LogHandle) causalchain.Log {
 	var entries []causalchain.Entry
 	return NewLogStub(h,
-		WithLogAppend(func(_ context.Context, e causalchain.Entry) error {
+		WithLogAppend(func(ctx context.Context, e causalchain.Entry) error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			e.Body = ""
 			entries = append(entries, e)
 			return nil
 		}),
-		WithLogReplay(func(context.Context) ([]causalchain.Entry, error) {
+		WithLogReplay(func(ctx context.Context) ([]causalchain.Entry, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
 			return slices.Clone(entries), nil
 		}))
 }

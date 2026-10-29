@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/opaque"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -36,6 +38,18 @@ type storePut struct {
 	conform.Callable[opaque.Store]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c storePut) Smoke() conform.ID[opaque.Store] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c storePut) Cancel() conform.ID[opaque.Store] {
+	return c.Check("cancel")
+}
+
 // AllocationBudget returns the identity of the check
 // Store.Put/allocation-budget.
 func (c storePut) AllocationBudget() conform.ID[opaque.Store] {
@@ -47,6 +61,39 @@ func (c storePut) AllocationBudget() conform.ID[opaque.Store] {
 func StoreSuite() conform.Suite[opaque.Store] {
 	return conform.Suite[opaque.Store]{
 		Declaration: "Store",
+		Checks: []conform.Check[opaque.Store]{
+			{
+				ID:          StoreChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *StoreHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, &opaque.PutRequest{Key: "Key-a"})
+					})
+				},
+				Defect: storePutPanics,
+			},
+			{
+				ID:          StoreChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *StoreHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, &opaque.PutRequest{Key: "Key-a"})
+					})
+				},
+				Defect: storePutSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[opaque.Store]{
 			{
 				Calls:    storePutCalls,
@@ -155,4 +202,37 @@ func newStoreOver(_ *StoreHandle, spend func()) opaque.Store {
 	return storeOver{spend: spend}
 }
 
-// dokimi:provenance sha256:88826b4b82ae88266ed0de08ba27783421acd57bdb7fb1dab5a5aad26b0d15d0
+// storePutPanicsDefect is the planted defect of a Store whose Put panics.
+type storePutPanicsDefect struct {
+	storeOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*storePutPanicsDefect) Put(p0 context.Context, p1 *opaque.PutRequest) (r0 error) {
+	panic("the planted defect of a Store whose Put panics")
+}
+
+// storePutPanics returns the planted defect of a Store whose Put panics
+// over a fresh subject.
+func storePutPanics(h *StoreHandle) opaque.Store {
+	return &storePutPanicsDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// storePutSucceedsAlwaysDefect is the planted defect of a Store whose Put
+// ignores the context.
+type storePutSucceedsAlwaysDefect struct {
+	storeOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*storePutSucceedsAlwaysDefect) Put(p0 context.Context, p1 *opaque.PutRequest) (r0 error) {
+	return r0
+}
+
+// storePutSucceedsAlways returns the planted defect of a Store whose Put
+// ignores the context over a fresh subject.
+func storePutSucceedsAlways(h *StoreHandle) opaque.Store {
+	return &storePutSucceedsAlwaysDefect{storeOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:0cdddba426f1658b6625908ca9a3f90c3b5dd157f860224ae8b49f284f422c0c

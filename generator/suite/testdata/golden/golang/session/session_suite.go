@@ -6,6 +6,8 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -34,16 +36,40 @@ type sessionsPut struct {
 	conform.Callable[Sessions]
 }
 
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c sessionsPut) Smoke() conform.ID[Sessions] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c sessionsPut) Cancel() conform.ID[Sessions] {
+	return c.Check("cancel")
+}
+
 // sessionsGet is the name of Sessions.Get, with the identities of its
 // checks.
 type sessionsGet struct {
 	conform.Callable[Sessions]
 }
 
-// KeepsTheLastPut returns the identity of the check that Get returns the
-// session of the last Put of its ID.
-func (c sessionsGet) KeepsTheLastPut() conform.ID[Sessions] {
-	return c.Check("keeps-the-last-put")
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c sessionsGet) Smoke() conform.ID[Sessions] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c sessionsGet) Cancel() conform.ID[Sessions] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c sessionsGet) ZeroOnError() conform.ID[Sessions] {
+	return c.Check("zero-on-error")
 }
 
 // SessionsSuite returns the checks of Sessions, and the calls and the
@@ -53,10 +79,83 @@ func SessionsSuite() conform.Suite[Sessions] {
 		Declaration: "Sessions",
 		Checks: []conform.Check[Sessions]{
 			{
-				ID:        SessionsChecks.Get.KeepsTheLastPut(),
-				Statement: "Get returns the session of the last Put of its ID",
-				Property:  KeepsTheLastPut,
-				Defect:    keepsTheFirstPut,
+				ID:          SessionsChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *SessionsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, Session{ID: "ID-a"})
+					})
+				},
+				Defect: sessionsPutPanics,
+			},
+			{
+				ID:          SessionsChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *SessionsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, Session{ID: "ID-a"})
+					})
+				},
+				Defect: sessionsPutSucceedsAlways,
+			},
+			{
+				ID:          SessionsChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *SessionsHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: sessionsGetPanics,
+			},
+			{
+				ID:          SessionsChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *SessionsHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("id-a"))
+						return err
+					})
+				},
+				Defect: sessionsGetSucceedsAlways,
+			},
+			{
+				ID:          SessionsChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *SessionsHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (Session, error) {
+						return h.Subject().Get(ctx, string("id-a"))
+					}, Session{})
+				},
+				Defect: sessionsGetValueBeside,
 			},
 		},
 		Calls: []conform.Call[Sessions]{
@@ -184,4 +283,91 @@ func (o sessionsOver) Get(context.Context, string) (r0 Session, r1 error) {
 // whose callables call spend.
 func newSessionsOver(_ *SessionsHandle, spend func()) Sessions {
 	return sessionsOver{spend: spend}
+}
+
+// sessionsPutPanicsDefect is the planted defect of a Sessions whose Put
+// panics.
+type sessionsPutPanicsDefect struct {
+	sessionsOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*sessionsPutPanicsDefect) Put(p0 context.Context, p1 Session) (r0 error) {
+	panic("the planted defect of a Sessions whose Put panics")
+}
+
+// sessionsPutPanics returns the planted defect of a Sessions whose Put
+// panics over a fresh subject.
+func sessionsPutPanics(h *SessionsHandle) Sessions {
+	return &sessionsPutPanicsDefect{sessionsOverEmbedded: h.Fresh()}
+}
+
+// sessionsPutSucceedsAlwaysDefect is the planted defect of a Sessions
+// whose Put ignores the context.
+type sessionsPutSucceedsAlwaysDefect struct {
+	sessionsOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*sessionsPutSucceedsAlwaysDefect) Put(p0 context.Context, p1 Session) (r0 error) {
+	return r0
+}
+
+// sessionsPutSucceedsAlways returns the planted defect of a Sessions whose
+// Put ignores the context over a fresh subject.
+func sessionsPutSucceedsAlways(h *SessionsHandle) Sessions {
+	return &sessionsPutSucceedsAlwaysDefect{sessionsOverEmbedded: h.Fresh()}
+}
+
+// sessionsGetPanicsDefect is the planted defect of a Sessions whose Get
+// panics.
+type sessionsGetPanicsDefect struct {
+	sessionsOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*sessionsGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 Session, r1 error) {
+	panic("the planted defect of a Sessions whose Get panics")
+}
+
+// sessionsGetPanics returns the planted defect of a Sessions whose Get
+// panics over a fresh subject.
+func sessionsGetPanics(h *SessionsHandle) Sessions {
+	return &sessionsGetPanicsDefect{sessionsOverEmbedded: h.Fresh()}
+}
+
+// sessionsGetSucceedsAlwaysDefect is the planted defect of a Sessions
+// whose Get ignores the context.
+type sessionsGetSucceedsAlwaysDefect struct {
+	sessionsOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*sessionsGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 Session, r1 error) {
+	return r0, r1
+}
+
+// sessionsGetSucceedsAlways returns the planted defect of a Sessions whose
+// Get ignores the context over a fresh subject.
+func sessionsGetSucceedsAlways(h *SessionsHandle) Sessions {
+	return &sessionsGetSucceedsAlwaysDefect{sessionsOverEmbedded: h.Fresh()}
+}
+
+// sessionsGetValueBesideDefect is the planted defect of a Sessions whose
+// Get returns a value beside an error.
+type sessionsGetValueBesideDefect struct {
+	sessionsOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*sessionsGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 Session, r1 error) {
+	r0 = Session{ID: "ID-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// sessionsGetValueBeside returns the planted defect of a Sessions whose
+// Get returns a value beside an error over a fresh subject.
+func sessionsGetValueBeside(h *SessionsHandle) Sessions {
+	return &sessionsGetValueBesideDefect{sessionsOverEmbedded: h.Fresh()}
 }

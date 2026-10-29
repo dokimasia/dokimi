@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/concurrentreaders"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -38,9 +40,39 @@ type mixedGet struct {
 	conform.Callable[concurrentreaders.Mixed]
 }
 
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c mixedGet) Smoke() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c mixedGet) Cancel() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c mixedGet) ZeroOnError() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("zero-on-error")
+}
+
 // mixedPut is the name of Mixed.Put, with the identities of its checks.
 type mixedPut struct {
 	conform.Callable[concurrentreaders.Mixed]
+}
+
+// Smoke returns the identity of the check that Put returns without a panic
+// for derived inputs.
+func (c mixedPut) Smoke() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Put returns an error for a
+// cancelled context.
+func (c mixedPut) Cancel() conform.ID[concurrentreaders.Mixed] {
+	return c.Check("cancel")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -48,6 +80,87 @@ type mixedPut struct {
 func MixedSuite() conform.Suite[concurrentreaders.Mixed] {
 	return conform.Suite[concurrentreaders.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[concurrentreaders.Mixed]{
+			{
+				ID:          MixedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
+				ID:          MixedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, string(""))
+				},
+				Defect: mixedGetValueBeside,
+			},
+			{
+				ID:          MixedChecks.Put.Smoke(),
+				Statement:   "Put returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedPutPanics,
+			},
+			{
+				ID:          MixedChecks.Put.Cancel(),
+				Statement:   "Put returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Put(ctx, string("key-a"), string("value-a"))
+					})
+				},
+				Defect: mixedPutSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[concurrentreaders.Mixed]{
 			{
 				Calls:      mixedGetCalls,
@@ -185,4 +298,89 @@ func newMixedOver(_ *MixedHandle, spend func()) concurrentreaders.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:74866770a5a6cdb802abb399f4a592e8d48ba63bc98e6634f4621b9de6a8fe6a
+// mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
+type mixedGetPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Get panics")
+}
+
+// mixedGetPanics returns the planted defect of a Mixed whose Get panics
+// over a fresh subject.
+func mixedGetPanics(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// ignores the context.
+type mixedGetSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// ignores the context over a fresh subject.
+func mixedGetSucceedsAlways(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
+// returns a value beside an error.
+type mixedGetValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedGetValueBeside returns the planted defect of a Mixed whose Get
+// returns a value beside an error over a fresh subject.
+func mixedGetValueBeside(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedPutPanicsDefect is the planted defect of a Mixed whose Put panics.
+type mixedPutPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*mixedPutPanicsDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	panic("the planted defect of a Mixed whose Put panics")
+}
+
+// mixedPutPanics returns the planted defect of a Mixed whose Put panics
+// over a fresh subject.
+func mixedPutPanics(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedPutPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedPutSucceedsAlwaysDefect is the planted defect of a Mixed whose Put
+// ignores the context.
+type mixedPutSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Put is the override of the planted defect.
+func (*mixedPutSucceedsAlwaysDefect) Put(p0 context.Context, p1, p2 string) (r0 error) {
+	return r0
+}
+
+// mixedPutSucceedsAlways returns the planted defect of a Mixed whose Put
+// ignores the context over a fresh subject.
+func mixedPutSucceedsAlways(h *MixedHandle) concurrentreaders.Mixed {
+	return &mixedPutSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:29d8d57e515373a77e5af0c69a16020dd355cd11bcfc4b8821a9c4ddf56e45dd

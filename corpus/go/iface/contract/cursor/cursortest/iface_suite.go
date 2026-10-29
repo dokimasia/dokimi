@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/contract/cursor"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type contractNext struct {
 	conform.Callable[cursor.Contract]
 }
 
+// Smoke returns the identity of the check that Next returns without a
+// panic for derived inputs.
+func (c contractNext) Smoke() conform.ID[cursor.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Next returns an error for
+// a cancelled context.
+func (c contractNext) Cancel() conform.ID[cursor.Contract] {
+	return c.Check("cancel")
+}
+
+// ZeroesOnError returns the identity of the check that Next returns the
+// zero values beside an error.
+func (c contractNext) ZeroesOnError() conform.ID[cursor.Contract] {
+	return c.Check("zeroes-on-error")
+}
+
+// Cursor returns the identity of the check that Next fails with the
+// declared sentinel after Close.
+func (c contractNext) Cursor() conform.ID[cursor.Contract] {
+	return c.Check("cursor")
+}
+
 // contractClose is the name of Contract.Close, with the identities of its
 // checks.
 type contractClose struct {
 	conform.Callable[cursor.Contract]
+}
+
+// Smoke returns the identity of the check that Close returns without a
+// panic for derived inputs.
+func (c contractClose) Smoke() conform.ID[cursor.Contract] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Close returns an error for
+// a cancelled context.
+func (c contractClose) Cancel() conform.ID[cursor.Contract] {
+	return c.Check("cancel")
 }
 
 // ContractSuite returns the checks of Contract, and the calls and the
@@ -50,6 +88,106 @@ type contractClose struct {
 func ContractSuite() conform.Suite[cursor.Contract] {
 	return conform.Suite[cursor.Contract]{
 		Declaration: "Contract",
+		Checks: []conform.Check[cursor.Contract]{
+			{
+				ID:          ContractChecks.Next.Smoke(),
+				Statement:   "Next returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().Next(ctx)
+						return err
+					})
+				},
+				Defect: contractNextPanics,
+			},
+			{
+				ID:          ContractChecks.Next.Cancel(),
+				Statement:   "Next returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().Next(ctx)
+						return err
+					})
+				},
+				Defect: contractNextSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Next.ZeroesOnError(),
+				Statement:   "Next returns the zero values beside an error",
+				Claim:       spec.ZeroesOnError,
+				Probe:       spec.ZeroPairBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ZeroPairBesideError(h, func(ctx context.Context) (probe.Pair[cursor.Value, bool], error) {
+						r0, r1, err := h.Subject().Next(ctx)
+						return probe.Pair[cursor.Value, bool]{First: r0, Second: r1}, err
+					}, probe.Pair[cursor.Value, bool]{First: cursor.Value{}, Second: bool(false)})
+				},
+				Defect: contractNextValuesBeside,
+			},
+			{
+				ID:          ContractChecks.Next.Cursor(),
+				Statement:   "Next fails with the declared sentinel after Close",
+				Claim:       spec.Cursor,
+				Probe:       spec.ReportsSealed,
+				Reason:      spec.AliveAfterClose,
+				Law:         spec.WorkAfterCloseIsRefused,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.ReportsSealed(h, func(ctx context.Context) error {
+						_, _, err := h.Subject().Next(ctx)
+						return err
+					}, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					}, cursor.ErrClosed)
+				},
+				Defect: contractNextSucceedsAlways,
+			},
+			{
+				ID:          ContractChecks.Close.Smoke(),
+				Statement:   "Close returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ContractHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					})
+				},
+				Defect: contractClosePanics,
+			},
+			{
+				ID:          ContractChecks.Close.Cancel(),
+				Statement:   "Close returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ContractHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						return h.Subject().Close(ctx)
+					})
+				},
+				Defect: contractCloseSucceedsAlways,
+			},
+		},
 		Calls: []conform.Call[cursor.Contract]{
 			{
 				Calls:    contractNextCalls,
@@ -169,4 +307,92 @@ func newContractOver(_ *ContractHandle, spend func()) cursor.Contract {
 	return contractOver{spend: spend}
 }
 
-// dokimi:provenance sha256:f2d548568a5fbd97b882527198c8b71d5f385fbce58e4edfc259b0c584795e42
+// contractNextPanicsDefect is the planted defect of a Contract whose Next
+// panics.
+type contractNextPanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Next is the override of the planted defect.
+func (*contractNextPanicsDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
+	panic("the planted defect of a Contract whose Next panics")
+}
+
+// contractNextPanics returns the planted defect of a Contract whose Next
+// panics over a fresh subject.
+func contractNextPanics(h *ContractHandle) cursor.Contract {
+	return &contractNextPanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractNextSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Next ignores the context.
+type contractNextSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Next is the override of the planted defect.
+func (*contractNextSucceedsAlwaysDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
+	return r0, r1, r2
+}
+
+// contractNextSucceedsAlways returns the planted defect of a Contract
+// whose Next ignores the context over a fresh subject.
+func contractNextSucceedsAlways(h *ContractHandle) cursor.Contract {
+	return &contractNextSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractNextValuesBesideDefect is the planted defect of a Contract whose
+// Next returns values beside an error.
+type contractNextValuesBesideDefect struct {
+	contractOverEmbedded
+}
+
+// Next is the override of the planted defect.
+func (*contractNextValuesBesideDefect) Next(p0 context.Context) (r0 cursor.Value, r1 bool, r2 error) {
+	r0 = cursor.Value{Key: "Key-b"}
+	r1 = bool(true)
+	r2 = conform.ErrGenerated
+	return r0, r1, r2
+}
+
+// contractNextValuesBeside returns the planted defect of a Contract whose
+// Next returns values beside an error over a fresh subject.
+func contractNextValuesBeside(h *ContractHandle) cursor.Contract {
+	return &contractNextValuesBesideDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractClosePanicsDefect is the planted defect of a Contract whose
+// Close panics.
+type contractClosePanicsDefect struct {
+	contractOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*contractClosePanicsDefect) Close(p0 context.Context) (r0 error) {
+	panic("the planted defect of a Contract whose Close panics")
+}
+
+// contractClosePanics returns the planted defect of a Contract whose Close
+// panics over a fresh subject.
+func contractClosePanics(h *ContractHandle) cursor.Contract {
+	return &contractClosePanicsDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// contractCloseSucceedsAlwaysDefect is the planted defect of a Contract
+// whose Close ignores the context.
+type contractCloseSucceedsAlwaysDefect struct {
+	contractOverEmbedded
+}
+
+// Close is the override of the planted defect.
+func (*contractCloseSucceedsAlwaysDefect) Close(p0 context.Context) (r0 error) {
+	return r0
+}
+
+// contractCloseSucceedsAlways returns the planted defect of a Contract
+// whose Close ignores the context over a fresh subject.
+func contractCloseSucceedsAlways(h *ContractHandle) cursor.Contract {
+	return &contractCloseSucceedsAlwaysDefect{contractOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:db632ac0b0938dff1dfca37ebccaafa2635a898f642f4aa83acfaad9d97fb16b

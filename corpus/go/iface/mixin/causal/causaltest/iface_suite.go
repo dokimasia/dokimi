@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/causal"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,9 +41,45 @@ type mixedStore struct {
 	conform.Callable[causal.Mixed]
 }
 
+// Smoke returns the identity of the check that Store returns without a
+// panic for derived inputs.
+func (c mixedStore) Smoke() conform.ID[causal.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Store returns an error for
+// a cancelled context.
+func (c mixedStore) Cancel() conform.ID[causal.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Store returns the
+// zero value beside an error.
+func (c mixedStore) ZeroOnError() conform.ID[causal.Mixed] {
+	return c.Check("zero-on-error")
+}
+
 // mixedGet is the name of Mixed.Get, with the identities of its checks.
 type mixedGet struct {
 	conform.Callable[causal.Mixed]
+}
+
+// Smoke returns the identity of the check that Get returns without a panic
+// for derived inputs.
+func (c mixedGet) Smoke() conform.ID[causal.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Get returns an error for a
+// cancelled context.
+func (c mixedGet) Cancel() conform.ID[causal.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Get returns the zero
+// value beside an error.
+func (c mixedGet) ZeroOnError() conform.ID[causal.Mixed] {
+	return c.Check("zero-on-error")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -49,6 +87,104 @@ type mixedGet struct {
 func MixedSuite() conform.Suite[causal.Mixed] {
 	return conform.Suite[causal.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[causal.Mixed]{
+			{
+				ID:          MixedChecks.Store.Smoke(),
+				Statement:   "Store returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Store(ctx, causal.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: mixedStorePanics,
+			},
+			{
+				ID:          MixedChecks.Store.Cancel(),
+				Statement:   "Store returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Store(ctx, causal.Value{Key: "Key-a"})
+						return err
+					})
+				},
+				Defect: mixedStoreSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Store.ZeroOnError(),
+				Statement:   "Store returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (causal.Value, error) {
+						return h.Subject().Store(ctx, causal.Value{Key: "Key-a"})
+					}, causal.Value{})
+				},
+				Defect: mixedStoreValueBeside,
+			},
+			{
+				ID:          MixedChecks.Get.Smoke(),
+				Statement:   "Get returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetPanics,
+			},
+			{
+				ID:          MixedChecks.Get.Cancel(),
+				Statement:   "Get returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Get(ctx, string("key-a"))
+						return err
+					})
+				},
+				Defect: mixedGetSucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Get.ZeroOnError(),
+				Statement:   "Get returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (causal.Value, error) {
+						return h.Subject().Get(ctx, string("key-a"))
+					}, causal.Value{})
+				},
+				Defect: mixedGetValueBeside,
+			},
+		},
 		Calls: []conform.Call[causal.Mixed]{
 			{
 				Calls:    mixedStoreCalls,
@@ -167,4 +303,109 @@ func newMixedOver(_ *MixedHandle, spend func()) causal.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:86211ba7bdf67f4e821b65feb26fcee72986022bb94c09baa1ed86c287aae86d
+// mixedStorePanicsDefect is the planted defect of a Mixed whose Store
+// panics.
+type mixedStorePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStorePanicsDefect) Store(p0 context.Context, p1 causal.Value) (r0 causal.Value, r1 error) {
+	panic("the planted defect of a Mixed whose Store panics")
+}
+
+// mixedStorePanics returns the planted defect of a Mixed whose Store
+// panics over a fresh subject.
+func mixedStorePanics(h *MixedHandle) causal.Mixed {
+	return &mixedStorePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedStoreSucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Store ignores the context.
+type mixedStoreSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStoreSucceedsAlwaysDefect) Store(p0 context.Context, p1 causal.Value) (r0 causal.Value, r1 error) {
+	return r0, r1
+}
+
+// mixedStoreSucceedsAlways returns the planted defect of a Mixed whose
+// Store ignores the context over a fresh subject.
+func mixedStoreSucceedsAlways(h *MixedHandle) causal.Mixed {
+	return &mixedStoreSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedStoreValueBesideDefect is the planted defect of a Mixed whose Store
+// returns a value beside an error.
+type mixedStoreValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Store is the override of the planted defect.
+func (*mixedStoreValueBesideDefect) Store(p0 context.Context, p1 causal.Value) (r0 causal.Value, r1 error) {
+	r0 = causal.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedStoreValueBeside returns the planted defect of a Mixed whose Store
+// returns a value beside an error over a fresh subject.
+func mixedStoreValueBeside(h *MixedHandle) causal.Mixed {
+	return &mixedStoreValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetPanicsDefect is the planted defect of a Mixed whose Get panics.
+type mixedGetPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetPanicsDefect) Get(p0 context.Context, p1 string) (r0 causal.Value, r1 error) {
+	panic("the planted defect of a Mixed whose Get panics")
+}
+
+// mixedGetPanics returns the planted defect of a Mixed whose Get panics
+// over a fresh subject.
+func mixedGetPanics(h *MixedHandle) causal.Mixed {
+	return &mixedGetPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetSucceedsAlwaysDefect is the planted defect of a Mixed whose Get
+// ignores the context.
+type mixedGetSucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetSucceedsAlwaysDefect) Get(p0 context.Context, p1 string) (r0 causal.Value, r1 error) {
+	return r0, r1
+}
+
+// mixedGetSucceedsAlways returns the planted defect of a Mixed whose Get
+// ignores the context over a fresh subject.
+func mixedGetSucceedsAlways(h *MixedHandle) causal.Mixed {
+	return &mixedGetSucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedGetValueBesideDefect is the planted defect of a Mixed whose Get
+// returns a value beside an error.
+type mixedGetValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Get is the override of the planted defect.
+func (*mixedGetValueBesideDefect) Get(p0 context.Context, p1 string) (r0 causal.Value, r1 error) {
+	r0 = causal.Value{Key: "Key-b"}
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedGetValueBeside returns the planted defect of a Mixed whose Get
+// returns a value beside an error over a fresh subject.
+func mixedGetValueBeside(h *MixedHandle) causal.Mixed {
+	return &mixedGetValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:600a26bdf065871b0bb967683748531949635a8148b6ddb00022ab66e31c347c

@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/mixin/total"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type mixedClassify struct {
 	conform.Callable[total.Mixed]
 }
 
+// Smoke returns the identity of the check that Classify returns without a
+// panic for derived inputs.
+func (c mixedClassify) Smoke() conform.ID[total.Mixed] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Classify returns an error
+// for a cancelled context.
+func (c mixedClassify) Cancel() conform.ID[total.Mixed] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Classify returns the
+// zero value beside an error.
+func (c mixedClassify) ZeroOnError() conform.ID[total.Mixed] {
+	return c.Check("zero-on-error")
+}
+
+// Total returns the identity of the check that Classify succeeds for the
+// input that its directive declares at the edge of the domain.
+func (c mixedClassify) Total() conform.ID[total.Mixed] {
+	return c.Check("total")
+}
+
 // mixedNormalize is the name of Mixed.Normalize, with the identities of
 // its checks.
 type mixedNormalize struct {
 	conform.Callable[total.Mixed]
+}
+
+// Smoke returns the identity of the check that Normalize returns without a
+// panic for derived inputs.
+func (c mixedNormalize) Smoke() conform.ID[total.Mixed] {
+	return c.Check("smoke")
+}
+
+// Deterministic returns the identity of the check that Normalize returns
+// the same value for the same inputs.
+func (c mixedNormalize) Deterministic() conform.ID[total.Mixed] {
+	return c.Check("deterministic")
 }
 
 // MixedSuite returns the checks of Mixed, and the calls and the budgets of
@@ -50,6 +88,107 @@ type mixedNormalize struct {
 func MixedSuite() conform.Suite[total.Mixed] {
 	return conform.Suite[total.Mixed]{
 		Declaration: "Mixed",
+		Checks: []conform.Check[total.Mixed]{
+			{
+				ID:          MixedChecks.Classify.Smoke(),
+				Statement:   "Classify returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Classify(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: mixedClassifyPanics,
+			},
+			{
+				ID:          MixedChecks.Classify.Cancel(),
+				Statement:   "Classify returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Classify(ctx, string("in-a"))
+						return err
+					})
+				},
+				Defect: mixedClassifySucceedsAlways,
+			},
+			{
+				ID:          MixedChecks.Classify.ZeroOnError(),
+				Statement:   "Classify returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *MixedHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (string, error) {
+						return h.Subject().Classify(ctx, string("in-a"))
+					}, string(""))
+				},
+				Defect: mixedClassifyValueBeside,
+			},
+			{
+				ID:          MixedChecks.Classify.Total(),
+				Statement:   "Classify succeeds for the input that its directive declares at the edge of the domain",
+				Claim:       spec.Total,
+				Probe:       spec.AcceptsTheEdge,
+				Reason:      spec.RefusedTheEdge,
+				Law:         spec.CallAcceptsItsDeclaredDomain,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.AcceptsTheEdge(h, func(ctx context.Context, v string) error {
+						_, err := h.Subject().Classify(ctx, v)
+						return err
+					}, total.Edge)
+				},
+				Defect: mixedClassifyFailsAlways,
+			},
+			{
+				ID:          MixedChecks.Normalize.Smoke(),
+				Statement:   "Normalize returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Normalize(string("in-a"))
+						return nil
+					})
+				},
+				Defect: mixedNormalizePanics,
+			},
+			{
+				ID:          MixedChecks.Normalize.Deterministic(),
+				Statement:   "Normalize returns the same value for the same inputs",
+				Claim:       spec.Deterministic,
+				Probe:       spec.RepeatAgrees,
+				Reason:      spec.UnstableRepeat,
+				Law:         spec.RepeatReturnsAlike,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *MixedHandle) {
+					probe.RepeatAgrees(h, func(ctx context.Context) (string, error) {
+						r0 := h.Subject().Normalize(string("in-a"))
+						return r0, nil
+					})
+				},
+				Defect: mixedNormalizeDrifts,
+			},
+		},
 		Calls: []conform.Call[total.Mixed]{
 			{
 				Calls:    mixedClassifyCalls,
@@ -168,4 +307,114 @@ func newMixedOver(_ *MixedHandle, spend func()) total.Mixed {
 	return mixedOver{spend: spend}
 }
 
-// dokimi:provenance sha256:7f0304bdf25418c53c81e1daf8b79e87a01a8183f3da48cb5b028448ab5513fe
+// mixedClassifyPanicsDefect is the planted defect of a Mixed whose
+// Classify panics.
+type mixedClassifyPanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Classify is the override of the planted defect.
+func (*mixedClassifyPanicsDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
+	panic("the planted defect of a Mixed whose Classify panics")
+}
+
+// mixedClassifyPanics returns the planted defect of a Mixed whose Classify
+// panics over a fresh subject.
+func mixedClassifyPanics(h *MixedHandle) total.Mixed {
+	return &mixedClassifyPanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedClassifySucceedsAlwaysDefect is the planted defect of a Mixed whose
+// Classify ignores the context.
+type mixedClassifySucceedsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Classify is the override of the planted defect.
+func (*mixedClassifySucceedsAlwaysDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
+	return r0, r1
+}
+
+// mixedClassifySucceedsAlways returns the planted defect of a Mixed whose
+// Classify ignores the context over a fresh subject.
+func mixedClassifySucceedsAlways(h *MixedHandle) total.Mixed {
+	return &mixedClassifySucceedsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedClassifyValueBesideDefect is the planted defect of a Mixed whose
+// Classify returns a value beside an error.
+type mixedClassifyValueBesideDefect struct {
+	mixedOverEmbedded
+}
+
+// Classify is the override of the planted defect.
+func (*mixedClassifyValueBesideDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r0 = string("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedClassifyValueBeside returns the planted defect of a Mixed whose
+// Classify returns a value beside an error over a fresh subject.
+func mixedClassifyValueBeside(h *MixedHandle) total.Mixed {
+	return &mixedClassifyValueBesideDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedClassifyFailsAlwaysDefect is the planted defect of a Mixed whose
+// Classify fails at the edge of its domain.
+type mixedClassifyFailsAlwaysDefect struct {
+	mixedOverEmbedded
+}
+
+// Classify is the override of the planted defect.
+func (*mixedClassifyFailsAlwaysDefect) Classify(p0 context.Context, p1 string) (r0 string, r1 error) {
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// mixedClassifyFailsAlways returns the planted defect of a Mixed whose
+// Classify fails at the edge of its domain over a fresh subject.
+func mixedClassifyFailsAlways(h *MixedHandle) total.Mixed {
+	return &mixedClassifyFailsAlwaysDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedNormalizePanicsDefect is the planted defect of a Mixed whose
+// Normalize panics.
+type mixedNormalizePanicsDefect struct {
+	mixedOverEmbedded
+}
+
+// Normalize is the override of the planted defect.
+func (*mixedNormalizePanicsDefect) Normalize(p0 string) (r0 string) {
+	panic("the planted defect of a Mixed whose Normalize panics")
+}
+
+// mixedNormalizePanics returns the planted defect of a Mixed whose
+// Normalize panics over a fresh subject.
+func mixedNormalizePanics(h *MixedHandle) total.Mixed {
+	return &mixedNormalizePanicsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// mixedNormalizeDriftsDefect is the planted defect of a Mixed whose
+// Normalize returns another value on the repeat.
+type mixedNormalizeDriftsDefect struct {
+	mixedOverEmbedded
+	calls int
+}
+
+// Normalize is the override of the planted defect.
+func (d *mixedNormalizeDriftsDefect) Normalize(p0 string) (r0 string) {
+	d.calls++
+	if d.calls > 1 {
+		r0 = string("sample-b")
+	}
+	return r0
+}
+
+// mixedNormalizeDrifts returns the planted defect of a Mixed whose
+// Normalize returns another value on the repeat over a fresh subject.
+func mixedNormalizeDrifts(h *MixedHandle) total.Mixed {
+	return &mixedNormalizeDriftsDefect{mixedOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:acd9e3a0e7106ab0ce425754226e5c151a6b5413420d53c2df7643665f56885f

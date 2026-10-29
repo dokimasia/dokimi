@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/lang/seededreader"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -39,10 +41,46 @@ type catalogLookup struct {
 	conform.Callable[seededreader.Catalog]
 }
 
+// Smoke returns the identity of the check that Lookup returns without a
+// panic for derived inputs.
+func (c catalogLookup) Smoke() conform.ID[seededreader.Catalog] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Lookup returns an error
+// for a cancelled context.
+func (c catalogLookup) Cancel() conform.ID[seededreader.Catalog] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Lookup returns the
+// zero value beside an error.
+func (c catalogLookup) ZeroOnError() conform.ID[seededreader.Catalog] {
+	return c.Check("zero-on-error")
+}
+
 // catalogLen is the name of Catalog.Len, with the identities of its
 // checks.
 type catalogLen struct {
 	conform.Callable[seededreader.Catalog]
+}
+
+// Smoke returns the identity of the check that Len returns without a panic
+// for derived inputs.
+func (c catalogLen) Smoke() conform.ID[seededreader.Catalog] {
+	return c.Check("smoke")
+}
+
+// Cancel returns the identity of the check that Len returns an error for a
+// cancelled context.
+func (c catalogLen) Cancel() conform.ID[seededreader.Catalog] {
+	return c.Check("cancel")
+}
+
+// ZeroOnError returns the identity of the check that Len returns the zero
+// value beside an error.
+func (c catalogLen) ZeroOnError() conform.ID[seededreader.Catalog] {
+	return c.Check("zero-on-error")
 }
 
 // CatalogSuite returns the checks of Catalog, and the calls and the
@@ -50,6 +88,104 @@ type catalogLen struct {
 func CatalogSuite() conform.Suite[seededreader.Catalog] {
 	return conform.Suite[seededreader.Catalog]{
 		Declaration: "Catalog",
+		Checks: []conform.Check[seededreader.Catalog]{
+			{
+				ID:          CatalogChecks.Lookup.Smoke(),
+				Statement:   "Lookup returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CatalogHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Lookup(ctx, seededreader.Key("test-doc"))
+						return err
+					})
+				},
+				Defect: catalogLookupPanics,
+			},
+			{
+				ID:          CatalogChecks.Lookup.Cancel(),
+				Statement:   "Lookup returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CatalogHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Lookup(ctx, seededreader.Key("test-doc"))
+						return err
+					})
+				},
+				Defect: catalogLookupSucceedsAlways,
+			},
+			{
+				ID:          CatalogChecks.Lookup.ZeroOnError(),
+				Statement:   "Lookup returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CatalogHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (seededreader.Body, error) {
+						return h.Subject().Lookup(ctx, seededreader.Key("test-doc"))
+					}, seededreader.Body(""))
+				},
+				Defect: catalogLookupValueBeside,
+			},
+			{
+				ID:          CatalogChecks.Len.Smoke(),
+				Statement:   "Len returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *CatalogHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						_, err := h.Subject().Len(ctx)
+						return err
+					})
+				},
+				Defect: catalogLenPanics,
+			},
+			{
+				ID:          CatalogChecks.Len.Cancel(),
+				Statement:   "Len returns an error for a cancelled context",
+				Claim:       spec.Cancel,
+				Probe:       spec.UnderCancelled,
+				Reason:      spec.IgnoredCancel,
+				Law:         spec.CancelledContextIsReported,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CatalogHandle) {
+					probe.UnderCancelled(h, func(ctx context.Context) error {
+						_, err := h.Subject().Len(ctx)
+						return err
+					})
+				},
+				Defect: catalogLenSucceedsAlways,
+			},
+			{
+				ID:          CatalogChecks.Len.ZeroOnError(),
+				Statement:   "Len returns the zero value beside an error",
+				Claim:       spec.ZeroOnError,
+				Probe:       spec.ZeroBesideError,
+				Reason:      spec.ValueBesideError,
+				Law:         spec.NoValueBesideAnError,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *CatalogHandle) {
+					probe.ZeroBesideError(h, func(ctx context.Context) (int, error) {
+						return h.Subject().Len(ctx)
+					}, int(0))
+				},
+				Defect: catalogLenValueBeside,
+			},
+		},
 		Calls: []conform.Call[seededreader.Catalog]{
 			{
 				Calls:    catalogLookupCalls,
@@ -190,4 +326,116 @@ func newCatalogOver(_ *CatalogHandle, spend func()) seededreader.Catalog {
 	return catalogOver{spend: spend}
 }
 
-// dokimi:provenance sha256:0b4bb6cc228b37694a87aed029f8b52f5457add4ae2262e8283b1e06ec391981
+// catalogLookupPanicsDefect is the planted defect of a Catalog whose
+// Lookup panics.
+type catalogLookupPanicsDefect struct {
+	catalogOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*catalogLookupPanicsDefect) Lookup(p0 context.Context, p1 seededreader.Key) (r0 seededreader.Body, r1 error) {
+	panic("the planted defect of a Catalog whose Lookup panics")
+}
+
+// catalogLookupPanics returns the planted defect of a Catalog whose Lookup
+// panics over a fresh subject.
+func catalogLookupPanics(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLookupPanicsDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// catalogLookupSucceedsAlwaysDefect is the planted defect of a Catalog
+// whose Lookup ignores the context.
+type catalogLookupSucceedsAlwaysDefect struct {
+	catalogOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*catalogLookupSucceedsAlwaysDefect) Lookup(
+	p0 context.Context,
+	p1 seededreader.Key,
+) (r0 seededreader.Body, r1 error) {
+	return r0, r1
+}
+
+// catalogLookupSucceedsAlways returns the planted defect of a Catalog
+// whose Lookup ignores the context over a fresh subject.
+func catalogLookupSucceedsAlways(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLookupSucceedsAlwaysDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// catalogLookupValueBesideDefect is the planted defect of a Catalog whose
+// Lookup returns a value beside an error.
+type catalogLookupValueBesideDefect struct {
+	catalogOverEmbedded
+}
+
+// Lookup is the override of the planted defect.
+func (*catalogLookupValueBesideDefect) Lookup(
+	p0 context.Context,
+	p1 seededreader.Key,
+) (r0 seededreader.Body, r1 error) {
+	r0 = seededreader.Body("sample-b")
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// catalogLookupValueBeside returns the planted defect of a Catalog whose
+// Lookup returns a value beside an error over a fresh subject.
+func catalogLookupValueBeside(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLookupValueBesideDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// catalogLenPanicsDefect is the planted defect of a Catalog whose Len
+// panics.
+type catalogLenPanicsDefect struct {
+	catalogOverEmbedded
+}
+
+// Len is the override of the planted defect.
+func (*catalogLenPanicsDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	panic("the planted defect of a Catalog whose Len panics")
+}
+
+// catalogLenPanics returns the planted defect of a Catalog whose Len
+// panics over a fresh subject.
+func catalogLenPanics(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLenPanicsDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// catalogLenSucceedsAlwaysDefect is the planted defect of a Catalog whose
+// Len ignores the context.
+type catalogLenSucceedsAlwaysDefect struct {
+	catalogOverEmbedded
+}
+
+// Len is the override of the planted defect.
+func (*catalogLenSucceedsAlwaysDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	return r0, r1
+}
+
+// catalogLenSucceedsAlways returns the planted defect of a Catalog whose
+// Len ignores the context over a fresh subject.
+func catalogLenSucceedsAlways(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLenSucceedsAlwaysDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// catalogLenValueBesideDefect is the planted defect of a Catalog whose Len
+// returns a value beside an error.
+type catalogLenValueBesideDefect struct {
+	catalogOverEmbedded
+}
+
+// Len is the override of the planted defect.
+func (*catalogLenValueBesideDefect) Len(p0 context.Context) (r0 int, r1 error) {
+	r0 = int(7)
+	r1 = conform.ErrGenerated
+	return r0, r1
+}
+
+// catalogLenValueBeside returns the planted defect of a Catalog whose Len
+// returns a value beside an error over a fresh subject.
+func catalogLenValueBeside(h *CatalogHandle) seededreader.Catalog {
+	return &catalogLenValueBesideDefect{catalogOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:78845a4f9012e46b65c42b35f6fbef22fe584792bbf1dc03e4a3922e874eb5c2

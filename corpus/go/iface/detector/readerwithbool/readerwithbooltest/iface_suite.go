@@ -10,7 +10,9 @@ import (
 
 	"go.dokimi.dev/assert/prop"
 	"go.dokimi.dev/conform"
+	"go.dokimi.dev/conform/probe"
 	"go.dokimi.dev/dokimi/corpus/go/iface/detector/readerwithbool"
+	"go.dokimi.dev/spec"
 )
 
 // The suite refers to the compatibility witness of its runtime.
@@ -37,11 +39,57 @@ type readerWithBoolLoad struct {
 	conform.Callable[readerwithbool.ReaderWithBool]
 }
 
+// Smoke returns the identity of the check that Load returns without a
+// panic for derived inputs.
+func (c readerWithBoolLoad) Smoke() conform.ID[readerwithbool.ReaderWithBool] {
+	return c.Check("smoke")
+}
+
+// ZeroOnMiss returns the identity of the check that Load returns the zero
+// value beside a false presence flag.
+func (c readerWithBoolLoad) ZeroOnMiss() conform.ID[readerwithbool.ReaderWithBool] {
+	return c.Check("zero-on-miss")
+}
+
 // ReaderWithBoolSuite returns the checks of ReaderWithBool, and the calls
 // and the budgets of its callables.
 func ReaderWithBoolSuite() conform.Suite[readerwithbool.ReaderWithBool] {
 	return conform.Suite[readerwithbool.ReaderWithBool]{
 		Declaration: "ReaderWithBool",
+		Checks: []conform.Check[readerwithbool.ReaderWithBool]{
+			{
+				ID:          ReaderWithBoolChecks.Load.Smoke(),
+				Statement:   "Load returns without a panic for derived inputs",
+				Claim:       spec.Smoke,
+				Probe:       spec.Survives,
+				Reason:      spec.Panicked,
+				Law:         spec.NoPanicOnAnyInput,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Shallow:     true,
+				Apply: func(h *ReaderWithBoolHandle) {
+					probe.Survives(h, func(ctx context.Context) error {
+						h.Subject().Load(ctx, string("key-a"))
+						return nil
+					})
+				},
+				Defect: readerWithBoolLoadPanics,
+			},
+			{
+				ID:          ReaderWithBoolChecks.Load.ZeroOnMiss(),
+				Statement:   "Load returns the zero value beside a false presence flag",
+				Claim:       spec.ZeroOnMiss,
+				Probe:       spec.ZeroBesideFalse,
+				Reason:      spec.ValueBesideFalse,
+				Law:         spec.NoValueBesideAFalseFlag,
+				Machineries: []spec.MachineryID{spec.NothingBeyondACaller},
+				Apply: func(h *ReaderWithBoolHandle) {
+					probe.ZeroBesideFalse(h, func(ctx context.Context) (readerwithbool.Value, bool) {
+						return h.Subject().Load(ctx, string("key-a"))
+					}, readerwithbool.Value{})
+				},
+				Defect: readerWithBoolLoadValueBesideAFalseFlag,
+			},
+		},
 		Calls: []conform.Call[readerwithbool.ReaderWithBool]{
 			{
 				Calls:    readerWithBoolLoadCalls,
@@ -156,4 +204,46 @@ func newReaderWithBoolOver(_ *ReaderWithBoolHandle, spend func()) readerwithbool
 	return readerWithBoolOver{spend: spend}
 }
 
-// dokimi:provenance sha256:23b6534a1554fecfb7f9518b16573e65e9068cf8a390c33cd679c1e6bb55a51d
+// readerWithBoolLoadPanicsDefect is the planted defect of a ReaderWithBool
+// whose Load panics.
+type readerWithBoolLoadPanicsDefect struct {
+	readerWithBoolOverEmbedded
+}
+
+// Load is the override of the planted defect.
+func (*readerWithBoolLoadPanicsDefect) Load(p0 context.Context, p1 string) (r0 readerwithbool.Value, r1 bool) {
+	panic("the planted defect of a ReaderWithBool whose Load panics")
+}
+
+// readerWithBoolLoadPanics returns the planted defect of a ReaderWithBool
+// whose Load panics over a fresh subject.
+func readerWithBoolLoadPanics(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool {
+	return &readerWithBoolLoadPanicsDefect{readerWithBoolOverEmbedded: h.Fresh()}
+}
+
+// readerWithBoolLoadValueBesideAFalseFlagDefect is the planted defect of a
+// ReaderWithBool whose Load returns a value beside a false presence flag.
+type readerWithBoolLoadValueBesideAFalseFlagDefect struct {
+	readerWithBoolOverEmbedded
+}
+
+// Load is the override of the planted defect.
+func (d *readerWithBoolLoadValueBesideAFalseFlagDefect) Load(
+	p0 context.Context,
+	p1 string,
+) (r0 readerwithbool.Value, r1 bool) {
+	r0, r1 = d.readerWithBoolOverEmbedded.Load(p0, p1)
+	if !r1 {
+		r0 = readerwithbool.Value{Key: "Key-b"}
+	}
+	return r0, r1
+}
+
+// readerWithBoolLoadValueBesideAFalseFlag returns the planted defect of a
+// ReaderWithBool whose Load returns a value beside a false presence flag
+// over a fresh subject.
+func readerWithBoolLoadValueBesideAFalseFlag(h *ReaderWithBoolHandle) readerwithbool.ReaderWithBool {
+	return &readerWithBoolLoadValueBesideAFalseFlagDefect{readerWithBoolOverEmbedded: h.Fresh()}
+}
+
+// dokimi:provenance sha256:a965c98fbbfdefa7e018473ee563ac8566ac84502ac844e3ec0fc90e5e11e84f

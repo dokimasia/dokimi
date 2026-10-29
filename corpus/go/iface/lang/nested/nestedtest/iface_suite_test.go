@@ -49,6 +49,30 @@ func TestDispatcherSuite(t *testing.T) {
 				},
 				Defect: func(*nestedtest.DispatcherHandle) nested.Dispatcher { return &dispatcherSubject{} },
 			}),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Dispatch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Dispatch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.DispatchAll.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.DispatchAll.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Weight.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Weight.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -70,6 +94,30 @@ func TestDispatcherSuite(t *testing.T) {
 				},
 				Defect: func(*nestedtest.DispatcherHandle) nested.Dispatcher { return &dispatcherSubject{} },
 			}),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Dispatch.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Dispatch.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.DispatchAll.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.DispatchAll.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Weight.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nestedtest.DispatcherChecks.Weight.Deterministic(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -113,6 +161,30 @@ func TestDispatcherSuiteBudgets(t *testing.T) {
 		t,
 		dispatcherIdle,
 		conform.Ceilings(nestedtest.DispatcherChecks.Weight.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -124,6 +196,30 @@ func FuzzDispatcherSuiteDispatch(f *testing.F) {
 		f,
 		nestedtest.DispatcherChecks.Dispatch.Callable,
 		dispatcherIdle,
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -135,6 +231,30 @@ func FuzzDispatcherSuiteDispatchAll(f *testing.F) {
 		f,
 		nestedtest.DispatcherChecks.DispatchAll.Callable,
 		dispatcherIdle,
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -145,6 +265,30 @@ func FuzzDispatcherSuiteWeight(f *testing.F) {
 		f,
 		nestedtest.DispatcherChecks.Weight.Callable,
 		dispatcherIdle,
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Dispatch.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.DispatchAll.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nestedtest.DispatcherChecks.Weight.Deterministic(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -162,4 +306,4 @@ func BenchmarkDispatcherSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:3a8e18c8c53f6e36012558c60ef57054c76b99c7cdb78b4df693ad9bfde71cf4
+// dokimi:provenance sha256:e1c7eef7a745b4d8d1f724ac70a58147b2cff0f45b6bc15ace2973f3ae1ffb2f

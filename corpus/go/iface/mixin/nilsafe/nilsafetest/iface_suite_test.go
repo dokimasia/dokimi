@@ -48,6 +48,18 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*nilsafetest.MixedHandle) nilsafe.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				nilsafetest.MixedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nilsafetest.MixedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nilsafetest.MixedChecks.Store.NilSafe(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +81,18 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*nilsafetest.MixedHandle) nilsafe.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				nilsafetest.MixedChecks.Store.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nilsafetest.MixedChecks.Store.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				nilsafetest.MixedChecks.Store.NilSafe(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -88,6 +112,18 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		t,
 		mixedIdle,
 		conform.Ceilings(nilsafetest.MixedChecks.Store.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			nilsafetest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nilsafetest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nilsafetest.MixedChecks.Store.NilSafe(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -98,6 +134,18 @@ func FuzzMixedSuiteStore(f *testing.F) {
 		f,
 		nilsafetest.MixedChecks.Store.Callable,
 		mixedIdle,
+		conform.Excuse(
+			nilsafetest.MixedChecks.Store.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nilsafetest.MixedChecks.Store.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			nilsafetest.MixedChecks.Store.NilSafe(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -109,4 +157,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f9f5720459b1c5d1bb19b66a28f9011712e59ad4777a3851826b20ba57073234
+// dokimi:provenance sha256:29816e6be5581a6fc4ab7cbec85d6a58707dd8c7bd38f30e3be49d704d20bec3

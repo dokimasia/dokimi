@@ -29,16 +29,24 @@ type InMemory struct {
 // NewInMemory returns an InMemory without fits.
 func NewInMemory() *InMemory { return &InMemory{} }
 
-// Fit implements [crosspackage.Fitter].
-func (f *InMemory) Fit(_ context.Context, p part.Part) error {
+// Fit implements [crosspackage.Fitter]. It returns the error of a cancelled
+// context.
+func (f *InMemory) Fit(ctx context.Context, p part.Part) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.fitted += p.Count
 	return nil
 }
 
-// Limit implements [crosspackage.Fitter].
-func (f *InMemory) Limit(_ context.Context, l part.Limits) error {
+// Limit implements [crosspackage.Fitter]. It returns the error of a cancelled
+// context.
+func (f *InMemory) Limit(ctx context.Context, l part.Limits) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.fitted = min(f.fitted, l.Count)

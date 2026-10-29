@@ -48,6 +48,38 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*snapshotisolationtest.MixedHandle) snapshotisolation.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Record.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Record.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.History.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.History.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.History.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 
@@ -69,6 +101,38 @@ func TestMixedSuite(t *testing.T) {
 				},
 				Defect: func(*snapshotisolationtest.MixedHandle) snapshotisolation.Mixed { return &mixedSubject{} },
 			}),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Record.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Record.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.History.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.History.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.History.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Get.Smoke(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Get.Cancel(),
+				"the test applies the check of its option alone",
+			),
+			conform.Excuse(
+				snapshotisolationtest.MixedChecks.Get.ZeroOnError(),
+				"the test applies the check of its option alone",
+			),
 		)
 	})
 }
@@ -90,6 +154,38 @@ func TestMixedSuiteBudgets(t *testing.T) {
 		conform.Ceilings(snapshotisolationtest.MixedChecks.Record.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(snapshotisolationtest.MixedChecks.History.Callable, conform.Budget{Allocs: new(uint64(0))}),
 		conform.Ceilings(snapshotisolationtest.MixedChecks.Get.Callable, conform.Budget{Allocs: new(uint64(0))}),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -100,6 +196,38 @@ func FuzzMixedSuiteRecord(f *testing.F) {
 		f,
 		snapshotisolationtest.MixedChecks.Record.Callable,
 		mixedIdle,
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -110,6 +238,38 @@ func FuzzMixedSuiteHistory(f *testing.F) {
 		f,
 		snapshotisolationtest.MixedChecks.History.Callable,
 		mixedIdle,
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -120,6 +280,38 @@ func FuzzMixedSuiteGet(f *testing.F) {
 		f,
 		snapshotisolationtest.MixedChecks.Get.Callable,
 		mixedIdle,
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Record.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.History.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Smoke(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.Cancel(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
+		conform.Excuse(
+			snapshotisolationtest.MixedChecks.Get.ZeroOnError(),
+			"the planted defect of a ceiling answers each call with its zero results",
+		),
 	)
 }
 
@@ -137,4 +329,4 @@ func BenchmarkMixedSuite(b *testing.B) {
 	})
 }
 
-// dokimi:provenance sha256:f919c58e5d031a57b8c24769734db51907e28ea38f439eb8788d607f333992d4
+// dokimi:provenance sha256:7e1018742b7fcec397de047bb96f8c2154a1b6757e1bc9cc5325121b8933a47e

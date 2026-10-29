@@ -71,10 +71,23 @@ This RFC leaves the rest of RFC-0003 unchanged: the order of `Derive`, the claim
 type PartnerMode string
 
 // Partner resolves the partner p of a claim on the callable of f, among the
-// callables of decl, by the mode of p. It returns the facts of the partner,
-// or the gate that refuses the claim: the gate partner-found when no
-// callable matches, and the gate one-partner when two do.
-func Partner(p spec.Partner, f *Facts, decl []Facts) (*Facts, *spec.Gate)
+// callables of decl, by the mode of p, and binds the arguments of the read.
+// It returns the gate that refuses the claim instead: the gate partner-found
+// when no callable matches, one-partner when two do, partner-arguments when
+// a parameter of the read selects nothing of the write, and rewritable when
+// a second write could not change what the read returns.
+func Partner(p *spec.Partner, f *Facts, decl []Facts) (*Pair, *spec.Gate)
+
+// Pair is the partner of a claim, with the read, the write, the index of the
+// written value in the inputs of the write, the arguments of the read, and
+// the field that a second write changes.
+type Pair struct {
+	Partner     *Facts
+	Read, Write *Facts
+	Changed     string
+	Arguments   []Argument
+	Written     int
+}
 ```
 
 | Mode | Reads | In RFC-0003 |
@@ -85,9 +98,19 @@ func Partner(p spec.Partner, f *Facts, decl []Facts) (*Facts, *spec.Gate)
 | `role` | The callable with the named role of the same contract instance | `FromRole` |
 | `interposed` | A `named` partner that the probe calls twice, and a field of the written value that the second call changes | New |
 | `rewriter` | A `reader` partner that the probe calls twice, with the same field | New |
-| `establishing` | The one other callable with the classification of the entry that takes every input of the licensed callable | New |
+| `establishing` | The one other callable with the classification of the entry whose written value the read of the licensed callable selects by the rule of the arguments | New |
 
 A value whose every field the read selects by refuses `interposed` and `rewriter` with the gate `rewritable`, because no second write could change what the read returns.
+
+### The arguments of a partner
+
+The probe calls the licensed callable and its partner on one state, so the read must select what the write stored. The derivation binds the arguments of the two calls by one rule:
+
+1. A parameter that both callables take, with the same name and the same type, takes one sample in both calls.
+2. Each other parameter of the read takes the field of the written value with its name and its type, such as the argument `id` of `Get(ctx, id)` from the field `ID` of the session that `Put(ctx, s)` stored.
+3. A parameter in the role context takes the context of the check.
+
+A read parameter that neither rule binds refuses the claim with the gate `partner-arguments`, whose remedy is to align the name of the parameter with the write. The read is the licensed callable in the modes `named`, `derived` and `interposed`, and the partner in the modes `reader`, `rewriter` and `establishing`. For a partner of the mode `role`, the read is the role that returns a value and the write the role that returns none. Where both roles return a value or neither does, as the roles `cache` and `backing` of the contract `cache`, the rule binds nothing and the probe passes the result of one call to the other.
 
 ### The reason on the handle
 

@@ -221,7 +221,7 @@ claims:
 | `role` | The callable with the named role of the same contract, such as `backing` of the contract `cache` |
 | `interposed` | A `named` partner that the probe calls twice, with reads before and after the second call. The derivation also binds a field of the written value that the second call changes |
 | `rewriter` | A `reader` partner of a licensed callable that the probe calls twice, with the same field as `interposed` |
-| `establishing` | The one other callable of the declaration that has the classification of the entry, such as `{mode: establishing, shape: writer}`, and takes every binding of the licensed callable. An example is the writer that puts the subject of a reader into a state |
+| `establishing` | The one other callable of the declaration that has the classification of the entry, such as `{mode: establishing, shape: writer}`, and whose written value the licensed callable reads by its arguments. An example is the writer that puts the subject of a reader into a state |
 
 A mode binds exactly one callable or the claim refuses. No match refuses with the gate `partner-found`, and two matches refuse with the gate `one-partner`. Both remedies name the param that selects the partner. A param of the directive on the licensed callable that names a callable takes precedence over every mode.
 

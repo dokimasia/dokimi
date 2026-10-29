@@ -27,7 +27,7 @@ A Go team that writes `//dokimi:suite` on an interface gets a check for each cla
 - [ ] `dokimi run` on a reader with the mixin `read-after-write` and its param `write` writes the check `read-after-write` with its planted defect, and a reader whose param names no callable lists the claim among its refusals with the remedy.
 - [ ] The module `go.dokimi.dev/conform` contains the packages `spec` and `probe`, with a Go probe for every probe of the spec that a single caller runs.
 - [ ] Falsification of a derived check fails with both reason codes when the planted defect fails for another reason.
-- [ ] Under `conform.Isolate`, falsification of a pair of `entails` fails with both identities when the deeper check passes on the defect of the shallower one, and the corpus passes the option for each control.
+- [ ] Under `conform.Isolate`, falsification of a pair of `entails` fails with both identities when the deeper check passes on the defect of the shallower one, and the corpus passes the option for the subject of each fixture.
 - [ ] Each of the seven partner modes binds a partner in a fixture of the corpus, and refuses with `partner-found` and `one-partner` in two more.
 - [ ] A declaration without `machineries=reference` lists a claim that needs a reference as unclaimed with the stance `needs`.
 - [ ] Each fixture of the Go corpus whose laws the spec states uses derived checks, and its tests pass.
@@ -61,4 +61,5 @@ The claims, probes and reason codes of milestone 0002 have to exist first. Vacui
 |---|---|---|
 | 2026-10-28 | Created at position 3 | The first roadmap of dokimi |
 | 2026-10-28 | The isolation and the edges run under `conform.Isolate`, a check gains `Machineries` and `Shallow`, and the corpus counts 146 fixtures | A defect of the subject of a consumer fails the isolation of every planted defect that wraps it, so the controls of the corpus isolate the derived defects. The suite record needs the machineries of each check |
+| 2026-10-28 | The corpus isolates the derived defects over the subjects of its fixtures | The controls of the corpus belong to milestone 0004, and the subject of each fixture is a correct implementation |
 | 2026-10-28 | The scope gains the generators `enum` and `sentinel` on the claims of the spec | Their checks are claims of the spec, and no milestone contained the change of the generators |

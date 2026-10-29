@@ -189,9 +189,9 @@ A defect that overrides a partner, such as `forgets-writes` on `Put`, also fails
 
 ### The runtime
 
-The module `go.dokimi.dev/conform` gains the packages `spec` and `probe`, as RFC-0002 and RFC-0005 state:
+The Go runtime gains the module `go.dokimi.dev/spec` and the package `probe` of the module `go.dokimi.dev/conform`, as RFC-0002 and RFC-0005 state:
 
-- `spec` decodes the vendored JSON files of a release of dokimi and declares a constant for each law, claim, probe and reason code.
+- `spec` embeds the vendored copy of the conformance spec, declares a constant for each entry with its spelling in the naming table, and returns the reasons of each probe.
 - `probe` implements every probe of the spec. A probe asserts through assert-go, passes the statement of the check as the contract of each assertion, and calls `Expect` before each assertion.
 
 `conform.Check[S]` gains five fields:

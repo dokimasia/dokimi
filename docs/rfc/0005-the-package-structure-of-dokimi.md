@@ -168,21 +168,23 @@ The runtime contains the code that every generated double and every generated ch
 
 #### The modules of dokimi-go
 
-The runtime of Go has three modules. Each module contains one concern of the runtime, and its path has the form `go.dokimi.dev/<name>`:
+The runtime of Go has four modules. Each module contains one concern of the runtime, and its path has the form `go.dokimi.dev/<name>`:
 
 | Module | Directory | Packages | Requires |
 |---|---|---|---|
+| `go.dokimi.dev/spec` | `spec/` | `spec`, with the vendored copy of the conformance spec | `go.dokimi.dev/assert` in its tests |
 | `go.dokimi.dev/fault` | `fault/` | `fault` | `go.dokimi.dev/assert` in its tests |
 | `go.dokimi.dev/stub` | `stub/` | `stub` | `go.dokimi.dev/fault` and `go.dokimi.dev/assert` |
-| `go.dokimi.dev/conform` | `conform/` | `conform`, `conform/spec` and `conform/probe` | `go.dokimi.dev/assert` |
+| `go.dokimi.dev/conform` | `conform/` | `conform` and `conform/probe` | `go.dokimi.dev/spec` and `go.dokimi.dev/assert` |
 
 - A test imports `go.dokimi.dev/stub` beside `go.dokimi.dev/assert`, and no import path contains the name of the repository. The doubles of a consumer do not require the conformance runtime.
-- The packages `spec` and `probe` are in the module of `conform`. A suite record contains the name and the version of one runtime, and that version implements one version of the conformance spec. A probe also takes the handle of `conform`. The verdict reverses when a second engine of suites calls the probes.
-- The root of the repository has no module. Its `go.work` uses the three directories, so a change of two modules builds and tests in one tree. ergon reads the modules of a repository from the `use` list of its `go.work`.
+- The copy of the conformance spec is in a module of its own at the root of the repository, so every module of the runtime reads one copy. `go:embed` reads the files of its own module alone, so a module that reads the copy requires `go.dokimi.dev/spec`.
+- The package `probe` is in the module of `conform`. A suite record contains the name and the version of one runtime, and that version implements one version of the conformance spec. A probe also takes the handle of `conform`. The verdict reverses when a second engine of suites calls the probes.
+- The root of the repository has no module. Its `go.work` uses the four directories, so a change of two modules builds and tests in one tree. ergon reads the modules of a repository from the `use` list of its `go.work`.
 - The vanity host go.dokimi.dev serves a page for each module. The `go-import` meta tag of the page contains the repository and the directory of the module, as in `go.dokimi.dev/stub git https://github.com/dokimasia/dokimi-go stub`. The go command reads the directory from Go 1.25 on.
 - The version tags of a module start with its directory, such as `conform/v0.1.0`, because the go command requires that prefix for a module in a directory.
 - The front matter of a changeset contains the path of the module that it releases, such as `"go.dokimi.dev/stub": minor`. A release of `fault` also releases `stub` at patch with the new requirement, because ergon releases each dependent whose consumers would not receive the new version otherwise.
-- Each module exports its compatibility witness: `stub.CompatV1`, `fault.CompatV1` and `conform.CompatV1`. A generated double that imports `fault` refers to `fault.CompatV1` beside `stub.CompatV1`.
+- Each module that generated files import exports its compatibility witness: `stub.CompatV1`, `fault.CompatV1` and `conform.CompatV1`. A generated double that imports `fault` refers to `fault.CompatV1` beside `stub.CompatV1`.
 
 The site generator of go.dokimi.dev writes a directory into the meta tag only for a module below another module, through the field `Dir` of its type `Sub`. Its type `Module` takes the same field for a module at the top level of the host.
 

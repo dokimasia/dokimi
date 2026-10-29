@@ -528,11 +528,11 @@ Each runtime implements the same parts in the conventions of its language:
 | The options of an application | `conform.With`, `conform.Excuse`, `conform.Reference`, `conform.Second`, `conform.Restartable`, `conform.Crashable`, `conform.Cases`, `conform.Using`, `conform.Ceilings` and `conform.Isolate`. The RFC of each machinery of the consumer adds the option of its door | `Options<S>`, with `isolate` |
 | The falsification | `conform.Falsify(t, suite)` | `falsify(suite)` |
 
-The module `go.dokimi.dev/conform` contains the packages `conform`, `spec` and `probe` of the Go runtime, as RFC-0005 states. `Run` and `Falsify` run each check as a test of its own, named by the identity of the check. Each check gets a handle of its own, and the probe reads the statement of the check from it. `Run` fails a derived check whose planted defect does not fail it with the reason of its claim, and a check that fails on its subject. Under `Isolate`, `Run` also fails a derived check whose planted defect fails another check, and an edge that fails in either direction. `Falsify` fails a check of the consumer whose planted defect does not fail it at its statement, and a ceiling that its defect does not break. Each writes the suite record of its application. The subject of a suite is the implementation that the factory of the consumer returns. The subject of the checks of errors is a value of a type that the generated test declares, with the errors of the package.
+The module `go.dokimi.dev/conform` contains the packages `conform` and `probe` of the Go runtime, and the module `go.dokimi.dev/spec` contains the package `spec`, as RFC-0005 states. `Run` and `Falsify` run each check as a test of its own, named by the identity of the check. Each check gets a handle of its own, and the probe reads the statement of the check from it. `Run` fails a derived check whose planted defect does not fail it with the reason of its claim, and a check that fails on its subject. Under `Isolate`, `Run` also fails a derived check whose planted defect fails another check, and an edge that fails in either direction. `Falsify` fails a check of the consumer whose planted defect does not fail it at its statement, and a ceiling that its defect does not break. Each writes the suite record of its application. The subject of a suite is the implementation that the factory of the consumer returns. The subject of the checks of errors is a value of a type that the generated test declares, with the errors of the package.
 
 ### The package spec
 
-The package `spec` of the module `go.dokimi.dev/dokimi` decodes every file of the spec for the derivation. The package `spec` of each runtime, such as `go.dokimi.dev/conform/spec`, declares the identifier types, the constants and the probes with their reasons alone, from its vendored copy. The handle reads the reasons of each probe to check the reason that the probe sets.
+The package `spec` of the module `go.dokimi.dev/dokimi` decodes every file of the spec for the derivation. The package `spec` of each runtime, such as `go.dokimi.dev/spec`, declares the identifier types, the constants and the probes with their reasons alone, from its vendored copy. The handle reads the reasons of each probe to check the reason that the probe sets.
 
 ```go
 // Package spec contains the conformance spec of dokimi: the laws, claims,
@@ -640,7 +640,7 @@ Each runtime is an implementation. Its `.spec.yaml` follows the releases of doki
 implements:
   - definition: dokimasia/dokimi
     track: release
-    path: conform/spec
+    path: spec
     languages: [go]
     test: [make, test-go]
 ```

@@ -88,10 +88,11 @@ spec/
 ├── manifest.json      the SHA-256 digest of each file that a runtime vendors, which spec manifest writes
 ├── spec.go            the package spec, which embeds the JSON files and decodes them
 ├── names.gen.go       a Go constant for each entry
+├── naming.json        the spelling of each identifier in the language of each runtime
 └── mutate-spec/       the vendored copy of mutate-spec
 ```
 
-`go generate ./spec` renders each YAML file into its JSON file and writes `names.gen.go`, and `spec manifest` writes `manifest.json`. The gate of dokimi runs both and fails when they change a file. The rendered JSON files are committed, because the runtimes read them and do not parse YAML. The manifest has entries for the files of the conformance spec alone, so a runtime does not vendor the copy of mutate-spec.
+`go generate ./spec` renders each YAML file into its JSON file and writes `names.gen.go` and `naming.json`, and `spec manifest` writes `manifest.json`. The gate of dokimi runs both and fails when they change a file. The rendered JSON files are committed, because the runtimes read them and do not parse YAML. The manifest has entries for the files of the conformance spec alone, so a runtime does not vendor the copy of mutate-spec.
 
 ### Identifiers
 
@@ -505,7 +506,7 @@ A generated file and its runtime agree on a compatibility function, the names of
 
 1. **A compatibility function.** Each package of a runtime that generated files import exports a function whose name contains the major version of its module, such as `conform.CompatV1` and `stub.CompatV1` in Go. Every generated file refers to the function of the major version that the generator targets. A major version of a runtime renames the function. A mismatch fails the build of the consumer in Go, Rust, Java, Kotlin and C#, and the type check or the module load in TypeScript. In Python and PHP it fails the import of the generated file.
 2. **Probe names.** A generated check calls each probe by its identifier in the casing of the language. With a runtime that implements an older spec without the probe, the build or the import fails at that call.
-3. **Constants.** Each runtime generates the constants of the entries of the spec from its vendored copy. Generated files refer to those constants, so a file that refers to an entry that the runtime lacks fails the build or the import.
+3. **Constants.** Each runtime declares the constants of the entries of the spec with the spellings of its language in `naming.json`, as each assert library takes the names of its assertions from the naming table of assert-spec. The renderer of dokimi alone spells an identifier, so a generated file and its runtime spell each constant alike. Generated files refer to those constants, so a file that refers to an entry that the runtime lacks fails the build or the import.
 4. **Reason codes.** A probe asserts through the assert library of its language. It passes the library a test handle of the runtime instead of the test itself, and it sets the reason code of each assertion on the handle before the assertion. The handle receives the failure record of each failed assertion and records the reason code that was set. Falsification reads the recorded code and never the text of the failure.
 
 The handle implements the interface that its assert library calls on a test, such as `assert.TB` in Go and `Seat` in TypeScript. In falsification the handle wraps the recorder of the assert library. The recorder keeps the failure records of the check without failing the falsification test.
@@ -531,7 +532,7 @@ The module `go.dokimi.dev/conform` contains the packages `conform`, `spec` and `
 
 ### The package spec
 
-The package `spec` of the module `go.dokimi.dev/dokimi` decodes every file of the spec for the derivation. The package `spec` of each runtime, such as `go.dokimi.dev/conform/spec`, declares the identifier types and the constants alone, from its vendored copy.
+The package `spec` of the module `go.dokimi.dev/dokimi` decodes every file of the spec for the derivation. The package `spec` of each runtime, such as `go.dokimi.dev/conform/spec`, declares the identifier types, the constants and the probes with their reasons alone, from its vendored copy. The handle reads the reasons of each probe to check the reason that the probe sets.
 
 ```go
 // Package spec contains the conformance spec of dokimi: the laws, claims,
@@ -639,7 +640,7 @@ Each runtime is an implementation. Its `.spec.yaml` follows the releases of doki
 implements:
   - definition: dokimasia/dokimi
     track: release
-    path: conformance/spec
+    path: conform/spec
     languages: [go]
     test: [make, test-go]
 ```
@@ -754,7 +755,7 @@ The runtime writes a JSON report of its own into a directory, apart from the art
 ## Drawbacks
 
 - **A sync commit for each new probe.** Each runtime takes a change of the spec through a release of dokimi and a sync commit of its own. With eight runtimes, an added probe means eight sync commits and eight implementations. A new claim that calls an existing probe does not need a change in a runtime.
-- **A constant generator in each runtime.** Each runtime turns the vendored JSON into the constants of its language with a generator of its own.
+- **A constant generator in each runtime.** Each runtime writes the constants of its language from the vendored `naming.json` with a generator of its own. The generator copies the spellings and does not apply a naming rule.
 - **Every probe in every runtime.** The probes are host code, so each probe exists once per runtime, and the corpus judges each copy.
 - **Reason codes that a run checks.** A test of the package `spec` cannot tell which assertion of a probe reports which reason. The handle checks each reported code against the list of the probe when a check runs, and the corpus runs every probe.
 - **A declaration of each machinery of the consumer.** A declaration that wants the checks of a reference, of faults, of a second subject or of a medium states the machinery with the param `machineries`. Without it the claims are unclaimed with the stance `needs`.
